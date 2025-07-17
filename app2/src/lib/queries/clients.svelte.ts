@@ -7,7 +7,7 @@ import { graphql } from "gql.tada"
 // Define the schema for client status
 const ClientStatus = S.Struct({
   height: S.OptionFromNullOr(Height),
-  timestamp: S.OptionFromNullOr(S.String),
+  timestamp: S.OptionFromNullOr(S.DateTimeUtc),
   transaction_hash: S.OptionFromNullOr(TransactionHash),
   counterparty_height: S.OptionFromNullOr(Height),
 })

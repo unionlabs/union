@@ -1,15 +1,16 @@
 <script lang="ts">
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { clientsQuery } from "$lib/queries/clients.svelte.ts"
 import { runFork, runFork$ } from "$lib/runtime"
+import { fetchFinalizedHeights } from "$lib/services/voyager-rpc"
 import { chains } from "$lib/stores/chains.svelte"
 import { clientsStore } from "$lib/stores/clients.svelte"
-import { fetchFinalizedHeights } from "$lib/services/voyager-rpc"
-import { Fiber, Option, Effect } from "effect"
+import { Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 
 // Get chains from the store, sorted alphabetically by universal chain ID
@@ -32,15 +33,17 @@ let finalizedHeights = $state<Map<string, Option.Option<string>>>(new Map())
 // Fetch clients data and finalized heights on mount
 onMount(() => {
   runFork$(() => clientsQuery())
-  
+
   // Fetch finalized heights when chains are available
   if (sortedChains.length > 0) {
     const chainIds = sortedChains.map(chain => chain.universal_chain_id)
-    runFork$(() => fetchFinalizedHeights(chainIds).pipe(
-      Effect.map(heights => {
-        finalizedHeights = heights
-      })
-    ))
+    runFork$(() =>
+      fetchFinalizedHeights(chainIds).pipe(
+        Effect.map(heights => {
+          finalizedHeights = heights
+        }),
+      )
+    )
   }
 })
 
@@ -48,11 +51,13 @@ onMount(() => {
 $effect(() => {
   if (sortedChains.length > 0) {
     const chainIds = sortedChains.map(chain => chain.universal_chain_id)
-    runFork$(() => fetchFinalizedHeights(chainIds).pipe(
-      Effect.map(heights => {
-        finalizedHeights = heights
-      })
-    ))
+    runFork$(() =>
+      fetchFinalizedHeights(chainIds).pipe(
+        Effect.map(heights => {
+          finalizedHeights = heights
+        }),
+      )
+    )
   }
 })
 
@@ -228,32 +233,41 @@ function getColumnLabelDelay(toIndex: number): number {
 
                             {#if Option.isSome(status.height)}
                               <section>
-                                <Label>Height</Label>
+                                <Label>Host Height</Label>
                                 <LongMonoWord>{status.height.value}</LongMonoWord>
                               </section>
                             {/if}
 
                             {#if Option.isSome(status.counterparty_height)}
                               <section>
-                                <Label>Counterparty Height</Label>
+                                <Label>Client Height</Label>
                                 <LongMonoWord>{status.counterparty_height.value}</LongMonoWord>
                               </section>
                             {/if}
-                            
-                            {#if tooltipData.trackedChainHeight && Option.isSome(tooltipData.trackedChainHeight)}
+
+                            {#if tooltipData.trackedChainHeight
+                  && Option.isSome(tooltipData.trackedChainHeight)}
                               <section>
-                                <Label>Tracked Chain Finalized Height</Label>
+                                <Label>Counterparty Height</Label>
                                 <LongMonoWord>{tooltipData.trackedChainHeight.value}</LongMonoWord>
                               </section>
                             {/if}
-                            
-                            {#if tooltipData.trackedChainHeight && Option.isSome(tooltipData.trackedChainHeight) && Option.isSome(status.counterparty_height)}
+
+                            {#if tooltipData.trackedChainHeight
+                  && Option.isSome(tooltipData.trackedChainHeight)
+                  && Option.isSome(status.counterparty_height)}
                               {@const trackedHeight = parseInt(tooltipData.trackedChainHeight.value)}
                               {@const counterpartyHeight = parseInt(status.counterparty_height.value)}
                               {@const delta = trackedHeight - counterpartyHeight}
                               <section>
-                                <Label>Delta</Label>
-                                <LongMonoWord class={delta < 0 ? "text-red-400" : delta > 0 ? "text-green-400" : "text-zinc-400"}>
+                                <Label>Client Height Delta</Label>
+                                <LongMonoWord
+                                  class={delta < 0
+                                  ? "text-red-400"
+                                  : delta > 0
+                                  ? "text-green-400"
+                                  : "text-zinc-400"}
+                                >
                                   {delta > 0 ? "+" : ""}{delta}
                                 </LongMonoWord>
                               </section>
@@ -262,31 +276,11 @@ function getColumnLabelDelay(toIndex: number): number {
                             {#if Option.isSome(status.timestamp)}
                               <section>
                                 <Label>Last Updated</Label>
-                                <div>{new Date(status.timestamp.value).toLocaleString()}</div>
-                              </section>
-                            {/if}
-                          {/if}
 
-                          {#if clientData.chain && Option.isSome(clientData.chain)
-                  && Option.isSome(clientData.chain.value.status)}
-                            {@const chainStatus = clientData.chain.value.status.value}
-                            {#if Option.isSome(chainStatus.status)}
-                              <section>
-                                <Label>Chain Status</Label>
-                                <div>{chainStatus.status.value}</div>
-                              </section>
-                            {/if}
-                          {/if}
-
-                          {#if clientData.counterparty_chain
-                  && Option.isSome(clientData.counterparty_chain)
-                  && Option.isSome(clientData.counterparty_chain.value.status)}
-                            {@const counterpartyStatus =
-                  clientData.counterparty_chain.value.status.value}
-                            {#if Option.isSome(counterpartyStatus.status)}
-                              <section>
-                                <Label>Counterparty Status</Label>
-                                <div>{counterpartyStatus.status.value}</div>
+                                <DateTimeComponent
+                                  class="text-sm hidden sm:block"
+                                  value={status.timestamp.value}
+                                />
                               </section>
                             {/if}
                           {/if}
