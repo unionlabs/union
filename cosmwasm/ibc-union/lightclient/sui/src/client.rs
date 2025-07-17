@@ -62,7 +62,7 @@ impl IbcClient for SuiLightClient {
         _key: Vec<u8>,
         _storage_proof: Self::StorageProof,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        Ok(())
+        unimplemented!()
     }
 
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {

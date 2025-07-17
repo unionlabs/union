@@ -58,68 +58,86 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::zkgm_packet {
+module zkgm::forward {
     use zkgm::zkgm_ethabi;
     use zkgm::instruction::{Self, Instruction};
 
-    public struct ZkgmPacket has copy, drop, store {
-        salt: vector<u8>,
+    public struct Forward has copy, drop, store {
         path: u256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
         instruction: Instruction
     }
 
-    public fun salt(zkgm_pack: &ZkgmPacket): vector<u8> {
-        zkgm_pack.salt
+    public fun new(
+        path: u256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        instruction: Instruction
+    ): Forward {
+        Forward {
+            path,
+            timeout_height,
+            timeout_timestamp,
+            instruction,
+        }
     }
 
-    public fun path(zkgm_pack: &ZkgmPacket): u256 {
-        zkgm_pack.path
+    public fun path(forward: &Forward): u256 {
+        forward.path
     }
 
-    public fun instruction(zkgm_pack: &ZkgmPacket): Instruction {
-        zkgm_pack.instruction
+    public fun timeout_height(forward: &Forward): u64 {
+        forward.timeout_height
     }
 
-    public fun new(salt: vector<u8>, path: u256, instruction: Instruction): ZkgmPacket {
-        ZkgmPacket { salt, path, instruction }
+    public fun timeout_timestamp(forward: &Forward): u64 {
+        forward.timeout_timestamp
     }
 
-    public fun encode(packet: &ZkgmPacket): vector<u8> {
+    public fun instruction(forward: &Forward): &Instruction {
+        &forward.instruction
+    }
+
+    public fun encode(forward: &Forward): vector<u8> {
         let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_bytes32(&mut buf, &packet.salt);
-        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.path);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
-
-        let ins_buf = instruction::encode(&packet.instruction);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, forward.path);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_height);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_timestamp);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x80);
+        let ins_buf = instruction::encode(&forward.instruction);
         vector::append(&mut buf, ins_buf);
-
         buf
     }
 
-    public fun decode(buf: &vector<u8>): ZkgmPacket {
+    public fun decode(buf: &vector<u8>): Forward {
         let mut index = 0;
-        let salt = zkgm_ethabi::decode_bytes32(buf, &mut index);
-        let path = zkgm_ethabi::decode_uint(buf, &mut index);
-        // skipping the pointer
-        index = index + 0x20;
-        let instruction = instruction::decode(buf, &mut index);
-
-        ZkgmPacket { salt: salt, path: path, instruction: instruction }
+        Forward {
+            path: zkgm_ethabi::decode_uint(buf, &mut index),
+            timeout_height: zkgm_ethabi::decode_uint(buf, &mut index) as u64,
+            timeout_timestamp: zkgm_ethabi::decode_uint(buf, &mut index) as u64,
+            instruction: instruction::decode(buf, &mut (index + 0x20))
+        }
     }
 
     #[test]
-    fun test_encode_zkgm_packet() {
-        let encoded =
-            x"414141414141414141414141414141414141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000084141414141414141000000000000000000000000000000000000000000000000";
-        let packet = decode(&encoded);
-        let expected_packet =
-            new(
-                b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                100,
-                instruction::new(10, 20, b"AAAAAAAA")
-            );
+    fun test_encode_decode_forward_packet() {
+        let output =
+            x"0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000084141414141414141000000000000000000000000000000000000000000000000";
 
-        assert!(packet == expected_packet, 1);
-        assert!(encode(&packet) == encoded, 1);
+        let forward = Forward {
+            path: 100,
+            timeout_height: 0,
+            timeout_timestamp: 100000,
+            instruction: instruction::new(
+                10,
+                20,
+                b"AAAAAAAA"
+            )
+        };
+
+        let encoded = encode(&forward);
+        assert!(encoded == output, 1);
+        assert!(decode(&encoded) == forward, 1);
     }
 }

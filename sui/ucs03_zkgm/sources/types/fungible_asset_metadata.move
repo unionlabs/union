@@ -58,66 +58,75 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::acknowledgement {
+module zkgm::fungible_asset_metadata {
     use zkgm::zkgm_ethabi;
 
-    public struct Acknowledgement has copy, drop, store {
-        tag: u256,
-        inner_ack: vector<u8>
+    public struct FungibleAssetMetadata has copy, drop, store {
+        implementation: vector<u8>,
+        initializer: vector<u8>,
     }
 
-    public fun new(tag: u256, inner_ack: vector<u8>): Acknowledgement {
-        Acknowledgement { tag, inner_ack }
+    public fun new(
+        implementation: vector<u8>,
+        initializer: vector<u8>,
+    ): FungibleAssetMetadata {
+        FungibleAssetMetadata {
+            implementation,
+            initializer
+        }
     }
 
-    public fun tag(ack: &Acknowledgement): u256 {
-        ack.tag
+    public fun implementation(metadata: &FungibleAssetMetadata): &vector<u8> {
+        &metadata.implementation
     }
 
-    public fun inner_ack(ack: &Acknowledgement): &vector<u8> {
-        &ack.inner_ack
+    public fun initializer(metadata: &FungibleAssetMetadata): &vector<u8> {
+        &metadata.initializer
     }
 
-    public fun encode(ack: &Acknowledgement): vector<u8> {
-        let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.tag);
+    public fun encode(metadata: &FungibleAssetMetadata): vector<u8> {
+        let mut buf = vector::empty();
 
-        let version_offset = 0x40;
-        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
-        zkgm_ethabi::encode_bytes(&mut buf, &ack.inner_ack);
+        let mut implementation = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut implementation, &metadata.implementation);
 
+        let mut initializer = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut initializer, &metadata.initializer);
+
+            
+        let mut dyn_offset: u64 = 0x20 * 2;
+
+        // `implementation` offset
+        zkgm_ethabi::encode_uint(&mut buf, dyn_offset);
+        dyn_offset = dyn_offset + implementation.length();
+
+        // `initializer` offset
+        zkgm_ethabi::encode_uint(&mut buf, dyn_offset);
+
+        buf.append(implementation);
+        buf.append(initializer);
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>): Acknowledgement {
-        let mut index = 0x0;
-        let tag = zkgm_ethabi::decode_uint(buf, &mut index);
-        index = index + 0x20;
-        let inner_ack = zkgm_ethabi::decode_bytes(buf, &mut index);
-        Acknowledgement { tag: tag, inner_ack: inner_ack }
+    public fun decode(buf: &vector<u8>): FungibleAssetMetadata {
+        let mut index = 0;
+        FungibleAssetMetadata {
+            implementation: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            initializer: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+        }
     }
-
+    
     #[test]
-    fun test_encode_decode_ack() {
-        let output =
-            x"000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000768656c6c6c6f6f00000000000000000000000000000000000000000000000000";
-        let ack_data = Acknowledgement { tag: 7788909223344, inner_ack: b"hellloo" };
+    fun test_encode_decode() {
+        let encoded = x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000021313233656c6e656c6e6176656c6e76626c656e61736c6765316c3265336e6c656e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e73646600000000000000000000000000000000000000000000000000";
+        let expected_metadata = FungibleAssetMetadata {
+            implementation: b"123elnelnavelnvblenaslge1l2e3nlen",
+            initializer: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf",
+        };
 
-        let ack_bytes = encode(&ack_data);
-        std::debug::print(&ack_bytes);
-        assert!(ack_bytes == output, 0);
-
-        let ack_data_decoded = decode(&ack_bytes);
-        assert!(ack_data_decoded.tag == 7788909223344, 1);
-        assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
-    }
-
-    #[test]
-    fun test_decode_ack(){
-        let output = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
-
-        let ack_data_decoded = decode(&output);
-        std::debug::print(&ack_data_decoded);
+        let metadata = decode(&encoded);
+        assert!(metadata == expected_metadata, 1);
+        assert!(encode(&metadata) == encoded, 1);
     }
 }

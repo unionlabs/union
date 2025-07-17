@@ -239,25 +239,25 @@ module ibc::ethabi {
         vector::append($buf, rest_buf);
     }
 
-    public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
-        // Read the first 32 bytes to get the length of the string
-        let mut len_bytes = vector_slice(buf, *index, *index + 32);
-
-        vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
-        let str_len: u256 = bcs::new(len_bytes).peel_u256();
-
+    public fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
+        // Decode the length of the bytes array
+        let mut len_bytes = vector_slice(buf, *index, *index + 32); // Extract the next 32 bytes for length
+        vector::reverse(&mut len_bytes); // Convert to big-endian format
+        let len: u64 = bcs::new(len_bytes).peel_u64(); // Convert the length bytes to u64
         *index = *index + 32; // Move the index forward after reading the length
+        // Decode the actual bytes
+        let byte_data = vector_slice(buf, *index, *index + len); // Extract the bytes of the given length
+        *index = *index + len; // Move the index forward after reading the byte data
 
-        // // Read the actual string bytes
-        let str_bytes = vector_slice(buf, *index, *index + (str_len as u64));
-        *index = *index + (str_len as u64); // Move the index forward after reading the string
+        // Skip padding to align to 32-byte boundary
+        let padding_len = (32 - (len % 32)) % 32;
+        *index = *index + padding_len; // Adjust the index to skip the padding
 
-        // Calculate padding to skip (align to 32-byte boundary)
-        let padding_len = (32 - ((str_len as u64) % 32)) % 32;
-        *index = *index + padding_len; // Skip the padding bytes
+        byte_data // Return the decoded bytes
+    }
 
-        // Convert the string bytes back to a String
-        string::utf8(str_bytes)
+    public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
+        string::utf8(decode_bytes(buf, index))
     }
 
     // Decoding an Ethereum address (20 bytes)
