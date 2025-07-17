@@ -226,11 +226,22 @@ input v2_channels_args {
   p_version: String
 }
 
+type v2_client_status_type {
+  block_hash: String
+  height: String
+  timestamp: DateTime
+  transaction_hash: String
+  counterparty_height: String
+}
+
 type v2_client_type {
   client_id: Int
   counterparty_universal_chain_id: String
   sort_order: String
   universal_chain_id: String
+  status: v2_client_status_type
+  chain: v2_chain_type!
+  counterparty_chain: v2_chain_type!
 }
 
 input v2_clients_args {
