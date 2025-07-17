@@ -56,8 +56,6 @@ onMount(() => {
 let viewportWidth = $state(0)
 const isRootPage = $derived(page.url.pathname === "/")
 const isMobile = $derived(viewportWidth < MAX_MOBILE_SIZE)
-const hideSidebar = $derived(isMobile && !isRootPage)
-const fullPageSidebar = $derived(isRootPage)
 let videoLoaded = $state(false)
 let currentVideoUrl = $state(uiStore.theme.videoUrl)
 let videoKey = $state(0)
@@ -138,28 +136,19 @@ $effect(() => {
 >
   <aside
     class={cn(
-      "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-hidden border-r border-zinc-900 max-h-dvh z-0",
-      fullPageSidebar ? "right-0" : "w-64",
+      "fixed hidden w-64 sm:block left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-hidden border-r border-zinc-900 max-h-dvh z-0",
     )}
-    hidden={hideSidebar}
   >
     <Sidebar />
   </aside>
 
   <!-- Main content area: Has margin to clear fixed sidebar -->
-  <main
-    class={cn(
-      "fixed min-h-svh grow right-0 top-0 bottom-0 z-0",
-      fullPageSidebar ? "w-0" : null,
-      hideSidebar ? "left-0" : "left-64",
-    )}
-    hidden={fullPageSidebar}
-  >
+  <main class={cn("fixed min-h-svh grow left-0 sm:left-64 right-0 top-0 bottom-0 z-0")}>
     <div class="sticky top-0 z-20">
-      <Header showNavigation={isMobile} />
+      <Header />
     </div>
 
-    <div class="absolute top-16 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">
+    <div class="absolute top-28 md:top-16 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">
       {@render children()}
     </div>
   </main>

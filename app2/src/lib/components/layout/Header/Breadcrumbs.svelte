@@ -46,7 +46,7 @@ $effect(() => {
 })
 </script>
 
-<nav class="flex items-center gap-2 text-zinc-400 h-8 overflow-hidden">
+<nav class="flex items-center gap-2 text-zinc-400 h-8 overflow-hidden pl-1 sm:pl-0">
   {#each currentBreadcrumbs as crumb, i (crumb.id)}
     <div
       animate:flip={{ duration: 400 }}

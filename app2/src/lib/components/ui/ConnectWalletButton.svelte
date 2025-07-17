@@ -6,14 +6,26 @@ import { Option } from "effect"
 import Button from "./Button.svelte"
 </script>
 
+<!-- Mobile: Icon variant -->
 <Button
-  variant="secondary"
-  class="flex items-center w-full"
+  variant="icon"
+  class="md:hidden"
   onclick={() => uiStore.openWalletModal()}
+  title="My wallets"
 >
   <SharpWalletIcon class="size-5" />
-  My wallets
-  <div class="flex items-center gap-1 ml-1 -mr-1">
+</Button>
+
+<!-- Desktop: Secondary variant with full content -->
+<Button
+  variant="secondary"
+  class="hidden md:flex items-center justify-center gap-2 w-full text-sm"
+  onclick={() => uiStore.openWalletModal()}
+  title="My wallets"
+>
+  <SharpWalletIcon class="size-5 flex-shrink-0" />
+  <span class="truncate">My wallets</span>
+  <div class="flex items-center gap-1 -mr-1 flex-shrink-0">
     <div
       class="{Option.isSome(wallets.evmAddress) ? 'pulse-1 bg-green-500 shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]' : 'bg-zinc-800'} w-2 h-2 rounded-full transition-colors duration-200"
       title="EVM"
