@@ -347,25 +347,6 @@ function getColumnLabelDelay(toIndex: number): number {
 {/if}
 
 <style>
-/* Custom scrollbar styling */
-:global(.overflow-auto::-webkit-scrollbar) {
-  width: 8px;
-  height: 8px;
-}
-
-:global(.overflow-auto::-webkit-scrollbar-track) {
-  background: #27272a;
-}
-
-:global(.overflow-auto::-webkit-scrollbar-thumb) {
-  background: #52525b;
-  border-radius: 4px;
-}
-
-:global(.overflow-auto::-webkit-scrollbar-thumb:hover) {
-  background: #71717a;
-}
-
 /* Scale in animation for matrix cells */
 @keyframes scale-in {
   0% {
