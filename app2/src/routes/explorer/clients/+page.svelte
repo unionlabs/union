@@ -257,7 +257,7 @@ function getColumnLabelDelay(toIndex: number): number {
                   && Option.isSome(tooltipData.trackedChainHeight)
                   && Option.isSome(status.counterparty_height)}
                               {@const trackedHeight = parseInt(tooltipData.trackedChainHeight.value)}
-                              {@const counterpartyHeight = parseInt(status.counterparty_height.value)}
+                              {@const counterpartyHeight = parseInt(status.counterparty_height.value.toString())}
                               {@const delta = trackedHeight - counterpartyHeight}
                               <section>
                                 <Label>Client Height Delta</Label>

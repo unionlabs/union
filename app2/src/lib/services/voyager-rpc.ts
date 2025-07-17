@@ -1,4 +1,5 @@
-import { Effect, Option, Schema } from "effect"
+import { Effect, Option, Schema, Array as A, pipe } from "effect"
+import { FetchHttpClient, HttpClient, HttpClientRequest, HttpClientResponse, HttpBody } from "@effect/platform"
 
 const VOY_RUN_URL = "https://voy.run"
 
@@ -35,53 +36,112 @@ export function extractChainId(universalChainId: string): string {
   return parts.length > 1 ? parts[1] : universalChainId
 }
 
-// Fetch finalized heights for multiple chains
-export const fetchFinalizedHeights = (universalChainIds: string[]) =>
-  Effect.tryPromise({
-    try: async () => {
-      const requests = universalChainIds.map((ucid, index) => ({
-        jsonrpc: "2.0" as const,
-        method: "voyager_queryLatestHeight",
-        params: [extractChainId(ucid), true],
-        id: index + 1
-      }))
+// Remove revision prefix from height (e.g., "5-1493366" -> "1493366")
+function parseHeight(height: string): string {
+  return height.includes('-') 
+    ? height.substring(height.indexOf('-') + 1)
+    : height
+}
 
-      const response = await fetch(VOY_RUN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(requests)
-      })
+// Fetch heights for a single batch of chain IDs
+const fetchHeightsBatch = (chainIds: string[], startId: number = 1) =>
+  Effect.gen(function* () {
+    const requests = chainIds.map((chainId, index) => ({
+      jsonrpc: "2.0" as const,
+      method: "voyager_queryLatestHeight",
+      params: [extractChainId(chainId), true],
+      id: startId + index
+    }))
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+    const httpClient = (yield* HttpClient.HttpClient).pipe(
+      HttpClient.withTracerDisabledWhen(() => true),
+    )
 
-      const json = await response.json()
-      const decoded = Schema.decodeUnknownSync(Schema.Array(JsonRpcResponse))(json)
+    const body = yield* HttpBody.json(requests)
+    const response = yield* httpClient.post(VOY_RUN_URL, {
+      body
+    })
 
-      // Map responses back to universal chain IDs
-      const heightMap = new Map<string, Option.Option<string>>()
-      
-      decoded.forEach((res: JsonRpcResponse, index: number) => {
-        const ucid = universalChainIds[index]
-        if ("result" in res) {
-          // Remove revision prefix (e.g., "5-1493366" -> "1493366")
-          const height = res.result.includes('-') 
-            ? res.result.substring(res.result.indexOf('-') + 1)
-            : res.result
-          heightMap.set(ucid, Option.some(height))
-        } else {
-          heightMap.set(ucid, Option.none())
-        }
-      })
-
-      return heightMap
-    },
-    catch: (error) => {
-      console.error("Failed to fetch finalized heights:", error)
-      // Return empty map on error
-      return new Map<string, Option.Option<string>>()
-    }
+    const json = yield* response.json
+    const decoded = yield* Schema.decodeUnknown(Schema.Array(JsonRpcResponse))(json)
+    
+    return { requests, responses: decoded }
   })
+
+// Fetch finalized heights for multiple chains with smart retry
+export const fetchFinalizedHeights = (universalChainIds: string[]) =>
+  Effect.gen(function* () {
+    const heightMap = new Map<string, Option.Option<string>>()
+    
+    // Initial batch request
+    const initialResult = yield* fetchHeightsBatch(universalChainIds).pipe(
+      Effect.catchAll(error => {
+        console.error("Failed to fetch heights batch:", error)
+        return Effect.succeed({ 
+          requests: [], 
+          responses: [] as JsonRpcResponse[] 
+        })
+      })
+    )
+
+    // Process successful responses and collect failed IDs
+    const failedChainIds: string[] = []
+    const successfulResponses = new Map<number, JsonRpcResponse>()
+
+    // Map responses by ID for easier lookup
+    initialResult.responses.forEach(response => {
+      successfulResponses.set(response.id, response)
+    })
+
+    // Process each chain ID
+    universalChainIds.forEach((ucid, index) => {
+      const requestId = index + 1
+      const response = successfulResponses.get(requestId)
+      
+      if (response && "result" in response) {
+        const height = parseHeight(response.result)
+        heightMap.set(ucid, Option.some(height))
+      } else {
+        // Mark as failed for retry
+        failedChainIds.push(ucid)
+        heightMap.set(ucid, Option.none())
+      }
+    })
+
+    // Retry failed requests if any
+    if (failedChainIds.length > 0) {
+      console.log(`Retrying ${failedChainIds.length} failed requests:`, failedChainIds.map(extractChainId))
+      
+      const retryResult = yield* fetchHeightsBatch(failedChainIds, 1000).pipe(
+        Effect.catchAll(error => {
+          console.error("Failed to retry heights batch:", error)
+          return Effect.succeed({ 
+            requests: [], 
+            responses: [] as JsonRpcResponse[] 
+          })
+        })
+      )
+
+      // Process retry responses
+      const retryResponses = new Map<number, JsonRpcResponse>()
+      retryResult.responses.forEach(response => {
+        retryResponses.set(response.id, response)
+      })
+
+      // Update the height map with retry results
+      failedChainIds.forEach((ucid, index) => {
+        const requestId = 1000 + index
+        const response = retryResponses.get(requestId)
+        
+        if (response && "result" in response) {
+          const height = parseHeight(response.result)
+          heightMap.set(ucid, Option.some(height))
+        }
+        // If still failed, keep as Option.none() (already set above)
+      })
+    }
+
+    return heightMap
+  }).pipe(
+    Effect.provide(FetchHttpClient.layer)
+  )
