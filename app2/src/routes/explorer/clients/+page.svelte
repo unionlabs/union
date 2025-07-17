@@ -4,20 +4,35 @@ import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import Switch from "$lib/components/ui/Switch.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { clientsQuery } from "$lib/queries/clients.svelte.ts"
 import { runFork, runFork$ } from "$lib/runtime"
 import { fetchFinalizedHeights } from "$lib/services/voyager-rpc"
 import { chains } from "$lib/stores/chains.svelte"
 import { clientsStore } from "$lib/stores/clients.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
 import { Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 
-// Get chains from the store, sorted alphabetically by universal chain ID
-const sortedChains = $derived(
+// Get chains from the store, separated by testnet/mainnet and sorted alphabetically
+const mainnetChains = $derived(
   chains.data.pipe(
     Option.map(chainsData =>
       chainsData
+        .filter(chain => !chain.testnet)
+        .slice()
+        .sort((a, b) => a.universal_chain_id.localeCompare(b.universal_chain_id))
+    ),
+    Option.getOrElse(() => []),
+  ),
+)
+
+const testnetChains = $derived(
+  chains.data.pipe(
+    Option.map(chainsData =>
+      chainsData
+        .filter(chain => chain.testnet)
         .slice()
         .sort((a, b) => a.universal_chain_id.localeCompare(b.universal_chain_id))
     ),
@@ -30,13 +45,17 @@ let fiber: Fiber.Fiber<any, any>
 // Store for finalized heights
 let finalizedHeights = $state<Map<string, Option.Option<string>>>(new Map())
 
+// Get current chains based on mainnetOnly setting
+const currentChains = $derived(settingsStore.mainnetOnly ? mainnetChains : testnetChains)
+
 // Fetch clients data and finalized heights on mount
 onMount(() => {
   runFork$(() => clientsQuery())
 
   // Fetch finalized heights when chains are available
-  if (sortedChains.length > 0) {
-    const chainIds = sortedChains.map(chain => chain.universal_chain_id)
+  const allChains = [...mainnetChains, ...testnetChains]
+  if (allChains.length > 0) {
+    const chainIds = allChains.map(chain => chain.universal_chain_id)
     runFork$(() =>
       fetchFinalizedHeights(chainIds).pipe(
         Effect.map(heights => {
@@ -49,8 +68,9 @@ onMount(() => {
 
 // Re-fetch heights when chains change
 $effect(() => {
-  if (sortedChains.length > 0) {
-    const chainIds = sortedChains.map(chain => chain.universal_chain_id)
+  const allChains = [...mainnetChains, ...testnetChains]
+  if (allChains.length > 0) {
+    const chainIds = allChains.map(chain => chain.universal_chain_id)
     runFork$(() =>
       fetchFinalizedHeights(chainIds).pipe(
         Effect.map(heights => {
@@ -99,9 +119,9 @@ function getTooltipData(fromChainId: string, toChainId: string) {
 }
 
 // Generate diagonal delay for animation (from top-right and bottom-left corners toward center)
-function getDiagonalDelay(fromIndex: number, toIndex: number): number {
-  const totalRows = sortedChains.length
-  const totalColumns = sortedChains.length
+function getDiagonalDelay(fromIndex: number, toIndex: number, chainsArray: any[]): number {
+  const totalRows = chainsArray.length
+  const totalColumns = chainsArray.length
 
   // Calculate distance from top-right corner (0, totalColumns-1)
   const distanceFromTopRight = fromIndex + (totalColumns - 1 - toIndex)
@@ -126,25 +146,161 @@ function getColumnLabelDelay(toIndex: number): number {
 }
 </script>
 
-{#if sortedChains.length === 0}
-  <div class="flex items-center justify-center h-64">
-    <div class="text-zinc-400">Loading chains...</div>
-  </div>
-{:else}
-  {#if Option.isSome(clientsStore.error)}
-    <ErrorComponent error={clientsStore.error.value} />
-  {/if}
+{#snippet matrixCell(fromChain: any, toChain: any, fromIndex: number, toIndex: number, chainsArray: any[])}
+  <td class="border-zinc-900 p-0 w-8 h-8">
+    {#if fromChain.universal_chain_id === toChain.universal_chain_id}
+      <div
+        class="w-8 h-8 animate-scale-in border-t border-l border-zinc-900 bg-zinc-925"
+        style="animation-delay: {getDiagonalDelay(fromIndex, toIndex, chainsArray)}ms;"
+      >
+      </div>
+    {:else}
+      {@const client = getClientStatus(
+        fromChain.universal_chain_id,
+        toChain.universal_chain_id,
+      )}
+      {@const hasStatus = client && hasActiveStatus(client)}
+      {@const tooltipData = getTooltipData(
+        fromChain.universal_chain_id,
+        toChain.universal_chain_id,
+      )}
+
+      <Tooltip>
+        {#snippet trigger()}
+          <div
+            class="w-8 h-8 animate-scale-in border-t border-l border-zinc-900 {hasStatus ? 'bg-accent' : 'bg-zinc-925'}"
+            style="animation-delay: {getDiagonalDelay(fromIndex, toIndex, chainsArray)}ms;"
+          >
+          </div>
+        {/snippet}
+
+        {#snippet content()}
+          <section>
+            <div class="flex gap-2 items-center text-lg text-white font-bold">
+              <div>{fromChain.display_name}</div>
+              <div>→</div>
+              <div>{toChain.display_name}</div>
+            </div>
+          </section>
+
+          {#if !tooltipData.hasClient}
+            <section>
+              <Label>Status</Label>
+              <div class="text-red-400">No client found</div>
+            </section>
+          {:else if tooltipData.client}
+            {@const clientData = tooltipData.client}
+
+            <section>
+              <Label>Client ID</Label>
+              <LongMonoWord>{clientData.client_id}</LongMonoWord>
+            </section>
+            {#if clientData.status && Option.isSome(clientData.status)}
+              {@const status = clientData.status.value}
+
+              {#if Option.isSome(status.height)}
+                <section>
+                  <Label>Host Height</Label>
+                  <LongMonoWord>{status.height.value}</LongMonoWord>
+                </section>
+              {/if}
+
+              {#if Option.isSome(status.counterparty_height)}
+                <section>
+                  <Label>Client Height</Label>
+                  <LongMonoWord>{status.counterparty_height.value}</LongMonoWord>
+                </section>
+              {/if}
+
+              {#if tooltipData.trackedChainHeight
+        && Option.isSome(tooltipData.trackedChainHeight)}
+                <section>
+                  <Label>Counterparty Height</Label>
+                  <LongMonoWord>{tooltipData.trackedChainHeight.value}</LongMonoWord>
+                </section>
+              {/if}
+
+              {#if tooltipData.trackedChainHeight
+        && Option.isSome(tooltipData.trackedChainHeight)
+        && Option.isSome(status.counterparty_height)}
+                {@const trackedHeight = parseInt(tooltipData.trackedChainHeight.value)}
+                {@const counterpartyHeight = parseInt(status.counterparty_height.value.toString())}
+                {@const delta = trackedHeight - counterpartyHeight}
+                <section>
+                  <Label>Client Height Delta</Label>
+                  <LongMonoWord
+                    class={delta < 0
+                    ? "text-red-400"
+                    : delta > 0
+                    ? "text-green-400"
+                    : "text-zinc-400"}
+                  >
+                    {delta > 0 ? "+" : ""}{delta}
+                  </LongMonoWord>
+                </section>
+              {/if}
+
+              {#if Option.isSome(status.timestamp)}
+                <section>
+                  <Label>Last Updated</Label>
+                  <DateTimeComponent
+                    class="text-sm hidden sm:block"
+                    value={status.timestamp.value}
+                  />
+                </section>
+              {/if}
+            {/if}
+
+            {#if clientData.chain && Option.isSome(clientData.chain)
+        && Option.isSome(clientData.chain.value.status)}
+              {@const chainStatus = clientData.chain.value.status.value}
+              {#if Option.isSome(chainStatus.status)}
+                <section>
+                  <Label>Chain Status</Label>
+                  <div>{chainStatus.status.value}</div>
+                </section>
+              {/if}
+            {/if}
+
+            {#if clientData.counterparty_chain
+        && Option.isSome(clientData.counterparty_chain)
+        && Option.isSome(clientData.counterparty_chain.value.status)}
+              {@const counterpartyStatus =
+        clientData.counterparty_chain.value.status.value}
+              {#if Option.isSome(counterpartyStatus.status)}
+                <section>
+                  <Label>Counterparty Status</Label>
+                  <div>{counterpartyStatus.status.value}</div>
+                </section>
+              {/if}
+            {/if}
+          {/if}
+        {/snippet}
+      </Tooltip>
+    {/if}
+  </td>
+{/snippet}
+
+{#snippet matrixTable(chains: any[])}
   <div class="overflow-auto max-h-full">
     <div class="inline-block min-w-full">
       <table class="border-collapse">
         <thead>
           <tr class="">
             <th class="top-0 sticky left-0 bg-zinc-925 z-30 p-2 text-xs font-medium text-zinc-300">
-              <div class="transform -rotate-45">
-                Host — Tracking
+              <div class="flex flex-col items-center justify-center h-full gap-2">
+                <div class="transform -rotate-45">
+                  Host — Tracking
+                </div>
+                <Switch
+                  checked={settingsStore.mainnetOnly}
+                  label={settingsStore.mainnetOnly ? 'Mainnet' : 'Testnet'}
+                  change={(value) => settingsStore.mainnetOnly = value}
+                  class="text-xs scale-75"
+                />
               </div>
             </th>
-            {#each sortedChains as toChain, toIndex}
+            {#each chains as toChain, toIndex}
               <th class="top-0 sticky z-10 max-w-8 h-[160px] bg-zinc-925">
                 <div class="h-[160px] pt-2 border-l border-zinc-900">
                   <div class="transform rotate-90 z-20">
@@ -164,7 +320,7 @@ function getColumnLabelDelay(toIndex: number): number {
           </tr>
         </thead>
         <tbody>
-          {#each sortedChains as fromChain, fromIndex}
+          {#each chains as fromChain, fromIndex}
             <tr>
               <td class="sticky left-0 bg-zinc-925 z-10 min-w-[160px]">
                 <div class="border-t border-zinc-900 flex items-center h-8 pl-2">
@@ -179,116 +335,8 @@ function getColumnLabelDelay(toIndex: number): number {
                   </div>
                 </div>
               </td>
-              {#each sortedChains as toChain, toIndex}
-                <td class="border-zinc-900 p-0 w-8 h-8">
-                  {#if fromChain.universal_chain_id === toChain.universal_chain_id}
-                    <div
-                      class="w-8 h-8 animate-scale-in border-t border-l border-zinc-900 bg-zinc-925"
-                      style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
-                    >
-                    </div>
-                  {:else}
-                    {@const client = getClientStatus(
-                fromChain.universal_chain_id,
-                toChain.universal_chain_id,
-              )}
-                    {@const hasStatus = client && hasActiveStatus(client)}
-                    {@const tooltipData = getTooltipData(
-                fromChain.universal_chain_id,
-                toChain.universal_chain_id,
-              )}
-
-                    <Tooltip>
-                      {#snippet trigger()}
-                        <div
-                          class="w-8 h-8 animate-scale-in border-t border-l border-zinc-900 {hasStatus ? 'bg-accent' : 'bg-zinc-925'}"
-                          style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
-                        >
-                        </div>
-                      {/snippet}
-
-                      {#snippet content()}
-                        <section>
-                          <div class="flex gap-2 items-center text-lg text-white font-bold">
-                            <div>{fromChain.display_name}</div>
-                            <div>→</div>
-                            <div>{toChain.display_name}</div>
-                          </div>
-                        </section>
-
-                        {#if !tooltipData.hasClient}
-                          <section>
-                            <Label>Status</Label>
-                            <div class="text-red-400">No client found</div>
-                          </section>
-                        {:else if tooltipData.client}
-                          {@const clientData = tooltipData.client}
-
-                          <section>
-                            <Label>Client ID</Label>
-                            <LongMonoWord>{clientData.client_id}</LongMonoWord>
-                          </section>
-                          {#if clientData.status && Option.isSome(clientData.status)}
-                            {@const status = clientData.status.value}
-
-                            {#if Option.isSome(status.height)}
-                              <section>
-                                <Label>Host Height</Label>
-                                <LongMonoWord>{status.height.value}</LongMonoWord>
-                              </section>
-                            {/if}
-
-                            {#if Option.isSome(status.counterparty_height)}
-                              <section>
-                                <Label>Client Height</Label>
-                                <LongMonoWord>{status.counterparty_height.value}</LongMonoWord>
-                              </section>
-                            {/if}
-
-                            {#if tooltipData.trackedChainHeight
-                  && Option.isSome(tooltipData.trackedChainHeight)}
-                              <section>
-                                <Label>Counterparty Height</Label>
-                                <LongMonoWord>{tooltipData.trackedChainHeight.value}</LongMonoWord>
-                              </section>
-                            {/if}
-
-                            {#if tooltipData.trackedChainHeight
-                  && Option.isSome(tooltipData.trackedChainHeight)
-                  && Option.isSome(status.counterparty_height)}
-                              {@const trackedHeight = parseInt(tooltipData.trackedChainHeight.value)}
-                              {@const counterpartyHeight = parseInt(status.counterparty_height.value.toString())}
-                              {@const delta = trackedHeight - counterpartyHeight}
-                              <section>
-                                <Label>Client Height Delta</Label>
-                                <LongMonoWord
-                                  class={delta < 0
-                                  ? "text-red-400"
-                                  : delta > 0
-                                  ? "text-green-400"
-                                  : "text-zinc-400"}
-                                >
-                                  {delta > 0 ? "+" : ""}{delta}
-                                </LongMonoWord>
-                              </section>
-                            {/if}
-
-                            {#if Option.isSome(status.timestamp)}
-                              <section>
-                                <Label>Last Updated</Label>
-
-                                <DateTimeComponent
-                                  class="text-sm hidden sm:block"
-                                  value={status.timestamp.value}
-                                />
-                              </section>
-                            {/if}
-                          {/if}
-                        {/if}
-                      {/snippet}
-                    </Tooltip>
-                  {/if}
-                </td>
+              {#each chains as toChain, toIndex}
+                {@render matrixCell(fromChain, toChain, fromIndex, toIndex, chains)}
               {/each}
             </tr>
           {/each}
@@ -296,6 +344,24 @@ function getColumnLabelDelay(toIndex: number): number {
       </table>
     </div>
   </div>
+{/snippet}
+
+{#if currentChains.length === 0}
+  <div class="flex items-center justify-center h-64">
+    <div class="text-zinc-400">
+      {#if settingsStore.mainnetOnly}
+        No mainnet chains available
+      {:else}
+        No testnet chains available
+      {/if}
+    </div>
+  </div>
+{:else}
+  {#if Option.isSome(clientsStore.error)}
+    <ErrorComponent error={clientsStore.error.value} />
+  {/if}
+  
+  {@render matrixTable(currentChains)}
 {/if}
 
 <style>
