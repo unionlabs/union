@@ -40,6 +40,10 @@ const classes = cn(
     "bg-red-500 border-red-400 border text-white hover:bg-red-700",
     "focus-visible:ring-red-500",
   ],
+  variant === "icon" && [
+    "w-9 h-9 p-0 hover:bg-zinc-800 text-gray-400 hover:text-zinc-50",
+    "focus-visible:ring-zinc-400",
+  ],
   variant === "inline" && [
     "underline text-accent hover:text-orange-300 transition-colors inline-flex items-center gap-1",
   ],

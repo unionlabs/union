@@ -1,5 +1,7 @@
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
 import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
+import HistoryIcon from "$lib/components/icons/HistoryIcon.svelte"
+import OrbitIcon from "$lib/components/icons/OrbitIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
@@ -34,22 +36,17 @@ export const navigation: Array<NavSection> = [
       {
         path: "/transfer",
         title: "Transfer",
+        icon: SharpTransferIcon,
+      },
+      {
+        path: "/transfer/multisig",
+        title: "Keplr Multisig",
         icon: OutlineControlPointDuplicate,
-        subroutes: [
-          {
-            path: "/transfer/multisig",
-            title: "Keplr Multisig",
-          },
-          {
-            path: "/transfers",
-            title: "History",
-          },
-          {
-            path: "/faucet",
-            title: "Faucets",
-            editions: ["app"],
-          },
-        ],
+      },
+      {
+        path: "/transfers",
+        title: "History",
+        icon: HistoryIcon,
       },
     ],
   },
@@ -73,23 +70,15 @@ export const navigation: Array<NavSection> = [
             title: "Find Packet",
           },
           {
-            path: "/explorer/orbital",
-            title: "Orbital",
-            new: true,
+            path: "/explorer/tokens",
+            title: "Tokens",
           },
-          // {
-          //   path: "/explorer/connections",
-          //   title: "Connections"
-          // },
-          // {
-          //   path: "/explorer/channels",
-          //   title: "Channels"
-          // },
-          // {
-          //   path: "/explorer/clients",
-          //   title: "Clients"
-          // }
         ],
+      },
+      {
+        path: "/explorer/orbital",
+        title: "Orbital",
+        icon: OrbitIcon,
       },
     ],
   },
@@ -114,11 +103,6 @@ export const navigation: Array<NavSection> = [
       {
         path: "/balances",
         title: "Your Balances",
-        icon: OutlineControlPointDuplicate,
-      },
-      {
-        path: "/explorer/tokens",
-        title: "Tokens",
         icon: OutlineControlPointDuplicate,
       },
     ],
