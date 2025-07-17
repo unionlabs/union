@@ -254,10 +254,17 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
-				return nil, err
+				if err != stakingtypes.ErrNoValidatorFound {
+					sdkCtx.Logger().Info(
+						"validator not found",
+						"addr", valAddr,
+					)
+					return nil, err
+				}
 			}
 
 			if validator.IsJailed() {
+				// this check is likely redundant since we removed jailed validators from the set above
 				sdkCtx.Logger().Info(
 					"validator is jailed",
 					"addr", valAddr,
