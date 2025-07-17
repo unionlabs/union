@@ -146,7 +146,13 @@ function getColumnLabelDelay(toIndex: number): number {
 }
 </script>
 
-{#snippet matrixCell(fromChain: any, toChain: any, fromIndex: number, toIndex: number, chainsArray: any[])}
+{#snippet matrixCell(
+  fromChain: any,
+  toChain: any,
+  fromIndex: number,
+  toIndex: number,
+  chainsArray: any[],
+)}
   <td class="border-zinc-900 p-0 w-8 h-8">
     {#if fromChain.universal_chain_id === toChain.universal_chain_id}
       <div
@@ -156,14 +162,14 @@ function getColumnLabelDelay(toIndex: number): number {
       </div>
     {:else}
       {@const client = getClientStatus(
-        fromChain.universal_chain_id,
-        toChain.universal_chain_id,
-      )}
+      fromChain.universal_chain_id,
+      toChain.universal_chain_id,
+    )}
       {@const hasStatus = client && hasActiveStatus(client)}
       {@const tooltipData = getTooltipData(
-        fromChain.universal_chain_id,
-        toChain.universal_chain_id,
-      )}
+      fromChain.universal_chain_id,
+      toChain.universal_chain_id,
+    )}
 
       <Tooltip>
         {#snippet trigger()}
@@ -250,30 +256,6 @@ function getColumnLabelDelay(toIndex: number): number {
                 </section>
               {/if}
             {/if}
-
-            {#if clientData.chain && Option.isSome(clientData.chain)
-        && Option.isSome(clientData.chain.value.status)}
-              {@const chainStatus = clientData.chain.value.status.value}
-              {#if Option.isSome(chainStatus.status)}
-                <section>
-                  <Label>Chain Status</Label>
-                  <div>{chainStatus.status.value}</div>
-                </section>
-              {/if}
-            {/if}
-
-            {#if clientData.counterparty_chain
-        && Option.isSome(clientData.counterparty_chain)
-        && Option.isSome(clientData.counterparty_chain.value.status)}
-              {@const counterpartyStatus =
-        clientData.counterparty_chain.value.status.value}
-              {#if Option.isSome(counterpartyStatus.status)}
-                <section>
-                  <Label>Counterparty Status</Label>
-                  <div>{counterpartyStatus.status.value}</div>
-                </section>
-              {/if}
-            {/if}
           {/if}
         {/snippet}
       </Tooltip>
@@ -288,16 +270,16 @@ function getColumnLabelDelay(toIndex: number): number {
         <thead>
           <tr class="">
             <th class="top-0 sticky left-0 bg-zinc-925 z-30 p-2 text-xs font-medium text-zinc-300">
-              <div class="flex flex-col items-center justify-center h-full gap-2">
-                <div class="transform -rotate-45">
-                  Host — Tracking
+              <div class="flex items-center justify-center h-full">
+                <div class="transform -rotate-45 flex flex-col items-center gap-2">
+                  <div class="text-sm font-medium">Host — Tracking</div>
+                  <Switch
+                    checked={settingsStore.mainnetOnly}
+                    label={settingsStore.mainnetOnly ? "Mainnet" : "Testnet"}
+                    change={(value) => settingsStore.mainnetOnly = value}
+                    class="text-xs scale-75"
+                  />
                 </div>
-                <Switch
-                  checked={settingsStore.mainnetOnly}
-                  label={settingsStore.mainnetOnly ? 'Mainnet' : 'Testnet'}
-                  change={(value) => settingsStore.mainnetOnly = value}
-                  class="text-xs scale-75"
-                />
               </div>
             </th>
             {#each chains as toChain, toIndex}
@@ -360,7 +342,7 @@ function getColumnLabelDelay(toIndex: number): number {
   {#if Option.isSome(clientsStore.error)}
     <ErrorComponent error={clientsStore.error.value} />
   {/if}
-  
+
   {@render matrixTable(currentChains)}
 {/if}
 
