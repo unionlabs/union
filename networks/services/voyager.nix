@@ -12,45 +12,32 @@ let
 in
 {
   build = {
-    image = pkgs.dockerTools.buildImage {
-      name = "voyager";
-
-      copyToRoot = pkgs.buildEnv {
-        name = "image-root";
-        paths = [
-          pkgs.coreutils
-          pkgs.cacert
-          self'.packages.voyager
-          voyager-start
-        ];
-        pathsToLink = [ "/bin" ];
-      };
-      config = {
-        Entrypoint = [ "ls" ];
-        Cmd = [ "-la" ];
-      };
-    }
-  };
-  service = {
-    tty = true;
-    stop_signal = "SIGINT";
-    ports = [
-      # Beacon node rest API
-      "9596:9596"
-    ];
-    healthcheck = {
-      interval = "5s";
-      retries = 6;
-      test = [
-        "CMD-SHELL"
-        ''
-          curl -f http://localhost:9596/eth/v2/beacon/blocks/2 || exit 1
-        ''
+    image = {
+      enableRecommendedContents = true;
+      contents = [
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.jq
+        voyager-start
+        self'.packages.voyager-modules-plugins
       ];
     };
-    depends_on = {
-      geth = {
-        condition = "service_healthy";
+    service = {
+      tty = true;
+      stop_signal = "SIGINT";
+      ports = [
+        # voyager rest laddr
+        "7177:7177"
+        # voyager rpc laddr
+        "7178:7178"
+      ];
+      command = [ "ls -la /bin" ];
+      healthcheck = {
+        interval = "5s";
+        retries = 3;
+        test = [
+          "CMD-SHELL"
+        ];
       };
     };
   };
