@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -147,7 +148,10 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 					return nil, err
 				}
 				sdkCtx.Logger().Info("validator is jailed, removing from set", "idx", idx, "addr", validator.OperatorAddress)
-				_ = keepers.StakingKeeper.RemoveValidator(ctx, valAddr)
+				err = keepers.StakingKeeper.RemoveValidator(ctx, valAddr)
+				if err != nil {
+					return nil, errorsmod.Wrapf(err, "unable to remove validator %s", validator.OperatorAddress)
+				}
 			}
 		}
 
