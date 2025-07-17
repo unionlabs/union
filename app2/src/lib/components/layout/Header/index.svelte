@@ -1,5 +1,6 @@
 <script lang="ts">
 import { afterNavigate } from "$app/navigation"
+import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import Banner from "$lib/components/ui/Banner.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
@@ -22,9 +23,9 @@ afterNavigate(() => menu = false)
         class="inline-flex flex-shrink-0 items-center"
       >
         <img
-          src="/images/union-logo-glyph.svg"
+          src="/images/union-logo.svg"
           alt="Union"
-          class="h-8 w-8"
+          class="h-8 w-auto"
         />
       </a>
     </div>
@@ -60,7 +61,15 @@ afterNavigate(() => menu = false)
   <div class="flex items-center h-12 sm:h-16 gap-4 px-2 py-2 sm:px-4 sm:py-0 border-b border-zinc-900">
     <Breadcrumbs />
     <div class="grow"></div>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center">
+      <Button
+        class="hidden sm:flex"
+        variant="icon"
+        onclick={() => uiStore.openWalletModal()}
+        title="My wallets"
+      >
+        <SharpWalletIcon class="size-6 flex-shrink-0" />
+      </Button>
       <CopyLink />
       {#if totalErrorCount() > 0}
         <Button
