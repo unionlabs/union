@@ -113,7 +113,15 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				// this is passed here just to make it compile
 				delegatorAddr,
 			)
-			_ = keepers.DistributionKeeper.DeleteValidatorCurrentRewards(ctx, valAddr)
+			rewards, err := keepers.DistributionKeeper.GetValidatorCurrentRewards(ctx, valAddr)
+			if err != nil {
+				return nil, err
+			}
+			rewards.Rewards = sdk.DecCoins{}
+			err = keepers.DistributionKeeper.SetValidatorCurrentRewards(ctx, valAddr, rewards)
+			if err != nil {
+				return nil, err
+			}
 
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
