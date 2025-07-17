@@ -92,6 +92,9 @@
           };
       };
 
+      voyagerNode = {
+      };
+
       unionTestnetGenesisNode = {
         node =
           { pkgs, ... }:
