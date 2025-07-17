@@ -8,7 +8,8 @@ import { clientsQuery } from "$lib/queries/clients.svelte.ts"
 import { runFork, runFork$ } from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
 import { clientsStore } from "$lib/stores/clients.svelte"
-import { Fiber, Option } from "effect"
+import { fetchFinalizedHeights } from "$lib/services/voyager-rpc"
+import { Fiber, Option, Effect } from "effect"
 import { onMount } from "svelte"
 
 // Get chains from the store, sorted alphabetically by universal chain ID
@@ -25,9 +26,34 @@ const sortedChains = $derived(
 
 let fiber: Fiber.Fiber<any, any>
 
-// Fetch clients data on mount
+// Store for finalized heights
+let finalizedHeights = $state<Map<string, Option.Option<string>>>(new Map())
+
+// Fetch clients data and finalized heights on mount
 onMount(() => {
   runFork$(() => clientsQuery())
+  
+  // Fetch finalized heights when chains are available
+  if (sortedChains.length > 0) {
+    const chainIds = sortedChains.map(chain => chain.universal_chain_id)
+    runFork$(() => fetchFinalizedHeights(chainIds).pipe(
+      Effect.map(heights => {
+        finalizedHeights = heights
+      })
+    ))
+  }
+})
+
+// Re-fetch heights when chains change
+$effect(() => {
+  if (sortedChains.length > 0) {
+    const chainIds = sortedChains.map(chain => chain.universal_chain_id)
+    runFork$(() => fetchFinalizedHeights(chainIds).pipe(
+      Effect.map(heights => {
+        finalizedHeights = heights
+      })
+    ))
+  }
 })
 
 // Get client status between two chains
@@ -59,9 +85,11 @@ function hasActiveStatus(client: any) {
 // Generate tooltip data for client status
 function getTooltipData(fromChainId: string, toChainId: string) {
   const client = getClientStatus(fromChainId, toChainId)
+  const trackedChainHeight = finalizedHeights.get(toChainId)
   return {
     client,
     hasClient: !!client,
+    trackedChainHeight,
   }
 }
 
@@ -209,6 +237,13 @@ function getColumnLabelDelay(toIndex: number): number {
                               <section>
                                 <Label>Counterparty Height</Label>
                                 <LongMonoWord>{status.counterparty_height.value}</LongMonoWord>
+                              </section>
+                            {/if}
+                            
+                            {#if tooltipData.trackedChainHeight && Option.isSome(tooltipData.trackedChainHeight)}
+                              <section>
+                                <Label>Tracked Chain Finalized Height</Label>
+                                <LongMonoWord>{tooltipData.trackedChainHeight.value}</LongMonoWord>
                               </section>
                             {/if}
 
