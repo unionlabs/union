@@ -102,7 +102,6 @@ impl Module {
             %chain_id,
             %counterparty_chain_id,
             %client_id,
-            %update_from,
             %update_to,
         )
     )]
@@ -112,7 +111,6 @@ impl Module {
         chain_id: ChainId,
         counterparty_chain_id: ChainId,
         client_id: ClientId,
-        update_from: Height,
         update_to: Height,
     ) -> RpcResult<Op<VoyagerMessage>> {
         let counterparty_latest_height = voyager_client
@@ -186,13 +184,22 @@ impl Module {
 
         debug!(?l2_consensus_state);
 
+        let l2_client_state_meta = voyager_client
+            .client_state_meta::<IbcUnion>(
+                l1_client_state_meta.counterparty_chain_id.clone(),
+                QueryHeight::Latest,
+                state_lens_client_state.l2_client_id,
+            )
+            .await?;
+
+        debug!(?l2_client_state_meta);
+
         let continuation = call(PluginMessage::new(
             self.plugin_name(),
             ModuleCall::from(FetchUpdateAfterL1Update {
                 counterparty_chain_id: counterparty_chain_id.clone(),
                 state_lens_client_state: state_lens_client_state.clone(),
                 client_id,
-                update_from,
                 update_to,
             }),
         ));
@@ -229,7 +236,7 @@ impl Module {
                                 .counterparty_chain_id
                                 .clone(),
                             client_id: RawClientId::new(state_lens_client_state.l2_client_id),
-                            update_from,
+                            update_from: l2_client_state_meta.counterparty_height,
                             update_to,
                         })],
                         [],
@@ -311,7 +318,6 @@ impl PluginServer<ModuleCall, Never> for Module {
                                             //         None::<()>,
                                             //     )
                                             // })?,
-                                            update_from: fetch.update_from,
                                             update_to: fetch.update_to,
                                         }),
                                     ));
@@ -338,7 +344,6 @@ impl PluginServer<ModuleCall, Never> for Module {
                 chain_id,
                 counterparty_chain_id,
                 client_id,
-                update_from,
                 update_to,
             }) => {
                 self.fetch_update(
@@ -346,7 +351,6 @@ impl PluginServer<ModuleCall, Never> for Module {
                     chain_id,
                     counterparty_chain_id,
                     client_id,
-                    update_from,
                     update_to,
                 )
                 .await
@@ -355,7 +359,6 @@ impl PluginServer<ModuleCall, Never> for Module {
                 counterparty_chain_id,
                 state_lens_client_state,
                 client_id,
-                update_from: _,
                 update_to,
             }) => {
                 let voyager_client = ext.voyager_client()?;

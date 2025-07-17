@@ -18,7 +18,6 @@ pub struct FetchUpdate {
     pub chain_id: ChainId,
     pub counterparty_chain_id: ChainId,
     pub client_id: ClientId,
-    pub update_from: Height,
     pub update_to: Height,
 }
 
@@ -27,6 +26,5 @@ pub struct FetchUpdateAfterL1Update {
     pub counterparty_chain_id: ChainId,
     pub state_lens_client_state: StateLensClientState,
     pub client_id: ClientId,
-    pub update_from: Height,
     pub update_to: Height,
 }
