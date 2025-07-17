@@ -67,7 +67,11 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
       decoded.forEach((res: JsonRpcResponse, index: number) => {
         const ucid = universalChainIds[index]
         if ("result" in res) {
-          heightMap.set(ucid, Option.some(res.result))
+          // Remove revision prefix (e.g., "5-1493366" -> "1493366")
+          const height = res.result.includes('-') 
+            ? res.result.substring(res.result.indexOf('-') + 1)
+            : res.result
+          heightMap.set(ucid, Option.some(height))
         } else {
           heightMap.set(ucid, Option.none())
         }

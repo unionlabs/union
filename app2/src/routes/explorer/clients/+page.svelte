@@ -246,6 +246,18 @@ function getColumnLabelDelay(toIndex: number): number {
                                 <LongMonoWord>{tooltipData.trackedChainHeight.value}</LongMonoWord>
                               </section>
                             {/if}
+                            
+                            {#if tooltipData.trackedChainHeight && Option.isSome(tooltipData.trackedChainHeight) && Option.isSome(status.counterparty_height)}
+                              {@const trackedHeight = parseInt(tooltipData.trackedChainHeight.value)}
+                              {@const counterpartyHeight = parseInt(status.counterparty_height.value)}
+                              {@const delta = trackedHeight - counterpartyHeight}
+                              <section>
+                                <Label>Delta</Label>
+                                <LongMonoWord class={delta < 0 ? "text-red-400" : delta > 0 ? "text-green-400" : "text-zinc-400"}>
+                                  {delta > 0 ? "+" : ""}{delta}
+                                </LongMonoWord>
+                              </section>
+                            {/if}
 
                             {#if Option.isSome(status.timestamp)}
                               <section>
