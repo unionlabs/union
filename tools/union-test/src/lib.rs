@@ -96,7 +96,8 @@ pub trait ChainEndpoint: Send + Sync {
     async fn wait_for_open_channel(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<helpers::ChannelOpenConfirm>;
+        expected_event_count: usize,
+    ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>>;
 
     // TODO: How to handle this for EVM chains?
     async fn send_ibc_transaction(
@@ -235,8 +236,9 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
     async fn wait_for_open_channel(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
-        self.wait_for_channel_open_confirm(timeout).await
+        expected_event_count: usize,
+    ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
+        self.wait_for_channel_open_confirm(timeout, expected_event_count).await
     }
 
     async fn send_ibc_transaction(
@@ -367,8 +369,11 @@ impl ChainEndpoint for cosmos::Module {
     async fn wait_for_open_channel(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
-        self.wait_for_channel_open_confirm(timeout).await
+        expected_event_count: usize,
+    ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
+        self.wait_for_channel_open_confirm(
+            timeout, expected_event_count
+        ).await
     }
 
     async fn send_ibc_transaction(
@@ -478,11 +483,12 @@ where
                 .open_channels(
                     voyager::channel_open,
                     |t: Duration| async move {
-                        let ev = self.dst.wait_for_open_channel(t).await?;
-                        Ok(ChannelConfirm {
-                            channel_id: ev.channel_id,
-                            counterparty_channel_id: ev.counterparty_channel_id,
-                        })
+                        Ok(self.dst.wait_for_open_channel(t, count).await?.into_iter().map(|ev| {
+                            ChannelConfirm {
+                                channel_id: ev.channel_id,
+                                counterparty_channel_id: ev.counterparty_channel_id,
+                            }
+                        }).collect::<Vec<_>>())
                     },
                     self.src.chain_id().clone(),
                     src_port,
@@ -502,11 +508,12 @@ where
             .open_channels(
                 voyager::channel_open,
                 |t: Duration| async move {
-                    let ev = self.src.wait_for_open_channel(t).await?;
-                    Ok(ChannelConfirm {
-                        channel_id: ev.channel_id,
-                        counterparty_channel_id: ev.counterparty_channel_id,
-                    })
+                    Ok(self.src.wait_for_open_channel(t, count).await?.into_iter().map(|ev| {
+                        ChannelConfirm {
+                            channel_id: ev.channel_id,
+                            counterparty_channel_id: ev.counterparty_channel_id,
+                        }
+                    }).collect::<Vec<_>>())
                 },
                 self.dst.chain_id().clone(),
                 dst_port,

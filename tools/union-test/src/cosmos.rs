@@ -144,17 +144,21 @@ impl Module {
         })
     }
 
-    async fn wait_for_event<T, F>(&self, mut filter_fn: F, max_wait: Duration) -> anyhow::Result<T>
+    async fn wait_for_event<T, F>(&self, mut filter_fn: F, max_wait: Duration, expected_event_count: usize) -> anyhow::Result<Vec<T>>
     where
         F: FnMut(&ModuleEvent) -> Option<T> + Send + 'static,
         T: Send + 'static,
     {
         let client = self.rpc.client();
 
+        let mut events = Vec::new();
         let mut height = client.status().await?.sync_info.latest_block_height - 10;
 
         tokio::time::timeout(max_wait, async move {
             loop {
+                if events.len() >=  expected_event_count{
+                    return Ok(events);
+                }
                 let latest = client.status().await?.sync_info.latest_block_height;
                 while height <= latest {
                     let mut page = NonZeroU32::new(1).unwrap();
@@ -188,7 +192,7 @@ impl Module {
                                 };
                                 let ibc_evt = event.event;
                                 if let Some(found) = filter_fn(&ibc_evt) {
-                                    return Ok(found);
+                                    events.push(found);
                                 }
                             }
                         }
@@ -212,7 +216,7 @@ impl Module {
         &self,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             |evt| {
                 if let ModuleEvent::WasmCreateClient { client_id, .. } = evt {
                     Some(helpers::CreateClientConfirm {
@@ -223,14 +227,16 @@ impl Module {
                 }
             },
             max_wait,
+            1
         )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn wait_for_channel_open_confirm(
         &self,
         max_wait: Duration,
-    ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
+        expected_event_count: usize
+    ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
         self.wait_for_event(
             |evt| {
                 if let ModuleEvent::WasmChannelOpenConfirm {
@@ -248,6 +254,7 @@ impl Module {
                 }
             },
             max_wait,
+            expected_event_count
         )
         .await
     }
@@ -256,7 +263,7 @@ impl Module {
         &self,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             |evt| {
                 if let ModuleEvent::WasmConnectionOpenConfirm {
                     connection_id,
@@ -276,8 +283,9 @@ impl Module {
                 }
             },
             max_wait,
+            1
         )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn wait_for_packet_recv(
@@ -286,7 +294,7 @@ impl Module {
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         println!("Waiting for packet recv event with hash: {packet_hash_param:?}");
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             move |evt| {
                 if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
                     println!("Packet recv event came with hash: {packet_hash:?}");
@@ -301,8 +309,9 @@ impl Module {
                 }
             },
             max_wait,
+            1
         )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn wait_for_delegate(
@@ -310,7 +319,7 @@ impl Module {
         validator_filter: String,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::Delegate> {
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             move |evt| {
                 if let ModuleEvent::Delegate { validator, .. } = evt {
                     if validator == &validator_filter {
@@ -325,8 +334,9 @@ impl Module {
                 }
             },
             max_wait,
+            1
         )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn predict_wrapped_token(
@@ -371,14 +381,19 @@ impl Module {
     }
 
     pub async fn get_signer(&self) -> (Bech32<H160>, &LocalSigner) {
-        let signer = self
-            .keyring
-            .with(|s| async move { s})
-            .await
-            .expect("no signers available in keyring");
-
-        let address = signer.address();
-        (address, signer)
+        loop {
+            if let Some(signer) = self
+                .keyring
+                .with(|s| async move { s })
+                .await
+            {
+                let address = signer.address();
+                return (address, signer);
+            } else {
+                // no signer yet, wait and retry
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+        }
     }
 
 
