@@ -138,7 +138,8 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			// the only delegation to validators is now via the foundation multisig
 			validator.MinSelfDelegation = math.NewInt(0)
 			// set tokens to zero as the delegate call at the end of the migration will set this
-			validator.Tokens = math.ZeroInt()
+			// validator.Tokens = math.ZeroInt()
+			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
 			err = keepers.StakingKeeper.SetValidator(ctx, validator)
 			if err != nil {
 				return nil, err
