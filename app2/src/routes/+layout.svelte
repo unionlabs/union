@@ -162,4 +162,4 @@ $effect(() => {
   isOpen={uiStore.errorsModalOpen}
   onClose={() => uiStore.closeErrorsModal()}
 />
-<DevInfo />
+<!-- <DevInfo /> -->

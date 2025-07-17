@@ -102,6 +102,8 @@ export class TransferData {
                 === destinationChain.universal_chain_id,
           )
 
+          console.log("maybeUnwrapped", maybeUnwrapped)
+
           return pipe(
             Option.fromNullable(maybeUnwrapped),
             Option.match({

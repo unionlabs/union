@@ -22,6 +22,7 @@
   --color-zinc-925: oklch(0.1755 0.0055 285.854);
   --color-babylon-orange: oklch(62.55% 0.149 43.92);
   --color-union: oklch(72.2% 0.099 205.4);
+  --color-yaps: oklch(84.979% 0.1738 86.555);
   --color-accent: var(--color-babylon-orange);
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
