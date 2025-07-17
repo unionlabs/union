@@ -2,7 +2,6 @@ package v1_2_0
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"cosmossdk.io/math"
