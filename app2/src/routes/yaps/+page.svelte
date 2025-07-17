@@ -2,11 +2,13 @@
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
+import { onMount, onDestroy } from "svelte";
 
 let videoHovered = $state(false)
 let showPlayButton = $state(true)
 let videoElement: HTMLVideoElement
 let activeTab = $state<'mad' | 'og'>('mad')
+let sceneLoaded = $state(false)
 
 function handlePlayClick() {
   if (videoElement) {
@@ -26,17 +28,72 @@ function handlePlayClick() {
   }
 }
 
+onMount(() => {
+    // Load the Unicorn Studio script
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.textContent = `
+      !function(){
+        if(!window.UnicornStudio){
+          window.UnicornStudio={isInitialized:!1};
+          var i=document.createElement("script");
+          i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.28/dist/unicornStudio.umd.js";
+          i.onload=function(){
+            if(!window.UnicornStudio.isInitialized){
+              UnicornStudio.init().then(scenes => {
+                console.log('Unicorn Studio scenes loaded:', scenes);
+                window.UnicornStudio.isInitialized = true;
+                // Dispatch custom event to notify that scenes are ready
+                window.dispatchEvent(new CustomEvent('unicornStudioReady'));
+              }).catch((err) => {
+                console.error('Unicorn Studio init error:', err);
+              });
+            }
+          };
+          (document.head || document.body).appendChild(i);
+        }
+      }();
+    `;
+    
+    document.head.appendChild(script);
+    
+    // Listen for when scenes are ready
+    const handleScenesReady = () => {
+      sceneLoaded = true;
+    };
+    
+    window.addEventListener('unicornStudioReady', handleScenesReady);
+    
+    // Cleanup function
+    return () => {
+      window.removeEventListener('unicornStudioReady', handleScenesReady);
+    };
+});
+
+onDestroy(() => {
+  if ((window as any).UnicornStudio && (window as any).UnicornStudio.destroy) {
+    (window as any).UnicornStudio.destroy();
+  }
+});
 </script>
 
-<div class="min-h-screen bg-cover bg-center bg-no-repeat relative" style="background-image: url('/mad-bg.png')">
+
+<div class="fixed md:left-64 inset-0">
+  <!-- Unicorn Studio -->
+  <div data-us-project="XhVxd2zKyAwt8YAl5a2m" class="absolute inset-0 w-full h-full"></div>
+
   <!-- Gritty vignette overlay -->
-  <div class="absolute inset-0" style="background: radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 30%, rgba(139,69,19,0.7) 60%, rgba(0,0,0,0.95) 100%)"></div>
+  <div class="absolute inset-0 z-20 pointer-events-none" style="background: radial-gradient(ellipse at center, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.1) 30%, rgba(139,69,19,0.3) 60%, rgba(0,0,0,0.5) 100%)"></div>
   
   <!-- Dust/noise texture overlay -->
-  <div class="absolute inset-0 opacity-20 mix-blend-overlay" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 /%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 /%3E%3C/svg%3E')"></div>
-  <div class="absolute inset-0 opacity-20 mix-blend-overlay" style="background-image: url('/grain.gif')"></div>
+  <div class="absolute inset-0 opacity-40 mix-blend-overlay z-20 pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 /%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 /%3E%3C/svg%3E')"></div>
+  <div class="absolute inset-0 opacity-20 mix-blend-overlay z-20 pointer-events-none" style="background-image: url('/grain.gif')"></div>
 
-<Sections class="max-w-6xl mx-auto relative z-10">
+</div>
+
+{#if sceneLoaded}
+<div class="relative z-10">
+<Sections class="max-w-6xl mx-auto">
   <!-- Hero Section with Logo -->
   <div class="relative mb-8 mt-4">
 
@@ -260,6 +317,13 @@ function handlePlayClick() {
 
 </Sections>
 </div>
+{:else}
+<!-- Loading state while Unicorn Studio loads -->
+<div class="flex items-center justify-center min-h-screen">
+  <div class="text-white text-lg">Loading...</div>
+</div>
+{/if}
+
 
 <style>
   @keyframes flicker {
