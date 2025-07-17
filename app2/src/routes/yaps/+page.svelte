@@ -15,14 +15,11 @@ function handlePlayClick() {
     videoElement.currentTime = 0
     videoElement.muted = false
     showPlayButton = false
-    // Request fullscreen with proper typing
     if (videoElement.requestFullscreen) {
       videoElement.requestFullscreen()
     } else if ((videoElement as any).webkitRequestFullscreen) {
-      // Safari
       (videoElement as any).webkitRequestFullscreen()
     } else if ((videoElement as any).msRequestFullscreen) {
-      // IE/Edge
       (videoElement as any).msRequestFullscreen()
     }
   }
@@ -56,15 +53,13 @@ onMount(() => {
     `;
     
     document.head.appendChild(script);
-    
-    // Listen for when scenes are ready
+  
     const handleScenesReady = () => {
       sceneLoaded = true;
     };
     
     window.addEventListener('unicornStudioReady', handleScenesReady);
-    
-    // Cleanup function
+  
     return () => {
       window.removeEventListener('unicornStudioReady', handleScenesReady);
     };
@@ -79,29 +74,20 @@ onDestroy(() => {
 
 
 <div class="fixed md:left-64 inset-0">
-  <!-- Unicorn Studio -->
   <div data-us-project="XhVxd2zKyAwt8YAl5a2m" class="absolute inset-0 w-full h-full"></div>
-
-  <!-- Gritty vignette overlay -->
-  <div class="absolute inset-0 z-20 pointer-events-none" style="background: radial-gradient(ellipse at center, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.1) 30%, rgba(139,69,19,0.3) 60%, rgba(0,0,0,0.5) 100%)"></div>
-  
-  <!-- Dust/noise texture overlay -->
-  <div class="absolute inset-0 opacity-40 mix-blend-overlay z-20 pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 /%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 /%3E%3C/svg%3E')"></div>
-  <div class="absolute inset-0 opacity-20 mix-blend-overlay z-20 pointer-events-none" style="background-image: url('/grain.gif')"></div>
-
 </div>
 
 {#if sceneLoaded}
 <div class="relative z-10">
 <Sections class="max-w-6xl mx-auto">
   <!-- Hero Section with Logo -->
-  <div class="relative mb-8 mt-4">
+  <div class="relative mt-4">
 
     
     <img 
       src="/mad.png" 
       alt="Mad Logo" 
-      class="w-full h-auto object-contain relative  drop-shadow-[0_0_30px_rgba(234,88,12,0.8)] animate-flicker"
+      class="w-full h-auto object-contain relative  drop-shadow-[0_0_30px_rgba(234,88,12,0.8)]"
     />
   </div>
 
@@ -326,17 +312,6 @@ onDestroy(() => {
 
 
 <style>
-  @keyframes flicker {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-    25% { opacity: 0.95; }
-    75% { opacity: 0.85; }
-  }
-  
-  :global(.animate-flicker) {
-    animation: flicker 3s ease-in-out infinite;
-  }
-  
   @keyframes pulse-slow {
     0%, 100% { opacity: 0.8; }
     50% { opacity: 1; }
