@@ -86,7 +86,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				return nil, err
 			}
 
-			sdkCtx.Logger().Info("total unbonding delegations", "count", len(delegations))
+			sdkCtx.Logger().Info("total unbonding delegations", "count", len(unbondingDelegations))
 
 			for idx, unbondingDelegation := range unbondingDelegations {
 				sdkCtx.Logger().Info(
@@ -219,11 +219,11 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		// NOTE: This is the original delegations list, since we want to reconstruct the same validator delegations but with the foundation account being the owner of all delegations
 		for idx, delegation := range delegations {
 			sdkCtx.Logger().Info(
-				"unbonding delegation info",
+				"re-delegating delegation info",
 				"idx", idx,
 				"DelegatorAddress", delegation.DelegatorAddress,
 				"ValidatorAddress", delegation.ValidatorAddress,
-				"Entries", delegation.Shares,
+				"Shares", delegation.Shares,
 			)
 
 			valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
@@ -235,16 +235,23 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				return nil, err
 			}
 
-			_, err = keepers.StakingKeeper.Delegate(
-				ctx,
-				unionFoundationMultiSig,
-				delegation.Shares.RoundInt(),
-				stakingtypes.Unbonded,
-				validator,
-				true,
-			)
-			if err != nil {
-				return nil, err
+			if validator.IsJailed() {
+				sdkCtx.Logger().Info(
+					"validator is jailed",
+					"addr", valAddr,
+				)
+			} else {
+				_, err = keepers.StakingKeeper.Delegate(
+					ctx,
+					unionFoundationMultiSig,
+					delegation.Shares.RoundInt(),
+					stakingtypes.Unbonded,
+					validator,
+					true,
+				)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 
