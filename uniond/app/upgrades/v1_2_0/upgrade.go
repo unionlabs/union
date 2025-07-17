@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -11,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -34,6 +34,12 @@ const DEVNET_SIG = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
 const UNION_DEVNET = "union-minimal-devnet-1"
 const UNION_TESTNET = "union-testnet-10"
 
+// NOTE: must expand map with mainnet address
+var unionFoundationSigMap = map[string]string{
+	UNION_TESTNET: FOUNDATION_TESTNET_SIG,
+	UNION_DEVNET:  DEVNET_SIG,
+}
+
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		migrations, err := mm.RunMigrations(ctx, configurator, vm)
@@ -41,13 +47,8 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		// NOTE: must expand map with mainnet address
-		unionFoundationSigMap := map[string]string{
-			UNION_TESTNET: FOUNDATION_TESTNET_SIG,
-			UNION_DEVNET:  DEVNET_SIG,
-		}
-
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(unionFoundationSigMap[sdkCtx.ChainID()])
 		if err != nil {
 			return nil, err
@@ -59,8 +60,18 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		for _, delegation := range delegations {
-			accAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
+		sdkCtx.Logger().Info("total delegations", "count", len(delegations))
+
+		for idx, delegation := range delegations {
+			sdkCtx.Logger().Info(
+				"delegation info",
+				"idx", idx,
+				"DelegatorAddress", delegation.DelegatorAddress,
+				"ValidatorAddress", delegation.ValidatorAddress,
+				"Shares", delegation.Shares,
+			)
+
+			delegatorAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
 			if err != nil {
 				return nil, err
 			}
@@ -69,25 +80,81 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				return nil, err
 			}
 
-			_, err = keepers.DistributionKeeper.WithdrawDelegationRewards(ctx, accAddr, valAddr)
-			if err != nil {
-				return nil, err
-			}
-			_, err = keepers.DistributionKeeper.WithdrawValidatorCommission(ctx, valAddr)
+			// Undelegate existing unbonding delegations
+			// NOTE: Remove this first just in case it needs to read the state we manually delete after this
+			unbondingDelegations, err := keepers.StakingKeeper.GetAllUnbondingDelegations(ctx, delegatorAddr)
 			if err != nil {
 				return nil, err
 			}
 
-			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
+			sdkCtx.Logger().Info("total unbonding delegations", "count", len(unbondingDelegations))
+
+			for idx, unbondingDelegation := range unbondingDelegations {
+				sdkCtx.Logger().Info(
+					"unbonding delegation info",
+					"idx", idx,
+					"DelegatorAddress", unbondingDelegation.DelegatorAddress,
+					"ValidatorAddress", unbondingDelegation.ValidatorAddress,
+					"Entries", len(unbondingDelegation.Entries),
+				)
+
+				if err := keepers.StakingKeeper.RemoveUnbondingDelegation(ctx, unbondingDelegation); err != nil {
+					return nil, err
+				}
+			}
+
+			// delete all information relating to the existing validator delegations and rewards/commission
+			_ = keepers.DistributionKeeper.DeleteValidatorOutstandingRewards(ctx, valAddr)
+			_ = keepers.DistributionKeeper.DeleteDelegatorStartingInfo(ctx, valAddr, delegatorAddr)
+			_ = keepers.DistributionKeeper.DeleteValidatorAccumulatedCommission(ctx, valAddr)
+			_ = keepers.DistributionKeeper.DeleteDelegatorWithdrawAddr(
+				ctx,
+				delegatorAddr,
+				// this is actually unused and shouldn't need to be provided lol
+				// this is passed here just to make it compile
+				delegatorAddr,
+			)
+			rewards, err := keepers.DistributionKeeper.GetValidatorCurrentRewards(ctx, valAddr)
 			if err != nil {
 				return nil, err
 			}
+			rewards.Rewards = sdk.DecCoins{}
+			err = keepers.DistributionKeeper.SetValidatorCurrentRewards(ctx, valAddr, rewards)
+			if err != nil {
+				return nil, err
+			}
+
+			if err := keepers.StakingKeeper.RemoveDelegation(ctx, delegation); err != nil {
+				return nil, err
+			}
+		}
+
+		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for idx, validator := range validators {
+			// the only delegation to validators is now via the foundation multisig
 			validator.MinSelfDelegation = math.NewInt(0)
-			keepers.StakingKeeper.SetValidator(ctx, validator)
-
-			_, _, err = keepers.StakingKeeper.Undelegate(ctx, accAddr, valAddr, delegation.Shares)
+			// set tokens to zero as the delegate call at the end of the migration will set this
+			// validator.Tokens = math.ZeroInt()
+			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
+			err = keepers.StakingKeeper.SetValidator(ctx, validator)
 			if err != nil {
 				return nil, err
+			}
+
+			if validator.IsJailed() {
+				valAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
+				if err != nil {
+					return nil, err
+				}
+				sdkCtx.Logger().Info("validator is jailed, removing from set", "idx", idx, "addr", validator.OperatorAddress)
+				err = keepers.StakingKeeper.RemoveValidator(ctx, valAddr)
+				if err != nil {
+					return nil, errorsmod.Wrapf(err, "unable to remove validator %s", validator.OperatorAddress)
+				}
 			}
 		}
 
@@ -108,6 +175,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 		stakingParams.BondDenom = U_BASE_DENOM
+		// NOTE: *technically* this should be 0, but all commission will go to the community fund anyways since we set the community tax in x/distribution to 100%
 		stakingParams.MinCommissionRate = math.LegacyMustNewDecFromStr("0.05")
 		err = keepers.StakingKeeper.SetParams(ctx, stakingParams)
 		if err != nil {
@@ -147,13 +215,12 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		sdkCtx = sdk.UnwrapSDKContext(ctx)
-
 		// Update x/distribution
 		distrParams, err := keepers.DistributionKeeper.Params.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
+		// set community tax to 100% to take all rewards
 		distrParams.CommunityTax = math.LegacyMustNewDecFromStr("1")
 		keepers.DistributionKeeper.Params.Set(ctx, distrParams)
 
@@ -163,6 +230,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 		feeMarketParams.FeeDenom = U_BASE_DENOM
+		// distribute fees rather than burning, the 100% community tax should intercept these before they're sent to the stakers (?)
 		feeMarketParams.DistributeFees = true
 		err = keepers.FeeMarketKeeper.SetParams(sdkCtx, feeMarketParams)
 		if err != nil {
@@ -170,26 +238,54 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 
 		// Redelegate to validators from Union foundation account
-		for _, delegation := range delegations {
+		// NOTE: This is the original delegations list, since we want to reconstruct the same validator delegations but with the foundation account being the owner of all delegations
+		for idx, delegation := range delegations {
+			sdkCtx.Logger().Info(
+				"re-delegating delegation info",
+				"idx", idx,
+				"DelegatorAddress", delegation.DelegatorAddress,
+				"ValidatorAddress", delegation.ValidatorAddress,
+				"Shares", delegation.Shares,
+			)
+
 			valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
 			if err != nil {
 				return nil, err
 			}
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
-				return nil, err
+				if err == stakingtypes.ErrNoValidatorFound {
+					sdkCtx.Logger().Info(
+						"validator not found",
+						"addr", valAddr,
+					)
+					continue
+				}
 			}
 
-			keepers.DistributionKeeper.SetValidatorOutstandingRewards(ctx, valAddr, distributiontypes.ValidatorOutstandingRewards{})
-
-			_, err = keepers.StakingKeeper.Delegate(ctx, unionFoundationMultiSig, delegation.Shares.RoundInt(), stakingtypes.Unbonded, validator, true)
-			if err != nil {
-				return nil, err
+			if validator.IsJailed() {
+				// this check is likely redundant since we removed jailed validators from the set above
+				sdkCtx.Logger().Info(
+					"validator is jailed",
+					"addr", valAddr,
+				)
+			} else {
+				_, err = keepers.StakingKeeper.Delegate(
+					ctx,
+					unionFoundationMultiSig,
+					delegation.Shares.RoundInt(),
+					stakingtypes.Unbonded,
+					validator,
+					true,
+				)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 
 		// Burn old tokens
-		burnToken(ctx, *keepers, "muno") // union-testnet-10 gas token
+		burnToken(ctx, *keepers, "muno") // union-minimal-devnet-1 (local devnet) and union-testnet-10 gas token
 		burnToken(ctx, *keepers, "upoa") // union-1 and union-testnet-10 PoA token
 		burnToken(ctx, *keepers, "ugas") // union-1 gas token
 
