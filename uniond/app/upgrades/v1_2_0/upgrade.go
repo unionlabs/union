@@ -69,14 +69,8 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				return nil, err
 			}
 
-			_, err = keepers.DistributionKeeper.WithdrawDelegationRewards(ctx, accAddr, valAddr)
-			if err != nil {
-				return nil, err
-			}
-			_, err = keepers.DistributionKeeper.WithdrawValidatorCommission(ctx, valAddr)
-			if err != nil {
-				return nil, err
-			}
+			_, _ = keepers.DistributionKeeper.WithdrawDelegationRewards(ctx, accAddr, valAddr)
+			_, _ = keepers.DistributionKeeper.WithdrawValidatorCommission(ctx, valAddr)
 
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
