@@ -61,6 +61,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 
 		for idx, delegation := range delegations {
 			sdkCtx.Logger().Info(
+				"delegation info",
 				"idx", idx,
 				"DelegatorAddress", delegation.DelegatorAddress,
 				"ValidatorAddress", delegation.ValidatorAddress,
