@@ -49,6 +49,32 @@
           };
       };
 
+      devnetVoyagerNode = {
+        node = {...}: {
+          imports = [
+            inputs.arion.nixosModules.arion
+          ];
+          networking = {
+            useNetworkd = true;
+            useDHCP = false;
+            firewall.enable = false;
+          };
+
+          systemd.network.networks."01-eth1" = {
+            name = "eth1";
+            networkConfig.Address = "10.0.0.2/24";
+          };
+          virtualisation = {
+            diskSize = 4 * 1024;
+            memorySize = 4 * 1024;
+            arion = {
+              backend = "docker";
+              projects.devnet-voyager.settings = networks.modules.devnet-voyager;
+            };
+          };
+        };
+      };
+
       unionTestnetGenesisNode = {
         node =
           { pkgs, ... }:
@@ -84,6 +110,30 @@
           };
         };
       };
+
+      voyager-queue = {
+        node = {...}: {
+          imports = [ inputs.arion.nixosModules.arion ];
+          networking = {
+            useNetworkd = true;
+            useDHCP = false;
+            firewall.enable = false;
+          };
+
+          systemd.network.networks."01-eth1" = {
+            name = "eth1";
+            networkConfig.Address = "10.0.0.1/24";
+          };
+          virtualisation = {
+            diskSize = 2 * 1024;
+            memorySize = 8 * 1024;
+            arion = {
+              backend = "docker";
+              projects.voyager-queue.settings = networks.modules.postgres;
+            };
+          };
+        };
+      };
     in
     {
       _module.args.e2e = {
@@ -106,14 +156,14 @@
 
             testScript = ''
               # NOTE: Start union first!
-              union.wait_for_open_port(${toString unionNode.wait_for_open_port})
-              devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
+              # union.wait_for_open_port(${toString unionNode.wait_for_open_port})
+              # devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
-              # match non-zero blocks
-              union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-              devnetEth.wait_for_console_text('${devnetEthNode.wait_for_console_text}')
+              # # match non-zero blocks
+              # union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+              # devnetEth.wait_for_console_text('${devnetEthNode.wait_for_console_text}')
 
-              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
+              # devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
 
               ${testScript}
             '';
@@ -123,8 +173,10 @@
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
                 (
                   {
-                    union = unionNode.node;
-                    devnetEth = devnetEthNode.node;
+                    # union = unionNode.node;
+                    # devnetEth = devnetEthNode.node;
+                    voyager = devnetVoyagerNode.node;
+                    voyager-queue = voyager-queue.node;
                   }
                   // nodes
                 );
