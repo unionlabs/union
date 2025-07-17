@@ -136,6 +136,21 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 		}
 
+		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for idx, validator := range validators {
+			if validator.IsJailed() {
+				valAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
+				if err != nil {
+					return nil, err
+				}
+				sdkCtx.Logger().Info("validator is jailed, removing from set", "idx", idx, "addr", validator.OperatorAddress)
+				_ = keepers.StakingKeeper.RemoveValidator(ctx, valAddr)
+			}
+		}
+
 		// Mint U
 		uTotalSupply := []sdk.Coin{getUFromU64(U_TOTAL_SUPPLY)}
 		err = keepers.MintKeeper.MintCoins(ctx, uTotalSupply)
