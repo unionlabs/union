@@ -124,14 +124,6 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				return nil, err
 			}
 
-			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
-			if err != nil {
-				return nil, err
-			}
-			// the only delegation to validators is via the foundation multisig
-			validator.MinSelfDelegation = math.NewInt(0)
-			keepers.StakingKeeper.SetValidator(ctx, validator)
-
 			if err := keepers.StakingKeeper.RemoveDelegation(ctx, delegation); err != nil {
 				return nil, err
 			}
@@ -141,7 +133,17 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		if err != nil {
 			return nil, err
 		}
+
 		for idx, validator := range validators {
+			// the only delegation to validators is now via the foundation multisig
+			validator.MinSelfDelegation = math.NewInt(0)
+			// set tokens to zero as the delegate call at the end of the migration will set this
+			validator.Tokens = math.ZeroInt()
+			err = keepers.StakingKeeper.SetValidator(ctx, validator)
+			if err != nil {
+				return nil, err
+			}
+
 			if validator.IsJailed() {
 				valAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
 				if err != nil {
