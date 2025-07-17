@@ -73,15 +73,23 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
   Effect.gen(function* () {
     const heightMap = new Map<string, Option.Option<string>>()
     
+    yield* Effect.log("Fetching finalized heights").pipe(
+      Effect.annotateLogs({
+        chainCount: universalChainIds.length,
+        chainIds: universalChainIds.map(extractChainId)
+      })
+    )
+    
     // Initial batch request
     const initialResult = yield* fetchHeightsBatch(universalChainIds).pipe(
-      Effect.catchAll(error => {
-        console.error("Failed to fetch heights batch:", error)
-        return Effect.succeed({ 
-          requests: [], 
-          responses: [] as JsonRpcResponse[] 
-        })
-      })
+      Effect.catchAll(error => 
+        Effect.logError("Failed to fetch heights batch", error).pipe(
+          Effect.andThen(Effect.succeed({ 
+            requests: [], 
+            responses: [] as JsonRpcResponse[] 
+          }))
+        )
+      )
     )
 
     // Process successful responses and collect failed IDs
@@ -110,16 +118,22 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
 
     // Retry failed requests if any
     if (failedChainIds.length > 0) {
-      console.log(`Retrying ${failedChainIds.length} failed requests:`, failedChainIds.map(extractChainId))
+      yield* Effect.log("Retrying failed requests").pipe(
+        Effect.annotateLogs({
+          count: failedChainIds.length,
+          chainIds: failedChainIds.map(extractChainId)
+        })
+      )
       
       const retryResult = yield* fetchHeightsBatch(failedChainIds, 1000).pipe(
-        Effect.catchAll(error => {
-          console.error("Failed to retry heights batch:", error)
-          return Effect.succeed({ 
-            requests: [], 
-            responses: [] as JsonRpcResponse[] 
-          })
-        })
+        Effect.catchAll(error => 
+          Effect.logError("Failed to retry heights batch", error).pipe(
+            Effect.andThen(Effect.succeed({ 
+              requests: [], 
+              responses: [] as JsonRpcResponse[] 
+            }))
+          )
+        )
       )
 
       // Process retry responses
@@ -141,7 +155,19 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
       })
     }
 
+    const successCount = Array.from(heightMap.values()).filter(Option.isSome).length
+    const failureCount = heightMap.size - successCount
+    
+    yield* Effect.log("Completed fetching finalized heights").pipe(
+      Effect.annotateLogs({
+        total: heightMap.size,
+        successful: successCount,
+        failed: failureCount
+      })
+    )
+
     return heightMap
   }).pipe(
+    Effect.withLogSpan("fetchFinalizedHeights"),
     Effect.provide(FetchHttpClient.layer)
   )
