@@ -76,9 +76,9 @@ impl ChannelPool {
     where
         F: Fn(ChainId, Bytes, Bytes, u32, String) -> anyhow::Result<()> + Send + Sync,
         C: Fn(Duration) -> Fut + Send + Sync,
-        Fut: Future<Output = anyhow::Result<ChannelConfirm>> + Send,
+        Fut: Future<Output = anyhow::Result<Vec<ChannelConfirm>>> + Send,
     {
-        let deadline = Instant::now() + duration;
+        // let deadline = Instant::now() + duration;
 
         let mut success_count = 0;
 
@@ -91,60 +91,70 @@ impl ChannelPool {
                 version.clone(),
             )?;
         }
-        loop {
-            if Instant::now() >= deadline || success_count == count {
-                break;
-            }
+        // loop {
+        //     if Instant::now() >= deadline || success_count == count {
+        //         break;
+        //     }
 
-            match confirmer(Duration::from_secs(360)).await {
-                Ok(confirm) => {
+        match confirmer(duration).await {
+            Ok(confirms) => {
+                let mut map = self.inner.lock().await;
+                let key = (src_chain.clone(), dst_chain.clone());
+                let rev_key = (dst_chain.clone(), src_chain.clone());
+                println!("length of confirms: {}", confirms.len());
+                for confirm in confirms {
+                    println!("confirm in channel_provider: {:?}", confirm);
                     let pair = ChannelPair {
-                        src: confirm.counterparty_channel_id,
-                        dest: confirm.channel_id,
+                        src: confirm.counterparty_channel_id.clone(),
+                        dest: confirm.channel_id.clone(),
                     };
-                    // grab lock once for check+insert
-                    let mut map = self.inner.lock().await;
-                    let key = (src_chain.clone(), dst_chain.clone());
-                    let rev_key = (dst_chain.clone(), src_chain.clone());
 
-                    let dup_forward = map.available.get(&key).map_or(false, |v| v.contains(&pair));
-                    let dup_backward = map.available.get(&rev_key).map_or(false, |v| {
-                        v.contains(&ChannelPair {
-                            src: pair.dest,
-                            dest: pair.src,
-                        })
-                    });
+                    let dup_forward = map
+                        .available
+                        .get(&key)
+                        .map_or(false, |v| v.contains(&pair));
+                    let dup_backward = map
+                        .available
+                        .get(&rev_key)
+                        .map_or(false, |v| {
+                            v.contains(&ChannelPair {
+                                src: pair.dest.clone(),
+                                dest: pair.src.clone(),
+                            })
+                        });
+
                     if dup_forward || dup_backward {
-                        // already stored → retry or break
-                        println!("⚠️  duplicate channel pair detected: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
-                                src_chain, pair.src, dst_chain, pair.dest);
-                        drop(map);
+                        println!(
+                            "⚠️  duplicate channel pair detected: \
+                            src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
+                            src_chain, pair.src, dst_chain, pair.dest
+                        );
                         continue;
                     }
+
                     // Store in forward direction
                     map.available
-                        .entry((src_chain.clone(), dst_chain.clone()))
+                        .entry(key.clone())
                         .or_default()
-                        .push(pair);
+                        .push(pair.clone());
                     // Store in reverse direction
                     map.available
-                        .entry((dst_chain.clone(), src_chain.clone()))
+                        .entry(rev_key.clone())
                         .or_default()
                         .push(ChannelPair {
-                            src: pair.dest,
-                            dest: pair.src,
+                            src: pair.dest.clone(),
+                            dest: pair.src.clone(),
                         });
 
                     success_count += 1;
-
                     println!(
-                            "✅  channel-open-confirm: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
-                            src_chain, pair.src, dst_chain, pair.dest
-                        );
+                        "✅  channel-open-confirm: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
+                        src_chain, pair.src, dst_chain, pair.dest
+                    );
                 }
-                Err(err) => {
-                    println!("⚠️  error waiting for channel-open-confirm: {}", err);
-                }
+            }
+            Err(err) => {
+                println!("⚠️  error waiting for channel-open-confirm: {}", err);
             }
         }
 

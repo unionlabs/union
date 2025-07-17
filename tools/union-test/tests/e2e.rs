@@ -168,7 +168,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 12; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 4; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -198,10 +198,6 @@ async fn ensure_channels_opened(channel_count: usize) {
             assert!(src_client.client_id > 0);
             assert!(dst_client.client_id > 0);
 
-            // let conn = ctx
-            //     .open_connection(true, src_client.client_id, dst_client.client_id, Duration::from_secs(180))
-            //     .await
-            //     .unwrap();
             let conn = ctx
                 .open_connection::<cosmos::Module, evm::Module>(
                     &ctx.src,
@@ -252,7 +248,8 @@ async fn ensure_channels_opened(channel_count: usize) {
         .await;
 }
 
-async fn _open_connection_from_evm_to_union() {
+async fn _open_connection_from_evm_to_union(dummy_number: u8) {
+    println!("DUMMY NUMBER: {:?}", dummy_number);
     let ctx = init_ctx().await;
     let (src_client, dst_client) = ctx
         .create_clients(
@@ -282,7 +279,8 @@ async fn _open_connection_from_evm_to_union() {
     assert!(conn.counterparty_connection_id > 0);
 }
 
-async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
+async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u8) {
+    println!("DUMMY NUMBER: {:?}", dummy_number);
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
     
@@ -443,6 +441,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 }
 
 async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u8) {
+    println!("DUMMY NUMBER: {:?}", dummy_number);
     let ctx = init_ctx().await;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
@@ -651,7 +650,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
 
 }
 
-async fn test_stake_from_evm_to_union() {
+async fn test_stake_from_evm_to_union(dummy_number: u8) {
+    println!("DUMMY NUMBER: {:?}", dummy_number);
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -872,152 +872,26 @@ async fn test_stake_from_evm_to_union() {
     //     "Failed to check NFT ownership after stake request: {:?}", is_ours.err());
 }
 
+
 #[tokio::test]
-#[serial]
 async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(1).await;
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(0).await;
 }
 
 #[tokio::test]
-#[serial]
-async fn from_evm_to_union1() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(2).await;
-}
-
-
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union2() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(3).await;
-}
-
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union3() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(4).await;
-}
-
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union4() {
-//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap(5).await;
-// }
-
-#[tokio::test]
-#[serial]
 async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake() {
-    self::test_stake_from_evm_to_union().await;
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap(0).await;
 }
 
 
 #[tokio::test]
-#[serial]
-async fn from_union_to_evm1() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+async fn from_evm_to_union_stake0() {
+    self::test_stake_from_evm_to_union(0).await;
 }
 
 
 #[tokio::test]
-#[serial]
-async fn from_union_to_evm3() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-#[serial]
-async fn from_union_to_evm4() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-// #[tokio::test]
-// #[serial]
-// async fn from_union_to_evm5() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
-
-#[tokio::test]
-#[serial]
 async fn from_evm_to_union_stake1() {
-    self::test_stake_from_evm_to_union().await;
+    self::test_stake_from_evm_to_union(1).await;
 }
 
-
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake2() {
-    self::test_stake_from_evm_to_union().await;
-}
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake3() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake4() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake5() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake6() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake7() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake8() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake9() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake10() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake11() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake12() {
-//     self::test_stake_from_evm_to_union().await;
-// }

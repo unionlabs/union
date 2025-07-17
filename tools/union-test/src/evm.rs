@@ -128,15 +128,21 @@ impl<'a> Module<'a> {
         })
     }
 
-    async fn wait_for_event<T, F: Fn(IbcEvents) -> Option<T>>(
+    async fn wait_for_event<T: std::fmt::Debug, F: Fn(IbcEvents) -> Option<T>>(
         &self,
         filter_fn: F,
         timeout: Duration,
-    ) -> anyhow::Result<T> {
+        expected_event_count: usize,
+    ) -> anyhow::Result<Vec<T>> {
         tokio::time::timeout(timeout, async {
             let mut prev_latest = self.provider.get_block_number().await?;
+            let mut events = Vec::new();
             loop {
                 let latest = self.provider.get_block_number().await?;
+
+                if events.len() >= expected_event_count {
+                    return Ok(events);
+                }
 
                 if prev_latest >= latest {
                     tokio::time::sleep(Duration::from_secs(5)).await;
@@ -155,11 +161,11 @@ impl<'a> Module<'a> {
                             return Err(anyhow::anyhow!("get_logs RPC error: {}", e));
                         }
                     };
-
                     for log in logs {
                         if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
                             if let Some(event) = filter_fn(ibc_event.data) {
-                                return Ok(event);
+                                println!("Event found: {:?}", event);
+                                events.push(event);
                             }
                         }
                     }
@@ -178,7 +184,7 @@ impl<'a> Module<'a> {
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             |e| match e {
                 IbcEvents::CreateClient(ev) => Some(helpers::CreateClientConfirm {
                     client_id: ev.client_id,
@@ -186,15 +192,16 @@ impl<'a> Module<'a> {
                 _ => None,
             },
             timeout,
+            1
         )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn wait_for_connection_open_confirm(
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             |e| match e {
                 IbcEvents::ConnectionOpenConfirm(ev) => Some(helpers::ConnectionConfirm {
                     connection_id: ev.connection_id,
@@ -203,14 +210,16 @@ impl<'a> Module<'a> {
                 _ => None,
             },
             timeout,
+            1
         )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn wait_for_channel_open_confirm(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
+        expected_event_count: usize,
+    ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
         self.wait_for_event(
             |e| match e {
                 IbcEvents::ChannelOpenConfirm(ev) => Some(helpers::ChannelOpenConfirm {
@@ -220,6 +229,7 @@ impl<'a> Module<'a> {
                 _ => None,
             },
             timeout,
+            expected_event_count
         )
         .await
     }
@@ -229,7 +239,7 @@ impl<'a> Module<'a> {
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        self.wait_for_event(
+        Ok(self.wait_for_event(
             |e| match e {
                 IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => {
                     Some(helpers::PacketRecv {
@@ -239,27 +249,9 @@ impl<'a> Module<'a> {
                 _ => None,
             },
             timeout,
+            1
         )
-        .await
-    }
-
-    pub async fn wait_for_send_packet(
-        &self,
-        channel_id: u32,
-        timeout: Duration,
-    ) -> anyhow::Result<helpers::PacketSend> {
-        self.wait_for_event(
-            |e| match e {
-                IbcEvents::PacketSend(ev) if ev.channel_id == channel_id => {
-                    Some(helpers::PacketSend {
-                        packet_hash: ev.packet_hash.try_into().unwrap(),
-                    })
-                }
-                _ => None,
-            },
-            timeout,
-        )
-        .await
+        .await?.pop().unwrap())
     }
 
     pub async fn predict_wrapped_token(
@@ -438,19 +430,22 @@ impl<'a> Module<'a> {
     // }
 
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
-        let maybe_wallet = self
-            .keyring
-            .with(|wallet| async move { wallet.clone() })
-            .await;
-        let wallet = maybe_wallet.expect("no signers available in keyring");
-        
-        // 2) Now that we've got the wallet, build your provider in a normal async call.
-        //    This future lives *outside* the .with, so UnwindSafe is not required here.
+        // wait until we get a wallet clone out of the Option
+        let wallet = loop {
+            if let Some(w) = self
+                .keyring
+                .with(|w| async move { w.clone() })
+                .await
+            {
+                break w;
+            } else {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+        };
+
         let wallet_addr = wallet.address();
         let provider = self.get_provider_with_wallet(&wallet).await;
-        // 3) Return the address and provider.
         (wallet_addr, provider)
-        
     }
 
     async fn get_provider_with_wallet(
