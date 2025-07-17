@@ -254,12 +254,12 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
-				if err != stakingtypes.ErrNoValidatorFound {
+				if err == stakingtypes.ErrNoValidatorFound {
 					sdkCtx.Logger().Info(
 						"validator not found",
 						"addr", valAddr,
 					)
-					return nil, err
+					continue
 				}
 			}
 
