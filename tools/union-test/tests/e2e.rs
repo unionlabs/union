@@ -168,7 +168,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 3; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 12; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -442,14 +442,14 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     // And see if muno is decreased by 10 and the receiver's muno is increased by 10
 }
 
-async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
+async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u8) {
     let ctx = init_ctx().await;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    println!("EVM Address: {:?}", evm_address);
-    println!("Cosmos Address: {:?}", cosmos_address);
+    println!("DUMMY NUMBER: {:?} EVM Address: {:?}", dummy_number, evm_address);
+    println!("DUMMY NUMBER: {:?} Cosmos Address: {:?}", dummy_number, cosmos_address);
 
     ensure_channels_opened(ctx.channel_count).await;
 
@@ -488,11 +488,10 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
         .expect("invalid quote‐token address hex");
 
-    println!("Quote token address: {:?}", quote_token_addr);
-    println!("deployed_erc20 address: {:?}", deployed_erc20);
+    println!("DUMMY NUMBER: {:?} Quote token address: {:?}", dummy_number, quote_token_addr);
+    println!("DUMMY NUMBER: {:?} deployed_erc20 address: {:?}", dummy_number, deployed_erc20);
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
-    
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -546,7 +545,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-    println!("Received packet data from evm->cosmos GOLD token: {:?}", recv_packet_data);
+    println!("DUMMY NUMBER: {:?} Received packet data from evm->cosmos GOLD token: {:?}", dummy_number, recv_packet_data);
 
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
         spender: UNION_MINTER_ADDRESS.into(),
@@ -561,14 +560,15 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let approve_contract: Bech32<FixedBytes<32>> =
         Bech32::from_str(std::str::from_utf8(&quote_token_bytes).unwrap()).unwrap();
 
-    println!("Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}", quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
+    println!("DUMMY NUMBER: {:?} Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}", dummy_number, quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
+
 
     let approve_recv_packet_data = ctx
         .src
-        .send_transaction(approve_contract, (approve_msg_bin, vec![]).into(), cosmos_signer)
+        .send_transaction_with_retry(approve_contract, (approve_msg_bin, vec![]).into(), cosmos_signer)
         .await;
 
-    println!("Approve transaction data: {:?}", approve_recv_packet_data);
+    println!("DUMMY NUMBER: {:?} Approve transaction data: {:?}", dummy_number, approve_recv_packet_data);
     assert!(
         approve_recv_packet_data.is_some(),
         "Failed to send approve transaction: {:?}",
@@ -629,7 +629,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         )
         .await;
 
-    println!("Received packet data: {:?}", recv_packet_data);
+    println!("DUMMY NUMBER: {:?} Received packet data: {:?}", dummy_number, recv_packet_data);
 
     assert!(
         recv_packet_data.is_ok(),
@@ -640,13 +640,13 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     // // TODO: Sending & recving manually from here:
     // let packet_hash = match ctx.src.send_ibc_transaction_with_signer(union_zkgm_contract, (bin_msg, funds).into(), cosmos_signer).await {
     //     Ok(hash) => hash,
-    //     Err(e) => panic!("Failed to send IBC transaction: {:?}", e),
+    //     Err(e) => panic!("Failed to send IBC transaction: {:?}", dummy_number, e),
     // };
     // match ctx.dst.wait_for_packet_recv(packet_hash, Duration::from_secs(720)).await {
     //     Ok(recv_data) => {
-    //         println!("Received packet data at the end of manual process: {:?}", recv_data);
+    //         println!("DUMMY NUMBER: {:?} Received packet data at the end of manual process: {:?}", dummy_number, recv_data);
     //     },
-    //     Err(e) => panic!("Failed to receive packet: {:?}", e),
+    //     Err(e) => panic!("Failed to receive packet: {:?}", dummy_number, e),
     // }
 
 }
@@ -875,66 +875,85 @@ async fn test_stake_from_evm_to_union() {
 #[tokio::test]
 #[serial]
 async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(1).await;
 }
 
 #[tokio::test]
 #[serial]
 async fn from_evm_to_union1() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(2).await;
 }
 
 
 #[tokio::test]
 #[serial]
 async fn from_evm_to_union2() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(3).await;
 }
 
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union3() {
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap(4).await;
+}
+
+
+
 // #[tokio::test]
 // #[serial]
-// async fn from_union_to_evm0() {
+// async fn from_evm_to_union4() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap(5).await;
+// }
+
+#[tokio::test]
+#[serial]
+async fn from_union_to_evm0() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+
+#[tokio::test]
+#[serial]
+async fn from_union_to_evm1() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
+
+
+#[tokio::test]
+#[serial]
+async fn from_union_to_evm3() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
+
+#[tokio::test]
+#[serial]
+async fn from_union_to_evm4() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm5() {
 //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
 // }
 
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake() {
-//     self::test_stake_from_evm_to_union().await;
-// }
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake1() {
+    self::test_stake_from_evm_to_union().await;
+}
 
 
-// #[tokio::test]
-// #[serial]
-// async fn from_union_to_evm1() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_union_to_evm3() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
-
-// #[tokio::test]
-// #[serial]
-// async fn from_union_to_evm4() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake1() {
-//     self::test_stake_from_evm_to_union().await;
-// }
-
-
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union_stake2() {
-//     self::test_stake_from_evm_to_union().await;
-// }
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake2() {
+    self::test_stake_from_evm_to_union().await;
+}
 
 
 // #[tokio::test]
