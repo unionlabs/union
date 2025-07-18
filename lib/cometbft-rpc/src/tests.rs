@@ -399,14 +399,16 @@ mod status {
                     ),
                     earliest_block_height: 1,
                     earliest_block_time: "2024-08-13T15:45:14.000000000Z".parse().unwrap(),
-                    latest_app_hash:
+                    latest_app_hash: Some(
                         "5933c3aa776e3d9976694ed85f4d420db92d13025fac557f1334c9ff03696889"
                             .parse()
                             .unwrap(),
-                    latest_block_hash:
+                    ),
+                    latest_block_hash: Some(
                         "317cac7db536eaf1686b7a5319ce201530ee27a15b902679dac7adcd9633cc80"
                             .parse()
                             .unwrap(),
+                    ),
                     latest_block_height: 290884,
                     latest_block_time: "2025-05-12T02:32:24.240017347Z".parse().unwrap(),
                 },

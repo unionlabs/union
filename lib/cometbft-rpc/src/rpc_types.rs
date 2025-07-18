@@ -72,8 +72,10 @@ pub struct SyncInfo {
     #[serde(with = "::serde_utils::string")]
     pub earliest_block_height: u64,
     pub earliest_block_time: Timestamp,
-    pub latest_app_hash: H256<HexUnprefixed>,
-    pub latest_block_hash: H256<HexUnprefixed>,
+    #[serde(with = "::cometbft_types::serde::maybe_empty_h256")]
+    pub latest_app_hash: Option<H256<HexUnprefixed>>,
+    #[serde(with = "::cometbft_types::serde::maybe_empty_h256")]
+    pub latest_block_hash: Option<H256<HexUnprefixed>>,
     #[serde(with = "::serde_utils::string")]
     pub latest_block_height: u64,
     pub latest_block_time: Timestamp,
