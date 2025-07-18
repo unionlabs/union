@@ -9,7 +9,6 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
-use opentelemetry::{metrics::Gauge, KeyValue};
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
@@ -45,19 +44,19 @@ pub struct Server {
 
 #[derive(Clone)]
 pub struct ServerMetrics {
-    latest_height_gauge: Gauge<u64>,
-    latest_timestamp_gauge: Gauge<u64>,
+    // latest_height_gauge: Gauge<u64>,
+    // latest_timestamp_gauge: Gauge<u64>,
 }
 
 impl ServerMetrics {
     fn new() -> Self {
         Self {
-            latest_height_gauge: opentelemetry::global::meter("voyager")
-                .u64_gauge("chain.latest_height")
-                .build(),
-            latest_timestamp_gauge: opentelemetry::global::meter("voyager")
-                .u64_gauge("chain.latest_timestamp")
-                .build(),
+            // latest_height_gauge: opentelemetry::global::meter("voyager")
+            //     .u64_gauge("chain.latest_height")
+            //     .build(),
+            // latest_timestamp_gauge: opentelemetry::global::meter("voyager")
+            //     .u64_gauge("chain.latest_timestamp")
+            //     .build(),
         }
     }
 }
@@ -100,51 +99,76 @@ impl Server {
             .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
     }
 
+    #[instrument(skip_all, fields(%chain_id, %finalized))]
+    pub async fn latest_height(&self, chain_id: &ChainId, finalized: bool) -> RpcResult<Height> {
+        trace!("querying latest height");
+
+        let latest_height = self
+            .cache
+            .latest_height(
+                chain_id.clone(),
+                finalized,
+                self.context()?
+                    .finality_module(chain_id)?
+                    .with_id(self.item_id)
+                    .query_latest_height(finalized)
+                    .map_err(json_rpc_error_to_error_object),
+            )
+            .await?;
+
+        trace!("queried latest height");
+
+        // self.server_metrics.latest_height_gauge.record(
+        //     latest_height.height(),
+        //     &[
+        //         KeyValue::new("chain_id", chain_id.to_string()),
+        //         KeyValue::new("finalized", false),
+        //     ],
+        // );
+
+        Ok(latest_height)
+    }
+
+    #[instrument(skip_all, fields(%chain_id, %finalized))]
+    pub async fn latest_timestamp(
+        &self,
+        chain_id: &ChainId,
+        finalized: bool,
+    ) -> RpcResult<Timestamp> {
+        trace!("querying latest timestamp");
+
+        let latest_timestamp = self
+            .cache
+            .latest_timestamp(
+                chain_id.clone(),
+                finalized,
+                self.context()?
+                    .finality_module(chain_id)?
+                    .with_id(self.item_id)
+                    .query_latest_timestamp(finalized)
+                    .map_err(json_rpc_error_to_error_object),
+            )
+            .await?;
+
+        trace!("queried latest timestamp");
+
+        // self.server_metrics.latest_timestamp_gauge.record(
+        //     latest_timestamp.timestamp(),
+        //     &[
+        //         KeyValue::new("chain_id", chain_id.to_string()),
+        //         KeyValue::new("finalized", false),
+        //     ],
+        // );
+
+        Ok(latest_timestamp)
+    }
+
     #[instrument(skip_all, fields(%height, %chain_id))]
     pub async fn query_height(&self, chain_id: &ChainId, height: QueryHeight) -> RpcResult<Height> {
         match height {
-            QueryHeight::Latest => {
-                let latest_height = self
-                    .context()?
-                    .finality_module(chain_id)?
-                    .with_id(self.item_id)
-                    .query_latest_height(false)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
-
-                trace!(%latest_height, finalized = false, "queried latest height");
-
-                self.server_metrics.latest_height_gauge.record(
-                    latest_height.height(),
-                    &[
-                        KeyValue::new("chain_id", chain_id.to_string()),
-                        KeyValue::new("finalized", false),
-                    ],
-                );
-
-                Ok(latest_height)
-            }
-            QueryHeight::Finalized => {
-                let latest_height = self
-                    .context()?
-                    .finality_module(chain_id)?
-                    .with_id(self.item_id)
-                    .query_latest_height(true)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
-
-                trace!(%latest_height, finalized = true, "queried latest height");
-
-                self.server_metrics.latest_height_gauge.record(
-                    latest_height.height(),
-                    &[
-                        KeyValue::new("chain_id", chain_id.to_string()),
-                        KeyValue::new("finalized", true),
-                    ],
-                );
-
-                Ok(latest_height)
-            }
+            QueryHeight::Latest => self.latest_height(chain_id, false).await,
+            QueryHeight::Finalized => self.latest_height(chain_id, true).await,
+            // TODO: Check if this is <= the latest height of the chain?
             QueryHeight::Specific(height) => Ok(height),
         }
     }
@@ -158,33 +182,7 @@ impl Server {
         finalized: bool,
     ) -> RpcResult<Height> {
         self.span()
-            .in_scope(|| async {
-                trace!("querying latest height");
-
-                let latest_height = self
-                    .context()?
-                    .finality_module(chain_id)?
-                    .with_id(self.item_id)
-                    .query_latest_height(finalized)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
-
-                trace!(
-                    %latest_height,
-                    finalized,
-                    "queried latest height"
-                );
-
-                self.server_metrics.latest_height_gauge.record(
-                    latest_height.height(),
-                    &[
-                        KeyValue::new("chain_id", chain_id.to_string()),
-                        KeyValue::new("finalized", finalized),
-                    ],
-                );
-
-                Ok(latest_height)
-            })
+            .in_scope(|| self.latest_height(chain_id, finalized))
             .await
     }
 
@@ -195,33 +193,7 @@ impl Server {
         finalized: bool,
     ) -> RpcResult<Timestamp> {
         self.span()
-            .in_scope(|| async {
-                trace!("querying latest timestamp");
-
-                let latest_timestamp = self
-                    .context()?
-                    .finality_module(chain_id)?
-                    .with_id(self.item_id)
-                    .query_latest_timestamp(finalized)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
-
-                trace!(
-                    latest_timestamp = latest_timestamp.as_nanos(),
-                    finalized,
-                    "queried latest timestamp"
-                );
-
-                self.server_metrics.latest_timestamp_gauge.record(
-                    latest_timestamp.as_nanos(),
-                    &[
-                        KeyValue::new("chain_id", chain_id.to_string()),
-                        KeyValue::new("finalized", finalized),
-                    ],
-                );
-
-                Ok(latest_timestamp)
-            })
+            .in_scope(|| self.latest_timestamp(chain_id, finalized))
             .await
     }
 

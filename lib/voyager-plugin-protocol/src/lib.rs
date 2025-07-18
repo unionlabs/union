@@ -20,6 +20,7 @@
 
 use std::{
     borrow::Cow,
+    cmp,
     fmt::Debug,
     future::Future,
     path::{Path, PathBuf},
@@ -588,7 +589,7 @@ pub async fn worker_child_process(
 /// Spawn a worker process with the given args, re-spawning it indefinitely unless it exits with [`INVALID_CONFIG_EXIT_CODE`] or the passed in cancellation token is cancelled.
 #[instrument(skip_all)]
 async fn lazarus_pit(cmd: &Path, args: Vec<String>, cancellation_token: CancellationToken) {
-    let mut attempt = 0;
+    let mut attempt = 0_u64;
 
     loop {
         let mut cmd = tokio::process::Command::new(cmd);
@@ -620,21 +621,21 @@ async fn lazarus_pit(cmd: &Path, args: Vec<String>, cancellation_token: Cancella
 
         tokio::select! {
             _ = cancellation_token.cancelled() => {
-                debug!(%id, "killing plugin");
+                debug!(%attempt, %id, "killing plugin");
                 match child.kill().await {
                     Ok(()) => {
-                        debug!(%id, "plugin received kill signal");
+                        debug!(%attempt, %id, "plugin received kill signal");
                         match child.wait().await {
                             Ok(exit_status) => {
-                                debug!(%id, %exit_status, "child exited successfully")
+                                debug!(%attempt, %id, %exit_status, "child exited successfully")
                             }
                             Err(err) => {
-                                error!(%id, err = %ErrorReporter(err), "child exited unsuccessfully")
+                                error!(%attempt, %id, err = %ErrorReporter(err), "child exited unsuccessfully")
                             }
                         }
                     }
                     Err(err) => {
-                        error!(%id, err = %ErrorReporter(err), "unable to kill plugin")
+                        error!(%attempt, %id, err = %ErrorReporter(err), "unable to kill plugin")
                     }
                 }
 
@@ -643,24 +644,24 @@ async fn lazarus_pit(cmd: &Path, args: Vec<String>, cancellation_token: Cancella
             res = child.wait() => {
                 match res {
                     Ok(exit_status) => {
-                        info!(%id, %exit_status, "child exited");
+                        info!(%attempt, %id, %exit_status, "child exited");
 
                         if exit_status
                             .code()
                             .is_some_and(|c| c == INVALID_CONFIG_EXIT_CODE as i32)
                         {
-                            error!(%id, "invalid config for plugin or module");
+                            error!(%attempt, %id, "invalid config for plugin or module");
                             cancellation_token.cancel();
                             break;
                         }
                     }
                     Err(err) => {
-                        error!(%id, err = %ErrorReporter(err), "child exited");
+                        error!(%attempt, %id, err = %ErrorReporter(err), "child exited");
                     }
                 }
 
                 // TODO: Exponential backoff
-                sleep(Duration::from_secs(1)).await;
+                sleep(Duration::from_secs(cmp::min(attempt.pow(2), 60))).await;
             }
         }
 

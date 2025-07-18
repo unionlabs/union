@@ -7,9 +7,9 @@ use opentelemetry::KeyValue;
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
-use tracing::trace;
+use tracing::{debug, trace, warn};
 use unionlabs::ibc::core::client::height::Height;
-use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId, IbcStorePathKey};
+use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId, IbcStorePathKey, Timestamp};
 use voyager_types::RawClientId;
 
 #[derive(Debug, Clone)]
@@ -23,6 +23,12 @@ pub struct Cache {
     client_info_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
     client_info_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
     client_info_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
+
+    latest_height_cache: moka::future::Cache<(ChainId, bool), Height>,
+    latest_height_metric: opentelemetry::metrics::Gauge<u64>,
+
+    latest_timestamp_cache: moka::future::Cache<(ChainId, bool), Timestamp>,
+    latest_timestamp_metric: opentelemetry::metrics::Gauge<u64>,
     // proof_cache: moka::future::Cache,
 }
 
@@ -59,6 +65,26 @@ impl Cache {
                 .build(),
             client_info_cache_miss_counter_metric: opentelemetry::global::meter("voyager")
                 .u64_counter("cache.client_info.miss")
+                .build(),
+
+            // 100 should be enough but would ideally be a passed in value
+            latest_height_cache: moka::future::CacheBuilder::new(100)
+                .time_to_live(Duration::from_secs(1000 * 365 * 24 * 60 * 60))
+                .time_to_idle(Duration::from_secs(1000 * 365 * 24 * 60 * 60))
+                .eviction_policy(EvictionPolicy::lru())
+                .build(),
+            latest_height_metric: opentelemetry::global::meter("voyager")
+                .u64_gauge("chain.latest_height")
+                .build(),
+
+            // 100 should be enough but would ideally be a passed in value
+            latest_timestamp_cache: moka::future::CacheBuilder::new(100)
+                .time_to_live(Duration::from_secs(1000 * 365 * 24 * 60 * 60))
+                .time_to_idle(Duration::from_secs(1000 * 365 * 24 * 60 * 60))
+                .eviction_policy(EvictionPolicy::lru())
+                .build(),
+            latest_timestamp_metric: opentelemetry::global::meter("voyager")
+                .u64_gauge("chain.latest_timestamp")
                 .build(),
         }
     }
@@ -147,6 +173,141 @@ impl Cache {
             }
             None => Ok(None),
         }
+    }
+
+    // TODO: Perhaps ensure that unfinalized is never > finalized?
+    pub async fn latest_height(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+        fut: impl Future<Output = RpcResult<Height>>,
+    ) -> RpcResult<Height> {
+        let attributes = &[
+            KeyValue::new("chain_id", chain_id.to_string()),
+            KeyValue::new("finalized", finalized.to_string()),
+        ];
+
+        let height_response = match fut.await {
+            Err(err) => {
+                let latest_known_height = self
+                    .latest_height_cache
+                    .get(&(chain_id.clone(), finalized))
+                    .await;
+                if let Some(latest_known_height) = latest_known_height {
+                    warn!(
+                        %latest_known_height,
+                        %err,
+                        "unable to query latest height, returning latest known value"
+                    );
+                    return Ok(latest_known_height);
+                } else {
+                    return Err(err);
+                }
+            }
+            Ok(height_response) => height_response,
+        };
+
+        let new_height = self
+            .latest_height_cache
+            .entry((chain_id.clone(), finalized))
+            .and_upsert_with(async |maybe_entry| match maybe_entry {
+                Some(cached_height) => {
+                    let cached_height = cached_height.into_value();
+                    if height_response < cached_height {
+                        debug!(
+                            %cached_height,
+                            %height_response,
+                            %chain_id,
+                            %finalized,
+                            "inconsistent latest height"
+                        );
+                        cached_height
+                    } else {
+                        height_response
+                    }
+                }
+                None => height_response,
+            })
+            .await
+            .into_value();
+
+        self.latest_height_metric
+            .record(new_height.height(), attributes);
+
+        trace!(
+            %new_height,
+            %finalized,
+            "latest height"
+        );
+
+        Ok(new_height)
+    }
+
+    // TODO: Perhaps ensure that unfinalized is never > finalized?
+    pub async fn latest_timestamp(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+        fut: impl Future<Output = RpcResult<Timestamp>>,
+    ) -> RpcResult<Timestamp> {
+        let attributes = &[
+            KeyValue::new("chain_id", chain_id.to_string()),
+            KeyValue::new("finalized", finalized.to_string()),
+        ];
+
+        let timestamp_response = match fut.await {
+            Err(why) => {
+                let latest_known_timestamp = self
+                    .latest_timestamp_cache
+                    .get(&(chain_id.clone(), finalized))
+                    .await;
+                if let Some(latest_known_timestamp) = latest_known_timestamp {
+                    warn!(
+                        %latest_known_timestamp,
+                        "unable to query latest timestamp, returning latest known value"
+                    );
+                    return Ok(latest_known_timestamp);
+                } else {
+                    return Err(why);
+                }
+            }
+            Ok(timestamp_response) => timestamp_response,
+        };
+
+        let new_timestamp = self
+            .latest_timestamp_cache
+            .entry((chain_id.clone(), finalized))
+            .and_upsert_with(async |maybe_entry| match maybe_entry {
+                Some(cached_timestamp) => {
+                    let cached_timestamp = cached_timestamp.into_value();
+                    if timestamp_response < cached_timestamp {
+                        debug!(
+                            %cached_timestamp,
+                            %timestamp_response,
+                            %chain_id,
+                            %finalized,
+                            "inconsistent latest timestamp"
+                        );
+                        cached_timestamp
+                    } else {
+                        timestamp_response
+                    }
+                }
+                None => timestamp_response,
+            })
+            .await
+            .into_value();
+
+        self.latest_timestamp_metric
+            .record(new_timestamp.as_nanos(), attributes);
+
+        trace!(
+            %new_timestamp,
+            %finalized,
+            "latest Timestamp"
+        );
+
+        Ok(new_timestamp)
     }
 }
 
