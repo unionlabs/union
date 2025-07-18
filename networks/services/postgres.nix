@@ -22,6 +22,15 @@ in
       POSTGRES_DB = "default";
       POSTGRES_HOST_AUTH_METHOD = "trust";
     };
+    healthcheck = {
+      interval = "5s";
+      retries = 10;
+      start_period = "15s";
+      test = [
+        "CMD-SHELL"
+        "pg_isready -h localhost -p 5432 -d default -U postgres"
+      ];
+    };
     # authentication = pkgs.lib.mkOverride 10 ''
     #   #type database  DBuser  auth-method
     #   local all       all     trust
