@@ -32,6 +32,14 @@ export const chainLogoMap = new Map([
     },
   ],
   [
+    "base.8453",
+    {
+      color: "/logos/chains/color/BASE.svg",
+      light: "/logos/chains/light/BASE.svg",
+      dark: "/logos/chains/dark/BASE.svg",
+    },
+  ],
+  [
     "base.84532",
     {
       color: "/logos/chains/color/BASE.svg",
@@ -125,6 +133,22 @@ export const chainLogoMap = new Map([
       color: "/logos/chains/color/MOVEMENT.svg",
       light: "/logos/chains/light/MOVEMENT.svg",
       dark: "/logos/chains/dark/MOVEMENT.svg",
+    },
+  ],
+  [
+    "neutron.neutron-1",
+    {
+      color: "/logos/chains/color/NEUTRON.svg",
+      light: "/logos/chains/light/NEUTRON.svg",
+      dark: "/logos/chains/dark/NEUTRON.svg",
+    },
+  ],
+  [
+    "neutron.pion-1",
+    {
+      color: "/logos/chains/color/NEUTRON.svg",
+      light: "/logos/chains/light/NEUTRON.svg",
+      dark: "/logos/chains/dark/NEUTRON.svg",
     },
   ],
   [
