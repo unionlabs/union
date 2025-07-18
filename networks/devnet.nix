@@ -254,8 +254,11 @@
 
         devnet-union-minimal = devnet-union-minimal.services;
 
-        voyager-img = import ./services/voyager.nix {
-          inherit pkgs self';
+        voyager-img = {
+          voyager = import ./services/voyager.nix {
+              inherit pkgs self';
+          };
+          postgres = services.postgres.postgres;
         };
 
         devnet-eth =
