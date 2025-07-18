@@ -304,15 +304,15 @@ function getColumnLabelDelay(toIndex: number): number {
         <tbody>
           {#each chains as fromChain, fromIndex}
             <tr>
-              <td class="sticky left-0 bg-zinc-925 z-10 min-w-[160px]">
-                <div class="border-t border-zinc-900 flex items-center h-8 pl-2">
+              <td class="sticky left-0 bg-zinc-925 z-10 min-w-[160px] align-top">
+                <div class="border-t border-zinc-900 flex items-center h-8 pl-2 leading-none">
                   <div
-                    class="animate-fade-in"
+                    class="animate-fade-in flex items-center"
                     style="animation-delay: {getRowLabelDelay(fromIndex)}ms;"
                   >
                     <ChainComponent
                       chain={fromChain}
-                      class="text-xs"
+                      class="text-xs align-top"
                     />
                   </div>
                 </div>
@@ -382,5 +382,18 @@ function getColumnLabelDelay(toIndex: number): number {
 .animate-fade-in {
   animation: fade-in 0.6s ease-out forwards;
   opacity: 0;
+}
+table tbody tr {
+  line-height: 1;
+}
+
+table tbody td {
+  line-height: 1;
+  font-size: 0;
+}
+
+table tbody td > * {
+  font-size: 0.75rem;
+  line-height: 1;
 }
 </style>
