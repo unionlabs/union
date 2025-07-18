@@ -178,7 +178,6 @@ impl Module {
 
                         for tx in resp.txs {
                             for raw_ev in tx.tx_result.events.into_iter() {
-                                // println!("raw event: {raw_ev:?}");
                                 let event = match CosmosSdkEvent::<ModuleEvent>::new(raw_ev) {
                                     Ok(event) => event,
                                     Err(cosmos_sdk_event::Error::Deserialize(_error)) => {
@@ -314,6 +313,32 @@ impl Module {
         .await?.pop().unwrap())
     }
 
+    pub async fn wait_for_packet_ack(
+        &self,
+        packet_hash_param: H256,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        println!("Waiting for packet ack event with hash: {packet_hash_param:?}");
+        Ok(self.wait_for_event(
+            move |evt| {
+                if let ModuleEvent::WasmPacketAck { packet_hash, .. } = evt {
+                    if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                        return Some(helpers::PacketAck {
+                            packet_hash: *packet_hash,
+                        });
+                    }
+                    None
+                } else {
+                    None
+                }
+            },
+            max_wait,
+            1
+        )
+        .await?.pop().unwrap())
+    }
+
+    
     pub async fn wait_for_delegate(
         &self,
         validator_filter: String,
@@ -325,6 +350,34 @@ impl Module {
                     if validator == &validator_filter {
                         Some(helpers::Delegate {
                             validator: validator.clone(),
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            },
+            max_wait,
+            1
+        )
+        .await?.pop().unwrap())
+    }
+
+
+    pub async fn wait_for_withdraw_rewards(
+        &self,
+        validator_filter: String,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::WithdrawRewards> {
+        Ok(self.wait_for_event(
+            move |evt| {
+                println!("EVT is: {:?}", evt);
+                if let ModuleEvent::WithdrawRewards { validator, amount } = evt {
+                    if validator == &validator_filter {
+                        Some(helpers::WithdrawRewards {
+                            validator: validator.clone(),
+                            amount: amount.clone(),
                         })
                     } else {
                         None
@@ -510,7 +563,16 @@ impl Module {
 #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
 pub enum ModuleEvent {
     #[serde(rename = "delegate")]
-    Delegate { validator: String, amount: String },
+    Delegate { 
+        validator: String, 
+        amount: String 
+    },
+
+    #[serde(rename = "withdraw_rewards")]
+    WithdrawRewards {
+        validator: String,
+        amount: String,
+    },
 
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {
@@ -566,5 +628,13 @@ pub enum ModuleEvent {
         packet_hash: H256,
         maker: Bech32<Bytes>,
         maker_msg: Bytes<HexUnprefixed>,
+    },
+
+    #[serde(rename = "wasm-packet_ack")]
+    WasmPacketAck {
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+        acknowledgement: Bytes<HexUnprefixed>,
     },
 }

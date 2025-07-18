@@ -11,9 +11,9 @@ use rand::RngCore;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetMetadata, FungibleAssetOrderV2, Instruction, Stake,
+        FungibleAssetMetadata, FungibleAssetOrderV2, Instruction, Stake, Unstake,
         FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_2,
-        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE,
+        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE,
     },
 };
 use union_test::{
@@ -84,9 +84,20 @@ use voyager_sdk::{anyhow, primitives::ChainId};
 //     Ok(address.into())
 // }
 
-// use evm::zkgm::{UCS03Zkgm};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // send_stake(false).await?;
+
+    let random_token_id = "111235239151157043841436637039164926998922383617846193637216301354934205390265";
+    let img = hex!("cfce857457d1b52cd752a85a8c83cb5885b5f0274226a383203790f7462228a6");
+    send_unstake(random_token_id, img).await?;
+    Ok(())
+}
+
+
+
+// #[tokio::main]
+async fn send_unstake(token_id: &str, img: [u8; 32]) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
     let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
@@ -147,57 +158,208 @@ async fn main() -> anyhow::Result<()> {
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
 
-    // 4) invoke create_clients and inspect the two confirms
-    // let (src_confirm, dst_confirm) = ctx
-    //     .create_clients(
-    //         Duration::from_secs(45),
-    //         "ibc-cosmwasm",
-    //         "trusted/evm/mpt",
-    //         "ibc-solidity",
-    //         "cometbls",
-    //     )
-    //     .await?;
+    // let random_token_id = U256::from(34254743732435489573089871927264396635233634929192990872135477444705812226668u128).into();
+    let mut salt = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt);
 
-    // println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
-    // println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
 
-    // let conn_confirm = ctx
-    //     .open_connection::<cosmos::Module, evm::Module>(
-    //         &ctx.src,
-    //         src_confirm.client_id,
-    //         &ctx.dst,
-    //         dst_confirm.client_id,
-    //         Duration::from_secs(180),
-    //     )
-    //     .await?;
-
-    // println!(
-    //     "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
-    //     conn_confirm.connection_id, conn_confirm.counterparty_connection_id,
-    // );
-
-    // let opened = ctx
-    //     .open_channels(
-    //         true,
-    //         "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
-    //             .as_bytes()
-    //             .into(),
-    //         hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
-    //             .to_vec()
-    //             .into(),
-    //         conn_confirm.connection_id,
-    //         "ucs03-zkgm-0".into(),
-    //         1,
-    //         Duration::from_secs(360),
-    //     )
-    //     .await?;
-
-    // println!("Opened {} channels", opened);
-
-    // let pair = ctx.get_channel().await.unwrap();
 
     let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-    let init_call = ZkgmERC20::initializeCall {
+    
+
+
+    let pair = ChannelPair {
+        src: 1.try_into().unwrap(),
+        dest: 1.try_into().unwrap(),
+    };
+    println!("Channel {} ↔ {}", pair.src, pair.dest);
+
+    let approve_tx_hash = ctx
+        .dst
+        .zkgmerc721_approve(
+            hex!("03c6772d23486a24e09426259f0a017f6ffc26b7").into(),
+            zkgm_evm_addr.into(),
+            token_id.parse().unwrap(),
+            evm_provider.clone()
+        )
+        .await?;
+
+    println!("✅ Approve tx hash: {:?}", approve_tx_hash);
+
+
+
+    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
+    let instruction_unstake = InstructionEvm {
+        version: INSTR_VERSION_0,
+        opcode: OP_UNSTAKE,
+        operand: Unstake {
+            token_id: token_id.parse().unwrap(),//into(),
+            // governance_token: governance_token.unwrappedToken,
+            // governance_metadata_image: governance_token.metadataImage,
+            governance_token: b"muno".into(),
+            governance_metadata_image: img.into(),
+            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            validator: given_validator.as_bytes().into(),
+            amount: "1".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+
+    let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider.clone());
+
+    rand::rng().fill_bytes(&mut salt);
+    let call_unstake = ucs03_zkgm
+        .send(
+            pair.dest.try_into().unwrap(),
+            0u64.into(),
+            4294967295000000000u64.into(),
+            salt.into(),
+            instruction_unstake.clone(),
+        )
+        .clear_decoder();
+    // let call = call.with_cloned_provider();
+    let recv_unstake = ctx
+        .send_and_recv_unstake::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            zkgm_evm_addr.into(),
+            call_unstake,
+            &ctx.src,
+            Duration::from_secs(360),
+            given_validator.to_string(),
+            evm_provider
+        )
+        .await;
+
+    println!("Received packet data: {:?}", recv_unstake);
+
+
+    Ok(())
+}
+
+
+pub async fn send_stake(open_channels: bool) -> anyhow::Result<()> {
+    let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
+    let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
+    let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
+
+    let approve_contract: Bech32<FixedBytes<32>> = Bech32::from_str(bech).unwrap();
+
+    println!("Bech32 Address: {}", approve_contract);
+
+    let cosmos_cfg = cosmos::Config {
+        chain_id: ChainId::new("union-devnet-1"),
+        ibc_host_contract_address: Bech32::from_str(
+            "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+        )
+        .unwrap(),
+        keyring: KeyringConfig {
+            name: "alice".into(),
+            keys: vec![KeyringConfigEntry::Raw {
+                name: "alice".into(),
+                key: hex_literal::hex!(
+                    "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+                )
+                .to_vec(),
+            }],
+        },
+        rpc_url: "http://localhost:26657".into(),
+        gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
+            max_gas: 10000000,
+            gas_multiplier: Some(1.4),
+            denom: None,
+        }),
+        fee_recipient: None,
+    };
+
+    let evm_cfg = evm::Config {
+        chain_id: ChainId::new("32382"),
+        ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
+        multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
+        rpc_url: "http://localhost:8545".into(),
+        ws_url: "ws://localhost:8546".into(),
+        keyring: KeyringConfig {
+            name: "alice".into(),
+            keys: vec![KeyringConfigEntry::Raw {
+                name: "alice".into(),
+                key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
+                    .to_vec(),
+            }],
+        },
+        max_gas_price: None,
+        fixed_gas_price: None,
+        gas_multiplier: 2.0,
+    };
+
+    let src = cosmos::Module::new(cosmos_cfg.clone()).await?;
+    let dst = evm::Module::new(evm_cfg.clone()).await?;
+
+    // 3) now hand them to your library’s TestContext
+    let ctx = TestContext::new(src, dst, 1).await?;
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+
+    if(open_channels){
+        let (src_confirm, dst_confirm) = ctx
+            .create_clients(
+                Duration::from_secs(45),
+                "ibc-cosmwasm",
+                "trusted/evm/mpt",
+                "ibc-solidity",
+                "cometbls",
+            )
+            .await?;
+
+        println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
+        println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
+
+        let conn_confirm = ctx
+            .open_connection::<cosmos::Module, evm::Module>(
+                &ctx.src,
+                src_confirm.client_id,
+                &ctx.dst,
+                dst_confirm.client_id,
+                Duration::from_secs(180),
+            )
+            .await?;
+
+        println!(
+            "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
+            conn_confirm.connection_id, conn_confirm.counterparty_connection_id,
+        );
+
+        let opened = ctx
+            .open_channels(
+                true,
+                "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
+                    .as_bytes()
+                    .into(),
+                hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
+                    .to_vec()
+                    .into(),
+                conn_confirm.connection_id,
+                "ucs03-zkgm-0".into(),
+                1,
+                Duration::from_secs(360),
+            )
+            .await?;
+
+        println!("Opened {} channels", opened);
+    }
+    
+    let pair = ChannelPair {
+        src: 1.try_into().unwrap(),
+        dest: 1.try_into().unwrap(),
+    };
+    if (open_channels) {
+        let pair = ctx.get_channel().await.unwrap();
+    }
+
+    let zkgm_evm_addr: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+    let init_call: ZkgmERC20::initializeCall = ZkgmERC20::initializeCall {
         _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
         _minter: zkgm_evm_addr.into(),
         _name: "muno".into(),
@@ -216,27 +378,19 @@ async fn main() -> anyhow::Result<()> {
 
     // panic!("panicked");
 
-    let pair = ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
-    // println!("Channel {} ↔ {}", pair.src, pair.dest);
+
+    println!("Channel {} ↔ {}", pair.src, pair.dest);
 
     // let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
 
-    // // let gov_token_addr = hex!("a513f3a432f575f1e8579cc456badac9c78d8b08");
-    // let governance_token: GovernanceToken = ctx.dst
-    //     .setup_governance_token(zkgm_evm_addr.into(),  pair.dest, img)
-    //     .await?;
+    if (open_channels){
+        let governance_token = ctx.dst
+            .setup_governance_token(zkgm_evm_addr.into(),  pair.dest, img, evm_provider.clone())
+            .await?;
 
-    // println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
-    // println!("✅ governance_token.metadataImage registered at: {:?}", governance_token.metadataImage);
-
-    // println!("✅ Governance token registered at: {:?}", deployed_erc20_addr);
-    /*
-    ✅ Governance token registered at: FixedBytes<20>(0x6c2bcc9c340595143c31b4e2b238ae8f0c04e572)
-    ✅ Governance token registered at: FixedBytes<20>(0xa513f3a432f575f1e8579cc456badac9c78d8b08) */
-
+        println!("✅ governance_token.metadataImage registered at: {:?}", governance_token);
+    }
+    
     let snake_nft = ctx
         .dst
         .predict_stake_manager_address(zkgm_evm_addr.into(), evm_provider.clone() )
@@ -340,12 +494,17 @@ async fn main() -> anyhow::Result<()> {
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
     println!("IMG: {:?}", img);
 
+    let mut buf: [u8; 32] = [0u8; 32];
+    rand::rng().fill_bytes(&mut buf);
+
+    let random_token_id = U256::from_be_bytes(buf).into();
+    println!("✅ random_token_id: {:?}", random_token_id);
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_0,
         opcode: OP_STAKE,
         operand: Stake {
-            token_id: "7".parse().unwrap(),
+            token_id: random_token_id,
             // governance_token: governance_token.unwrappedToken,
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
@@ -390,510 +549,5 @@ async fn main() -> anyhow::Result<()> {
         .await;
 
     println!("Received packet data: {:?}", recv_packet_data);
-    // union tarafinda delegate eventi aricaz
-    // nft de verdigim tokenid benim mi diye bakcaz
-
-    // panic!("panicked");
-
-    // let mut salt_bytes: [u8; 32] = [0u8; 32];
-    // rand::rng().fill_bytes(&mut salt_bytes);
-    // let contract: Bech32<FixedBytes<32>> =
-    //     Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
-    //         .unwrap();
-    // let funded_msg = (
-    //     Encode::<Json>::encode(ucs03_zkgm::msg::ExecuteMsg::Send {
-    //         channel_id: pair.dest.try_into().unwrap(),
-    //         timeout_height: 0u64.into(),
-    //         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-    //         salt: salt_bytes.into(),
-    //         instruction: Instruction {
-    //             version: INSTR_VERSION_1,
-    //             opcode: OP_FUNGIBLE_ASSET_ORDER,
-    //             operand: FungibleAssetOrder {
-    //                 sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-    //                     .as_bytes()
-    //                     .into(),
-    //                 receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
-    //                     .to_vec()
-    //                     .into(),
-    //                 base_token: "muno".as_bytes().into(),
-    //                 base_amount: "10".parse().unwrap(),
-    //                 base_token_symbol: "muno".into(),
-    //                 base_token_name: "muno".into(),
-    //                 base_token_decimals: 6,
-    //                 base_token_path: "0".parse().unwrap(),
-    //                 quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579")
-    //                     .to_vec()
-    //                     .into(),
-    //                 quote_amount: "10".parse().unwrap(),
-    //             }
-    //             .abi_encode_params()
-    //             .into(),
-    //         }
-    //         .abi_encode_params()
-    //         .into(),
-    //     }),
-    //     vec![Coin {
-    //         denom: "muno".into(),
-    //         amount: "10".into(),
-    //     }],
-    // );
-
-    // let packet_hash = ctx.src.send_ibc_transaction(contract, funded_msg).await?;
-    // let recv_packet_data = ctx
-    //     .dst
-    //     .wait_for_packet_recv(packet_hash, Duration::from_secs(360))
-    //     .await;
-
-    // assert!(
-    //     recv_packet_data.is_ok(),
-    //     "Failed to send and receive packet: {:?}",
-    //     recv_packet_data.err()
-    // );
-
-    // let mut salt_bytes = [0u8; 32];
-    // rand::rng().fill_bytes(&mut salt_bytes);
-
-    // let instruction_from_evm_to_union = InstructionEvm {
-    //     version: INSTR_VERSION_1,
-    //     opcode: OP_FUNGIBLE_ASSET_ORDER,
-    //     operand: FungibleAssetOrder {
-    //         sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").to_vec().into(),
-    //         receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".as_bytes().into(),
-    //         base_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
-    //         base_amount: "1".parse().unwrap(),
-    //         base_token_symbol: "muno".into(),
-    //         base_token_name: "muno".into(),
-    //         base_token_decimals: 6,
-    //         base_token_path: "1".parse().unwrap(),
-    //         quote_token:  "muno".into(),
-    //         quote_amount: "1".parse().unwrap(),
-    //     }
-    //     .abi_encode_params()
-    //     .into(),
-    // };
-
-    // let ucs03_addr_on_evm = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-    // let eth = evm::Module::new(evm_cfg.clone()).await?;
-    // let union = cosmos::Module::new(cosmos_cfg.clone()).await?;
-
-    // let send_call_struct = UCS03Zkgm::sendCall {
-    //     channelId: 1.try_into().unwrap(),
-    //     timeoutTimestamp: 4294967295000000000u64.into(),
-    //     timeoutHeight: 0u64.into(),
-    //     salt: salt_bytes.into(),
-    //     instruction: instruction_from_evm_to_union.clone(),
-    // };
-
-    // let hash_val = eth.send_zkgm_transaction(
-    //     ucs03_addr_on_evm.into(),
-    //     send_call_struct
-    // ).await;
-
-    // println!("Hash Value: {:?}", hash_val);
-
-    // let recv_packet = union.wait_for_packet_recv(
-    //     hash_val.unwrap(),
-    //     Duration::from_secs(280),
-    // ).await;
-
-    // println!("Received Packet: {:?}", recv_packet);
-
-    // let contract: Bech32<FixedBytes<32>> = Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
-    //     .unwrap();
-    // let funded_msgs = vec![(
-    //     Box::new(ucs03_zkgm::msg::ExecuteMsg::Send {
-    //         channel_id: 1.try_into().unwrap(),
-    //         timeout_height: 0u64.into(),
-    //         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-    //         salt: salt_bytes.into(),
-    //         instruction: Instruction {
-    //             version: INSTR_VERSION_1,
-    //             opcode: OP_FUNGIBLE_ASSET_ORDER,
-    //             operand: FungibleAssetOrder {
-    //                 sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".as_bytes().into(),
-    //                 receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").to_vec().into(),
-    //                 base_token: "muno".as_bytes().into(),
-    //                 base_amount: "10".parse().unwrap(),
-    //                 base_token_symbol: "muno".into(),
-    //                 base_token_name: "muno".into(),
-    //                 base_token_decimals: 6,
-    //                 base_token_path: "0".parse().unwrap(),
-    //                 quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
-    //                 quote_amount: "10".parse().unwrap(),
-    //             }
-    //             .abi_encode_params()
-    //             .into(),
-    //         }
-    //         .abi_encode_params()
-    //         .into(),
-    //     }),
-    //     vec![Coin {
-    //         denom: "muno".into(),
-    //         amount: "10".into(),
-    //     }],
-    // )];
-
-    // let recv_packet_data = ctx.send_and_recv(
-    //     true, // send from source
-    //     contract,
-    //     funded_msgs,
-    //     Duration::from_secs(360),
-    // ).await;
-    // assert!(recv_packet_data.is_ok(), "Failed to send and receive packet: {:?}", recv_packet_data.err());
-
-    // // 4) invoke create_clients and inspect the two confirms
-    // let (src_confirm, dst_confirm) = ctx
-    //     .create_clients(
-    //         Duration::from_secs(45),
-    //         "ibc-cosmwasm",
-    //         "trusted/evm/mpt",
-    //         "ibc-solidity",
-    //         "cometbls",
-    //     )
-    //     .await?;
-
-    // println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
-    // println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
-
-    // let conn_confirm = ctx
-    //     .open_connection(
-    //         true,
-    //         src_confirm.client_id,
-    //         dst_confirm.client_id,
-    //         Duration::from_secs(180),
-    //     )
-    //     .await?;
-
-    // println!(
-    //     "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
-    //     conn_confirm.connection_id,
-    //     conn_confirm.counterparty_connection_id,
-    // );
-
-    // let opened = ctx
-    //     .open_channels(
-    //         true,
-    //         "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
-    //         hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
-    //         conn_confirm.connection_id,
-    //         "ucs03-zkgm-0".into(),
-    //         1,
-    //         Duration::from_secs(240),
-    //     )
-    //     .await?;
-
-    // println!("Opened {} channels", opened);
-
-    // let conn_confirm_pt2 = ctx
-    //     .open_connection(
-    //         false,
-    //         src_confirm.client_id,
-    //         dst_confirm.client_id,
-    //         Duration::from_secs(180),
-    //     )
-    //     .await?;
-
-    // println!(
-    //     "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
-    //     conn_confirm_pt2.connection_id,
-    //     conn_confirm_pt2.counterparty_connection_id,
-    // );
-
     Ok(())
 }
-
-// #[tokio::main]
-// async fn main() -> anyhow::Result<()> {
-//     let union_config = cosmos::Config {
-//         chain_id: ChainId::new("union-devnet-1"),
-//         ibc_host_contract_address: Bech32::from_str(
-//             "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
-//         )
-//         .unwrap(),
-//         keyring: KeyringConfig {
-//             name: "alice".into(),
-//             keys: vec![KeyringConfigEntry::Raw {
-//                 name: "alice".into(),
-//                 key: hex_literal::hex!(
-//                     "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-//                 )
-//                 .to_vec(),
-//             }],
-//         },
-//         rpc_url: "http://localhost:26657".into(),
-//         gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
-//             max_gas: 10000000,
-//             gas_multiplier: Some(1.4),
-//             denom: None,
-//         }),
-//         fee_recipient: None,
-//     };
-
-// //     let union = cosmos::Module::new(union_config).await?;
-
-//     let evm_config = evm::Config {
-//         chain_id: ChainId::new("32382"),
-//         ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
-//         multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
-//         rpc_url: "http://localhost:8545".into(),
-//         keyring: KeyringConfig {
-//             name: "alice".into(),
-//             keys: vec![KeyringConfigEntry::Raw {
-//                 name: "alice".into(),
-//                 key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
-//                     .to_vec(),
-//             }],
-//         },
-//         max_gas_price: None,
-//         fixed_gas_price: None,
-//         gas_multiplier: 2.0,
-//     };
-
-//     let eth = evm::Module::new(evm_config).await?;
-
-//     voyager::init_fetch(union.chain_id.clone())?;
-//     voyager::init_fetch(eth.chain_id.clone())?;
-
-//     voyager::create_client(
-//         eth.chain_id.clone(),
-//         union.chain_id.clone(),
-//         "ibc-solidity".into(),
-//         "cometbls".into(),
-//     )?;
-
-//     let res = eth.wait_for_create_client(Duration::from_secs(45)).await;
-
-//     let counterparty_client_id = match res {
-//         Ok(confirm) => {
-//             println!(
-//                 "✅ got create client result on EVM. client_id: {}",
-//                 confirm.client_id,
-//             );
-//             confirm.client_id
-//         }
-//         Err(err) => {
-//             eprintln!("⚠️  error waiting for create-client-confirm: {}", err);
-//             return Ok(());
-//         }
-//     };
-
-//     voyager::create_client(
-//         union.chain_id.clone(),
-//         eth.chain_id.clone(),
-//         "ibc-cosmwasm".into(),
-//         "trusted/evm/mpt".into(),
-//     )?;
-
-//     let res = union.wait_for_create_client_id(Duration::from_secs(45)).await;
-//     let client_id: u32 = match res {
-//         Ok(confirm) => {
-//             println!(
-//                 "✅ got create client result on Cosmos. client_id: {}",
-//                 confirm.client_id,
-//             );
-//             confirm.client_id
-//         }
-//         Err(err) => {
-//             eprintln!("⚠️  error waiting for create-client-confirm: {}", err);
-//             return Ok(());
-//         }
-//     };
-
-//     std::thread::sleep(Duration::from_secs(5));
-
-//     voyager::connection_open(union.chain_id.clone(), client_id, counterparty_client_id)?;
-
-//     let res = eth.wait_for_connection_open_confirm(Duration::from_secs(180)).await;
-
-//     let connection_id = match res {
-//         Ok(confirm) => {
-//             println!(
-//                 "✅ got connection confirm: {} ↔ {}",
-//                 confirm.connection_id,
-//                 confirm.counterparty_connection_id,
-//             );
-//             confirm.counterparty_connection_id
-//         }
-//         Err (err) => {
-//             println!("Error occured when waiting for connection open confirm. Err: {}", err);
-//             return Ok(());
-//         }
-//     };
-
-//     let channel_pool = channel_provider::ChannelPool::new();
-
-//     let opened = channel_pool
-//         .open_channels(
-//             voyager::channel_open,                                       // fn pointer
-//             |timeout: Duration| {                                        // map to ChannelConfirm
-//                 let eth = &eth;                                         // capture `eth`
-//                 async move {
-//                     let ev = eth.wait_for_channel_open_confirm(timeout).await?;
-//                     Ok(ChannelConfirm {
-//                         channel_id: ev.channel_id,
-//                         counterparty_channel_id: ev.counterparty_channel_id,
-//                     })
-//                 }
-//             },
-//             union.chain_id.clone(),
-//             "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
-//             eth.chain_id.clone(),
-//             hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
-//             connection_id,
-//             "ucs03-zkgm-0".into(),
-//             1,
-//             Duration::from_secs(240) // 1 attempt, 240 seconds timeout
-//         )
-//         .await?;
-
-//     println!("Opened {} channels", opened);
-
-//     let channel_id: ChannelId = match channel_pool
-//         .get_channel(&union.chain_id, &eth.chain_id)
-//         .await
-//     {
-//         Some(channel) => {
-//             println!(
-//                 "Channel {} ↔ {}",
-//                 channel.src,
-//                 channel.dest,
-//             );
-//             channel.src.try_into().unwrap()
-//         }
-//         None => {
-//             eprintln!("⚠️  No more channels available");
-//             panic!("no channel to send on");
-//         }
-//     };
-
-//     let mut salt_bytes = [0u8; 32];
-//     rand::rng().fill_bytes(&mut salt_bytes);
-
-//     let cosmos::IbcEvent::WasmPacketSend { packet_hash, .. } = union
-//         .send_ibc_transaction(
-//             Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
-//                 .unwrap(),
-//             vec![(
-//                 Box::new(ucs03_zkgm::msg::ExecuteMsg::Send {
-//                     channel_id: channel_id,
-//                     timeout_height: 0u64.into(),
-//                     timeout_timestamp: Timestamp::from_secs(u32::MAX.into()),
-//                     salt: salt_bytes.into(),
-//                     instruction: Instruction {
-//                         version: INSTR_VERSION_1,
-//                         opcode: OP_FUNGIBLE_ASSET_ORDER,
-//                         operand: FungibleAssetOrder {
-//                             sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-//                                 .as_bytes()
-//                                 .into(),
-//                             receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
-//                                 .to_vec()
-//                                 .into(),
-//                             base_token: "muno".as_bytes().into(),
-//                             base_amount: "10".parse().unwrap(),
-//                             base_token_symbol: "muno".into(),
-//                             base_token_name: "muno".into(),
-//                             base_token_decimals: 6,
-//                             base_token_path: "0".parse().unwrap(),
-//                             quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579")
-//                                 .to_vec()
-//                                 .into(),
-//                             quote_amount: "10".parse().unwrap(),
-//                         }
-//                         .abi_encode_params()
-//                         .into(),
-//                     }
-//                     .abi_encode_params()
-//                     .into(),
-//                 }),
-//                 vec![Coin {
-//                     denom: "muno".into(),
-//                     amount: "10".into(),
-//                 }],
-//             )],
-//         )
-//         .await
-//         .unwrap()
-//         .unwrap() else { todo!("unexpected event type") };
-
-//     let recv = match eth
-//         .wait_for_packet_recv(packet_hash, Duration::from_secs(280))
-//         .await
-//     {
-//         Ok(ev) => {
-//             println!("✅ packet received: {:?}", ev);
-//             ev
-//         }
-//         Err(err) => {
-//             eprintln!("⚠️  error waiting for PacketRecv: {}", err);
-//             return Ok(());
-//         }
-//     };
-
-//     Ok(())
-// }
-
-/*
-pub async fn open_channels(
-    &self,
-    src_port: Bytes,
-    dst_port: Bytes,
-    connection_id: u32,
-    count: usize,
-    duration: Duration,
-) -> anyhow::Result<usize> {
-  */
-
-// async fn test_channels(
-//     pool: &channel_provider::ChannelPool,
-//     src: &ChainId,
-//     dst: &ChainId,
-//     max: usize,
-//     release_at: Option<usize>,
-//     eth: &evm::Module,
-//     union: &cosmos::Module,
-//     connection_id: u32,
-// ) {
-
-//     let opened = pool
-//         .open_channels(
-//             voyager::channel_open,
-//             |timeout: Duration| {
-//                 let eth = &eth;
-//                 async move {
-//                     let ev = eth.wait_for_channel_open_confirm(timeout).await?;
-//                     Ok(ChannelConfirm {
-//                         channel_id: ev.channel_id,
-//                         counterparty_channel_id: ev.counterparty_channel_id,
-//                     })
-//                 }
-//             },
-//             union.chain_id.clone(),
-//             "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
-//             eth.chain_id.clone(),
-//             hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
-//             connection_id,
-//             "ucs03-zkgm-0".into(),
-//             8,
-//             Duration::from_secs(240*8) // 8 attempts, 240 seconds each
-//         )
-//         .await;
-
-//     for idx in 1..=max {
-//         println!("Attempting to get channel #{}", idx);
-//         match pool.get_channel(src, dst).await {
-//             Some(channel) => {
-//                 println!("Channel {}: {} ↔ {}", idx, channel.src, channel.dest);
-//                 if release_at.map_or(false, |n| n == idx) {
-//                     println!("Releasing channel #{}", idx);
-//                     pool.release_channel(src, dst, channel).await;
-//                 }
-//             }
-//             None => {
-//                 eprintln!("⚠️  No more channels available at iteration {}", idx);
-//                 break;
-//             }
-//         }
-//     }
-// }

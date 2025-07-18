@@ -113,11 +113,24 @@ pub trait ChainEndpoint: Send + Sync {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
 
+
+    async fn wait_for_packet_ack(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketAck>;
+
     async fn wait_for_delegate(
         &self,
         validator: String,
         timeout: Duration,
     ) -> anyhow::Result<helpers::Delegate>;
+
+    async fn wait_for_withdraw_rewards(
+        &self,
+        validator: String,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::WithdrawRewards>;
 }
 
 pub trait IbcEventHash {
@@ -142,6 +155,14 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         _timeout: Duration,
     ) -> anyhow::Result<helpers::Delegate> {
         unimplemented!("wait_for_delegate is not implemented for Cosmos chains")
+    }
+
+    async fn wait_for_withdraw_rewards(
+        &self,
+        _validator: String,
+        _timeout: Duration,
+    ) -> anyhow::Result<helpers::WithdrawRewards> {
+        unimplemented!("wait_for_withdraw_rewards is not implemented for Cosmos chains")
     }
 
     fn send_create_client(
@@ -258,6 +279,14 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_packet_recv(packet_hash, timeout).await
+    }
+
+    async fn wait_for_packet_ack(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        self.wait_for_packet_ack(packet_hash, timeout).await
     }
 }
 
@@ -393,12 +422,28 @@ impl ChainEndpoint for cosmos::Module {
         self.wait_for_packet_recv(packet_hash, timeout).await
     }
 
+    async fn wait_for_packet_ack(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        self.wait_for_packet_ack(packet_hash, timeout).await
+    }
+
     async fn wait_for_delegate(
         &self,
         validator: String,
         timeout: Duration,
     ) -> anyhow::Result<helpers::Delegate> {
         self.wait_for_delegate(validator, timeout).await
+    }
+
+    async fn wait_for_withdraw_rewards(
+        &self,
+        validator: String,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::WithdrawRewards> {
+        self.wait_for_withdraw_rewards(validator, timeout).await
     }
 }
 
@@ -652,13 +697,75 @@ where
             packet_hash
         );
 
-        match destination_chain
+        let delegate = match destination_chain
             .wait_for_delegate(validator, timeout)
             .await
         {
             Ok(evt) => Ok(evt),
             Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
-        }
+        };
+
+        match source_chain
+            .wait_for_packet_ack(packet_hash, timeout)
+            .await
+        {
+            Ok(evt) => evt,
+            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
+        };
+
+
+        return delegate;
+
+    }
+
+    pub async fn send_and_recv_unstake<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        validator: String,
+        signer: Src::ProviderType,
+    ) -> anyhow::Result<helpers::WithdrawRewards> {
+        let packet_hash = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        let withdraw_rewards = match destination_chain
+            .wait_for_withdraw_rewards(validator, timeout)
+            .await
+        {
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
+        };
+
+        match source_chain
+            .wait_for_packet_ack(packet_hash, timeout)
+            .await
+        {
+            Ok(evt) => evt,
+            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
+        };
+
+        withdraw_rewards
+
+
     }
 
     pub async fn send_and_recv_with_retry<Src: ChainEndpoint, Dst: ChainEndpoint>(
