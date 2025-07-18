@@ -254,6 +254,27 @@ impl<'a> Module<'a> {
         .await?.pop().unwrap())
     }
 
+
+    pub async fn wait_for_packet_ack(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        Ok(self.wait_for_event(
+            |e| match e {
+                IbcEvents::PacketAck(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => {
+                    Some(helpers::PacketAck {
+                        packet_hash: ev.packet_hash.try_into().unwrap(),
+                    })
+                }
+                _ => None,
+            },
+            timeout,
+            1
+        )
+        .await?.pop().unwrap())
+    }
+
     pub async fn predict_wrapped_token(
         &self,
         ucs03_addr_on_evm: H160,
@@ -532,14 +553,40 @@ impl<'a> Module<'a> {
                 }
             }
         }
-        // let pending = erc.approve(spender.into(), amount.into()).send().await?;
-        // let tx_hash = <H256>::from(*pending.tx_hash());
-        // println!("pending: {:?}", pending);
+    }
 
-        // self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+    pub async fn zkgmerc721_approve(
+        &self,
+        contract: H160,
+        spender: H160,
+        token_id: U256,
+        provider: DynProvider<AnyNetwork>
+    ) -> anyhow::Result<H256> {
+        let mut attempts = 0;
+        let erc = zkgm::ZkgmERC721::new(contract.into(), provider.clone());
+        loop {
+            attempts += 1;
+            let pending = erc.approve(spender.into(), token_id.into()).send().await;
 
-        // println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
-        // Ok(tx_hash)
+            match pending {
+                Ok(pending) => {
+                    let tx_hash = <H256>::from(*pending.tx_hash());
+                    println!("pending: {:?}", pending);
+                    self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!("Approved spender: {spender:?} for token_id: {token_id:?} on contract: {contract:?}");
+                    return Ok(tx_hash);
+                }
+                 Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                    println!("Nonce too low, retrying... Attempt: {attempts}");
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                 }
+
+                Err(err) => {
+                    return Err(err.into());
+                }
+            }
+        }
     }
 
     pub async fn basic_erc721_approve(

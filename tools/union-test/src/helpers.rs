@@ -22,6 +22,11 @@ pub struct PacketRecv {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct PacketAck {
+    pub packet_hash: FixedBytes<32>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct PacketSend {
     pub packet_hash: FixedBytes<32>,
 }
@@ -29,4 +34,11 @@ pub struct PacketSend {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Delegate {
     pub validator: String,
+}
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WithdrawRewards {
+    pub validator: String,
+    pub amount: String,
 }
