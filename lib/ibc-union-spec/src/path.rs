@@ -3,6 +3,7 @@ use sha3::{Digest, Keccak256};
 use unionlabs::primitives::{Bytes, H256, U256};
 use voyager_primitives::IbcStorePathKey;
 
+
 #[cfg(feature = "ethabi")]
 use crate::Packet;
 use crate::{
@@ -34,6 +35,7 @@ pub const CONNECTIONS: U256 = U256::from_limbs([2, 0, 0, 0]);
 pub const CHANNELS: U256 = U256::from_limbs([3, 0, 0, 0]);
 pub const PACKETS: U256 = U256::from_limbs([4, 0, 0, 0]);
 pub const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
+pub const CLIENT_STATUS: U256 = U256::from_limbs([6, 0, 0, 0]);
 
 #[cfg(feature = "ethabi")]
 #[must_use]
@@ -60,6 +62,7 @@ pub enum StorePath {
     Channel(ChannelPath),
     BatchReceipts(BatchReceiptsPath),
     BatchPackets(BatchPacketsPath),
+    ClientStatus(ClientStatusPath),
 }
 
 impl StorePath {
@@ -72,6 +75,7 @@ impl StorePath {
             StorePath::Channel(path) => path.key(),
             StorePath::BatchReceipts(path) => path.key(),
             StorePath::BatchPackets(path) => path.key(),
+            StorePath::ClientStatus(path) => path.key(),
         }
     }
 }
@@ -264,4 +268,42 @@ impl IbcStorePathKey for BatchPacketsPath {
     type Spec = IbcUnion;
 
     type Value = H256;
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[repr(u8)]
+pub enum Status {
+    Active = 1,
+    Expired = 2,
+    Frozen = 3,
+}
+
+/// Represents the path to a client's committed status (Active, Expired, etc.)
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct ClientStatusPath {
+    pub client_id: ClientId,
+}
+
+impl ClientStatusPath {
+    #[must_use]
+    pub fn key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update(CLIENT_STATUS.to_be_bytes())
+            .chain_update(U256::from(self.client_id.get()).to_be_bytes())
+            .finalize()
+            .into()
+    }
+}
+
+impl IbcStorePathKey for ClientStatusPath {
+    type Spec = IbcUnion;
+    type Value = u8; // repr(u8) status stored as raw byte
 }

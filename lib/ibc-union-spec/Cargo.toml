@@ -28,7 +28,7 @@ voyager-primitives = { workspace = true }
 ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde"] }
 
 [features]
-default = []
+default = ["serde"]
 
 bincode  = ["dep:bincode", "voyager-primitives/bincode", "unionlabs/bincode"]
 ethabi   = ["dep:alloy-sol-types", "unionlabs/ethabi"]

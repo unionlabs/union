@@ -566,6 +566,23 @@ impl Module {
             None::<()>,
         ))
     }
+
+    #[instrument(skip_all,fields(chain_id = %self.chain_id, %height, %client_id))]
+    async fn query_client_status(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Option<u8>> {
+        let status = self
+            .query_smart::<_, u8>(
+                &ibc_union_msg::query::QueryMsg::GetStatus { client_id },
+                Some(height),
+            )
+            .await?;
+
+        Ok(status)
+    }
+
 }
 
 fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {
@@ -631,6 +648,10 @@ impl StateModuleServer<IbcUnion> for Module {
                 .map(into_value),
             StorePath::BatchPackets(path) => self
                 .query_batch_packets(at, path.batch_hash)
+                .await
+                .map(into_value),
+            StorePath::ClientStatus(path) => self
+                .query_client_status(at, path.client_id)
                 .await
                 .map(into_value),
         }
