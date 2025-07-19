@@ -1,7 +1,5 @@
 ---
 import TeamMember from "#/components/TeamMember.astro"
-import { contentfulClient } from "../lib/contentful/client.ts"
-import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types.ts"
 
 import vc_founderheads from "#/assets/images/investors/founderheads.svg"
 import vc_galileo from "#/assets/images/investors/galileo.svg"
@@ -81,7 +79,6 @@ let teamData: Array<TeamPageFields> | null = null
 let error: string | null = null
 
 try {
-  const teamEntries = await contentfulClient.getEntries<TeamPageSkeleton>({
     content_type: "team",
   })
 
