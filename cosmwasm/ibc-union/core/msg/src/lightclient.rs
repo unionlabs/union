@@ -6,10 +6,11 @@ use unionlabs_primitives::Bytes;
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[repr(u8)]
 pub enum Status {
-    Active,
-    Expired,
-    Frozen,
+    Active = 0,
+    Expired = 1,
+    Frozen = 2,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
