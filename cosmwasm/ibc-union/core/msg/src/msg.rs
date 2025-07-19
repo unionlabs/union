@@ -50,6 +50,14 @@ pub enum ExecuteMsg {
     PacketSend(MsgSendPacket),
     WriteAcknowledgement(MsgWriteAcknowledgement),
     MigrateState(MsgMigrateState),
+    CommitClientStatus(MsgCommitClientStatus),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsgCommitClientStatus {
+    pub client_id: ClientId,
+    pub height: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
