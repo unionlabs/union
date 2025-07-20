@@ -56,6 +56,7 @@ alloy_sol_types::sol! {
 
     struct Forward {
         uint256 path;
+        // TODO: Forward v2 to remove this field
         uint64 timeout_height;
         uint64 timeout_timestamp;
         Instruction instruction;

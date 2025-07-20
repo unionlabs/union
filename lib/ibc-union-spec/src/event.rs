@@ -289,7 +289,6 @@ macro_rules! packet_method {
                 source_channel_id: self.packet.source_channel.channel_id,
                 destination_channel_id: self.packet.destination_channel.channel_id,
                 data: self.packet_data.clone(),
-                timeout_height: self.packet.timeout_height,
                 timeout_timestamp: self.packet.timeout_timestamp,
             }
         }
@@ -404,8 +403,6 @@ impl PacketTimeout {
 pub struct PacketMetadata {
     pub source_channel: ChannelMetadata,
     pub destination_channel: ChannelMetadata,
-
-    pub timeout_height: u64,
     pub timeout_timestamp: Timestamp,
 }
 

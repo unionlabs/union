@@ -90,17 +90,10 @@ pub enum ContractError {
     PacketNotReceived,
     #[error("{} packet is already acknowledged", ContractErrorKind::from(self))]
     AlreadyAcknowledged,
-    #[error(
-        "{} height timeout is not supported anymore",
-        ContractErrorKind::from(self)
-    )]
-    TimeoutHeightUnsupported,
     #[error("{} timeout must be set", ContractErrorKind::from(self))]
     TimeoutMustBeSet,
     #[error("{} timestamp timeout not yet reached", ContractErrorKind::from(self))]
     TimeoutTimestampNotReached,
-    #[error("{} height timeout not yet reached", ContractErrorKind::from(self))]
-    TimeoutHeightNotReached,
     #[error("{kind} channel ({0}) does not exist", kind = ContractErrorKind::from(self))]
     ChannelNotExist(u32),
     #[error(

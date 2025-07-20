@@ -1,3 +1,5 @@
+#![cfg(not(test))]
+
 pub mod supabase;
 pub mod types;
 

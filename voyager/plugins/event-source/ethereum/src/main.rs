@@ -17,7 +17,7 @@ use ibc_union_spec::{
     },
     path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
-    ChannelId, ChannelState, IbcUnion, Packet, Timestamp,
+    ChannelId, ChannelState, IbcUnion, Packet,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -1069,7 +1069,6 @@ impl Module {
                                     packet: PacketMetadata {
                                         source_channel,
                                         destination_channel,
-                                        timeout_height: packet.timeout_height,
                                         timeout_timestamp: packet.timeout_timestamp,
                                     },
                                 }
@@ -1144,7 +1143,6 @@ impl Module {
                     packet: PacketMetadata {
                         source_channel,
                         destination_channel,
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                     packet_data: packet.data,
@@ -1185,7 +1183,6 @@ impl Module {
                     packet: PacketMetadata {
                         source_channel,
                         destination_channel,
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                     packet_data: packet.data,
@@ -1227,7 +1224,6 @@ impl Module {
                 //     packet: PacketMetadata {
                 //         source_channel,
                 //         destination_channel,
-                //         timeout_height: packet.timeout_height,
                 //         timeout_timestamp: packet.timeout_timestamp,
                 //     },
                 //     packet_data: packet.data,
@@ -1296,7 +1292,6 @@ impl Module {
                     packet: PacketMetadata {
                         source_channel,
                         destination_channel,
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                 }
@@ -1337,7 +1332,6 @@ impl Module {
                     packet: PacketMetadata {
                         source_channel,
                         destination_channel,
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                     maker_msg: raw_event.maker_msg.into(),
@@ -1363,13 +1357,11 @@ impl Module {
 }
 
 fn convert_packet(value: ibc_solidity::Packet) -> RpcResult<Packet> {
-    Ok(Packet {
-        source_channel_id: ChannelId::from_raw(value.source_channel_id)
-            .ok_or_else(|| ErrorObject::owned(-1, "invalid source channel id", None::<()>))?,
-        destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
-            .ok_or_else(|| ErrorObject::owned(-1, "invalid destination channel id", None::<()>))?,
-        data: value.data.into(),
-        timeout_height: value.timeout_height,
-        timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
+    value.try_into().map_err(move |e| {
+        ErrorObject::owned(
+            -1,
+            ErrorReporter(e).with_message("invalid packet"),
+            None::<()>,
+        )
     })
 }

@@ -120,10 +120,8 @@ fn packet_to_attrs(packet: &Packet) -> [Attribute; 5] {
             packet.destination_channel_id.to_string(),
         ),
         (events::attribute::PACKET_DATA, packet.data.to_string()),
-        (
-            events::attribute::PACKET_TIMEOUT_HEIGHT,
-            packet.timeout_height.to_string(),
-        ),
+        // emitted as a legacy attribute
+        (events::attribute::PACKET_TIMEOUT_HEIGHT, 0.to_string()),
         (
             events::attribute::PACKET_TIMEOUT_TIMESTAMP,
             packet.timeout_timestamp.to_string(),
@@ -544,14 +542,12 @@ pub fn execute(
         ),
         ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel_id,
-            timeout_height,
             timeout_timestamp,
             data,
         }) => send_packet(
             deps.branch(),
             info.sender,
             source_channel_id,
-            timeout_height,
             timeout_timestamp,
             data.into_vec(),
         ),
@@ -799,16 +795,12 @@ fn timeout_packet(
     )?;
     mark_packet_as_acknowledged(deps.branch(), &packet)?;
 
-    if packet.timeout_timestamp.is_zero() && packet.timeout_height == 0 {
+    if packet.timeout_timestamp.is_zero() {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
-    if !packet.timeout_timestamp.is_zero() && packet.timeout_timestamp > proof_timestamp {
+    if packet.timeout_timestamp > proof_timestamp {
         return Err(ContractError::TimeoutTimestampNotReached);
-    }
-
-    if !packet.timeout_timestamp.is_zero() && packet.timeout_height > proof_height {
-        return Err(ContractError::TimeoutHeightNotReached);
     }
 
     let port_id = deps.storage.read::<ChannelOwner>(&source_channel)?;
@@ -1769,10 +1761,6 @@ fn process_receive(
             return Err(ContractError::BatchSameChannelOnly);
         }
 
-        if packet.timeout_height != 0 {
-            return Err(ContractError::TimeoutHeightUnsupported);
-        }
-
         let current_timestamp = Timestamp::from_nanos(env.block.time.nanos());
         if current_timestamp >= packet.timeout_timestamp {
             return Err(ContractError::ReceivedTimedOutPacketTimestamp {
@@ -1890,14 +1878,9 @@ fn send_packet(
     mut deps: DepsMut,
     sender: Addr,
     source_channel_id: ChannelId,
-    timeout_height: u64,
     timeout_timestamp: Timestamp,
     data: Vec<u8>,
 ) -> ContractResult {
-    if timeout_height != 0 {
-        return Err(ContractError::TimeoutHeightUnsupported);
-    }
-
     if timeout_timestamp.is_zero() {
         return Err(ContractError::TimeoutMustBeSet);
     }
@@ -1918,7 +1901,6 @@ fn send_packet(
             .counterparty_channel_id
             .expect("channel is open; qed;"),
         data: data.into(),
-        timeout_height,
         timeout_timestamp,
     };
 

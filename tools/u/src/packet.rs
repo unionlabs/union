@@ -64,8 +64,6 @@ impl Cmd {
                         source_channel_id,
                         destination_channel_id,
                         data,
-                        // deprecated
-                        timeout_height: 0,
                         timeout_timestamp,
                     }
                     .hash(),
