@@ -764,6 +764,47 @@ where
         };
 
         withdraw_rewards
+    }
+
+    pub async fn send_and_recv_withdraw<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        signer: Src::ProviderType,
+    ) -> anyhow::Result<()>  {
+        let packet_hash = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        // TODO: any other event is expected here?
+
+        match source_chain
+            .wait_for_packet_ack(packet_hash, timeout)
+            .await
+        {
+            Ok(evt) => evt,
+            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
+        };
+
+        Ok(())
 
 
     }
