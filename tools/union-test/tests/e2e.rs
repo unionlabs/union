@@ -845,7 +845,6 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
     );
     println!("Received packet data: {:?}", recv_packet_data);
 
-    // Check random_token_id is ours or not now
 
     let snake_nft = ctx
         .dst
@@ -859,15 +858,23 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         snake_nft, random_token_id, evm_address
     );
 
-    // let is_ours = ctx.dst.nft_owner_of(
-    //     snake_nft,
-    //     evm_address
-    //             .to_vec()
-    //             .into(),
-    //             random_token_id.into()
-    //         ).await;
-    // assert!(is_ours.is_ok() && is_ours.unwrap(),
-    //     "Failed to check NFT ownership after stake request: {:?}", is_ours.err());
+
+    // Check random_token_id is ours or not now
+    let res = ctx.dst.nft_owner_of(
+        snake_nft,
+        evm_address.into(),
+                random_token_id.into(),
+                evm_provider.clone()
+            ).await;
+    let is_ours: bool = res
+        .unwrap_or_else(|e| {
+            panic!("Failed to check NFT ownership after stake request: {:?}", e)
+        });
+
+    assert!(is_ours, "NFT ownership check returned false");
+
+    println!("is ours: {}", is_ours);
+        
 }
 
 
@@ -1069,7 +1076,6 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     );
     println!("Received packet data: {:?}", recv_packet_data);
 
-    // Check random_token_id is ours or not now
 
     let snake_nft = ctx
         .dst
@@ -1083,15 +1089,21 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         snake_nft, random_token_id, evm_address
     );
 
-    // let is_ours = ctx.dst.nft_owner_of(
-    //     snake_nft,
-    //     evm_address
-    //             .to_vec()
-    //             .into(),
-    //             random_token_id.into()
-    //         ).await;
-    // assert!(is_ours.is_ok() && is_ours.unwrap(),
-    //     "Failed to check NFT ownership after stake request: {:?}", is_ours.err());
+    // Check random_token_id is ours or not now
+    let res = ctx.dst.nft_owner_of(
+        snake_nft,
+        evm_address.into(),
+                random_token_id.into(),
+                evm_provider.clone()
+            ).await;
+    let is_ours: bool = res
+        .unwrap_or_else(|e| {
+            panic!("Failed to check NFT ownership after stake request: {:?}", e)
+        });
+
+    assert!(is_ours, "NFT ownership check returned false");
+
+    println!("is ours: {}", is_ours);
 
 
     let approve_tx_hash = ctx
