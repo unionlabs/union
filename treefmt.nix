@@ -178,9 +178,25 @@
         options = [ ];
         includes = [ "*.move" ];
       };
-      deployments-json = {
+      deployments-channels-clients-json = {
         command = lib.getExe (
-          pkgs.writeShellScriptBin "format-deployments" ''
+          pkgs.writeShellScriptBin "format-deployments-channels-clients" ''
+            # sort with jq
+            ${lib.getExe pkgs.jq} . "$1" -S | ${lib.getExe pkgs.jq} 'map_values(. | to_entries | sort_by(.key | tonumber) | from_entries)' | ${lib.getExe' pkgs.moreutils "sponge"} "$1"
+
+            # format using biome
+            ${lib.getExe pkgs.biome} format --config-path ./biome.json --write "$1"
+          ''
+        );
+        options = [ ];
+        includes = [
+          "deployments/channels.json"
+          "deployments/clients.json"
+        ];
+      };
+      deployments-editions-json = {
+        command = lib.getExe (
+          pkgs.writeShellScriptBin "format-deployments-editions" ''
             # sort with jq
             ${lib.getExe pkgs.jq} . "$1" -S | ${lib.getExe' pkgs.moreutils "sponge"} "$1"
 
@@ -190,7 +206,6 @@
         );
         options = [ ];
         includes = [
-          "deployments/channels.json"
           "deployments/editions.json"
         ];
       };
