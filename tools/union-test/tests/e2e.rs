@@ -18,8 +18,9 @@ use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake, Unstake, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_FUNGIBLE_ASSET_ORDER, OP_STAKE,
-        OP_UNSTAKE, OP_WITHDRAW_STAKE, WithdrawStake
+        FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake, Unstake, WithdrawStake,
+        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE,
     },
 };
 use union_test::{
@@ -43,9 +44,11 @@ static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
 static ERC20: OnceCell<H160> = OnceCell::const_new();
 
-static UNION_ZKGM_ADDRESS : &str = "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";
-static UNION_MINTER_ADDRESS : &str = "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550";
-static EVM_ZKGM_ADDRESS : &str = "05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5";
+static UNION_ZKGM_ADDRESS: &str =
+    "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";
+static UNION_MINTER_ADDRESS: &str =
+    "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550";
+static EVM_ZKGM_ADDRESS: &str = "05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5";
 /// Returns the one–and–only deployed ERC20 address.
 /// Deploys it the first time it’s called, then just returns the stored value.
 // async fn ensure_erc20(spender: H160) -> H160 {
@@ -99,7 +102,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                             "a1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
                         )
                         .to_vec(),
-                    }
+                    },
                 ],
             },
             rpc_url: "http://localhost:26657".into(),
@@ -121,48 +124,64 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                 keys: vec![
                     KeyringConfigEntry::Raw {
                         name: "dev-key0.prv".into(),
-                        key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
-                            .to_vec(),
+                        key: hex!(
+                            "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key1.prv".into(),
-                        key: hex!("d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9")
-                            .to_vec(),
+                        key: hex!(
+                            "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key2.prv".into(),
-                        key: hex!("eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b")
-                            .to_vec(),
+                        key: hex!(
+                            "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key3.prv".into(),
-                        key: hex!("d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710")
-                            .to_vec(),
+                        key: hex!(
+                            "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key4.prv".into(),
-                        key: hex!("084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d")
-                            .to_vec(),
+                        key: hex!(
+                            "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key5.prv".into(),
-                        key: hex!("f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba")
-                            .to_vec(),
+                        key: hex!(
+                            "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key6.prv".into(),
-                        key: hex!("523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c")
-                            .to_vec(),
+                        key: hex!(
+                            "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
+                        )
+                        .to_vec(),
                     },
                     KeyringConfigEntry::Raw {
                         name: "dev-key7.prv".into(),
-                        key: hex!("b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058")
-                            .to_vec(),
+                        key: hex!(
+                            "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
+                        )
+                        .to_vec(),
                     },
                 ],
             },
             max_gas_price: None,
-            fixed_gas_price: None,//Some(200_000_000_000u64.into()),
+            fixed_gas_price: None, //Some(200_000_000_000u64.into()),
             gas_multiplier: 2.0,
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
@@ -215,9 +234,7 @@ async fn ensure_channels_opened(channel_count: usize) {
             let opened = ctx
                 .open_channels(
                     true,
-                    UNION_ZKGM_ADDRESS
-                        .as_bytes()
-                        .into(),
+                    UNION_ZKGM_ADDRESS.as_bytes().into(),
                     hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
                         .to_vec()
                         .into(),
@@ -282,7 +299,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
     println!("DUMMY NUMBER: {:?}", dummy_number);
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
-    
+
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
@@ -302,26 +319,21 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
             eth_zkgm_contract.into(),
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "muno".into(),
-            &evm_provider
+            &evm_provider,
         )
         .await
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
-    let contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str(UNION_ZKGM_ADDRESS)
-            .unwrap();
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: cosmos_address_bytes.clone()
-                .into(),
-            receiver: evm_address
-                .to_vec()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             base_token_symbol: "muno".into(),
@@ -360,7 +372,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            cosmos_provider
+            cosmos_provider,
         )
         .await;
     assert!(
@@ -378,11 +390,8 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: evm_address
-                .to_vec()
-                .into(),
-            receiver: cosmos_address_bytes.clone()
-                .into(),
+            sender: evm_address.to_vec().into(),
+            receiver: cosmos_address_bytes.clone().into(),
             base_token: quote_token_addr.as_ref().to_vec().into(),
             base_amount: "1".parse().unwrap(),
             base_token_symbol: "muno".into(),
@@ -400,7 +409,6 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
 
     // TODO: Here we should check the muno balance of sender account
     // Also token balanceOf the receiver account
-
 
     let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
 
@@ -423,7 +431,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            &evm_provider
+            &evm_provider,
         )
         .await;
 
@@ -446,11 +454,16 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    println!("DUMMY NUMBER: {:?} EVM Address: {:?}", dummy_number, evm_address);
-    println!("DUMMY NUMBER: {:?} Cosmos Address: {:?}", dummy_number, cosmos_address);
+    println!(
+        "DUMMY NUMBER: {:?} EVM Address: {:?}",
+        dummy_number, evm_address
+    );
+    println!(
+        "DUMMY NUMBER: {:?} Cosmos Address: {:?}",
+        dummy_number, cosmos_address
+    );
 
     ensure_channels_opened(ctx.channel_count).await;
-
 
     let available_channel = ctx.get_available_channel_count().await;
     assert_eq!(available_channel > 0, true);
@@ -463,14 +476,13 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
 
     // let deployed_erc20 = ensure_erc20(eth_zkgm_contract.into()).await;
 
-    let deployed_erc20 = ctx.dst
+    let deployed_erc20 = ctx
+        .dst
         .deploy_basic_erc20(eth_zkgm_contract.into(), evm_provider.clone())
         .await
         .expect("failed to deploy ERC20");
 
-    let union_zkgm_contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str(UNION_ZKGM_ADDRESS)
-            .unwrap();
+    let union_zkgm_contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
     let quote_token_addr = ctx
         .predict_wrapped_token::<cosmos::Module>(
@@ -478,7 +490,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
             union_zkgm_contract.into(),
             ChannelId::new(NonZero::new(src_chain_id).unwrap()),
             deployed_erc20.as_ref().to_vec(),
-            cosmos_signer
+            cosmos_signer,
         )
         .await
         .unwrap();
@@ -486,8 +498,14 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
         .expect("invalid quote‐token address hex");
 
-    println!("DUMMY NUMBER: {:?} Quote token address: {:?}", dummy_number, quote_token_addr);
-    println!("DUMMY NUMBER: {:?} deployed_erc20 address: {:?}", dummy_number, deployed_erc20);
+    println!(
+        "DUMMY NUMBER: {:?} Quote token address: {:?}",
+        dummy_number, quote_token_addr
+    );
+    println!(
+        "DUMMY NUMBER: {:?} deployed_erc20 address: {:?}",
+        dummy_number, deployed_erc20
+    );
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
 
@@ -495,11 +513,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: evm_address
-                .to_vec()
-                .into(),
-            receiver: cosmos_address_bytes.clone()
-                .into(),
+            sender: evm_address.to_vec().into(),
+            receiver: cosmos_address_bytes.clone().into(),
             base_token: deployed_erc20.as_ref().to_vec().into(),
             base_amount: "10".parse().unwrap(),
             base_token_symbol: "GLD".into(),
@@ -534,7 +549,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            &evm_provider
+            &evm_provider,
         )
         .await;
 
@@ -543,7 +558,10 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-    println!("DUMMY NUMBER: {:?} Received packet data from evm->cosmos GOLD token: {:?}", dummy_number, recv_packet_data);
+    println!(
+        "DUMMY NUMBER: {:?} Received packet data from evm->cosmos GOLD token: {:?}",
+        dummy_number, recv_packet_data
+    );
 
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
         spender: UNION_MINTER_ADDRESS.into(),
@@ -560,13 +578,19 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
 
     println!("DUMMY NUMBER: {:?} Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}", dummy_number, quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
 
-
     let approve_recv_packet_data = ctx
         .src
-        .send_transaction_with_retry(approve_contract, (approve_msg_bin, vec![]).into(), cosmos_signer)
+        .send_transaction_with_retry(
+            approve_contract,
+            (approve_msg_bin, vec![]).into(),
+            cosmos_signer,
+        )
         .await;
 
-    println!("DUMMY NUMBER: {:?} Approve transaction data: {:?}", dummy_number, approve_recv_packet_data);
+    println!(
+        "DUMMY NUMBER: {:?} Approve transaction data: {:?}",
+        dummy_number, approve_recv_packet_data
+    );
     assert!(
         approve_recv_packet_data.is_some(),
         "Failed to send approve transaction: {:?}",
@@ -577,11 +601,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: cosmos_address_bytes.clone()
-                .into(),
-            receiver: evm_address
-                .to_vec()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
             base_token: quote_token_bytes.into(),
             base_amount: "1".parse().unwrap(),
             base_token_symbol: "GLD".into(),
@@ -609,11 +630,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     // TODO: Here we should check the muno balance of sender account
     // Also token balanceOf the receiver account
 
-    let union_zkgm_contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str(UNION_ZKGM_ADDRESS)
-            .unwrap();
+    let union_zkgm_contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
-    
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
@@ -623,18 +641,21 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            cosmos_signer
+            cosmos_signer,
         )
         .await;
 
-    println!("DUMMY NUMBER: {:?} Received packet data: {:?}", dummy_number, recv_packet_data);
+    println!(
+        "DUMMY NUMBER: {:?} Received packet data: {:?}",
+        dummy_number, recv_packet_data
+    );
 
     assert!(
         recv_packet_data.is_ok(),
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-    
+
     // // TODO: Sending & recving manually from here:
     // let packet_hash = match ctx.src.send_ibc_transaction_with_signer(union_zkgm_contract, (bin_msg, funds).into(), cosmos_signer).await {
     //     Ok(hash) => hash,
@@ -646,7 +667,6 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     //     },
     //     Err(e) => panic!("Failed to receive packet: {:?}", dummy_number, e),
     // }
-
 }
 
 async fn test_stake_from_evm_to_union(dummy_number: u8) {
@@ -687,7 +707,12 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
 
     let governance_token = ctx
         .dst
-        .setup_governance_token(eth_zkgm_contract.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            eth_zkgm_contract.into(),
+            pair.dest,
+            img,
+            evm_provider.clone(),
+        )
         .await;
 
     assert!(
@@ -708,7 +733,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
-            &evm_provider
+            &evm_provider,
         )
         .await
         .unwrap();
@@ -719,11 +744,8 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         version: INSTR_VERSION_2,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrderV2 {
-            sender: cosmos_address_bytes.clone()
-                .into(),
-            receiver: evm_address
-                .to_vec()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
@@ -752,14 +774,13 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
-            Bech32::from_str(UNION_ZKGM_ADDRESS)
-                .unwrap(),
+            Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
             (bin_msg, funds).into(),
             &ctx.dst,
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            cosmos_provider
+            cosmos_provider,
         )
         .await;
 
@@ -770,7 +791,10 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
     );
 
     println!("Received packet data: {:?}", recv_packet_data);
-    println!("Calling approve on quote token: {:?} -> from account: {:?}", quote_token_addr, evm_address);
+    println!(
+        "Calling approve on quote token: {:?} -> from account: {:?}",
+        quote_token_addr, evm_address
+    );
 
     let approve_tx_hash = ctx
         .dst
@@ -778,14 +802,15 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
             quote_token_addr.into(),
             eth_zkgm_contract.into(),
             U256::from(100000000000u64),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
     assert!(
         approve_tx_hash.is_ok(),
         "Failed to send approve transaction: {:?}, from_account: {:?}",
-        approve_tx_hash.err(), evm_address
+        approve_tx_hash.err(),
+        evm_address
     );
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
@@ -801,12 +826,8 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
             token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: evm_address
-                .to_vec()
-                .into(),
-            beneficiary: evm_address
-                .to_vec()
-                .into(),
+            sender: evm_address.to_vec().into(),
+            beneficiary: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -835,7 +856,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
@@ -845,7 +866,6 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         recv_packet_data.err()
     );
     println!("Received packet data: {:?}", recv_packet_data);
-
 
     let snake_nft = ctx
         .dst
@@ -859,26 +879,23 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         snake_nft, random_token_id, evm_address
     );
 
-
     // Check random_token_id is ours or not now
-    let res = ctx.dst.nft_owner_of(
-        snake_nft,
-        evm_address.into(),
-                random_token_id.into(),
-                evm_provider.clone()
-            ).await;
+    let res = ctx
+        .dst
+        .nft_owner_of(
+            snake_nft,
+            evm_address.into(),
+            random_token_id.into(),
+            evm_provider.clone(),
+        )
+        .await;
     let is_ours: bool = res
-        .unwrap_or_else(|e| {
-            panic!("Failed to check NFT ownership after stake request: {:?}", e)
-        });
+        .unwrap_or_else(|e| panic!("Failed to check NFT ownership after stake request: {:?}", e));
 
     assert!(is_ours, "NFT ownership check returned false");
 
     println!("is ours: {}", is_ours);
-        
 }
-
-
 
 async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     println!("DUMMY NUMBER: {:?}", dummy_number);
@@ -918,7 +935,12 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
 
     let governance_token = ctx
         .dst
-        .setup_governance_token(eth_zkgm_contract.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            eth_zkgm_contract.into(),
+            pair.dest,
+            img,
+            evm_provider.clone(),
+        )
         .await;
 
     assert!(
@@ -939,7 +961,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
-            &evm_provider
+            &evm_provider,
         )
         .await
         .unwrap();
@@ -950,11 +972,8 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         version: INSTR_VERSION_2,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrderV2 {
-            sender: cosmos_address_bytes.clone()
-                .into(),
-            receiver: evm_address
-                .to_vec()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
@@ -983,14 +1002,13 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
-            Bech32::from_str(UNION_ZKGM_ADDRESS)
-                .unwrap(),
+            Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
             (bin_msg, funds).into(),
             &ctx.dst,
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            cosmos_provider
+            cosmos_provider,
         )
         .await;
 
@@ -1001,7 +1019,10 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     );
 
     println!("Received packet data: {:?}", recv_packet_data);
-    println!("Calling approve on quote token: {:?} -> from account: {:?}", quote_token_addr, evm_address);
+    println!(
+        "Calling approve on quote token: {:?} -> from account: {:?}",
+        quote_token_addr, evm_address
+    );
 
     let approve_tx_hash = ctx
         .dst
@@ -1009,14 +1030,15 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             quote_token_addr.into(),
             eth_zkgm_contract.into(),
             U256::from(100000000000u64),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
     assert!(
         approve_tx_hash.is_ok(),
         "Failed to send approve transaction: {:?}, from_account: {:?}",
-        approve_tx_hash.err(), evm_address
+        approve_tx_hash.err(),
+        evm_address
     );
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
@@ -1032,12 +1054,8 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: evm_address
-                .to_vec()
-                .into(),
-            beneficiary: evm_address
-                .to_vec()
-                .into(),
+            sender: evm_address.to_vec().into(),
+            beneficiary: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -1066,7 +1084,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
@@ -1076,7 +1094,6 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         recv_packet_data.err()
     );
     println!("Received packet data: {:?}", recv_packet_data);
-
 
     let snake_nft = ctx
         .dst
@@ -1091,21 +1108,21 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     );
 
     // Check random_token_id is ours or not now
-    let res = ctx.dst.nft_owner_of(
-        snake_nft,
-        evm_address.into(),
-                random_token_id.into(),
-                evm_provider.clone()
-            ).await;
+    let res = ctx
+        .dst
+        .nft_owner_of(
+            snake_nft,
+            evm_address.into(),
+            random_token_id.into(),
+            evm_provider.clone(),
+        )
+        .await;
     let is_ours: bool = res
-        .unwrap_or_else(|e| {
-            panic!("Failed to check NFT ownership after stake request: {:?}", e)
-        });
+        .unwrap_or_else(|e| panic!("Failed to check NFT ownership after stake request: {:?}", e));
 
     assert!(is_ours, "NFT ownership check returned false");
 
     println!("is ours: {}", is_ours);
-
 
     let approve_tx_hash = ctx
         .dst
@@ -1113,17 +1130,17 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             snake_nft.into(),
             eth_zkgm_contract.into(),
             random_token_id.into(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
     assert!(
         approve_tx_hash.is_ok(),
         "Failed to send approve transaction for NFT: {:?}, from_account: {:?}",
-        approve_tx_hash.err(), evm_address
+        approve_tx_hash.err(),
+        evm_address
     );
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
-
 
     let instruction_unstake = InstructionEvm {
         version: INSTR_VERSION_0,
@@ -1134,8 +1151,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: cosmos_address_bytes.clone()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -1153,7 +1169,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             instruction_unstake.clone(),
         )
         .clear_decoder();
-    
+
     // let call = call.with_cloned_provider();
     let recv_unstake = ctx
         .send_and_recv_unstake::<evm::Module, cosmos::Module>(
@@ -1163,14 +1179,12 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider
+            evm_provider,
         )
         .await;
 
     println!("Received packet data: {:?}", recv_unstake);
-
 }
-
 
 async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     println!("DUMMY NUMBER: {:?}", dummy_number);
@@ -1210,7 +1224,12 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     let governance_token = ctx
         .dst
-        .setup_governance_token(eth_zkgm_contract.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            eth_zkgm_contract.into(),
+            pair.dest,
+            img,
+            evm_provider.clone(),
+        )
         .await;
 
     assert!(
@@ -1231,7 +1250,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
-            &evm_provider
+            &evm_provider,
         )
         .await
         .unwrap();
@@ -1242,11 +1261,8 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         version: INSTR_VERSION_2,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrderV2 {
-            sender: cosmos_address_bytes.clone()
-                .into(),
-            receiver: evm_address
-                .to_vec()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
@@ -1275,14 +1291,13 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
-            Bech32::from_str(UNION_ZKGM_ADDRESS)
-                .unwrap(),
+            Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
             (bin_msg, funds).into(),
             &ctx.dst,
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            cosmos_provider
+            cosmos_provider,
         )
         .await;
 
@@ -1293,7 +1308,10 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     );
 
     println!("Received packet data: {:?}", recv_packet_data);
-    println!("Calling approve on quote token: {:?} -> from account: {:?}", quote_token_addr, evm_address);
+    println!(
+        "Calling approve on quote token: {:?} -> from account: {:?}",
+        quote_token_addr, evm_address
+    );
 
     let approve_tx_hash = ctx
         .dst
@@ -1301,14 +1319,15 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             quote_token_addr.into(),
             eth_zkgm_contract.into(),
             U256::from(100000000000u64),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
     assert!(
         approve_tx_hash.is_ok(),
         "Failed to send approve transaction: {:?}, from_account: {:?}",
-        approve_tx_hash.err(), evm_address
+        approve_tx_hash.err(),
+        evm_address
     );
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
@@ -1324,12 +1343,8 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: evm_address
-                .to_vec()
-                .into(),
-            beneficiary: evm_address
-                .to_vec()
-                .into(),
+            sender: evm_address.to_vec().into(),
+            beneficiary: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -1358,7 +1373,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
@@ -1368,7 +1383,6 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         recv_packet_data.err()
     );
     println!("Received packet data: {:?}", recv_packet_data);
-
 
     let snake_nft = ctx
         .dst
@@ -1383,21 +1397,21 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     );
 
     // Check random_token_id is ours or not now
-    let res = ctx.dst.nft_owner_of(
-        snake_nft,
-        evm_address.into(),
-                random_token_id.into(),
-                evm_provider.clone()
-            ).await;
+    let res = ctx
+        .dst
+        .nft_owner_of(
+            snake_nft,
+            evm_address.into(),
+            random_token_id.into(),
+            evm_provider.clone(),
+        )
+        .await;
     let is_ours: bool = res
-        .unwrap_or_else(|e| {
-            panic!("Failed to check NFT ownership after stake request: {:?}", e)
-        });
+        .unwrap_or_else(|e| panic!("Failed to check NFT ownership after stake request: {:?}", e));
 
     assert!(is_ours, "NFT ownership check returned false");
 
     println!("is ours: {}", is_ours);
-
 
     let approve_tx_hash = ctx
         .dst
@@ -1405,17 +1419,17 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             snake_nft.into(),
             eth_zkgm_contract.into(),
             random_token_id.into(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
     assert!(
         approve_tx_hash.is_ok(),
         "Failed to send approve transaction for NFT: {:?}, from_account: {:?}",
-        approve_tx_hash.err(), evm_address
+        approve_tx_hash.err(),
+        evm_address
     );
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
-
 
     let instruction_unstake = InstructionEvm {
         version: INSTR_VERSION_0,
@@ -1426,8 +1440,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: cosmos_address_bytes.clone()
-                .into(),
+            sender: cosmos_address_bytes.clone().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -1445,7 +1458,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             instruction_unstake.clone(),
         )
         .clear_decoder();
-    
+
     // let call = call.with_cloned_provider();
     let recv_unstake = ctx
         .send_and_recv_unstake::<evm::Module, cosmos::Module>(
@@ -1455,7 +1468,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await;
 
@@ -1463,6 +1476,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     // Now we should withdraw the NFT from the stake manager
 
+    tokio::time::sleep(Duration::from_secs(150)).await; // 2min is the withdraw min time
 
     let instruction_withdraw = InstructionEvm {
         version: INSTR_VERSION_0,
@@ -1471,12 +1485,8 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: evm_address
-                .to_vec()
-                .into(),
-            beneficiary: evm_address
-                .to_vec()
-                .into(),
+            sender: evm_address.to_vec().into(),
+            beneficiary: evm_address.to_vec().into(),
         }
         .abi_encode_params()
         .into(),
@@ -1500,7 +1510,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             call_unstake,
             &ctx.src,
             Duration::from_secs(360),
-            evm_provider
+            evm_provider,
         )
         .await;
 
@@ -1510,9 +1520,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         recv_withdraw.err()
     );
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
-
 }
-
 
 // #[tokio::test]
 // async fn send_stake_and_unstake_from_evm_to_union0() {
@@ -1534,15 +1542,12 @@ async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
 //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap(0).await;
 // }
 
-
 // #[tokio::test]
 // async fn from_evm_to_union_stake0() {
 //     self::test_stake_from_evm_to_union(0).await;
 // }
 
-
 // #[tokio::test]
 // async fn from_evm_to_union_stake1() {
 //     self::test_stake_from_evm_to_union(1).await;
 // }
-
