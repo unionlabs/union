@@ -2616,7 +2616,6 @@ name = "bob-client"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bob-types",
  "hex-literal",
  "tokio",
  "tracing",
@@ -16805,6 +16804,7 @@ dependencies = [
  "base-client",
  "base-light-client-types",
  "base-verifier",
+ "bob-types",
  "embed-commit",
  "enumorph",
  "ethereum-light-client-types",
@@ -17185,6 +17185,7 @@ name = "voyager-finality-module-base"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "base-client",
  "embed-commit",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
@@ -17230,9 +17231,6 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bob-client",
- "bob-light-client-types",
- "bob-types",
- "bob-verifier",
  "embed-commit",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",

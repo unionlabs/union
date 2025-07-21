@@ -6,13 +6,11 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
-use bob_client::{finalized_execution_block_of_l1_height, output_index_of_l2_block_on_l1_block};
 use bob_light_client_types::{
     header::{L2Header, OutputRootProof},
     ClientState, Header,
 };
-use bob_types::{L2_OUTPUTS_SLOT, L2_TO_L1_MESSAGE_PASSER};
-use bob_verifier::FINALIZATION_PERIOD_SECONDS;
+use bob_types::L2_TO_L1_MESSAGE_PASSER;
 use call::FetchL2Update;
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
@@ -26,7 +24,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
     never::Never,
-    primitives::{H160, H256, U256},
+    primitives::{encoding::HexPrefixed, ByteArrayExt, H160, H256, U256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -41,7 +39,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     types::RawClientId,
     vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit},
     DefaultCmd, ExtensionsExt, VoyagerClient,
@@ -60,7 +58,9 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub l2_oracle_address: H160,
+    pub l1_dispute_game_factory_proxy: H160,
+    pub dispute_game_factory_dispute_game_list_slot: U256,
+    pub fault_dispute_game_code_root_claim_index: usize,
 
     pub l1_provider: DynProvider,
     pub l2_provider: DynProvider<AnyNetwork>,
@@ -74,8 +74,9 @@ pub struct Module {
 pub struct Config {
     pub l2_chain_id: ChainId,
 
-    /// The L2 oracle contract on the L1.
-    pub l2_oracle_address: H160,
+    pub l1_dispute_game_factory_proxy: H160,
+    pub dispute_game_factory_dispute_game_list_slot: U256,
+    pub fault_dispute_game_code_root_claim_index: usize,
 
     /// The RPC endpoint for the settlement (L1) execution chain.
     pub l1_rpc_url: String,
@@ -108,21 +109,25 @@ impl Module {
             ibc_handler_address = %self.ibc_handler_address
         )
     )]
-    pub async fn fetch_oracle_account_proof(&self, block_number: u64) -> RpcResult<AccountProof> {
+    pub async fn fetch_dispute_game_factory_account_proof(
+        &self,
+        block_number: u64,
+    ) -> RpcResult<AccountProof> {
         let account_update = self
             .l1_provider
-            .get_proof(self.l2_oracle_address.into(), vec![])
+            .get_proof(self.l1_dispute_game_factory_proxy.into(), vec![])
             .block_id(block_number.into())
             .await
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    ErrorReporter(e).with_message("error fetching oracle account proof"),
+                    ErrorReporter(e)
+                        .with_message("error fetching dispute game factory account proof"),
                     None::<()>,
                 )
             })?;
 
-        debug!(storage_hash = %account_update.storage_hash, "fetched account update");
+        debug!(storage_hash = %account_update.storage_hash, "fetched dispute game factory account update");
 
         Ok(AccountProof {
             storage_root: account_update.storage_hash.into(),
@@ -134,18 +139,14 @@ impl Module {
         })
     }
 
-    pub async fn fetch_output_proposal_proof(
-        &self,
-        output_index: u32,
-        height: u64,
-    ) -> RpcResult<StorageProof> {
+    pub async fn fetch_game_proof(&self, game_index: U256, height: u64) -> RpcResult<StorageProof> {
         let [proof]: [_; 1] = self
             .l1_provider
             .get_proof(
-                self.l2_oracle_address.into(),
-                vec![bob_verifier::compute_output_proposal_slot(
-                    L2_OUTPUTS_SLOT.into(),
-                    output_index,
+                self.l1_dispute_game_factory_proxy.into(),
+                vec![bob_verifier::compute_game_slot(
+                    self.dispute_game_factory_dispute_game_list_slot,
+                    game_index,
                 )
                 .to_be_bytes()
                 .into()],
@@ -194,10 +195,14 @@ impl Plugin for Module {
 
         Ok(Self {
             chain_id: l2_chain_id,
-            l2_oracle_address: config.l2_oracle_address,
             l1_provider,
             l2_provider,
             ibc_handler_address: config.ibc_handler_address,
+            l1_dispute_game_factory_proxy: config.l1_dispute_game_factory_proxy,
+            dispute_game_factory_dispute_game_list_slot: config
+                .dispute_game_factory_dispute_game_list_slot,
+            fault_dispute_game_code_root_claim_index: config
+                .fault_dispute_game_code_root_claim_index,
         })
     }
 
@@ -312,6 +317,43 @@ impl PluginServer<ModuleCall, Never> for Module {
 }
 
 impl Module {
+    async fn fetch_game_account_code(&self, game_account: H160) -> RpcResult<Vec<u8>> {
+        self.l2_provider
+            .get_code_at(game_account.into())
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching game account code: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })
+            .map(|x| x.into())
+    }
+
+    async fn fetch_game_account_proof(
+        &self,
+        height: u64,
+        game_account: H160,
+    ) -> RpcResult<AccountProof> {
+        let proof = self
+            .l2_provider
+            .get_proof(game_account.into(), vec![])
+            .block_id(height.into())
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching game account proof: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?;
+        Ok(AccountProof {
+            storage_root: proof.storage_hash.into(),
+            proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
+        })
+    }
+
     async fn fetch_ibc_contract_root_proof(&self, height: u64) -> RpcResult<AccountProof> {
         let proof = self
             .l2_provider
@@ -331,10 +373,10 @@ impl Module {
         })
     }
 
-    async fn fetch_output_root_proof(&self, height: u64) -> RpcResult<OutputRootProof> {
+    async fn fetch_output_root_proof(&self, l2_height: u64) -> RpcResult<OutputRootProof> {
         let l2_block = self
             .l2_provider
-            .get_block(height.into())
+            .get_block(l2_height.into())
             .await
             .map_err(|e| {
                 ErrorObject::owned(
@@ -347,7 +389,7 @@ impl Module {
         let message_passer_storage_root = self
             .l2_provider
             .get_proof(L2_TO_L1_MESSAGE_PASSER.into(), vec![])
-            .block_id(height.into())
+            .block_id(l2_height.into())
             .await
             .map_err(|e| {
                 ErrorObject::owned(
@@ -407,13 +449,21 @@ impl Module {
 
         debug!(?bob_client_state_info);
 
-        let ClientState::V1(bob_client_state) = voy_client
+        let ClientState::V2(bob_client_state) = voy_client
             .decode_client_state::<IbcUnion, ClientState>(
                 bob_client_state_info.client_type.clone(),
                 bob_client_state_info.ibc_interface,
                 raw_bob_client_state,
             )
-            .await?;
+            .await?
+        else {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "expected bob client state v2".to_string(),
+                None::<()>,
+            )
+            .into());
+        };
 
         debug!(?bob_client_state);
 
@@ -521,13 +571,21 @@ impl Module {
 
         debug!(?bob_client_state_info);
 
-        let ClientState::V1(bob_client_state) = voy_client
+        let ClientState::V2(bob_client_state) = voy_client
             .decode_client_state::<IbcUnion, ClientState>(
                 bob_client_state_info.client_type.clone(),
                 bob_client_state_info.ibc_interface,
                 raw_bob_client_state,
             )
-            .await?;
+            .await?
+        else {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "expected bob client state v2".to_string(),
+                None::<()>,
+            )
+            .into());
+        };
 
         debug!(?bob_client_state);
 
@@ -541,36 +599,56 @@ impl Module {
 
         let l1_height = l1_client_meta.counterparty_height.height();
 
-        let l2_block = finalized_execution_block_of_l1_height(
+        let l2_block_number = bob_client::finalized_l2_block_number_of_l1_block_number(
             &self.l1_provider,
-            &self.l2_provider,
-            self.l2_oracle_address,
-            FINALIZATION_PERIOD_SECONDS,
+            self.l1_dispute_game_factory_proxy,
             l1_height,
         )
         .await
         .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
 
-        // Guarantee to exist because we know the latest committed exists.
-        let output_index = output_index_of_l2_block_on_l1_block(
-            &self.l1_provider,
-            self.l2_oracle_address,
-            l2_block.header.number,
-            l1_height,
-        )
-        .await
-        .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+        let l2_block = self
+            .l2_provider
+            .get_block(l2_block_number.into())
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching finalized l2 block"),
+                    None::<()>,
+                )
+            })?
+            .expect("block should exist");
 
-        // Extract proofs for the output proposal of the L2 oracle contract on
-        // the L1.
-        let output_proposal_proof = self
-            .fetch_output_proposal_proof(output_index, l1_height)
-            .await?;
-        let l2_oracle_account_proof = self.fetch_oracle_account_proof(l1_height).await?;
-
-        // Extract proofs for the preimage of the output proposal committed on
-        // L1 (extracted above) and IBC handle contract on the L2.
         let output_root_proof = self.fetch_output_root_proof(l2_block.header.number).await?;
+
+        let game_index = bob_client::latest_game_of_l1_block_number(
+            &self.l1_provider,
+            l1_height,
+            self.l1_dispute_game_factory_proxy,
+        )
+        .await
+        .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+
+        let game_index = game_index - U256::ONE;
+
+        let dispute_game_factory_account_proof = self
+            .fetch_dispute_game_factory_account_proof(l1_height)
+            .await
+            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+
+        let game_proof = self.fetch_game_proof(game_index, l1_height).await?;
+
+        let game_id = game_proof.value.to_be_bytes();
+        // TODO: introduce a gameId type with a tryfrom
+        // See https://github.com/ethereum-optimism/optimism/blob/4a7cb8a198a1f027e739d2e51dc170faf02b5d28/packages/contracts-bedrock/src/dispute/lib/LibUDT.sol#L70-L79
+        let game_account_address = H160::<HexPrefixed>::new(game_id.array_slice::<12, 20>());
+
+        let game_account_proof = self
+            .fetch_game_account_proof(l1_height, game_account_address)
+            .await?;
+        let game_account_code = self.fetch_game_account_code(game_account_address).await?;
+
         let l2_ibc_account_proof = self
             .fetch_ibc_contract_root_proof(l2_block.header.number)
             .await?;
@@ -582,7 +660,6 @@ impl Module {
                 },
                 into_value(Header {
                     l1_height,
-                    l2_oracle_account_proof,
                     l2_ibc_account_proof,
                     l2_header: L2Header {
                         parent_hash: l2_block.header.parent_hash.into(),
@@ -613,11 +690,14 @@ impl Module {
                             .parent_beacon_block_root
                             .unwrap()
                             .into(),
-                        requests_hash: l2_block.header.requests_hash.map(Into::into).into(),
+                        requests_hash: l2_block.header.requests_hash.unwrap().into(),
                     },
-                    l2_oracle_l2_outputs_slot_proof: output_proposal_proof,
-                    output_index,
+                    dispute_game_factory_account_proof,
                     output_root_proof,
+                    game_index,
+                    game_proof,
+                    game_account_proof,
+                    game_account_code: game_account_code.into(),
                 }),
             )],
         }))

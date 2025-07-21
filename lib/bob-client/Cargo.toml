@@ -13,7 +13,6 @@ workspace = true
 
 [dependencies]
 alloy     = { workspace = true, features = ["sol-types", "contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-bob-types = { workspace = true }
 tracing   = { workspace = true, features = ["attributes"] }
 unionlabs = { workspace = true, features = ["ethabi"] }
 

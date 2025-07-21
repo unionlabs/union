@@ -1,5 +1,4 @@
 use bob_light_client_types::{ClientState, ConsensusState, Header};
-use bob_verifier::FINALIZATION_PERIOD_SECONDS;
 use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
@@ -68,12 +67,18 @@ impl IbcClient for BobLightClient {
         consensus_state.timestamp
     }
 
-    fn get_latest_height(ClientState::V1(client_state): &Self::ClientState) -> u64 {
-        client_state.latest_height
+    fn get_latest_height(client_state: &Self::ClientState) -> u64 {
+        match client_state {
+            ClientState::V1(v1) => v1.latest_height,
+            ClientState::V2(v2) => v2.latest_height,
+        }
     }
 
-    fn get_counterparty_chain_id(ClientState::V1(client_state): &Self::ClientState) -> String {
-        client_state.chain_id.to_string()
+    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+        match client_state {
+            ClientState::V1(v1) => v1.chain_id.to_string(),
+            ClientState::V2(v2) => v2.chain_id.to_string(),
+        }
     }
 
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
@@ -100,7 +105,9 @@ impl IbcClient for BobLightClient {
         header: Self::Header,
         _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
-        let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
+        let ClientState::V2(mut client_state) = ctx.read_self_client_state()? else {
+            panic!("impossible")
+        };
 
         let l1_consensus_state = ctx
             .read_consensus_state::<EthereumLightClient>(
@@ -109,14 +116,8 @@ impl IbcClient for BobLightClient {
             )
             .map_err(Into::<Error>::into)?;
 
-        bob_verifier::verify_header(
-            &client_state,
-            &header,
-            l1_consensus_state.state_root,
-            ctx.env.block.time.seconds(),
-            FINALIZATION_PERIOD_SECONDS,
-        )
-        .map_err(Into::<Error>::into)?;
+        bob_verifier::verify_header(&client_state, &header, l1_consensus_state.state_root)
+            .map_err(Into::<Error>::into)?;
 
         let update_height = header.l2_header.number.try_into().expect("impossible");
 
@@ -130,7 +131,7 @@ impl IbcClient for BobLightClient {
 
         if client_state.latest_height < update_height {
             client_state.latest_height = update_height;
-            Ok(state_update.overwrite_client_state(ClientState::V1(client_state)))
+            Ok(state_update.overwrite_client_state(ClientState::V2(client_state)))
         } else {
             Ok(state_update)
         }

@@ -2,7 +2,7 @@ use ethereum_light_client_types::{AccountProof, StorageProof};
 use rlp::Encodable;
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{H160, H2048, H256, H64, H72, U256},
+    primitives::{Bytes, H160, H2048, H256, H64, H72, U256},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -10,11 +10,13 @@ use unionlabs::{
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     pub l1_height: u64,
-    pub l2_oracle_account_proof: AccountProof,
-    pub l2_oracle_l2_outputs_slot_proof: StorageProof,
+    pub dispute_game_factory_account_proof: AccountProof,
+    pub game_index: U256,
+    pub game_proof: StorageProof,
+    pub game_account_proof: AccountProof,
+    pub game_account_code: Bytes,
     pub l2_ibc_account_proof: AccountProof,
     pub l2_header: L2Header,
-    pub output_index: u32,
     pub output_root_proof: OutputRootProof,
 }
 
@@ -77,36 +79,7 @@ pub struct L2Header {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub excess_blob_gas: u64,
     pub parent_beacon_block_root: H256,
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Nullable::is_none")
-    )]
-    pub requests_hash: Nullable<H256>,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-#[derive(Default, Debug, Clone, PartialEq)]
-pub struct Nullable<T>(Option<T>);
-
-impl<T> Nullable<T> {
-    pub fn is_none(&self) -> bool {
-        self.0.is_none()
-    }
-}
-
-impl<T> From<Option<T>> for Nullable<T> {
-    fn from(value: Option<T>) -> Self {
-        Self(value)
-    }
-}
-
-impl<T: Encodable> Encodable for Nullable<T> {
-    fn rlp_append(&self, s: &mut rlp::RlpStream) {
-        if let Some(ref value) = self.0 {
-            s.append(value);
-        }
-    }
+    pub requests_hash: H256,
 }
 
 impl L2Header {
@@ -125,39 +98,39 @@ mod tests {
     #[test]
     fn hash() {
         let header = L2Header {
-            parent_hash: hex!("2e0fa901f264102bd20c86822222f0e3be0e72517ddf8ecae5bb09717c542f33").into(),
+            parent_hash: hex!("327686d326438b9f95b8300c1ceed12050a3d685fcfbe895f23f8a812e57ee15").into(),
             sha3_uncles: hex!("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347").into(),
             miner: hex!("4200000000000000000000000000000000000011").into(),
-            state_root: hex!("1965c4276f2ee3e5e7f4190c1302835c630afeb7b1078f595ad80206d0901fc2").into(),
+            state_root: hex!("096c1251fad148c6e8d39934dfb1b1e677232ab7b7a7ab294195a99826ec2e2b").into(),
             transactions_root: hex!(
-                "75418567809ce6cb380eebb1895034e31751b2eb691c2f4b170de50d25e8c061"
+                "333c9ba379b9c46686ca661ebb6a033f9d5a0cdc11f00b175d2e1706c34f9614"
             ).into(),
             receipts_root: hex!(
-                "0d98745240a828bea4726880dca08008c87f95f6a55f7524861bb23917b0b6e7"
+                "4d8e11add88fec0151369ca910de47451e314d30d7c7fd81d1906a34ca10de0b"
             ).into(),
-            logs_bloom: Box::new(hex!("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").into()),
+            logs_bloom: Box::new(hex!("57bbb78267e7bf5d0cfe97ffb7ee6bd5fefed75fb6efbf3dafd77bc8febbbf7cedeed71e5cdd7df43763f8fdcf3eb77bf47f8b749eedfb8cffffaf0ff7a7fbe0b777dd9bb27ffc2d6d7ef2eebd5768fee7efacafcbffeff7ec7ef7dcbbfa3674ffbecfb61f7fd7ef7b3feaabef1f9e2b595f7f6f4efd979cde6bb1df157f97eff7cf2e2bffe57fcecf6bdf3af80efcd3b773ffefff7bd799fdeeb87fffd6d5fb1fef195ff7f8f3a9d7fff7425ef5a5fffdf179ba65be1dddb3efbb5b8d9efbb63a548ffed9fbf577cbc92fdd276b7fdf750fc7afffda3bf2bfbe07877b9fffb6c6debedbedb5f77b7ffdbfefbadf77a5eda2bfe62ffe5effee58dbc3575f2bdf").into()),
             difficulty: 0_u64.into(),
-            number: 16649144_u64.into(),
-            gas_limit: 30000000,
-            gas_used: 64887,
-            timestamp: 1746160275,
-            extra_data: hex!("00000000fa00000006").into(),
-            mix_hash: hex!("a20ab72103cd88aefd65cb31a0c470a6a88e53b4d4da00b27503deb4580e128c").into(),
+            number: 32376940_u64.into(),
+            gas_limit: 0x8f0d180,
+            gas_used: 0x254cdb6,
+            timestamp: 0x68666dbb,
+            extra_data: hex!("000000003200000003").into(),
+            mix_hash: hex!("40bfcd42c3cb3b7966a467ce8cdc2638cbd6b03558448a82a47b42ad5504ef72").into(),
             nonce: hex!("0000000000000000").into(),
-            base_fee_per_gas: 252_u64.into(),
+            base_fee_per_gas: 0x326e8f_u64.into(),
             withdrawals_root: hex!(
-                "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+                "6ee1a180fdbccc2e70984ac91116d64c58feb817a417a81500b9b0cbd69a9373"
             ).into(),
             blob_gas_used: 0,
             excess_blob_gas: 0,
             parent_beacon_block_root: hex!(
-                "9467bee415d6385906410d33fc263b32ef2d4880f4a6c9559db669acfd325213"
+                "4fccae25b4204cb426da9b8b2961be949be574f964e000c6b64627e7c98be4c3"
             ).into(),
-            requests_hash: Nullable(None),
+            requests_hash: hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").into(),
         };
 
         let hash: H256 =
-            hex!("8975fdc9d79a1ad20b7cca844ef06f25b4a61e76c8d0cef32121aff90dbdef53").into();
+            hex!("f5b06eb8b0bacf8b030dbd596964b6bf346f7602f906f57db958e12c726367f1").into();
 
         assert_eq!(hash, header.hash());
     }
