@@ -1,17 +1,16 @@
 use std::{marker::PhantomData, panic::AssertUnwindSafe, str::FromStr, time::Duration};
 
 use alloy::{
-    transports::RpcError,
     contract::{Error, RawCallBuilder, Result},
     network::{AnyNetwork, EthereumWallet},
     providers::{
-        fillers::RecommendedFillers, DynProvider, PendingTransactionError, Provider,
-        ProviderBuilder, PendingTransaction
+        fillers::RecommendedFillers, DynProvider, PendingTransaction, PendingTransactionError,
+        Provider, ProviderBuilder,
     },
     rpc::types::Filter,
     signers::local::LocalSigner,
     sol_types::SolEventInterface,
-    transports::TransportError,
+    transports::{RpcError, TransportError},
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
@@ -184,35 +183,41 @@ impl<'a> Module<'a> {
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
-        Ok(self.wait_for_event(
-            |e| match e {
-                IbcEvents::CreateClient(ev) => Some(helpers::CreateClientConfirm {
-                    client_id: ev.client_id,
-                }),
-                _ => None,
-            },
-            timeout,
-            1
-        )
-        .await?.pop().unwrap())
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::CreateClient(ev) => Some(helpers::CreateClientConfirm {
+                        client_id: ev.client_id,
+                    }),
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn wait_for_connection_open_confirm(
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        Ok(self.wait_for_event(
-            |e| match e {
-                IbcEvents::ConnectionOpenConfirm(ev) => Some(helpers::ConnectionConfirm {
-                    connection_id: ev.connection_id,
-                    counterparty_connection_id: ev.counterparty_connection_id,
-                }),
-                _ => None,
-            },
-            timeout,
-            1
-        )
-        .await?.pop().unwrap())
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::ConnectionOpenConfirm(ev) => Some(helpers::ConnectionConfirm {
+                        connection_id: ev.connection_id,
+                        counterparty_connection_id: ev.counterparty_connection_id,
+                    }),
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn wait_for_channel_open_confirm(
@@ -229,7 +234,7 @@ impl<'a> Module<'a> {
                 _ => None,
             },
             timeout,
-            expected_event_count
+            expected_event_count,
         )
         .await
     }
@@ -239,40 +244,49 @@ impl<'a> Module<'a> {
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        Ok(self.wait_for_event(
-            |e| match e {
-                IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => {
-                    Some(helpers::PacketRecv {
-                        packet_hash: ev.packet_hash.try_into().unwrap(),
-                    })
-                }
-                _ => None,
-            },
-            timeout,
-            1
-        )
-        .await?.pop().unwrap())
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::PacketRecv(ev)
+                        if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
+                    {
+                        Some(helpers::PacketRecv {
+                            packet_hash: ev.packet_hash.try_into().unwrap(),
+                        })
+                    }
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
-
 
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketAck> {
-        Ok(self.wait_for_event(
-            |e| match e {
-                IbcEvents::PacketAck(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => {
-                    Some(helpers::PacketAck {
-                        packet_hash: ev.packet_hash.try_into().unwrap(),
-                    })
-                }
-                _ => None,
-            },
-            timeout,
-            1
-        )
-        .await?.pop().unwrap())
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::PacketAck(ev)
+                        if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
+                    {
+                        Some(helpers::PacketAck {
+                            packet_hash: ev.packet_hash.try_into().unwrap(),
+                        })
+                    }
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn predict_wrapped_token(
@@ -280,7 +294,7 @@ impl<'a> Module<'a> {
         ucs03_addr_on_evm: H160,
         channel: ChannelId,
         token: Vec<u8>,
-        provider: &DynProvider<AnyNetwork>
+        provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         // let (_,signer) = self.get_provider().await;
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
@@ -303,7 +317,7 @@ impl<'a> Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata: zkgm::FungibleAssetMetadata,
-        provider: &DynProvider<AnyNetwork>
+        provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
         let call = ucs03_zkgm.predictWrappedTokenV2(
@@ -319,14 +333,13 @@ impl<'a> Module<'a> {
         Ok(wrapped_token)
     }
 
-
     pub async fn predict_wrapped_token_from_metadata_image_v2(
         &self,
         ucs03_addr_on_evm: H160,
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
-        provider: &DynProvider<AnyNetwork>
+        provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
         let call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
@@ -453,11 +466,7 @@ impl<'a> Module<'a> {
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
         // wait until we get a wallet clone out of the Option
         let wallet = loop {
-            if let Some(w) = self
-                .keyring
-                .with(|w| async move { w.clone() })
-                .await
-            {
+            if let Some(w) = self.keyring.with(|w| async move { w.clone() }).await {
                 break w;
             } else {
                 tokio::time::sleep(Duration::from_secs(10)).await;
@@ -482,7 +491,6 @@ impl<'a> Module<'a> {
         )
     }
 
-
     pub async fn wait_for_tx_inclusion(
         &self,
         provider: &DynProvider<AnyNetwork>,
@@ -493,10 +501,8 @@ impl<'a> Module<'a> {
             let maybe_rcpt = provider
                 .get_transaction_receipt(tx_hash.into())
                 .await
-                .map_err(|rpc_err| {
-                    TxSubmitError::InclusionError
-                })?;
-  
+                .map_err(|rpc_err| TxSubmitError::InclusionError)?;
+
             if let Some(rcpt) = maybe_rcpt {
                 println!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
                 return Ok(());
@@ -510,7 +516,6 @@ impl<'a> Module<'a> {
             return Err(TxSubmitError::BatchTooLarge);
         }
     }
-
 
     fn is_nonce_too_low(&self, e: &Error) -> bool {
         if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
@@ -526,7 +531,7 @@ impl<'a> Module<'a> {
         contract: H160,
         spender: H160,
         amount: U256,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H256> {
         let mut attempts = 0;
         let erc = zkgmerc20::ZkgmERC20::new(contract.into(), provider.clone());
@@ -542,11 +547,11 @@ impl<'a> Module<'a> {
                     println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
-                 Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
                     println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
-                 }
+                }
 
                 Err(err) => {
                     return Err(err.into());
@@ -560,7 +565,7 @@ impl<'a> Module<'a> {
         contract: H160,
         spender: H160,
         token_id: U256,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H256> {
         let mut attempts = 0;
         let erc = zkgm::ZkgmERC721::new(contract.into(), provider.clone());
@@ -576,11 +581,11 @@ impl<'a> Module<'a> {
                     println!("Approved spender: {spender:?} for token_id: {token_id:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
-                 Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
                     println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
-                 }
+                }
 
                 Err(err) => {
                     return Err(err.into());
@@ -594,7 +599,7 @@ impl<'a> Module<'a> {
         contract: H160,
         spender: H160,
         token_id: U256,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H256> {
         // let (_,provider) = self.get_provider().await;
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
@@ -608,7 +613,7 @@ impl<'a> Module<'a> {
         contract: H160,
         owner: H160,
         token_id: U256,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<bool> {
         // let (_,provider) = self.get_provider().await;
 
@@ -624,7 +629,7 @@ impl<'a> Module<'a> {
         from: H160,
         to: H160,
         token_id: U256,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H256> {
         // let (_,provider) = self.get_provider().await;
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
@@ -639,7 +644,7 @@ impl<'a> Module<'a> {
     pub async fn deploy_basic_erc20(
         &self,
         spender: H160,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         const BYTECODE: &str = "0x608060405234801561000f575f5ffd5b50604051610b91380380610b9183398101604081905261002e916102f0565b6040518060400160405280600481526020016311dbdb1960e21b8152506040518060400160405280600381526020016211d31160ea1b815250816003908161007691906103c1565b50600461008382826103c1565b50505061009633836100a860201b60201c565b6100a13382846100e5565b50506104a0565b6001600160a01b0382166100d65760405163ec442f0560e01b81525f60048201526024015b60405180910390fd5b6100e15f83836100f7565b5050565b6100f2838383600161021d565b505050565b6001600160a01b038316610121578060025f828254610116919061047b565b909155506101919050565b6001600160a01b0383165f90815260208190526040902054818110156101735760405163391434e360e21b81526001600160a01b038516600482015260248101829052604481018390526064016100cd565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166101ad576002805482900390556101cb565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161021091815260200190565b60405180910390a3505050565b6001600160a01b0384166102465760405163e602df0560e01b81525f60048201526024016100cd565b6001600160a01b03831661026f57604051634a1406b160e11b81525f60048201526024016100cd565b6001600160a01b038085165f90815260016020908152604080832093871683529290522082905580156102ea57826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925846040516102e191815260200190565b60405180910390a35b50505050565b5f5f60408385031215610301575f5ffd5b825160208401519092506001600160a01b038116811461031f575f5ffd5b809150509250929050565b634e487b7160e01b5f52604160045260245ffd5b600181811c9082168061035257607f821691505b60208210810361037057634e487b7160e01b5f52602260045260245ffd5b50919050565b601f8211156100f257805f5260205f20601f840160051c8101602085101561039b5750805b601f840160051c820191505b818110156103ba575f81556001016103a7565b5050505050565b81516001600160401b038111156103da576103da61032a565b6103ee816103e8845461033e565b84610376565b6020601f821160018114610420575f83156104095750848201515b5f19600385901b1c1916600184901b1784556103ba565b5f84815260208120601f198516915b8281101561044f578785015182556020948501946001909201910161042f565b508482101561046c57868401515f19600387901b60f8161c191681555b50505050600190811b01905550565b8082018082111561049a57634e487b7160e01b5f52601160045260245ffd5b92915050565b6106e4806104ad5f395ff3fe608060405234801561000f575f5ffd5b5060043610610090575f3560e01c8063313ce56711610063578063313ce567146100fa57806370a082311461010957806395d89b4114610131578063a9059cbb14610139578063dd62ed3e1461014c575f5ffd5b806306fdde0314610094578063095ea7b3146100b257806318160ddd146100d557806323b872dd146100e7575b5f5ffd5b61009c610184565b6040516100a99190610554565b60405180910390f35b6100c56100c03660046105a4565b610214565b60405190151581526020016100a9565b6002545b6040519081526020016100a9565b6100c56100f53660046105cc565b61022d565b604051601281526020016100a9565b6100d9610117366004610606565b6001600160a01b03165f9081526020819052604090205490565b61009c610250565b6100c56101473660046105a4565b61025f565b6100d961015a366004610626565b6001600160a01b039182165f90815260016020908152604080832093909416825291909152205490565b60606003805461019390610657565b80601f01602080910402602001604051908101604052809291908181526020018280546101bf90610657565b801561020a5780601f106101e15761010080835404028352916020019161020a565b820191905f5260205f20905b8154815290600101906020018083116101ed57829003601f168201915b5050505050905090565b5f3361022181858561026c565b60019150505b92915050565b5f3361023a85828561027e565b6102458585856102ff565b506001949350505050565b60606004805461019390610657565b5f336102218185856102ff565b610279838383600161035c565b505050565b6001600160a01b038381165f908152600160209081526040808320938616835292905220545f198110156102f957818110156102eb57604051637dc7a0d960e11b81526001600160a01b038416600482015260248101829052604481018390526064015b60405180910390fd5b6102f984848484035f61035c565b50505050565b6001600160a01b03831661032857604051634b637e8f60e11b81525f60048201526024016102e2565b6001600160a01b0382166103515760405163ec442f0560e01b81525f60048201526024016102e2565b61027983838361042e565b6001600160a01b0384166103855760405163e602df0560e01b81525f60048201526024016102e2565b6001600160a01b0383166103ae57604051634a1406b160e11b81525f60048201526024016102e2565b6001600160a01b038085165f90815260016020908152604080832093871683529290522082905580156102f957826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b9258460405161042091815260200190565b60405180910390a350505050565b6001600160a01b038316610458578060025f82825461044d919061068f565b909155506104c89050565b6001600160a01b0383165f90815260208190526040902054818110156104aa5760405163391434e360e21b81526001600160a01b038516600482015260248101829052604481018390526064016102e2565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166104e457600280548290039055610502565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161054791815260200190565b60405180910390a3505050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b038116811461059f575f5ffd5b919050565b5f5f604083850312156105b5575f5ffd5b6105be83610589565b946020939093013593505050565b5f5f5f606084860312156105de575f5ffd5b6105e784610589565b92506105f560208501610589565b929592945050506040919091013590565b5f60208284031215610616575f5ffd5b61061f82610589565b9392505050565b5f5f60408385031215610637575f5ffd5b61064083610589565b915061064e60208401610589565b90509250929050565b600181811c9082168061066b57607f821691505b60208210810361068957634e487b7160e01b5f52602260045260245ffd5b50919050565b8082018082111561022757634e487b7160e01b5f52601160045260245ffdfea26469706673582212207cfaf374f2b49d6608fed1bc9f4e741950ec2c77f36bb3d89258c5218167ab4764736f6c634300081e0033";
         let mut code = ethers_hex::decode(BYTECODE.trim_start_matches("0x"))?;
@@ -658,11 +663,11 @@ impl<'a> Module<'a> {
         let mut attempts = 0;
         loop {
             attempts += 1;
-                // let nonce = provider.get_transaction_count(from.into()).await?;
+            // let nonce = provider.get_transaction_count(from.into()).await?;
 
             let mut call = RawCallBuilder::new_raw_deploy(
-                provider.clone(), // your DynProvider<AnyNetwork>
-                code.clone().into(),      // the bytecode
+                provider.clone(),    // your DynProvider<AnyNetwork>
+                code.clone().into(), // the bytecode
             );
             let gas_est = call.estimate_gas().await?;
             call = call.gas((gas_est as f64 * 2.2) as u64);
@@ -670,13 +675,13 @@ impl<'a> Module<'a> {
             match pending {
                 Ok(pending) => {
                     let tx_hash = *pending.tx_hash();
-                    self.wait_for_tx_inclusion(&provider, tx_hash.into()).await?;
+                    self.wait_for_tx_inclusion(&provider, tx_hash.into())
+                        .await?;
                     let receipt = pending.get_receipt().await?;
-
 
                     let address = receipt
                         .contract_address
-                        .expect("deploy didn’t return an address");
+                        .expect("deploy didnt return an address");
                     return Ok(address.into());
                 }
                 Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
@@ -687,7 +692,6 @@ impl<'a> Module<'a> {
                 Err(err) => {
                     return Err(anyhow::anyhow!("Failed to deploy contract: {:?}", err).into());
                 }
-        
             }
         }
     }
@@ -696,7 +700,7 @@ impl<'a> Module<'a> {
         &self,
         _contract: H160,
         msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
-        _provider: &DynProvider<AnyNetwork>
+        _provider: &DynProvider<AnyNetwork>,
     ) -> RpcResult<FixedBytes<32>> {
         let res = self
             .keyring
@@ -706,57 +710,50 @@ impl<'a> Module<'a> {
             })
             .await;
 
-    match res {
-        Some(Ok(tx_hash)) => {
-            let receipt_with = self.provider
-                .get_transaction_receipt(tx_hash.into())
-                .await
-                .map_err(|e| ErrorObjectOwned::owned(
-                    -1,
-                    format!("failed to fetch receipt: {:?}", e),
-                    None::<()>,
-                ))?
-                .ok_or_else(|| ErrorObjectOwned::owned(
-                    -1,
-                    "receipt not found",
-                    None::<()>,
-                ))?;
+        match res {
+            Some(Ok(tx_hash)) => {
+                let receipt_with = self
+                    .provider
+                    .get_transaction_receipt(tx_hash.into())
+                    .await
+                    .map_err(|e| {
+                        ErrorObjectOwned::owned(
+                            -1,
+                            format!("failed to fetch receipt: {:?}", e),
+                            None::<()>,
+                        )
+                    })?
+                    .ok_or_else(|| ErrorObjectOwned::owned(-1, "receipt not found", None::<()>))?;
 
-            let logs = &receipt_with
-                .inner
-                .inner
-                .inner
-                .receipt
-                .logs;        
+                let logs = &receipt_with.inner.inner.inner.receipt.logs;
 
-            for raw in logs {
-                if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
-                    if let IbcEvents::PacketSend(ev) = alloy_log.data {
-                        return Ok(ev.packet_hash.into());
+                for raw in logs {
+                    if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
+                        if let IbcEvents::PacketSend(ev) = alloy_log.data {
+                            return Ok(ev.packet_hash.into());
+                        }
                     }
                 }
+
+                Err(ErrorObjectOwned::owned(
+                    -1,
+                    "no PacketSend event found in transaction",
+                    None::<()>,
+                ))
             }
 
-            Err(ErrorObjectOwned::owned(
+            Some(Err(e)) => Err(ErrorObjectOwned::owned(
                 -1,
-                "no PacketSend event found in transaction",
+                format!("transaction submission failed: {:?}", e),
                 None::<()>,
-            ))
+            )),
+
+            None => Err(ErrorObjectOwned::owned(
+                -1,
+                "no signers available",
+                None::<()>,
+            )),
         }
-
-        Some(Err(e)) => Err(ErrorObjectOwned::owned(
-            -1,
-            format!("transaction submission failed: {:?}", e),
-            None::<()>,
-        )),
-
-        None => Err(ErrorObjectOwned::owned(
-            -1,
-            "no signers available",
-            None::<()>,
-        )),
-    }
-
     }
 
     pub async fn submit_transaction(
@@ -885,7 +882,7 @@ impl<'a> Module<'a> {
     pub async fn predict_stake_manager_address(
         &self,
         zkgm_addr: H160,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         // 1) build a typed alloy client
         // let (_,provider) = self.get_provider().await;
@@ -901,18 +898,20 @@ impl<'a> Module<'a> {
         zkgm_addr: H160,
         channel_id: u32,
         metadata_image: FixedBytes<32>,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
         // 1) build a typed alloy client
         // let (_,provider) = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
 
         let pending = zkgm
-            .registerGovernanceToken(channel_id,
+            .registerGovernanceToken(
+                channel_id,
                 zkgm::GovernanceToken {
                     unwrappedToken: b"muno".into(),
                     metadataImage: metadata_image.into(),
-                },)
+                },
+            )
             .send()
             .await?;
 
@@ -1096,5 +1095,4 @@ pub enum TxSubmitError {
     BatchTooLarge,
     #[error("rpc transport error waiting for receipt: {0}")]
     RpcTransport(#[from] RpcError<TransportError>),
-
 }

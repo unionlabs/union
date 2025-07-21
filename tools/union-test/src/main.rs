@@ -13,7 +13,7 @@ use ucs03_zkgm::{
     com::{
         FungibleAssetMetadata, FungibleAssetOrderV2, Instruction, Stake, Unstake, WithdrawStake,
         FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_2,
-        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE
+        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE,
     },
 };
 use union_test::{
@@ -93,10 +93,11 @@ async fn main() -> anyhow::Result<()> {
 
     // send_stake(true, pair).await?;
 
-    let random_token_id = "104876234059028879932730581024791282511281807550345635411656066941866346969265";
+    let random_token_id =
+        "17153270927682699173622609407203678679697251909133559730627168317640491668457";
     let img = hex!("cfce857457d1b52cd752a85a8c83cb5885b5f0274226a383203790f7462228a6");
-    // send_unstake(random_token_id, img, pair).await?;
-    send_withdraw(random_token_id, img, pair).await?;
+    send_unstake(random_token_id, img, pair).await?;
+    // send_withdraw(random_token_id, img, pair).await?;
     Ok(())
 }
 
@@ -165,8 +166,6 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
     let mut salt = [0u8; 32];
     rand::rng().fill_bytes(&mut salt);
 
-
-
     let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
 
     println!("Channel {} ↔ {}", pair.src, pair.dest);
@@ -177,20 +176,18 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
             hex!("03c6772d23486a24e09426259f0a017f6ffc26b7").into(),
             zkgm_evm_addr.into(),
             token_id.parse().unwrap(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await?;
 
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
-
-
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
     let instruction_withdraw = InstructionEvm {
         version: INSTR_VERSION_0,
         opcode: OP_WITHDRAW_STAKE,
         operand: WithdrawStake {
-            token_id: token_id.parse().unwrap(),//into(),
+            token_id: token_id.parse().unwrap(), //into(),
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
             sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
@@ -203,7 +200,6 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
         .abi_encode_params()
         .into(),
     };
-
 
     let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider.clone());
 
@@ -226,12 +222,11 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider
+            evm_provider,
         )
         .await;
 
     println!("Received packet data: {:?}", recv_unstake);
-
 
     Ok(())
 }
@@ -301,10 +296,7 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
     let mut salt = [0u8; 32];
     rand::rng().fill_bytes(&mut salt);
 
-
-
     let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-    
 
     println!("Channel {} ↔ {}", pair.src, pair.dest);
 
@@ -314,20 +306,18 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
             hex!("03c6772d23486a24e09426259f0a017f6ffc26b7").into(),
             zkgm_evm_addr.into(),
             token_id.parse().unwrap(),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await?;
 
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
-
-
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
     let instruction_unstake = InstructionEvm {
         version: INSTR_VERSION_0,
         opcode: OP_UNSTAKE,
         operand: Unstake {
-            token_id: token_id.parse().unwrap(),//into(),
+            token_id: token_id.parse().unwrap(), //into(),
             // governance_token: governance_token.unwrappedToken,
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
@@ -341,7 +331,6 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
         .abi_encode_params()
         .into(),
     };
-
 
     let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider.clone());
 
@@ -364,16 +353,14 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider
+            evm_provider,
         )
         .await;
 
     println!("Received packet data: {:?}", recv_unstake);
 
-
     Ok(())
 }
-
 
 pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
@@ -436,7 +423,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
 
-    if(open_channels){
+    if (open_channels) {
         let (src_confirm, dst_confirm) = ctx
             .create_clients(
                 Duration::from_secs(45),
@@ -483,8 +470,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
 
         println!("Opened {} channels", opened);
     }
-    
-    
+
     if (open_channels) {
         pair = ctx.get_channel().await.unwrap();
     }
@@ -509,22 +495,25 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
 
     // panic!("panicked");
 
-
     println!("Channel {} ↔ {}", pair.src, pair.dest);
 
     // let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
 
-    if (open_channels){
-        let governance_token = ctx.dst
-            .setup_governance_token(zkgm_evm_addr.into(),  pair.dest, img, evm_provider.clone())
+    if (open_channels) {
+        let governance_token = ctx
+            .dst
+            .setup_governance_token(zkgm_evm_addr.into(), pair.dest, img, evm_provider.clone())
             .await?;
 
-        println!("✅ governance_token.metadataImage registered at: {:?}", governance_token);
+        println!(
+            "✅ governance_token.metadataImage registered at: {:?}",
+            governance_token
+        );
     }
-    
+
     let snake_nft = ctx
         .dst
-        .predict_stake_manager_address(zkgm_evm_addr.into(), evm_provider.clone() )
+        .predict_stake_manager_address(zkgm_evm_addr.into(), evm_provider.clone())
         .await?;
 
     println!("✅ Stake manager address: {:?}", snake_nft);
@@ -541,7 +530,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
-            &evm_provider
+            &evm_provider,
         )
         .await
         .unwrap();
@@ -603,7 +592,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            cosmos_provider
+            cosmos_provider,
         )
         .await;
 
@@ -618,7 +607,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
             quote_token_addr.into(),
             zkgm_evm_addr.into(),
             U256::from(100000000000u64),
-            evm_provider.clone()
+            evm_provider.clone(),
         )
         .await?;
 
@@ -653,7 +642,6 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
         .into(),
     };
 
-
     let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider.clone());
 
     rand::rng().fill_bytes(&mut salt);
@@ -675,7 +663,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
-            evm_provider
+            evm_provider,
         )
         .await;
 

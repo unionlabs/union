@@ -82,27 +82,27 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                         )
                         .to_vec(),
                     },
-                    KeyringConfigEntry::Raw {
-                        name: "bob".into(),
-                        key: hex_literal::hex!(
-                            "f562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dave".into(),
-                        key: hex_literal::hex!(
-                            "edc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "charlie".into(),
-                        key: hex_literal::hex!(
-                            "a1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
-                        )
-                        .to_vec(),
-                    },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "bob".into(),
+                    //     key: hex_literal::hex!(
+                    //         "f562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dave".into(),
+                    //     key: hex_literal::hex!(
+                    //         "edc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "charlie".into(),
+                    //     key: hex_literal::hex!(
+                    //         "a1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+                    //     )
+                    //     .to_vec(),
+                    // },
                 ],
             },
             rpc_url: "http://localhost:26657".into(),
@@ -129,55 +129,55 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                         )
                         .to_vec(),
                     },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key1.prv".into(),
-                        key: hex!(
-                            "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key2.prv".into(),
-                        key: hex!(
-                            "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key3.prv".into(),
-                        key: hex!(
-                            "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key4.prv".into(),
-                        key: hex!(
-                            "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key5.prv".into(),
-                        key: hex!(
-                            "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key6.prv".into(),
-                        key: hex!(
-                            "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key7.prv".into(),
-                        key: hex!(
-                            "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
-                        )
-                        .to_vec(),
-                    },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key1.prv".into(),
+                    //     key: hex!(
+                    //         "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key2.prv".into(),
+                    //     key: hex!(
+                    //         "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key3.prv".into(),
+                    //     key: hex!(
+                    //         "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key4.prv".into(),
+                    //     key: hex!(
+                    //         "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key5.prv".into(),
+                    //     key: hex!(
+                    //         "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key6.prv".into(),
+                    //     key: hex!(
+                    //         "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key7.prv".into(),
+                    //     key: hex!(
+                    //         "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
+                    //     )
+                    //     .to_vec(),
+                    // },
                 ],
             },
             max_gas_price: None,
@@ -1151,7 +1151,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: cosmos_address_bytes.clone().into(),
+            sender: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -1221,7 +1221,6 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     .abi_encode_params();
 
     let img = keccak256(&img_metadata);
-
     let governance_token = ctx
         .dst
         .setup_governance_token(
@@ -1412,6 +1411,10 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     assert!(is_ours, "NFT ownership check returned false");
 
     println!("is ours: {}", is_ours);
+    println!(
+        "Calling approve on NFT: {:?} -> from account: {:?}",
+        snake_nft, evm_address
+    );
 
     let approve_tx_hash = ctx
         .dst
@@ -1430,6 +1433,8 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         evm_address
     );
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
+    println!("calling unstake now..\n\n\n");
+    tokio::time::sleep(Duration::from_secs(15)).await; // Wait for 1 minute before unstake
 
     let instruction_unstake = InstructionEvm {
         version: INSTR_VERSION_0,
@@ -1440,7 +1445,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: cosmos_address_bytes.clone().into(),
+            sender: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
             amount: "1".parse().unwrap(),
         }
@@ -1474,9 +1479,27 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     println!("Received packet data: {:?}", recv_unstake);
 
-    // Now we should withdraw the NFT from the stake manager
+    println!("after unstake.\n\n\n");
 
-    tokio::time::sleep(Duration::from_secs(150)).await; // 2min is the withdraw min time
+    println!("Waiting for 2 minutes before withdraw...");
+    tokio::time::sleep(Duration::from_secs(180)).await; // 2min is the withdraw min time
+
+    let approve_tx_hash = ctx
+        .dst
+        .zkgmerc721_approve(
+            snake_nft.into(),
+            eth_zkgm_contract.into(),
+            random_token_id.into(),
+            evm_provider.clone(),
+        )
+        .await;
+
+    assert!(
+        approve_tx_hash.is_ok(),
+        "Failed to send approve transaction for NFT: {:?}, from_account: {:?}",
+        approve_tx_hash.err(),
+        evm_address
+    );
 
     let instruction_withdraw = InstructionEvm {
         version: INSTR_VERSION_0,
