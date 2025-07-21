@@ -1,6 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use alloy::{
     eips::BlockNumberOrTag,
@@ -104,6 +104,29 @@ impl StateModule<IbcUnion> for Module {
         })
     }
 }
+
+static EMPTY_CHANNEL_BYTES: LazyLock<Bytes> = LazyLock::new(|| {
+    ibc_solidity::Channel {
+        state: ibc_solidity::ChannelState::Unspecified,
+        connection_id: 0,
+        counterparty_channel_id: 0,
+        counterparty_port_id: b"".into(),
+        version: "".into(),
+    }
+    .abi_encode_params()
+    .into()
+});
+
+static EMPTY_CONNECTION_BYTES: LazyLock<Bytes> = LazyLock::new(|| {
+    ibc_solidity::Connection {
+        state: ibc_solidity::ConnectionState::Unspecified,
+        client_id: 0,
+        counterparty_connection_id: 0,
+        counterparty_client_id: 0,
+    }
+    .abi_encode_params()
+    .into()
+});
 
 impl Module {
     #[must_use]
@@ -250,6 +273,10 @@ impl Module {
                 )
             })?;
 
+        if **raw == **EMPTY_CONNECTION_BYTES {
+            return Ok(None);
+        }
+
         let connection = Connection::abi_decode_params_validate(&raw).map_err(|e| {
             ErrorObject::owned(
                 -1,
@@ -320,6 +347,10 @@ impl Module {
                     None::<()>,
                 )
             })?;
+
+        if **raw == **EMPTY_CHANNEL_BYTES {
+            return Ok(None);
+        }
 
         let channel = Channel::abi_decode_params_validate(&raw).map_err(|e| {
             ErrorObject::owned(
