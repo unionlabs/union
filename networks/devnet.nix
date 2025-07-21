@@ -254,13 +254,6 @@
 
         devnet-union-minimal = devnet-union-minimal.services;
 
-        voyager-img = {
-          voyager = import ./services/voyager.nix {
-              inherit pkgs self';
-          };
-          postgres = services.postgres.postgres;
-        };
-
         devnet-eth =
           {
             geth = import ./services/geth.nix {
@@ -345,7 +338,6 @@
           };
         }
         // mkNamedModule "postgres"
-        // mkNamedModule "voyager-img"
         // mkNamedModule "devnet-eth"
         // mkNamedModule "devnet-stargaze"
         // mkNamedModule "devnet-osmosis"
@@ -366,7 +358,6 @@
           };
         }
         // mkNamedSpec "full-dev-setup"
-        // mkNamedSpec "voyager-img"
         // mkNamedSpec "devnet-eth"
         // mkNamedSpec "devnet-stargaze"
         // mkNamedSpec "devnet-osmosis"
@@ -381,7 +372,6 @@
       build =
         mkNamedBuild "full-dev-setup"
         // mkNamedBuild "voyager-queue"
-        // mkNamedBuild "voyager-img"
         // mkNamedBuild "devnet-eth"
         // mkNamedBuild "devnet-stargaze"
         // mkNamedBuild "devnet-osmosis"
@@ -465,7 +455,6 @@
         // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
-        // (mkArionBuild "voyager-img" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"))
         // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
 

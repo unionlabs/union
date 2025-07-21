@@ -88,14 +88,18 @@
               testScript = ''
                 start_all()
 
-                union.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
+                devnetUnion.wait_for_open_port(${toString e2e.unionNode.wait_for_open_port})
 
                 # Ensure the union network commits more than one block
-                union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+                devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+
+                devnetEth.succeed("ping -c1 devnetUnion")
+                devnetEth.wait_until_succeeds('[[ $(curl "http://devnetUnion:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
               '';
 
               nodes = {
-                union = e2e.unionNode.node;
+                devnetUnion = e2e.unionNode.node;
+                devnetEth = e2e.devnetEthNode.node;
               };
             };
           }
