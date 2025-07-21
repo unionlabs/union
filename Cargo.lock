@@ -2275,6 +2275,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "base-client"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "hex-literal",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "base-light-client"
 version = "0.0.0"
 dependencies = [
@@ -2888,7 +2900,6 @@ name = "bob-client"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bob-types",
  "hex-literal",
  "tokio",
  "tracing",
@@ -17290,6 +17301,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-base"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "base-client",
+ "base-light-client-types",
+ "base-verifier",
+ "bob-types",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "macros",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-berachain"
 version = "0.0.0"
 dependencies = [
@@ -17654,6 +17689,7 @@ name = "voyager-finality-module-base"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "base-client",
  "embed-commit",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
@@ -17699,9 +17735,6 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bob-client",
- "bob-light-client-types",
- "bob-types",
- "bob-verifier",
  "embed-commit",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",

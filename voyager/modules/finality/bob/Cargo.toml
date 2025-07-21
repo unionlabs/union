@@ -12,19 +12,16 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                  = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-bob-client             = { workspace = true }
-bob-light-client-types = { workspace = true }
-bob-types              = { workspace = true }
-bob-verifier           = { workspace = true }
-embed-commit           = { workspace = true }
-ibc-union-spec         = { workspace = true, features = ["serde", "ethabi"] }
-jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
-serde                  = { workspace = true, features = ["derive"] }
-tokio                  = { workspace = true }
-tracing                = { workspace = true }
-unionlabs              = { workspace = true }
-voyager-sdk            = { workspace = true }
+alloy          = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+bob-client     = { workspace = true }
+embed-commit   = { workspace = true }
+ibc-union-spec = { workspace = true, features = ["serde", "ethabi"] }
+jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }
+serde          = { workspace = true, features = ["derive"] }
+tokio          = { workspace = true }
+tracing        = { workspace = true }
+unionlabs      = { workspace = true }
+voyager-sdk    = { workspace = true }
 
 
 [dev-dependencies]

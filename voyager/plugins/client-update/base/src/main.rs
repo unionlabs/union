@@ -6,11 +6,10 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
-use bob_light_client_types::{
+use base_light_client_types::{
     header::{L2Header, OutputRootProof},
     ClientState, Header,
 };
-use bob_types::L2_TO_L1_MESSAGE_PASSER;
 use call::FetchL2Update;
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
@@ -39,7 +38,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{types::PluginInfo, PluginServer},
     types::RawClientId,
     vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit},
     DefaultCmd, ExtensionsExt, VoyagerClient,
@@ -144,7 +143,7 @@ impl Module {
             .l1_provider
             .get_proof(
                 self.l1_dispute_game_factory_proxy.into(),
-                vec![bob_verifier::compute_game_slot(
+                vec![base_verifier::compute_game_slot(
                     self.dispute_game_factory_dispute_game_list_slot,
                     game_index,
                 )
@@ -211,7 +210,7 @@ impl Plugin for Module {
             name: plugin_name(&config.l2_chain_id),
             interest_filter: UpdateHook::filter(
                 &config.l2_chain_id,
-                &ClientType::new(ClientType::BOB),
+                &ClientType::new(ClientType::BASE),
             ),
         }
     }
@@ -234,21 +233,25 @@ impl PluginServer<ModuleCall, Never> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(&self.chain_id, &ClientType::new(ClientType::BOB), |fetch| {
-                        Call::Plugin(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchUpdate {
-                                from_height: fetch.update_from,
-                                to_height: fetch.update_to,
-                                counterparty_chain_id: fetch.counterparty_chain_id.clone(),
-                                client_id: fetch
-                                    .client_id
-                                    .clone()
-                                    .decode_spec::<IbcUnion>()
-                                    .unwrap(),
-                            }),
-                        ))
-                    })
+                    UpdateHook::new(
+                        &self.chain_id,
+                        &ClientType::new(ClientType::BASE),
+                        |fetch| {
+                            Call::Plugin(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchUpdate {
+                                    from_height: fetch.update_from,
+                                    to_height: fetch.update_to,
+                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                    client_id: fetch
+                                        .client_id
+                                        .clone()
+                                        .decode_spec::<IbcUnion>()
+                                        .unwrap(),
+                                }),
+                            ))
+                        },
+                    )
                     .visit_op(&mut op);
 
                     op
@@ -388,7 +391,8 @@ impl Module {
             .unwrap();
         let message_passer_storage_root = self
             .l2_provider
-            .get_proof(L2_TO_L1_MESSAGE_PASSER.into(), vec![])
+            // TODO: refactor this in a common crate for opstack
+            .get_proof(bob_types::L2_TO_L1_MESSAGE_PASSER.into(), vec![])
             .block_id(l2_height.into())
             .await
             .map_err(|e| {
@@ -433,7 +437,7 @@ impl Module {
             .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
 
-        let raw_bob_client_state = voy_client
+        let raw_base_client_state = voy_client
             .query_ibc_state(
                 counterparty_chain_id.clone(),
                 QueryHeight::Specific(counterparty_latest_height),
@@ -441,40 +445,32 @@ impl Module {
             )
             .await?;
 
-        debug!(?raw_bob_client_state);
+        debug!(?raw_base_client_state);
 
-        let bob_client_state_info = voy_client
+        let base_client_state_info = voy_client
             .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
             .await?;
 
-        debug!(?bob_client_state_info);
+        debug!(?base_client_state_info);
 
-        let ClientState::V2(bob_client_state) = voy_client
+        let ClientState::V1(base_client_state) = voy_client
             .decode_client_state::<IbcUnion, ClientState>(
-                bob_client_state_info.client_type.clone(),
-                bob_client_state_info.ibc_interface,
-                raw_bob_client_state,
+                base_client_state_info.client_type.clone(),
+                base_client_state_info.ibc_interface,
+                raw_base_client_state,
             )
-            .await?
-        else {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "expected bob client state v2".to_string(),
-                None::<()>,
-            )
-            .into());
-        };
+            .await?;
 
-        debug!(?bob_client_state);
+        debug!(?base_client_state);
 
-        if bob_client_state.latest_height >= update_to.height() {
-            info!("bob: irrelevant update");
+        if base_client_state.latest_height >= update_to.height() {
+            info!("base: irrelevant update");
             Ok(data(OrderedHeaders { headers: vec![] }))
         } else {
             let l1_client_info = voy_client
                 .client_info::<IbcUnion>(
                     counterparty_chain_id.clone(),
-                    bob_client_state.l1_client_id,
+                    base_client_state.l1_client_id,
                 )
                 .await?;
 
@@ -482,7 +478,7 @@ impl Module {
                 .client_state_meta::<IbcUnion>(
                     counterparty_chain_id.clone(),
                     QueryHeight::Latest,
-                    bob_client_state.l1_client_id,
+                    base_client_state.l1_client_id,
                 )
                 .await?;
 
@@ -497,7 +493,7 @@ impl Module {
                         client_type: l1_client_info.client_type,
                         chain_id: l1_client_meta.counterparty_chain_id.clone(),
                         counterparty_chain_id: counterparty_chain_id.clone(),
-                        client_id: RawClientId::new(bob_client_state.l1_client_id),
+                        client_id: RawClientId::new(base_client_state.l1_client_id),
                         update_from: l1_client_meta.counterparty_height,
                         update_to: l1_latest_height,
                     })],
@@ -505,14 +501,14 @@ impl Module {
                     AggregateSubmitTxFromOrderedHeaders {
                         ibc_spec_id: IbcUnion::ID,
                         chain_id: counterparty_chain_id.clone(),
-                        client_id: RawClientId::new(bob_client_state.l1_client_id),
+                        client_id: RawClientId::new(base_client_state.l1_client_id),
                     },
                 ),
                 seq([
                     call(WaitForTrustedHeight {
                         chain_id: counterparty_chain_id.clone(),
                         ibc_spec_id: IbcUnion::ID,
-                        client_id: RawClientId::new(bob_client_state.l1_client_id),
+                        client_id: RawClientId::new(base_client_state.l1_client_id),
                         height: l1_latest_height,
                         finalized: false,
                     }),
@@ -555,7 +551,7 @@ impl Module {
             .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
 
-        let raw_bob_client_state = voy_client
+        let raw_base_client_state = voy_client
             .query_ibc_state(
                 counterparty_chain_id.clone(),
                 QueryHeight::Specific(counterparty_latest_height),
@@ -563,43 +559,35 @@ impl Module {
             )
             .await?;
 
-        debug!(?raw_bob_client_state);
+        debug!(?raw_base_client_state);
 
-        let bob_client_state_info = voy_client
+        let base_client_state_info = voy_client
             .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
             .await?;
 
-        debug!(?bob_client_state_info);
+        debug!(?base_client_state_info);
 
-        let ClientState::V2(bob_client_state) = voy_client
+        let ClientState::V1(base_client_state) = voy_client
             .decode_client_state::<IbcUnion, ClientState>(
-                bob_client_state_info.client_type.clone(),
-                bob_client_state_info.ibc_interface,
-                raw_bob_client_state,
+                base_client_state_info.client_type.clone(),
+                base_client_state_info.ibc_interface,
+                raw_base_client_state,
             )
-            .await?
-        else {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "expected bob client state v2".to_string(),
-                None::<()>,
-            )
-            .into());
-        };
+            .await?;
 
-        debug!(?bob_client_state);
+        debug!(?base_client_state);
 
         let l1_client_meta = voy_client
             .client_state_meta::<IbcUnion>(
                 counterparty_chain_id.clone(),
                 QueryHeight::Latest,
-                bob_client_state.l1_client_id,
+                base_client_state.l1_client_id,
             )
             .await?;
 
         let l1_height = l1_client_meta.counterparty_height.height();
 
-        let l2_block_number = bob_client::finalized_l2_block_number_of_l1_block_number(
+        let l2_block_number = base_client::finalized_l2_block_number_of_l1_block_number(
             &self.l1_provider,
             self.l1_dispute_game_factory_proxy,
             l1_height,
@@ -622,7 +610,7 @@ impl Module {
 
         let output_root_proof = self.fetch_output_root_proof(l2_block.header.number).await?;
 
-        let game_index = bob_client::latest_game_of_l1_block_number(
+        let game_index = base_client::latest_game_of_l1_block_number(
             &self.l1_provider,
             l1_height,
             self.l1_dispute_game_factory_proxy,

@@ -45,6 +45,7 @@ members = [
   "lib/arbitrum-types",
   "lib/arbitrum-client",
   "lib/bob-types",
+  "lib/base-client",
   "lib/bob-client",
   "lib/serde-utils",
   "lib/ssz",
@@ -192,7 +193,7 @@ members = [
   "voyager/modules/finality/trusted-evm",
   "voyager/modules/finality/sui",
 
-  # "voyager/plugins/client-update/base",
+  "voyager/plugins/client-update/base",
   "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",
   "voyager/plugins/client-update/berachain",
@@ -328,19 +329,19 @@ parlia-light-client-types = { path = "lib/parlia-light-client-types", default-fe
 parlia-types              = { path = "lib/parlia-types", default-features = false }
 parlia-verifier           = { path = "lib/parlia-verifier", default-features = false }
 
+base-client             = { path = "lib/base-client", default-features = false }
 base-light-client-types = { path = "lib/base-light-client-types", default-features = false }
 base-verifier           = { path = "lib/base-verifier", default-features = false }
 
+bob-client             = { path = "lib/bob-client", default-features = false }
 bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
+bob-types              = { path = "lib/bob-types", default-features = false }
 bob-verifier           = { path = "lib/bob-verifier", default-features = false }
 
 arbitrum-client             = { path = "lib/arbitrum-client", default-features = false }
 arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", default-features = false }
 arbitrum-types              = { path = "lib/arbitrum-types", default-features = false }
 arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
-
-bob-client = { path = "lib/bob-client", default-features = false }
-bob-types  = { path = "lib/bob-types", default-features = false }
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
 cometbls-light-client       = { path = "cosmwasm/ibc-union/lightclient/cometbls", default-features = false }

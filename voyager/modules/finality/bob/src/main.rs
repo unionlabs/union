@@ -5,7 +5,6 @@ use alloy::{
     network::AnyNetwork,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
 };
-use bob_verifier::FINALIZATION_PERIOD_SECONDS;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -33,7 +32,7 @@ pub struct Module {
 
     pub l1_chain_id: ChainId,
 
-    pub l2_oracle_address: H160,
+    pub l1_dispute_game_factory_proxy: H160,
 
     pub l1_provider: DynProvider,
     pub l2_provider: DynProvider<AnyNetwork>,
@@ -45,8 +44,7 @@ pub struct Config {
     /// The chain id of the chain this bob chain chain settles on.
     pub l1_chain_id: ChainId,
 
-    /// The L2 oracle contract on the L1.
-    pub l2_oracle_address: H160,
+    pub l1_dispute_game_factory_proxy: H160,
 
     /// The RPC endpoint for the settlement (L1) execution chain.
     pub l1_rpc_url: String,
@@ -86,7 +84,7 @@ impl FinalityModule for Module {
         Ok(Self {
             chain_id: l2_chain_id,
             l1_chain_id,
-            l2_oracle_address: config.l2_oracle_address,
+            l1_dispute_game_factory_proxy: config.l1_dispute_game_factory_proxy,
             l1_provider,
             l2_provider,
         })
@@ -105,11 +103,9 @@ impl FinalityModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block = bob_client::finalized_execution_block_of_l1_height(
+            let block_number = bob_client::finalized_l2_block_number_of_l1_block_number(
                 &self.l1_provider,
-                &self.l2_provider,
-                self.l2_oracle_address,
-                FINALIZATION_PERIOD_SECONDS,
+                self.l1_dispute_game_factory_proxy,
                 l1_latest_height.height(),
             )
             .await
@@ -117,12 +113,12 @@ impl FinalityModuleServer for Module {
                 ErrorObject::owned(
                     -1,
                     ErrorReporter(e)
-                        .with_message("error fetching finalized execution block of l1 height"),
+                        .with_message("error fetching finalized l2 execution block of l1 height"),
                     None::<()>,
                 )
             })?;
 
-            Ok(Height::new(block.header.number))
+            Ok(Height::new(block_number))
         } else {
             self.l2_provider
                 .get_block_number()
@@ -146,21 +142,33 @@ impl FinalityModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block = bob_client::finalized_execution_block_of_l1_height(
+            let block_number = bob_client::finalized_l2_block_number_of_l1_block_number(
                 &self.l1_provider,
-                &self.l2_provider,
-                self.l2_oracle_address,
-                FINALIZATION_PERIOD_SECONDS,
+                self.l1_dispute_game_factory_proxy,
                 l1_latest_height.height(),
             )
             .await
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    ErrorReporter(e).with_message("error fetching finalized l2 block"),
+                    ErrorReporter(e)
+                        .with_message("error fetching finalized l2 execution block of l1 height"),
                     None::<()>,
                 )
             })?;
+
+            let block = self
+                .l2_provider
+                .get_block(block_number.into())
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(e).with_message("error fetching finalized l2 block"),
+                        None::<()>,
+                    )
+                })?
+                .expect("block should exist");
 
             Ok(Timestamp::from_secs(block.header.timestamp))
         } else {

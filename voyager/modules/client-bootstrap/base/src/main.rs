@@ -130,7 +130,6 @@ impl ClientBootstrapModuleServer for Module {
                 .expect("self.chain_id is a valid u256; qed;"),
             frozen_height: 0,
             ibc_contract_address: self.ibc_handler_address,
-            // 0xd6E6dBf4F7EA0ac412fD8b65ED297e64BB7a06E1
             dispute_game_factory_address: self.dispute_game_factory_address,
             dispute_game_factory_dispute_game_list_slot: self
                 .dispute_game_factory_dispute_game_list_slot,

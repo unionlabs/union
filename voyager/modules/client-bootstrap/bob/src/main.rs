@@ -2,8 +2,7 @@ use alloy::{
     network::AnyNetwork,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
 };
-use bob_light_client_types::{ClientState, ClientStateV1, ConsensusState};
-use bob_types::L2_OUTPUTS_SLOT;
+use bob_light_client_types::{ClientState, ClientStateV2, ConsensusState};
 use ibc_union_spec::{ClientId, Timestamp};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -36,7 +35,9 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub l2_oracle_address: H160,
+    pub dispute_game_factory_address: H160,
+    pub dispute_game_factory_dispute_game_list_slot: U256,
+    pub fault_dispute_game_code_root_claim_index: usize,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -47,7 +48,9 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub l2_oracle_address: H160,
+    pub dispute_game_factory_address: H160,
+    pub dispute_game_factory_dispute_game_list_slot: U256,
+    pub fault_dispute_game_code_root_claim_index: usize,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -85,9 +88,13 @@ impl ClientBootstrapModule for Module {
 
         Ok(Self {
             chain_id: l2_chain_id,
-            ibc_handler_address: config.ibc_handler_address,
-            l2_oracle_address: config.l2_oracle_address,
             provider,
+            ibc_handler_address: config.ibc_handler_address,
+            dispute_game_factory_address: config.dispute_game_factory_address,
+            dispute_game_factory_dispute_game_list_slot: config
+                .dispute_game_factory_dispute_game_list_slot,
+            fault_dispute_game_code_root_claim_index: config
+                .fault_dispute_game_code_root_claim_index,
         })
     }
 }
@@ -112,7 +119,7 @@ impl ClientBootstrapModuleServer for Module {
             )
         })?;
 
-        Ok(into_value(ClientState::V1(ClientStateV1 {
+        Ok(into_value(ClientState::V2(ClientStateV2 {
             l1_client_id: config.l1_client_id,
             latest_height: height.height(),
             chain_id: self
@@ -120,10 +127,12 @@ impl ClientBootstrapModuleServer for Module {
                 .as_str()
                 .parse()
                 .expect("self.chain_id is a valid u256; qed;"),
-            l2_oracle_address: self.l2_oracle_address,
+            dispute_game_factory_address: self.dispute_game_factory_address,
+            dispute_game_factory_dispute_game_list_slot: self
+                .dispute_game_factory_dispute_game_list_slot,
+            fault_dispute_game_code_root_claim_index: self.fault_dispute_game_code_root_claim_index,
             frozen_height: 0,
             ibc_contract_address: self.ibc_handler_address,
-            l2_oracle_l2_outputs_slot: U256::from_be_bytes(L2_OUTPUTS_SLOT.to_be_bytes()),
         })))
     }
 
