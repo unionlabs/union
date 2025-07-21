@@ -2914,6 +2914,7 @@ dependencies = [
  "bob-light-client-types",
  "bob-verifier",
  "cosmwasm-std 2.2.2",
+ "depolama",
  "embed-commit",
  "ethereum-light-client",
  "ethereum-light-client-types",

@@ -41,7 +41,7 @@ pub struct ClientStateV2 {
     /// Slot of the [`_disputeGameList`](https://vscode.blockscan.com/ethereum/0x4bba758f006ef09402ef31724203f316ab74e4a0) within the DisputeGameFactory.
     pub dispute_game_factory_dispute_game_list_slot: U256,
     /// Index of the `rootClaim` within the game proxy bytecode.
-    pub fault_dispute_game_code_root_claim_index: usize,
+    pub fault_dispute_game_code_root_claim_index: u32,
     pub frozen_height: u64,
     pub ibc_contract_address: H160,
 }
