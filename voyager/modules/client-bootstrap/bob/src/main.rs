@@ -37,7 +37,7 @@ pub struct Module {
 
     pub dispute_game_factory_address: H160,
     pub dispute_game_factory_dispute_game_list_slot: U256,
-    pub fault_dispute_game_code_root_claim_index: usize,
+    pub fault_dispute_game_code_root_claim_index: u32,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -50,7 +50,7 @@ pub struct Module {
 pub struct Config {
     pub dispute_game_factory_address: H160,
     pub dispute_game_factory_dispute_game_list_slot: U256,
-    pub fault_dispute_game_code_root_claim_index: usize,
+    pub fault_dispute_game_code_root_claim_index: u32,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,

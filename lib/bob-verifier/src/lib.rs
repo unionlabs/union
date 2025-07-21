@@ -82,8 +82,8 @@ pub fn verify_header(
     // the output root proof.
     verify_l2_header_is_related_to_output_root_proof(&header.output_root_proof, &header.l2_header)?;
 
-    let minimum_code_size =
-        client_state.fault_dispute_game_code_root_claim_index + H256::<HexPrefixed>::BYTES_LEN;
+    let minimum_code_size = client_state.fault_dispute_game_code_root_claim_index as usize
+        + H256::<HexPrefixed>::BYTES_LEN;
     if header.game_account_code.len() < minimum_code_size {
         return Err(Error::InvalidCodeSize {
             expected_minimum: minimum_code_size,
@@ -95,7 +95,7 @@ pub fn verify_header(
     let root_claim_index = client_state.fault_dispute_game_code_root_claim_index;
     let root_claim = H256::<HexPrefixed>::new(
         header.game_account_code
-            [root_claim_index..root_claim_index + H256::<HexPrefixed>::BYTES_LEN]
+            [root_claim_index as _..root_claim_index as usize + H256::<HexPrefixed>::BYTES_LEN]
             .try_into()
             .expect("impossible"),
     );
