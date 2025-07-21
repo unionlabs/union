@@ -672,7 +672,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,
-                                    timeout_height: packet.timeout_height.0,
                                     timeout_timestamp: Timestamp::from_nanos(
                                         packet.timeout_timestamp.0,
                                     ),

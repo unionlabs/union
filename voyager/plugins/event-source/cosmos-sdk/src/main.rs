@@ -1589,7 +1589,7 @@ impl Module {
                 packet_source_channel_id,
                 packet_destination_channel_id,
                 packet_data,
-                packet_timeout_height,
+                packet_timeout_height: _,
                 packet_timeout_timestamp,
                 channel_id: _,
                 packet_hash: _,
@@ -1598,7 +1598,6 @@ impl Module {
                     source_channel_id: packet_source_channel_id,
                     destination_channel_id: packet_destination_channel_id,
                     data: packet_data,
-                    timeout_height: packet_timeout_height,
                     timeout_timestamp: packet_timeout_timestamp,
                 };
 
@@ -1668,7 +1667,6 @@ impl Module {
                                     .unwrap(),
                             },
                         },
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                 }
@@ -1822,7 +1820,6 @@ impl Module {
                                     .unwrap(),
                             },
                         },
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                     acknowledgement: acknowledgement.into_encoding(),
@@ -1924,7 +1921,6 @@ impl Module {
                                 connection_id: destination_channel.connection_id,
                             },
                         },
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                     maker_msg: maker_msg.into_encoding(),
@@ -2025,7 +2021,6 @@ impl Module {
                                 connection_id: destination_channel.connection_id,
                             },
                         },
-                        timeout_height: packet.timeout_height,
                         timeout_timestamp: packet.timeout_timestamp,
                     },
                     acknowledgement: acknowledgement.into_encoding(),

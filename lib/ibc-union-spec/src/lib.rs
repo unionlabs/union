@@ -192,7 +192,6 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
             data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
-            data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),
@@ -232,7 +231,6 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
             data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
-            data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),
@@ -255,7 +253,6 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
             data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
-            data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),
@@ -278,7 +275,6 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
             data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
-            data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),
@@ -301,7 +297,6 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
             data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
-            data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),
@@ -323,7 +318,6 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.destination_channel.connection.client_id = %e.packet.destination_channel.connection.client_id,
             data.packet.destination_channel.connection.connection_id = %e.packet.destination_channel.connection.connection_id,
 
-            data.packet.timeout_height = %e.packet.timeout_height,
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),

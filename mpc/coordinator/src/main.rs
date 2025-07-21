@@ -1,3 +1,5 @@
+#![cfg(not(test))]
+
 use std::str::FromStr;
 
 use clap::{Parser, Subcommand};

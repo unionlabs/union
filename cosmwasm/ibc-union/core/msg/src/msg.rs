@@ -228,10 +228,9 @@ pub struct MsgWriteAcknowledgement {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+// #[serde(deny_unknown_fields)] will make the upgrade path easier
 pub struct MsgSendPacket {
     pub source_channel_id: ChannelId,
-    pub timeout_height: u64,
     pub timeout_timestamp: Timestamp,
     pub data: Bytes,
 }

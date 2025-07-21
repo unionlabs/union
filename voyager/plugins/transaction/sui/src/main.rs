@@ -574,7 +574,7 @@ async fn process_msgs(
                             p.source_channel_id,
                             p.destination_channel_id,
                             p.data.clone(),
-                            p.timeout_height,
+                            0,
                             p.timeout_timestamp,
                         )
                     })

@@ -246,15 +246,14 @@ pub fn execute(
         }
         ExecuteMsg::Send {
             channel_id,
-            timeout_height,
             timeout_timestamp,
+            timeout_height: _,
             salt,
             instruction,
         } => send(
             deps,
             info,
             channel_id,
-            timeout_height.u64(),
             timeout_timestamp,
             salt,
             Instruction::abi_decode_params_validate(&instruction)?,
@@ -744,7 +743,6 @@ fn timeout_multiplex(
                 multiplex.contract_calldata.into(),
             )
             .into(),
-            timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
 
@@ -1263,7 +1261,6 @@ fn acknowledge_multiplex(
                 multiplex.contract_calldata.into(),
             )
             .into(),
-            timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
 
@@ -1593,7 +1590,7 @@ fn execute_forward(
             opcode: OP_FORWARD,
             operand: Forward {
                 path: continuation_path,
-                timeout_height: forward.timeout_height,
+                timeout_height: 0,
                 timeout_timestamp: forward.timeout_timestamp,
                 instruction: forward.instruction,
             }
@@ -1610,7 +1607,6 @@ fn execute_forward(
 
     let next_packet = MsgSendPacket {
         source_channel_id: next_source_channel_id,
-        timeout_height: forward.timeout_height,
         timeout_timestamp: Timestamp::from_nanos(forward.timeout_timestamp),
         data: ZkgmPacket {
             salt: derive_forward_salt(salt).into(),
@@ -1670,7 +1666,6 @@ fn execute_multiplex(
                 multiplex.contract_calldata.into(),
             )
             .into(),
-            timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
 
@@ -3365,7 +3360,6 @@ pub fn send(
     mut deps: DepsMut,
     info: MessageInfo,
     channel_id: ChannelId,
-    timeout_height: u64,
     timeout_timestamp: Timestamp,
     salt: H256,
     instruction: Instruction,
@@ -3391,7 +3385,6 @@ pub fn send(
         &config.ibc_host,
         &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel_id: channel_id,
-            timeout_height,
             timeout_timestamp,
             data: ZkgmPacket {
                 salt: hashed_salt.into(),

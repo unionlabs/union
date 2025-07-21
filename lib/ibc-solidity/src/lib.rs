@@ -660,7 +660,7 @@ pub mod compat {
                 source_channel_id: value.source_channel_id.raw(),
                 destination_channel_id: value.destination_channel_id.raw(),
                 data: value.data.into(),
-                timeout_height: value.timeout_height,
+                timeout_height: 0,
                 timeout_timestamp: value.timeout_timestamp.as_nanos(),
             }
         }
@@ -670,13 +670,16 @@ pub mod compat {
         type Error = InvalidPacketError;
 
         fn try_from(value: Packet) -> Result<Self, Self::Error> {
+            if value.timeout_height != 0 {
+                return Err(InvalidPacketError::TimeoutHeightMustBeZero);
+            }
+
             Ok(Self {
                 source_channel_id: ChannelId::from_raw(value.source_channel_id)
                     .ok_or(InvalidPacketError::InvalidSourceChannelId)?,
                 destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
                     .ok_or(InvalidPacketError::InvalidDestinationChannelId)?,
                 data: value.data.into(),
-                timeout_height: value.timeout_height,
                 timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
             })
         }
@@ -684,6 +687,8 @@ pub mod compat {
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum InvalidPacketError {
+        #[error("timeout height must be 0")]
+        TimeoutHeightMustBeZero,
         #[error("invalid source channel id")]
         InvalidSourceChannelId,
         #[error("invalid destination channel id")]
@@ -1008,16 +1013,15 @@ mod tests {
                 source_channel_id: 1,
                 destination_channel_id: 1,
                 data: b"data".into(),
-                timeout_height: 1,
-                timeout_timestamp: 0,
+                timeout_height: 0,
+                timeout_timestamp: 1,
             };
 
             let packet = ibc_union_spec::Packet {
-                source_channel_id: ChannelId::from_raw(1).unwrap(),
-                destination_channel_id: ChannelId::from_raw(1).unwrap(),
+                source_channel_id: ChannelId!(1),
+                destination_channel_id: ChannelId!(1),
                 data: b"data".into(),
-                timeout_height: 1,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_timestamp: Timestamp::from_nanos(1),
             };
 
             let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
@@ -1035,16 +1039,15 @@ mod tests {
                 source_channel_id: 1,
                 destination_channel_id: 1,
                 data: b"data".into(),
-                timeout_height: 1,
-                timeout_timestamp: 0,
+                timeout_height: 0,
+                timeout_timestamp: 1,
             };
 
             let packet = ibc_union_spec::Packet {
                 source_channel_id: ChannelId::from_raw(1).unwrap(),
                 destination_channel_id: ChannelId::from_raw(1).unwrap(),
                 data: b"data".into(),
-                timeout_height: 1,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_timestamp: Timestamp::from_nanos(1),
             };
 
             let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
@@ -1074,6 +1077,32 @@ mod tests {
                     U256::from(0_u32).into(),
                     b"data".as_slice().into(),
                     U256::from(0_u64).into(),
+                    U256::from(0_u64).into(),
+                ));
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
+            let err =
+                ibc_union_spec::Packet::abi_decode_params_validate(&ibc_solidity_bz).unwrap_err();
+            assert_eq!(expected_err, err);
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
+            let err = ibc_union_spec::Packet::abi_decode_validate(&ibc_solidity_bz).unwrap_err();
+            assert_eq!(expected_err, err);
+
+            let ibc_solidity_packet = Packet {
+                source_channel_id: 1,
+                destination_channel_id: 1,
+                data: b"data".into(),
+                timeout_height: 1,
+                timeout_timestamp: 0,
+            };
+
+            let expected_err =
+                alloy::sol_types::Error::type_check_fail_token::<ibc_union_spec::Packet>(&(
+                    U256::from(1_u32).into(),
+                    U256::from(1_u32).into(),
+                    b"data".as_slice().into(),
+                    U256::from(1_u64).into(),
                     U256::from(0_u64).into(),
                 ));
 

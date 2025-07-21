@@ -14,13 +14,11 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{
-    self, ibc::core::client::height::Height, never::Never, traits::Member, ErrorReporter,
-};
+use unionlabs::{self, never::Never, traits::Member, ErrorReporter};
 use voyager_sdk::{
     anyhow,
     message::{
-        call::{SubmitTx, WaitForTrustedHeight, WaitForTrustedTimestamp},
+        call::{SubmitTx, WaitForTrustedTimestamp},
         data::{Data, IbcDatagram},
         PluginMessage, VoyagerMessage,
     },
@@ -287,16 +285,7 @@ impl Module {
             None => {
                 debug!("packet not received yet");
 
-                if event.packet.timeout_height != 0
-                    && event.packet.timeout_height > counterparty_latest_height.height()
-                {
-                    info!(
-                        "packet timed out (height): {} <= {}",
-                        event.packet.timeout_height, counterparty_latest_height
-                    );
-
-                    Ok(self.mk_wait(chain_id, counterparty_chain_id, event))
-                } else if !event.packet.timeout_timestamp.is_zero() {
+                if !event.packet.timeout_timestamp.is_zero() {
                     let counterparty_timestamp = voyager_client
                         .query_latest_timestamp(counterparty_chain_id.clone(), false)
                         .await?;
@@ -330,32 +319,15 @@ impl Module {
         event: PacketSend,
     ) -> Op<VoyagerMessage> {
         seq([
-            conc(
-                [
-                    (event.packet.timeout_height != 0).then_some(call(WaitForTrustedHeight {
-                        chain_id: chain_id.clone(),
-                        ibc_spec_id: IbcUnion::ID,
-                        client_id: RawClientId::new(
-                            event.packet.source_channel.connection.client_id,
-                        ),
-                        height: Height::new(event.packet.timeout_height),
-                        finalized: false,
-                    })),
-                    (event.packet.timeout_timestamp.as_nanos() != 0).then_some(call(
-                        WaitForTrustedTimestamp {
-                            chain_id: chain_id.clone(),
-                            ibc_spec_id: IbcUnion::ID,
-                            client_id: RawClientId::new(
-                                event.packet.source_channel.connection.client_id,
-                            ),
-                            timestamp: event.packet.timeout_timestamp,
-                            finalized: false,
-                        },
-                    )),
-                ]
-                .into_iter()
-                .flatten(),
-            ),
+            conc(event.packet.timeout_timestamp.is_zero().then_some(call(
+                WaitForTrustedTimestamp {
+                    chain_id: chain_id.clone(),
+                    ibc_spec_id: IbcUnion::ID,
+                    client_id: RawClientId::new(event.packet.source_channel.connection.client_id),
+                    timestamp: event.packet.timeout_timestamp,
+                    finalized: false,
+                },
+            ))),
             call(PluginMessage::new(
                 self.plugin_name(),
                 ModuleCall::from(MakeMsgTimeout {

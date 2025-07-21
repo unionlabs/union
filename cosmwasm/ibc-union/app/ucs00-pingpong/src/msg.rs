@@ -46,7 +46,6 @@ impl UCS00PingPong {
         };
         ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel_id: source_channel,
-            timeout_height: 0,
             timeout_timestamp: current_timestamp
                 .plus_duration(Duration::from_secs(config.seconds_before_timeout))
                 .expect("timeout overflow"),

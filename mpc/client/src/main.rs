@@ -1,3 +1,5 @@
+#![cfg(not(test))]
+
 mod types;
 mod ui;
 

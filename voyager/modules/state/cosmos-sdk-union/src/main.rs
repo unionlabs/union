@@ -137,7 +137,7 @@ impl Module {
             packet_source_channel_id,
             packet_destination_channel_id,
             packet_data,
-            packet_timeout_height,
+            packet_timeout_height: _,
             packet_timeout_timestamp,
             channel_id: _,
             packet_hash: _,
@@ -154,7 +154,6 @@ impl Module {
             source_channel_id: packet_source_channel_id,
             destination_channel_id: packet_destination_channel_id,
             data: packet_data,
-            timeout_height: packet_timeout_height,
             timeout_timestamp: packet_timeout_timestamp,
         })
     }
