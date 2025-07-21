@@ -11,9 +11,9 @@ use rand::RngCore;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetMetadata, FungibleAssetOrderV2, Instruction, Stake, Unstake,
+        FungibleAssetMetadata, FungibleAssetOrderV2, Instruction, Stake, Unstake, WithdrawStake,
         FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_2,
-        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE,
+        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE
     },
 };
 use union_test::{
@@ -86,18 +86,157 @@ use voyager_sdk::{anyhow, primitives::ChainId};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // send_stake(false).await?;
+    let pair = ChannelPair {
+        src: 1.try_into().unwrap(),
+        dest: 1.try_into().unwrap(),
+    };
 
-    let random_token_id = "111235239151157043841436637039164926998922383617846193637216301354934205390265";
+    // send_stake(true, pair).await?;
+
+    let random_token_id = "104876234059028879932730581024791282511281807550345635411656066941866346969265";
     let img = hex!("cfce857457d1b52cd752a85a8c83cb5885b5f0274226a383203790f7462228a6");
-    send_unstake(random_token_id, img).await?;
+    // send_unstake(random_token_id, img, pair).await?;
+    send_withdraw(random_token_id, img, pair).await?;
     Ok(())
 }
 
+async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyhow::Result<()> {
+    let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
+    let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
+    let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
+
+    let approve_contract: Bech32<FixedBytes<32>> = Bech32::from_str(bech).unwrap();
+
+    println!("Bech32 Address: {}", approve_contract);
+
+    let cosmos_cfg = cosmos::Config {
+        chain_id: ChainId::new("union-devnet-1"),
+        ibc_host_contract_address: Bech32::from_str(
+            "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+        )
+        .unwrap(),
+        keyring: KeyringConfig {
+            name: "alice".into(),
+            keys: vec![KeyringConfigEntry::Raw {
+                name: "alice".into(),
+                key: hex_literal::hex!(
+                    "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+                )
+                .to_vec(),
+            }],
+        },
+        rpc_url: "http://localhost:26657".into(),
+        gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
+            max_gas: 10000000,
+            gas_multiplier: Some(1.4),
+            denom: None,
+        }),
+        fee_recipient: None,
+    };
+
+    let evm_cfg = evm::Config {
+        chain_id: ChainId::new("32382"),
+        ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
+        multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
+        rpc_url: "http://localhost:8545".into(),
+        ws_url: "ws://localhost:8546".into(),
+        keyring: KeyringConfig {
+            name: "alice".into(),
+            keys: vec![KeyringConfigEntry::Raw {
+                name: "alice".into(),
+                key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
+                    .to_vec(),
+            }],
+        },
+        max_gas_price: None,
+        fixed_gas_price: None,
+        gas_multiplier: 2.0,
+    };
+
+    let src = cosmos::Module::new(cosmos_cfg.clone()).await?;
+    let dst = evm::Module::new(evm_cfg.clone()).await?;
+
+    // 3) now hand them to your library’s TestContext
+    let ctx = TestContext::new(src, dst, 1).await?;
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+
+    // let random_token_id = U256::from(34254743732435489573089871927264396635233634929192990872135477444705812226668u128).into();
+    let mut salt = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt);
 
 
-// #[tokio::main]
-async fn send_unstake(token_id: &str, img: [u8; 32]) -> anyhow::Result<()> {
+
+    let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+
+    println!("Channel {} ↔ {}", pair.src, pair.dest);
+
+    let approve_tx_hash = ctx
+        .dst
+        .zkgmerc721_approve(
+            hex!("03c6772d23486a24e09426259f0a017f6ffc26b7").into(),
+            zkgm_evm_addr.into(),
+            token_id.parse().unwrap(),
+            evm_provider.clone()
+        )
+        .await?;
+
+    println!("✅ Approve tx hash: {:?}", approve_tx_hash);
+
+
+
+    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
+    let instruction_withdraw = InstructionEvm {
+        version: INSTR_VERSION_0,
+        opcode: OP_WITHDRAW_STAKE,
+        operand: WithdrawStake {
+            token_id: token_id.parse().unwrap(),//into(),
+            governance_token: b"muno".into(),
+            governance_metadata_image: img.into(),
+            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            beneficiary: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+
+    let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider.clone());
+
+    rand::rng().fill_bytes(&mut salt);
+    let call_unstake = ucs03_zkgm
+        .send(
+            pair.dest.try_into().unwrap(),
+            0u64.into(),
+            4294967295000000000u64.into(),
+            salt.into(),
+            instruction_withdraw.clone(),
+        )
+        .clear_decoder();
+    // let call = call.with_cloned_provider();
+    let recv_unstake = ctx
+        .send_and_recv_unstake::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            zkgm_evm_addr.into(),
+            call_unstake,
+            &ctx.src,
+            Duration::from_secs(360),
+            given_validator.to_string(),
+            evm_provider
+        )
+        .await;
+
+    println!("Received packet data: {:?}", recv_unstake);
+
+
+    Ok(())
+}
+
+async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
     let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
@@ -167,11 +306,6 @@ async fn send_unstake(token_id: &str, img: [u8; 32]) -> anyhow::Result<()> {
     let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
     
 
-
-    let pair = ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
     println!("Channel {} ↔ {}", pair.src, pair.dest);
 
     let approve_tx_hash = ctx
@@ -241,7 +375,7 @@ async fn send_unstake(token_id: &str, img: [u8; 32]) -> anyhow::Result<()> {
 }
 
 
-pub async fn send_stake(open_channels: bool) -> anyhow::Result<()> {
+pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
     let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
@@ -350,12 +484,9 @@ pub async fn send_stake(open_channels: bool) -> anyhow::Result<()> {
         println!("Opened {} channels", opened);
     }
     
-    let pair = ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    
     if (open_channels) {
-        let pair = ctx.get_channel().await.unwrap();
+        pair = ctx.get_channel().await.unwrap();
     }
 
     let zkgm_evm_addr: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
