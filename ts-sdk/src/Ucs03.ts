@@ -1039,25 +1039,29 @@ export class Batch extends S.TaggedClass<Batch>()("Batch", {
  * @category models
  * @since 2.0.0
  */
-export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("FungibleAssetOrder", {
-  opcode: S.Literal(3).pipe(
-    S.optional,
-    S.withDefaults({
-      constructor: () => 3 as const,
-      decoding: () => 3 as const,
-    }),
-  ),
-  version: S.Literal(1).pipe(
-    S.optional,
-    S.withDefaults({
-      constructor: () => 1 as const,
-      decoding: () => 1 as const,
-    }),
-  ),
-  operand: FungibleAssetOrderOperand,
-}) {
+export class FungibleAssetOrderV1
+  extends S.TaggedClass<FungibleAssetOrderV1>()("FungibleAssetOrder", {
+    opcode: S.Literal(3).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 3 as const,
+        decoding: () => 3 as const,
+      }),
+    ),
+    version: S.tag(1).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 1 as const,
+        decoding: () => 1 as const,
+      }),
+    ),
+    operand: FungibleAssetOrderOperand,
+  })
+{
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
+
+const a = new FungibleAssetOrder({} as unknown as any)
 
 /**
  * @category models
