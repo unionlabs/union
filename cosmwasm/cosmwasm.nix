@@ -741,7 +741,8 @@ _: {
                       (get-lightclient (l: l.name == lc)).client-type
                     }"' -r)" \
                     --new-bytecode ${(mk-lightclient lc).release} \
-                    ${mk-gas-args gas_config}
+                    ${mk-gas-args gas_config} \
+                    "$@"
                 '';
               };
             }
