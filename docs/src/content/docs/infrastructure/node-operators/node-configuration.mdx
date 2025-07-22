@@ -47,13 +47,13 @@ Located in `config/app.toml`, this file is host to app settings.
 
 Located under the "Base Configuration" section of `config/app.toml`.
 
-The [skip-mev/feemarket](https://github.com/skip-mev/feemarket/) module sets a global gas price/fee. To ensure consistency with the rest of the network, set this to `"0muno"`.
+The [skip-mev/feemarket](https://github.com/skip-mev/feemarket/) module sets a global gas price/fee. To ensure consistency with the rest of the network, set this to `"0au"`.
 
 ```toml
 # The minimum gas prices a validator is willing to accept for processing a
 # transaction. A transaction's fees must meet the minimum of any denomination
 # specified in this config (e.g. 0.25token1;0.0001token2).
-minimum-gas-prices = "0muno"
+minimum-gas-prices = "0au"
 ```
 
 ### Pruning

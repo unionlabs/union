@@ -46,7 +46,7 @@ Add the following content to the file:
 ```json title="validator.json"
 {
 	"pubkey": <PUBKEY>,
-	"amount": "1000000muno",
+	"amount": "1000000au",
 	"moniker": "<MONIKER>",
 	"identity": "optional identity signature (ex. UPort or Keybase)",
 	"website": "validator's (optional) website",
@@ -65,14 +65,40 @@ Replacing:
 - `<MONIKER>` with your moniker
 - And the optional content with your preferred details
 
-### 2) Run the Create Validator Command
+### 2) Create a Proof of Possession
+
+:::note
+
+This step is specific to the Union network, other Cosmos based chains do not currently replicate this process.
+
+:::
+
+Assuming your private validator key is in the default location:
+
+<Tabs>
+  <TabItem label='uniond-release'>
+    ```sh frame="none"
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.union/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
+	```
+  </TabItem>
+  <TabItem label='Unionvisor'>
+    ```sh frame="none"
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.unionvisor/home/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
+	```
+  </TabItem>
+</Tabs>
+
+
+### 3) Run the Create Validator Command
 
 Then you can submit this file using the `create-union-validator` sub-command:
 
 ```sh frame="none"
-uniond tx poa create-validator path/to/validator.json \
-  --from $KEY_NAME \
-  --chain-id union-testnet-10
+uniond tx union-staking create-union-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
+	--from $KEY_NAME \
+	--chain-id union-testnet-10
 ```
 
 _Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`_
@@ -90,7 +116,7 @@ touch ~/.unionvisor/validator.json
 
 # Then after editing the json content
 
-uniond tx poa create-validator /.unionvisor/validator.json \
+uniond tx union-staking create-union-validator /.unionvisor/validator.json $POSSESSION_PROOF \
 	--from $KEY_NAME \
 	--chain-id union-testnet-10
 ```
