@@ -39,6 +39,10 @@ var unionFoundationSigMap = map[string]string{
 	UNION_TESTNET: FOUNDATION_TESTNET_SIG,
 	UNION_DEVNET:  DEVNET_SIG,
 }
+var feemarketDistFees = map[string]bool{
+	UNION_TESTNET: true,
+	UNION_DEVNET:  false,
+}
 
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
@@ -231,7 +235,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 		feeMarketParams.FeeDenom = U_BASE_DENOM
 		// distribute fees rather than burning, the 100% community tax should intercept these before they're sent to the stakers (?)
-		feeMarketParams.DistributeFees = true
+		feeMarketParams.DistributeFees = feemarketDistFees[sdkCtx.ChainID()]
 		err = keepers.FeeMarketKeeper.SetParams(sdkCtx, feeMarketParams)
 		if err != nil {
 			return nil, err
