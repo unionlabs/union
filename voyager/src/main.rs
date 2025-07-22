@@ -284,7 +284,14 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
         Command::Queue(cli_msg) => {
             let db = || {
                 Ok(match get_voyager_config()?.voyager.queue {
-                    QueueConfig::PgQueue(cfg) => pg_queue::PgQueue::<VoyagerMessage>::new(cfg),
+                    QueueConfig::PgQueue(cfg) => {
+                        pg_queue::PgQueue::<VoyagerMessage>::new(PgQueueConfig {
+                            // only one connection is needed for the queue commands
+                            min_connections: 1,
+                            max_connections: 1,
+                            ..cfg
+                        })
+                    }
                     QueueConfig::InMemory => {
                         return Err(anyhow!(
                             "no database set in config, queue commands \
