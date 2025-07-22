@@ -212,6 +212,6 @@ func inputsHash(header ProverLightHeader, trustedValidatorsHash []byte) fr.Eleme
 	hash := sha256.Sum256(buff)
 
 	var e fr.Element
-	e.SetBytes(hash[1:])
+	e.SetBytes(hash[:])
 	return e
 }
