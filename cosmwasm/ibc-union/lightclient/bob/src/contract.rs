@@ -61,7 +61,7 @@ pub fn migrate(
                     dispute_game_factory_dispute_game_list_slot,
                     fault_dispute_game_code_root_claim_index,
                 },
-                1,
+                current_version @ (1 | 2),
             ) => {
                 let ibc_host = deps.storage.read_item::<IbcHost>()?;
                 let mut migrate_state_msgs = Vec::new();
@@ -112,7 +112,11 @@ pub fn migrate(
                 }
                 Ok((
                     Response::default().add_messages(migrate_state_msgs),
-                    Some(NonZeroU32::new(2).expect("impossible")),
+                    if current_version == 1 {
+                        Some(NonZeroU32::new(2).expect("impossible"))
+                    } else {
+                        None
+                    },
                 ))
             }
             (msg, version) => Err(StdError::generic_err(format!(
