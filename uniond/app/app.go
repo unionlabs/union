@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"io"
+	"math/big"
 	"os"
 	"slices"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	_ "cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	_ "cosmossdk.io/x/circuit" // import for side-effects
 	circuitkeeper "cosmossdk.io/x/circuit/keeper"
@@ -157,6 +159,10 @@ type App struct {
 	configurator module.Configurator
 }
 
+var PowerReduction = sdkmath.NewIntFromBigInt(
+	new(big.Int).SetUint64(1_000_000_000_000_000_000),
+)
+
 func init() {
 	var err error
 	clienthelpers.EnvPrefix = Name
@@ -164,6 +170,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	sdk.DefaultPowerReduction = PowerReduction
 }
 
 // getGovProposalHandlers return the chain proposal handlers.
