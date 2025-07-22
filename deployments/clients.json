@@ -309,6 +309,7 @@
       "refresh_rate": "500"
     },
     "10": {
+      "client_type": "tendermint",
       "counterparty": "xion.xion-testnet-2",
       "refresh_rate": "500"
     },
@@ -317,10 +318,12 @@
       "refresh_rate": "5000"
     },
     "14": {
+      "client_type": "ethermint",
       "counterparty": "sei.atlantic-2",
       "refresh_rate": "5000"
     },
     "15": {
+      "client_type": "parlia",
       "counterparty": "bsc.97",
       "refresh_rate": "5000"
     }

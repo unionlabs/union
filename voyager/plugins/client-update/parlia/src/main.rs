@@ -7,13 +7,13 @@ use alloy::{
     providers::{DynProvider, Provider, ProviderBuilder},
 };
 use ethereum_light_client_types::AccountProof;
-use ibc_union_spec::{path::ConsensusStatePath, ClientId, IbcUnion};
+use ibc_union_spec::{ClientId, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
     Extensions,
 };
-use parlia_light_client_types::{ConsensusState, Header};
+use parlia_light_client_types::Header;
 use parlia_types::ParliaHeader;
 use parlia_verifier::EPOCH_LENGTH;
 use serde::{Deserialize, Serialize};
@@ -29,10 +29,10 @@ use voyager_sdk::{
         PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientType, IbcInterface, QueryHeight},
+    primitives::{ChainId, ClientType},
     rpc::{types::PluginInfo, PluginServer},
     vm::{self, pass::PassResult, BoxDynError, Op, Visit},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    DefaultCmd,
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -52,6 +52,8 @@ pub struct Module {
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+
+    pub valset_size: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,10 +101,29 @@ impl Plugin for Module {
 
         assert_eq!(chain_id, config.chain_id);
 
+        let latest_block_number = provider.get_block_number().await?;
+
+        let (_, valset) = parlia_verifier::parse_epoch_rotation_header_extra_data(
+            &provider
+                .get_block_by_number(
+                    (latest_block_number - (latest_block_number % parlia_verifier::EPOCH_LENGTH))
+                        .into(),
+                )
+                .await?
+                .unwrap()
+                .header
+                .extra_data,
+        )?;
+
+        let valset_size = valset.len();
+
+        info!("valset size is {valset_size}");
+
         Ok(Self {
             chain_id,
             provider,
             ibc_handler_address: config.ibc_handler_address,
+            valset_size,
         })
     }
 
@@ -149,6 +170,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                         .clone()
                                         .decode_spec::<IbcUnion>()
                                         .unwrap(),
+                                    already_fetched_updates: vec![],
                                 }),
                             ))
                         },
@@ -164,16 +186,17 @@ impl PluginServer<ModuleCall, Never> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 from_height,
                 to_height,
                 counterparty_chain_id,
                 client_id,
+                already_fetched_updates,
             }) => self
                 .fetch_update(
-                    e.voyager_client()?,
+                    already_fetched_updates,
                     from_height,
                     to_height,
                     counterparty_chain_id,
@@ -232,7 +255,7 @@ impl Module {
     )]
     async fn fetch_update(
         &self,
-        voy_client: &VoyagerClient,
+        already_fetched_updates: Vec<Header>,
         update_from: Height,
         update_to: Height,
         counterparty_chain_id: ChainId,
@@ -240,41 +263,37 @@ impl Module {
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
         // fetch intermediate updates for every epoch
 
-        let mut trusted_valset_size = {
-            let trusted_consensus_state_bytes = voy_client
-                .query_ibc_state(
-                    counterparty_chain_id.clone(),
-                    QueryHeight::Latest,
-                    ConsensusStatePath {
-                        client_id,
-                        height: update_from.height(),
-                    },
-                )
-                .await?;
+        // #[derive(Debug, Deserialize)]
+        // struct Snapshot {
+        //     validators: Vec<Value>,
+        // }
 
-            let trusted_consensus_state = voy_client
-                .decode_consensus_state::<IbcUnion, ConsensusState>(
-                    ClientType::new(ClientType::PARLIA),
-                    IbcInterface::new(IbcInterface::IBC_COSMWASM),
-                    trusted_consensus_state_bytes,
-                )
-                .await?;
-
-            let block = self
-                .provider
-                .get_block(trusted_consensus_state.valset_epoch_block_number.into())
-                .await?
-                .unwrap();
-
-            let (_, valset) =
-                parlia_verifier::parse_epoch_rotation_header_extra_data(&block.header.extra_data)?;
-
-            valset.len()
-        };
-
-        let mut headers = vec![];
+        let mut headers: Vec<Header> = vec![];
 
         for block in windows(update_from.height(), update_to.height()) {
+            if headers.len() >= 10 {
+                let last = headers.last().unwrap().source.number;
+
+                info!(
+                    "fetched updates between {first} to {last}, continuing from {last} to {update_to}",
+                    first = headers.first().unwrap().source.number,
+                );
+
+                return Ok(vm::call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::from(FetchUpdate {
+                        from_height: Height::new(last.try_into().unwrap()),
+                        to_height: update_to,
+                        counterparty_chain_id,
+                        client_id,
+                        already_fetched_updates: already_fetched_updates
+                            .into_iter()
+                            .chain(headers)
+                            .collect(),
+                    }),
+                )));
+            }
+
             info!("fetching update to {block}");
 
             let source = self.provider.get_block(block.into()).await?.unwrap();
@@ -284,22 +303,10 @@ impl Module {
             let trusted_valset_epoch_number =
                 parlia_verifier::calculate_signing_valset_epoch_block_number(
                     attestation.header.number,
-                    trusted_valset_size.try_into().unwrap(),
+                    self.valset_size.try_into().unwrap(),
                 );
 
             info!(%trusted_valset_epoch_number);
-
-            trusted_valset_size = parlia_verifier::parse_epoch_rotation_header_extra_data(
-                &self
-                    .provider
-                    .get_block(trusted_valset_epoch_number.into())
-                    .await?
-                    .unwrap()
-                    .header
-                    .extra_data,
-            )?
-            .1
-            .len();
 
             let ibc_account_proof = self
                 .fetch_ibc_contract_root_proof(source.header.number)
@@ -311,12 +318,13 @@ impl Module {
                 target: convert_header(target),
                 attestation: convert_header(attestation),
                 ibc_account_proof,
-            })
+            });
         }
 
         Ok(vm::data(OrderedHeaders {
-            headers: headers
+            headers: already_fetched_updates
                 .into_iter()
+                .chain(headers)
                 .map(|h| {
                     (
                         DecodedHeaderMeta {

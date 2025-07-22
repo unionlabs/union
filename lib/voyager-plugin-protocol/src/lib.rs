@@ -40,6 +40,7 @@ use jsonrpsee::{
     types::{ErrorObject, Response, ResponsePayload},
     MethodResponse, RpcModule,
 };
+use opentelemetry::{global, KeyValue};
 use reth_ipc::{
     client::IpcClientBuilder,
     server::{RpcService, RpcServiceBuilder},
@@ -572,6 +573,7 @@ pub async fn worker_child_process(
     debug!(%coordinator_to_worker_socket, %worker_to_coordinator_socket);
 
     lazarus_pit(
+        &name,
         &path,
         [
             "run".to_owned(),
@@ -588,8 +590,17 @@ pub async fn worker_child_process(
 
 /// Spawn a worker process with the given args, re-spawning it indefinitely unless it exits with [`INVALID_CONFIG_EXIT_CODE`] or the passed in cancellation token is cancelled.
 #[instrument(skip_all)]
-async fn lazarus_pit(cmd: &Path, args: Vec<String>, cancellation_token: CancellationToken) {
+async fn lazarus_pit(
+    name: &str,
+    cmd: &Path,
+    args: Vec<String>,
+    cancellation_token: CancellationToken,
+) {
     let mut attempt = 0_u64;
+
+    let metrics_handle = global::meter("voyager")
+        .u64_counter("lazarus_pit.child_revivals.count")
+        .build();
 
     loop {
         let mut cmd = tokio::process::Command::new(cmd);
@@ -660,10 +671,11 @@ async fn lazarus_pit(cmd: &Path, args: Vec<String>, cancellation_token: Cancella
                     }
                 }
 
-                // TODO: Exponential backoff
                 sleep(Duration::from_secs(cmp::min(attempt.pow(2), 60))).await;
             }
         }
+
+        metrics_handle.add(1, &[KeyValue::new("plugin", name.to_owned())]);
 
         attempt += 1;
     }

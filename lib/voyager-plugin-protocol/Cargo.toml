@@ -16,6 +16,8 @@ anyhow                         = { workspace = true }
 futures                        = { workspace = true }
 itertools                      = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
+opentelemetry                  = { workspace = true }
+opentelemetry_sdk              = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
 serde                          = { workspace = true, features = ["derive"] }
