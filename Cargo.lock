@@ -17974,6 +17974,8 @@ dependencies = [
  "futures",
  "itertools 0.13.0",
  "jsonrpsee 0.25.1",
+ "opentelemetry",
+ "opentelemetry_sdk",
  "reconnecting-jsonrpc-ws-client",
  "reth-ipc",
  "serde",
