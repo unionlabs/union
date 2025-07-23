@@ -10,7 +10,7 @@ use std::{
 use cosmos_sdk_event::CosmosSdkEvent;
 use dashmap::DashMap;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{path::ChannelPath, query::PacketByHash, IbcUnion, Packet};
+use ibc_union_spec::{path::ChannelPath, query::PacketByHash, IbcUnion, MustBeZero, Packet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -1598,6 +1598,7 @@ impl Module {
                     source_channel_id: packet_source_channel_id,
                     destination_channel_id: packet_destination_channel_id,
                     data: packet_data,
+                    timeout_height: MustBeZero,
                     timeout_timestamp: packet_timeout_timestamp,
                 };
 

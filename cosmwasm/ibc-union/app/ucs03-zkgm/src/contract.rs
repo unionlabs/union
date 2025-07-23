@@ -16,7 +16,7 @@ use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
-use ibc_union_spec::{path::BatchPacketsPath, ChannelId, Packet, Timestamp};
+use ibc_union_spec::{path::BatchPacketsPath, ChannelId, MustBeZero, Packet, Timestamp};
 use ucs03_zkgm_token_minter_api::{LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg};
 use unionlabs::{
     ethereum::keccak256,
@@ -743,6 +743,7 @@ fn timeout_multiplex(
                 multiplex.contract_calldata.into(),
             )
             .into(),
+            timeout_height: MustBeZero,
             timeout_timestamp: packet.timeout_timestamp,
         };
 
@@ -1261,6 +1262,7 @@ fn acknowledge_multiplex(
                 multiplex.contract_calldata.into(),
             )
             .into(),
+            timeout_height: MustBeZero,
             timeout_timestamp: packet.timeout_timestamp,
         };
 
@@ -1666,6 +1668,7 @@ fn execute_multiplex(
                 multiplex.contract_calldata.into(),
             )
             .into(),
+            timeout_height: MustBeZero,
             timeout_timestamp: packet.timeout_timestamp,
         };
 

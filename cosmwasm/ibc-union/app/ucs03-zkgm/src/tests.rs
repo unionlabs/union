@@ -10,7 +10,7 @@ use cw20_token_minter::contract::save_native_token;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor, SudoMsg};
 use cw_storage_plus::Map;
 use ibc_union_msg::module::IbcUnionMsg;
-use ibc_union_spec::{path::commit_packets, ChannelId, ConnectionId, Packet};
+use ibc_union_spec::{path::commit_packets, ChannelId, ConnectionId, MustBeZero, Packet};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -624,6 +624,7 @@ fn test_execute_internal_execute_only_self() {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(10),
                 data: Default::default(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Default::default(),
             },
             relayer: Addr::unchecked(""),
@@ -689,6 +690,7 @@ fn test_on_recv_packet_only_ibc() {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(10),
                 data: Default::default(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Default::default(),
             },
             relayer: "".into(),
@@ -711,6 +713,7 @@ fn test_on_recv_packet_invalid_caller() {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(10),
                 data: Default::default(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Default::default(),
             },
             relayer: "".into(),
@@ -738,6 +741,7 @@ fn test_on_recv_packet_invalid_relayer() {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(10),
                 data: Default::default(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Default::default(),
             },
             relayer: "".into(),
@@ -759,6 +763,7 @@ fn test_on_recv_packet_save_packet() {
         source_channel_id: ChannelId!(1),
         destination_channel_id: ChannelId!(10),
         data: Default::default(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
     let result = execute(
@@ -788,6 +793,7 @@ fn test_on_recv_packet_nonreentrant() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(10),
             data: Default::default(),
+            timeout_height: MustBeZero,
             timeout_timestamp: Default::default(),
         },
         relayer: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
@@ -1004,6 +1010,7 @@ fn test_recv_packet_invalid_failure_ack() {
         source_channel_id: ChannelId!(1),
         destination_channel_id: ChannelId!(10),
         data: Default::default(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
     let caller = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".to_string();
@@ -1175,6 +1182,7 @@ impl IncomingOrderBuilder {
             }
             .abi_encode_params()
             .into(),
+            timeout_height: MustBeZero,
             timeout_timestamp: Default::default(),
         };
         let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
@@ -2023,6 +2031,7 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_failure_
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2178,6 +2187,7 @@ fn test_recv_packet_native_v2_wrap_ok() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2304,6 +2314,7 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2432,6 +2443,7 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2505,6 +2517,7 @@ fn test_recv_packet_native_v2_invalid_metadata_type() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2599,6 +2612,7 @@ fn test_recv_packet_native_v2_market_maker_fill() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2733,6 +2747,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2798,6 +2813,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -2930,6 +2946,7 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -3056,6 +3073,7 @@ fn test_recv_packet_native_v2_unwrap_with_v1_metadata_image() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 
@@ -3153,6 +3171,7 @@ fn test_recv_packet_native_v2_unwrap_no_outstanding_balance() {
         }
         .abi_encode_params()
         .into(),
+        timeout_height: MustBeZero,
         timeout_timestamp: Default::default(),
     };
 

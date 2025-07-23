@@ -30,8 +30,8 @@ use ibc_union_spec::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
         ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
     },
-    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState, Packet,
-    Timestamp,
+    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
+    MustBeZero, Packet, Timestamp,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
@@ -1901,6 +1901,7 @@ fn send_packet(
             .counterparty_channel_id
             .expect("channel is open; qed;"),
         data: data.into(),
+        timeout_height: MustBeZero,
         timeout_timestamp,
     };
 
