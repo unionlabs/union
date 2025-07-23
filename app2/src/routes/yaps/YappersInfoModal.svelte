@@ -145,7 +145,12 @@ const { isOpen, onClose }: Props = $props()
             <strong class="text-white">Start Yapping:</strong> If it's your first time, start by
             sharing educational content about Union's mission and tech. Make sure to engage with
             fellow yappers and join the ongoing conversation within the Union community. Please read
-            this yapper guide as a reference.
+            <a
+              href="https://union.build/yapper-guide"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-orange-400 hover:text-orange-300 underline"
+            >this yapper guide</a> as a reference.
           </li>
           <li>
             <strong class="text-white">Climb the Leaderboard:</strong> Your impact is tracked in
