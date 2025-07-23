@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    future::Future,
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::{collections::HashMap, future::Future, sync::Arc, time::Duration};
 
 use jsonrpsee::core::async_trait;
 use tokio::sync::Mutex;
@@ -109,19 +104,13 @@ impl ChannelPool {
                         dest: confirm.channel_id.clone(),
                     };
 
-                    let dup_forward = map
-                        .available
-                        .get(&key)
-                        .map_or(false, |v| v.contains(&pair));
-                    let dup_backward = map
-                        .available
-                        .get(&rev_key)
-                        .map_or(false, |v| {
-                            v.contains(&ChannelPair {
-                                src: pair.dest.clone(),
-                                dest: pair.src.clone(),
-                            })
-                        });
+                    let dup_forward = map.available.get(&key).map_or(false, |v| v.contains(&pair));
+                    let dup_backward = map.available.get(&rev_key).map_or(false, |v| {
+                        v.contains(&ChannelPair {
+                            src: pair.dest.clone(),
+                            dest: pair.src.clone(),
+                        })
+                    });
 
                     if dup_forward || dup_backward {
                         println!(

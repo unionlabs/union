@@ -1,6 +1,5 @@
 use std::{
     num::{NonZeroU32, NonZeroU8},
-    panic::AssertUnwindSafe,
     time::Duration,
 };
 
@@ -25,11 +24,9 @@ use unionlabs::{
     bech32::Bech32,
     google::protobuf::any::mk_any,
     primitives::{encoding::HexUnprefixed, Bytes, H160, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow::{self, anyhow, bail, Context},
-    jsonrpsee::tracing::info,
     primitives::ChainId,
     serde_json,
     vm::BoxDynError,
@@ -144,7 +141,12 @@ impl Module {
         })
     }
 
-    async fn wait_for_event<T, F>(&self, mut filter_fn: F, max_wait: Duration, expected_event_count: usize) -> anyhow::Result<Vec<T>>
+    async fn wait_for_event<T, F>(
+        &self,
+        mut filter_fn: F,
+        max_wait: Duration,
+        expected_event_count: usize,
+    ) -> anyhow::Result<Vec<T>>
     where
         F: FnMut(&ModuleEvent) -> Option<T> + Send + 'static,
         T: Send + 'static,
@@ -156,7 +158,7 @@ impl Module {
 
         tokio::time::timeout(max_wait, async move {
             loop {
-                if events.len() >=  expected_event_count{
+                if events.len() >= expected_event_count {
                     return Ok(events);
                 }
                 let latest = client.status().await?.sync_info.latest_block_height;
@@ -215,26 +217,29 @@ impl Module {
         &self,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
-        Ok(self.wait_for_event(
-            |evt| {
-                if let ModuleEvent::WasmCreateClient { client_id, .. } = evt {
-                    Some(helpers::CreateClientConfirm {
-                        client_id: client_id.raw().try_into().unwrap(),
-                    })
-                } else {
-                    None
-                }
-            },
-            max_wait,
-            1
-        )
-        .await?.pop().unwrap())
+        Ok(self
+            .wait_for_event(
+                |evt| {
+                    if let ModuleEvent::WasmCreateClient { client_id, .. } = evt {
+                        Some(helpers::CreateClientConfirm {
+                            client_id: client_id.raw().try_into().unwrap(),
+                        })
+                    } else {
+                        None
+                    }
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn wait_for_channel_open_confirm(
         &self,
         max_wait: Duration,
-        expected_event_count: usize
+        expected_event_count: usize,
     ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
         self.wait_for_event(
             |evt| {
@@ -253,7 +258,7 @@ impl Module {
                 }
             },
             max_wait,
-            expected_event_count
+            expected_event_count,
         )
         .await
     }
@@ -262,29 +267,32 @@ impl Module {
         &self,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        Ok(self.wait_for_event(
-            |evt| {
-                if let ModuleEvent::WasmConnectionOpenConfirm {
-                    connection_id,
-                    counterparty_connection_id,
-                    ..
-                } = evt
-                {
-                    Some(helpers::ConnectionConfirm {
-                        connection_id: connection_id.raw().try_into().unwrap(),
-                        counterparty_connection_id: counterparty_connection_id
-                            .raw()
-                            .try_into()
-                            .unwrap(),
-                    })
-                } else {
-                    None
-                }
-            },
-            max_wait,
-            1
-        )
-        .await?.pop().unwrap())
+        Ok(self
+            .wait_for_event(
+                |evt| {
+                    if let ModuleEvent::WasmConnectionOpenConfirm {
+                        connection_id,
+                        counterparty_connection_id,
+                        ..
+                    } = evt
+                    {
+                        Some(helpers::ConnectionConfirm {
+                            connection_id: connection_id.raw().try_into().unwrap(),
+                            counterparty_connection_id: counterparty_connection_id
+                                .raw()
+                                .try_into()
+                                .unwrap(),
+                        })
+                    } else {
+                        None
+                    }
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn wait_for_packet_recv(
@@ -293,24 +301,27 @@ impl Module {
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         println!("Waiting for packet recv event with hash: {packet_hash_param:?}");
-        Ok(self.wait_for_event(
-            move |evt| {
-                if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
-                    println!("Packet recv event came with hash: {packet_hash:?}");
-                    if packet_hash.as_ref() == packet_hash_param.as_ref() {
-                        return Some(helpers::PacketRecv {
-                            packet_hash: *packet_hash,
-                        });
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
+                        println!("Packet recv event came with hash: {packet_hash:?}");
+                        if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            return Some(helpers::PacketRecv {
+                                packet_hash: *packet_hash,
+                            });
+                        }
+                        None
+                    } else {
+                        None
                     }
-                    None
-                } else {
-                    None
-                }
-            },
-            max_wait,
-            1
-        )
-        .await?.pop().unwrap())
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn wait_for_packet_ack(
@@ -319,77 +330,84 @@ impl Module {
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketAck> {
         println!("Waiting for packet ack event with hash: {packet_hash_param:?}");
-        Ok(self.wait_for_event(
-            move |evt| {
-                if let ModuleEvent::WasmPacketAck { packet_hash, .. } = evt {
-                    if packet_hash.as_ref() == packet_hash_param.as_ref() {
-                        return Some(helpers::PacketAck {
-                            packet_hash: *packet_hash,
-                        });
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::WasmPacketAck { packet_hash, .. } = evt {
+                        if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            return Some(helpers::PacketAck {
+                                packet_hash: *packet_hash,
+                            });
+                        }
+                        None
+                    } else {
+                        None
                     }
-                    None
-                } else {
-                    None
-                }
-            },
-            max_wait,
-            1
-        )
-        .await?.pop().unwrap())
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
-    
     pub async fn wait_for_delegate(
         &self,
         validator_filter: String,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::Delegate> {
-        Ok(self.wait_for_event(
-            move |evt| {
-                if let ModuleEvent::Delegate { validator, .. } = evt {
-                    if validator == &validator_filter {
-                        Some(helpers::Delegate {
-                            validator: validator.clone(),
-                        })
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::Delegate { validator, .. } = evt {
+                        if validator == &validator_filter {
+                            Some(helpers::Delegate {
+                                validator: validator.clone(),
+                            })
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
-                } else {
-                    None
-                }
-            },
-            max_wait,
-            1
-        )
-        .await?.pop().unwrap())
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
-
 
     pub async fn wait_for_withdraw_rewards(
         &self,
         validator_filter: String,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::WithdrawRewards> {
-        Ok(self.wait_for_event(
-            move |evt| {
-                println!("EVT is: {:?}", evt);
-                if let ModuleEvent::WithdrawRewards { validator, amount } = evt {
-                    if validator == &validator_filter {
-                        Some(helpers::WithdrawRewards {
-                            validator: validator.clone(),
-                            amount: amount.clone(),
-                        })
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    println!("EVT is: {:?}", evt);
+                    if let ModuleEvent::WithdrawRewards { validator, amount } = evt {
+                        if validator == &validator_filter {
+                            Some(helpers::WithdrawRewards {
+                                validator: validator.clone(),
+                                amount: amount.clone(),
+                            })
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
-                } else {
-                    None
-                }
-            },
-            max_wait,
-            1
-        )
-        .await?.pop().unwrap())
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
     }
 
     pub async fn predict_wrapped_token(
@@ -435,11 +453,7 @@ impl Module {
 
     pub async fn get_signer(&self) -> (Bech32<H160>, &LocalSigner) {
         loop {
-            if let Some(signer) = self
-                .keyring
-                .with(|s| async move { s })
-                .await
-            {
+            if let Some(signer) = self.keyring.with(|s| async move { s }).await {
                 let address = signer.address();
                 return (address, signer);
             } else {
@@ -449,7 +463,6 @@ impl Module {
         }
     }
 
-
     pub async fn send_transaction_with_retry(
         &self,
         contract: Bech32<H256>,
@@ -458,7 +471,9 @@ impl Module {
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
         let max_retries = 5;
         for attempt in 1..=max_retries {
-            let outcome = self.send_transaction(contract.clone(), msg.clone(), signer).await;
+            let outcome = self
+                .send_transaction(contract.clone(), msg.clone(), signer)
+                .await;
 
             if let Some(Ok(_)) = &outcome {
                 return outcome;
@@ -468,7 +483,9 @@ impl Module {
                 if self.is_sequence_mismatch(err) && attempt < max_retries {
                     tracing::warn!(
                         "send_transaction attempt {}/{} failed with sequence mismatch, {:?}",
-                        attempt, max_retries, err
+                        attempt,
+                        max_retries,
+                        err
                     );
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
@@ -476,19 +493,17 @@ impl Module {
                     return outcome;
                 }
             }
-
         }
 
         None
     }
-
 
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
         contract: Bech32<H256>,
         msg: (Vec<u8>, Vec<Coin>),
-        signer: &LocalSigner
+        signer: &LocalSigner,
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
         let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
 
@@ -514,20 +529,19 @@ impl Module {
 
         // wrap it back into an Option
         Some(outcome)
-
     }
 
     /// Helper to detect the ABCI “account sequence mismatch” error.
     fn is_sequence_mismatch(&self, err: &BroadcastTxCommitError) -> bool {
-    // You’ll want to match exactly on the gRPC error variant—
-    // here we just do a string-contains on the log.
-    match err {
-        BroadcastTxCommitError::Query(grpc_err) => {
-            grpc_err.log.contains("account sequence mismatch")
+        // You’ll want to match exactly on the gRPC error variant—
+        // here we just do a string-contains on the log.
+        match err {
+            BroadcastTxCommitError::Query(grpc_err) => {
+                grpc_err.log.contains("account sequence mismatch")
+            }
+            _ => false,
         }
-        _ => false,
     }
-}
 
     pub async fn send_ibc_transaction(
         &self,
@@ -563,16 +577,10 @@ impl Module {
 #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
 pub enum ModuleEvent {
     #[serde(rename = "delegate")]
-    Delegate { 
-        validator: String, 
-        amount: String 
-    },
+    Delegate { validator: String, amount: String },
 
     #[serde(rename = "withdraw_rewards")]
-    WithdrawRewards {
-        validator: String,
-        amount: String,
-    },
+    WithdrawRewards { validator: String, amount: String },
 
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {

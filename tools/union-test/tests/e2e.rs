@@ -13,7 +13,6 @@ use hex_literal::hex;
 use ibc_union_spec::ChannelId;
 use protos::cosmos::base::v1beta1::Coin;
 use rand::RngCore;
-use serial_test::serial;
 use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
@@ -36,13 +35,13 @@ use unionlabs::{
     bech32::Bech32,
     encoding::{Encode, Json},
     ethereum::keccak256,
-    primitives::{FixedBytes, H160, U256},
+    primitives::{FixedBytes, U256},
 };
 use voyager_sdk::primitives::ChainId;
 
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
-static ERC20: OnceCell<H160> = OnceCell::const_new();
+// static ERC20: OnceCell<H160> = OnceCell::const_new();
 
 static UNION_ZKGM_ADDRESS: &str =
     "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";

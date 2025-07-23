@@ -4,8 +4,8 @@ use alloy::{
     contract::{Error, RawCallBuilder, Result},
     network::{AnyNetwork, EthereumWallet},
     providers::{
-        fillers::RecommendedFillers, DynProvider, PendingTransaction, PendingTransactionError,
-        Provider, ProviderBuilder,
+        fillers::RecommendedFillers, DynProvider, PendingTransactionError, Provider,
+        ProviderBuilder,
     },
     rpc::types::Filter,
     signers::local::LocalSigner,
@@ -20,10 +20,7 @@ use ethers::{
 };
 use ibc_solidity::Ibc::IbcEvents;
 use ibc_union_spec::{datagram::Datagram, ChannelId};
-use jsonrpsee::{
-    core::RpcResult,
-    types::{ErrorObject, ErrorObjectOwned},
-};
+use jsonrpsee::{core::RpcResult, types::ErrorObjectOwned};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info_span, warn, Instrument};
 use unionlabs::{
@@ -31,7 +28,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow::{self, Context},
+    anyhow::{self},
     primitives::ChainId,
 };
 
@@ -501,7 +498,7 @@ impl<'a> Module<'a> {
             let maybe_rcpt = provider
                 .get_transaction_receipt(tx_hash.into())
                 .await
-                .map_err(|rpc_err| TxSubmitError::InclusionError)?;
+                .map_err(|_rpc_err| TxSubmitError::InclusionError)?;
 
             if let Some(rcpt) = maybe_rcpt {
                 println!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
@@ -654,21 +651,11 @@ impl<'a> Module<'a> {
 
         code.extend(&encoded);
 
-        let from = self
-            .keyring
-            .with(|w| async move { w.address() })
-            .await
-            .unwrap();
-
         let mut attempts = 0;
         loop {
             attempts += 1;
-            // let nonce = provider.get_transaction_count(from.into()).await?;
 
-            let mut call = RawCallBuilder::new_raw_deploy(
-                provider.clone(),    // your DynProvider<AnyNetwork>
-                code.clone().into(), // the bytecode
-            );
+            let mut call = RawCallBuilder::new_raw_deploy(provider.clone(), code.clone().into());
             let gas_est = call.estimate_gas().await?;
             call = call.gas((gas_est as f64 * 2.2) as u64);
             let pending = call.send().await;
