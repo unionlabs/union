@@ -9,6 +9,7 @@ import { onDestroy, onMount } from "svelte"
 import YappersHero from "./YappersHero.svelte"
 import YappersPodium from "./YappersPodium.svelte"
 import YappersTable from "./YappersTable.svelte"
+import YappersTeamModal from "./YappersTeamModal.svelte"
 
 let activeTab = $state<"season1" | "season0">("season1")
 let sceneLoaded = $state(false)
@@ -20,10 +21,19 @@ let contentReady = $state(false)
 let searchQuery = $state("")
 let currentPage = $state(1)
 const itemsPerPage = 50
+let isTeamModalOpen = $state(false)
 
 // Computed values for current data
 const currentData = $derived(activeTab === "season1" ? season1Data : season0Data)
 const currentLoading = $derived(activeTab === "season1" ? season1Loading : season0Loading)
+
+function openTeamModal() {
+  isTeamModalOpen = true
+}
+
+function closeTeamModal() {
+  isTeamModalOpen = false
+}
 
 onMount(() => {
   const checkAndSetContentReady = () => {
@@ -237,6 +247,7 @@ onDestroy(() => {
             {searchQuery}
             bind:currentPage
             {itemsPerPage}
+            {openTeamModal}
           />
         </Card>
       </div>
@@ -262,6 +273,11 @@ onDestroy(() => {
     </div>
   </div>
 {/if}
+
+<YappersTeamModal
+  isOpen={isTeamModalOpen}
+  onClose={closeTeamModal}
+/>
 
 <style>
 @keyframes fade-in {

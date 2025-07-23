@@ -1,26 +1,17 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import type { YapsSeason } from "$lib/dashboard/queries/public"
-import YappersTeamModal from "./YappersTeamModal.svelte"
 
 interface Props {
   entries: YapsSeason[]
   searchQuery: string
   currentPage: number
   itemsPerPage: number
+  openTeamModal: () => void
 }
 
-let { entries, searchQuery, currentPage = $bindable(), itemsPerPage }: Props = $props()
-
-let isTeamModalOpen = $state(false)
-
-function openTeamModal() {
-  isTeamModalOpen = true
-}
-
-function closeTeamModal() {
-  isTeamModalOpen = false
-}
+let { entries, searchQuery, currentPage = $bindable(), itemsPerPage, openTeamModal }: Props =
+  $props()
 
 function getAvatarUrl(username: string | null, pfp: string | null) {
   const cleanUsername = (username || "unknown").toLowerCase().replace(" ", "")
@@ -176,9 +167,3 @@ let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex 
     </div>
   {/if}
 </div>
-
-<!-- Team Member Modal -->
-<YappersTeamModal
-  isOpen={isTeamModalOpen}
-  onClose={closeTeamModal}
-/>
