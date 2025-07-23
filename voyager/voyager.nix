@@ -49,26 +49,64 @@
               ) voy-modules-list
             )
           );
+          # voyager-modules-plugins =
+          #   let
+          #     builder =
+          #       release:
+          #       pkgs.symlinkJoin {
+          #         name = "voyager-modules-plugins";
+          #         paths = map (
+          #           path:
+          #           let
+          #             p = dbg (
+          #               builtins.head (
+          #                 builtins.attrValues (
+          #                   crane.buildWorkspaceMember (dbg path) {
+          #                     postInstall = ''
+          #                       strip $out/bin/*
+          #                     '';
+          #                   }
+          #                 )
+          #               )
+          #             );
+          #           in
+          #           if release then p.release else p
+          #         ) voy-modules-list;
+          #         postBuild = ''
+          #           rm $out/lib -r
+          #         '';
+          #       };
+          #   in
+          #   (builder false)
+          #   // {
+          #     release = builder true;
+          #   };
           voyager-modules-plugins =
             let
               builder =
                 release:
-                pkgs.symlinkJoin {
+                pkgs.stdenv.mkDerivation {
                   name = "voyager-modules-plugins";
-                  paths = pkgs.lib.mapAttrsToList (_: path: if release then path.release else path) (
-                    builtins.foldl' (
-                      acc: p:
-                      acc
-                      // (crane.buildWorkspaceMember p {
-                        postInstall = ''
-                          strip $out/bin/*
-                        '';
-                      })
-                    ) { } voy-modules-list
-                  );
-                  postBuild = ''
-                    rm $out/lib -r
-                  '';
+                  buildPhase =
+                    ''
+                      mkdir -p $out/bin
+                    ''
+                    + pkgs.lib.concatMapStringsSep "\n\n" (
+                      path:
+                      let
+                        p = builtins.head (
+                          builtins.attrValues (
+                            crane.buildWorkspaceMember (dbg path) {
+                              postInstall = ''
+                                strip $out/bin/*
+                              '';
+                            }
+                          )
+                        );
+                      in
+                      ''cp ${if release then p.release else p}/bin/* $out/bin/''
+
+                    ) voy-modules-list;
                 };
             in
             (builder false)

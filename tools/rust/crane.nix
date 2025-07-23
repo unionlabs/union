@@ -149,13 +149,23 @@
                 );
           };
         in
-        pkgs.stdenv.mkDerivation {
-          name = "clean-workspace-source";
-          src = filteredSrc;
-          buildInputs = [ ];
-          buildPhase = ''
-            cp ${cargoLock} ./Cargo.lock
-            cp ${cargoToml} ./Cargo.toml
+        pkgs.runCommand "clean-workspace-source"
+          {
+            # src = filteredSrc;
+            # buildInputs = [ ];
+            # buildPhase = ;
+            # # nothing to strip
+            # dontStrip = true;
+            # dontFixup = true;
+            # dontInstall = true;
+            # dontPatch = true;
+            # dontConfigure = true;
+          }
+          ''
+            mkdir $out
+            cp -r --no-preserve=mode ${filteredSrc}/* $out
+            cp ${cargoLock} $out/Cargo.lock
+            cp ${cargoToml} $out/Cargo.toml
 
             ${builtins.concatStringsSep "\n\n" (
               lib.mapAttrsToList (
@@ -165,13 +175,14 @@
                     builtins.removeAttrs cargoToml (lib.optionals (!dontRemoveDevDeps) [ "dev-dependencies" ])
                   );
                 in
-                "cp ${cargoTomlPath} ./${path}/Cargo.toml"
+                ''
+                  cp ${cargoTomlPath} $out/${path}/Cargo.toml
+                ''
               ) (readMemberCargoTomls workspaceMembers)
             )}
 
-            cp -r . $out
+            # cp -r . $out
           '';
-        };
 
       # Cargo.toml of the workspace.
       #
