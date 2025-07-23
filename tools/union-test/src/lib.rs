@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
 use axum::async_trait;
-use ethers::middleware::signer;
+use cosmos_client::wallet::LocalSigner;
 use ibc_union_spec::ChannelId;
 use protos::cosmos::base::v1beta1::Coin;
 use unionlabs::{
@@ -13,7 +13,6 @@ use voyager_sdk::{
     anyhow::{self},
     primitives::ChainId,
 };
-use cosmos_client::wallet::LocalSigner;
 
 pub mod channel_provider;
 pub mod cosmos;
@@ -113,7 +112,6 @@ pub trait ChainEndpoint: Send + Sync {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
 
-
     async fn wait_for_packet_ack(
         &self,
         packet_hash: H256,
@@ -187,7 +185,8 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         token: Vec<u8>,
         provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse> {
-        self.predict_wrapped_token(contract, channel, token, provider).await
+        self.predict_wrapped_token(contract, channel, token, provider)
+            .await
     }
 
     async fn predict_wrapped_token_from_metadata_image_v2(
@@ -198,8 +197,14 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         metadata_image: FixedBytes<32>,
         provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
-        self.predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image, provider)
-            .await
+        self.predict_wrapped_token_from_metadata_image_v2(
+            contract,
+            channel,
+            token,
+            metadata_image,
+            provider,
+        )
+        .await
     }
 
     async fn predict_wrapped_token_v2(
@@ -259,7 +264,8 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         timeout: Duration,
         expected_event_count: usize,
     ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
-        self.wait_for_channel_open_confirm(timeout, expected_event_count).await
+        self.wait_for_channel_open_confirm(timeout, expected_event_count)
+            .await
     }
 
     async fn send_ibc_transaction(
@@ -351,7 +357,7 @@ impl ChainEndpoint for cosmos::Module {
         token: Vec<u8>,
         _provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse> {
-        self.predict_wrapped_token(contract, channel, token,).await
+        self.predict_wrapped_token(contract, channel, token).await
     }
 
     async fn predict_wrapped_token_from_metadata_image_v2(
@@ -400,9 +406,8 @@ impl ChainEndpoint for cosmos::Module {
         timeout: Duration,
         expected_event_count: usize,
     ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>> {
-        self.wait_for_channel_open_confirm(
-            timeout, expected_event_count
-        ).await
+        self.wait_for_channel_open_confirm(timeout, expected_event_count)
+            .await
     }
 
     async fn send_ibc_transaction(
@@ -528,12 +533,16 @@ where
                 .open_channels(
                     voyager::channel_open,
                     |t: Duration| async move {
-                        Ok(self.dst.wait_for_open_channel(t, count).await?.into_iter().map(|ev| {
-                            ChannelConfirm {
+                        Ok(self
+                            .dst
+                            .wait_for_open_channel(t, count)
+                            .await?
+                            .into_iter()
+                            .map(|ev| ChannelConfirm {
                                 channel_id: ev.channel_id,
                                 counterparty_channel_id: ev.counterparty_channel_id,
-                            }
-                        }).collect::<Vec<_>>())
+                            })
+                            .collect::<Vec<_>>())
                     },
                     self.src.chain_id().clone(),
                     src_port,
@@ -553,12 +562,16 @@ where
             .open_channels(
                 voyager::channel_open,
                 |t: Duration| async move {
-                    Ok(self.src.wait_for_open_channel(t, count).await?.into_iter().map(|ev| {
-                        ChannelConfirm {
+                    Ok(self
+                        .src
+                        .wait_for_open_channel(t, count)
+                        .await?
+                        .into_iter()
+                        .map(|ev| ChannelConfirm {
                             channel_id: ev.channel_id,
                             counterparty_channel_id: ev.counterparty_channel_id,
-                        }
-                    }).collect::<Vec<_>>())
+                        })
+                        .collect::<Vec<_>>())
                 },
                 self.dst.chain_id().clone(),
                 dst_port,
@@ -614,7 +627,13 @@ where
         provider: &Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response> {
         source_chain
-            .predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image, provider)
+            .predict_wrapped_token_from_metadata_image_v2(
+                contract,
+                channel,
+                token,
+                metadata_image,
+                provider,
+            )
             .await
     }
 
@@ -705,17 +724,12 @@ where
             Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
         };
 
-        match source_chain
-            .wait_for_packet_ack(packet_hash, timeout)
-            .await
-        {
+        match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
             Ok(evt) => evt,
             Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
         };
 
-
         return delegate;
-
     }
 
     pub async fn send_and_recv_unstake<Src: ChainEndpoint, Dst: ChainEndpoint>(
@@ -755,10 +769,7 @@ where
             Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
         };
 
-        match source_chain
-            .wait_for_packet_ack(packet_hash, timeout)
-            .await
-        {
+        match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
             Ok(evt) => evt,
             Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
         };
@@ -774,7 +785,7 @@ where
         destination_chain: &Dst,
         timeout: Duration,
         signer: Src::ProviderType,
-    ) -> anyhow::Result<()>  {
+    ) -> anyhow::Result<()> {
         let packet_hash = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
@@ -796,17 +807,12 @@ where
 
         // TODO: any other event is expected here?
 
-        match source_chain
-            .wait_for_packet_ack(packet_hash, timeout)
-            .await
-        {
+        match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
             Ok(evt) => evt,
             Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
         };
 
         Ok(())
-
-
     }
 
     pub async fn send_and_recv_with_retry<Src: ChainEndpoint, Dst: ChainEndpoint>(
@@ -819,7 +825,7 @@ where
         retry_delay: Duration,
         timeout: Duration,
         signer: &Src::ProviderType,
-    ) -> anyhow::Result<helpers::PacketRecv>  {
+    ) -> anyhow::Result<helpers::PacketRecv> {
         let mut attempt = 0;
         println!(
             "Starting send_and_recv_with_retry with max_retries: {}, retry_delay: {:?}",
@@ -834,7 +840,7 @@ where
                     msg.clone(),
                     destination_chain,
                     timeout,
-                    signer
+                    signer,
                 )
                 .await
             {

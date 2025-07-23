@@ -91,13 +91,15 @@ async fn main() -> anyhow::Result<()> {
         dest: 1.try_into().unwrap(),
     };
 
-    // send_stake(true, pair).await?;
+    let token_id = send_stake(true, pair).await?;
 
-    let random_token_id =
-        "17153270927682699173622609407203678679697251909133559730627168317640491668457";
+    let random_token_id = token_id.to_string();
+    // Change random token_id from the print log
+    // let random_token_id =
+    //     "17153270927682699173622609407203678679697251909133559730627168317640491668457";
     let img = hex!("cfce857457d1b52cd752a85a8c83cb5885b5f0274226a383203790f7462228a6");
-    send_unstake(random_token_id, img, pair).await?;
-    // send_withdraw(random_token_id, img, pair).await?;
+    send_unstake(&random_token_id, img, pair).await?;
+    send_withdraw(&random_token_id, img, pair).await?;
     Ok(())
 }
 
@@ -159,8 +161,8 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
 
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst, 1).await?;
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let (_evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (_cosmos_address, _cosmos_provider) = ctx.src.get_signer().await;
 
     // let random_token_id = U256::from(34254743732435489573089871927264396635233634929192990872135477444705812226668u128).into();
     let mut salt = [0u8; 32];
@@ -289,8 +291,8 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
 
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst, 1).await?;
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let (_evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (_cosmos_address, _cosmos_provider) = ctx.src.get_signer().await;
 
     // let random_token_id = U256::from(34254743732435489573089871927264396635233634929192990872135477444705812226668u128).into();
     let mut salt = [0u8; 32];
@@ -362,7 +364,7 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
     Ok(())
 }
 
-pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<()> {
+pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<U256> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
     let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
@@ -420,10 +422,10 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
 
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst, 1).await?;
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let (_evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (_cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
 
-    if (open_channels) {
+    if open_channels {
         let (src_confirm, dst_confirm) = ctx
             .create_clients(
                 Duration::from_secs(45),
@@ -471,7 +473,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
         println!("Opened {} channels", opened);
     }
 
-    if (open_channels) {
+    if open_channels {
         pair = ctx.get_channel().await.unwrap();
     }
 
@@ -499,7 +501,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
 
     // let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
 
-    if (open_channels) {
+    if open_channels {
         let governance_token = ctx
             .dst
             .setup_governance_token(zkgm_evm_addr.into(), pair.dest, img, evm_provider.clone())
@@ -668,5 +670,5 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
         .await;
 
     println!("Received packet data: {:?}", recv_packet_data);
-    Ok(())
+    Ok(random_token_id.into())
 }
