@@ -58,8 +58,6 @@ pub struct Module<'a> {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
-
-    /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
@@ -293,9 +291,7 @@ impl<'a> Module<'a> {
         token: Vec<u8>,
         provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
-        // let (_,signer) = self.get_provider().await;
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
-        // let path: U256 = ::from(0);
         let call = ucs03_zkgm.predictWrappedToken(
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
@@ -352,116 +348,7 @@ impl<'a> Module<'a> {
         Ok(wrapped_token)
     }
 
-    // async fn submit_transaction_zkgm(
-    //     &self,
-    //     ucs03_addr_on_evm: H160,
-    //     wallet: &LocalSigner<SigningKey>,
-    //     send_call_struct: zkgm::UCS03Zkgm::sendCall,
-    // ) -> Result<H256, TxSubmitError> {
-    //     let signer = DynProvider::new(
-    //         ProviderBuilder::new()
-    //             .network::<AnyNetwork>()
-    //             .filler(AnyNetwork::recommended_fillers())
-    //             .wallet(EthereumWallet::new(wallet.clone()))
-    //             .connect_provider(self.provider.clone()),
-    //     );
-
-    //     if let Some(max_gas_price) = self.max_gas_price {
-    //         let gas_price = self
-    //             .provider
-    //             .get_gas_price()
-    //             .await
-    //             .expect("unable to fetch gas price");
-
-    //         if gas_price > max_gas_price {
-    //             warn!(%max_gas_price, %gas_price, "gas price is too high");
-
-    //             return Err(TxSubmitError::GasPriceTooHigh {
-    //                 max: self.max_gas_price.expect("max gas price is set"),
-    //                 price: gas_price,
-    //             });
-    //         } else {
-    //             println!("gas price: {}", gas_price);
-    //         }
-    //     }
-
-    //     let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
-
-    //     let mut call = ucs03_zkgm.send(
-    //         send_call_struct.channelId,
-    //         send_call_struct.timeoutHeight,
-    //         send_call_struct.timeoutTimestamp,
-    //         send_call_struct.salt,
-    //         send_call_struct.instruction,
-    //     );
-    //     println!("submitting evm tx");
-
-    //     let gas_estimate = call.estimate_gas().await.map_err(|e| {
-    //         println!("error estimating gas: {:?}", e);
-    //         if ErrorReporter(&e)
-    //             .to_string()
-    //             .contains("gas required exceeds")
-    //         {
-    //             TxSubmitError::BatchTooLarge
-    //         } else {
-    //             TxSubmitError::Estimate(e)
-    //         }
-    //     })?;
-
-    //     let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
-    //     println!(
-    //         "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
-    //         self.gas_multiplier
-    //     );
-
-    //     if let Some(fixed) = self.fixed_gas_price {
-    //         call = call.gas_price(fixed);
-    //     }
-
-    //     match call.gas(gas_to_use).send().await {
-    //         Ok(ok) => {
-    //             let tx_hash = <H256>::from(*ok.tx_hash());
-    //             async move {
-    //                 let _ = ok.get_receipt().await?;
-    //                 println!("tx included: {:?}", tx_hash);
-
-    //                 Ok(tx_hash)
-    //             }
-    //             .instrument(info_span!("evm tx", %tx_hash))
-    //             .await
-    //         }
-
-    //         Err(
-    //             Error::PendingTransactionError(PendingTransactionError::TransportError(
-    //                 TransportError::ErrorResp(e),
-    //             ))
-    //             | Error::TransportError(TransportError::ErrorResp(e)),
-    //         ) if e
-    //             .message
-    //             .contains("insufficient funds for gas * price + value") =>
-    //         {
-    //             error!("out of gas");
-    //             return Err(TxSubmitError::OutOfGas);
-    //         }
-
-    //         Err(
-    //             Error::PendingTransactionError(PendingTransactionError::TransportError(
-    //                 TransportError::ErrorResp(e),
-    //             ))
-    //             | Error::TransportError(TransportError::ErrorResp(e)),
-    //         ) if e.message.contains("oversized data")
-    //             || e.message.contains("exceeds block gas limit")
-    //             || e.message.contains("gas required exceeds") =>
-    //         {
-    //             return Err(TxSubmitError::BatchTooLarge);
-    //         }
-
-    //         Err(err) => return Err(TxSubmitError::Error(err)),
-    //     }
-    // }
-
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
-        // wait until we get a wallet clone out of the Option
         let wallet = loop {
             if let Some(w) = self.keyring.with(|w| async move { w.clone() }).await {
                 break w;
@@ -598,7 +485,6 @@ impl<'a> Module<'a> {
         token_id: U256,
         provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H256> {
-        // let (_,provider) = self.get_provider().await;
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
         let pending = erc.approve(spender.into(), token_id.into()).send().await?;
         let tx_hash = <H256>::from(*pending.tx_hash());
@@ -612,8 +498,6 @@ impl<'a> Module<'a> {
         token_id: U256,
         provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<bool> {
-        // let (_,provider) = self.get_provider().await;
-
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
         let actual_owner = erc.ownerOf(token_id.into()).call().await?;
         let owner_addr: alloy::primitives::Address = owner.into();
@@ -628,7 +512,6 @@ impl<'a> Module<'a> {
         token_id: U256,
         provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H256> {
-        // let (_,provider) = self.get_provider().await;
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
         let pending = erc
             .transferFrom(from.into(), to.into(), token_id.into())
@@ -796,7 +679,6 @@ impl<'a> Module<'a> {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
                     self.wait_for_tx_inclusion(&self.provider, tx_hash).await?;
-                    // let _ = ok.get_receipt().await?;
                     println!("tx included: {:?}", tx_hash);
 
                     Ok(tx_hash)
@@ -831,35 +713,9 @@ impl<'a> Module<'a> {
             }
 
             Err(Error::PendingTransactionError(PendingTransactionError::FailedToRegister)) => {
-                println!("Idk whats happening");
-                // let tx_req = call.clone().into_tx_request();
                 return Err(TxSubmitError::PendingTransactionError(
                     PendingTransactionError::FailedToRegister,
                 ));
-
-                // // 1) Build and sign the raw transaction
-                // let tx_req = call.clone().into_tx_request();
-                // let sig = wallet.sign_transaction(&tx_req).await
-                //     .map_err(TxSubmitError::Error)?;
-                // let raw_tx = sig.rlp();
-
-                // let pending = signer
-                //     .provider()
-                //     .send_raw_transaction(raw_tx.into())
-                //     .await
-                //     .map_err(TxSubmitError::Error)?;
-
-                // let tx_hash = pending.tx_hash();
-
-                // // 3) Manual poll loop
-                // loop {
-                //     if let Some(receipt) = self.provider.get_transaction_receipt(tx_hash).await
-                //         .map_err(TxSubmitError::Error)?
-                //     {
-                //         return Ok(tx_hash);
-                //     }
-                //     tokio::time::sleep(Duration::from_secs(1)).await;
-                // }
             }
 
             Err(err) => return Err(TxSubmitError::Error(err)),
@@ -871,11 +727,8 @@ impl<'a> Module<'a> {
         zkgm_addr: H160,
         provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
-        // 1) build a typed alloy client
-        // let (_,provider) = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
 
-        // 2) call predictStakeManagerAddress(...)
         let ret = zkgm.predictStakeManagerAddress().call().await?;
         Ok(ret.into())
     }
@@ -887,8 +740,6 @@ impl<'a> Module<'a> {
         metadata_image: FixedBytes<32>,
         provider: DynProvider<AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
-        // 1) build a typed alloy client
-        // let (_,provider) = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
 
         let pending = zkgm
@@ -932,11 +783,7 @@ pub mod zkgm {
 
         contract ZkgmERC721 {
             function mint(uint256 tokenId, address to ) external;
-
-            /// burn an existing NFT
             function burn(uint256 tokenId) external;
-
-            /// `ERC721` standard:
             function ownerOf(uint256 tokenId) external view returns (address);
             function approve(address to, uint256 tokenId) external;
             function transferFrom(address from, address to, uint256 tokenId) external;

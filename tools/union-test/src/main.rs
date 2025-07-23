@@ -86,6 +86,7 @@ use voyager_sdk::{anyhow, primitives::ChainId};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Change this one with the new pair too - if they are changed
     let pair = ChannelPair {
         src: 1.try_into().unwrap(),
         dest: 1.try_into().unwrap(),

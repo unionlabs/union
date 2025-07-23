@@ -416,7 +416,6 @@ impl Module {
         channel_id: ChannelId,
         token: Vec<u8>,
     ) -> anyhow::Result<String> {
-        // build the query payload
         let msg = QueryMsg::PredictWrappedToken {
             path: "0".to_string(),
             channel_id,
@@ -428,7 +427,6 @@ impl Module {
                 .context("serializing PredictWrappedToken QueryMsg")?,
         };
 
-        // execute the ABCI query
         let raw = self
             .rpc
             .client()
@@ -446,8 +444,6 @@ impl Module {
         let resp: PredictWrappedTokenResponse =
             serde_json::from_slice(&raw).context("deserializing PredictWrappedTokenResponse")?;
 
-        // let addr: H160 = H160::from_str(&resp.wrapped_token)
-        //     .context("parsing wrapped_token into H160")?;
         Ok(resp.wrapped_token)
     }
 
@@ -508,7 +504,6 @@ impl Module {
         let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
 
         let signer_address = signer.address();
-        // run the broadcast
         let outcome = tx_client
             .broadcast_tx_commit(
                 [msg]
@@ -527,14 +522,11 @@ impl Module {
             )
             .await;
 
-        // wrap it back into an Option
         Some(outcome)
     }
 
     /// Helper to detect the ABCI “account sequence mismatch” error.
     fn is_sequence_mismatch(&self, err: &BroadcastTxCommitError) -> bool {
-        // You’ll want to match exactly on the gRPC error variant—
-        // here we just do a string-contains on the log.
         match err {
             BroadcastTxCommitError::Query(grpc_err) => {
                 grpc_err.log.contains("account sequence mismatch")
