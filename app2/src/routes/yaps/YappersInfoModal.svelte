@@ -29,7 +29,7 @@ const { isOpen, onClose }: Props = $props()
           come to save the world. They came to rebuild it, trustless and wild.
         </p>
         <p class="mb-4">
-          Now, the call goes out: On July 24, the Yapocalypse begins.
+          Now, the call goes out: On July 23, the Yapocalypse begins.
         </p>
         <p class="mb-4">
           The Yap Boys, feral riders of the feed, take to the sands, howling gospel in the name of
@@ -59,8 +59,8 @@ const { isOpen, onClose }: Props = $props()
         </p>
         <p class="mb-4">
           <strong class="text-white">Season 0</strong> ended today. The timeframe for Season 0 is
-          from Union's inception (October 2023) to today (July 24, 2025). A screenshot of the
-          leaderboard has been taken which can be viewed in the Union Dashboard.
+          from Union's inception (October 2023) to today (July 23, 2025). A screenshot of the
+          leaderboard has been taken, which can be viewed on the Union App.
         </p>
         <p class="mb-4">
           <strong class="text-white">Season 1</strong> begins now. It's open to newcomers and OGs
@@ -98,7 +98,7 @@ const { isOpen, onClose }: Props = $props()
             today.
           </li>
           <li>
-            <strong>Season 1:</strong> The new season starts today, July 24 and runs through public
+            <strong>Season 1:</strong> The new season starts today, July 23, and runs through public
             mainnet, rewarding yappers based on their mindshare during this timeframe.
           </li>
         </ul>
@@ -118,12 +118,15 @@ const { isOpen, onClose }: Props = $props()
           </li>
           <li>
             Union core team members will not receive rewards from any of the allocations outlined
-            above. Their mindshares will be added to the Season 1 pool to give community an extra
-            boost on this final sprint.
+            above. The core team pledges to receive no rewards from any Union incentive program,
+            including Kaito. Rewards allocated to core team member's mindshare from Season 0 and
+            Season 1 will be added to future incentive programs to give the community an extra
+            boost.
           </li>
           <li>
-            Season 1 mindshare data will be updated periodically as full reports are received from
-            Kaito, approximately every 2–3 days.
+            Season 1 mindshare data is currently limited to displaying the top 1,000 yappers due to
+            API constraints. However, there is no cap on the total number of eligible yappers—those
+            ranked beyond 1,000 will still receive rewards proportional to their mindshare.
           </li>
         </ul>
       </div>
@@ -141,7 +144,7 @@ const { isOpen, onClose }: Props = $props()
           <li>
             <strong class="text-white">Start Yapping:</strong> If it's your first time, start by
             sharing educational content about Union's mission and tech. Make sure to engage with
-            fellow yappers and join the ongoing conversation with the Union community. Please read
+            fellow yappers and join the ongoing conversation within the Union community. Please read
             this yapper guide as a reference.
           </li>
           <li>
@@ -154,7 +157,7 @@ const { isOpen, onClose }: Props = $props()
         <p class="mb-4">
           Yappers, this is the mad sprint, the final chorus echoing across the wastelands. Whether
           you're a seasoned yapper or a fresh voice in the wilds, your moment is now. When the dust
-          settles, only the truly mad shall be remembered.
+          settles, only the truly mad will be remembered.
         </p>
         <p class="text-orange-400 font-bold text-lg">
           The Yapocalypse has begun.

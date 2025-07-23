@@ -173,7 +173,7 @@ onDestroy(() => {
 
             <p class="text-orange-200/80 text-md leading-relaxed font-medium">
               The old world collapsed. Chains shattered, giants fell, and liquidity turned to dust.
-              From its ashes, Union rose. Ready to rebuild what once was, trustless and wild. In
+              From its ashes, The Union rose, ready to rebuild what once was, trustless and wild. In
               July 2025, the Yapocalypse begins. Speak now or be forgotten.
             </p>
 
@@ -186,7 +186,7 @@ onDestroy(() => {
                 >
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
-                <span>WAR READY</span>
+                <span>YAP READY</span>
               </div>
               <div class="flex items-center gap-2 text-orange-300/80 font-bold uppercase text-xs">
                 <svg

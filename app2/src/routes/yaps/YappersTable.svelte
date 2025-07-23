@@ -8,10 +8,11 @@ interface Props {
   currentPage: number
   itemsPerPage: number
   openTeamModal: () => void
+  showPodium: boolean
 }
 
-let { entries, searchQuery, currentPage = $bindable(), itemsPerPage, openTeamModal }: Props =
-  $props()
+let { entries, searchQuery, currentPage = $bindable(), itemsPerPage, openTeamModal, showPodium }:
+  Props = $props()
 
 function getAvatarUrl(username: string | null, pfp: string | null) {
   const cleanUsername = (username || "unknown").toLowerCase().replace(" ", "")
@@ -58,12 +59,37 @@ let filteredEntries = $derived(
     : entries,
 )
 
-let skipPodium = $derived(0)
+// When podium is shown, we need to skip entries that appear in podium
+// Podium shows top 3 non-team yappers, so we find where the 3rd non-team yapper is in the full list
+let podiumSkipCount = $derived.by(() => {
+  if (!showPodium) {
+    return 0
+  }
+
+  let nonTeamCount = 0
+  let skipCount = 0
+
+  for (const entry of filteredEntries) {
+    if (!entry.team) {
+      nonTeamCount++
+      if (nonTeamCount === 3) {
+        skipCount++
+        break
+      }
+    }
+    skipCount++
+  }
+
+  return skipCount
+})
+
 let totalPages = $derived(
-  Math.ceil(Math.max(0, filteredEntries.length - skipPodium) / itemsPerPage),
+  Math.ceil(Math.max(0, filteredEntries.length - podiumSkipCount) / itemsPerPage),
 )
-let listStartIndex = $derived(skipPodium + (currentPage - 1) * itemsPerPage)
+let listStartIndex = $derived(podiumSkipCount + (currentPage - 1) * itemsPerPage)
 let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex + itemsPerPage))
+
+// Keep buttons always enabled - click handlers have guard conditions
 </script>
 
 <!-- Remaining Positions List -->
@@ -132,8 +158,11 @@ let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex 
     <div class="flex justify-center items-center gap-2 mt-6">
       <Button
         variant="secondary"
-        disabled={currentPage === 1}
-        onclick={() => currentPage = Math.max(1, currentPage - 1)}
+        onclick={() => {
+          if (currentPage > 1) {
+            currentPage = currentPage - 1
+          }
+        }}
       >
         Previous
       </Button>
@@ -144,8 +173,11 @@ let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex 
 
       <Button
         variant="secondary"
-        disabled={currentPage === totalPages}
-        onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+        onclick={() => {
+          if (currentPage < totalPages) {
+            currentPage = currentPage + 1
+          }
+        }}
       >
         Next
       </Button>

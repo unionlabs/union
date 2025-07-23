@@ -311,8 +311,8 @@ onDestroy(() => {
 
           {@const entries = currentData || []}
 
-          <!-- Podium -->
-          {#if !searchQuery}
+          <!-- Podium (only show for Season 0) -->
+          {#if !searchQuery && activeTab === "season0"}
             <YappersPodium {entries} />
           {/if}
 
@@ -392,6 +392,7 @@ onDestroy(() => {
             bind:currentPage
             {itemsPerPage}
             {openTeamModal}
+            showPodium={!searchQuery && activeTab === "season0"}
           />
         </Card>
       </div>
