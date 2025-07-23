@@ -9,7 +9,7 @@ import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
 // TODO: narrow filter for arbitraries
-export const UniversalChainId = S.String.pipe(S.pattern(/^[^:]+\.[^:]+$/)).pipe(
+export const UniversalChainId = S.String.pipe(S.pattern(/^[a-z]+\.[a-z\-0-9]+$/)).pipe(
   S.brand("UniversalChainId"),
 )
 export type UniversalChainId = typeof UniversalChainId.Type

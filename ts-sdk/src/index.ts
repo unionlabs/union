@@ -94,3 +94,23 @@ export * as FungibleAssetOrder from "./FungibleAssetOrder.js"
  * @since 2.0.0
  */
 export * as Types from "./Types.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as Client from "./Client.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as ClientRequest from "./ClientRequest.js"
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as ChannelRegistry from "./ChannelRegistry.js"
