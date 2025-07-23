@@ -79,7 +79,11 @@ const podiumEntries = $derived(
 
       <!-- Number (right side) -->
       <div class="relative z-10 flex items-center justify-center min-w-[4rem]">
-        <div class="text-2xl font-black italic text-orange-400">2</div>
+        <img
+          src="/yaps/2.png"
+          alt="2nd Place"
+          class="h-8"
+        />
       </div>
     </div>
 
@@ -112,7 +116,11 @@ const podiumEntries = $derived(
         </div>
 
         <!-- Number -->
-        <div class="text-6xl font-black italic text-orange-400 drop-shadow-lg">2</div>
+        <img
+          src="/yaps/2.png"
+          alt="2nd Place"
+          class="h-24 drop-shadow-lg"
+        />
       </div>
     </div>
   </div>
@@ -147,7 +155,11 @@ const podiumEntries = $derived(
 
       <!-- Number (right side) -->
       <div class="relative z-10 flex items-center justify-center min-w-[4rem]">
-        <div class="text-3xl font-black italic text-red-400">1</div>
+        <img
+          src="/yaps/1.png"
+          alt="1st Place"
+          class="h-10"
+        />
       </div>
     </div>
 
@@ -180,7 +192,11 @@ const podiumEntries = $derived(
         </div>
 
         <!-- Number -->
-        <div class="text-7xl font-black text-red-400 italic drop-shadow-lg">1</div>
+        <img
+          src="/yaps/1.png"
+          alt="1st Place"
+          class="h-28 drop-shadow-lg"
+        />
       </div>
     </div>
   </div>
@@ -215,7 +231,11 @@ const podiumEntries = $derived(
 
       <!-- Number (right side) -->
       <div class="relative z-10 flex items-center justify-center min-w-[4rem]">
-        <div class="text-2xl font-black italic text-yellow-400">3</div>
+        <img
+          src="/yaps/3.png"
+          alt="3rd Place"
+          class="h-8"
+        />
       </div>
     </div>
 
@@ -248,7 +268,11 @@ const podiumEntries = $derived(
         </div>
 
         <!-- Number -->
-        <div class="text-6xl font-black italic text-yellow-400 drop-shadow-lg">3</div>
+        <img
+          src="/yaps/3.png"
+          alt="3rd Place"
+          class="h-24 drop-shadow-lg"
+        />
       </div>
     </div>
   </div>
