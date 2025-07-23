@@ -48,7 +48,8 @@ static UNION_ZKGM_ADDRESS: &str =
     "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";
 static UNION_MINTER_ADDRESS: &str =
     "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550";
-static EVM_ZKGM_ADDRESS: &str = "05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5";
+static EVM_ZKGM_BYTES: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+
 /// Returns the one–and–only deployed ERC20 address.
 /// Deploys it the first time it’s called, then just returns the stored value.
 // async fn ensure_erc20(spender: H160) -> H160 {
@@ -82,27 +83,27 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                         )
                         .to_vec(),
                     },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "bob".into(),
-                    //     key: hex_literal::hex!(
-                    //         "f562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dave".into(),
-                    //     key: hex_literal::hex!(
-                    //         "edc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "charlie".into(),
-                    //     key: hex_literal::hex!(
-                    //         "a1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
-                    //     )
-                    //     .to_vec(),
-                    // },
+                    KeyringConfigEntry::Raw {
+                        name: "bob".into(),
+                        key: hex_literal::hex!(
+                            "f562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dave".into(),
+                        key: hex_literal::hex!(
+                            "edc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "charlie".into(),
+                        key: hex_literal::hex!(
+                            "a1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+                        )
+                        .to_vec(),
+                    },
                 ],
             },
             rpc_url: "http://localhost:26657".into(),
@@ -129,64 +130,64 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                         )
                         .to_vec(),
                     },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key1.prv".into(),
-                    //     key: hex!(
-                    //         "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key2.prv".into(),
-                    //     key: hex!(
-                    //         "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key3.prv".into(),
-                    //     key: hex!(
-                    //         "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key4.prv".into(),
-                    //     key: hex!(
-                    //         "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key5.prv".into(),
-                    //     key: hex!(
-                    //         "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key6.prv".into(),
-                    //     key: hex!(
-                    //         "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
-                    //     )
-                    //     .to_vec(),
-                    // },
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key7.prv".into(),
-                    //     key: hex!(
-                    //         "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
-                    //     )
-                    //     .to_vec(),
-                    // },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key1.prv".into(),
+                        key: hex!(
+                            "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key2.prv".into(),
+                        key: hex!(
+                            "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key3.prv".into(),
+                        key: hex!(
+                            "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key4.prv".into(),
+                        key: hex!(
+                            "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key5.prv".into(),
+                        key: hex!(
+                            "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key6.prv".into(),
+                        key: hex!(
+                            "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key7.prv".into(),
+                        key: hex!(
+                            "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
+                        )
+                        .to_vec(),
+                    },
                 ],
             },
             max_gas_price: None,
-            fixed_gas_price: None, //Some(200_000_000_000u64.into()),
+            fixed_gas_price: None,
             gas_multiplier: 2.0,
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 5; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -196,7 +197,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
     .await
     .clone()
 }
-/// do the “open clients → open connection → open channel” dance exactly once
+
 async fn ensure_channels_opened(channel_count: usize) {
     CHANNELS_OPENED
         .get_or_init(|| async move {
@@ -235,9 +236,7 @@ async fn ensure_channels_opened(channel_count: usize) {
                 .open_channels(
                     true,
                     UNION_ZKGM_ADDRESS.as_bytes().into(),
-                    hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
-                        .to_vec()
-                        .into(),
+                    EVM_ZKGM_BYTES.to_vec().into(),
                     conn.counterparty_connection_id,
                     "ucs03-zkgm-0".into(),
                     channel_count,
@@ -258,14 +257,11 @@ async fn ensure_channels_opened(channel_count: usize) {
             ctx.release_channel(pair).await;
             let available_count_after_release = ctx.get_available_channel_count().await;
             assert_eq!(available_count_after_open, available_count_after_release);
-
-            // 4) done
         })
         .await;
 }
 
-async fn _open_connection_from_evm_to_union(dummy_number: u8) {
-    println!("DUMMY NUMBER: {:?}", dummy_number);
+async fn _open_connection_from_evm_to_union() {
     let ctx = init_ctx().await;
     let (src_client, dst_client) = ctx
         .create_clients(
@@ -295,8 +291,7 @@ async fn _open_connection_from_evm_to_union(dummy_number: u8) {
     assert!(conn.counterparty_connection_id > 0);
 }
 
-async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u8) {
-    println!("DUMMY NUMBER: {:?}", dummy_number);
+async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
 
@@ -311,12 +306,10 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
 
-    let eth_zkgm_contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-
     let quote_token_addr = ctx
         .predict_wrapped_token::<evm::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "muno".into(),
             &evm_provider,
@@ -361,8 +354,6 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
         amount: "10".into(),
     }];
 
-    // TODO: Here we should check the muno balance of sender account
-    // Also token balanceOf the receiver account
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
@@ -380,9 +371,6 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-    // TODO: Here we should check the muno balance of sender account
-    // Also token balanceOf the receiver account
-    // And see if muno is decreased by 10 and the receiver's muno is increased by 10
 
     rand::rng().fill_bytes(&mut salt_bytes);
 
@@ -407,10 +395,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
 
     println!("quote_token:  {:?}", quote_token_addr);
 
-    // TODO: Here we should check the muno balance of sender account
-    // Also token balanceOf the receiver account
-
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
     let call = ucs03_zkgm
         .send(
@@ -421,11 +406,11 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
             instruction_from_evm_to_union.clone(),
         )
         .clear_decoder();
-    // let call = call.with_cloned_provider();
+
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call,
             &ctx.src,
             3,
@@ -442,26 +427,16 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap(dummy_number: u
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-    // TODO: Here we should check the muno balance of sender account
-    // Also token balanceOf the receiver account
-    // And see if muno is decreased by 10 and the receiver's muno is increased by 10
 }
 
-async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u8) {
-    println!("DUMMY NUMBER: {:?}", dummy_number);
+async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let ctx = init_ctx().await;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    println!(
-        "DUMMY NUMBER: {:?} EVM Address: {:?}",
-        dummy_number, evm_address
-    );
-    println!(
-        "DUMMY NUMBER: {:?} Cosmos Address: {:?}",
-        dummy_number, cosmos_address
-    );
+    println!("EVM Address: {:?}", evm_address);
+    println!("Cosmos Address: {:?}", cosmos_address);
 
     ensure_channels_opened(ctx.channel_count).await;
 
@@ -472,13 +447,11 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
 
-    let eth_zkgm_contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-
-    // let deployed_erc20 = ensure_erc20(eth_zkgm_contract.into()).await;
+    // let deployed_erc20 = ensure_erc20(EVM_ZKGM_BYTES.into()).await;
 
     let deployed_erc20 = ctx
         .dst
-        .deploy_basic_erc20(eth_zkgm_contract.into(), evm_provider.clone())
+        .deploy_basic_erc20(EVM_ZKGM_BYTES.into(), evm_provider.clone())
         .await
         .expect("failed to deploy ERC20");
 
@@ -498,14 +471,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
         .expect("invalid quote‐token address hex");
 
-    println!(
-        "DUMMY NUMBER: {:?} Quote token address: {:?}",
-        dummy_number, quote_token_addr
-    );
-    println!(
-        "DUMMY NUMBER: {:?} deployed_erc20 address: {:?}",
-        dummy_number, deployed_erc20
-    );
+    println!("Quote token address: {:?}", quote_token_addr);
+    println!("deployed_erc20 address: {:?}", deployed_erc20);
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
 
@@ -528,7 +495,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         .into(),
     };
 
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
     let call = ucs03_zkgm
         .send(
@@ -539,11 +506,11 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
             instruction_from_evm_to_union.clone(),
         )
         .clear_decoder();
-    // let call = call.with_cloned_provider();
-    let recv_packet_data = ctx
+
+    let recv_packet_data: Result<union_test::helpers::PacketRecv, voyager_sdk::anyhow::Error> = ctx
         .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call,
             &ctx.src,
             3,
@@ -559,8 +526,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         recv_packet_data.err()
     );
     println!(
-        "DUMMY NUMBER: {:?} Received packet data from evm->cosmos GOLD token: {:?}",
-        dummy_number, recv_packet_data
+        "Received packet data from evm->cosmos GOLD token: {:?}",
+        recv_packet_data
     );
 
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
@@ -576,7 +543,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     let approve_contract: Bech32<FixedBytes<32>> =
         Bech32::from_str(std::str::from_utf8(&quote_token_bytes).unwrap()).unwrap();
 
-    println!("DUMMY NUMBER: {:?} Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}", dummy_number, quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
+    println!("Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}",  quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
 
     let approve_recv_packet_data = ctx
         .src
@@ -587,10 +554,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         )
         .await;
 
-    println!(
-        "DUMMY NUMBER: {:?} Approve transaction data: {:?}",
-        dummy_number, approve_recv_packet_data
-    );
+    println!("Approve transaction data: {:?}", approve_recv_packet_data);
     assert!(
         approve_recv_packet_data.is_some(),
         "Failed to send approve transaction: {:?}",
@@ -626,10 +590,6 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![];
-
-    // TODO: Here we should check the muno balance of sender account
-    // Also token balanceOf the receiver account
-
     let union_zkgm_contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
     let recv_packet_data = ctx
@@ -645,32 +605,16 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap(dummy_number: u
         )
         .await;
 
-    println!(
-        "DUMMY NUMBER: {:?} Received packet data: {:?}",
-        dummy_number, recv_packet_data
-    );
+    println!("Received packet data: {:?}", recv_packet_data);
 
     assert!(
         recv_packet_data.is_ok(),
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-
-    // // TODO: Sending & recving manually from here:
-    // let packet_hash = match ctx.src.send_ibc_transaction_with_signer(union_zkgm_contract, (bin_msg, funds).into(), cosmos_signer).await {
-    //     Ok(hash) => hash,
-    //     Err(e) => panic!("Failed to send IBC transaction: {:?}", dummy_number, e),
-    // };
-    // match ctx.dst.wait_for_packet_recv(packet_hash, Duration::from_secs(720)).await {
-    //     Ok(recv_data) => {
-    //         println!("DUMMY NUMBER: {:?} Received packet data at the end of manual process: {:?}", dummy_number, recv_data);
-    //     },
-    //     Err(e) => panic!("Failed to receive packet: {:?}", dummy_number, e),
-    // }
 }
 
-async fn test_stake_from_evm_to_union(dummy_number: u8) {
-    println!("DUMMY NUMBER: {:?}", dummy_number);
+async fn test_stake_from_evm_to_union() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -685,15 +629,13 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let eth_zkgm_contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-
     let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
         initializer: ZkgmERC20::initializeCall {
             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
-            _minter: eth_zkgm_contract.into(),
+            _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
             _decimals: 6u8.into(),
@@ -707,12 +649,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
 
     let governance_token = ctx
         .dst
-        .setup_governance_token(
-            eth_zkgm_contract.into(),
-            pair.dest,
-            img,
-            evm_provider.clone(),
-        )
+        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
         .await;
 
     assert!(
@@ -720,8 +657,6 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         "Failed to setup governance token: {:?}",
         governance_token.err()
     );
-    // let governance_token = governance_token.unwrap();
-    // println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
 
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
@@ -729,7 +664,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
     let quote_token_addr = ctx
         .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
@@ -800,7 +735,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         .dst
         .zkgmerc20_approve(
             quote_token_addr.into(),
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
         )
@@ -835,7 +770,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         .into(),
     };
 
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
@@ -847,11 +782,11 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
             instruction_from_evm_to_union.clone(),
         )
         .clear_decoder();
-    // let call = call.with_cloned_provider();
+
     let recv_packet_data = ctx
         .send_and_recv_stake::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call,
             &ctx.src,
             Duration::from_secs(360),
@@ -869,7 +804,7 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
 
     let snake_nft = ctx
         .dst
-        .predict_stake_manager_address(eth_zkgm_contract.into(), evm_provider.clone())
+        .predict_stake_manager_address(EVM_ZKGM_BYTES.into(), evm_provider.clone())
         .await;
     assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
     let snake_nft = snake_nft.unwrap();
@@ -893,12 +828,9 @@ async fn test_stake_from_evm_to_union(dummy_number: u8) {
         .unwrap_or_else(|e| panic!("Failed to check NFT ownership after stake request: {:?}", e));
 
     assert!(is_ours, "NFT ownership check returned false");
-
-    println!("is ours: {}", is_ours);
 }
 
-async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
-    println!("DUMMY NUMBER: {:?}", dummy_number);
+async fn test_stake_and_unstake_from_evm_to_union() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -913,15 +845,13 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let eth_zkgm_contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-
     let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
         initializer: ZkgmERC20::initializeCall {
             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
-            _minter: eth_zkgm_contract.into(),
+            _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
             _decimals: 6u8.into(),
@@ -935,12 +865,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
 
     let governance_token = ctx
         .dst
-        .setup_governance_token(
-            eth_zkgm_contract.into(),
-            pair.dest,
-            img,
-            evm_provider.clone(),
-        )
+        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
         .await;
 
     assert!(
@@ -957,7 +882,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     let quote_token_addr = ctx
         .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
@@ -1028,7 +953,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         .dst
         .zkgmerc20_approve(
             quote_token_addr.into(),
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
         )
@@ -1063,7 +988,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         .into(),
     };
 
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
@@ -1079,7 +1004,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     let recv_packet_data = ctx
         .send_and_recv_stake::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call,
             &ctx.src,
             Duration::from_secs(360),
@@ -1097,7 +1022,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
 
     let snake_nft = ctx
         .dst
-        .predict_stake_manager_address(eth_zkgm_contract.into(), evm_provider.clone())
+        .predict_stake_manager_address(EVM_ZKGM_BYTES.into(), evm_provider.clone())
         .await;
     assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
     let snake_nft = snake_nft.unwrap();
@@ -1121,14 +1046,12 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         .unwrap_or_else(|e| panic!("Failed to check NFT ownership after stake request: {:?}", e));
 
     assert!(is_ours, "NFT ownership check returned false");
-
-    println!("is ours: {}", is_ours);
 
     let approve_tx_hash = ctx
         .dst
         .zkgmerc721_approve(
             snake_nft.into(),
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             random_token_id.into(),
             evm_provider.clone(),
         )
@@ -1147,8 +1070,6 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         opcode: OP_UNSTAKE,
         operand: Unstake {
             token_id: random_token_id.into(),
-            // governance_token: governance_token.unwrappedToken,
-            // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
             sender: evm_address.to_vec().into(),
@@ -1170,11 +1091,10 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
         )
         .clear_decoder();
 
-    // let call = call.with_cloned_provider();
     let recv_unstake = ctx
         .send_and_recv_unstake::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call_unstake,
             &ctx.src,
             Duration::from_secs(360),
@@ -1186,8 +1106,7 @@ async fn test_stake_and_unstake_from_evm_to_union(dummy_number: u8) {
     println!("Received packet data: {:?}", recv_unstake);
 }
 
-async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
-    println!("DUMMY NUMBER: {:?}", dummy_number);
+async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -1202,15 +1121,13 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let eth_zkgm_contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-
     let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
         initializer: ZkgmERC20::initializeCall {
             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
-            _minter: eth_zkgm_contract.into(),
+            _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
             _decimals: 6u8.into(),
@@ -1223,12 +1140,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     let img = keccak256(&img_metadata);
     let governance_token = ctx
         .dst
-        .setup_governance_token(
-            eth_zkgm_contract.into(),
-            pair.dest,
-            img,
-            evm_provider.clone(),
-        )
+        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
         .await;
 
     assert!(
@@ -1236,8 +1148,6 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         "Failed to setup governance token: {:?}",
         governance_token.err()
     );
-    // let governance_token = governance_token.unwrap();
-    // println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
 
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
@@ -1245,7 +1155,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     let quote_token_addr = ctx
         .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
@@ -1316,7 +1226,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         .dst
         .zkgmerc20_approve(
             quote_token_addr.into(),
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
         )
@@ -1351,7 +1261,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         .into(),
     };
 
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
@@ -1363,11 +1273,11 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
             instruction_from_evm_to_union.clone(),
         )
         .clear_decoder();
-    // let call = call.with_cloned_provider();
+
     let recv_packet_data = ctx
         .send_and_recv_stake::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call,
             &ctx.src,
             Duration::from_secs(360),
@@ -1385,7 +1295,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     let snake_nft = ctx
         .dst
-        .predict_stake_manager_address(eth_zkgm_contract.into(), evm_provider.clone())
+        .predict_stake_manager_address(EVM_ZKGM_BYTES.into(), evm_provider.clone())
         .await;
     assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
     let snake_nft = snake_nft.unwrap();
@@ -1410,7 +1320,6 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     assert!(is_ours, "NFT ownership check returned false");
 
-    println!("is ours: {}", is_ours);
     println!(
         "Calling approve on NFT: {:?} -> from account: {:?}",
         snake_nft, evm_address
@@ -1420,7 +1329,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         .dst
         .zkgmerc721_approve(
             snake_nft.into(),
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             random_token_id.into(),
             evm_provider.clone(),
         )
@@ -1433,16 +1342,14 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         evm_address
     );
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
-    println!("calling unstake now..\n\n\n");
-    tokio::time::sleep(Duration::from_secs(15)).await; // Wait for 1 minute before unstake
+
+    tokio::time::sleep(Duration::from_secs(60)).await; // Wait for 1 minute before unstake
 
     let instruction_unstake = InstructionEvm {
         version: INSTR_VERSION_0,
         opcode: OP_UNSTAKE,
         operand: Unstake {
             token_id: random_token_id.into(),
-            // governance_token: governance_token.unwrappedToken,
-            // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
             sender: evm_address.to_vec().into(),
@@ -1464,11 +1371,10 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
         )
         .clear_decoder();
 
-    // let call = call.with_cloned_provider();
     let recv_unstake = ctx
         .send_and_recv_unstake::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call_unstake,
             &ctx.src,
             Duration::from_secs(360),
@@ -1479,16 +1385,13 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
 
     println!("Received packet data: {:?}", recv_unstake);
 
-    println!("after unstake.\n\n\n");
-
-    println!("Waiting for 2 minutes before withdraw...");
-    tokio::time::sleep(Duration::from_secs(180)).await; // 2min is the withdraw min time
+    tokio::time::sleep(Duration::from_secs(180)).await; // 2min is the withdraw min time, waiting 3m just to be sure
 
     let approve_tx_hash = ctx
         .dst
         .zkgmerc721_approve(
             snake_nft.into(),
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             random_token_id.into(),
             evm_provider.clone(),
         )
@@ -1529,7 +1432,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     let recv_withdraw = ctx
         .send_and_recv_withdraw::<evm::Module, cosmos::Module>(
             &ctx.dst,
-            eth_zkgm_contract.into(),
+            EVM_ZKGM_BYTES.into(),
             call_unstake,
             &ctx.src,
             Duration::from_secs(360),
@@ -1545,32 +1448,27 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union(dummy_number: u8) {
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
 }
 
-// #[tokio::test]
-// async fn send_stake_and_unstake_from_evm_to_union0() {
-//     self::test_stake_and_unstake_from_evm_to_union(0).await;
-// }
+#[tokio::test]
+async fn send_stake_and_unstake_from_evm_to_union0() {
+    self::test_stake_and_unstake_from_evm_to_union().await;
+}
 
 #[tokio::test]
 async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-    self::test_stake_unstake_and_withdraw_from_evm_to_union(0).await;
+    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
 }
 
-// #[tokio::test]
-// async fn from_evm_to_union0() {
-//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap(0).await;
-// }
+#[tokio::test]
+async fn from_evm_to_union0() {
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// async fn from_union_to_evm0() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap(0).await;
-// }
+#[tokio::test]
+async fn from_union_to_evm0() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_stake0() {
-//     self::test_stake_from_evm_to_union(0).await;
-// }
-
-// #[tokio::test]
-// async fn from_evm_to_union_stake1() {
-//     self::test_stake_from_evm_to_union(1).await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_stake0() {
+    self::test_stake_from_evm_to_union().await;
+}
