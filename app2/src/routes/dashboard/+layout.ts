@@ -9,7 +9,7 @@ export const trailingSlash = "ignore"
 
 export const load: LayoutLoad = async () => {
   if (Option.isNone(dashboard.session)) {
-    throw redirect(302, "/")
+    throw redirect(302, "/auth/sign-in")
   }
 
   return {
