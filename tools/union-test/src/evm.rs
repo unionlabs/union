@@ -139,7 +139,7 @@ impl<'a> Module<'a> {
                 }
 
                 if prev_latest >= latest {
-                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
 
@@ -167,7 +167,7 @@ impl<'a> Module<'a> {
                     prev_latest += 1u64;
                 }
 
-                tokio::time::sleep(Duration::from_secs(5)).await;
+                tokio::time::sleep(Duration::from_secs(10)).await;
             }
         })
         .await
@@ -284,6 +284,32 @@ impl<'a> Module<'a> {
             .unwrap())
     }
 
+    /// Retry an async operation up to `max_attempts` times with a small delay between attempts.
+    async fn retry_with_backoff<F, Fut, T, E>(
+        &self,
+        mut operation: F,
+        max_attempts: usize,
+        backoff: std::time::Duration,
+    ) -> Result<T, E>
+    where
+        F: FnMut() -> Fut,
+        Fut: std::future::Future<Output = Result<T, E>>,
+    {
+        let mut last_err = None;
+        for attempt in 1..=max_attempts {
+            match operation().await {
+                Ok(val) => return Ok(val),
+                Err(err) if attempt < max_attempts => {
+                    tracing::warn!(attempt, "operation failed, retrying...");
+                    last_err = Some(err);
+                    tokio::time::sleep(backoff).await;
+                }
+                Err(err) => return Err(err),
+            }
+        }
+        Err(last_err.expect("retry_with_backoff called with zero attempts"))
+    }
+
     pub async fn predict_wrapped_token(
         &self,
         ucs03_addr_on_evm: H160,
@@ -292,16 +318,22 @@ impl<'a> Module<'a> {
         provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
-        let call = ucs03_zkgm.predictWrappedToken(
-            U256::from(0u32).into(),
-            channel.raw().try_into().unwrap(),
-            token.into(),
-        );
+        let unwrapped = self
+            .retry_with_backoff(
+                || {
+                    let call = ucs03_zkgm.predictWrappedToken(
+                        U256::from(0u32).into(),
+                        channel.raw().try_into().unwrap(),
+                        token.clone().into(),
+                    );
+                    async move { call.call().await }
+                },
+                3,
+                Duration::from_secs(5),
+            )
+            .await?;
 
-        let ret = call.call().await;
-        let unwrapped = ret.unwrap();
-        let wrapped_token: H160 = unwrapped._0.into();
-        Ok(wrapped_token)
+        Ok(unwrapped._0.into())
     }
 
     pub async fn predict_wrapped_token_v2(
@@ -313,17 +345,23 @@ impl<'a> Module<'a> {
         provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
-        let call = ucs03_zkgm.predictWrappedTokenV2(
-            U256::from(0u32).into(),
-            channel.raw().try_into().unwrap(),
-            token.into(),
-            metadata.into(),
-        );
+        let ret = self
+            .retry_with_backoff(
+                || {
+                    let call = ucs03_zkgm.predictWrappedTokenV2(
+                        U256::from(0u32).into(),
+                        channel.raw().try_into().unwrap(),
+                        token.clone().into(),
+                        metadata.clone().into(),
+                    );
+                    async move { call.call().await }
+                },
+                3,
+                Duration::from_secs(2),
+            )
+            .await?;
 
-        let ret = call.call().await;
-        let unwrapped = ret.unwrap();
-        let wrapped_token: H160 = unwrapped._0.into();
-        Ok(wrapped_token)
+        Ok(ret._0.0.into())
     }
 
     pub async fn predict_wrapped_token_from_metadata_image_v2(
@@ -335,17 +373,22 @@ impl<'a> Module<'a> {
         provider: &DynProvider<AnyNetwork>,
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
-        let call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
-            U256::from(0u32).into(),
-            channel.raw().try_into().unwrap(),
-            token.into(),
-            metadata_image.into(),
-        );
-
-        let ret = call.call().await;
-        let unwrapped = ret.unwrap();
-        let wrapped_token: H160 = unwrapped._0.into();
-        Ok(wrapped_token)
+        let ret = self
+            .retry_with_backoff(
+                || {
+                    let call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
+                        U256::from(0u32).into(),
+                        channel.raw().try_into().unwrap(),
+                        token.clone().into(),
+                        metadata_image.into(),
+                    );
+                    async move { call.call().await }
+                },
+                3,
+                Duration::from_secs(2),
+            )
+            .await?;
+        Ok(ret._0.0.into())
     }
 
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
@@ -391,7 +434,7 @@ impl<'a> Module<'a> {
                 println!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
                 return Ok(());
             }
-            if attempts < 5 {
+            if attempts <= 5 {
                 attempts += 1;
                 println!("receipt not yet available, retry {attempts}/5…");
                 tokio::time::sleep(Duration::from_secs(4)).await;
@@ -431,9 +474,9 @@ impl<'a> Module<'a> {
                     println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
-                Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
                     println!("Nonce too low, retrying... Attempt: {attempts}");
-                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
 
@@ -465,9 +508,9 @@ impl<'a> Module<'a> {
                     println!("Approved spender: {spender:?} for token_id: {token_id:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
-                Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
                     println!("Nonce too low, retrying... Attempt: {attempts}");
-                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
 
@@ -554,9 +597,9 @@ impl<'a> Module<'a> {
                         .expect("deploy didnt return an address");
                     return Ok(address.into());
                 }
-                Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
                     println!("Nonce too low, retrying... Attempt: {attempts}");
-                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
                 Err(err) => {
@@ -729,8 +772,17 @@ impl<'a> Module<'a> {
     ) -> anyhow::Result<H160> {
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
 
-        let ret = zkgm.predictStakeManagerAddress().call().await?;
-        Ok(ret.into())
+        let addr = self
+            .retry_with_backoff(
+                || {
+                    let call = zkgm.predictStakeManagerAddress();
+                    async move { call.call().await }
+                },
+                3,
+                Duration::from_secs(2),
+            )
+            .await?;
+        Ok(addr.into())
     }
 
     pub async fn setup_governance_token(
