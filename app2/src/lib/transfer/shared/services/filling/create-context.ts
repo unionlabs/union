@@ -176,20 +176,6 @@ const calculateNativeValue = (
     }
   }
 
-  if (chainGasDenom) {
-    const nativeToken = normalizeToken(chainGasDenom.address, args.sourceChain.rpc_type)
-    const nativeIntents = intents.filter(intent =>
-      normalizeToken(intent.baseToken, args.sourceChain.rpc_type) === nativeToken
-    )
-
-    const totalAmount = nativeIntents.reduce((sum, intent) => sum + intent.baseAmount, 0n)
-    if (totalAmount > 0n) {
-      const preferredBaseToken = nativeIntents.at(-1)?.baseToken || nativeToken
-      const currentAmount = nativeTokensMap.get(preferredBaseToken) || 0n
-      nativeTokensMap.set(preferredBaseToken, currentAmount + totalAmount)
-    }
-  }
-
   // Convert map to array
   const nativeFunds = Array.from(nativeTokensMap.entries()).map(([token, amount]) => ({
     baseToken: token,

@@ -45,8 +45,6 @@ export function checkAllowances(
       return Option.none()
     }
 
-    console.log("allowance start")
-
     const [firstIntent] = context.intents
     const chain = firstIntent.sourceChain
     const sender = firstIntent.sender
