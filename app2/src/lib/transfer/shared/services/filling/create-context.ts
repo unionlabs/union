@@ -189,7 +189,7 @@ const calculateNativeValue = (
       nativeTokensMap.set(preferredBaseToken, currentAmount + totalAmount)
     }
   }
-  
+
   // Convert map to array
   const nativeFunds = Array.from(nativeTokensMap.entries()).map(([token, amount]) => ({
     baseToken: token,

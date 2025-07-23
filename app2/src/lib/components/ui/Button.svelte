@@ -4,7 +4,7 @@ import type { Snippet } from "svelte"
 import type { HTMLButtonAttributes } from "svelte/elements"
 
 type Props = HTMLButtonAttributes & {
-  variant?: "primary" | "secondary" | "danger" | "outline" | "icon" | "inline"
+  variant?: "primary" | "secondary" | "danger" | "outline" | "text" | "icon" | "inline"
   selected?: boolean | undefined
   class?: string
   children: Snippet
@@ -32,13 +32,23 @@ const classes = cn(
     "focus-visible:ring-accent",
   ],
   variant === "secondary" && [
-    "border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900",
+    "border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900 font-bold",
     "dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50",
     "focus-visible:ring-zinc-400",
   ],
   variant === "danger" && [
-    "bg-red-500 border-red-400 border text-white hover:bg-red-700",
+    "bg-red-500 border-red-400 border text-white hover:bg-red-700 font-bold",
     "focus-visible:ring-red-500",
+  ],
+  variant === "outline" && [
+    "border border-zinc-200 bg-transparent text-zinc-900 hover:bg-zinc-100 font-bold",
+    "dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800",
+    "focus-visible:ring-zinc-400",
+  ],
+  variant === "text" && [
+    "bg-transparent text-zinc-900 hover:bg-zinc-100 font-bold",
+    "dark:text-zinc-100 dark:hover:bg-zinc-800",
+    "focus-visible:ring-zinc-400",
   ],
   variant === "icon" && [
     "w-9 h-9 p-0 hover:bg-zinc-800 text-gray-400 hover:text-zinc-50",

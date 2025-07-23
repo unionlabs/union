@@ -21,6 +21,14 @@ export type Category = Entity<"categories">
 export type UserExperience = Entity<"user_levels">
 export type Mission = Entity<"missions">
 export type Reward = Entity<"rewards">
+export type YapsSeason = {
+  user_id: string | null
+  username: string | null
+  mindshare: string | null
+  twitter_id: number | null
+  pfp: string | null
+  team: boolean | null
+}
 
 export const getChains = () =>
   withLocalStorageCacheStale(
@@ -227,6 +235,70 @@ export const getAvailableRewards = () =>
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
         errorStore.showError(new RewardError({ cause: error, operation: "loadAvailable" }))
+        return Effect.succeed(Option.none())
+      }),
+    ),
+  )
+
+export const getYapsSeason0 = () =>
+  withLocalStorageCacheStale(
+    "public",
+    `${CACHE_VERSION}:yaps_season_0`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("yaps_season_zero_with_users")
+              .select("user_id, username, mindshare, twitter_id, pfp, team")
+              .order("rank", { ascending: true })
+              .limit(20000),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadYapsSeason0",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadYapsSeason0" }))
+        return Effect.succeed(Option.none())
+      }),
+    ),
+  )
+
+export const getYapsSeason1 = () =>
+  withLocalStorageCacheStale(
+    "public",
+    `${CACHE_VERSION}:yaps_season_1`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("yaps_season_one_with_users")
+              .select("user_id, username, mindshare, twitter_id, pfp, team")
+              .order("rank", { ascending: true })
+              .limit(20000),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadYapsSeason1",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadYapsSeason1" }))
         return Effect.succeed(Option.none())
       }),
     ),
