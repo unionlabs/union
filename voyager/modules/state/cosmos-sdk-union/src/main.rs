@@ -383,14 +383,13 @@ impl Module {
     ) -> RpcResult<Option<u8>> {
         let status = self
             .query_smart::<_, u8>(
-                &ibc_union_msg::query::QueryMsg::GetStatus { client_id },
+                &ibc_union_msg::query::QueryMsg::GetCommittedStatus { client_id },
                 Some(height),
             )
             .await?;
 
         Ok(status)
     }
-
 }
 
 #[derive(Debug, thiserror::Error)]

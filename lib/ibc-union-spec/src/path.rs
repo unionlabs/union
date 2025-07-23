@@ -3,7 +3,6 @@ use sha3::{Digest, Keccak256};
 use unionlabs::primitives::{Bytes, H256, U256};
 use voyager_primitives::IbcStorePathKey;
 
-
 #[cfg(feature = "ethabi")]
 use crate::Packet;
 use crate::{
@@ -270,9 +269,13 @@ impl IbcStorePathKey for BatchPacketsPath {
     type Value = H256;
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
 #[repr(u8)]
 pub enum Status {
     Active = 1,
@@ -280,7 +283,7 @@ pub enum Status {
     Frozen = 3,
 }
 
-/// Represents the path to a client's committed status (Active, Expired, etc.)
+/// Represents the path to a client's committed [`Status`].
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -305,5 +308,5 @@ impl ClientStatusPath {
 
 impl IbcStorePathKey for ClientStatusPath {
     type Spec = IbcUnion;
-    type Value = u8; // repr(u8) status stored as raw byte
+    type Value = Status;
 }

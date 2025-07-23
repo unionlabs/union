@@ -573,16 +573,8 @@ impl Module {
         height: Height,
         client_id: ClientId,
     ) -> RpcResult<Option<u8>> {
-        let status = self
-            .query_smart::<_, u8>(
-                &ibc_union_msg::query::QueryMsg::GetStatus { client_id },
-                Some(height),
-            )
-            .await?;
-
-        Ok(status)
+        unimplemented!("query_client_status is not implemented yet");
     }
-
 }
 
 fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {

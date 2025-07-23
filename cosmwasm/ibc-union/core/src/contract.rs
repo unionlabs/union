@@ -28,8 +28,8 @@ use ibc_union_msg::{
 use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ClientStatusPath, ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC,
-        COMMITMENT_MAGIC_ACK, Status,
+        ClientStatusPath, ConnectionPath, ConsensusStatePath, Status, COMMITMENT_MAGIC,
+        COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState, Packet,
     Timestamp,
@@ -2194,7 +2194,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             )?;
             Ok(to_json_binary(&status)?)
         }
-        QueryMsg::GetCommittedStatus { client_id, .. } => {
+        QueryMsg::GetCommittedStatus { client_id } => {
             let commit = read_commit(deps, &ClientStatusPath { client_id }.key());
             Ok(to_json_binary(&commit)?)
         }
