@@ -650,7 +650,7 @@ impl Clone for Ibc::IbcEvents {
 
 /// Conversions between [`alloy::sol!`] generated types and the canonical tyeps in [`ibc_union_spec`].
 pub mod compat {
-    use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
+    use ibc_union_spec::{ChannelId, ClientId, ConnectionId, MustBeZero, Timestamp};
 
     use super::*;
 
@@ -680,6 +680,7 @@ pub mod compat {
                 destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
                     .ok_or(InvalidPacketError::InvalidDestinationChannelId)?,
                 data: value.data.into(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
             })
         }
@@ -1003,7 +1004,7 @@ mod tests {
 
     mod packet {
         use alloy::sol_types::{private::U256, SolValue};
-        use ibc_union_spec::{ChannelId, Timestamp};
+        use ibc_union_spec::{ChannelId, MustBeZero, Timestamp};
 
         use super::*;
 
@@ -1021,6 +1022,7 @@ mod tests {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(1),
                 data: b"data".into(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Timestamp::from_nanos(1),
             };
 
@@ -1047,6 +1049,7 @@ mod tests {
                 source_channel_id: ChannelId::from_raw(1).unwrap(),
                 destination_channel_id: ChannelId::from_raw(1).unwrap(),
                 data: b"data".into(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: Timestamp::from_nanos(1),
             };
 

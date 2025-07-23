@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{builder::ArgPredicate, Subcommand};
-use ibc_union_spec::{path::commit_packets, ChannelId, Packet, Timestamp};
+use ibc_union_spec::{path::commit_packets, ChannelId, MustBeZero, Packet, Timestamp};
 use unionlabs::{
     encoding::{DecodeAs, Json},
     primitives::Bytes,
@@ -64,6 +64,7 @@ impl Cmd {
                         source_channel_id,
                         destination_channel_id,
                         data,
+                        timeout_height: MustBeZero,
                         timeout_timestamp,
                     }
                     .hash(),

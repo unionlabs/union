@@ -13,7 +13,7 @@ pub use voyager_primitives::{Duration, Timestamp};
 pub use crate::types::{
     channel::{Channel, ChannelState},
     connection::{Connection, ConnectionState},
-    packet::Packet,
+    packet::{MustBeZero, Packet},
     ChannelId, ClientId, ConnectionId,
 };
 use crate::{

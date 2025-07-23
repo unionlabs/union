@@ -3,7 +3,7 @@ use unionlabs::primitives::{Bytes, H256};
 use voyager_primitives::{ClientType, Timestamp};
 
 use crate::{
-    types::{ChannelId, ClientId, ConnectionId},
+    types::{packet::MustBeZero, ChannelId, ClientId, ConnectionId},
     Connection, Packet,
 };
 
@@ -289,6 +289,7 @@ macro_rules! packet_method {
                 source_channel_id: self.packet.source_channel.channel_id,
                 destination_channel_id: self.packet.destination_channel.channel_id,
                 data: self.packet_data.clone(),
+                timeout_height: MustBeZero,
                 timeout_timestamp: self.packet.timeout_timestamp,
             }
         }

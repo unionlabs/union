@@ -8,7 +8,8 @@ use futures::{stream::FuturesUnordered, TryStreamExt};
 use ibc_union_spec::{
     path::StorePath,
     query::{PacketByHash, PacketsByBatchHash, Query},
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet, Timestamp,
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet,
+    Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -154,6 +155,7 @@ impl Module {
             source_channel_id: packet_source_channel_id,
             destination_channel_id: packet_destination_channel_id,
             data: packet_data,
+            timeout_height: MustBeZero,
             timeout_timestamp: packet_timeout_timestamp,
         })
     }
