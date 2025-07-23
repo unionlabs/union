@@ -20,7 +20,7 @@ pub struct Config {
     pub admin: Addr,
     /// The address of the `ibc-union` contract running on this chain.
     pub ibc_host: Addr,
-    /// The code id of the `ucs03-zkgm-token-minter-api` implementor. This will be instantiated by `ucs03-zkgm` and used to mint and burn tokens.
+    /// The code id of the `ucs03-zkgm-token-minter-api` implementer. This will be instantiated by `ucs03-zkgm` and used to mint and burn tokens.
     pub token_minter_code_id: u64,
     /// The address that can update the rate limiters.
     pub rate_limit_admin: Addr,
