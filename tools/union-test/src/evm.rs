@@ -521,19 +521,6 @@ impl<'a> Module<'a> {
         }
     }
 
-    pub async fn basic_erc721_approve(
-        &self,
-        contract: H160,
-        spender: H160,
-        token_id: U256,
-        provider: DynProvider<AnyNetwork>,
-    ) -> anyhow::Result<H256> {
-        let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
-        let pending = erc.approve(spender.into(), token_id.into()).send().await?;
-        let tx_hash = <H256>::from(*pending.tx_hash());
-        Ok(tx_hash)
-    }
-
     pub async fn nft_owner_of(
         &self,
         contract: H160,
@@ -541,10 +528,19 @@ impl<'a> Module<'a> {
         token_id: U256,
         provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<bool> {
-        let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
-        let actual_owner = erc.ownerOf(token_id.into()).call().await?;
+        let actual_owner = self
+            .retry_with_backoff(
+                || {
+                    let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
+                    async move { erc.ownerOf(token_id.into()).call().await }
+                },
+                3,
+                Duration::from_secs(2),
+            )
+            .await?;
+
         let owner_addr: alloy::primitives::Address = owner.into();
-        return Ok(actual_owner == owner_addr);
+        Ok(actual_owner == owner_addr)
     }
 
     pub async fn basic_erc721_transfer_from(
