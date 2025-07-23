@@ -39,9 +39,7 @@ function resetPageState() {
   showLimitTooltip = false
 }
 
-// Computed values for current data
 const currentData = $derived(activeTab === "season1" ? season1Data : season0Data)
-const currentLoading = $derived(activeTab === "season1" ? season1Loading : season0Loading)
 
 function openTeamModal() {
   isTeamModalOpen = true
@@ -60,7 +58,6 @@ function closeLimitTooltip() {
 }
 
 onMount(() => {
-  // Reset state on each navigation to ensure clean start
   resetPageState()
 
   const checkAndSetContentReady = () => {
@@ -82,13 +79,11 @@ onMount(() => {
         ),
       ]),
       Effect.tap(([season0Result, season1Result]) => {
-        // Handle Season 0 result
         if (Option.isSome(season0Result)) {
           season0Data = season0Result.value
         }
         season0Loading = false
 
-        // Handle Season 1 result
         if (Option.isSome(season1Result)) {
           season1Data = season1Result.value
         }
@@ -106,14 +101,9 @@ onMount(() => {
     ),
   )
 
-  // Handle UnicornStudio script loading/initialization
   const initializeUnicornStudio = () => {
     const windowWithUnicorn = window as any
-
-    // Check if UnicornStudio is already available and initialized
     if (windowWithUnicorn.UnicornStudio && windowWithUnicorn.UnicornStudio.isInitialized) {
-      // For client-side navigation, we need to force complete re-initialization
-      // because the 3D scene might be tied to the previous DOM
       windowWithUnicorn.UnicornStudio.isInitialized = false
 
       setTimeout(() => {
@@ -187,18 +177,16 @@ onMount(() => {
 
   window.addEventListener("unicornStudioReady", handleScenesReady)
 
-  // Fallback timeout in case UnicornStudio never loads
   const fallbackTimeout = setTimeout(() => {
     if (!sceneLoaded) {
       sceneLoaded = true
       checkAndSetContentReady()
     }
-  }, 5000) // 5 second fallback (reduced since we handle most cases directly)
+  }, 5000)
 
-  // Additional fallback to force content ready after a longer timeout
   const contentFallbackTimeout = setTimeout(() => {
     contentReady = true
-  }, 8000) // 8 second fallback for content
+  }, 8000)
 
   return () => {
     window.removeEventListener("unicornStudioReady", handleScenesReady)
@@ -245,7 +233,6 @@ onDestroy(() => {
         <Card
           class="relative flex flex-col gap-6 p-6 bg-gradient-to-br from-zinc-900/90 via-zinc-950/90 to-orange-950/30 border border-orange-900/50 backdrop-blur-sm"
           onclick={(e) => {
-            // Close tooltip when clicking outside
             const target = e.target as HTMLElement
             if (target && !target.closest(".relative.group")) {
               closeLimitTooltip()
@@ -337,7 +324,7 @@ onDestroy(() => {
                     </svg>
                   </button>
 
-                  <!-- Custom tooltip - responsive width and mobile-friendly -->
+                  <!-- Custom tooltip -->
                   <div
                     class="
                       absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 sm:w-96 max-w-[90vw] p-3 bg-zinc-900 border border-orange-500/30 rounded-lg shadow-xl text-xs text-zinc-200 leading-relaxed z-50 transition-all duration-200
@@ -349,14 +336,12 @@ onDestroy(() => {
                     due to API constraints. However, there is no cap on the total number of eligible
                     yappers—those ranked beyond 1,000 will still receive rewards proportional to
                     their mindshare.
-                    <!-- Arrow -->
                     <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900">
                     </div>
                   </div>
                 </div>
               </div>
             {:else}
-              <!-- Empty space for Season 0 to maintain layout -->
               <div></div>
             {/if}
 
@@ -392,14 +377,12 @@ onDestroy(() => {
             bind:currentPage
             {itemsPerPage}
             {openTeamModal}
-            showPodium={!searchQuery && activeTab === "season0"}
           />
         </Card>
       </div>
     </Sections>
   </div>
 {:else}
-  <!-- Loading state while content loads -->
   <div class="flex items-center justify-center min-h-screen">
     <div class="flex flex-col items-center gap-4">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>

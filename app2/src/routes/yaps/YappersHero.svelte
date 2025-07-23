@@ -82,6 +82,8 @@ onDestroy(() => {
       <!-- Video Section -->
       <div
         class="relative group/video w-full lg:w-2/5 flex-shrink-0"
+        role="img"
+        aria-label="Mad Yaps promotional video"
         onmouseenter={() => videoHovered = true}
         onmouseleave={() => videoHovered = false}
       >

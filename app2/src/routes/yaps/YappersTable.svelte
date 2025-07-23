@@ -8,11 +8,10 @@ interface Props {
   currentPage: number
   itemsPerPage: number
   openTeamModal: () => void
-  showPodium: boolean
 }
 
-let { entries, searchQuery, currentPage = $bindable(), itemsPerPage, openTeamModal, showPodium }:
-  Props = $props()
+let { entries, searchQuery, currentPage = $bindable(), itemsPerPage, openTeamModal }: Props =
+  $props()
 
 function getAvatarUrl(username: string | null, pfp: string | null) {
   const cleanUsername = (username || "unknown").toLowerCase().replace(" ", "")
@@ -59,40 +58,16 @@ let filteredEntries = $derived(
     : entries,
 )
 
-// When podium is shown, we need to skip entries that appear in podium
-// Podium shows top 3 non-team yappers, so we find where the 3rd non-team yapper is in the full list
-let podiumSkipCount = $derived.by(() => {
-  if (!showPodium) {
-    return 0
-  }
-
-  let nonTeamCount = 0
-  let skipCount = 0
-
-  for (const entry of filteredEntries) {
-    if (!entry.team) {
-      nonTeamCount++
-      if (nonTeamCount === 3) {
-        skipCount++
-        break
-      }
-    }
-    skipCount++
-  }
-
-  return skipCount
-})
+// Show all users in table, even if they appear in podium (podium is just a highlight)
+let podiumSkipCount = 0
 
 let totalPages = $derived(
   Math.ceil(Math.max(0, filteredEntries.length - podiumSkipCount) / itemsPerPage),
 )
 let listStartIndex = $derived(podiumSkipCount + (currentPage - 1) * itemsPerPage)
 let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex + itemsPerPage))
-
-// Keep buttons always enabled - click handlers have guard conditions
 </script>
 
-<!-- Remaining Positions List -->
 <div class="overflow-visible">
   {#if searchQuery && listEntries.length === 0}
     <div class="text-center py-8 text-zinc-400">

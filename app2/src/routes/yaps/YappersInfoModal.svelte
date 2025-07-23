@@ -37,7 +37,7 @@ const { isOpen, onClose }: Props = $props()
           wreckage, pointing the way to Yaphalla.
         </p>
         <p class="mb-4">
-          One truth remains: this is your last opportunity to bind yourself to the Dashboard sigil
+          One truth remains: this is your best opportunity to bind yourself to the Dashboard sigil
           before the Yapocalypse begins—or be lost to the void. The top yappers shall ascend beyond
           myth. The unspeaking will vanish beneath the dust.
         </p>
@@ -118,10 +118,8 @@ const { isOpen, onClose }: Props = $props()
           </li>
           <li>
             Union core team members will not receive rewards from any of the allocations outlined
-            above. The core team pledges to receive no rewards from any Union incentive program,
-            including Kaito. Rewards allocated to core team member's mindshare from Season 0 and
-            Season 1 will be added to future incentive programs to give the community an extra
-            boost.
+            above. Rewards allocated to core team member's mindshare from Season 0 and Season 1 will
+            be added to future incentive programs to give the community an extra boost.
           </li>
           <li>
             Season 1 mindshare data is currently limited to displaying the top 1,000 yappers due to
@@ -144,13 +142,7 @@ const { isOpen, onClose }: Props = $props()
           <li>
             <strong class="text-white">Start Yapping:</strong> If it's your first time, start by
             sharing educational content about Union's mission and tech. Make sure to engage with
-            fellow yappers and join the ongoing conversation within the Union community. Please read
-            <a
-              href="https://union.build/yapper-guide"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-orange-400 hover:text-orange-300 underline"
-            >this yapper guide</a> as a reference.
+            fellow yappers and join the ongoing conversation within the Union community.
           </li>
           <li>
             <strong class="text-white">Climb the Leaderboard:</strong> Your impact is tracked in

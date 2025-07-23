@@ -19,8 +19,8 @@ const {
   variant = "static",
 }: Props = $props()
 
-let highlightElement: HTMLElement
-let navigationContainer: HTMLDivElement
+let highlightElement: HTMLElement | undefined
+let navigationContainer: HTMLDivElement | undefined
 
 const updateHighlightPosition = () => {
   if (variant === "animated" && $page.url.pathname && highlightElement && navigationContainer) {
