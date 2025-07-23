@@ -1,9 +1,17 @@
 <script lang="ts">
+import { goto } from "$app/navigation"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromise } from "$lib/runtime"
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
+
+// Redirect to dashboard if already authenticated
+$effect(() => {
+  if (Option.isSome(dashboard.session)) {
+    goto("/dashboard")
+  }
+})
 
 type AuthProvider = {
   id: "twitter" | "github" | "discord"

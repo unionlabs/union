@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       achievement_types: {
@@ -185,16 +190,37 @@ export type Database = {
           call: string
           created_at: string
           discord_id: number
+          user_id: string | null
         }
         Insert: {
-          call?: string
+          call: string
           created_at?: string
           discord_id?: number
+          user_id?: string | null
         }
         Update: {
           call?: string
           created_at?: string
           discord_id?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      call_attendees_by_uuid: {
+        Row: {
+          call: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          call: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          call?: string
+          created_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -252,6 +278,96 @@ export type Database = {
           public?: boolean
           testnet?: boolean
           type?: string | null
+        }
+        Relationships: []
+      }
+      crypto_influencers: {
+        Row: {
+          author_description: string | null
+          author_followers_count: number | null
+          author_id: number
+          author_location: string | null
+          author_name: string | null
+          author_smart_followers_count: number | null
+          author_username: string | null
+          bookmark_count: number | null
+          community_mindshare: string | null
+          earliest_mention_date: string | null
+          hardcore_score: number | null
+          impression_count: number | null
+          insightfullness_score: number | null
+          is_ai_agent: boolean | null
+          like_count: number | null
+          negative_tweet_count: number | null
+          originality_score: number | null
+          quote_count: number | null
+          registered_yapper: boolean | null
+          reply_count: number | null
+          retweet_count: number | null
+          smart_engagement_count: number | null
+          tweet_count: number | null
+          urls: string[] | null
+          user_type: string | null
+          wallet: boolean | null
+          yaps_score: number | null
+        }
+        Insert: {
+          author_description?: string | null
+          author_followers_count?: number | null
+          author_id: number
+          author_location?: string | null
+          author_name?: string | null
+          author_smart_followers_count?: number | null
+          author_username?: string | null
+          bookmark_count?: number | null
+          community_mindshare?: string | null
+          earliest_mention_date?: string | null
+          hardcore_score?: number | null
+          impression_count?: number | null
+          insightfullness_score?: number | null
+          is_ai_agent?: boolean | null
+          like_count?: number | null
+          negative_tweet_count?: number | null
+          originality_score?: number | null
+          quote_count?: number | null
+          registered_yapper?: boolean | null
+          reply_count?: number | null
+          retweet_count?: number | null
+          smart_engagement_count?: number | null
+          tweet_count?: number | null
+          urls?: string[] | null
+          user_type?: string | null
+          wallet?: boolean | null
+          yaps_score?: number | null
+        }
+        Update: {
+          author_description?: string | null
+          author_followers_count?: number | null
+          author_id?: number
+          author_location?: string | null
+          author_name?: string | null
+          author_smart_followers_count?: number | null
+          author_username?: string | null
+          bookmark_count?: number | null
+          community_mindshare?: string | null
+          earliest_mention_date?: string | null
+          hardcore_score?: number | null
+          impression_count?: number | null
+          insightfullness_score?: number | null
+          is_ai_agent?: boolean | null
+          like_count?: number | null
+          negative_tweet_count?: number | null
+          originality_score?: number | null
+          quote_count?: number | null
+          registered_yapper?: boolean | null
+          reply_count?: number | null
+          retweet_count?: number | null
+          smart_engagement_count?: number | null
+          tweet_count?: number | null
+          urls?: string[] | null
+          user_type?: string | null
+          wallet?: boolean | null
+          yaps_score?: number | null
         }
         Relationships: []
       }
@@ -390,14 +506,17 @@ export type Database = {
       }
       fudders: {
         Row: {
+          blurb: string | null
           reason: string
           twitter_id: number
         }
         Insert: {
+          blurb?: string | null
           reason: string
           twitter_id: number
         }
         Update: {
+          blurb?: string | null
           reason?: string
           twitter_id?: number
         }
@@ -571,6 +690,96 @@ export type Database = {
         }
         Relationships: []
       }
+      kaito_yapper_data: {
+        Row: {
+          author_description: string | null
+          author_followers_count: number | null
+          author_id: number
+          author_location: string | null
+          author_name: string | null
+          author_smart_followers_count: number | null
+          author_username: string | null
+          bookmark_count: number | null
+          community_mindshare: string | null
+          earliest_mention_date: string | null
+          hardcore_score: number | null
+          impression_count: number | null
+          insightfullness_score: number | null
+          is_ai_agent: boolean | null
+          like_count: number | null
+          negative_tweet_count: number | null
+          originality_score: number | null
+          quote_count: number | null
+          registered_yapper: boolean | null
+          reply_count: number | null
+          retweet_count: number | null
+          smart_engagement_count: number | null
+          tweet_count: number | null
+          urls: string[] | null
+          user_type: string | null
+          wallet: boolean | null
+          yaps_score: number | null
+        }
+        Insert: {
+          author_description?: string | null
+          author_followers_count?: number | null
+          author_id: number
+          author_location?: string | null
+          author_name?: string | null
+          author_smart_followers_count?: number | null
+          author_username?: string | null
+          bookmark_count?: number | null
+          community_mindshare?: string | null
+          earliest_mention_date?: string | null
+          hardcore_score?: number | null
+          impression_count?: number | null
+          insightfullness_score?: number | null
+          is_ai_agent?: boolean | null
+          like_count?: number | null
+          negative_tweet_count?: number | null
+          originality_score?: number | null
+          quote_count?: number | null
+          registered_yapper?: boolean | null
+          reply_count?: number | null
+          retweet_count?: number | null
+          smart_engagement_count?: number | null
+          tweet_count?: number | null
+          urls?: string[] | null
+          user_type?: string | null
+          wallet?: boolean | null
+          yaps_score?: number | null
+        }
+        Update: {
+          author_description?: string | null
+          author_followers_count?: number | null
+          author_id?: number
+          author_location?: string | null
+          author_name?: string | null
+          author_smart_followers_count?: number | null
+          author_username?: string | null
+          bookmark_count?: number | null
+          community_mindshare?: string | null
+          earliest_mention_date?: string | null
+          hardcore_score?: number | null
+          impression_count?: number | null
+          insightfullness_score?: number | null
+          is_ai_agent?: boolean | null
+          like_count?: number | null
+          negative_tweet_count?: number | null
+          originality_score?: number | null
+          quote_count?: number | null
+          registered_yapper?: boolean | null
+          reply_count?: number | null
+          retweet_count?: number | null
+          smart_engagement_count?: number | null
+          tweet_count?: number | null
+          urls?: string[] | null
+          user_type?: string | null
+          wallet?: boolean | null
+          yaps_score?: number | null
+        }
+        Relationships: []
+      }
       levels: {
         Row: {
           created_at: string
@@ -610,6 +819,27 @@ export type Database = {
           created_at?: string
           data?: string
           id?: string
+        }
+        Relationships: []
+      }
+      metabase_raccoons: {
+        Row: {
+          count: number | null
+          created_at: string | null
+          ethereum_address: string
+          initia_address: string
+        }
+        Insert: {
+          count?: number | null
+          created_at?: string | null
+          ethereum_address: string
+          initia_address: string
+        }
+        Update: {
+          count?: number | null
+          created_at?: string | null
+          ethereum_address?: string
+          initia_address?: string
         }
         Relationships: []
       }
@@ -797,6 +1027,7 @@ export type Database = {
           new_count: number | null
           phase: string
           universal_chain_id: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -804,6 +1035,7 @@ export type Database = {
           new_count?: number | null
           phase: string
           universal_chain_id: string
+          updated_at?: string | null
           user_id?: string
         }
         Update: {
@@ -811,6 +1043,7 @@ export type Database = {
           new_count?: number | null
           phase?: string
           universal_chain_id?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -966,18 +1199,36 @@ export type Database = {
           start_timestamp?: string
           user_id?: string
         }
+        Relationships: []
+      }
+      team: {
+        Row: {
+          created_at: string
+          name: string | null
+          userId: string
+        }
+        Insert: {
+          created_at?: string
+          name?: string | null
+          userId: string
+        }
+        Update: {
+          created_at?: string
+          name?: string | null
+          userId?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "streaks_by_chain_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
+            foreignKeyName: "team_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: true
             referencedRelation: "user_discord_invites"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "streaks_by_chain_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
+            foreignKeyName: "team_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1497,6 +1748,195 @@ export type Database = {
           },
         ]
       }
+      yaps_season_one_with_users: {
+        Row: {
+          language: string | null
+          mindshare: string | null
+          peripheral_tweet_urls: string | null
+          pfp: string | null
+          rank: number | null
+          raw_community_score: number | null
+          team: boolean | null
+          total_bookmarks: string | null
+          total_community_engagements: string | null
+          total_impressions: number | null
+          total_likes: number | null
+          total_quote_tweets: string | null
+          total_retweets: string | null
+          total_smart_engagements: string | null
+          tweet_counts: number | null
+          tweet_urls: string | null
+          twitter_id: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          language?: string | null
+          mindshare?: string | null
+          peripheral_tweet_urls?: string | null
+          pfp?: string | null
+          rank?: number | null
+          raw_community_score?: number | null
+          team?: boolean | null
+          total_bookmarks?: string | null
+          total_community_engagements?: string | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_quote_tweets?: string | null
+          total_retweets?: string | null
+          total_smart_engagements?: string | null
+          tweet_counts?: number | null
+          tweet_urls?: string | null
+          twitter_id?: number | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          language?: string | null
+          mindshare?: string | null
+          peripheral_tweet_urls?: string | null
+          pfp?: string | null
+          rank?: number | null
+          raw_community_score?: number | null
+          team?: boolean | null
+          total_bookmarks?: string | null
+          total_community_engagements?: string | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_quote_tweets?: string | null
+          total_retweets?: string | null
+          total_smart_engagements?: string | null
+          tweet_counts?: number | null
+          tweet_urls?: string | null
+          twitter_id?: number | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      yaps_season_zero_raw: {
+        Row: {
+          language: string | null
+          mindshare: string | null
+          peripheral_tweet_urls: string | null
+          rank: number | null
+          raw_community_score: number | null
+          total_bookmarks: string | null
+          total_community_engagements: string | null
+          total_impressions: number | null
+          total_likes: number | null
+          total_quote_tweets: string | null
+          total_retweets: string | null
+          total_smart_engagements: string | null
+          tweet_counts: number | null
+          tweet_urls: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          language?: string | null
+          mindshare?: string | null
+          peripheral_tweet_urls?: string | null
+          rank?: number | null
+          raw_community_score?: number | null
+          total_bookmarks?: string | null
+          total_community_engagements?: string | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_quote_tweets?: string | null
+          total_retweets?: string | null
+          total_smart_engagements?: string | null
+          tweet_counts?: number | null
+          tweet_urls?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          language?: string | null
+          mindshare?: string | null
+          peripheral_tweet_urls?: string | null
+          rank?: number | null
+          raw_community_score?: number | null
+          total_bookmarks?: string | null
+          total_community_engagements?: string | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_quote_tweets?: string | null
+          total_retweets?: string | null
+          total_smart_engagements?: string | null
+          tweet_counts?: number | null
+          tweet_urls?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      yaps_season_zero_with_users: {
+        Row: {
+          language: string | null
+          mindshare: string | null
+          peripheral_tweet_urls: string | null
+          pfp: string | null
+          rank: number | null
+          raw_community_score: number | null
+          team: boolean | null
+          total_bookmarks: string | null
+          total_community_engagements: string | null
+          total_impressions: number | null
+          total_likes: number | null
+          total_quote_tweets: string | null
+          total_retweets: string | null
+          total_smart_engagements: string | null
+          tweet_counts: number | null
+          tweet_urls: string | null
+          twitter_id: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          language?: string | null
+          mindshare?: string | null
+          peripheral_tweet_urls?: string | null
+          pfp?: string | null
+          rank?: number | null
+          raw_community_score?: number | null
+          team?: boolean | null
+          total_bookmarks?: string | null
+          total_community_engagements?: string | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_quote_tweets?: string | null
+          total_retweets?: string | null
+          total_smart_engagements?: string | null
+          tweet_counts?: number | null
+          tweet_urls?: string | null
+          twitter_id?: number | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          language?: string | null
+          mindshare?: string | null
+          peripheral_tweet_urls?: string | null
+          pfp?: string | null
+          rank?: number | null
+          raw_community_score?: number | null
+          team?: boolean | null
+          total_bookmarks?: string | null
+          total_community_engagements?: string | null
+          total_impressions?: number | null
+          total_likes?: number | null
+          total_quote_tweets?: string | null
+          total_retweets?: string | null
+          total_smart_engagements?: string | null
+          tweet_counts?: number | null
+          tweet_urls?: string | null
+          twitter_id?: number | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       leaderboard: {
@@ -1643,6 +2083,26 @@ export type Database = {
       }
     }
     Functions: {
+      bech32_charset: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      bech32_create_checksum: {
+        Args: { hrp: string; input_data: number[] }
+        Returns: number[]
+      }
+      bech32_encode: {
+        Args: { hrp: string; input_data: number[] }
+        Returns: string
+      }
+      bech32_hrp_expand: {
+        Args: { hrp: string }
+        Returns: number[]
+      }
+      bech32_polymod: {
+        Args: { input_vals: number[] }
+        Returns: number
+      }
       bulk_import_nfts: {
         Args: {
           p_collection_id: string
@@ -1651,13 +2111,46 @@ export type Database = {
         }
         Returns: Json
       }
+      bytea_to_text: {
+        Args: { data: string }
+        Returns: string
+      }
       check_twitter_follow: {
         Args: { p_user_id: string; p_leader_id: number }
         Returns: boolean
       }
+      convert_bits: {
+        Args: {
+          input_data: string
+          from_bits: number
+          to_bits: number
+          pad: boolean
+        }
+        Returns: number[]
+      }
       decode_error_level: {
         Args: { elevel: number }
         Returns: string
+      }
+      eth_to_initia_address: {
+        Args: { eth_address: string }
+        Returns: string
+      }
+      generate_initial_codes_for_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_readable_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_user_codes_readable: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          user_email: string
+          generated_code: string
+        }[]
       }
       get_and_update_twitter_leader: {
         Args: Record<PropertyKey, never>
@@ -1741,9 +2234,64 @@ export type Database = {
           ticked: boolean
         }[]
       }
+      hex_to_bytea: {
+        Args: { hex_string: string }
+        Returns: string
+      }
       histogram: {
         Args: { _bucket: number; _quryid: number }
         Returns: Record<string, unknown>[]
+      }
+      http: {
+        Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_delete: {
+        Args:
+          | { uri: string }
+          | { uri: string; content: string; content_type: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_get: {
+        Args: { uri: string } | { uri: string; data: Json }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_head: {
+        Args: { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_header: {
+        Args: { field: string; value: string }
+        Returns: Database["public"]["CompositeTypes"]["http_header"]
+      }
+      http_list_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          curlopt: string
+          value: string
+        }[]
+      }
+      http_patch: {
+        Args: { uri: string; content: string; content_type: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_post: {
+        Args:
+          | { uri: string; content: string; content_type: string }
+          | { uri: string; data: Json }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_put: {
+        Args: { uri: string; content: string; content_type: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+      }
+      http_reset_curlopt: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      http_set_curlopt: {
+        Args: { curlopt: string; value: string }
+        Returns: boolean
       }
       insert_nfts_from_stargaze_json: {
         Args: { data: Json }
@@ -1800,6 +2348,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string[]
       }
+      text_to_bytea: {
+        Args: { data: string }
+        Returns: string
+      }
       tick_user: {
         Args: { user_id_param: string }
         Returns: undefined
@@ -1818,32 +2370,56 @@ export type Database = {
           threshold: number
         }[]
       }
+      urlencode: {
+        Args: { data: Json } | { string: string } | { string: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      http_header: {
+        field: string | null
+        value: string | null
+      }
+      http_request: {
+        method: unknown | null
+        uri: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content_type: string | null
+        content: string | null
+      }
+      http_response: {
+        status: number | null
+        content_type: string | null
+        headers: Database["public"]["CompositeTypes"]["http_header"][] | null
+        content: string | null
+      }
     }
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   } ? keyof (
-      & Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-      & Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
+      & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+      & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
     )
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database } ? (
-    & Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    & Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+} ? (
+    & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
   )[TableName] extends {
     Row: infer R
   } ? R
@@ -1863,15 +2439,18 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  } ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    schema: keyof DatabaseWithoutInternals
+  } ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I
-  } ? I
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends
+    {
+      Insert: infer I
+    } ? I
   : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
@@ -1883,15 +2462,18 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  } ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    schema: keyof DatabaseWithoutInternals
+  } ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U
-  } ? U
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends
+    {
+      Update: infer U
+    } ? U
   : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
@@ -1903,13 +2485,14 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
-  } ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    schema: keyof DatabaseWithoutInternals
+  } ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+} ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
   : never
@@ -1917,13 +2500,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
-  } ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    schema: keyof DatabaseWithoutInternals
+  } ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+} ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][
+    CompositeTypeName
+  ]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
   : never
@@ -1933,18 +2519,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
-export type JoinedAchievement = Database["public"]["Tables"]["achievements"]["Row"] & {
-  category?: {
-    title: string
-  } | null
-  subcategory?: {
-    title: string
-  } | null
-  reward_achievements?: {
-    rewards: {
-      title: string | null
-      cutoff: string | null
-    }[]
-  }[]
-}
