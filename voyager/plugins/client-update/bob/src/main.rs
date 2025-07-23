@@ -24,7 +24,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
     never::Never,
-    primitives::{encoding::HexPrefixed, ByteArrayExt, H160, H256, U256},
+    primitives::{encoding::HexPrefixed, ByteArrayExt, Bytes, H160, H256, U256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -318,7 +318,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
 impl Module {
     async fn fetch_game_account_code(&self, game_account: H160) -> RpcResult<Vec<u8>> {
-        self.l2_provider
+        self.l1_provider
             .get_code_at(game_account.into())
             .await
             .map_err(|e| {
@@ -337,7 +337,7 @@ impl Module {
         game_account: H160,
     ) -> RpcResult<AccountProof> {
         let proof = self
-            .l2_provider
+            .l1_provider
             .get_proof(game_account.into(), vec![])
             .block_id(height.into())
             .await
@@ -644,10 +644,15 @@ impl Module {
         // See https://github.com/ethereum-optimism/optimism/blob/4a7cb8a198a1f027e739d2e51dc170faf02b5d28/packages/contracts-bedrock/src/dispute/lib/LibUDT.sol#L70-L79
         let game_account_address = H160::<HexPrefixed>::new(game_id.array_slice::<12, 20>());
 
+        debug!(%game_account_address);
+
         let game_account_proof = self
             .fetch_game_account_proof(l1_height, game_account_address)
             .await?;
-        let game_account_code = self.fetch_game_account_code(game_account_address).await?;
+        let game_account_code =
+            <Bytes>::new(self.fetch_game_account_code(game_account_address).await?);
+
+        debug!(%game_account_code);
 
         let l2_ibc_account_proof = self
             .fetch_ibc_contract_root_proof(l2_block.header.number)
@@ -697,7 +702,7 @@ impl Module {
                     game_index,
                     game_proof,
                     game_account_proof,
-                    game_account_code: game_account_code.into(),
+                    game_account_code,
                 }),
             )],
         }))

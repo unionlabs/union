@@ -89,6 +89,7 @@ _: {
       networks = [
         {
           chain-id = "union-devnet-1";
+          ucs04-chain-id = "union.union-devnet-1";
           name = "union-devnet";
           rpc_url = "http://localhost:26657";
           # alice from the devnet keyring
