@@ -1048,7 +1048,7 @@ export class FungibleAssetOrderV1
         decoding: () => 3 as const,
       }),
     ),
-    version: S.tag(1).pipe(
+    version: S.Literal(1).pipe(
       S.optional,
       S.withDefaults({
         constructor: () => 1 as const,
@@ -1061,7 +1061,34 @@ export class FungibleAssetOrderV1
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
-const a = new FungibleAssetOrder({} as unknown as any)
+export class FungibleAssetOrderV2
+  extends S.TaggedClass<FungibleAssetOrderV2>()("FungibleAssetOrder", {
+    opcode: S.Literal(3).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 3 as const,
+        decoding: () => 3 as const,
+      }),
+    ),
+    version: S.Literal(2).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 2 as const,
+        decoding: () => 2 as const,
+      }),
+    ),
+    operand: FungibleAssetOrderOperand,
+  })
+{
+  static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
+}
+
+export const FungibleAssetOrder = S.Union(FungibleAssetOrderV1, FungibleAssetOrderV2)
+export type FungibleAssetOrder = typeof FungibleAssetOrder.Type
+
+const faov1 = FungibleAssetOrderV1.fromOperand([] as unknown as any)
+declare const f: (a: FungibleAssetOrder) => void
+const g = f(faov1)
 
 /**
  * @category models
