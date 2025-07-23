@@ -75,13 +75,13 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             keyring: KeyringConfig {
                 name: "alice".into(),
                 keys: vec![
-                    KeyringConfigEntry::Raw {
-                        name: "alice".into(),
-                        key: hex_literal::hex!(
-                            "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-                        )
-                        .to_vec(),
-                    },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "alice".into(),
+                    //     key: hex_literal::hex!(
+                    //         "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+                    //     )
+                    //     .to_vec(),
+                    // },
                     KeyringConfigEntry::Raw {
                         name: "bob".into(),
                         key: hex_literal::hex!(
@@ -122,13 +122,13 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             keyring: KeyringConfig {
                 name: "evm-keyring".into(),
                 keys: vec![
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key0.prv".into(),
-                        key: hex!(
-                            "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-                        )
-                        .to_vec(),
-                    },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key0.prv".into(),
+                    //     key: hex!(
+                    //         "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+                    //     )
+                    //     .to_vec(),
+                    // },
                     KeyringConfigEntry::Raw {
                         name: "dev-key1.prv".into(),
                         key: hex!(
@@ -1296,6 +1296,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
         .dst
         .predict_stake_manager_address(EVM_ZKGM_BYTES.into(), evm_provider.clone())
         .await;
+
     assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
     let snake_nft = snake_nft.unwrap();
 
