@@ -1,25 +1,23 @@
-import {
-  FetchHttpClient,
-  HttpBody,
-  HttpClient,
-  HttpClientRequest,
-  HttpClientResponse,
-} from "@effect/platform"
-import { Array as A, Effect, Option, pipe, Schema } from "effect"
+import { FetchHttpClient, HttpBody, HttpClient } from "@effect/platform"
+import { Effect, Option, Schema } from "effect"
 
-const VOY_RUN_URL = "https://voy.run"
-
-const JsonRpcRequest = Schema.Struct({
-  jsonrpc: Schema.Literal("2.0"),
-  method: Schema.String,
-  params: Schema.Array(Schema.Unknown),
-  id: Schema.Number,
-})
+const VOY_RUN_URL = "https://voyrun.union.build"
 
 // Extract chain ID from universal chain ID (remove family prefix)
 export function extractChainId(universalChainId: string): string {
   const parts = universalChainId.split(".")
   return parts.length > 1 ? parts[1] : universalChainId
+}
+
+function createDeterministicId(universalChainId: string): number {
+  let hash = 0
+  const chainId = extractChainId(universalChainId)
+  for (let i = 0; i < chainId.length; i++) {
+    const char = chainId.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return Math.abs(hash)
 }
 
 // Schema transform to remove revision prefix from height (e.g., "5-1493366" -> "1493366")
@@ -54,14 +52,14 @@ const JsonRpcResponse = Schema.Union(
 
 type JsonRpcResponse = Schema.Schema.Type<typeof JsonRpcResponse>
 
-// Fetch heights for a single batch of chain IDs
-const fetchHeightsBatch = (chainIds: string[], startId: number = 1) =>
+// Fetch heights for a single batch of chain IDs with optional ID offset
+const fetchHeightsBatch = (chainIds: string[], idOffset: number = 0) =>
   Effect.gen(function*() {
-    const requests = chainIds.map((chainId, index) => ({
+    const requests = chainIds.map((chainId) => ({
       jsonrpc: "2.0" as const,
       method: "voyager_queryLatestHeight",
       params: [extractChainId(chainId), true],
-      id: startId + index,
+      id: createDeterministicId(chainId) + idOffset,
     }))
 
     const httpClient = (yield* HttpClient.HttpClient).pipe(
@@ -82,17 +80,19 @@ const fetchHeightsBatch = (chainIds: string[], startId: number = 1) =>
 // Fetch finalized heights for multiple chains with smart retry
 export const fetchFinalizedHeights = (universalChainIds: string[]) =>
   Effect.gen(function*() {
+    // Sort chain IDs to ensure consistent ordering for caching
+    const sortedUniversalChainIds = [...universalChainIds].sort()
     const heightMap = new Map<string, Option.Option<string>>()
 
     yield* Effect.log("Fetching finalized heights").pipe(
       Effect.annotateLogs({
-        chainCount: universalChainIds.length,
-        chainIds: universalChainIds.map(extractChainId),
+        chainCount: sortedUniversalChainIds.length,
+        chainIds: sortedUniversalChainIds.map(extractChainId),
       }),
     )
 
     // Initial batch request
-    const initialResult = yield* fetchHeightsBatch(universalChainIds).pipe(
+    const initialResult = yield* fetchHeightsBatch(sortedUniversalChainIds).pipe(
       Effect.catchAll(error =>
         Effect.logError("Failed to fetch heights batch", error).pipe(
           Effect.andThen(Effect.succeed({
@@ -113,9 +113,9 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
     })
 
     // Process each chain ID
-    universalChainIds.forEach((ucid, index) => {
-      const requestId = index + 1
-      const response = successfulResponses.get(requestId)
+    sortedUniversalChainIds.forEach((ucid) => {
+      const expectedId = createDeterministicId(ucid)
+      const response = successfulResponses.get(expectedId)
 
       if (response && "result" in response) {
         heightMap.set(ucid, Option.some(response.result))
@@ -135,7 +135,7 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
         }),
       )
 
-      const retryResult = yield* fetchHeightsBatch(failedChainIds, 1000).pipe(
+      const retryResult = yield* fetchHeightsBatch(failedChainIds, 100000).pipe(
         Effect.catchAll(error =>
           Effect.logError("Failed to retry heights batch", error).pipe(
             Effect.andThen(Effect.succeed({
@@ -153,9 +153,9 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
       })
 
       // Update the height map with retry results
-      failedChainIds.forEach((ucid, index) => {
-        const requestId = 1000 + index
-        const response = retryResponses.get(requestId)
+      failedChainIds.forEach((ucid) => {
+        const expectedId = createDeterministicId(ucid) + 100000
+        const response = retryResponses.get(expectedId)
 
         if (response && "result" in response) {
           heightMap.set(ucid, Option.some(response.result))
@@ -175,7 +175,13 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
       }),
     )
 
-    return heightMap
+    // Convert the sorted results back to match the original order
+    const originalOrderMap = new Map<string, Option.Option<string>>()
+    universalChainIds.forEach(ucid => {
+      originalOrderMap.set(ucid, heightMap.get(ucid) ?? Option.none())
+    })
+
+    return originalOrderMap
   }).pipe(
     Effect.withLogSpan("fetchFinalizedHeights"),
     Effect.provide(FetchHttpClient.layer),
