@@ -1,30 +1,50 @@
 <script lang="ts">
 import { cn } from "$lib/utils"
 import type { Snippet } from "svelte"
-import type { HTMLButtonAttributes } from "svelte/elements"
+import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements"
 
-type Props = HTMLButtonAttributes & {
+type BaseProps = {
   variant?: "primary" | "secondary" | "danger" | "outline" | "text" | "icon" | "inline"
   selected?: boolean | undefined
   class?: string
   children: Snippet
 }
 
+type ButtonProps = BaseProps & HTMLButtonAttributes & {
+  href?: never
+}
+
+type AnchorProps = BaseProps & HTMLAnchorAttributes & {
+  href: string
+  type?: never
+  disabled?: never
+}
+
+type Props = ButtonProps | AnchorProps
+
+const props = $props()
+
 const {
   variant = "primary",
   disabled = false,
   selected = false,
-  type = "button",
   class: className = "",
   children,
+  type,
+  href,
   ...rest
-}: Props = $props()
+} = props
+
+const isLink = href !== undefined
 
 const classes = cn(
   // Base styles
   "inline-flex cursor-pointer items-center gap-2 justify-center rounded-md text-sm font-medium transition-colors",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-  "disabled:pointer-events-none disabled:opacity-50",
+  // Disabled styles (only for buttons)
+  !isLink && "disabled:pointer-events-none disabled:opacity-50",
+  // Disabled styles for links (using aria-disabled)
+  isLink && disabled && "pointer-events-none opacity-50",
   // Variants
   variant === "primary" && [
     "bg-sky-600 border-sky-600 border text-white hover:bg-sky-700",
@@ -64,11 +84,22 @@ const classes = cn(
 )
 </script>
 
-<button
-  {type}
-  class={classes}
-  {disabled}
-  {...rest}
->
-  {@render children()}
-</button>
+{#if isLink}
+  <a
+    {href}
+    class={classes}
+    aria-disabled={disabled}
+    {...rest}
+  >
+    {@render children()}
+  </a>
+{:else}
+  <button
+    type={type || "button"}
+    class={classes}
+    {disabled}
+    {...rest}
+  >
+    {@render children()}
+  </button>
+{/if}

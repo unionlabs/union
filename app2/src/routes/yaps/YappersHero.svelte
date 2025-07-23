@@ -7,7 +7,7 @@ import { onDestroy, onMount } from "svelte"
 
 let showPlayButton = $state(true)
 let videoHovered = $state(false)
-let seasonStartTime = new Date("2025-07-01T00:00:00Z") // Season 1 start date
+let seasonStartTime = new Date("2025-07-23T00:00:00Z") // Season 1 start date
 let currentTime = $state(new Date())
 let timerInterval: ReturnType<typeof setInterval>
 let isInfoModalOpen = $state(false)
@@ -33,7 +33,7 @@ function handlePlayClick() {
 }
 
 function formatTimeDuration(startDate: Date, currentDate: Date) {
-  const diff = startDate.getTime() - currentDate.getTime()
+  const diff = currentDate.getTime() - startDate.getTime()
   if (diff <= 0) {
     return { days: 0, hours: 0, minutes: 0, seconds: 0 }
   }
@@ -217,6 +217,7 @@ onDestroy(() => {
           <Button
             variant="primary"
             class="order-1 sm:order-0"
+            href="/auth/sign-in"
           >
             <span class="skew-x-[5deg]">JOIN THE YAPPERS</span>
             <svg

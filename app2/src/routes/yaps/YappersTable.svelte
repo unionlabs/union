@@ -33,33 +33,18 @@ function createAvatarErrorHandler(username: string) {
   }
 }
 
-function formatRankNumber(rank: number): string {
-  if (rank >= 1000000) {
-    return (rank / 1000000).toFixed(1).replace(".0", "") + "M"
-  } else if (rank >= 1000) {
-    return (rank / 1000).toFixed(1).replace(".0", "") + "k"
-  }
-  return rank.toString()
-}
-
 function formatMindshare(mindshare: string | null): string {
   if (!mindshare) {
-    return "0.0000%"
+    return "0.00%"
   }
-
-  // If it already has %, just return it
   if (mindshare.includes("%")) {
     return mindshare
   }
-
-  // Parse as number and convert to percentage
   const value = parseFloat(mindshare)
   if (isNaN(value)) {
-    return "0.0000%"
+    return "0.00%"
   }
-
-  // Convert to percentage and format to 4 decimal places
-  return (value * 100).toFixed(4) + "%"
+  return (value * 100).toFixed(2) + "%"
 }
 
 let filteredEntries = $derived(
@@ -95,8 +80,8 @@ let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex 
         : listStartIndex + index + 1}
         <li class="flex gap-3 items-center py-2 px-3 rounded-lg bg-zinc-800/20 hover:bg-zinc-700/40 border border-zinc-700/30 hover:border-zinc-600/50 transition-all duration-200 overflow-visible">
           <!-- Rank badge -->
-          <div class="w-8 h-6 rounded bg-zinc-700/80 flex items-center justify-center text-xs font-bold text-zinc-300 flex-shrink-0">
-            {formatRankNumber(rank)}
+          <div class="min-w-[2rem] h-6 px-2 rounded bg-zinc-700/80 flex items-center justify-center text-xs font-bold text-zinc-300 flex-shrink-0">
+            {rank}
           </div>
 
           <!-- Avatar -->
@@ -111,7 +96,7 @@ let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex 
 
           <!-- User info -->
           <div class="flex-1 min-w-0">
-            <div class="text-sm text-zinc-100 font-mono font-medium truncate">
+            <div class="text-sm text-zinc-100 font-medium truncate">
               @{entry.username?.toLowerCase().replace(" ", "")}
             </div>
           </div>
@@ -133,7 +118,7 @@ let listEntries = $derived(filteredEntries.slice(listStartIndex, listStartIndex 
                 </svg>
               </button>
             {/if}
-            <div class="font-mono font-bold text-sm {entry.team ? 'text-zinc-500' : 'text-white'}">
+            <div class="font-bold text-sm {entry.team ? 'text-zinc-500' : 'text-white'}">
               {formatMindshare(entry.mindshare)}
             </div>
           </div>

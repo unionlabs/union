@@ -29,22 +29,16 @@ function createAvatarErrorHandler(username: string) {
 
 function formatMindshare(mindshare: string | null): string {
   if (!mindshare) {
-    return "0.0000%"
+    return "0.00%"
   }
-
-  // If it already has %, just return it
   if (mindshare.includes("%")) {
     return mindshare
   }
-
-  // Parse as number and convert to percentage
   const value = parseFloat(mindshare)
   if (isNaN(value)) {
-    return "0.0000%"
+    return "0.00%"
   }
-
-  // Convert to percentage and format to 4 decimal places
-  return (value * 100).toFixed(4) + "%"
+  return (value * 100).toFixed(2) + "%"
 }
 
 // Filter out team members and get top 3 non-team yappers
@@ -74,7 +68,7 @@ const podiumEntries = $derived(
           />
         </div>
         <div class="flex flex-col">
-          <div class="text-white text-xs font-mono">
+          <div class="text-white text-xs">
             @{podiumEntries[1]?.username?.toLowerCase().replace(" ", "")}
           </div>
           <div class="text-orange-400 text-sm font-bold">
@@ -109,7 +103,7 @@ const podiumEntries = $derived(
       <div class="relative z-10 flex flex-col items-center text-center pt-16 pb-6 px-4 gap-8">
         <!-- Text Content -->
         <div>
-          <div class="text-white text-sm font-mono">
+          <div class="text-white text-sm">
             @{podiumEntries[1]?.username?.toLowerCase().replace(" ", "")}
           </div>
           <div class="text-orange-400 text-base font-bold mt-1">
@@ -142,7 +136,7 @@ const podiumEntries = $derived(
           />
         </div>
         <div class="flex flex-col">
-          <div class="text-white text-sm font-mono">
+          <div class="text-white text-sm">
             @{podiumEntries[0]?.username?.toLowerCase().replace(" ", "")}
           </div>
           <div class="text-red-400 text-lg font-bold">
@@ -177,7 +171,7 @@ const podiumEntries = $derived(
       <div class="relative z-10 flex flex-col items-center text-center pt-16 pb-8 px-4 gap-10">
         <!-- Text Content -->
         <div>
-          <div class="text-white text-base font-mono">
+          <div class="text-white text-base">
             @{podiumEntries[0]?.username?.toLowerCase().replace(" ", "")}
           </div>
           <div class="text-red-400 text-xl font-bold mt-2">
@@ -210,7 +204,7 @@ const podiumEntries = $derived(
           />
         </div>
         <div class="flex flex-col">
-          <div class="text-white text-xs font-mono">
+          <div class="text-white text-xs">
             @{podiumEntries[2]?.username?.toLowerCase().replace(" ", "")}
           </div>
           <div class="text-yellow-400 text-sm font-bold">
@@ -245,7 +239,7 @@ const podiumEntries = $derived(
       <div class="relative z-10 flex flex-col items-center text-center pt-16 pb-5 px-4 gap-4">
         <!-- Text Content -->
         <div>
-          <div class="text-white text-sm font-mono">
+          <div class="text-white text-sm">
             @{podiumEntries[2]?.username?.toLowerCase().replace(" ", "")}
           </div>
           <div class="text-yellow-400 text-base font-bold mt-1">
