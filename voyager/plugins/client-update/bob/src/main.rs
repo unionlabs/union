@@ -318,7 +318,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
 impl Module {
     async fn fetch_game_account_code(&self, game_account: H160) -> RpcResult<Vec<u8>> {
-        self.l2_provider
+        self.l1_provider
             .get_code_at(game_account.into())
             .await
             .map_err(|e| {
@@ -337,7 +337,7 @@ impl Module {
         game_account: H160,
     ) -> RpcResult<AccountProof> {
         let proof = self
-            .l2_provider
+            .l1_provider
             .get_proof(game_account.into(), vec![])
             .block_id(height.into())
             .await
