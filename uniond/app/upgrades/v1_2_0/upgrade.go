@@ -220,8 +220,8 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		if err != nil {
 			return nil, err
 		}
-		// set community tax to 100% to take all rewards
-		distrParams.CommunityTax = math.LegacyMustNewDecFromStr("1")
+		// Set CommunityTax to 2% to ensure validators and delegators receive staking rewards.
+		distrParams.CommunityTax = math.LegacyMustNewDecFromStr("0.02")
 		keepers.DistributionKeeper.Params.Set(ctx, distrParams)
 
 		// Update x/feemarket
