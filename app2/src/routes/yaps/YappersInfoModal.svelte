@@ -84,7 +84,7 @@ const { isOpen, onClose }: Props = $props()
           >1% of its token supply</strong> to the Kaito rewards program. This initiative is meant to
           reward Union's early believers, active yappers, and community ambassadors for both their
           past contributions and their continued efforts to make Union a household name as a
-          cross-chain Layer-1.
+          crosschain Layer 1.
         </p>
 
         <h4 class="text-md font-semibold text-white mb-2">Rewards Breakdown</h4>
@@ -102,10 +102,16 @@ const { isOpen, onClose }: Props = $props()
             mainnet, rewarding yappers based on their mindshare during this timeframe.
           </li>
         </ul>
+
+        <h4 class="text-md font-semibold text-white mb-2">Kaito Ecosystem (0.25%)</h4>
         <p class="mb-4">
-          <strong class="text-white">Kaito Ecosystem (0.25%):</strong> Directed to Kaito stakers,
-          genesis NFT holders, and the broader Kaito community. This allocation is consistent with
-          reward structures from similar projects participating in Kaito Earn campaigns.
+          Directed to Kaito stakers, genesis NFT holders, and the broader Kaito community. This
+          allocation is consistent with reward structures from similar projects participating in <a
+            href="https://dune.com/kaitoai/kaito"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-orange-400 hover:text-orange-300 underline"
+          >Kaito Earn campaigns.</a>
         </p>
       </div>
 
@@ -136,8 +142,12 @@ const { isOpen, onClose }: Props = $props()
         </p>
         <ol class="list-decimal list-inside mb-4 ml-4 space-y-2">
           <li>
-            <strong class="text-white">Sign up on the Union Dashboard:</strong> If you haven't
-            already, this is your first step to enter the arena. Connect your X account and wallets.
+            <strong class="text-white"
+            >Sign up on the <a
+                href="/dashboard"
+                class="text-orange-400 hover:text-orange-300 underline"
+              >Union Dashboard</a>:</strong> If you haven't already, this is your first step to
+            enter the arena. Connect your X account and wallets.
           </li>
           <li>
             <strong class="text-white">Start Yapping:</strong> If it's your first time, start by
