@@ -36,7 +36,6 @@ pub struct Delegate {
     pub validator: String,
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct WithdrawRewards {
     pub validator: String,

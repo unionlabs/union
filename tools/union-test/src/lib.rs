@@ -98,7 +98,6 @@ pub trait ChainEndpoint: Send + Sync {
         expected_event_count: usize,
     ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>>;
 
-    // TODO: How to handle this for EVM chains?
     async fn send_ibc_transaction(
         &self,
         contract: Self::Contract,
@@ -806,7 +805,6 @@ where
         );
 
         // TODO: any other event is expected here?
-
         match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
             Ok(evt) => evt,
             Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
