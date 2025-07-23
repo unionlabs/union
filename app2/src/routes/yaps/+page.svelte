@@ -226,7 +226,12 @@ onDestroy(() => {
 {#if contentReady}
   <div class="relative z-10 animate-fade-in">
     <Sections class="max-w-6xl mx-auto">
-      <div class="relative mt-4">
+      <div class="flex flex-col items-center relative mt-4">
+        <img
+          src="/yaps/unionxkaito.png"
+          alt="Mad Logo"
+          class="w-72 h-auto mb-6"
+        />
         <img
           src="/yaps/mad.png"
           alt="Mad Logo"
