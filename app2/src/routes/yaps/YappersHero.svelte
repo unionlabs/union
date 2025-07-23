@@ -1,74 +1,76 @@
 <script lang="ts">
-  import Button from "$lib/components/ui/Button.svelte"
-  import Card from "$lib/components/ui/Card.svelte"
-  import YappersInfoModal from "./YappersInfoModal.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import YappersInfoModal from "./YappersInfoModal.svelte"
 
-  import { onDestroy, onMount } from "svelte"
+import { onDestroy, onMount } from "svelte"
 
-  let showPlayButton = $state(true)
-  let videoHovered = $state(false)
-  let seasonStartTime = new Date("2025-07-01T00:00:00Z") // Season 1 start date
-  let currentTime = $state(new Date())
-  let timerInterval: ReturnType<typeof setInterval>
-  let isInfoModalOpen = $state(false)
+let showPlayButton = $state(true)
+let videoHovered = $state(false)
+let seasonStartTime = new Date("2025-07-01T00:00:00Z") // Season 1 start date
+let currentTime = $state(new Date())
+let timerInterval: ReturnType<typeof setInterval>
+let isInfoModalOpen = $state(false)
 
-  let videoElement: HTMLVideoElement
+let videoElement: HTMLVideoElement
 
-  function handlePlayClick() {
-    if (!videoElement) {
-      return
-    }
-    videoElement.currentTime = 0
-    videoElement.muted = false
-    showPlayButton = false
+function handlePlayClick() {
+  if (!videoElement) {
+    return
+  }
+  videoElement.currentTime = 0
+  videoElement.muted = false
+  showPlayButton = false
 
-    const element = videoElement as any
-    if (element.requestFullscreen) {
-      element.requestFullscreen()
-    } else if (element.webkitRequestFullscreen) {
-      element.webkitRequestFullscreen()
-    } else if (element.msRequestFullscreen) {
-      element.msRequestFullscreen()
-    }
+  const element = videoElement as any
+  if (element.requestFullscreen) {
+    element.requestFullscreen()
+  } else if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen()
+  } else if (element.msRequestFullscreen) {
+    element.msRequestFullscreen()
+  }
+}
+
+function formatTimeDuration(startDate: Date, currentDate: Date) {
+  const diff = startDate.getTime() - currentDate.getTime()
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0 }
   }
 
-  function formatTimeDuration(startDate: Date, currentDate: Date) {
-    const diff = startDate.getTime() - currentDate.getTime()
-    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 }
+  const second = 1000
+  const minute = second * 60
+  const hour = minute * 60
+  const day = hour * 24
 
-    const second = 1000
-    const minute = second * 60
-    const hour = minute * 60
-    const day = hour * 24
-
-    return {
-      days: Math.floor(diff / day),
-      hours: Math.floor((diff % day) / hour),
-      minutes: Math.floor((diff % hour) / minute),
-      seconds: Math.floor((diff % minute) / second),
-    }
+  return {
+    days: Math.floor(diff / day),
+    hours: Math.floor((diff % day) / hour),
+    minutes: Math.floor((diff % hour) / minute),
+    seconds: Math.floor((diff % minute) / second),
   }
+}
 
-  function openInfoModal() {
-    isInfoModalOpen = true
+function openInfoModal() {
+  isInfoModalOpen = true
+}
+
+function closeInfoModal() {
+  isInfoModalOpen = false
+}
+
+onMount(() => {
+  // Update timer every second
+  timerInterval = setInterval(() => {
+    currentTime = new Date()
+  }, 1000)
+})
+
+onDestroy(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
   }
-
-  function closeInfoModal() {
-    isInfoModalOpen = false
-  }
-
-  onMount(() => {
-    // Update timer every second
-    timerInterval = setInterval(() => {
-      currentTime = new Date()
-    }, 1000)
-  })
-
-  onDestroy(() => {
-    if (timerInterval) {
-      clearInterval(timerInterval)
-    }
-  })
+})
 </script>
 
 <!-- Hero Content Card -->
@@ -170,8 +172,8 @@
             </h1>
 
             <p class="text-orange-200/80 text-md leading-relaxed font-medium">
-              In the wasteland of Web3, only the mad survive. Join the warboys of DeFi as we
-              ride to Valhalla on the Fury Road of decentralized chaos.
+              In the wasteland of Web3, only the mad survive. Join the warboys of DeFi as we ride to
+              Valhalla on the Fury Road of decentralized chaos.
             </p>
 
             <div class="flex flex-wrap gap-3 text-sm pt-2">
@@ -211,7 +213,10 @@
 
         <!-- Action Buttons -->
         <div class="mt-6 flex flex-col sm:flex-row gap-3">
-          <Button variant="primary" class="order-1 sm:order-0">
+          <Button
+            variant="primary"
+            class="order-1 sm:order-0"
+          >
             <span class="skew-x-[5deg]">JOIN THE YAPPERS</span>
             <svg
               class="w-5 h-5 skew-x-[5deg]"
@@ -221,7 +226,10 @@
               <path d="M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z" />
             </svg>
           </Button>
-          <Button variant="text" onclick={openInfoModal}>
+          <Button
+            variant="text"
+            onclick={openInfoModal}
+          >
             <span class="skew-x-[5deg]">LEARN MORE</span>
             <svg
               class="w-5 h-5 skew-x-[5deg]"
@@ -240,4 +248,4 @@
 <YappersInfoModal
   isOpen={isInfoModalOpen}
   onClose={closeInfoModal}
-/> 
+/>

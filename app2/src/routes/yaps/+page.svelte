@@ -1,31 +1,29 @@
 <script lang="ts">
-  import Button from "$lib/components/ui/Button.svelte"
-  import Card from "$lib/components/ui/Card.svelte"
-  import Sections from "$lib/components/ui/Sections.svelte"
-  import { getYapsSeason0, getYapsSeason1, type YapsSeason } from "$lib/dashboard/queries/public"
-  import { runPromise } from "$lib/runtime"
-  import { Effect, Option, pipe } from "effect"
-  import { onDestroy, onMount } from "svelte"
-  import YappersTable from "./YappersTable.svelte"
-  import YappersPodium from "./YappersPodium.svelte"
-  import YappersHero from "./YappersHero.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
+import { getYapsSeason0, getYapsSeason1, type YapsSeason } from "$lib/dashboard/queries/public"
+import { runPromise } from "$lib/runtime"
+import { Effect, Option, pipe } from "effect"
+import { onDestroy, onMount } from "svelte"
+import YappersHero from "./YappersHero.svelte"
+import YappersPodium from "./YappersPodium.svelte"
+import YappersTable from "./YappersTable.svelte"
 
+let activeTab = $state<"season1" | "season0">("season1")
+let sceneLoaded = $state(false)
+let season0Data = $state<YapsSeason[] | null>(null)
+let season0Loading = $state(true)
+let season1Data = $state<YapsSeason[] | null>(null)
+let season1Loading = $state(true)
+let contentReady = $state(false)
+let searchQuery = $state("")
+let currentPage = $state(1)
+const itemsPerPage = 50
 
-  let activeTab = $state<"season1" | "season0">("season1")
-  let sceneLoaded = $state(false)
-  let season0Data = $state<YapsSeason[] | null>(null)
-  let season0Loading = $state(true)
-  let season1Data = $state<YapsSeason[] | null>(null)
-  let season1Loading = $state(true)
-  let contentReady = $state(false)
-  let searchQuery = $state("")
-  let currentPage = $state(1)
-  const itemsPerPage = 50
-
-  // Computed values for current data
-  const currentData = $derived(activeTab === "season1" ? season1Data : season0Data)
-  const currentLoading = $derived(activeTab === "season1" ? season1Loading : season0Loading)
-
+// Computed values for current data
+const currentData = $derived(activeTab === "season1" ? season1Data : season0Data)
+const currentLoading = $derived(activeTab === "season1" ? season1Loading : season0Loading)
 
 onMount(() => {
   const checkAndSetContentReady = () => {
@@ -39,12 +37,12 @@ onMount(() => {
       Effect.all([
         pipe(
           getYapsSeason0(),
-          Effect.catchAll(() => Effect.succeed(Option.none()))
+          Effect.catchAll(() => Effect.succeed(Option.none())),
         ),
         pipe(
           getYapsSeason1(),
-          Effect.catchAll(() => Effect.succeed(Option.none()))
-        )
+          Effect.catchAll(() => Effect.succeed(Option.none())),
+        ),
       ]),
       Effect.tap(([season0Result, season1Result]) => {
         // Handle Season 0 result
@@ -234,7 +232,12 @@ onDestroy(() => {
           </div>
 
           <!-- Table -->
-          <YappersTable {entries} {searchQuery} bind:currentPage {itemsPerPage} />
+          <YappersTable
+            {entries}
+            {searchQuery}
+            bind:currentPage
+            {itemsPerPage}
+          />
         </Card>
       </div>
     </Sections>
