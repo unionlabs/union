@@ -26,7 +26,7 @@ use voyager_sdk::{
     primitives::{ChainId, IbcSpec, QueryHeight},
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     types::{ProofType, RawClientId},
-    vm::{call, conc, noop, pass::PassResult, seq, Op},
+    vm::{call, defer, noop, pass::PassResult, seq, Op},
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
@@ -319,15 +319,17 @@ impl Module {
         event: PacketSend,
     ) -> Op<VoyagerMessage> {
         seq([
-            conc(event.packet.timeout_timestamp.is_zero().then_some(call(
-                WaitForTrustedTimestamp {
-                    chain_id: chain_id.clone(),
-                    ibc_spec_id: IbcUnion::ID,
-                    client_id: RawClientId::new(event.packet.source_channel.connection.client_id),
-                    timestamp: event.packet.timeout_timestamp,
-                    finalized: false,
-                },
-            ))),
+            // wait until the timestamp is hit
+            defer(event.packet.timeout_timestamp.as_secs()),
+            // then wait for the counterparty client to be updated to a block >= the timestamp
+            call(WaitForTrustedTimestamp {
+                chain_id: chain_id.clone(),
+                ibc_spec_id: IbcUnion::ID,
+                client_id: RawClientId::new(event.packet.source_channel.connection.client_id),
+                timestamp: event.packet.timeout_timestamp,
+                finalized: false,
+            }),
+            // then make the timeout message
             call(PluginMessage::new(
                 self.plugin_name(),
                 ModuleCall::from(MakeMsgTimeout {
