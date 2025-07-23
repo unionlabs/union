@@ -166,14 +166,15 @@ onDestroy(() => {
 
           <!-- Main Content -->
           <div class="space-y-4">
-            <h1 class="text-3xl font-black leading-tight uppercase">
-              <span>UNION YAPPERS</span>
+            <h1 class="text-2xl font-black leading-tight uppercase">
+              <span>Kaito x Union Presents: Mad Yaps</span>
               <br />
             </h1>
 
             <p class="text-orange-200/80 text-md leading-relaxed font-medium">
-              In the wasteland of Web3, only the mad survive. Join the warboys of DeFi as we ride to
-              Valhalla on the Fury Road of decentralized chaos.
+              The old world collapsed. Chains shattered, giants fell, and liquidity turned to dust.
+              From its ashes, Union rose. Ready to rebuild what once was, trustless and wild. In
+              July 2025, the Yapocalypse begins. Speak now or be forgotten.
             </p>
 
             <div class="flex flex-wrap gap-3 text-sm pt-2">
