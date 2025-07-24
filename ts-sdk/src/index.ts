@@ -114,3 +114,10 @@ export * as ClientRequest from "./ClientRequest.js"
  * @since 2.0.0
  */
 export * as ChannelRegistry from "./ChannelRegistry.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as Token from "./Token.js"

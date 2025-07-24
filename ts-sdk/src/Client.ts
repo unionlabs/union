@@ -1,4 +1,7 @@
 /**
+
+ * TODO: - assume user specifies quote token up-front
+         - later consider deterimning ranked quote token
  * @since 1.0.0
  */
 import type * as Context from "effect/Context"
