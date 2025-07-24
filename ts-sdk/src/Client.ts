@@ -1,7 +1,4 @@
 /**
-
- * TODO: - assume user specifies quote token up-front
-         - later consider deterimning ranked quote token
  * @since 1.0.0
  */
 import type * as Context from "effect/Context"
@@ -94,3 +91,23 @@ export const make: (
     fiber: RuntimeFiber<ClientResponse.ClientResponse, ClientError.ClientError>,
   ) => Effect.Effect<ClientResponse.ClientResponse, ClientError.ClientError>,
 ) => Client = internal.make
+
+/**
+ * @since 1.0.0
+ * @category mapping & sequencing
+ */
+export const transform: {
+  <E, R, E1, R1>(
+    f: (
+      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
+      request: ClientRequest.ClientRequest,
+    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
+  ): (self: Client.With<E, R>) => Client.With<E | E1, R | R1>
+  <E, R, E1, R1>(
+    self: Client.With<E, R>,
+    f: (
+      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
+      request: ClientRequest.ClientRequest,
+    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
+  ): Client.With<E | E1, R | R1>
+} = internal.transform

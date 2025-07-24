@@ -3,7 +3,7 @@
  *
  * @since 2.0.0
  */
-import { Context, Data, Effect, flow, Layer, pipe } from "effect"
+import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
 import { type Address, erc20Abi } from "viem"
 import {
   Abi,
@@ -582,6 +582,8 @@ export const sendInstruction = (instruction: Ucs03.Instruction) =>
     const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
     const salt = yield* Utils.generateSalt("evm")
 
+    const operand = yield* S.encode(Ucs03.InstructionFromHex)(instruction)
+
     return yield* writeContract({
       account: walletClient.account,
       abi: Ucs03.Abi,
@@ -596,34 +598,9 @@ export const sendInstruction = (instruction: Ucs03.Instruction) =>
         {
           opcode: instruction.opcode,
           version: instruction.version,
-          operand: Ucs03.encode(instruction),
+          operand,
         },
       ],
+      value: 10n,
     })
   })
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const estimateL1Fee = pipe(
-  PublicClient,
-  Effect.andThen(({ client }) =>
-    Effect.tryPromise({
-      try: () =>
-        client
-          .extend(publicActionsL2())
-          .estimateL1Fee({
-            account: "0x0000000000000000000000000000000000000000",
-            chain: undefined,
-          }),
-      catch: cause =>
-        new GasPriceError({
-          module: "Evm",
-          method: "additiveFee",
-          description: `Could not calculate L1 fee for ${id}`,
-          cause,
-        }),
-    })
-  ),
-)
