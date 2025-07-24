@@ -11,7 +11,7 @@ use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
+        QueryMsg as LightClientQuery, UpdateStateResponse, VerifyCreationResponse,
         VerifyCreationResponseEvent,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
@@ -28,7 +28,8 @@ use ibc_union_msg::{
 use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        ClientStatusPath, ConnectionPath, ConsensusStatePath, Status, COMMITMENT_MAGIC,
+        COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     MustBeZero, Packet, Timestamp,
@@ -591,6 +592,28 @@ pub fn execute(
                     .add_attribute("action", "revoke")
                     .add_attribute("relayer", relayer),
             ))
+        }
+        ExecuteMsg::CommitClientStatus(msg) => {
+            let status = query_light_client::<Status>(
+                deps.as_ref(),
+                client_impl(deps.as_ref(), msg.client_id)?,
+                LightClientQuery::GetStatus {
+                    client_id: msg.client_id,
+                },
+            )?;
+
+            let status_bytes = (status as u8).to_le_bytes();
+
+            store_commit(
+                deps.branch(),
+                &ClientStatusPath {
+                    client_id: msg.client_id,
+                }
+                .key(),
+                &commit(status_bytes),
+            );
+
+            Ok(Response::default())
         }
     }
 }
@@ -2153,6 +2176,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
                 LightClientQuery::GetStatus { client_id },
             )?;
             Ok(to_json_binary(&status)?)
+        }
+        QueryMsg::GetCommittedStatus { client_id } => {
+            let commit = read_commit(deps, &ClientStatusPath { client_id }.key());
+            Ok(to_json_binary(&commit)?)
         }
         QueryMsg::GetChannels { contract } => {
             let contract = deps.api.addr_validate(&contract)?;

@@ -3,7 +3,7 @@ use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
     spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::path::Status;
 use trusted_mpt_light_client_types::{
     signed_data::SignedData, ClientState, ConsensusState, Header,
 };

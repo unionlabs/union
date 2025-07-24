@@ -23,6 +23,7 @@ embed-commit           = { workspace = true }
 frissitheto            = { workspace = true }
 ibc-union-light-client = { workspace = true }
 ibc-union-msg          = { workspace = true }
+ibc-union-spec         = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
 serde_repr             = { version = "0.1.20", optional = true }
 sui-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }

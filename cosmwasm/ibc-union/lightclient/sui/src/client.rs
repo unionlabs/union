@@ -3,7 +3,7 @@ use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_light_client::{
     spec::Timestamp, ClientCreationResult, IbcClient, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::path::Status;
 use sui_light_client_types::{
     client_state::ClientState, committee::Committee, consensus_state::ConsensusState,
     header::Header, storage_proof::StorageProof, U64,
