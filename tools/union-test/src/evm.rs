@@ -157,6 +157,7 @@ impl<'a> Module<'a> {
                     };
                     for log in logs {
                         if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
+                            println!("Decoded IBC event: {:?}", ibc_event);
                             if let Some(event) = filter_fn(ibc_event.data) {
                                 println!("Event found: {:?}", event);
                                 events.push(event);
@@ -451,6 +452,26 @@ impl<'a> Module<'a> {
         } else {
             false
         }
+    }
+
+    pub async fn zkgmerc20_balance_of(
+        &self,
+        contract: H160,
+        owner: H160,
+        provider: DynProvider<AnyNetwork>
+    ) -> anyhow::Result<U256> {
+        let erc = zkgmerc20::ZkgmERC20::new(contract.into(), provider.clone());
+        let balance = self
+            .retry_with_backoff(
+                || {
+                    let call = erc.balanceOf(owner.into());
+                    async move { call.call().await }
+                },
+                3,
+                Duration::from_secs(2),
+            )
+            .await?;
+        Ok(balance.into())
     }
 
     pub async fn zkgmerc20_approve(
@@ -924,6 +945,8 @@ pub mod zkgmerc20 {
             ) external;
 
             function approve(address spender, uint256 value) public returns (bool);
+
+            function balanceOf(address account) public view returns (uint256);
         }
     }
 }
