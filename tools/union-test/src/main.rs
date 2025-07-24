@@ -93,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
         dest: 1.try_into().unwrap(),
     };
 
-    send_refund_scenario(false, pair).await?;
+    send_stake_refund(false, pair).await?;
 
     // let random_token_id = token_id.to_string();
     // // Change random token_id from the print log
@@ -105,6 +105,326 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<U256> {
+    let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
+    let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
+    let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
+
+    let approve_contract: Bech32<FixedBytes<32>> = Bech32::from_str(bech).unwrap();
+
+    println!("Bech32 Address: {}", approve_contract);
+
+    let cosmos_cfg = cosmos::Config {
+        chain_id: ChainId::new("union-devnet-1"),
+        ibc_host_contract_address: Bech32::from_str(
+            "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+        )
+        .unwrap(),
+        keyring: KeyringConfig {
+            name: "alice".into(),
+            keys: vec![KeyringConfigEntry::Raw {
+                name: "alice".into(),
+                key: hex_literal::hex!(
+                    "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+                )
+                .to_vec(),
+            }],
+        },
+        rpc_url: "http://localhost:26657".into(),
+        gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
+            max_gas: 10000000,
+            gas_multiplier: Some(1.4),
+            denom: None,
+        }),
+        fee_recipient: None,
+    };
+
+    let evm_cfg = evm::Config {
+        chain_id: ChainId::new("32382"),
+        ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
+        multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
+        rpc_url: "http://localhost:8545".into(),
+        ws_url: "ws://localhost:8546".into(),
+        keyring: KeyringConfig {
+            name: "alice".into(),
+            keys: vec![KeyringConfigEntry::Raw {
+                name: "alice".into(),
+                key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
+                    .to_vec(),
+            }],
+        },
+        max_gas_price: None,
+        fixed_gas_price: None,
+        gas_multiplier: 2.0,
+    };
+
+    let src = cosmos::Module::new(cosmos_cfg.clone()).await?;
+    let dst = evm::Module::new(evm_cfg.clone()).await?;
+
+    // 3) now hand them to your library’s TestContext
+    let ctx = TestContext::new(src, dst, 1).await?;
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (_cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+
+    if open_channels {
+        let (src_confirm, dst_confirm) = ctx
+            .create_clients(
+                Duration::from_secs(45),
+                "ibc-cosmwasm",
+                "trusted/evm/mpt",
+                "ibc-solidity",
+                "cometbls",
+            )
+            .await?;
+
+        println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
+        println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
+
+        let conn_confirm = ctx
+            .open_connection::<cosmos::Module, evm::Module>(
+                &ctx.src,
+                src_confirm.client_id,
+                &ctx.dst,
+                dst_confirm.client_id,
+                Duration::from_secs(180),
+            )
+            .await?;
+
+        println!(
+            "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
+            conn_confirm.connection_id, conn_confirm.counterparty_connection_id,
+        );
+
+        let opened = ctx
+            .open_channels(
+                true,
+                "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
+                    .as_bytes()
+                    .into(),
+                hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
+                    .to_vec()
+                    .into(),
+                conn_confirm.connection_id,
+                "ucs03-zkgm-0".into(),
+                1,
+                Duration::from_secs(360),
+            )
+            .await?;
+
+        println!("Opened {} channels", opened);
+    }
+
+    if open_channels {
+        pair = ctx.get_channel().await.unwrap();
+    }
+
+    let zkgm_evm_addr: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+    let init_call: ZkgmERC20::initializeCall = ZkgmERC20::initializeCall {
+        _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
+        _minter: zkgm_evm_addr.into(),
+        _name: "muno".into(),
+        _symbol: "muno".into(),
+        _decimals: 6u8.into(),
+    };
+    let img_metadata = FungibleAssetMetadata {
+        implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
+            .to_vec()
+            .into(),
+        initializer: init_call.abi_encode().into(),
+    }
+    .abi_encode_params();
+
+    let snake_nft = ctx
+        .dst
+        .predict_stake_manager_address(zkgm_evm_addr.into(), evm_provider.clone())
+        .await?;
+
+    println!("✅ Stake manager address: {:?}", snake_nft);
+
+    let img = keccak256(&img_metadata);
+
+    println!("Channel {} ↔ {}", pair.src, pair.dest);
+
+    if open_channels {
+        let governance_token = ctx
+            .dst
+            .setup_governance_token(zkgm_evm_addr.into(), pair.dest, img, evm_provider.clone())
+            .await?;
+
+        println!(
+            "✅ governance_token.metadataImage registered at: {:?}",
+            governance_token
+        );
+    }
+
+    let mut salt = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt);
+
+    let quote_token_addr = ctx
+        .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
+            &ctx.dst,
+            zkgm_evm_addr.into(),
+            ChannelId::new(NonZero::new(pair.dest).unwrap()),
+            "muno".into(),
+            img.into(),
+            &evm_provider,
+        )
+        .await
+        .unwrap();
+
+    // println!("✅ Quote token address: {:?}", quote_token_addr);
+    // let mut salt_bytes = [0u8; 32];
+    // rand::rng().fill_bytes(&mut salt_bytes);
+
+    // let contract: Bech32<FixedBytes<32>> =
+    //     Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+    //         .unwrap();
+
+    // let instruction_cosmos = Instruction {
+    //     version: INSTR_VERSION_2,
+    //     opcode: OP_FUNGIBLE_ASSET_ORDER,
+    //     operand: FungibleAssetOrderV2 {
+    //         sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+    //             .as_bytes()
+    //             .into(),
+    //         receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+    //             .to_vec()
+    //             .into(),
+    //         base_token: "muno".as_bytes().into(),
+    //         base_amount: "10".parse().unwrap(),
+    //         metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+    //         metadata: img_metadata.into(),
+    //         quote_token: quote_token_addr.as_ref().to_vec().into(),
+    //         quote_amount: "10".parse().unwrap(),
+    //     }
+    //     .abi_encode_params()
+    //     .into(),
+    // };
+
+    // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    //     channel_id: pair.src.try_into().unwrap(),
+    //     timeout_height: 0u64.into(),
+    //     timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+    //     salt: salt_bytes.into(),
+    //     instruction: instruction_cosmos.abi_encode_params().into(),
+    // };
+    // let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    // let funds = vec![Coin {
+    //     denom: "muno".into(),
+    //     amount: "10".into(),
+    // }];
+
+    // // TODO: Here we should check the muno balance of sender account
+    // // Also token balanceOf the receiver account
+    // let recv_packet_data = ctx
+    //     .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+    //         &ctx.src,
+    //         contract,
+    //         (bin_msg, funds).into(),
+    //         &ctx.dst,
+    //         3,
+    //         Duration::from_secs(20),
+    //         Duration::from_secs(720),
+    //         cosmos_provider,
+    //     )
+    //     .await;
+
+    // println!("Received packet data: {:?}", recv_packet_data);
+
+    //appropve here
+    println!("Calling approve on quote token: {:?}", quote_token_addr); // 0xc7484B8b13FdE71A7203876359f1484808DCCc4A
+
+    let approve_tx_hash = ctx
+        .dst
+        .zkgmerc20_approve(
+            quote_token_addr.into(),
+            zkgm_evm_addr.into(),
+            U256::from(100000000000u64),
+            evm_provider.clone(),
+        )
+        .await?;
+
+    println!("✅ Approve tx hash: {:?}", approve_tx_hash);
+    println!("IMG: {:?}", img);
+
+    let mut buf: [u8; 32] = [0u8; 32];
+    rand::rng().fill_bytes(&mut buf);
+
+    let random_token_id = U256::from_be_bytes(buf).into();
+    println!("✅ random_token_id: {:?}", random_token_id);
+    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
+    
+    
+    let erc20_balance_before_send = ctx
+        .dst
+        .zkgmerc20_balance_of(quote_token_addr.into(), 
+            evm_address.clone().into(), evm_provider.clone())
+        .await?;
+
+    println!("ERC20 balance before send: {:?}", erc20_balance_before_send);
+
+    let instruction_from_evm_to_union = InstructionEvm {
+        version: INSTR_VERSION_0,
+        opcode: OP_STAKE,
+        operand: Stake {
+            token_id: random_token_id,
+            // governance_token: governance_token.unwrappedToken,
+            // governance_metadata_image: governance_token.metadataImage,
+            governance_token: b"muno".into(),
+            governance_metadata_image: img.into(),
+            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            beneficiary: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            validator: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            amount: "1".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider.clone());
+
+    rand::rng().fill_bytes(&mut salt);
+    let call = ucs03_zkgm
+        .send(
+            pair.dest.try_into().unwrap(),
+            0u64.into(),
+            4294967295000000000u64.into(),
+            salt.into(),
+            instruction_from_evm_to_union.clone(),
+        )
+        .clear_decoder();
+
+    println!("Waiting 15 sec before sending");
+    tokio::time::sleep(Duration::from_secs(15)).await;
+    // let call = call.with_cloned_provider();
+    let recv_packet_data = ctx
+        .send_and_recv_refund::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            zkgm_evm_addr.into(),
+            call,
+            &ctx.src,
+            Duration::from_secs(360),
+            evm_provider.clone(),
+        )
+        .await;
+
+    println!("Received packet data: {:?}", recv_packet_data);
+    let erc20_balance_after_send = ctx
+        .dst
+        .zkgmerc20_balance_of(quote_token_addr.into(), 
+            evm_address.clone().into(), evm_provider.clone())
+        .await?;
+    println!("ERC20 balance after send: {:?}", erc20_balance_after_send);
+
+    Ok(random_token_id.into())
+}
 
 pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
@@ -218,6 +538,8 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
     if open_channels {
         pair = ctx.get_channel().await.unwrap();
     }
+
+
     let deployed_erc20 = ctx
         .dst
         .deploy_basic_erc20(hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into(), evm_provider.clone())
