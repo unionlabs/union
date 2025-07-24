@@ -668,8 +668,8 @@
       "bob": {
         "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
         "height": 461757,
-        "commit": "c9a0b82990813698dd9601099beb6477b64768e0",
-        "code_id": 42
+        "commit": "76eab12ff6f91a3db9757c92ac5e863bfede519f",
+        "code_id": 44
       },
       "ethereum": {
         "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
@@ -733,6 +733,12 @@
         "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f",
         "code_id": 67
       },
+      "base": {
+        "address": "union1xll86ajefrwsjn0msw89xhnmyd85fyzc6203j8p5uc6t7kyuvusqkutpsu",
+        "height": 1798364,
+        "commit": "dirty",
+        "code_id": 123
+      },
       "berachain": {
         "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",
         "height": 354882,
@@ -742,8 +748,8 @@
       "bob": {
         "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
         "height": 354886,
-        "commit": "c9a0b82990813698dd9601099beb6477b64768e0",
-        "code_id": 101
+        "commit": "e58ff878698ecffc279cc8fd767113a7219a7801",
+        "code_id": 132
       },
       "ethereum": {
         "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
