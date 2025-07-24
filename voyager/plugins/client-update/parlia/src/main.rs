@@ -300,6 +300,15 @@ impl Module {
             let target = self.provider.get_block((block + 1).into()).await?.unwrap();
             let attestation = self.provider.get_block((block + 2).into()).await?.unwrap();
 
+            info!(
+                source_hash = %source.header.hash,
+                target_hash = %target.header.hash,
+                attestation_hash = %attestation.header.hash,
+                source_number = %source.header.number,
+                target_number = %target.header.number,
+                attestation_number = %attestation.header.number
+            );
+
             let trusted_valset_epoch_number =
                 parlia_verifier::calculate_signing_valset_epoch_block_number(
                     attestation.header.number,
