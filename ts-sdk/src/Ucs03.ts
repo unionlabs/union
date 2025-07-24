@@ -888,7 +888,12 @@ type OpCode = typeof OpCode.Type
  * @since 2.0.0
  */
 const MultiplexOperand = S.Union(
-  S.Tuple(Hex, S.Boolean, Hex, Hex),
+  S.Tuple(
+    Hex,
+    S.Boolean,
+    Hex,
+    Hex,
+  ),
 )
 /**
  * @category models
@@ -900,25 +905,137 @@ type MultiplexOperand = typeof MultiplexOperand.Type
  * @category models
  * @since 2.0.0
  */
-const FungibleAssetOrderOperand = S.Union(
+const FungibleAssetOrderOperandV1 = S.Union(
   S.Tuple(
-    Hex,
-    Hex,
-    Hex,
-    S.BigIntFromSelf,
-    S.String,
-    S.String,
-    S.Uint8,
-    S.BigIntFromSelf,
-    HexChecksum,
-    S.BigIntFromSelf,
+    Hex.pipe(
+      S.annotations({
+        title: "sender",
+        description: "source chain sender address",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "receiver",
+        description: "destination chain receiver address",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "baseToken",
+        description: "token being sent",
+      }),
+    ),
+    S.BigIntFromSelf.pipe(
+      S.annotations({
+        title: "baseAmount",
+        description: "amount being sent",
+      }),
+    ),
+    S.String.pipe(
+      S.annotations({
+        title: "baseTokenSymbol",
+        description: "token symbol for wrapped asset",
+      }),
+    ),
+    S.String.pipe(
+      S.annotations({
+        title: "baseTokenName",
+        description: "token name for wrapped asset",
+      }),
+    ),
+    S.Uint8.pipe(
+      S.annotations({
+        title: "baseTokenDecimals",
+        description: "token decimals for wrapped asset",
+      }),
+    ),
+    S.BigIntFromSelf.pipe(
+      S.annotations({
+        title: "baseTokenPath",
+        description: "origin path for unwrapping",
+      }),
+    ),
+    HexChecksum.pipe(
+      S.annotations({
+        title: "quoteToken",
+        description: "token requested in return",
+      }),
+    ),
+    S.BigIntFromSelf.pipe(
+      S.annotations({
+        title: "quoteAmount",
+        description: "minimum amount requested",
+      }),
+    ),
   ),
 )
 /**
  * @category models
  * @since 2.0.0
  */
-type FungibleAssetOrderOperand = typeof FungibleAssetOrderOperand.Type
+type FungibleAssetOrderOperandV1 = typeof FungibleAssetOrderOperandV1.Type
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+const FungibleAssetOrderOperandV2 = S.Union(
+  S.Tuple(
+    Hex.pipe(
+      S.annotations({
+        title: "sender",
+        description: "source chain sender address",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "receiver",
+        description: "destination chain receiver address",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "baseToken",
+        description: "token being sent",
+      }),
+    ),
+    S.BigIntFromSelf.pipe(
+      S.annotations({
+        title: "baseAmount",
+        description: "amount being sent",
+      }),
+    ),
+    S.Uint8.pipe(
+      S.annotations({
+        title: "metadataType",
+        description: "type of metadata (image, preimage, image_unwrap)",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "metadata",
+        description: "token metadata based on type",
+      }),
+    ),
+    HexChecksum.pipe(
+      S.annotations({
+        title: "quoteToken",
+        description: "token requested in return",
+      }),
+    ),
+    S.BigIntFromSelf.pipe(
+      S.annotations({
+        title: "quoteAmount",
+        description: "minimum amount requested",
+      }),
+    ),
+  ),
+)
+/**
+ * @category models
+ * @since 2.0.0
+ */
+type FungibleAssetOrderOperandV2 = typeof FungibleAssetOrderOperandV2.Type
 
 /**
  * @category models
@@ -939,7 +1056,8 @@ export const Operand = S.Union(
   MultiplexOperand,
   // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
   S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
-  FungibleAssetOrderOperand,
+  FungibleAssetOrderOperandV1,
+  FungibleAssetOrderOperandV2,
   // [bigint, `0x${string}`]
   S.Tuple(S.BigIntFromSelf, Hex),
   // [readonly `0x${string}`[]]
@@ -1055,7 +1173,7 @@ export class FungibleAssetOrderV1
         decoding: () => 1 as const,
       }),
     ),
-    operand: FungibleAssetOrderOperand,
+    operand: FungibleAssetOrderOperandV1,
   })
 {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
@@ -1077,7 +1195,7 @@ export class FungibleAssetOrderV2
         decoding: () => 2 as const,
       }),
     ),
-    operand: FungibleAssetOrderOperand,
+    operand: FungibleAssetOrderOperandV2,
   })
 {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
@@ -1085,10 +1203,6 @@ export class FungibleAssetOrderV2
 
 export const FungibleAssetOrder = S.Union(FungibleAssetOrderV1, FungibleAssetOrderV2)
 export type FungibleAssetOrder = typeof FungibleAssetOrder.Type
-
-const faov1 = FungibleAssetOrderV1.fromOperand([] as unknown as any)
-declare const f: (a: FungibleAssetOrder) => void
-const g = f(faov1)
 
 /**
  * @category models
