@@ -4,6 +4,7 @@ import type { Pipeable } from "effect/Pipeable"
 import type { ReadonlyRecord } from "effect/Record"
 import * as internal from "./internal/clientRequest.js"
 import type { Channel } from "./schema/channel.js"
+import * as Token from "./Token.js"
 
 /**
  * @category type ids
@@ -33,8 +34,9 @@ export interface ClientRequest extends Inspectable, Pipeable {
   readonly method: Method
   readonly sender: string
   readonly receiver: string
-  readonly baseToken: Token.Any
-  readonly quoteToken: Token.Any | "auto"
+  readonly amount: bigint
+  readonly baseToken: Token.Any | string
+  readonly quoteToken: Token.Any | string | "auto"
 }
 
 /**
@@ -87,7 +89,7 @@ export const make: <M extends Method>(
 ) => (
   sender: string,
   receiver: string,
-  options?: (M extends "SEND" ? Options.Send : Options.NoUrl) | undefined,
+  options?: (M extends "SEND" ? Options.Send : Options.NoQuote) | undefined,
 ) => ClientRequest = internal.make
 
 /**

@@ -34,7 +34,7 @@ const sourceClient = Evm.PublicClientSource.Live({
   chain: holesky,
   transport: http("https://rpc.17000.ethereum.chain.kitchen"),
 })
-const destinationClient = Cosmos.ClientDestination.Live(
+const destinationClient = Cosmos.Client.Live(
   "https://rpc.xion-testnet-2.xion.chain.kitchen/",
 )
 const walletClient = Evm.WalletClient.Live({
