@@ -71,12 +71,22 @@
       "client_type": "state-lens/ics23/ics23",
       "counterparty": "bsc.97",
       "refresh_rate": "5000"
+    },
+    "13": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "base.84532",
+      "refresh_rate": "5000"
     }
   },
   "base.84532": {
     "1": {
       "client_type": "cometbls",
       "counterparty": "union.union-testnet-10",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "client_type": "state-lens/ics23/ics23",
+      "counterparty": "babylon.bbn-test-5",
       "refresh_rate": "500"
     }
   },
