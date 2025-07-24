@@ -16,7 +16,9 @@ contract AbiExport {
         FungibleAssetOrder calldata,
         Ack calldata,
         BatchAck calldata,
-        FungibleAssetOrderAck calldata
+        FungibleAssetOrderAck calldata,
+        FungibleAssetOrderV2 calldata,
+        FungibleAssetMetadata calldata
     ) public {}
 }
 
