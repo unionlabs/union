@@ -1,7 +1,7 @@
 #![feature(let_chains)]
 
 use std::{
-    collections::{BTreeMap, HashSet, VecDeque},
+    collections::{HashSet, VecDeque},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -92,8 +92,8 @@ pub struct Module {
     drop_protocol_fill_acks: bool,
     drop_invalid_checksum: bool,
     drop_suspicious: bool,
-    /// chain id -> provider
-    providers: BTreeMap<ChainId, ChainProvider>,
+    chain_id: ChainId,
+    provider: ChainProvider,
     db: PgPool,
     whitelisted_addresses: HashSet<Bytes>,
     // i64 for ease of use with the sqlx types
@@ -111,10 +111,8 @@ pub struct Config {
     drop_protocol_fill_acks: bool,
     drop_invalid_checksum: bool,
     drop_suspicious: bool,
-    /// chain id -> rpc url
-    ///
-    /// salt checks will only be done on configured chains, any unconfigured chain will send all send_packets through
-    providers: BTreeMap<ChainId, ChainProviderConfig>,
+    chain_id: ChainId,
+    provider: ChainProviderConfig,
     db_url: String,
     #[serde(default)]
     whitelisted_addresses_evm: HashSet<H160>,
@@ -144,8 +142,6 @@ impl Plugin for Module {
     type Cmd = Cmd;
 
     async fn new(config: Self::Config) -> anyhow::Result<Self> {
-        let mut providers = BTreeMap::new();
-
         let db = PgPoolOptions::new().connect(&config.db_url).await?;
 
         db.execute_many(
@@ -169,44 +165,44 @@ impl Plugin for Module {
         .instrument(info_span!("db_init"))
         .await?;
 
-        for (chain_id, provider_config) in config.providers {
-            info!("registering chain {chain_id}");
+        info!("registering chain {}", config.chain_id);
 
-            match provider_config {
-                ChainProviderConfig::Cosmos { rpc_url } => {
-                    let client = cometbft_rpc::Client::new(rpc_url.clone()).await?;
+        let provider = match config.provider {
+            ChainProviderConfig::Cosmos { rpc_url } => {
+                let client = cometbft_rpc::Client::new(rpc_url.clone()).await?;
 
-                    let expected_chain_id = client.status().await?.node_info.network;
+                let expected_chain_id = client.status().await?.node_info.network;
 
-                    if chain_id.as_str() != expected_chain_id {
-                        bail!(
-                            "expected chain id {chain_id} for rpc endpoint \
-                            {rpc_url} but found {expected_chain_id}"
-                        );
-                    }
-
-                    providers.insert(chain_id, ChainProvider::Cosmos { client });
+                if config.chain_id.as_str() != expected_chain_id {
+                    bail!(
+                        "expected chain id {} for rpc endpoint \
+                        {rpc_url} but found {expected_chain_id}",
+                        config.chain_id
+                    );
                 }
-                ChainProviderConfig::Evm { rpc_url } => {
-                    let provider =
-                        DynProvider::new(ProviderBuilder::new().connect(&rpc_url).await?);
 
-                    let raw_chain_id = provider.get_chain_id().await?;
-
-                    if chain_id.as_str() != raw_chain_id.to_string() {
-                        bail!(
-                            "expected chain id {chain_id} for rpc endpoint \
-                            {rpc_url} but found {raw_chain_id}"
-                        );
-                    }
-
-                    providers.insert(chain_id, ChainProvider::Evm { provider });
-                }
+                ChainProvider::Cosmos { client }
             }
-        }
+            ChainProviderConfig::Evm { rpc_url } => {
+                let provider = DynProvider::new(ProviderBuilder::new().connect(&rpc_url).await?);
+
+                let raw_chain_id = provider.get_chain_id().await?;
+
+                if config.chain_id.as_str() != raw_chain_id.to_string() {
+                    bail!(
+                        "expected chain id {} for rpc endpoint \
+                        {rpc_url} but found {raw_chain_id}",
+                        config.chain_id
+                    );
+                }
+
+                ChainProvider::Evm { provider }
+            }
+        };
 
         Ok(Self {
-            providers,
+            chain_id: config.chain_id,
+            provider,
             drop_protocol_fill_acks: config.drop_protocol_fill_acks,
             drop_invalid_checksum: config.drop_invalid_checksum,
             drop_suspicious: config.drop_suspicious,
@@ -226,18 +222,20 @@ impl Plugin for Module {
         })
     }
 
-    fn info(Config { .. }: Self::Config) -> PluginInfo {
+    fn info(Config { chain_id, .. }: Self::Config) -> PluginInfo {
         PluginInfo {
-            name: PLUGIN_NAME.to_owned(),
+            name: plugin_name(&chain_id),
             interest_filter: format!(
                 r#"
 if ."@type" == "data"
     and ."@value"."@type" == "ibc_event"
     and ."@value"."@value".ibc_spec_id == "{ibc_union_id}"
+    and ."@value"."@value".chain_id == "{chain_id}"
     and (
         ."@value"."@value".event."@type" == "write_ack"
         or ."@value"."@value".event."@type" == "packet_send"
     )
+    and ."@value"."@value".event."@value".packet.source_channel.version == "ucs03-zkgm-0"
 then
     true
 else
@@ -378,17 +376,20 @@ pub enum Cmd {
     },
 }
 
-pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+fn plugin_name(chain_id: &ChainId) -> String {
+    const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+    format!("{PLUGIN_NAME}/{chain_id}")
+}
 
 impl Module {
     fn plugin_name(&self) -> String {
-        PLUGIN_NAME.to_string()
+        plugin_name(&self.chain_id)
     }
 }
 
 #[async_trait]
 impl PluginServer<ModuleCall, Never> for Module {
-    #[instrument(skip_all, fields())]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
@@ -446,35 +447,28 @@ impl PluginServer<ModuleCall, Never> for Module {
                     };
 
                     match &full_event {
-                        FullEvent::PacketSend(packet_send) => {
-                            if packet_send.packet.source_channel.version
-                                == ucs03_zkgm::contract::PROTOCOL_VERSION
-                                && self.providers.contains_key(&chain_event.chain_id)
-                            {
-                                info!(
-                                    packet_hash = %packet_send.packet().hash(),
-                                    chain_id = %chain_event.chain_id,
-                                    "found zkgm packet"
-                                );
+                        FullEvent::PacketSend(packet_send) => {                           
+                            info!(
+                                packet_hash = %packet_send.packet().hash(),
+                                chain_id = %chain_event.chain_id,
+                                "found zkgm packet"
+                            );
 
-                                Ok((
-                                    vec![idx],
-                                    call(PluginMessage::new(
-                                        self.plugin_name(),
-                                        ModuleCall::CheckSendPacket(CheckSendPacket {
-                                            event: packet_send.clone(),
-                                            chain_id: chain_event.chain_id.clone(),
-                                            tx_hash: chain_event.tx_hash,
-                                            counterparty_chain_id: chain_event
-                                                .counterparty_chain_id
-                                                .clone(),
-                                            provable_height: *chain_event.provable_height.height(),
-                                        }),
-                                    )),
-                                ))
-                            } else {
-                                ready()
-                            }
+                            Ok((
+                                vec![idx],
+                                call(PluginMessage::new(
+                                    self.plugin_name(),
+                                    ModuleCall::CheckSendPacket(CheckSendPacket {
+                                        event: packet_send.clone(),
+                                        chain_id: chain_event.chain_id.clone(),
+                                        tx_hash: chain_event.tx_hash,
+                                        counterparty_chain_id: chain_event
+                                            .counterparty_chain_id
+                                            .clone(),
+                                        provable_height: *chain_event.provable_height.height(),
+                                    }),
+                                )),
+                            ))
                         }
                         FullEvent::WriteAck(write_ack) => {
                             if self.drop_protocol_fill_acks && is_successful_protocol_fill(write_ack) {
@@ -512,14 +506,14 @@ impl PluginServer<ModuleCall, Never> for Module {
         })
     }
 
-    #[instrument(skip_all, fields())]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::CheckSendPacket(p) => self.check_send_packet(p).await,
         }
     }
 
-    #[instrument(skip_all, fields())]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
         _: &Extensions,
@@ -538,7 +532,8 @@ impl Module {
             %counterparty_chain_id,
             %tx_hash,
             %provable_height,
-            packet_hash = %event.packet().hash()
+            packet_hash = %event.packet().hash(),
+            chain_id = %self.chain_id
         )
     )]
     async fn check_send_packet(
@@ -551,17 +546,9 @@ impl Module {
             provable_height,
         }: CheckSendPacket,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let provider = self.providers.get(&chain_id).ok_or_else(|| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unknown chain {chain_id}"),
-                None::<()>,
-            )
-        })?;
-
         let packet_hash = event.packet().hash();
 
-        let (valid, address) = match provider {
+        let (valid, address) = match &self.provider {
             ChainProvider::Cosmos { client } => {
                 let tx = client.tx(tx_hash, false).await.map_err(|err| {
                     ErrorObject::owned(
