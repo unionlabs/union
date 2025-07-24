@@ -687,9 +687,16 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
             evm_provider.clone(),
         )
         .await;
-    assert!(erc20_balance_before_send.is_ok(), "Failed to get ERC20 balance: {:?}", erc20_balance_before_send.err());
+    assert!(
+        erc20_balance_before_send.is_ok(),
+        "Failed to get ERC20 balance: {:?}",
+        erc20_balance_before_send.err()
+    );
     let erc20_balance_before_send = erc20_balance_before_send.unwrap();
-    println!("ERC20 balance of {}: {}", evm_address, erc20_balance_before_send);
+    println!(
+        "ERC20 balance of {}: {}",
+        evm_address, erc20_balance_before_send
+    );
 
     let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
@@ -732,17 +739,22 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
             evm_provider.clone(),
         )
         .await;
-    assert!(erc20_balance_after_send.is_ok(), "Failed to get ERC20 balance after send: {:?}", erc20_balance_after_send.err());
+    assert!(
+        erc20_balance_after_send.is_ok(),
+        "Failed to get ERC20 balance after send: {:?}",
+        erc20_balance_after_send.err()
+    );
     let erc20_balance_after_send = erc20_balance_after_send.unwrap();
 
-    println!("ERC20 balance of {} after send: {}", evm_address, erc20_balance_after_send);
-
-    assert_eq!(
-        erc20_balance_before_send,
-        erc20_balance_after_send,
-        "ERC20 balance should remain the same after refund"
+    println!(
+        "ERC20 balance of {} after send: {}",
+        evm_address, erc20_balance_after_send
     );
 
+    assert_eq!(
+        erc20_balance_before_send, erc20_balance_after_send,
+        "ERC20 balance should remain the same after refund"
+    );
 }
 
 async fn test_stake_from_evm_to_union() {
@@ -961,8 +973,6 @@ async fn test_stake_from_evm_to_union() {
     assert!(is_ours, "NFT ownership check returned false");
 }
 
-
-
 async fn test_stake_from_evm_to_union_and_refund() {
     let ctx = init_ctx().await;
 
@@ -1124,13 +1134,23 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let erc20_balance_before_send = ctx
         .dst
-        .zkgmerc20_balance_of(quote_token_addr.into(), 
-            evm_address.clone().into(), evm_provider.clone())
+        .zkgmerc20_balance_of(
+            quote_token_addr.into(),
+            evm_address.clone().into(),
+            evm_provider.clone(),
+        )
         .await;
 
-    assert!(erc20_balance_before_send.is_ok(), "Failed to get ERC20 balance: {:?}", erc20_balance_before_send.err());
+    assert!(
+        erc20_balance_before_send.is_ok(),
+        "Failed to get ERC20 balance: {:?}",
+        erc20_balance_before_send.err()
+    );
     let erc20_balance_before_send = erc20_balance_before_send.unwrap();
-    println!("ERC20 balance of {}: {}", evm_address, erc20_balance_before_send);
+    println!(
+        "ERC20 balance of {}: {}",
+        evm_address, erc20_balance_before_send
+    );
 
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
@@ -1163,20 +1183,28 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let erc20_balance_after_send = ctx
         .dst
-        .zkgmerc20_balance_of(quote_token_addr.into(), 
-            evm_address.clone().into(), evm_provider.clone())
+        .zkgmerc20_balance_of(
+            quote_token_addr.into(),
+            evm_address.clone().into(),
+            evm_provider.clone(),
+        )
         .await;
 
-    assert!(erc20_balance_after_send.is_ok(), "Failed to get ERC20 balance: {:?}", erc20_balance_after_send.err());
+    assert!(
+        erc20_balance_after_send.is_ok(),
+        "Failed to get ERC20 balance: {:?}",
+        erc20_balance_after_send.err()
+    );
     let erc20_balance_after_send = erc20_balance_after_send.unwrap();
-    println!("ERC20 balance of {} after send: {}", evm_address, erc20_balance_after_send);
-
-    assert_eq!(
-        erc20_balance_before_send,
-        erc20_balance_after_send,
-        "ERC20 balance should remain the same after refund"
+    println!(
+        "ERC20 balance of {} after send: {}",
+        evm_address, erc20_balance_after_send
     );
 
+    assert_eq!(
+        erc20_balance_before_send, erc20_balance_after_send,
+        "ERC20 balance should remain the same after refund"
+    );
 }
 
 async fn test_stake_and_unstake_from_evm_to_union() {
@@ -1827,7 +1855,6 @@ async fn from_union_to_evm0() {
 async fn from_evm_to_union_stake0() {
     self::test_stake_from_evm_to_union().await;
 }
-
 
 #[tokio::test]
 async fn from_evm_to_union_stake_and_refund() {

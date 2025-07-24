@@ -458,7 +458,7 @@ impl<'a> Module<'a> {
         &self,
         contract: H160,
         owner: H160,
-        provider: DynProvider<AnyNetwork>
+        provider: DynProvider<AnyNetwork>,
     ) -> anyhow::Result<U256> {
         let erc = zkgmerc20::ZkgmERC20::new(contract.into(), provider.clone());
         let balance = self
