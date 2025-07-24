@@ -45,7 +45,7 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
+    vm::{call, defer, defer_relative, noop, now, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd,
 };
 
@@ -409,6 +409,8 @@ impl Module {
                                     self.plugin_name(),
                                     ModuleCall::SubmitTransaction(msgs),
                                 )),
+                                // ensure that the first half gets included
+                                defer_relative(3),
                                 call(PluginMessage::new(
                                     self.plugin_name(),
                                     ModuleCall::SubmitTransaction(new_msgs),

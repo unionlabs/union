@@ -120,6 +120,9 @@ pub enum Op<T: QueueMessage> {
     Defer {
         until: u64,
     },
+    DeferRelative {
+        secs: u64,
+    },
     /// A sequence of messages to be executed in order. Messages are handled from the front, with
     /// new messages requeued at the front:
     //
@@ -164,7 +167,7 @@ pub trait Visit<T: QueueMessage> {
         match op {
             Op::Data(data) => self.visit_data(data),
             Op::Call(call) => self.visit_call(call),
-            Op::Defer { until: _ } | Op::Noop => {}
+            Op::Defer { until: _ } | Op::DeferRelative { secs: _ } | Op::Noop => {}
             Op::Seq(seq) => seq.iter_mut().for_each(|op| self.visit_op(op)),
             Op::Conc(conc) => conc.iter_mut().for_each(|op| self.visit_op(op)),
             Op::Promise(Promise {
@@ -270,6 +273,7 @@ pub fn process<'a, T: QueueMessage, H: Handler<T>>(
                     Ok(None)
                 }
             }
+            Op::DeferRelative { secs } => Ok(Some(defer(now() + secs))),
             Op::Seq(mut queue) => match queue.pop_front() {
                 Some(op) => {
                     let op = process(op, handler, depth + 1).await?;
@@ -353,6 +357,7 @@ impl<T: QueueMessage> Op<T> {
                 Op::Data(data) => vec![Op::Data(data)],
                 Op::Call(call) => vec![Op::Call(call)],
                 Op::Defer { until } => vec![Op::Defer { until }],
+                Op::DeferRelative { secs } => vec![Op::DeferRelative { secs }],
                 Op::Seq(seq) => {
                     let mut ops = seq.into_iter().flat_map(go).collect::<Vec<_>>();
 
@@ -512,6 +517,13 @@ pub fn conc<T: QueueMessage>(ts: impl IntoIterator<Item = Op<T>>) -> Op<T> {
 #[must_use = "constructing an instruction has no effect"]
 pub fn defer<T: QueueMessage>(timestamp: u64) -> Op<T> {
     Op::Defer { until: timestamp }
+}
+
+/// Convenience constructor for [`Op::DeferRelative`]
+#[inline]
+#[must_use = "constructing an instruction has no effect"]
+pub fn defer_relative<T: QueueMessage>(secs: u64) -> Op<T> {
+    Op::DeferRelative { secs }
 }
 
 /// Convenience constructor for [`Op::Call`]
