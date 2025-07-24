@@ -20,8 +20,8 @@ type Circuit struct {
 	CommitmentX     frontend.Variable `gnark:",public"`
 	CommitmentY     frontend.Variable `gnark:",public"`
 	InnerInputsHash frontend.Variable `gnark:",public"`
+	// VkHash          frontend.Variable `gnark:",public"`
 	// OptimizedInnerWitness frontend.Variable `gnark:",public"`
-	// VkHash frontend.Variable `gnark:",public"`
 }
 
 func (c *Circuit) Define(api frontend.API) error {
