@@ -45,7 +45,7 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, defer, defer_relative, noop, now, pass::PassResult, seq, BoxDynError, Op, Visit},
+    vm::{call, defer_relative, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd,
 };
 
