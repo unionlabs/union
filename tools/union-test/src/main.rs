@@ -1,7 +1,13 @@
-use std::{num::NonZero, str::FromStr, time::Duration, time::SystemTime, time::UNIX_EPOCH};
+use std::{
+    num::NonZero,
+    str::FromStr,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
-use alloy::{hex::decode as hex_decode};
-use alloy::sol_types::{SolCall, SolValue};
+use alloy::{
+    hex::decode as hex_decode,
+    sol_types::{SolCall, SolValue},
+};
 use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
 use ethers::utils::hex;
@@ -12,9 +18,10 @@ use rand::RngCore;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetMetadata, FungibleAssetOrderV2, FungibleAssetOrder, Instruction, Stake, Unstake, WithdrawStake,
-        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE,
+        FungibleAssetMetadata, FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake,
+        Unstake, WithdrawStake, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0,
+        INSTR_VERSION_1, INSTR_VERSION_2, OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE,
+        OP_WITHDRAW_STAKE,
     },
 };
 use union_test::{
@@ -353,12 +360,15 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
     rand::rng().fill_bytes(&mut buf);
 
     let random_token_id = U256::from_be_bytes(buf).into();
-    println!("✅ random_token_id: {:?}", random_token_id);    
-    
+    println!("✅ random_token_id: {:?}", random_token_id);
+
     let erc20_balance_before_send = ctx
         .dst
-        .zkgmerc20_balance_of(quote_token_addr.into(), 
-            evm_address.clone().into(), evm_provider.clone())
+        .zkgmerc20_balance_of(
+            quote_token_addr.into(),
+            evm_address.clone().into(),
+            evm_provider.clone(),
+        )
         .await?;
 
     println!("ERC20 balance before send: {:?}", erc20_balance_before_send);
@@ -417,8 +427,11 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
     println!("Received packet data: {:?}", recv_packet_data);
     let erc20_balance_after_send = ctx
         .dst
-        .zkgmerc20_balance_of(quote_token_addr.into(), 
-            evm_address.clone().into(), evm_provider.clone())
+        .zkgmerc20_balance_of(
+            quote_token_addr.into(),
+            evm_address.clone().into(),
+            evm_provider.clone(),
+        )
         .await?;
     println!("ERC20 balance after send: {:?}", erc20_balance_after_send);
 
@@ -426,7 +439,10 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
 }
 
 #[allow(dead_code)]
-pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<()> {
+pub async fn send_refund_scenario(
+    open_channels: bool,
+    mut pair: ChannelPair,
+) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
     let bech = std::str::from_utf8(&ascii).expect("Failed to convert bytes to string");
@@ -538,14 +554,18 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
         pair = ctx.get_channel().await.unwrap();
     }
 
-
     let deployed_erc20 = ctx
         .dst
-        .deploy_basic_erc20(hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into(), evm_provider.clone())
+        .deploy_basic_erc20(
+            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into(),
+            evm_provider.clone(),
+        )
         .await
         .expect("failed to deploy ERC20");
 
-    let union_zkgm_contract: Bech32<FixedBytes<32>> = Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c").unwrap();
+    let union_zkgm_contract: Bech32<FixedBytes<32>> =
+        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+            .unwrap();
 
     let quote_token_addr = ctx
         .predict_wrapped_token::<cosmos::Module>(
@@ -586,7 +606,10 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
         .into(),
     };
 
-    let ucs03_zkgm = UCS03Zkgm::new(hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(
+        hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into(),
+        evm_provider.clone(),
+    );
 
     let timeout_timestamp_ns: u64 = {
         let now = SystemTime::now()
@@ -600,7 +623,6 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
         plus_one_min.as_nanos() as u64
     };
 
-
     let erc20_balance = ctx
         .dst
         .zkgmerc20_balance_of(
@@ -610,7 +632,7 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
         )
         .await?;
     println!("ERC20 balance of {}: {}", evm_address, erc20_balance);
-    
+
     let call = ucs03_zkgm
         .send(
             pair.dest.try_into().unwrap(),
@@ -634,7 +656,11 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
         )
         .await;
 
-    assert!(recv_packet_data.is_ok(), "Failed to send and receive packet: {:?}", recv_packet_data.err());
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
     println!(
         "Received packet data from evm->cosmos GOLD token: {:?}",
         recv_packet_data
@@ -648,10 +674,12 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
             evm_provider.clone(),
         )
         .await?;
-    println!("ERC20 balance of {} AFTER REFUND?: {}", evm_address, erc20_balance_after);
+    println!(
+        "ERC20 balance of {} AFTER REFUND?: {}",
+        evm_address, erc20_balance_after
+    );
 
     Ok(())
-   
 }
 #[allow(dead_code)]
 async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyhow::Result<()> {
