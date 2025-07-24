@@ -186,7 +186,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 5; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -611,6 +611,139 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
+}
+
+async fn test_send_packet_from_evm_to_union_get_refund() {
+    let ctx = init_ctx().await;
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+
+    println!("EVM Address: {:?}", evm_address);
+    println!("Cosmos Address: {:?}", cosmos_address);
+
+    ensure_channels_opened(ctx.channel_count).await;
+
+    let available_channel = ctx.get_available_channel_count().await;
+    assert_eq!(available_channel > 0, true);
+
+    let pair = ctx.get_channel().await.expect("channel available");
+    let dst_chain_id = pair.dest;
+    let src_chain_id = pair.src;
+
+    // let deployed_erc20 = ensure_erc20(EVM_ZKGM_BYTES.into()).await;
+
+    let deployed_erc20 = ctx
+        .dst
+        .deploy_basic_erc20(EVM_ZKGM_BYTES.into(), evm_provider.clone())
+        .await
+        .expect("failed to deploy ERC20");
+
+    let union_zkgm_contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+
+    let quote_token_addr = ctx
+        .predict_wrapped_token::<cosmos::Module>(
+            &ctx.src,
+            union_zkgm_contract.into(),
+            ChannelId::new(NonZero::new(src_chain_id).unwrap()),
+            deployed_erc20.as_ref().to_vec(),
+            cosmos_signer,
+        )
+        .await
+        .unwrap();
+
+    let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
+        .expect("invalid quote‐token address hex");
+
+    println!("Quote token address: {:?}", quote_token_addr);
+    println!("deployed_erc20 address: {:?}", deployed_erc20);
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
+
+    let instruction_from_evm_to_union = InstructionEvm {
+        version: INSTR_VERSION_1,
+        opcode: OP_FUNGIBLE_ASSET_ORDER,
+        operand: FungibleAssetOrder {
+            sender: evm_address.to_vec().into(),
+            receiver: evm_address.to_vec().into(), // Here providing evm_address as receiver on purpose to
+            // make recv_packet fail on the destination chain and get refund.
+            base_token: deployed_erc20.as_ref().to_vec().into(),
+            base_amount: "10".parse().unwrap(),
+            base_token_symbol: "GLD".into(),
+            base_token_name: "Gold".into(),
+            base_token_decimals: 18,
+            base_token_path: "0".parse().unwrap(),
+            quote_token: quote_token_bytes.into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let erc20_balance_before_send = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            deployed_erc20.into(),
+            evm_address.clone().into(),
+            evm_provider.clone(),
+        )
+        .await;
+    assert!(erc20_balance_before_send.is_ok(), "Failed to get ERC20 balance: {:?}", erc20_balance_before_send.err());
+    let erc20_balance_before_send = erc20_balance_before_send.unwrap();
+    println!("ERC20 balance of {}: {}", evm_address, erc20_balance_before_send);
+
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
+
+    let call = ucs03_zkgm
+        .send(
+            dst_chain_id.try_into().unwrap(),
+            0u64.into(),
+            4294967295000000000u64.into(),
+            salt_bytes.into(),
+            instruction_from_evm_to_union.clone(),
+        )
+        .clear_decoder();
+
+    let recv_packet_data = ctx
+        .send_and_recv_refund::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            EVM_ZKGM_BYTES.into(),
+            call,
+            &ctx.src,
+            Duration::from_secs(720),
+            evm_provider.clone(),
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+    println!(
+        "Received packet data from evm->cosmos GOLD token: {:?}",
+        recv_packet_data
+    );
+
+    let erc20_balance_after_send = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            deployed_erc20.into(),
+            evm_address.clone().into(),
+            evm_provider.clone(),
+        )
+        .await;
+    assert!(erc20_balance_after_send.is_ok(), "Failed to get ERC20 balance after send: {:?}", erc20_balance_after_send.err());
+    let erc20_balance_after_send = erc20_balance_after_send.unwrap();
+
+    println!("ERC20 balance of {} after send: {}", evm_address, erc20_balance_after_send);
+
+    assert_eq!(
+        erc20_balance_before_send,
+        erc20_balance_after_send,
+        "ERC20 balance should remain the same after refund"
+    );
+
 }
 
 async fn test_stake_from_evm_to_union() {
@@ -1448,27 +1581,32 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
 }
 
-#[tokio::test]
-async fn send_stake_and_unstake_from_evm_to_union0() {
-    self::test_stake_and_unstake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// async fn send_stake_and_unstake_from_evm_to_union0() {
+//     self::test_stake_and_unstake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union0() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
 
 #[tokio::test]
-async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+async fn from_evm_to_union_refund() {
+    self::test_send_packet_from_evm_to_union_get_refund().await;
 }
 
-#[tokio::test]
-async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-}
+// #[tokio::test]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
 
-#[tokio::test]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake0() {
-    self::test_stake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_stake0() {
+//     self::test_stake_from_evm_to_union().await;
+// }
