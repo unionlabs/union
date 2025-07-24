@@ -4,12 +4,15 @@
  * @since 2.0.0
  */
 
+import { Effect, Match, ParseResult } from "effect"
 import * as A from "effect/Array"
 import * as Data from "effect/Data"
-import { constant } from "effect/Function"
+import { constant, pipe } from "effect/Function"
 import * as S from "effect/Schema"
-import { encodeAbiParameters } from "viem"
+import { decodeAbiParameters, encodeAbiParameters } from "viem"
 import { Hex, HexChecksum } from "./schema/hex.js"
+import { Uint256FromSelf } from "./schema/uint256.js"
+import { Uint64FromSelf } from "./schema/uint64.js"
 
 /**
  * Contract ABI
@@ -127,6 +130,29 @@ export const Abi = [
       internalType: "struct FungibleAssetOrderAck",
       components: [{ name: "fillType", type: "uint256", internalType: "uint256" }, {
         name: "marketMaker",
+        type: "bytes",
+        internalType: "bytes",
+      }],
+    }, {
+      name: "",
+      type: "tuple",
+      internalType: "struct FungibleAssetOrderV2",
+      components: [
+        { name: "sender", type: "bytes", internalType: "bytes" },
+        { name: "receiver", type: "bytes", internalType: "bytes" },
+        { name: "baseToken", type: "bytes", internalType: "bytes" },
+        { name: "baseAmount", type: "uint256", internalType: "uint256" },
+        { name: "metadataType", type: "uint8", internalType: "uint8" },
+        { name: "metadata", type: "bytes", internalType: "bytes" },
+        { name: "quoteToken", type: "bytes", internalType: "bytes" },
+        { name: "quoteAmount", type: "uint256", internalType: "uint256" },
+      ],
+    }, {
+      name: "",
+      type: "tuple",
+      internalType: "struct FungibleAssetMetadata",
+      components: [{ name: "implementation", type: "bytes", internalType: "bytes" }, {
+        name: "initializer",
         type: "bytes",
         internalType: "bytes",
       }],
@@ -817,7 +843,20 @@ const byStructName = <const S extends keyof StructMap>(name: S): StructMap[S] =>
  * @category abis
  * @since 2.0.0
  */
-export const FungibleAssetOrderAbi = constant(byStructName("FungibleAssetOrder"))
+export const FungibleAssetOrderV1Abi = constant(byStructName("FungibleAssetOrder"))
+
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const FungibleAssetOrderV2Abi = constant(byStructName("FungibleAssetOrderV2"))
+
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const FungibleAssetMetadataAbi = constant(byStructName("FungibleAssetMetadata"))
+
 /**
  * @category abis
  * @since 2.0.0
@@ -975,6 +1014,29 @@ const FungibleAssetOrderOperandV1 = S.Union(
  */
 type FungibleAssetOrderOperandV1 = typeof FungibleAssetOrderOperandV1.Type
 
+export const MetadataType = S.Union(
+  S.Literal(0).pipe(
+    S.annotations({
+      title: "FUNGIBLE_ASSET_METADATA_TYPE_IMAGE",
+      description: "Uses a metadata image hash for existing token identification",
+    }),
+  ),
+  S.Literal(1).pipe(
+    S.annotations({
+      title: "FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE",
+      description:
+        "Provides full metadata implementation and initializer for custom token deployment",
+    }),
+  ),
+  S.Literal(2).pipe(
+    S.annotations({
+      title: "FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP",
+      description: "Specifically for unwrapping operations",
+    }),
+  ),
+)
+export type MetadaatType = typeof MetadataType.Type
+
 /**
  * @category models
  * @since 2.0.0
@@ -1005,7 +1067,7 @@ const FungibleAssetOrderOperandV2 = S.Union(
         description: "amount being sent",
       }),
     ),
-    S.Uint8.pipe(
+    MetadataType.pipe(
       S.annotations({
         title: "metadataType",
         description: "type of metadata (image, preimage, image_unwrap)",
@@ -1090,16 +1152,22 @@ export class Forward extends S.TaggedClass<Forward>()("Forward", {
   ),
   operand: S.Tuple(
     // TODO(ehegnes): Check bitwidth constraint
-    S.PositiveBigIntFromSelf.annotations({
-      description: "Path",
+    Uint256FromSelf.annotations({
+      title: "path",
+      description: "channel sequence as (prevDst,nextSrc) pairs",
     }),
-    S.PositiveBigIntFromSelf.annotations({
-      description: "Timeout Height",
+    Uint64FromSelf.annotations({
+      title: "timeout height",
+      description: "block height timeout",
     }),
-    S.PositiveBigIntFromSelf.annotations({
-      description: "Timeout Timestamp",
+    Uint64FromSelf.annotations({
+      title: "timeout timestamp",
+      description: "Unix timestamp timeout",
     }),
-    S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema),
+    S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema).annotations({
+      title: "instruction",
+      description: "instruction to forward",
+    }),
   ),
 }) {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
@@ -1250,7 +1318,7 @@ export type Instruction = typeof Schema.Type
 /**
  * Encodes an {@link Instruction} as as {@link Hex} for dispatching.
  *
- * @example
+ * @deprecated Use {@link InstructionFromHex} instead.
  *
  * @category utils
  * @since 2.0.0
@@ -1276,5 +1344,213 @@ export const encode: (_: Instruction) => Hex = Instruction.$match({
         operand: encode(i),
       })),
     ]),
-  FungibleAssetOrder: ({ operand }) => encodeAbiParameters(FungibleAssetOrderAbi(), operand),
+  FungibleAssetOrder: ({ operand, version }) =>
+    pipe(
+      Match.value(version),
+      // TODO(ehegnes): improve narrowing
+      Match.when(1, () =>
+        encodeAbiParameters(FungibleAssetOrderV1Abi(), operand as FungibleAssetOrderV1["operand"])),
+      Match.when(2, () =>
+        encodeAbiParameters(FungibleAssetOrderV2Abi(), operand as FungibleAssetOrderV2["operand"])),
+      Match.exhaustive,
+    ),
 })
+
+const ForwardFromHex = S.transformOrFail(
+  Hex,
+  Forward,
+  {
+    decode: (fromA, _, ast) =>
+      pipe(
+        Effect.try(() => decodeAbiParameters(ForwardAbi(), fromA)),
+        Effect.mapError((e) => new ParseResult.Type(ast, fromA, String(e.error))),
+        Effect.flatMap(([path, timeoutHeight, timeoutTimestamp, instruction]) =>
+          pipe(
+            S.decodeUnknown(S.suspend(() => InstructionFromHex))(instruction),
+            Effect.map((i) =>
+              Forward.fromOperand([
+                path,
+                timeoutHeight,
+                timeoutTimestamp,
+                i,
+              ])
+            ),
+          )
+        ),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      ),
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        S.encodeUnknown(S.suspend(() => InstructionFromHex))(toA.operand[3]),
+        Effect.map((operand) =>
+          [
+            toA.operand[0],
+            toA.operand[1],
+            toA.operand[2],
+            {
+              opcode: toA.operand[3].opcode,
+              version: toA.operand[3].version,
+              operand,
+            },
+          ] as const
+        ),
+        Effect.flatMap((x) => Effect.try(() => encodeAbiParameters(ForwardAbi(), x))),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error))),
+        ),
+      ),
+  },
+)
+
+const MultiplexFromHex = S.transformOrFail(
+  Hex,
+  Multiplex,
+  {
+    decode: (fromA, _, ast) =>
+      pipe(
+        Effect.try(() => decodeAbiParameters(MultiplexAbi(), fromA)),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
+        ),
+        Effect.map(Multiplex.fromOperand),
+      ),
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        Effect.try(() => encodeAbiParameters(MultiplexAbi(), toA.operand)),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error))),
+        ),
+      ),
+  },
+)
+
+const BatchFromHex = S.transformOrFail(
+  Hex,
+  Batch,
+  {
+    decode: (fromA, _, ast) =>
+      pipe(
+        Effect.try(() => decodeAbiParameters(BatchAbi(), fromA)),
+        Effect.mapError((e) => new ParseResult.Type(ast, fromA, String(e.error))),
+        Effect.flatMap(
+          Effect.forEach(
+            (instruction) => S.decodeUnknown(S.suspend(() => InstructionFromHex))(instruction),
+            { concurrency: "unbounded" },
+          ),
+        ),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+        Effect.map((operand) => Batch.fromOperand(operand)),
+      ),
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        toA.operand,
+        A.map((instruction) =>
+          pipe(
+            S.encodeUnknown(InstructionFromHex)(instruction),
+            Effect.map((operand) =>
+              ({
+                version: instruction.version,
+                opcode: instruction.opcode,
+                operand,
+              }) as const
+            ),
+          )
+        ),
+        Effect.allWith({ concurrency: "unbounded" }),
+        Effect.flatMap(x => Effect.try(() => encodeAbiParameters(BatchAbi(), [x]))),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error))),
+        ),
+      ),
+  },
+)
+
+export const FungibleAssetOrderFromHex = S.transformOrFail(
+  Hex,
+  FungibleAssetOrder,
+  {
+    decode: (fromA, _, ast) => {
+      const a = pipe(
+        Effect.raceAll(
+          [
+            Effect.try(
+              () => decodeAbiParameters(FungibleAssetOrderV1Abi(), fromA),
+            ),
+            Effect.try(
+              () => decodeAbiParameters(FungibleAssetOrderV2Abi(), fromA),
+            ),
+          ],
+        ),
+        Effect.flatMap((operand) =>
+          S.decodeUnknown(FungibleAssetOrder)({ _tag: "FungibleAssetOrder", operand })
+        ),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
+        ),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      )
+
+      return a
+    },
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        // TODO(ehegnes): improve narrowing
+        Match.value(toA.version),
+        Match.when(
+          1,
+          () =>
+            Effect.try(() =>
+              encodeAbiParameters(
+                FungibleAssetOrderV1Abi(),
+                toA.operand as FungibleAssetOrderV1["operand"],
+              )
+            ),
+        ),
+        Match.when(
+          2,
+          () =>
+            Effect.try(() =>
+              encodeAbiParameters(
+                FungibleAssetOrderV2Abi(),
+                toA.operand as FungibleAssetOrderV2["operand"],
+              )
+            ),
+        ),
+        Match.exhaustive,
+        Effect.catchTag("UnknownException", (error) =>
+          ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error)))),
+      ),
+  },
+)
+
+export const InstructionFromHex: S.Union<[
+  S.transformOrFail<
+    typeof Hex,
+    typeof Batch
+  >,
+  S.transformOrFail<
+    typeof Hex,
+    typeof FungibleAssetOrder
+  >,
+  S.transformOrFail<
+    typeof Hex,
+    typeof Forward
+  >,
+  S.transformOrFail<
+    typeof Hex,
+    typeof Multiplex
+  >,
+]> = S
+  .Union(
+    BatchFromHex,
+    FungibleAssetOrderFromHex,
+    ForwardFromHex,
+    MultiplexFromHex,
+  )

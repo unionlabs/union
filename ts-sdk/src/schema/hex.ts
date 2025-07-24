@@ -11,6 +11,10 @@ import { fromHex, toHex } from "viem"
 export const Hex = S.NonEmptyString.pipe(
   S.pattern(/^0x[0-9a-fA-F]+$/), // TODO: remove uppercase
   S.minLength(3),
+  S.annotations({
+    title: "hex",
+    description: "hex string",
+  }),
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type Hex = typeof Hex.Type
 

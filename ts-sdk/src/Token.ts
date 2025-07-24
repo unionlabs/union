@@ -1,59 +1,88 @@
-import {
-  Effect,
-  Either as E,
-  flow,
-  Match,
-  Option as O,
-  ParseResult,
-  pipe,
-  Schema as S,
-  String as Str,
-} from "effect"
+import { Effect, flow, ParseResult, pipe, Schema as S, Struct } from "effect"
 
 export const Erc20 = S.Struct({
   _tag: S.tag("Erc20"),
-  address: S.String,
+  address: S.String.pipe(
+    S.pattern(/^0x[0-9a-fA-F]{40}$/),
+    S.annotations({
+      examples: ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
+    }),
+  ),
 })
 export type Erc20 = typeof Erc20.Type
 
+export const EvmGas = S.Struct({
+  _tag: S.tag("EvmGas"),
+  address: S.String.pipe(
+    S.pattern(/^0x[eE]{40}$/),
+    S.annotations({
+      examples: ["0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"],
+    }),
+  ),
+})
+export type EvmGas = typeof EvmGas.Type
+
+export const CosmosIbcClassic = S.Struct({
+  _tag: S.tag("CosmosIbcClassic"),
+  address: S.String.pipe(
+    S.pattern(/^ibc\/[0-9A-Fa-f]{64}$/),
+    S.annotations({
+      examples: [""],
+    }),
+  ),
+})
+export type CosmosIbcClassic = typeof CosmosIbcClassic.Type
+
+export const CosmosTokenFactory = S.Struct({
+  _tag: S.tag("CosmosTokenFactory"),
+  address: S.String.pipe(
+    S.pattern(/^factory\/.+$/),
+  ),
+})
+export type CosmosTokenFactory = typeof CosmosTokenFactory.Type
+
+export const Cw20 = S.Struct({
+  _tag: S.tag("Cw20"),
+  address: S.String.pipe(
+    S.pattern(/^[a-z0-9]{1,15}1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{38,64}$/),
+  ),
+})
+export type Cw20 = typeof Cw20.Type
+
 export const CosmosBank = S.Struct({
   _tag: S.tag("CosmosBank"),
-  address: S.String,
+  address: S.String.pipe(
+    S.pattern(/^[a-z][a-z0-9]{1,127}$/),
+  ),
 })
 export type CosmosBank = typeof CosmosBank.Type
 
-export const IbcClassic = S.Struct({
-  _tag: S.tag("IbcClassic"),
-  address: S.String,
-})
-export type IbcClassic = typeof IbcClassic.Type
-
 export const Any = S.Union(
   Erc20,
+  EvmGas,
+  Cw20,
+  CosmosTokenFactory,
   CosmosBank,
-  IbcClassic,
+  CosmosIbcClassic,
 )
 export type Any = typeof Any.Type
 
 export const TokenFromString = S.transformOrFail(
-  S.NonEmptyString,
+  S.String,
   Any,
   {
-    decode: (fromA, _, ast) =>
+    decode: (address) =>
       pipe(
-        Match.value(fromA),
-        // XXX: revise string matching
-        Match.when(flow(Str.match(/^0x[a-fA-F0-9]{40}$/), O.isSome), (address) =>
-          Effect.succeed(Erc20.make({ address }))),
-        Match.when(flow(Str.match(/^[a-zA-Z0-9/.:_-]+$/), O.isSome), (address) =>
-          Effect.succeed(CosmosBank.make({ address }))),
-        Match.when(flow(Str.match(/^ibc\/[a-fA-F0-9]{64}$/), O.isSome), (address) =>
-          Effect.succeed(IbcClassic.make({ address }))),
-        Match.orElse(() =>
-          ParseResult.fail(new ParseResult.Type(ast, fromA, "No match"))
-        ),
+        Effect.raceAll([
+          S.decodeEither(EvmGas)({ _tag: "EvmGas", address }),
+          S.decodeEither(CosmosIbcClassic)({ _tag: "CosmosIbcClassic", address }),
+          S.decodeEither(CosmosTokenFactory)({ _tag: "CosmosTokenFactory", address }),
+          S.decodeEither(Cw20)({ _tag: "Cw20", address }),
+        ]),
+        Effect.orElse(() => S.decodeEither(Erc20)({ _tag: "Erc20", address })),
+        Effect.orElse(() => S.decodeEither(CosmosBank)({ _tag: "CosmosBank", address })),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
       ),
-    encode: (toI) => Effect.succeed(toI.address),
+    encode: flow(Struct.get("address"), Effect.succeed),
   },
 )
-export type TokenFromString = typeof TokenFromString.Type

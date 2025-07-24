@@ -1,11 +1,12 @@
-import { Context, Effect, Fiber, Inspectable } from "effect"
+import { Context, Effect, Fiber, Inspectable, Predicate } from "effect"
+import { dual } from "effect/Function"
+import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
 import type * as Client from "../Client.js"
+import type * as ClientError from "../ClientError.js"
 import type * as ClientRequest from "../ClientRequest.js"
 import type * as ClientResponse from "../ClientResponse.js"
-import type * as ClientError from "../ClientError.js"
 import * as internalRequest from "./clientRequest.js"
-import { globalValue } from "effect/GlobalValue"
 
 /** @internal */
 export const TypeId: Client.TypeId = Symbol.for(
@@ -43,6 +44,14 @@ const ClientProto = {
   },
 }
 
+const isClient = (u: unknown): u is Client.Client.With<unknown, unknown> =>
+  Predicate.hasProperty(u, TypeId)
+
+interface ClientImpl<E, R> extends Client.Client.With<E, R> {
+  readonly preprocess: Client.Client.Preprocess<E, R>
+  readonly postprocess: Client.Client.Postprocess<E, R>
+}
+
 /** @internal */
 export const makeWith = <E2, R2, E, R>(
   postprocess: (
@@ -59,105 +68,25 @@ export const makeWith = <E2, R2, E, R>(
   return self
 }
 
-const scopedRequests = globalValue(
-  "@unionlabs/sdk/Client/scopedRequests",
-  () => new WeakMap<ClientRequest.ClientRequest, AbortController>()
-)
-
 /** @internal */
-export const make = (
-  f: (
-    request: ClientRequest.ClientRequest,
-    url: URL,
-    signal: AbortSignal,
-    fiber: Fiber.RuntimeFiber<ClientResponse.ClientResponse, ClientError.ClientError>,
-  ) => Effect.Effect<ClientResponse.ClientResponse, ClientError.ClientError>,
-): Client.Client =>
-  makeWith((effect) =>
-    Effect.flatMap(effect, (request) =>
-      Effect.withFiberRuntime((fiber) => {
-        const a = f(
-        const scopedController = scopedRequests.get(request)
-        const controller = scopedController ?? new AbortController()
-        const urlResult = UrlParams.makeUrl(request.url, request.urlParams, request.hash)
-        if (urlResult._tag === "Left") {
-          return Effect.fail(
-            new Error.RequestError({ request, reason: "InvalidUrl", cause: urlResult.left }),
-          )
-        }
-        const url = urlResult.right
-        const tracerDisabled = !fiber.getFiberRef(FiberRef.currentTracerEnabled)
-          || fiber.getFiberRef(currentTracerDisabledWhen)(request)
-        if (tracerDisabled) {
-          const effect = f(request, url, controller.signal, fiber)
-          if (scopedController) {
-            return effect
-          }
-          return Effect.uninterruptibleMask((restore) =>
-            Effect.matchCauseEffect(restore(effect), {
-              onSuccess(response) {
-                responseRegistry.register(response, controller)
-                return Effect.succeed(new InterruptibleResponse(response, controller))
-              },
-              onFailure(cause) {
-                if (Cause.isInterrupted(cause)) {
-                  controller.abort()
-                }
-                return Effect.failCause(cause)
-              },
-            })
-          )
-        }
-        const nameGenerator = Context.get(fiber.currentContext, SpanNameGenerator)
-        return Effect.useSpan(
-          nameGenerator(request),
-          { kind: "client", captureStackTrace: false },
-          (span) => {
-            span.attribute("http.request.method", request.method)
-            span.attribute("server.address", url.origin)
-            if (url.port !== "") {
-              span.attribute("server.port", +url.port)
-            }
-            span.attribute("url.full", url.toString())
-            span.attribute("url.path", url.pathname)
-            span.attribute("url.scheme", url.protocol.slice(0, -1))
-            const query = url.search.slice(1)
-            if (query !== "") {
-              span.attribute("url.query", query)
-            }
-            const redactedHeaderNames = fiber.getFiberRef(Headers.currentRedactedNames)
-            const redactedHeaders = Headers.redact(request.headers, redactedHeaderNames)
-            for (const name in redactedHeaders) {
-              span.attribute(`http.request.header.${name}`, String(redactedHeaders[name]))
-            }
-            request = fiber.getFiberRef(currentTracerPropagation)
-              ? internalRequest.setHeaders(request, TraceContext.toHeaders(span))
-              : request
-            return Effect.uninterruptibleMask((restore) =>
-              restore(f(request, url, controller.signal, fiber)).pipe(
-                Effect.withParentSpan(span),
-                Effect.matchCauseEffect({
-                  onSuccess: (response) => {
-                    span.attribute("http.response.status_code", response.status)
-                    const redactedHeaders = Headers.redact(response.headers, redactedHeaderNames)
-                    for (const name in redactedHeaders) {
-                      span.attribute(`http.response.header.${name}`, String(redactedHeaders[name]))
-                    }
-                    if (scopedController) {
-                      return Effect.succeed(response)
-                    }
-                    responseRegistry.register(response, controller)
-                    return Effect.succeed(new InterruptibleResponse(response, controller))
-                  },
-                  onFailure(cause) {
-                    if (!scopedController && Cause.isInterrupted(cause)) {
-                      controller.abort()
-                    }
-                    return Effect.failCause(cause)
-                  },
-                }),
-              )
-            )
-          },
-        )
-      })), Effect.succeed as Client.HttpClient.Preprocess<never, never>)
+export const transform = dual<
+  <E, R, E1, R1>(
+    f: (
+      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
+      request: ClientRequest.ClientRequest,
+    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
+  ) => (self: Client.Client.With<E, R>) => Client.Client.With<E | E1, R | R1>,
+  <E, R, E1, R1>(
+    self: Client.Client.With<E, R>,
+    f: (
+      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
+      request: ClientRequest.ClientRequest,
+    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
+  ) => Client.Client.With<E | E1, R | R1>
+>(2, (self, f) => {
+  const client = self as ClientImpl<any, any>
+  return makeWith(
+    Effect.flatMap((request) => f(client.postprocess(Effect.succeed(request)), request)),
+    client.preprocess,
+  )
+})
