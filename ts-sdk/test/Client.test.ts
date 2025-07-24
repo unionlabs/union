@@ -11,6 +11,7 @@ describe("Client", () => {
         ClientRequest.send("0x123", "bbn1abc", {
           batch: true,
         }),
+        ClientRequest.withTokenBy(x => x.name === "WBTC"),
       )
 
       const result = yield* client.execute(transfer)
