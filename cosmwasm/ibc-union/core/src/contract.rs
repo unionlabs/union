@@ -19,9 +19,9 @@ use ibc_union_msg::{
         ExecuteMsg, InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm,
         MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
         MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgIntentPacketRecv, MsgMigrateState,
-        MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgRegisterClient,
-        MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
+        MsgConnectionOpenTry, MsgCreateClient, MsgForceUpdateClient, MsgIntentPacketRecv,
+        MsgMigrateState, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
+        MsgRegisterClient, MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
     },
     query::QueryMsg,
 };
@@ -205,6 +205,38 @@ pub fn execute(
                 client_message.to_vec(),
                 relayer,
             )
+        }
+        ExecuteMsg::ForceUpdateClient(MsgForceUpdateClient {
+            client_id,
+            client_state_bytes,
+            consensus_state_bytes,
+            height,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+
+            store_commit(
+                deps.branch(),
+                &ClientStatePath { client_id }.key(),
+                &commit(&client_state_bytes),
+            );
+            store_commit(
+                deps.branch(),
+                &ConsensusStatePath { client_id, height }.key(),
+                &commit(&consensus_state_bytes),
+            );
+
+            deps.storage
+                .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+            deps.storage.write::<ClientConsensusStates>(
+                &(client_id, height),
+                &consensus_state_bytes.into_vec().into(),
+            );
+
+            Ok(Response::new().add_event(
+                Event::new("force_update_client")
+                    .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
+                    .add_attribute(events::attribute::COUNTERPARTY_HEIGHT, height.to_string()),
+            ))
         }
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             client_id,
