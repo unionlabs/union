@@ -461,9 +461,8 @@ pub enum MsgCmd {
         rpc_url: Option<String>,
     },
     UpdateClient {
-        #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        #[arg(long)]
         client_id: RawClientId,
         #[arg(
             long,
@@ -475,6 +474,10 @@ pub enum MsgCmd {
         /// The height to update the client to. Defaults to the latest height of the chain being tracked.
         #[arg(long)]
         update_to: Option<Height>,
+
+        /// The height to update the client from. Defaults to the latest height of client.
+        #[arg(long)]
+        update_from: Option<Height>,
 
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]

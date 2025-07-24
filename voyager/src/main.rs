@@ -728,6 +728,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 client_id,
                 ibc_spec_id,
                 update_to,
+                update_from,
                 enqueue,
                 rest_url,
                 rpc_url,
@@ -761,13 +762,15 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     }
                 };
 
+                let update_from = update_from.unwrap_or(client_state_meta.counterparty_height);
+
                 let op = promise::<VoyagerMessage>(
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
                         chain_id: client_state_meta.counterparty_chain_id,
                         counterparty_chain_id: on.clone(),
                         client_id: client_id.clone(),
-                        update_from: client_state_meta.counterparty_height,
+                        update_from,
                         update_to,
                     })],
                     [],
