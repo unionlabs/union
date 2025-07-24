@@ -451,7 +451,7 @@ fn restrict_symbol(symbol: String) -> String {
     if symbol.len() > 12 {
         // truncate the symbol to get the last 12 chars
         let symbol = &symbol[(symbol.len() - 12)..];
-        // split it by `/` incase this is a factory token and only get the last part
+        // split it by `/` in case this is a factory token and only get the last part
         let split = symbol.split('/').collect::<Vec<&str>>();
         // filter the unwanted chars
         let symbol = split[split.len() - 1]

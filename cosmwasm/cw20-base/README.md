@@ -34,7 +34,7 @@ the repository root: https://github.com/CosmWasm/cw-plus#compiling.
 ## Importing this contract
 
 You can also import much of the logic of this contract to build another
-ERC20-contract, such as a bonding curve, overiding or extending what you
+ERC20-contract, such as a bonding curve, overriding or extending what you
 need.
 
 Basically, you just need to write your handle function and import
