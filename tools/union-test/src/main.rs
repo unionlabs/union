@@ -105,6 +105,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<U256> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
@@ -272,65 +273,65 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
         .await
         .unwrap();
 
-    // println!("✅ Quote token address: {:?}", quote_token_addr);
-    // let mut salt_bytes = [0u8; 32];
-    // rand::rng().fill_bytes(&mut salt_bytes);
+    println!("✅ Quote token address: {:?}", quote_token_addr);
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
 
-    // let contract: Bech32<FixedBytes<32>> =
-    //     Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
-    //         .unwrap();
+    let contract: Bech32<FixedBytes<32>> =
+        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+            .unwrap();
 
-    // let instruction_cosmos = Instruction {
-    //     version: INSTR_VERSION_2,
-    //     opcode: OP_FUNGIBLE_ASSET_ORDER,
-    //     operand: FungibleAssetOrderV2 {
-    //         sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-    //             .as_bytes()
-    //             .into(),
-    //         receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
-    //             .to_vec()
-    //             .into(),
-    //         base_token: "muno".as_bytes().into(),
-    //         base_amount: "10".parse().unwrap(),
-    //         metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
-    //         metadata: img_metadata.into(),
-    //         quote_token: quote_token_addr.as_ref().to_vec().into(),
-    //         quote_amount: "10".parse().unwrap(),
-    //     }
-    //     .abi_encode_params()
-    //     .into(),
-    // };
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_FUNGIBLE_ASSET_ORDER,
+        operand: FungibleAssetOrderV2 {
+            sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+                .as_bytes()
+                .into(),
+            receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "10".parse().unwrap(),
+            metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            metadata: img_metadata.into(),
+            quote_token: quote_token_addr.as_ref().to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
 
-    // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-    //     channel_id: pair.src.try_into().unwrap(),
-    //     timeout_height: 0u64.into(),
-    //     timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-    //     salt: salt_bytes.into(),
-    //     instruction: instruction_cosmos.abi_encode_params().into(),
-    // };
-    // let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: pair.src.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
-    // let funds = vec![Coin {
-    //     denom: "muno".into(),
-    //     amount: "10".into(),
-    // }];
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
 
-    // // TODO: Here we should check the muno balance of sender account
-    // // Also token balanceOf the receiver account
-    // let recv_packet_data = ctx
-    //     .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
-    //         &ctx.src,
-    //         contract,
-    //         (bin_msg, funds).into(),
-    //         &ctx.dst,
-    //         3,
-    //         Duration::from_secs(20),
-    //         Duration::from_secs(720),
-    //         cosmos_provider,
-    //     )
-    //     .await;
+    // TODO: Here we should check the muno balance of sender account
+    // Also token balanceOf the receiver account
+    let recv_packet_data = ctx
+        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds).into(),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
 
-    // println!("Received packet data: {:?}", recv_packet_data);
+    println!("Received packet data: {:?}", recv_packet_data);
 
     //appropve here
     println!("Calling approve on quote token: {:?}", quote_token_addr); // 0xc7484B8b13FdE71A7203876359f1484808DCCc4A
@@ -352,9 +353,7 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
     rand::rng().fill_bytes(&mut buf);
 
     let random_token_id = U256::from_be_bytes(buf).into();
-    println!("✅ random_token_id: {:?}", random_token_id);
-    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
-    
+    println!("✅ random_token_id: {:?}", random_token_id);    
     
     let erc20_balance_before_send = ctx
         .dst
@@ -426,6 +425,7 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
     Ok(random_token_id.into())
 }
 
+#[allow(dead_code)]
 pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
@@ -485,8 +485,7 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst, 1).await?;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
-    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+    let (_cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
     if open_channels {
         let (src_confirm, dst_confirm) = ctx
             .create_clients(
@@ -565,7 +564,6 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
     println!("Quote token address: {:?}", quote_token_addr);
     println!("deployed_erc20 address: {:?}", deployed_erc20);
 
-    let wrong_quote_token_addr = "0x756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
 
@@ -655,7 +653,7 @@ pub async fn send_refund_scenario(open_channels: bool, mut pair: ChannelPair) ->
     Ok(())
    
 }
-
+#[allow(dead_code)]
 async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
@@ -786,6 +784,7 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyhow::Result<()> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
@@ -917,6 +916,7 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::Result<U256> {
     let quote_token_addr = "756e696f6e3174366a646a73386170793479667634396e6c7375326c346473796d32737a633838376a673274726e6e6570376d63637868657773713532736830";
     let ascii = hex::decode(quote_token_addr).expect("Failed to decode hex string");
