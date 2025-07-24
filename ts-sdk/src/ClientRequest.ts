@@ -1,4 +1,4 @@
-import type { Option } from "effect"
+import type { Brand, Option } from "effect"
 import type { Inspectable } from "effect/Inspectable"
 import type { Pipeable } from "effect/Pipeable"
 import type { ReadonlyRecord } from "effect/Record"
@@ -33,8 +33,8 @@ export interface ClientRequest extends Inspectable, Pipeable {
   readonly method: Method
   readonly sender: string
   readonly receiver: string
-  readonly asset: string
-  readonly quote: Option.Option<string>
+  readonly baseToken: Token.Any
+  readonly quoteToken: Token.Any | "auto"
 }
 
 /**
@@ -46,6 +46,10 @@ export interface Options {
   readonly method?: Method | undefined
   /** Address to send from. */
   readonly sender?: string | undefined
+  /** Base token */
+  readonly baseToken?: string | undefined
+  /** Quote tooken. */
+  readonly quoteToken?: string | undefined
   /** Address to send from. */
   readonly receiver?: string | undefined
   /** Fee priority for gas calculation. */
@@ -71,7 +75,7 @@ export declare namespace Options {
    * @category models
    * @since 2.0.0
    */
-  export interface NoUrl extends Omit<Options, "method" | "url"> {}
+  export interface NoQuote extends Omit<Options, "method" | "sender" | "receiver" | "quoteToken"> {}
 }
 
 /**
