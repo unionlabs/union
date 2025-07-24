@@ -91,6 +91,28 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     }
 
     /**
+     * @dev forceUpdateClient forcibly updates the consensus state and the state root from a provided header
+     */
+    function forceUpdateClient(
+        IBCMsgs.MsgForceUpdateClient calldata msg_
+    ) external restricted {
+        ConsensusStateUpdate memory update = IForceLightClient(
+            address(getClientInternal(msg_.clientId))
+        ).forceUpdateClient(
+            msg.sender,
+            msg_.clientId,
+            msg_.clientStateBytes,
+            msg_.consensusStateBytes
+        );
+        commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] =
+            update.clientStateCommitment;
+        commitments[IBCCommitment.consensusStateCommitmentKey(
+            msg_.clientId, update.height
+        )] = update.consensusStateCommitment;
+        emit IBCClientLib.UpdateClient(msg_.clientId, update.height);
+    }
+
+    /**
      * @dev misbehaviour submits a misbehaviour to the client for it to take action if it is correct
      */
     function misbehaviour(

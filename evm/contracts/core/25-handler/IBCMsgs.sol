@@ -19,6 +19,12 @@ library IBCMsgs {
         address relayer;
     }
 
+    struct MsgForceUpdateClient {
+        uint32 clientId;
+        bytes clientStateBytes;
+        bytes consensusStateBytes;
+    }
+
     struct MsgConnectionOpenInit {
         uint32 clientId;
         uint32 counterpartyClientId;

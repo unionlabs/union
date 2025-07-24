@@ -197,6 +197,7 @@ library CometblsClientLib {
 
 contract CometblsClient is
     ILightClient,
+    IForceLightClient,
     Initializable,
     UUPSUpgradeable,
     AccessManagedUpgradeable,
@@ -450,6 +451,26 @@ contract CometblsClient is
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
             height: untrustedHeightNumber
+        });
+    }
+
+    function forceUpdateClient(
+        address,
+        uint32 clientId,
+        bytes calldata clientStateBytes,
+        bytes calldata consensusStateBytes
+    ) external onlyIBC whenNotPaused returns (ConsensusStateUpdate memory) {
+        ClientState calldata clientState = clientStateBytes.decodeClientState();
+        ConsensusState calldata consensusState =
+            consensusStateBytes.decodeConsensusState();
+
+        clientStates[clientId] = clientState;
+        consensusStates[clientId][clientState.latestHeight] = consensusState;
+
+        return ConsensusStateUpdate({
+            clientStateCommitment: clientState.commit(),
+            consensusStateCommitment: consensusState.commit(),
+            height: clientState.latestHeight
         });
     }
 
