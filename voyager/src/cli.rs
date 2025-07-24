@@ -475,7 +475,7 @@ pub enum MsgCmd {
         #[arg(long)]
         update_to: Option<Height>,
 
-        /// The height to update the client from. Defaults to the latest height of client.
+        /// The height to update the client from. Defaults to the latest height of the client.
         #[arg(long)]
         update_from: Option<Height>,
 

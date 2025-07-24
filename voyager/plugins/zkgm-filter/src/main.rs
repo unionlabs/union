@@ -447,7 +447,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     };
 
                     match &full_event {
-                        FullEvent::PacketSend(packet_send) => {                           
+                        FullEvent::PacketSend(packet_send) => {
                             info!(
                                 packet_hash = %packet_send.packet().hash(),
                                 chain_id = %chain_event.chain_id,
