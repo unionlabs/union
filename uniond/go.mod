@@ -238,7 +238,7 @@ require (
 
 replace (
 	github.com/skip-mev/chaintestutil => github.com/unionlabs/chaintestutil v0.0.0-20250302021446-4a21a73faf94
-	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250715203232-09b3cdf73dc1
+	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250725184025-cd8b620c9675
 )
 
 replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508

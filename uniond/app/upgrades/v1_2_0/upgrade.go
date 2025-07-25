@@ -2,14 +2,16 @@ package v1_2_0
 
 import (
 	"context"
+	"math"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -43,6 +45,10 @@ var feemarketDistFees = map[string]bool{
 	UNION_TESTNET: true,
 	UNION_DEVNET:  false,
 }
+
+var PowerReduction = sdkmath.NewIntFromBigInt(
+	new(big.Int).SetUint64(1_000_000_000_000_000_000),
+)
 
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
@@ -140,7 +146,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 
 		for idx, validator := range validators {
 			// the only delegation to validators is now via the foundation multisig
-			validator.MinSelfDelegation = math.NewInt(0)
+			validator.MinSelfDelegation = sdkmath.NewInt(0)
 			// set tokens to zero as the delegate call at the end of the migration will set this
 			// validator.Tokens = math.ZeroInt()
 			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
@@ -180,7 +186,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 		stakingParams.BondDenom = U_BASE_DENOM
 		// NOTE: *technically* this should be 0, but all commission will go to the community fund anyways since we set the community tax in x/distribution to 100%
-		stakingParams.MinCommissionRate = math.LegacyMustNewDecFromStr("0.05")
+		stakingParams.MinCommissionRate = sdkmath.LegacyMustNewDecFromStr("0.05")
 		err = keepers.StakingKeeper.SetParams(ctx, stakingParams)
 		if err != nil {
 			return nil, err
@@ -225,7 +231,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 		// set community tax to 100% to take all rewards
-		distrParams.CommunityTax = math.LegacyMustNewDecFromStr("1")
+		distrParams.CommunityTax = sdkmath.LegacyMustNewDecFromStr("1")
 		keepers.DistributionKeeper.Params.Set(ctx, distrParams)
 
 		// Update x/feemarket
@@ -274,10 +280,18 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 					"addr", valAddr,
 				)
 			} else {
+				shares := delegation.Shares.RoundInt()
+				if sdkCtx.ChainID() != UNION_TESTNET {
+					sharesBig, ok := new(big.Int).SetString("1000000000000000000000000", 10)
+					if !ok {
+						return nil, errorsmod.New("upgrade", 1, "failed to convert shares from bigint string")
+					}
+					shares = sdkmath.NewIntFromBigInt(sharesBig)
+				}
 				_, err = keepers.StakingKeeper.Delegate(
 					ctx,
 					unionFoundationMultiSig,
-					delegation.Shares.RoundInt(),
+					shares,
 					stakingtypes.Unbonded,
 					validator,
 					true,
@@ -293,19 +307,43 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		burnToken(ctx, *keepers, "upoa") // union-1 and union-testnet-10 PoA token
 		burnToken(ctx, *keepers, "ugas") // union-1 gas token
 
+		if sdkCtx.ChainID() != UNION_TESTNET {
+			sdk.DefaultPowerReduction = PowerReduction
+		}
+
 		return migrations, nil
 	}
 }
 
 func burnToken(ctx context.Context, keepers upgrades.AppKeepers, denom string) error {
-	tokenOwners, err := keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
-		Denom:      denom,
-		Pagination: nil,
-	})
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	var tokenOwners *banktypes.QueryDenomOwnersResponse
+	var err error
+
+	// Ensure no changed behavior in how testnet 10 pagination was determined
+	if sdkCtx.ChainID() == UNION_TESTNET {
+		tokenOwners, err = keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
+			Denom:      denom,
+			Pagination: nil,
+		})
+	} else {
+		tokenOwners, err = keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
+			Denom: denom,
+			Pagination: &query.PageRequest{
+				Key:        []byte{},
+				Offset:     0,
+				Limit:      math.MaxUint64,
+				CountTotal: false,
+				Reverse:    false,
+			},
+		})
+	}
 	if err != nil {
 		return err
 	}
-	tokenSum := math.ZeroInt()
+
+	tokenSum := sdkmath.ZeroInt()
 	for _, tokenOwner := range tokenOwners.DenomOwners {
 		accAddr, err := sdk.AccAddressFromBech32(tokenOwner.Address)
 		if err != nil {
@@ -318,7 +356,7 @@ func burnToken(ctx context.Context, keepers upgrades.AppKeepers, denom string) e
 		}
 		tokenSum = tokenSum.Add(tokenOwner.Balance.Amount)
 	}
-	if tokenSum.GT(math.ZeroInt()) {
+	if tokenSum.GT(sdkmath.ZeroInt()) {
 		err = keepers.BankKeeper.BurnCoins(ctx, govtypes.ModuleName, sdk.NewCoins(sdk.Coin{
 			Denom:  denom,
 			Amount: tokenSum,
@@ -334,6 +372,6 @@ func getUFromU64(amount int64) sdk.Coin {
 	res := new(big.Int).Mul(big.NewInt(ONE_U), big.NewInt(amount))
 	return sdk.Coin{
 		Denom:  U_BASE_DENOM,
-		Amount: math.NewIntFromBigInt(res),
+		Amount: sdkmath.NewIntFromBigInt(res),
 	}
 }
