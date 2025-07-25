@@ -7747,6 +7747,47 @@
           }
         }
       }
+    },
+    "union/tracing/v1/tx_storage_trace/${txHash}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "operationId": "Query_TxStorageTrace",
+        "parameters": [
+          {
+            "name": "txHash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryTxStorageTraceResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8466,8 +8507,7 @@
           "lastCommit": {
             "$ref": "#/components/schemas/Commit"
           }
-        },
-        "description": "Block defines the structure of a block in the CometBFT blockchain."
+        }
       },
       "BlockID": {
         "type": "object",
@@ -8480,7 +8520,7 @@
             "$ref": "#/components/schemas/PartSetHeader"
           }
         },
-        "description": "BlockID defines the unique ID of a block as its hash and its `PartSetHeader`."
+        "description": "BlockID"
       },
       "Commit": {
         "type": "object",
@@ -8580,8 +8620,7 @@
           "other": {
             "$ref": "#/components/schemas/DefaultNodeInfoOther"
           }
-        },
-        "description": "DefaultNodeInfo is a basic node's information sent to other peers during the\n p2p handshake."
+        }
       },
       "DefaultNodeInfoOther": {
         "type": "object",
@@ -8592,8 +8631,7 @@
           "rpcAddress": {
             "type": "string"
           }
-        },
-        "description": "DefaultNodeInfoOther is the misc. application specific data."
+        }
       },
       "DuplicateVoteEvidence": {
         "type": "object",
@@ -8626,8 +8664,7 @@
           "lightClientAttackEvidence": {
             "$ref": "#/components/schemas/LightClientAttackEvidence"
           }
-        },
-        "description": "Evidence is a generic type for wrapping evidence of misbehavior by a validator."
+        }
       },
       "EvidenceList": {
         "type": "object",
@@ -8638,8 +8675,7 @@
               "$ref": "#/components/schemas/Evidence"
             }
           }
-        },
-        "description": "EvidenceList is a list of evidence."
+        }
       },
       "GetBlockByHeightResponse": {
         "type": "object",
@@ -8838,8 +8874,7 @@
           "validatorSet": {
             "$ref": "#/components/schemas/ValidatorSet"
           }
-        },
-        "description": "LightBlock is a combination of SignedHeader and ValidatorSet. It is used by light clients."
+        }
       },
       "LightClientAttackEvidence": {
         "type": "object",
@@ -8896,7 +8931,7 @@
             "format": "bytes"
           }
         },
-        "description": "Header of the parts set for a block."
+        "description": "PartsetHeader"
       },
       "ProofOp": {
         "type": "object",
@@ -8913,7 +8948,7 @@
             "format": "bytes"
           }
         },
-        "description": "ProofOp defines an operation used for calculating Merkle root\n The data could be arbitrary format, providing necessary data\n for example neighbouring node hash"
+        "description": "ProofOp defines an operation used for calculating Merkle root\n The data could be arbitrary format, providing nessecary data\n for example neighbouring node hash"
       },
       "ProofOps": {
         "type": "object",
@@ -8939,8 +8974,7 @@
           "app": {
             "type": "string"
           }
-        },
-        "description": "ProtocolVersion represents the current p2p protocol version."
+        }
       },
       "SignedHeader": {
         "type": "object",
@@ -8951,8 +8985,7 @@
           "commit": {
             "$ref": "#/components/schemas/Commit"
           }
-        },
-        "description": "SignedHeader contains a Header(H) and Commit(H+1) with signatures of validators who signed it."
+        }
       },
       "Validator": {
         "type": "object",
@@ -8969,16 +9002,8 @@
           },
           "proposerPriority": {
             "type": "string"
-          },
-          "pubKeyBytes": {
-            "type": "string",
-            "format": "bytes"
-          },
-          "pubKeyType": {
-            "type": "string"
           }
-        },
-        "description": "Validator represents a node participating in the consensus protocol."
+        }
       },
       "ValidatorSet": {
         "type": "object",
@@ -8995,8 +9020,7 @@
           "totalVotingPower": {
             "type": "string"
           }
-        },
-        "description": "ValidatorSet defines a set of validators."
+        }
       },
       "VersionInfo": {
         "type": "object",
@@ -9155,24 +9179,24 @@
         "properties": {
           "voteExtensionsEnableHeight": {
             "type": "string",
-            "description": "vote_extensions_enable_height has been deprecated.\n Instead, use FeatureParams.vote_extensions_enable_height."
+            "description": "vote_extensions_enable_height configures the first height during which\n vote extensions will be enabled. During this specified height, and for all\n subsequent heights, precommit messages that do not contain valid extension data\n will be considered invalid. Prior to this height, vote extensions will not\n be used or accepted by validators on the network.\n\n Once enabled, vote extensions will be created by the application in ExtendVote,\n passed to the application for validation in VerifyVoteExtension and given\n to the application to use when proposing a block during PrepareProposal."
           }
         },
-        "description": "ABCIParams is deprecated and its contents moved to FeatureParams"
+        "description": "ABCIParams configure functionality specific to the Application Blockchain Interface."
       },
       "BlockParams": {
         "type": "object",
         "properties": {
           "maxBytes": {
             "type": "string",
-            "description": "Maximum size of a block, in bytes.\n\n Must be greater or equal to -1 and cannot be greater than the hard-coded\n maximum block size, which is 100MB.\n\n If set to -1, the limit is the hard-coded maximum block size."
+            "description": "Max block size, in bytes.\n Note: must be greater than 0"
           },
           "maxGas": {
             "type": "string",
-            "description": "Maximum gas wanted by transactions included in a block.\n\n Must be greater or equal to -1. If set to -1, no limit is enforced."
+            "description": "Max gas per block.\n Note: must be greater or equal to -1"
           }
         },
-        "description": "BlockParams define limits on the block size and gas."
+        "description": "BlockParams contains limits on the block size."
       },
       "ConsensusParams": {
         "type": "object",
@@ -9191,12 +9215,6 @@
           },
           "abci": {
             "$ref": "#/components/schemas/ABCIParams"
-          },
-          "synchrony": {
-            "$ref": "#/components/schemas/SynchronyParams"
-          },
-          "feature": {
-            "$ref": "#/components/schemas/FeatureParams"
           }
         },
         "description": "ConsensusParams contains consensus critical parameters that determine the\n validity of blocks."
@@ -9206,49 +9224,19 @@
         "properties": {
           "maxAgeNumBlocks": {
             "type": "string",
-            "description": "Maximum age of evidence, in blocks.\n\n The recommended formula for calculating it is max_age_duration / {average\n block time}."
+            "description": "Max age of evidence, in blocks.\n\n The basic formula for calculating this is: MaxAgeDuration / {average block\n time}."
           },
           "maxAgeDuration": {
             "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
             "type": "string",
-            "description": "Maximum age of evidence, in time.\n\n The recommended value of is should correspond to the application's\n \"unbonding period\" or other similar mechanism for handling\n Nothing-At-Stake attacks.\n See: https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed."
+            "description": "Max age of evidence, in time.\n\n It should correspond with an app's \"unbonding period\" or other similar\n mechanism for handling [Nothing-At-Stake\n attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed)."
           },
           "maxBytes": {
             "type": "string",
-            "description": "Maximum size in bytes of evidence allowed to be included in a block.\n\n It should fall comfortably under the maximum size of a block."
+            "description": "This sets the maximum size of total evidence in bytes that can be committed in a single block.\n and should fall comfortably under the max block bytes.\n Default is 1048576 or 1MB"
           }
         },
-        "description": "EvidenceParams determine the validity of evidences of Byzantine behavior."
-      },
-      "FeatureParams": {
-        "type": "object",
-        "properties": {
-          "voteExtensionsEnableHeight": {
-            "type": "string",
-            "description": "Height during which vote extensions will be enabled.\n\n A value of 0 means vote extensions are disabled. A value > 0 denotes\n the height at which vote extensions will be (or have been) enabled.\n\n During the specified height, and for all subsequent heights, precommit\n messages that do not contain valid extension data will be considered\n invalid. Prior to this height, or when this height is set to 0, vote\n extensions will not be used or accepted by validators on the network.\n\n Once enabled, vote extensions will be created by the application in\n ExtendVote, validated by the application in VerifyVoteExtension, and\n used by the application in PrepareProposal, when proposing the next block.\n\n Cannot be set to heights lower or equal to the current blockchain height."
-          },
-          "pbtsEnableHeight": {
-            "type": "string",
-            "description": "Height at which Proposer-Based Timestamps (PBTS) will be enabled.\n\n A value of 0 means PBTS is disabled. A value > 0 denotes the height at\n which PBTS will be (or has been) enabled.\n\n From the specified height, and for all subsequent heights, the PBTS\n algorithm will be used to produce and validate block timestamps. Prior to\n this height, or when this height is set to 0, the legacy BFT Time\n algorithm is used to produce and validate timestamps.\n\n Cannot be set to heights lower or equal to the current blockchain height."
-          }
-        },
-        "description": "FeatureParams configure the height from which features of CometBFT are enabled."
-      },
-      "SynchronyParams": {
-        "type": "object",
-        "properties": {
-          "precision": {
-            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
-            "type": "string",
-            "description": "Bound for how skewed a proposer's clock may be from any validator on the\n network while still producing valid proposals."
-          },
-          "messageDelay": {
-            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
-            "type": "string",
-            "description": "Bound for how long a proposal message may take to reach all validators on\n a network and still be considered valid."
-          }
-        },
-        "description": "SynchronyParams determine the validity of block timestamps.\n\n These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.\n For more information on the relationship of the synchrony parameters to\n block timestamps validity, refer to the PBTS specification:\n https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md"
+        "description": "EvidenceParams determine how we handle evidence of malfeasance."
       },
       "ValidatorParams": {
         "type": "object",
@@ -9260,17 +9248,16 @@
             }
           }
         },
-        "description": "ValidatorParams restrict the public key types validators can use.\n\n NOTE: uses ABCI public keys naming, not Amino names."
+        "description": "ValidatorParams restrict the public key types validators can use.\n NOTE: uses ABCI pubkey naming, not Amino names."
       },
       "VersionParams": {
         "type": "object",
         "properties": {
           "app": {
-            "type": "string",
-            "description": "The ABCI application version.\n\n It was named app_version in CometBFT 0.34."
+            "type": "string"
           }
         },
-        "description": "VersionParams contain the version of specific components of CometBFT."
+        "description": "VersionParams contains the ABCI application version."
       },
       "DecCoin": {
         "type": "object",
@@ -10416,17 +10403,9 @@
           "secp256k1": {
             "type": "string",
             "format": "bytes"
-          },
-          "bls12381": {
-            "type": "string",
-            "format": "bytes"
-          },
-          "bn254": {
-            "type": "string",
-            "format": "bytes"
           }
         },
-        "description": "PublicKey is a ED25519 or a secp256k1 public key."
+        "description": "PublicKey defines the keys available for use with Validators"
       },
       "QueryDelegationResponse": {
         "type": "object",
@@ -10886,7 +10865,7 @@
             }
           }
         },
-        "description": "Event allows application developers to attach additional information to\n ResponseFinalizeBlock and ResponseCheckTx.\n Up to 0.37, this could also be used in ResponseBeginBlock, ResponseEndBlock,\n and ResponseDeliverTx.\n Later, transactions may be queried using these events."
+        "description": "Event allows application developers to attach additional information to\n ResponseFinalizeBlock and ResponseCheckTx.\n Later, transactions may be queried using these events."
       },
       "EventAttribute": {
         "type": "object",
@@ -11932,6 +11911,10 @@
           }
         },
         "description": "QueryWasmLimitsConfigResponse is the response type for the\n Query/WasmLimitsConfig RPC method. It contains the JSON encoded limits for\n static validation of Wasm files."
+      },
+      "QueryTxStorageTraceResponse": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

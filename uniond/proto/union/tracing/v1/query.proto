@@ -1,0 +1,17 @@
+syntax = "proto3";
+package union.tracing.v1;
+
+option go_package = "github.com/unionlabs/union/uniond/x/tracing/types";
+import "google/api/annotations.proto";
+
+service Query {
+  rpc TxStorageTrace(QueryTxStorageTrace) returns (QueryTxStorageTraceResponse) {
+    option (google.api.http).get = "union/tracing/v1/tx_storage_trace/${tx_hash}";
+  }
+}
+
+message QueryTxStorageTrace {
+  bytes tx_hash = 1;
+}
+
+message QueryTxStorageTraceResponse {}

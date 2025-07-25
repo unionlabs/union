@@ -261,7 +261,7 @@ func New(
 	baseAppOptions = append(baseAppOptions, baseapp.SetOptimisticExecution())
 
 	// build app
-	app.App = appBuilder.Build(db, traceStore, baseAppOptions...)
+	app.App = appBuilder.Build(&TracerDB{db}, traceStore, baseAppOptions...)
 
 	// register legacy modules
 	if err := app.registerIBCModules(appOpts); err != nil {
@@ -449,3 +449,65 @@ func BlockedAddresses() map[string]bool {
 	}
 	return result
 }
+
+type TracerDB struct {
+	db dbm.DB
+}
+
+var _ dbm.DB = (*TracerDB)(nil)
+
+// Get fetches the value of the given key, or nil if it does not exist.
+// CONTRACT: key, value readonly []byte
+func (db *TracerDB) Get(k []byte) ([]byte, error) { return db.db.Get(k) }
+
+// Has checks if a key exists.
+// CONTRACT: key, value readonly []byte
+func (db *TracerDB) Has(key []byte) (bool, error) { return db.db.Has(key) }
+
+// Set sets the value for the given key, replacing it if it already exists.
+// CONTRACT: key, value readonly []byte
+func (db *TracerDB) Set(k []byte, v []byte) error { return db.db.Set(k, v) }
+
+// SetSync sets the value for the given key, and flushes it to storage before returning.
+func (db *TracerDB) SetSync(k []byte, v []byte) error { return db.db.SetSync(k, v) }
+
+// Delete deletes the key, or does nothing if the key does not exist.
+// CONTRACT: key readonly []byte
+func (db *TracerDB) Delete(k []byte) error { return db.db.Delete(k) }
+
+// DeleteSync deletes the key, and flushes the delete to storage before returning.
+func (db *TracerDB) DeleteSync(k []byte) error { return db.db.DeleteSync(k) }
+
+// Iterator returns an iterator over a domain of keys, in ascending order. The caller must call
+// Close when done. End is exclusive, and start must be less than end. A nil start iterates
+// from the first key, and a nil end iterates to the last key (inclusive). Empty keys are not
+// valid.
+// CONTRACT: No writes may happen within a domain while an iterator exists over it.
+// CONTRACT: start, end readonly []byte
+func (db *TracerDB) Iterator(start, end []byte) (dbm.Iterator, error) { return db.db.Iterator(start, end) }
+
+// ReverseIterator returns an iterator over a domain of keys, in descending order. The caller
+// must call Close when done. End is exclusive, and start must be less than end. A nil end
+// iterates from the last key (inclusive), and a nil start iterates to the first key (inclusive).
+// Empty keys are not valid.
+// CONTRACT: No writes may happen within a domain while an iterator exists over it.
+// CONTRACT: start, end readonly []byte
+func (db *TracerDB) ReverseIterator(start, end []byte) (dbm.Iterator, error) {
+	return db.db.ReverseIterator(start, end)
+}
+
+// Close closes the database connection.
+func (db TracerDB) Close() error { return db.db.Close() }
+
+// NewBatch creates a batch for atomic updates. The caller must call Batch.Close.
+func (db *TracerDB) NewBatch() dbm.Batch { return db.db.NewBatch() }
+
+// NewBatchWithSize create a new batch for atomic updates, but with pre-allocated size.
+// This will does the same thing as NewBatch if the batch implementation doesn't support pre-allocation.
+func (db *TracerDB) NewBatchWithSize(i int) dbm.Batch { return db.db.NewBatchWithSize(i) }
+
+// Print is used for debugging.
+func (db *TracerDB) Print() error { return db.db.Print() }
+
+// Stats returns a map of property values for all keys and the size of the cache.
+func (db *TracerDB) Stats() map[string]string { return db.db.Stats() }
