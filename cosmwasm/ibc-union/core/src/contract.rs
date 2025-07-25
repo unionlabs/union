@@ -28,16 +28,16 @@ use ibc_union_msg::{
 use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ClientStatusPath, ConnectionPath, ConsensusStatePath, Status, COMMITMENT_MAGIC,
+        ClientStatusPath, ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC,
         COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState, Packet,
-    Timestamp,
+    Status, Timestamp,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{Bytes, H256},
+    primitives::{Bytes, H256, U256},
 };
 
 use crate::{
@@ -605,18 +605,14 @@ pub fn execute(
                     client_id: msg.client_id,
                 },
             )?;
-
-            let status_bytes = (status as u8).to_le_bytes();
-
             store_commit(
                 deps.branch(),
                 &ClientStatusPath {
                     client_id: msg.client_id,
                 }
                 .key(),
-                &commit(status_bytes),
+                &commit(U256::from(status as u32).to_le_bytes()),
             );
-
             Ok(Response::default())
         }
     }
@@ -2194,7 +2190,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             )?;
             Ok(to_json_binary(&status)?)
         }
-        QueryMsg::GetCommittedStatus { client_id } => {
+        QueryMsg::GetStatusCommitment { client_id } => {
             let commit = read_commit(deps, &ClientStatusPath { client_id }.key());
             Ok(to_json_binary(&commit)?)
         }

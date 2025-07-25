@@ -92,3 +92,17 @@ macro_rules! id {
 id!(ClientId);
 id!(ConnectionId);
 id!(ChannelId);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[repr(u8)]
+pub enum Status {
+    Active = 1,
+    Expired = 2,
+    Frozen = 3,
+}

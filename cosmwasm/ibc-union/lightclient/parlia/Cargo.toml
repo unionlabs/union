@@ -27,7 +27,6 @@ evm-storage-verifier        = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
-ibc-union-spec              = { workspace = true }
 ics23                       = { workspace = true }
 parlia-light-client-types   = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 parlia-types                = { workspace = true, features = ["bincode"] }

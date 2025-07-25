@@ -10,7 +10,7 @@ mod tests;
 
 use cosmwasm_std::{Addr, StdError};
 use frissitheto::UpgradeError;
-use ibc_union_spec::{path::Status, ChannelId, ChannelState, ClientId, ConnectionState, Timestamp};
+use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState, Status, Timestamp};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
 

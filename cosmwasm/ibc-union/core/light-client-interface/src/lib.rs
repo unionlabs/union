@@ -11,7 +11,7 @@ use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, StorageWrites, UpdateStateResponse, VerifyCreationResponse,
     VerifyCreationResponseEvent,
 };
-use ibc_union_spec::{path::Status, ClientId, Timestamp};
+use ibc_union_spec::{ClientId, Status, Timestamp};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     primitives::Bytes,

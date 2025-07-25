@@ -25,7 +25,6 @@ ethermint-light-client-types  = { workspace = true, features = ["serde", "bincod
 frissitheto                   = { workspace = true }
 ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
-ibc-union-spec                = { workspace = true }
 ics23                         = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
 tendermint-light-client       = { workspace = true, features = ["library"] }

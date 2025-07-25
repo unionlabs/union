@@ -376,19 +376,19 @@ impl Module {
             %client_id
         )
     )]
-    async fn query_client_status(
+    async fn query_client_status_commitment(
         &self,
         height: Height,
         client_id: ClientId,
-    ) -> RpcResult<Option<u8>> {
-        let status = self
-            .query_smart::<_, u8>(
-                &ibc_union_msg::query::QueryMsg::GetCommittedStatus { client_id },
+    ) -> RpcResult<Option<H256>> {
+        let commitment = self
+            .query_smart::<_, Option<H256>>(
+                &ibc_union_msg::query::QueryMsg::GetStatusCommitment { client_id },
                 Some(height),
             )
             .await?;
 
-        Ok(status)
+        Ok(commitment.flatten())
     }
 }
 
@@ -527,7 +527,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map(into_value),
             StorePath::ClientStatus(path) => self
-                .query_client_status(at, path.client_id)
+                .query_client_status_commitment(at, path.client_id)
                 .await
                 .map(into_value),
         }

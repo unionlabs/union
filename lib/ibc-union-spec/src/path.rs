@@ -7,7 +7,7 @@ use voyager_primitives::IbcStorePathKey;
 use crate::Packet;
 use crate::{
     types::{ChannelId, ClientId, ConnectionId},
-    Channel, Connection, IbcUnion,
+    Channel, Connection, IbcUnion, Status,
 };
 
 pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];
@@ -267,20 +267,6 @@ impl IbcStorePathKey for BatchPacketsPath {
     type Spec = IbcUnion;
 
     type Value = H256;
-}
-
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(
-    feature = "serde",
-    serde(rename_all = "snake_case", deny_unknown_fields)
-)]
-#[repr(u8)]
-pub enum Status {
-    Active = 1,
-    Expired = 2,
-    Frozen = 3,
 }
 
 /// Represents the path to a client's committed [`Status`].
