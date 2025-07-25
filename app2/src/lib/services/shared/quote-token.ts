@@ -3,7 +3,7 @@ import { getPublicClient as getAptosClient } from "$lib/services/aptos/clients"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { MoveVector } from "@aptos-labs/ts-sdk"
-import { ucs03abi } from "@unionlabs/sdk/evm/abi"
+import { Ucs03 } from "@unionlabs/sdk"
 import type { Chain, Channel, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Effect, Schedule } from "effect"
 import type { Hex } from "viem"
@@ -63,7 +63,7 @@ export const getQuoteToken = (
         try: () =>
           client.readContract({
             address: channel.destination_port_id,
-            abi: ucs03abi,
+            abi: Ucs03.Abi,
             functionName: "predictWrappedToken",
             args: [0n, channel.destination_channel_id, base_token],
           }) as Promise<[Address, string]>,

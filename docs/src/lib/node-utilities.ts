@@ -2,16 +2,16 @@
  * CAUTION: these utilities require Node.js to run
  */
 
-import fs from "node:fs/promises"
-import path from "node:path"
-import url from "node:url"
+import * as Fs from "node:fs/promises"
+import * as Path from "node:path"
+import * as Url from "node:url"
 
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
+const __dirname = Path.dirname(Url.fileURLToPath(import.meta.url))
 
 export function getFileContent({ filepath }: { filepath: string }) {
-  const file = path.resolve(__dirname, filepath)
-  if (!fs.stat(file)) {
+  const file = Path.resolve(__dirname, filepath)
+  if (!Fs.stat(file)) {
     throw new Error(`File not found: ${file}`)
   }
-  return fs.readFile(file, { encoding: "utf8" })
+  return Fs.readFile(file, { encoding: "utf8" })
 }

@@ -30,7 +30,6 @@
     "noImplicitThis": true,
     "noUncheckedIndexedAccess": false,
     "strictNullChecks": true,
-    "baseUrl": ".",
     "target": "ES2022",
     "module": "NodeNext",
     "incremental": true,
@@ -38,13 +37,17 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "transform": "@effect/language-service/transform"
+        "transform": "@effect/language-service/transform",
+        "diagnostics": true,
+        "diagnosticSeverity": {
+          "floatingEffect": "error"
+        },
+        "quickinfo": true,
+        "completions": true,
+        "goto": true,
+        "allowedDuplicatedPackages": [],
+        "namespaceImportPackages": ["effect", "@effect/*"]
       }
-    ],
-    "paths": {
-      "@unionlabs/sdk": ["./ts-sdk/src/index.js"],
-      "@unionlabs/sdk/*": ["./ts-sdk/src/*.js", "./ts-sdk/src/*/index.js"],
-      "@unionlabs/client": ["./typescript-sdk/src/mod.js"]
-    }
+    ]
   }
 }
