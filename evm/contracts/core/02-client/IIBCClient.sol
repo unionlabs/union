@@ -27,6 +27,13 @@ interface IIBCClient {
     ) external;
 
     /**
+     * @dev forceUpdateClient forcibly updates the client and consensus state
+     */
+    function forceUpdateClient(
+        IBCMsgs.MsgForceUpdateClient calldata msg_
+    ) external;
+
+    /**
      * @dev misbehaviour submits a misbehaviour to the client for it to take action if it is correct
      */
     function misbehaviour(

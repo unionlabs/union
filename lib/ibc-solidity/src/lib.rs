@@ -450,6 +450,12 @@ maybe_sol_attr! {
             address relayer;
         }
 
+        struct MsgForceUpdateClient {
+            uint32 clientId;
+            bytes clientStateBytes;
+            bytes consensusStateBytes;
+        }
+
         struct MsgConnectionOpenInit {
             uint32 client_id;
             uint32 counterparty_client_id;

@@ -25,6 +25,7 @@ pub enum ExecuteMsg {
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
+    ForceUpdateClient(MsgForceUpdateClient),
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
     ForceConnectionOpenTry(MsgConnectionOpenTry),
@@ -76,6 +77,15 @@ pub struct MsgUpdateClient {
     pub client_id: ClientId,
     pub client_message: Bytes,
     pub relayer: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsgForceUpdateClient {
+    pub client_id: ClientId,
+    pub client_state_bytes: Bytes,
+    pub consensus_state_bytes: Bytes,
+    pub height: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

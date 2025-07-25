@@ -127,3 +127,12 @@ interface ILightClient {
         uint32 clientId
     ) external view returns (bool);
 }
+
+interface IForceLightClient {
+    function forceUpdateClient(
+        address caller,
+        uint32 clientId,
+        bytes calldata clientStateBytes,
+        bytes calldata consensusStateBytes
+    ) external returns (ConsensusStateUpdate memory update);
+}
