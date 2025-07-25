@@ -10,6 +10,36 @@
       ...
     }:
     {
+      _module.args.galois-arion-project = {
+        project.name = "galois";
+        services = {
+          galois = {
+            image = {
+              enableRecommendedContents = true;
+              contents = [
+                pkgs.coreutils-full
+                pkgs.cacert
+                self'.packages.galoisd-testnet-standalone
+              ];
+            };
+
+            service = {
+              tty = true;
+              stop_signal = "SIGINT";
+              ports = [
+                "9999:9999"
+              ];
+              command = [
+                "sh"
+                "-c"
+                ''
+                  ${pkgs.lib.getExe self'.packages.galoisd-testnet-standalone}
+                ''
+              ];
+            };
+          };
+        };
+      };
       packages = {
         galoisd = pkgs.pkgsStatic.buildGo123Module (
           {
