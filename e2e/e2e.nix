@@ -7,6 +7,9 @@
       system,
       networks,
       inputs',
+      mkVoyagerImg,
+      galois-arion-project,
+      self',
       ...
     }:
     let
@@ -53,27 +56,34 @@
           };
       };
 
-      # voyagerNode = {
-      #   wait_for_open_port = 5432;
-      #   readiness_probe = "${pkgs.postgresql}/bin/pg_isready -h 127.0.0.1 -p 5432 -d default -U postgres";
-      #   node =
-      #     { pkgs, ... }:
-      #     {
-      #       imports = [
-      #         inputs.arion.nixosModules.arion
-      #       ];
-      #       virtualisation = {
-      #         diskSize = 16 * 1024;
-      #         memorySize = 8 * 1024;
-      #         arion = {
-      #           backend = "docker";
-      #           # projects.voyager-img.settings = networks.modules.voyager-img;
-      #         };
-      #       };
+      mkVoyagerNode = configFilePath: rec {
+        wait_for_open_port = 7177;
+        readiness_probe = "";
+        voyagerConfig =
+          pkgs.runCommand "voyager-config" { } ''
+            mkdir $out
+            cp ${configFilePath} $out/voyager-config.jsonc
+          '';
+        node =
+          { pkgs, ... }:
+          {
+            imports = [
+              inputs.arion.nixosModules.arion
+            ];
+            virtualisation = {
+              diskSize = 16 * 1024;
+              memorySize = 8 * 1024;
+              arion = {
+                backend = "docker";
+                projects.voyager.settings = mkVoyagerImg voyagerConfig;
+              };
+              vlans = [ 1 ];
+            };
+            networking.hostName = "devnetVoyager";
 
-      #       environment.systemPackages = with pkgs; [ jq ];
-      #     };
-      # };
+            environment.systemPackages = with pkgs; [ jq ];
+          };
+      };
 
       unionTestnetGenesisNode = {
         node =
@@ -112,6 +122,27 @@
           networking.hostName = "devnetUnion";
         };
       };
+
+      galoisNode = {
+        wait_for_console_text = "Serving...";
+        wait_for_open_port = 9999;
+        node = _: {
+          imports = [
+            inputs.arion.nixosModules.arion
+          ];
+          virtualisation = {
+            diskSize = 4 * 1024;
+            memorySize = 4 * 1024;
+            arion = {
+              backend = "docker";
+              projects.galois.settings = galois-arion-project;
+            };
+            vlans = [ 1 ];
+        };
+          networking.hostName = "galois";
+      };
+    };
+      
     in
     {
       _module.args.e2e = {
@@ -138,7 +169,7 @@
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
               # match non-zero blocks
-              union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+              union.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
               devnetEth.wait_for_console_text('${devnetEthNode.wait_for_console_text}')
 
               devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
@@ -163,29 +194,50 @@
           {
             name,
             testScript,
-            nodes,
+            nodes ? {},
           }:
+          let
+            voyagerNode = mkVoyagerNode ../tools/union-test/config.jsonc;
+            voyagerBin = "${self'.packages.voyager}/bin/voyager";
+          in
           mkTest {
             inherit name;
 
             testScript = ''
-              # # NOTE: Start union first!
-              union.wait_for_open_port(${toString unionNode.wait_for_open_port})
+              devnetUnion.wait_for_open_port(${toString unionNode.wait_for_open_port})
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
+              # devnetUnion.succeed('${self'.packages.cosmwasm-scripts.union-devnet.deploy}/bin/union-devnet-deploy-full')
+
               # match non-zero blocks
-              union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-              devnetEth.wait_for_console_text('${devnetEthNode.wait_for_console_text}')
-              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
+              devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 1\') == "true" ]]')
+
+              devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
+              devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
+
+              # galois.wait_for_open_port(${toString galoisNode.wait_for_open_port})
+              # galois.wait_for_console_text('${galoisNode.wait_for_console_text}')
+
+              devnetVoyager.succeed('${voyagerBin} init-fetch union-devnet-1 --config-file-path ${voyagerNode.voyagerConfig}/voyager-config.jsonc');
+              devnetVoyager.succeed('${voyagerBin} init-fetch 32382 --config-file-path ${voyagerNode.voyagerConfig}/voyager-config.jsonc');
+
+              devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 200000") == "true" ]]')
+
+
             '';
 
             nodes =
-              (pkgs.lib.throwIf (builtins.hasAttr "union" nodes) "union node already exists; use a different name")
+              (pkgs.lib.throwIf (builtins.hasAttr "devnetUnion" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
+                  (pkgs.lib.throwIf (builtins.hasAttr "voyager" nodes) "voyager node already exists; use a different name")
+                    # (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
                 (
                   {
-                    union = unionNode.node;
+                    devnetUnion = unionNode.node;
                     devnetEth = devnetEthNode.node;
+                    devnetVoyager = voyagerNode.node;
+                    # galois = galoisNode.node;
                   }
                   // nodes
                 );

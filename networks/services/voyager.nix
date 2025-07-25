@@ -1,18 +1,14 @@
+{...}:
 {
+  perSystem = {
     self',
     pkgs,
-    inputs',
     lib,
+    ...
   }:
 let
-  arion = inputs'.arion.packages.default;
-  # voyager-start = pkgs.writeShellApplication {
-  #   name = "voyager-start";
-  #   text = ''
-  #     ${self'.packages.voyager}/bin/voyager start 
-  #   '';
-  # };
-  voyager-service = {
+  voyagerService = voyagerConfig:
+  {
     image = {
       enableRecommendedContents = true;
       contents = [
@@ -20,32 +16,39 @@ let
         pkgs.curl
         pkgs.jq
         self'.packages.voyager
-        # self'.packages.voyager-modules-plugins
+        voyagerConfig
+        self'.packages.voyager-modules-plugins
       ];
     };
+
     service = {
+      network_mode = "host";
       tty = true;
       stop_signal = "SIGINT";
-      ports = [
-        # voyager rest laddr
-        "7177:7177"
-        # voyager rpc laddr
-        "7178:7178"
-      ];
+      tmpfs = [ "/tmp" ];
+      # these are not needed since the network_mode is "host"
+      # ports = [
+      #   # voyager rest laddr
+      #   "7177:7177"
+      #   # voyager rpc laddr
+      #   "7178:7178"
+      # ];
       command = [
         "sh"
         "-c"
         ''
-          ls -la /bin
+          RUST_LOG=voyager=debug voyager -c ${voyagerConfig}/voyager-config.jsonc start
         ''
       ];
-      # healthcheck = {
-      #   interval = "5s";
-      #   retries = 3;
-      #   test = [
-      #     "CMD-SHELL"
-      #   ];
-      # };
+      healthcheck = {
+        interval = "5s";
+        retries = 10;
+        start_period = "15s";
+        test = [
+          "CMD-SHELL"
+          "voyager rpc info"
+        ];
+      };
       depends_on = {
         postgres = {
           condition = "service_healthy";
@@ -56,29 +59,12 @@ let
 
 in
 {
-  mkVoyagerImg = {
+  _module.args.mkVoyagerImg = configFilePath: {
     project.name = "voyager";
     services = {
-      voyager = voyager-service;
+      voyager = voyagerService configFilePath;
       postgres = import ./postgres.nix { inherit lib pkgs; };
     };
   };
-  # packages.voyager-img = pkgs.writeShellApplication {
-  #   name = "voyager-img";
-  #   runtimeInputs = [ arion ];    
-  #   text = ''
-  #     arion --prebuilt-file ${arion.build
-  #     {
-  #       modules = [
-  #         {
-  #           project.name = "voyager";
-  #           services = {
-  #             voyager = voyager-service;
-  #             postgres = import ./postgres.nix { inherit lib pkgs; };
-  #           };
-  #         }
-  #       ];
-  #     }} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-  #   '';
-  # };
+};
 }

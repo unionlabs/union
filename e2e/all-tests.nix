@@ -102,6 +102,13 @@
                 devnetEth = e2e.devnetEthNode.node;
               };
             };
+
+            voyager-runs = e2e.mkE2eTestEthUnion {
+              name = "voyager-runs";
+
+              testScript = ''
+              '';
+            };
           }
         )
       );

@@ -209,6 +209,7 @@
         ./sentinel/sentinel.nix
         ./sentinel2/sentinel.nix
         ./lib/embed-commit
+        ./networks/services/voyager.nix
         treefmt-nix.flakeModule
       ];
 
