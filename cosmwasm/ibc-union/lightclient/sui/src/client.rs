@@ -158,15 +158,20 @@ impl IbcClient for SuiLightClient {
 
         Ok(state_update)
     }
+/// Misbehaviour verification is currently not supported for SuiLightClient.
+/// This function is required by the IbcClient trait, but left unimplemented.
+/// A proper implementation would require double-signing detection, header checks, etc.
+fn misbehaviour(
+    _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+    _caller: cosmwasm_std::Addr,
+    _misbehaviour: Self::Misbehaviour,
+    _relayer: cosmwasm_std::Addr,
+) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+    Err(ibc_union_light_client::IbcClientError::custom(
+        "misbehaviour verification is not implemented for SuiLightClient",
+    ))
+}
 
-    fn misbehaviour(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        _caller: cosmwasm_std::Addr,
-        _misbehaviour: Self::Misbehaviour,
-        _relayer: cosmwasm_std::Addr,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
-        todo!()
-    }
 }
 
 pub enum CommitteeStore {}
