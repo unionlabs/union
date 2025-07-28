@@ -10,6 +10,8 @@
       ...
     }:
     {
+      # TODO(aeryz): This builds the keys for now bc of my shitty internet. Otherwise, it takes me forever to try
+      # In the real CI version, this will just use `galois-testnet-standalone` and download the keys.
       _module.args.galois-arion-project = {
         project.name = "galois";
         services = {

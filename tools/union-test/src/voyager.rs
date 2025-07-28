@@ -1,18 +1,28 @@
 use std::process::Command;
 
+use ibc_union_spec::datagram::{Datagram, MsgChannelOpenInit, MsgConnectionOpenInit};
 use unionlabs::primitives::Bytes;
-use voyager_sdk::{anyhow, primitives::ChainId, serde_json::json};
+use voyager_sdk::{
+    anyhow,
+    message::{
+        call::{Call, SubmitTx},
+        data::IbcDatagram,
+    },
+    primitives::{ChainId, IbcSpecId},
+    serde_json::{self},
+};
 
 pub fn create_client(
+    config_file_path: &str,
     on: ChainId,
     tracking: ChainId,
     ibc_interface: String,
     client_type: String,
 ) -> anyhow::Result<()> {
-    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
+    Command::new("voyager")
         .args([
             "--config-file-path",
-            "voyager/config.jsonc",
+            config_file_path,
             "msg",
             "create-client",
             "--on",
@@ -31,11 +41,11 @@ pub fn create_client(
     Ok(())
 }
 
-pub fn init_fetch(on: ChainId) -> anyhow::Result<()> {
-    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
+pub fn init_fetch(config_file_path: &str, on: ChainId) -> anyhow::Result<()> {
+    Command::new("voyager")
         .args([
             "--config-file-path",
-            "voyager/config.jsonc",
+            config_file_path,
             "init-fetch",
             on.as_str(),
             "--enqueue",
@@ -49,13 +59,26 @@ pub fn connection_open(
     client_id: u32,
     counterparty_client_id: u32,
 ) -> anyhow::Result<()> {
-    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
+    Command::new("voyager")
         .args([
-            "--config-file-path",
-            "voyager/config.jsonc",
-            "q", "e",
-            format!("{{\"@type\":\"call\",\"@value\":{{\"@type\":\"submit_tx\",\"@value\":{{\"chain_id\":\"{on}\",\"datagrams\":[{{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{{\"@type\":\"connection_open_init\",\"@value\":{{\"client_id\":{client_id},\"counterparty_client_id\":{counterparty_client_id}}}}}}}]}}}}}}").as_str()
-        ]).status()?;
+            "q",
+            "e",
+            &serde_json::to_string(&Call::SubmitTx(SubmitTx {
+                chain_id: on,
+                datagrams: vec![IbcDatagram {
+                    ibc_spec_id: IbcSpecId::new_static(IbcSpecId::UNION),
+                    datagram: serde_json::to_value(&Datagram::ConnectionOpenInit(
+                        MsgConnectionOpenInit {
+                            client_id: client_id.try_into().unwrap(),
+                            counterparty_client_id: counterparty_client_id.try_into().unwrap(),
+                        },
+                    ))
+                    .unwrap(),
+                }],
+            }))
+            .unwrap(),
+        ])
+        .status()?;
 
     Ok(())
 }
@@ -72,34 +95,26 @@ pub fn channel_open(
         "Opening channel on {}: port_id={}, counterparty_port_id={}, connection_id={}, version={}",
         chain_id, port_id, counterparty_port_id, connection_id, version
     );
-    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
+    Command::new("voyager")
         .args([
             "q",
             "e",
-            &json!({
-              "@type": "call",
-              "@value": {
-                "@type": "submit_tx",
-                "@value": {
-                  "chain_id": chain_id,
-                  "datagrams": [
-                    {
-                      "ibc_spec_id": "ibc-union",
-                      "datagram": {
-                        "@type": "channel_open_init",
-                        "@value": {
-                          "port_id": port_id,
-                          "counterparty_port_id": counterparty_port_id,
-                          "connection_id": connection_id,
-                          "version": version
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            })
-            .to_string(),
+            &serde_json::to_string(&Call::SubmitTx(SubmitTx {
+                chain_id,
+                datagrams: vec![IbcDatagram {
+                    ibc_spec_id: IbcSpecId::new_static(IbcSpecId::UNION),
+                    datagram: serde_json::to_value(&Datagram::ChannelOpenInit(
+                        MsgChannelOpenInit {
+                            port_id,
+                            counterparty_port_id,
+                            connection_id: connection_id.try_into().unwrap(),
+                            version,
+                        },
+                    ))
+                    .unwrap(),
+                }],
+            }))
+            .unwrap(),
         ])
         .status()?;
 

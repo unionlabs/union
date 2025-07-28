@@ -35,13 +35,6 @@ pub trait ChainEndpoint: Send + Sync {
 
     fn chain_id(&self) -> &ChainId;
 
-    fn send_create_client(
-        &self,
-        tracking: &ChainId,
-        ibc_interface: &str,
-        client_type: &str,
-    ) -> anyhow::Result<()>;
-
     async fn predict_wrapped_token(
         &self,
         contract: Self::Contract,
@@ -73,24 +66,10 @@ pub trait ChainEndpoint: Send + Sync {
         timeout: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm>;
 
-    fn send_open_connection(
-        &self,
-        client_id: u32,
-        counterparty_client_id: u32,
-    ) -> anyhow::Result<()>;
-
     async fn wait_for_open_connection(
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm>;
-
-    fn send_open_channel(
-        &self,
-        port_id: Bytes,
-        counterparty_port: Bytes,
-        connection_id: u32,
-        version: String,
-    ) -> anyhow::Result<()>;
 
     async fn wait_for_open_channel(
         &self,
@@ -162,21 +141,6 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         unimplemented!("wait_for_withdraw_rewards is not implemented for Cosmos chains")
     }
 
-    fn send_create_client(
-        &self,
-        tracking: &ChainId,
-        ibc_interface: &str,
-        client_type: &str,
-    ) -> anyhow::Result<()> {
-        voyager::create_client(
-            self.chain_id.clone(),
-            tracking.clone(),
-            ibc_interface.to_string(),
-            client_type.to_string(),
-        )?;
-        Ok(())
-    }
-
     async fn predict_wrapped_token(
         &self,
         contract: Self::Contract,
@@ -225,37 +189,11 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         self.wait_for_create_client(timeout).await
     }
 
-    fn send_open_connection(
-        &self,
-        client_id: u32,
-        counterparty_client_id: u32,
-    ) -> anyhow::Result<()> {
-        voyager::connection_open(self.chain_id.clone(), client_id, counterparty_client_id)?;
-        Ok(())
-    }
-
     async fn wait_for_open_connection(
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
         self.wait_for_connection_open_confirm(timeout).await
-    }
-
-    fn send_open_channel(
-        &self,
-        port_id: Bytes,
-        counterparty_port: Bytes,
-        connection_id: u32,
-        version: String,
-    ) -> anyhow::Result<()> {
-        voyager::channel_open(
-            self.chain_id.clone(),
-            port_id,
-            counterparty_port,
-            connection_id,
-            version,
-        )?;
-        Ok(())
     }
 
     async fn wait_for_open_channel(
@@ -311,35 +249,11 @@ impl ChainEndpoint for cosmos::Module {
         &self.chain_id
     }
 
-    fn send_create_client(
-        &self,
-        tracking: &ChainId,
-        ibc_interface: &str,
-        client_type: &str,
-    ) -> anyhow::Result<()> {
-        voyager::create_client(
-            self.chain_id.clone(),
-            tracking.clone(),
-            ibc_interface.to_string(),
-            client_type.to_string(),
-        )?;
-        Ok(())
-    }
-
     async fn wait_for_create_client(
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
         self.wait_for_create_client_id(timeout).await
-    }
-
-    fn send_open_connection(
-        &self,
-        client_id: u32,
-        counterparty_client_id: u32,
-    ) -> anyhow::Result<()> {
-        voyager::connection_open(self.chain_id.clone(), client_id, counterparty_client_id)?;
-        Ok(())
     }
 
     async fn wait_for_open_connection(
@@ -381,23 +295,6 @@ impl ChainEndpoint for cosmos::Module {
         _provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         unimplemented!("predict_wrapped_token_v2 is not implemented for Cosmos chains")
-    }
-
-    fn send_open_channel(
-        &self,
-        port_id: Bytes,
-        counterparty_port: Bytes,
-        connection_id: u32,
-        version: String,
-    ) -> anyhow::Result<()> {
-        voyager::channel_open(
-            self.chain_id.clone(),
-            port_id,
-            counterparty_port,
-            connection_id,
-            version,
-        )?;
-        Ok(())
     }
 
     async fn wait_for_open_channel(
@@ -461,6 +358,7 @@ pub struct TestContext<S: ChainEndpoint, D: ChainEndpoint> {
     pub dst: D,
     pub channel_pool: Arc<ChannelPool>,
     pub channel_count: usize,
+    pub voyager_config_file_path: String,
 }
 
 impl<S, D> TestContext<S, D>
@@ -468,9 +366,14 @@ where
     S: ChainEndpoint + 'static,
     D: ChainEndpoint + 'static,
 {
-    pub async fn new(src: S, dst: D, channel_count: usize) -> anyhow::Result<Self> {
-        voyager::init_fetch(src.chain_id().clone())?;
-        voyager::init_fetch(dst.chain_id().clone())?;
+    pub async fn new(
+        src: S,
+        dst: D,
+        channel_count: usize,
+        voyager_config_file_path: &str,
+    ) -> anyhow::Result<Self> {
+        voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
+        voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
         let channel_pool = ChannelPool::new();
         println!(
             "Creating test context for {} and {}. Init_fetch called for both chains.",
@@ -482,6 +385,7 @@ where
             dst,
             channel_pool,
             channel_count,
+            voyager_config_file_path: voyager_config_file_path.into(),
         })
     }
 
@@ -493,11 +397,21 @@ where
         dst_ibc_interface: &str,
         dst_client_type: &str,
     ) -> anyhow::Result<(helpers::CreateClientConfirm, helpers::CreateClientConfirm)> {
-        self.src
-            .send_create_client(self.dst.chain_id(), src_ibc_interface, src_client_type)?;
+        voyager::create_client(
+            &self.voyager_config_file_path,
+            self.src.chain_id().clone(),
+            self.dst.chain_id().clone(),
+            src_ibc_interface.into(),
+            src_client_type.into(),
+        )?;
         let src_confirm = self.src.wait_for_create_client(duration).await?;
-        self.dst
-            .send_create_client(self.src.chain_id(), dst_ibc_interface, dst_client_type)?;
+        voyager::create_client(
+            &self.voyager_config_file_path,
+            self.dst.chain_id().clone(),
+            self.src.chain_id().clone(),
+            dst_ibc_interface.into(),
+            dst_client_type.into(),
+        )?;
         let dst_confirm = self.dst.wait_for_create_client(duration).await?;
 
         Ok((src_confirm, dst_confirm))
@@ -511,7 +425,7 @@ where
         dst_client_id: u32,
         duration: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        src.send_open_connection(src_client_id, dst_client_id)?;
+        voyager::connection_open(src.chain_id().clone(), src_client_id, dst_client_id)?;
         let conn = dst.wait_for_open_connection(duration).await?;
         return Ok(conn);
     }

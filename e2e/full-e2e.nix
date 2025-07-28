@@ -7,8 +7,7 @@
   voyager-queue-works = e2e.mkE2eTestEthUnion {
     name = "voyager-queue-works";
 
-    testScript = ''
-    '';
+    testScript = '''';
 
     nodes = {
       # empty node used to communicate with the other nodes

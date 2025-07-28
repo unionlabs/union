@@ -59,11 +59,10 @@
       mkVoyagerNode = configFilePath: rec {
         wait_for_open_port = 7177;
         readiness_probe = "";
-        voyagerConfig =
-          pkgs.runCommand "voyager-config" { } ''
-            mkdir $out
-            cp ${configFilePath} $out/voyager-config.jsonc
-          '';
+        voyagerConfig = pkgs.runCommand "voyager-config" { } ''
+          mkdir $out
+          cp ${configFilePath} $out/voyager-config.jsonc
+        '';
         node =
           { pkgs, ... }:
           {
@@ -140,9 +139,9 @@
             vlans = [ 1 ];
           };
           networking.hostName = "galois";
+        };
       };
-    };
-      
+
     in
     {
       _module.args.e2e = {
@@ -169,7 +168,7 @@
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
               # match non-zero blocks
-              union.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+              union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
               devnetEth.wait_for_console_text('${devnetEthNode.wait_for_console_text}')
 
               devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 0\') == "true" ]]')
@@ -194,7 +193,7 @@
           {
             name,
             testScript,
-            nodes ? {},
+            nodes ? { },
           }:
           let
             voyagerNode = mkVoyagerNode ../tools/union-test/config.jsonc;
@@ -228,8 +227,8 @@
             nodes =
               (pkgs.lib.throwIf (builtins.hasAttr "devnetUnion" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
-                  (pkgs.lib.throwIf (builtins.hasAttr "voyager" nodes) "voyager node already exists; use a different name")
-                    # (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
+                (pkgs.lib.throwIf (builtins.hasAttr "voyager" nodes) "voyager node already exists; use a different name")
+                # (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
                 (
                   {
                     devnetUnion = unionNode.node;

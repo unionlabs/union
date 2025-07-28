@@ -187,7 +187,9 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
         let needed_channel_count = 7; // TODO: Hardcoded now, it will be specified from config later.
-        let ctx = TestContext::new(src, dst, needed_channel_count)
+
+        // TODO(aeryz): move config file into the testing framework's own config file
+        let ctx = TestContext::new(src, dst, needed_channel_count, "/tmp/config.jsonc")
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
 

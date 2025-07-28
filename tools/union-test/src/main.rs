@@ -170,7 +170,7 @@ pub async fn send_stake_refund(open_channels: bool, mut pair: ChannelPair) -> an
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
     // 3) now hand them to your library’s TestContext
-    let ctx = TestContext::new(src, dst, 1).await?;
+    let ctx = TestContext::new(src, dst, 1, "/tmp/config.jsonc").await?;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (_cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
 
@@ -499,7 +499,7 @@ pub async fn send_refund_scenario(
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
     // 3) now hand them to your library’s TestContext
-    let ctx = TestContext::new(src, dst, 1).await?;
+    let ctx = TestContext::new(src, dst, 1, "/tmp/config.jsonc").await?;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (_cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
     if open_channels {
@@ -739,7 +739,7 @@ async fn send_withdraw(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyh
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
     // 3) now hand them to your library’s TestContext
-    let ctx = TestContext::new(src, dst, 1).await?;
+    let ctx = TestContext::new(src, dst, 1, "/tmp/config.jsonc").await?;
     let (_evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (_cosmos_address, _cosmos_provider) = ctx.src.get_signer().await;
 
@@ -870,7 +870,7 @@ async fn send_unstake(token_id: &str, img: [u8; 32], pair: ChannelPair) -> anyho
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
     // 3) now hand them to your library’s TestContext
-    let ctx = TestContext::new(src, dst, 1).await?;
+    let ctx = TestContext::new(src, dst, 1, "/tmp/config.jsonc").await?;
     let (_evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (_cosmos_address, _cosmos_provider) = ctx.src.get_signer().await;
 
@@ -1002,7 +1002,7 @@ pub async fn send_stake(open_channels: bool, mut pair: ChannelPair) -> anyhow::R
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
     // 3) now hand them to your library’s TestContext
-    let ctx = TestContext::new(src, dst, 1).await?;
+    let ctx = TestContext::new(src, dst, 1, "/tmp/config.jsonc").await?;
     let (_evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (_cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
 

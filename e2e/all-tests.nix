@@ -92,22 +92,11 @@
 
                 # Ensure the union network commits more than one block
                 devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-
-                devnetEth.succeed("ping -c1 devnetUnion")
-                devnetEth.wait_until_succeeds('[[ $(curl "http://devnetUnion:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
               '';
 
               nodes = {
                 devnetUnion = e2e.unionNode.node;
-                devnetEth = e2e.devnetEthNode.node;
               };
-            };
-
-            voyager-runs = e2e.mkE2eTestEthUnion {
-              name = "voyager-runs";
-
-              testScript = ''
-              '';
             };
           }
         )
