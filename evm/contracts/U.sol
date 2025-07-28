@@ -75,7 +75,18 @@ contract U is
         return _getUStorage().decimals;
     }
 
-    function mint(address to, uint256 amount) external onlyMinter {
+    function transfer(address to, uint256 value) public override returns (bool) {
+        address from = _msgSender();
+        // Allow zkgm transferring to the zero address (burning).
+        if (from == _getUStorage().zkgm) {
+            _update(from, to, value);
+        } else {
+            _transfer(from, to, value);
+        }
+        return true;
+    }
+
+    function mint(address to, uint256 amount) external onlyZkgm {
         _mint(to, amount);
     }
 
