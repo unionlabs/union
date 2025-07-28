@@ -19,9 +19,9 @@ use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ibc_union_light_client::{
-    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::Status;
 use unionlabs::{
     encoding::{Bincode, DecodeAs, EncodeAs},
     ensure,

@@ -1,4 +1,4 @@
-use core::num::NonZeroU32;
+use core::{fmt, num::NonZeroU32};
 
 use unionlabs::primitives::U256;
 
@@ -92,3 +92,22 @@ macro_rules! id {
 id!(ClientId);
 id!(ConnectionId);
 id!(ChannelId);
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum Status {
+    Active = 1,
+    Expired = 2,
+    Frozen = 3,
+}
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Status::Active => "active",
+            Status::Expired => "expired",
+            Status::Frozen => "frozen",
+        })
+    }
+}

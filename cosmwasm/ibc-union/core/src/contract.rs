@@ -11,7 +11,7 @@ use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
+        QueryMsg as LightClientQuery, UpdateStateResponse, VerifyCreationResponse,
         VerifyCreationResponseEvent,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
@@ -31,7 +31,7 @@ use ibc_union_spec::{
         ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
-    MustBeZero, Packet, Timestamp,
+    MustBeZero, Packet, Status, Timestamp,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{

@@ -3,15 +3,6 @@ use std::collections::BTreeMap;
 use ibc_union_spec::ClientId;
 use unionlabs_primitives::Bytes;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum Status {
-    Active,
-    Expired,
-    Frozen,
-}
-
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MisbehaviourResponse {

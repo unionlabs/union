@@ -4,8 +4,8 @@ use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
-use ibc_union_spec::{path::ConsensusStatePath, Timestamp};
+use ibc_union_msg::lightclient::VerifyCreationResponseEvent;
+use ibc_union_spec::{path::ConsensusStatePath, Status, Timestamp};
 use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{

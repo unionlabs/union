@@ -337,6 +337,22 @@ pub enum RpcCmd {
         #[arg(long, short = 'f', default_value_t = false)]
         finalized: bool,
     },
+    Query {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
+        ibc_spec_id: IbcSpecId,
+        #[arg(
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+        )]
+        query: serde_json::Value,
+    },
     IbcState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
