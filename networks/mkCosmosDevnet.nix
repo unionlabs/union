@@ -42,10 +42,10 @@ let
     dave = "allow where void replace vocal cabbage can expose rival danger stomach noodle faculty cart surround cash rice kite audit slight ten bicycle dance middle";
     erin = "hard educate knock ketchup salon obey debate one other impose smoke spoon pull describe cactus talk other merit joy great critic canvas scene lounge";
     frank = "over floor explain will stereo camera subway park pilot trick good exchange foot violin shop kite educate bracket shoulder fancy denial ill era battle";
-    abdullah = "expose case pulp tone typical orbit hybrid total chest vanish exhibit boat eager glue soldier december author crucial abstract fruit clock sun away organ";
-    ben = "tribe scale pulp napkin cactus female velvet fever outdoor mimic summer obey tornado giant tennis cube game cover midnight general thrive boring situate west";
-    kaan = "fork slender display army write mixture deputy giant siren injury tornado culture spice message mandate anxiety blade pigeon actress ivory sorry latin panther high";
-    hussein = "where devote brisk game include voice evil name fancy pizza nice find rely convince honey gas follow milk certain tennis style material reform electric";
+    gabe = "expose case pulp tone typical orbit hybrid total chest vanish exhibit boat eager glue soldier december author crucial abstract fruit clock sun away organ";
+    hussein = "tribe scale pulp napkin cactus female velvet fever outdoor mimic summer obey tornado giant tennis cube game cover midnight general thrive boring situate west";
+    ibiza = "fork slender display army write mixture deputy giant siren injury tornado culture spice message mandate anxiety blade pigeon actress ivory sorry latin panther high";
+    jake = "where devote brisk game include voice evil name fancy pizza nice find rely convince honey gas follow milk certain tennis style material reform electric";
   };
 
   nodeBin = pkgs.lib.getExe node;
