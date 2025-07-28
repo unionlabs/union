@@ -32,10 +32,9 @@ use union_test::{
     TestContext,
 };
 use unionlabs::{
-    bech32::Bech32,
     encoding::{Encode, Json},
     ethereum::keccak256,
-    primitives::{FixedBytes, U256},
+    primitives::{Bech32, FixedBytes, U256},
 };
 use voyager_sdk::primitives::ChainId;
 
@@ -48,21 +47,6 @@ static UNION_ZKGM_ADDRESS: &str =
 static UNION_MINTER_ADDRESS: &str =
     "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550";
 static EVM_ZKGM_BYTES: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-
-/// Returns the one–and–only deployed ERC20 address.
-/// Deploys it the first time it’s called, then just returns the stored value.
-// async fn ensure_erc20(spender: H160) -> H160 {
-//     ERC20
-//         .get_or_init(|| async move {
-//             let ctx = init_ctx().await;
-//             ctx.dst
-//                 .deploy_basic_erc20(spender)
-//                 .await
-//                 .expect("failed to deploy ERC20")
-//         })
-//         .await
-//         .clone()
-// }
 
 async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
     CTX.get_or_init(|| async {
@@ -301,7 +285,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
     let dst_chain_id = pair.dest;
@@ -359,7 +343,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             contract,
-            (bin_msg, funds).into(),
+            (bin_msg, funds),
             &ctx.dst,
             3,
             Duration::from_secs(20),
@@ -400,9 +384,9 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
     let call = ucs03_zkgm
         .send(
-            dst_chain_id.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            dst_chain_id,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -442,7 +426,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
     let dst_chain_id = pair.dest;
@@ -461,7 +445,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let quote_token_addr = ctx
         .predict_wrapped_token::<cosmos::Module>(
             &ctx.src,
-            union_zkgm_contract.into(),
+            union_zkgm_contract,
             ChannelId::new(NonZero::new(src_chain_id).unwrap()),
             deployed_erc20.as_ref().to_vec(),
             cosmos_signer,
@@ -500,9 +484,9 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let call = ucs03_zkgm
         .send(
-            dst_chain_id.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            dst_chain_id,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -548,11 +532,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let approve_recv_packet_data = ctx
         .src
-        .send_transaction_with_retry(
-            approve_contract,
-            (approve_msg_bin, vec![]).into(),
-            cosmos_signer,
-        )
+        .send_transaction_with_retry(approve_contract, (approve_msg_bin, vec![]), cosmos_signer)
         .await;
 
     println!("Approve transaction data: {:?}", approve_recv_packet_data);
@@ -597,7 +577,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             union_zkgm_contract,
-            (bin_msg, funds).into(),
+            (bin_msg, funds),
             &ctx.dst,
             3,
             Duration::from_secs(20),
@@ -626,7 +606,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
     let dst_chain_id = pair.dest;
@@ -645,7 +625,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
     let quote_token_addr = ctx
         .predict_wrapped_token::<cosmos::Module>(
             &ctx.src,
-            union_zkgm_contract.into(),
+            union_zkgm_contract,
             ChannelId::new(NonZero::new(src_chain_id).unwrap()),
             deployed_erc20.as_ref().to_vec(),
             cosmos_signer,
@@ -683,11 +663,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
 
     let erc20_balance_before_send = ctx
         .dst
-        .zkgmerc20_balance_of(
-            deployed_erc20.into(),
-            evm_address.clone().into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(deployed_erc20, evm_address.into(), evm_provider.clone())
         .await;
     assert!(
         erc20_balance_before_send.is_ok(),
@@ -704,9 +680,9 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
 
     let call = ucs03_zkgm
         .send(
-            dst_chain_id.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            dst_chain_id,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -735,11 +711,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
 
     let erc20_balance_after_send = ctx
         .dst
-        .zkgmerc20_balance_of(
-            deployed_erc20.into(),
-            evm_address.clone().into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(deployed_erc20, evm_address.into(), evm_provider.clone())
         .await;
     assert!(
         erc20_balance_after_send.is_ok(),
@@ -770,7 +742,7 @@ async fn test_stake_from_evm_to_union() {
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
 
@@ -783,7 +755,7 @@ async fn test_stake_from_evm_to_union() {
             _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
-            _decimals: 6u8.into(),
+            _decimals: 6u8,
         }
         .abi_encode()
         .into(),
@@ -812,7 +784,7 @@ async fn test_stake_from_evm_to_union() {
             EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
-            img.into(),
+            img,
             &evm_provider,
         )
         .await
@@ -855,7 +827,7 @@ async fn test_stake_from_evm_to_union() {
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
-            (bin_msg, funds).into(),
+            (bin_msg, funds),
             &ctx.dst,
             3,
             Duration::from_secs(20),
@@ -879,7 +851,7 @@ async fn test_stake_from_evm_to_union() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc20_approve(
-            quote_token_addr.into(),
+            quote_token_addr,
             EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
@@ -920,9 +892,9 @@ async fn test_stake_from_evm_to_union() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -986,7 +958,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
 
@@ -999,7 +971,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
             _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
-            _decimals: 6u8.into(),
+            _decimals: 6u8,
         }
         .abi_encode()
         .into(),
@@ -1028,7 +1000,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
             EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
-            img.into(),
+            img,
             &evm_provider,
         )
         .await
@@ -1071,7 +1043,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
-            (bin_msg, funds).into(),
+            (bin_msg, funds),
             &ctx.dst,
             3,
             Duration::from_secs(20),
@@ -1095,7 +1067,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc20_approve(
-            quote_token_addr.into(),
+            quote_token_addr,
             EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
@@ -1136,11 +1108,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let erc20_balance_before_send = ctx
         .dst
-        .zkgmerc20_balance_of(
-            quote_token_addr.into(),
-            evm_address.clone().into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(quote_token_addr, evm_address.into(), evm_provider.clone())
         .await;
 
     assert!(
@@ -1157,9 +1125,9 @@ async fn test_stake_from_evm_to_union_and_refund() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -1185,11 +1153,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let erc20_balance_after_send = ctx
         .dst
-        .zkgmerc20_balance_of(
-            quote_token_addr.into(),
-            evm_address.clone().into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(quote_token_addr, evm_address.into(), evm_provider.clone())
         .await;
 
     assert!(
@@ -1220,7 +1184,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
 
@@ -1233,7 +1197,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
             _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
-            _decimals: 6u8.into(),
+            _decimals: 6u8,
         }
         .abi_encode()
         .into(),
@@ -1264,7 +1228,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
             EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
-            img.into(),
+            img,
             &evm_provider,
         )
         .await
@@ -1307,7 +1271,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
-            (bin_msg, funds).into(),
+            (bin_msg, funds),
             &ctx.dst,
             3,
             Duration::from_secs(20),
@@ -1331,7 +1295,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc20_approve(
-            quote_token_addr.into(),
+            quote_token_addr,
             EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
@@ -1372,9 +1336,9 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -1429,7 +1393,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc721_approve(
-            snake_nft.into(),
+            snake_nft,
             EVM_ZKGM_BYTES.into(),
             random_token_id.into(),
             evm_provider.clone(),
@@ -1448,12 +1412,11 @@ async fn test_stake_and_unstake_from_evm_to_union() {
         version: INSTR_VERSION_0,
         opcode: OP_UNSTAKE,
         operand: Unstake {
-            token_id: random_token_id.into(),
+            token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
             sender: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
-            amount: "1".parse().unwrap(),
         }
         .abi_encode_params()
         .into(),
@@ -1462,9 +1425,9 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call_unstake = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_unstake.clone(),
         )
@@ -1496,7 +1459,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
-    assert_eq!(available_channel > 0, true);
+    assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
 
@@ -1509,7 +1472,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
             _minter: EVM_ZKGM_BYTES.into(),
             _name: "muno".into(),
             _symbol: "muno".into(),
-            _decimals: 6u8.into(),
+            _decimals: 6u8,
         }
         .abi_encode()
         .into(),
@@ -1537,7 +1500,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
             EVM_ZKGM_BYTES.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
-            img.into(),
+            img,
             &evm_provider,
         )
         .await
@@ -1580,7 +1543,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
-            (bin_msg, funds).into(),
+            (bin_msg, funds),
             &ctx.dst,
             3,
             Duration::from_secs(20),
@@ -1604,7 +1567,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc20_approve(
-            quote_token_addr.into(),
+            quote_token_addr,
             EVM_ZKGM_BYTES.into(),
             U256::from(100000000000u64),
             evm_provider.clone(),
@@ -1645,9 +1608,9 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
@@ -1708,7 +1671,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc721_approve(
-            snake_nft.into(),
+            snake_nft,
             EVM_ZKGM_BYTES.into(),
             random_token_id.into(),
             evm_provider.clone(),
@@ -1729,12 +1692,11 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
         version: INSTR_VERSION_0,
         opcode: OP_UNSTAKE,
         operand: Unstake {
-            token_id: random_token_id.into(),
+            token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
             sender: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
-            amount: "1".parse().unwrap(),
         }
         .abi_encode_params()
         .into(),
@@ -1743,9 +1705,9 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call_unstake = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_unstake.clone(),
         )
@@ -1770,7 +1732,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     let approve_tx_hash = ctx
         .dst
         .zkgmerc721_approve(
-            snake_nft.into(),
+            snake_nft,
             EVM_ZKGM_BYTES.into(),
             random_token_id.into(),
             evm_provider.clone(),
@@ -1801,9 +1763,9 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     rand::rng().fill_bytes(&mut salt_bytes);
     let call_unstake = ucs03_zkgm
         .send(
-            pair.dest.try_into().unwrap(),
-            0u64.into(),
-            4294967295000000000u64.into(),
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
             salt_bytes.into(),
             instruction_withdraw.clone(),
         )

@@ -21,9 +21,8 @@ use serde::{Deserialize, Serialize};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
-    bech32::Bech32,
     google::protobuf::any::mk_any,
-    primitives::{encoding::HexUnprefixed, Bytes, H160, H256},
+    primitives::{encoding::HexUnprefixed, Bech32, Bytes, H160, H256},
 };
 use voyager_sdk::{
     anyhow::{self, anyhow, bail, Context},
@@ -222,7 +221,7 @@ impl Module {
                 |evt| {
                     if let ModuleEvent::WasmCreateClient { client_id, .. } = evt {
                         Some(helpers::CreateClientConfirm {
-                            client_id: client_id.raw().try_into().unwrap(),
+                            client_id: client_id.raw(),
                         })
                     } else {
                         None
@@ -250,8 +249,8 @@ impl Module {
                 } = evt
                 {
                     Some(helpers::ChannelOpenConfirm {
-                        channel_id: channel_id.raw().try_into().unwrap(),
-                        counterparty_channel_id: counterparty_channel_id.raw().try_into().unwrap(),
+                        channel_id: channel_id.raw(),
+                        counterparty_channel_id: counterparty_channel_id.raw(),
                     })
                 } else {
                     None
@@ -277,11 +276,8 @@ impl Module {
                     } = evt
                     {
                         Some(helpers::ConnectionConfirm {
-                            connection_id: connection_id.raw().try_into().unwrap(),
-                            counterparty_connection_id: counterparty_connection_id
-                                .raw()
-                                .try_into()
-                                .unwrap(),
+                            connection_id: connection_id.raw(),
+                            counterparty_connection_id: counterparty_connection_id.raw(),
                         })
                     } else {
                         None

@@ -247,7 +247,7 @@ impl<'a> Module<'a> {
                         if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
                     {
                         Some(helpers::PacketRecv {
-                            packet_hash: ev.packet_hash.try_into().unwrap(),
+                            packet_hash: ev.packet_hash.into(),
                         })
                     }
                     _ => None,
@@ -272,7 +272,7 @@ impl<'a> Module<'a> {
                         if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
                     {
                         Some(helpers::PacketAck {
-                            packet_hash: ev.packet_hash.try_into().unwrap(),
+                            packet_hash: ev.packet_hash.into(),
                         })
                     }
                     _ => None,
@@ -324,7 +324,7 @@ impl<'a> Module<'a> {
                 || {
                     let call = ucs03_zkgm.predictWrappedToken(
                         U256::from(0u32).into(),
-                        channel.raw().try_into().unwrap(),
+                        channel.raw(),
                         token.clone().into(),
                     );
                     async move { call.call().await }
@@ -351,9 +351,9 @@ impl<'a> Module<'a> {
                 || {
                     let call = ucs03_zkgm.predictWrappedTokenV2(
                         U256::from(0u32).into(),
-                        channel.raw().try_into().unwrap(),
+                        channel.raw(),
                         token.clone().into(),
-                        metadata.clone().into(),
+                        metadata.clone(),
                     );
                     async move { call.call().await }
                 },
@@ -379,7 +379,7 @@ impl<'a> Module<'a> {
                 || {
                     let call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
                         U256::from(0u32).into(),
-                        channel.raw().try_into().unwrap(),
+                        channel.raw(),
                         token.clone().into(),
                         metadata_image.into(),
                     );
@@ -590,7 +590,7 @@ impl<'a> Module<'a> {
         let mut code = ethers_hex::decode(BYTECODE.trim_start_matches("0x"))?;
         let initial_supply = ethers::types::U256::from_dec_str("1000000000000000000")?;
         let spender = ethers::types::Address::from_str(&spender.to_string())?;
-        let encoded = abi::encode(&[Token::Uint(initial_supply.into()), Token::Address(spender)]);
+        let encoded = abi::encode(&[Token::Uint(initial_supply), Token::Address(spender)]);
 
         code.extend(&encoded);
 
@@ -620,7 +620,7 @@ impl<'a> Module<'a> {
                     continue;
                 }
                 Err(err) => {
-                    return Err(anyhow::anyhow!("Failed to deploy contract: {:?}", err).into());
+                    return Err(anyhow::anyhow!("Failed to deploy contract: {:?}", err));
                 }
             }
         }
@@ -757,7 +757,7 @@ impl<'a> Module<'a> {
                 .contains("insufficient funds for gas * price + value") =>
             {
                 error!("out of gas");
-                return Err(TxSubmitError::OutOfGas);
+                Err(TxSubmitError::OutOfGas)
             }
 
             Err(
@@ -769,16 +769,14 @@ impl<'a> Module<'a> {
                 || e.message.contains("exceeds block gas limit")
                 || e.message.contains("gas required exceeds") =>
             {
-                return Err(TxSubmitError::BatchTooLarge);
+                Err(TxSubmitError::BatchTooLarge)
             }
 
-            Err(Error::PendingTransactionError(PendingTransactionError::FailedToRegister)) => {
-                return Err(TxSubmitError::PendingTransactionError(
-                    PendingTransactionError::FailedToRegister,
-                ));
-            }
+            Err(Error::PendingTransactionError(PendingTransactionError::FailedToRegister)) => Err(
+                TxSubmitError::PendingTransactionError(PendingTransactionError::FailedToRegister),
+            ),
 
-            Err(err) => return Err(TxSubmitError::Error(err)),
+            Err(err) => Err(TxSubmitError::Error(err)),
         }
     }
 

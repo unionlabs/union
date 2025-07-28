@@ -100,15 +100,15 @@ impl ChannelPool {
                 for confirm in confirms {
                     println!("confirm in channel_provider: {:?}", confirm);
                     let pair = ChannelPair {
-                        src: confirm.counterparty_channel_id.clone(),
-                        dest: confirm.channel_id.clone(),
+                        src: confirm.counterparty_channel_id,
+                        dest: confirm.channel_id,
                     };
 
-                    let dup_forward = map.available.get(&key).map_or(false, |v| v.contains(&pair));
-                    let dup_backward = map.available.get(&rev_key).map_or(false, |v| {
+                    let dup_forward = map.available.get(&key).is_some_and(|v| v.contains(&pair));
+                    let dup_backward = map.available.get(&rev_key).is_some_and(|v| {
                         v.contains(&ChannelPair {
-                            src: pair.dest.clone(),
-                            dest: pair.src.clone(),
+                            src: pair.dest,
+                            dest: pair.src,
                         })
                     });
 
@@ -122,17 +122,14 @@ impl ChannelPool {
                     }
 
                     // Store in forward direction
-                    map.available
-                        .entry(key.clone())
-                        .or_default()
-                        .push(pair.clone());
+                    map.available.entry(key.clone()).or_default().push(pair);
                     // Store in reverse direction
                     map.available
                         .entry(rev_key.clone())
                         .or_default()
                         .push(ChannelPair {
-                            src: pair.dest.clone(),
-                            dest: pair.src.clone(),
+                            src: pair.dest,
+                            dest: pair.src,
                         });
 
                     success_count += 1;

@@ -67,7 +67,7 @@ pub fn connection_open(
                 chain_id: on,
                 datagrams: vec![IbcDatagram {
                     ibc_spec_id: IbcSpecId::new_static(IbcSpecId::UNION),
-                    datagram: serde_json::to_value(&Datagram::ConnectionOpenInit(
+                    datagram: serde_json::to_value(Datagram::ConnectionOpenInit(
                         MsgConnectionOpenInit {
                             client_id: client_id.try_into().unwrap(),
                             counterparty_client_id: counterparty_client_id.try_into().unwrap(),
@@ -103,14 +103,12 @@ pub fn channel_open(
                 chain_id,
                 datagrams: vec![IbcDatagram {
                     ibc_spec_id: IbcSpecId::new_static(IbcSpecId::UNION),
-                    datagram: serde_json::to_value(&Datagram::ChannelOpenInit(
-                        MsgChannelOpenInit {
-                            port_id,
-                            counterparty_port_id,
-                            connection_id: connection_id.try_into().unwrap(),
-                            version,
-                        },
-                    ))
+                    datagram: serde_json::to_value(Datagram::ChannelOpenInit(MsgChannelOpenInit {
+                        port_id,
+                        counterparty_port_id,
+                        connection_id: connection_id.try_into().unwrap(),
+                        version,
+                    }))
                     .unwrap(),
                 }],
             }))

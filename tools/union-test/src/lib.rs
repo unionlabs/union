@@ -5,10 +5,7 @@ use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
 use ibc_union_spec::ChannelId;
 use protos::cosmos::base::v1beta1::Coin;
-use unionlabs::{
-    bech32::Bech32,
-    primitives::{Bytes, FixedBytes, H160, H256},
-};
+use unionlabs::primitives::{Bech32, Bytes, FixedBytes, H160, H256};
 use voyager_sdk::{
     anyhow::{self},
     primitives::ChainId,
@@ -312,7 +309,7 @@ impl ChainEndpoint for cosmos::Module {
         msg: Self::Msg,
         signer: &Self::ProviderType,
     ) -> anyhow::Result<H256> {
-        self.send_ibc_transaction(contract, msg, &signer).await
+        self.send_ibc_transaction(contract, msg, signer).await
     }
 
     async fn wait_for_packet_recv(
@@ -426,10 +423,10 @@ where
         duration: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
         voyager::connection_open(src.chain_id().clone(), src_client_id, dst_client_id)?;
-        let conn = dst.wait_for_open_connection(duration).await?;
-        return Ok(conn);
+        dst.wait_for_open_connection(duration).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn open_channels(
         &self,
         send_from_source: bool,
@@ -600,6 +597,7 @@ where
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn send_and_recv_stake<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
@@ -637,14 +635,15 @@ where
             Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
         };
 
-        match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
-            Ok(evt) => evt,
-            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
-        };
+        let _ = source_chain
+            .wait_for_packet_ack(packet_hash, timeout)
+            .await
+            .unwrap();
 
-        return delegate;
+        delegate
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn send_and_recv_unstake<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
@@ -771,6 +770,7 @@ where
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn send_and_recv_with_retry<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
