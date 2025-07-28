@@ -148,7 +148,7 @@ contract VestingTests is Test {
                 IAccessManaged.AccessManagedUnauthorized.selector, malicious
             )
         );
-        account.execute(address(0), hex"");
+        account.execute(address(0), 0, hex"");
     }
 
     function test_update_onlyAuthority(

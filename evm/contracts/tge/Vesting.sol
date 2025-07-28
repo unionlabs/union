@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBytes.sol";
+import "solady/utils/LibCall.sol";
 
 import "../internal/Versioned.sol";
 import "../apps/ucs/03-zkgm/IZkgm.sol";
@@ -28,6 +29,7 @@ contract VestingAccount is
     Versioned
 {
     using LibBytes for *;
+    using LibCall for *;
 
     error VestingAccount_Unauthorized();
     error VestingAccount_StakeBeneficiaryMustBeSelf();
@@ -162,9 +164,14 @@ contract VestingAccount is
 
     function execute(
         address target,
+        uint256 value,
         bytes calldata payload
     ) public restricted {
-        target.call(payload);
+        (bool success,, bytes memory result) =
+            target.tryCall(value, gasleft(), type(uint16).max, payload);
+        if (!success) {
+            LibCall.bubbleUpRevert(result);
+        }
     }
 
     modifier onlyVestingManager() {
