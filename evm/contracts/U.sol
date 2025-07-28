@@ -6,25 +6,42 @@ import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import
     "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
+import "solady/utils/LibBytes.sol";
+
 import "./internal/Versioned.sol";
+import "./apps/ucs/03-zkgm/ISolver.sol";
 
 contract U is
     Initializable,
     UUPSUpgradeable,
     AccessManagedUpgradeable,
     ERC20Upgradeable,
-    Versioned
+    Versioned,
+    ISolver
 {
-    error UDare();
+    using LibBytes for *;
+
+    error U_OnlyZkgm();
+    error U_IntentNotYetSupported();
+    error U_CounterpartyIsNotFungible();
+    error U_BaseAmountMustCoverQuoteAmount();
+    error U_InvalidCounterpartyBeneficiary();
 
     bytes32 internal constant U_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.storage.zkgm.u")) - 1)
     ) & ~bytes32(uint256(0xff));
 
+    struct FungibleCounterparty {
+        bytes beneficiary;
+    }
+
     struct UStorage {
-        address minter;
+        address zkgm;
         uint8 decimals;
         bytes salt;
+        // (channelId, baseToken) => FungibleCounterparty
+        mapping(uint32 => mapping(bytes => FungibleCounterparty))
+            fungibleCounterparties;
     }
 
     function _getUStorage() private pure returns (UStorage storage $) {
@@ -40,18 +57,18 @@ contract U is
 
     function initialize(
         address _authority,
-        address _minter,
+        address _zkgm,
         string calldata _name,
         string calldata _symbol,
         uint8 _decimals,
         bytes calldata _salt
     ) external initializer {
-        __U_init(_authority, _minter, _name, _symbol, _decimals, _salt);
+        __U_init(_authority, _zkgm, _name, _symbol, _decimals, _salt);
     }
 
     function __U_init(
         address _authority,
-        address _minter,
+        address _zkgm,
         string calldata _name,
         string calldata _symbol,
         uint8 _decimals,
@@ -61,7 +78,7 @@ contract U is
         __AccessManaged_init(_authority);
         __ERC20_init(_name, _symbol);
         UStorage storage $ = _getUStorage();
-        $.minter = _minter;
+        $.zkgm = _zkgm;
         $.decimals = _decimals;
         $.salt = _salt;
     }
@@ -75,7 +92,10 @@ contract U is
         return _getUStorage().decimals;
     }
 
-    function transfer(address to, uint256 value) public override returns (bool) {
+    function transfer(
+        address to,
+        uint256 value
+    ) public override returns (bool) {
         address from = _msgSender();
         // Allow zkgm transferring to the zero address (burning).
         if (from == _getUStorage().zkgm) {
@@ -90,13 +110,63 @@ contract U is
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 amount) external onlyMinter {
+    function burn(address from, uint256 amount) external onlyZkgm {
         _burn(from, amount);
     }
 
-    modifier onlyMinter() {
-        if (msg.sender != _getUStorage().minter) {
-            revert UDare();
+    function setFungibleCounterparty(
+        uint32 channelId,
+        bytes calldata token,
+        FungibleCounterparty calldata counterparty
+    ) public restricted {
+        _getUStorage().fungibleCounterparties[channelId][token] = counterparty;
+    }
+
+    function solve(
+        IBCPacket calldata packet,
+        FungibleAssetOrderV2 calldata order,
+        address caller,
+        address relayer,
+        bytes calldata relayerMsg,
+        bool intent
+    ) external onlyZkgm {
+        if (intent) {
+            // TODO: have a mapping from packet hash to bool then have a script
+            // pushing packets we want to fill.
+            revert U_IntentNotYetSupported();
+        }
+
+        FungibleCounterparty memory counterparty = _getUStorage()
+            .fungibleCounterparties[packet.destinationChannelId][order.baseToken];
+        if (counterparty.beneficiary.length == 0) {
+            revert U_CounterpartyIsNotFungible();
+        }
+
+        // Maker address is provided by the relayer in relayerMsg.
+        // Ensure it's the configured address that will gets the funds on acknowledgement.
+        if (!relayerMsg.eq(abi.encodePacked(counterparty.beneficiary))) {
+            revert U_InvalidCounterpartyBeneficiary();
+        }
+
+        if (order.quoteAmount > order.baseAmount) {
+            revert U_BaseAmountMustCoverQuoteAmount();
+        }
+
+        // Incentive relayer.
+        uint256 fee = order.quoteAmount - order.baseAmount;
+        if (fee > 0) {
+            _mint(relayer, fee);
+        }
+
+        uint256 quoteAmountMinusFee = order.quoteAmount - fee;
+        if (quoteAmountMinusFee > 0) {
+            _mint(address(bytes20(order.receiver)), quoteAmountMinusFee);
+        }
+    }
+
+    modifier onlyZkgm() {
+        if (msg.sender != _getUStorage().zkgm) {
+            revert U_OnlyZkgm();
         }
         _;
     }
