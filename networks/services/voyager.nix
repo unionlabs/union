@@ -1,5 +1,4 @@
-_:
-{
+_: {
   perSystem =
     {
       self',
