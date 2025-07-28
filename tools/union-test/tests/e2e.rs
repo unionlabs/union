@@ -105,7 +105,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                     },
                 ],
             },
-            rpc_url: "http://localhost:26657".into(),
+            rpc_url: "http://devnetUnion:26657".into(),
             gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
                 max_gas: 10000000,
                 gas_multiplier: Some(1.4),
@@ -117,8 +117,8 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             chain_id: ChainId::new("32382"),
             ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
             multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
-            rpc_url: "http://localhost:8545".into(),
-            ws_url: "ws://localhost:8546".into(),
+            rpc_url: "http://devnetEth:8545".into(),
+            ws_url: "ws://devnetEth:8546".into(),
             keyring: KeyringConfig {
                 name: "evm-keyring".into(),
                 keys: vec![

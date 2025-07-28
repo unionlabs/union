@@ -131,14 +131,14 @@
             inputs.arion.nixosModules.arion
           ];
           virtualisation = {
-            diskSize = 4 * 1024;
-            memorySize = 4 * 1024;
+            diskSize = 16 * 1024;
+            memorySize = 32 * 1024;
             arion = {
               backend = "docker";
               projects.galois.settings = galois-arion-project;
             };
             vlans = [ 1 ];
-        };
+          };
           networking.hostName = "galois";
       };
     };
@@ -204,10 +204,11 @@
             inherit name;
 
             testScript = ''
+              galois.start()
               devnetUnion.wait_for_open_port(${toString unionNode.wait_for_open_port})
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
-              # devnetUnion.succeed('${self'.packages.cosmwasm-scripts.union-devnet.deploy}/bin/union-devnet-deploy-full')
+              devnetUnion.succeed('${self'.packages.cosmwasm-scripts.union-devnet.deploy}/bin/union-devnet-deploy-full')
 
               # match non-zero blocks
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
@@ -216,15 +217,12 @@
               devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
               devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
 
-              # galois.wait_for_open_port(${toString galoisNode.wait_for_open_port})
-              # galois.wait_for_console_text('${galoisNode.wait_for_console_text}')
+              galois.wait_for_console_text('${galoisNode.wait_for_console_text}')
 
               devnetVoyager.succeed('${voyagerBin} init-fetch union-devnet-1 --config-file-path ${voyagerNode.voyagerConfig}/voyager-config.jsonc');
               devnetVoyager.succeed('${voyagerBin} init-fetch 32382 --config-file-path ${voyagerNode.voyagerConfig}/voyager-config.jsonc');
 
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 200000") == "true" ]]')
-
-
             '';
 
             nodes =
@@ -237,7 +235,7 @@
                     devnetUnion = unionNode.node;
                     devnetEth = devnetEthNode.node;
                     devnetVoyager = voyagerNode.node;
-                    # galois = galoisNode.node;
+                    galois = galoisNode.node;
                   }
                   // nodes
                 );

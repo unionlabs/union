@@ -19,21 +19,23 @@
               contents = [
                 pkgs.coreutils-full
                 pkgs.cacert
-                self'.packages.galoisd-testnet-standalone
+                self'.packages.galoisd
               ];
             };
 
             service = {
+              network_mode = "host";
               tty = true;
               stop_signal = "SIGINT";
-              ports = [
-                "9999:9999"
-              ];
+              tmpfs = [ "/tmp" ];
+              # ports = [
+              #   "9999:9999"
+              # ];
               command = [
                 "sh"
                 "-c"
                 ''
-                  ${pkgs.lib.getExe self'.packages.galoisd-testnet-standalone}
+                  ${pkgs.lib.getExe self'.packages.galoisd} serve 0.0.0.0:9999 --cs-path=/tmp/r1cs.bin --pk-path=/tmp/pk.bin --vk-path=/tmp/vk.bin  --max-conn 3
                 ''
               ];
             };
