@@ -3,9 +3,9 @@ use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::Status;
 use unionlabs::encoding::Bincode;
 
 use crate::errors::Error;

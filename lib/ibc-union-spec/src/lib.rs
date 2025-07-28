@@ -14,7 +14,7 @@ pub use crate::types::{
     channel::{Channel, ChannelState},
     connection::{Connection, ConnectionState},
     packet::{MustBeZero, Packet},
-    ChannelId, ClientId, ConnectionId,
+    ChannelId, ClientId, ConnectionId, Status,
 };
 use crate::{
     datagram::{Datagram, MsgUpdateClient},

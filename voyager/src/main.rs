@@ -620,6 +620,14 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     let timestamp = voyager_client.query_latest_timestamp(on, finalized).await?;
                     print_json(&timestamp);
                 }
+                RpcCmd::Query {
+                    on,
+                    ibc_spec_id,
+                    query,
+                } => {
+                    let response = voyager_client.query(on, ibc_spec_id, query).await?;
+                    print_json(&response);
+                }
                 RpcCmd::IbcState {
                     on,
                     ibc_spec_id,

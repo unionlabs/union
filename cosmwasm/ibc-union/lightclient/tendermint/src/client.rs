@@ -4,9 +4,8 @@ use cometbft_types::{
 };
 use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Status, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};

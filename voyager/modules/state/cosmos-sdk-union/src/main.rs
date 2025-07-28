@@ -7,8 +7,8 @@ use cosmos_sdk_event::CosmosSdkEvent;
 use futures::{stream::FuturesUnordered, TryStreamExt};
 use ibc_union_spec::{
     path::StorePath,
-    query::{PacketByHash, PacketsByBatchHash, Query},
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet,
+    query::{ClientStatus, PacketByHash, PacketsByBatchHash, Query},
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet, Status,
     Timestamp,
 };
 use jsonrpsee::{
@@ -19,7 +19,7 @@ use jsonrpsee::{
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument, trace};
+use tracing::{debug, error, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     option_unwrap,
@@ -447,6 +447,28 @@ impl StateModuleServer<IbcUnion> for Module {
                     .await?;
 
                 Ok(into_value(packets))
+            }
+            Query::ClientStatus(ClientStatus { client_id, height }) => {
+                let status = self
+                    .query_smart::<_, Status>(
+                        &ibc_union_msg::query::QueryMsg::GetStatus { client_id },
+                        height.map(Height::new),
+                    )
+                    .await?
+                    .ok_or(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("client {client_id} not found at height {height:?}"),
+                        None::<()>,
+                    ))?;
+
+                debug!(
+                    %status,
+                    %client_id,
+                    height = height.map(|h| h.to_string()),
+                    "fetched client status"
+                );
+
+                Ok(into_value(status))
             }
         }
     }

@@ -8,10 +8,10 @@ use depolama::{QuerierExt, StorageExt, Store};
 use frissitheto::UpgradeError;
 use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
 use ibc_union_msg::lightclient::{
-    MisbehaviourResponse, QueryMsg, Status, StorageWrites, UpdateStateResponse,
-    VerifyCreationResponse, VerifyCreationResponseEvent,
+    MisbehaviourResponse, QueryMsg, StorageWrites, UpdateStateResponse, VerifyCreationResponse,
+    VerifyCreationResponseEvent,
 };
-use ibc_union_spec::{ClientId, Timestamp};
+use ibc_union_spec::{ClientId, Status, Timestamp};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     primitives::Bytes,

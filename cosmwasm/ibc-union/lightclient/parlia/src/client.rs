@@ -1,9 +1,9 @@
 use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_msg::lightclient::Status;
 use parlia_light_client_types::{ClientState, ClientStateV1, ConsensusState, Header, Misbehaviour};
 use parlia_types::Valset;
 use parlia_verifier::VerificationContext;

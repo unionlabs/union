@@ -19,7 +19,7 @@ use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
     query::Query,
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
-    IbcUnion, Packet,
+    IbcUnion, Packet, Status,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -35,10 +35,11 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_sdk::{
-    self, anyhow, into_value,
+    anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     rpc::{types::StateModuleInfo, StateModuleServer, MISSING_STATE_ERROR_CODE},
+    ExtensionsExt,
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -597,6 +598,31 @@ impl Module {
             None::<()>,
         ))
     }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %client_id, %height))]
+    async fn client_status(&self, client_id: ClientId, height: u64) -> RpcResult<Status> {
+        let client_address = self.client_address(client_id.raw(), height).await?;
+
+        let light_client = ILightClient::new(client_address, self.provider.clone());
+        let status = light_client
+            .isFrozen(client_id.raw())
+            .block(height.into())
+            .call()
+            .await;
+
+        match status {
+            Ok(true) => Ok(Status::Frozen),
+            Ok(false) => Ok(Status::Active),
+            Err(err) => Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "error fetching client status at height {height}: {}",
+                    ErrorReporter(err)
+                ),
+                None::<()>,
+            )),
+        }
+    }
 }
 
 fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {
@@ -616,7 +642,7 @@ fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, Blo
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+    async fn query(&self, e: &Extensions, query: Query) -> RpcResult<Value> {
         match query {
             Query::PacketByHash(packet_by_hash) => self
                 .packet_by_packet_hash(packet_by_hash.channel_id, packet_by_hash.packet_hash)
@@ -629,6 +655,20 @@ impl StateModuleServer<IbcUnion> for Module {
                 )
                 .await
                 .map(into_value),
+            Query::ClientStatus(client_status) => {
+                let height = match client_status.height {
+                    Some(height) => height,
+                    None => e
+                        .voyager_client()?
+                        .query_latest_height(self.chain_id.clone(), false)
+                        .await?
+                        .height(),
+                };
+
+                self.client_status(client_status.client_id, height)
+                    .await
+                    .map(into_value)
+            }
         }
     }
 
