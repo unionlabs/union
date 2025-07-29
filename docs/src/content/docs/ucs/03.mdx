@@ -169,9 +169,9 @@ Fields:
 
 - `opcode`: Instruction type identifier as `uint8`
   - 0x00: [Forward](#0x00---forward)
-  - 0x01: [Call](#0x01---multiplex)
+  - 0x01: [Call](#0x01---call)
   - 0x02: [Batch](#0x02---batch)
-  - 0x03: [FungibleAssetOrder](#0x03---fungible-asset-order)
+  - 0x03: [TokenOrder](#0x03---fungible-asset-order)
   - 0x04: [Stake](#0x04---stake)
   - 0x05: [Unstake](#0x05---unstake)
   - 0x06: [WithdrawStake](#0x06---withdraw-stake)
@@ -181,7 +181,7 @@ Fields:
   - Forward: Path, timeouts and instruction to forward
   - Call: Sender, callback mode and contract call data
   - Batch: Array of instructions to execute atomically
-  - FungibleAssetOrder: Transfer details like tokens, amounts and parties
+  - TokenOrder: Transfer details like tokens, amounts and parties
   - Stake/Unstake/WithdrawStake/WithdrawRewards: Staking operation parameters
 
 :::note
@@ -224,13 +224,13 @@ Fields:
   - Must be greater than current time when executed
 
 - `instruction`: The [Instruction](#instruction) to forward
-  - Can be Call, FungibleAssetOrder, or Batch
+  - Can be Call, TokenOrder, or Batch
   - Will be executed on final destination chain
   - Cannot be another Forward instruction
 
 :::tip
 
-The forward instruction can wrap Call, FungibleAssetOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
+The forward instruction can wrap Call, TokenOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
 
 The protocol verifies that only these specific instructions can be forwarded and that the channel pairs are valid.
 
@@ -247,7 +247,7 @@ sequenceDiagram
 
 ### 0x01 - Call
 
-The multiplex instruction uses opcode `0x01` and requires version `INSTR_VERSION_0`.
+The call instruction uses opcode `0x01` and requires version `INSTR_VERSION_0`.
 
 ```solidity
 struct Call {
@@ -280,7 +280,7 @@ Fields:
   - Interpreted by target contract's implementation
   - Available in both standard and eureka modes
 
-The multiplex instruction has two modes:
+The multiplexcall instruction has two modes:
 
 1. Standard Mode (eureka = false):
    - Target must implement IZkgmable interface
@@ -365,7 +365,7 @@ struct Batch {
 
 Fields:
 - `instructions`: Array of [Instructions](#instruction) to execute atomically
-  - Only specific instructions allowed (Call, FungibleAssetOrder, Stake, Unstake, WithdrawStake)
+  - Only specific instructions allowed (Call, TokenOrder, Stake, Unstake, WithdrawStake)
   - Executed in sequential order
   - All must succeed or entire batch reverts
   - Individual acknowledgements collected in array
@@ -396,7 +396,7 @@ The fungible asset order instruction has two versions:
 1. Version 1 (INSTR_VERSION_1) - **DEPRECATED**:
 
 ```solidity
-struct FungibleAssetOrder {
+struct TokenOrder {
     bytes sender;             // Source chain sender address
     bytes receiver;           // Destination chain receiver address
     bytes baseToken;          // Token being sent
