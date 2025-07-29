@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,25 +58,60 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-// module zkgm::fungible_token {
-//     use sui::coin::{Self};
+module zkgm::instruction {
+    use zkgm::zkgm_ethabi;
 
-//     // one time witness
-//     public struct FUNGIBLE_TOKEN has drop {}
+    public struct Instruction has copy, drop, store {
+        version: u8,
+        opcode: u8,
+        operand: vector<u8>
+    }
 
-//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-//         let (treasury_cap, metadata) =
-//             coin::create_currency<FUNGIBLE_TOKEN>(
-//                 witness,
-//                 (@decimals.to_u256()) as u8,
-//                 b"muno",
-//                 b"muno",
-//                 b"zkgm token created by voyager",
-//                 option::none(),
-//                 ctx
-//             );
+    public fun new(version: u8, opcode: u8, operand: vector<u8>): Instruction {
+        Instruction { version, opcode, operand }
+    }
 
-//         transfer::public_share_object(metadata);
-//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-//     }
-// }
+    public fun version(instruction: &Instruction): u8 {
+        instruction.version
+    }
+
+    public fun opcode(instruction: &Instruction): u8 {
+        instruction.opcode
+    }
+
+    public fun operand(instruction: &Instruction): &vector<u8> {
+        &instruction.operand
+    }
+
+    public fun encode(instruction: &Instruction): vector<u8> {
+        let mut buf = vector::empty<u8>();
+
+        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.version);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
+        zkgm_ethabi::encode_bytes(&mut buf, &instruction.operand);
+
+        buf
+    }
+
+    public fun decode(buf: &vector<u8>, index: &mut u64): Instruction {
+        let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
+        let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
+        // skipping the pointer
+        *index = *index + 0x20;
+        let operand = zkgm_ethabi::decode_bytes(buf, index);
+        new(version, opcode, operand)
+    }
+
+    #[test]
+    fun test_encode() {
+        let encoded =
+            x"000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000044141414100000000000000000000000000000000000000000000000000000000";
+        let mut index = 0;
+        let instruction = decode(&encoded, &mut index);
+        let expected_instruction = new(10, 20, b"AAAA");
+
+        assert!(instruction == expected_instruction, 1);
+        assert!(encode(&instruction) == encoded, 1);
+    }
+}

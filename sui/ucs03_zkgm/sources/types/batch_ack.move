@@ -58,60 +58,54 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::instruction {
+module zkgm::batch_ack {
     use zkgm::zkgm_ethabi;
 
-    public struct Instruction has copy, drop, store {
-        version: u8,
-        opcode: u8,
-        operand: vector<u8>
+    public struct BatchAck has copy, drop, store {
+        acknowledgements: vector<vector<u8>>
     }
 
-    public fun new(version: u8, opcode: u8, operand: vector<u8>): Instruction {
-        Instruction { version, opcode, operand }
+    public fun new(acknowledgements: vector<vector<u8>>): BatchAck {
+        BatchAck { acknowledgements }
     }
 
-    public fun version(instruction: &Instruction): u8 {
-        instruction.version
+    public fun acknowledgements(batch_ack: &BatchAck): vector<vector<u8>> {
+        batch_ack.acknowledgements
     }
 
-    public fun opcode(instruction: &Instruction): u8 {
-        instruction.opcode
-    }
-
-    public fun operand(instruction: &Instruction): &vector<u8> {
-        &instruction.operand
-    }
-
-    public fun encode(instruction: &Instruction): vector<u8> {
-        let mut buf = vector::empty<u8>();
-
-        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.version);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
-        zkgm_ethabi::encode_bytes(&mut buf, &instruction.operand);
+    public fun encode(ack: &BatchAck): vector<u8> {
+        let mut buf = vector::empty();
+        zkgm_ethabi::encode_uint(&mut buf, 0x20);
+        zkgm_ethabi::encode_dyn_array!(
+            &mut buf,
+            &ack.acknowledgements,
+            |b, elem| zkgm_ethabi::encode_bytes(b, elem)
+        );
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>, index: &mut u64): Instruction {
-        let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
-        let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
-        // skipping the pointer
-        *index = *index + 0x20;
-        let operand = zkgm_ethabi::decode_bytes(buf, index);
-        new(version, opcode, operand)
+    public fun decode(buf: &vector<u8>): BatchAck {
+        let mut index = 0x20; 
+        BatchAck {
+            acknowledgements: zkgm_ethabi::decode_dyn_array!(buf, &mut index, |b| zkgm_ethabi::decode_bytes(&b, &mut 0))
+        }
     }
 
     #[test]
-    fun test_encode_instruction() {
-        let encoded =
-            x"000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000044141414100000000000000000000000000000000000000000000000000000000";
-        let mut index = 0;
-        let instruction = decode(&encoded, &mut index);
-        let expected_instruction = new(10, 20, b"AAAA");
+    fun test_encode_decode() {
+        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002686900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046865686500000000000000000000000000000000000000000000000000000000";
 
-        assert!(instruction == expected_instruction, 1);
-        assert!(encode(&instruction) == encoded, 1);
+        let expected_ack = BatchAck {
+            acknowledgements: vector[
+                b"hello",
+                b"hi",
+                b"hehe",
+            ],
+        };
+
+        let ack = decode(&output);
+        assert!(ack == expected_ack, 1);
+        assert!(encode(&ack) == output, 1);
     }
 }
