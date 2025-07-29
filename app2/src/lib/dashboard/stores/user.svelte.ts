@@ -10,6 +10,7 @@ import { hasProviderLinked } from "../helpers"
 import { invokeTick } from "../queries/private"
 import { errorStore } from "../stores/errors.svelte"
 import { AchievementsStore } from "./achievements.svelte"
+import { CheckStore } from "./check.svelte"
 import { ExperienceStore } from "./experience.svelte"
 import { LeaderboardStore } from "./leaderboard.svelte"
 import { MissionsStore } from "./missions.svelte"
@@ -43,6 +44,9 @@ export class Dashboard {
 
   /** Wallet store instance */
   wallets = $state<Option.Option<WalletStore>>(Option.none())
+
+  /** Check store instance */
+  check = $state<Option.Option<CheckStore>>(Option.none())
 
   /**
    * Usernames from all connected providers
@@ -255,6 +259,9 @@ export class Dashboard {
       if (Option.isNone(this.wallets)) {
         this.wallets = Option.some(new WalletStore(session.user.id))
       }
+      if (Option.isNone(this.check)) {
+        this.check = Option.some(new CheckStore(session.user.id))
+      }
       // Start tick polling when user is authenticated
       this.startTickPolling()
     } else {
@@ -294,6 +301,12 @@ export class Dashboard {
         onSome: (store) => store.cleanup(),
       })
       this.wallets = Option.none()
+
+      Option.match(this.check, {
+        onNone: () => {},
+        onSome: (store) => store.cleanup(),
+      })
+      this.check = Option.none()
 
       // Stop tick polling when user is logged out
       this.stopTickPolling()
