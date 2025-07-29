@@ -10,6 +10,40 @@
       ...
     }:
     {
+      # TODO(aeryz): This builds the keys for now bc of my shitty internet. Otherwise, it takes me forever to try
+      # In the real CI version, this will just use `galois-testnet-standalone` and download the keys.
+      _module.args.galois-arion-project = {
+        project.name = "galois";
+        services = {
+          galois = {
+            image = {
+              enableRecommendedContents = true;
+              contents = [
+                pkgs.coreutils-full
+                pkgs.cacert
+                self'.packages.galoisd
+              ];
+            };
+
+            service = {
+              network_mode = "host";
+              tty = true;
+              stop_signal = "SIGINT";
+              tmpfs = [ "/tmp" ];
+              # ports = [
+              #   "9999:9999"
+              # ];
+              command = [
+                "sh"
+                "-c"
+                ''
+                  ${pkgs.lib.getExe self'.packages.galoisd} serve 0.0.0.0:9999 --cs-path=/tmp/r1cs.bin --pk-path=/tmp/pk.bin --vk-path=/tmp/vk.bin  --max-conn 3
+                ''
+              ];
+            };
+          };
+        };
+      };
       packages = {
         galoisd = pkgs.pkgsStatic.buildGo123Module (
           {

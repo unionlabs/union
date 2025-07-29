@@ -649,7 +649,7 @@
             src = cargoWorkspaceSrc;
 
             # unionvisor is tested individually, and mpc* crates attempt to link to galoisd (and don't have any tests anyways).
-            cargoTestExtraArgs = "--workspace --exclude 'mpc*' --exclude unionvisor --no-fail-fast";
+            cargoTestExtraArgs = "--workspace --exclude 'mpc*' --exclude unionvisor --exclude union-test --no-fail-fast";
             cargoClippyExtraArgs = "--workspace --tests -- -Dwarnings";
 
             CARGO_PROFILE = "dev";
