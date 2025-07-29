@@ -1183,7 +1183,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: abi.encodePacked(receiver),
@@ -1270,7 +1270,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_2,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeTokenOrderV2(
                     TokenOrderV2({
                         sender: abi.encodePacked(receiver),
@@ -1321,7 +1321,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: sender,
@@ -1389,7 +1389,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_2,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeTokenOrderV2(
                     TokenOrderV2({
                         sender: sender,
@@ -1438,7 +1438,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: sender,
@@ -1487,7 +1487,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_2,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeTokenOrderV2(
                     TokenOrderV2({
                         sender: sender,
@@ -1535,7 +1535,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: sender,
@@ -1585,7 +1585,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: sender,
@@ -1635,7 +1635,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: sender,
@@ -1686,7 +1686,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
                         sender: sender,
@@ -1738,7 +1738,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_2,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeTokenOrderV2(
                     TokenOrderV2({
                         sender: sender,
@@ -1801,7 +1801,7 @@ contract ZkgmTests is Test {
             bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_2,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeTokenOrderV2(
                     TokenOrderV2({
                         sender: abi.encodePacked(receiver),
@@ -2286,7 +2286,7 @@ contract ZkgmTests is Test {
                         path: path,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_1,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
                     })
@@ -2425,7 +2425,7 @@ contract ZkgmTests is Test {
                     path: path,
                     instruction: Instruction({
                         version: ZkgmLib.INSTR_VERSION_1,
-                        opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                        opcode: ZkgmLib.OP_TOKEN_ORDER,
                         operand: ZkgmLib.encodeFungibleAssetOrder(order)
                     })
                 })
@@ -2451,7 +2451,7 @@ contract ZkgmTests is Test {
                     path: path,
                     instruction: Instruction({
                         version: ZkgmLib.INSTR_VERSION_2,
-                        opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                        opcode: ZkgmLib.OP_TOKEN_ORDER,
                         operand: ZkgmLib.encodeTokenOrderV2(order)
                     })
                 })
@@ -3498,7 +3498,7 @@ contract ZkgmTests is Test {
                         path: path,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_2,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeTokenOrderV2(
                                 TokenOrderV2({
                                     sender: sender,
@@ -3572,7 +3572,7 @@ contract ZkgmTests is Test {
                         path: differentPath,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_2,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeTokenOrderV2(
                                 TokenOrderV2({
                                     sender: sender,
@@ -3916,7 +3916,7 @@ contract ZkgmTests is Test {
                         path: path,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_1,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
                     })
@@ -3951,7 +3951,7 @@ contract ZkgmTests is Test {
                         path: path,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_2,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeTokenOrderV2(order)
                         })
                     })
@@ -4906,7 +4906,7 @@ contract ZkgmTests is Test {
                         path: 0,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_2,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeTokenOrderV2(
                                 TokenOrderV2({
                                     sender: sender,
@@ -6219,7 +6219,7 @@ contract ZkgmTests is Test {
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_1,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeFungibleAssetOrder(foa)
         });
         console.logBytes(ZkgmLib.encodeInstruction(inst));
@@ -6255,7 +6255,7 @@ contract ZkgmTests is Test {
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeTokenOrderV2(foa)
         });
         console.log("Initializer");
@@ -6297,7 +6297,7 @@ contract ZkgmTests is Test {
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeTokenOrderV2(foa)
         });
         console.log("Image");
@@ -6337,7 +6337,7 @@ contract ZkgmTests is Test {
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeTokenOrderV2(foa)
         });
         console.log("Image");
@@ -6373,7 +6373,7 @@ contract ZkgmTests is Test {
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeTokenOrderV2(foa)
         });
         console.log("Initializer");
@@ -6417,7 +6417,7 @@ contract ZkgmTests is Test {
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeTokenOrderV2(foa)
         });
         console.log("Instruction");
@@ -6553,7 +6553,7 @@ contract ZkgmTests is Test {
         // V1 order
         instructions[0] = Instruction({
             version: ZkgmLib.INSTR_VERSION_1,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeFungibleAssetOrder(
                 FungibleAssetOrder({
                     sender: sender,
@@ -6572,7 +6572,7 @@ contract ZkgmTests is Test {
         // V2 order
         instructions[1] = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
-            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
             operand: ZkgmLib.encodeTokenOrderV2(
                 TokenOrderV2({
                     sender: sender,
@@ -6752,7 +6752,7 @@ contract ZkgmTests is Test {
             bytes32(uint256(bytes32(salt)) + 1),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_2,
-                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                opcode: ZkgmLib.OP_TOKEN_ORDER,
                 operand: ZkgmLib.encodeTokenOrderV2(
                     TokenOrderV2({
                         sender: abi.encodePacked(receiver),
@@ -6962,7 +6962,7 @@ contract ZkgmTests is Test {
                         path: path,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_2,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeTokenOrderV2(order)
                         })
                     })
@@ -7219,7 +7219,7 @@ contract ZkgmTests is Test {
                         path: path,
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_2,
-                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            opcode: ZkgmLib.OP_TOKEN_ORDER,
                             operand: ZkgmLib.encodeTokenOrderV2(order)
                         })
                     })

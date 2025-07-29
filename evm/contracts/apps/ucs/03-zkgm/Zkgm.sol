@@ -237,7 +237,7 @@ contract UCS03Zkgm is
     ) internal returns (bytes memory) {
         if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
             )
         ) {
             FungibleAssetOrder calldata order =
@@ -259,7 +259,7 @@ contract UCS03Zkgm is
             return abi.decode(rawResult, (bytes));
         } else if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
             )
         ) {
             TokenOrderV2 calldata order =
@@ -552,7 +552,7 @@ contract UCS03Zkgm is
     ) internal {
         if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
             )
         ) {
             FungibleAssetOrder calldata order =
@@ -566,7 +566,7 @@ contract UCS03Zkgm is
             );
         } else if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
             )
         ) {
             TokenOrderV2 calldata order =
@@ -798,7 +798,7 @@ contract UCS03Zkgm is
     ) internal {
         if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
             )
         ) {
             FungibleAssetOrder calldata order =
@@ -811,7 +811,7 @@ contract UCS03Zkgm is
             );
         } else if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
             )
         ) {
             TokenOrderV2 calldata order =

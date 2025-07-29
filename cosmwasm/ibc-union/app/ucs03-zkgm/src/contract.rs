@@ -30,7 +30,7 @@ use crate::{
         WithdrawRewards, WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket,
         ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC,
         INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD,
-        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE,
+        OP_TOKEN_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE,
         TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
         TOKEN_ORDER_KIND_UNESCROW,
     },
@@ -573,7 +573,7 @@ fn timeout_internal(
     instruction: Instruction,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
                 refund(deps, path, packet.source_channel_id, order)
@@ -745,7 +745,7 @@ fn acknowledge_internal(
     ack: Bytes,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
                 let order_ack = if successful {
@@ -1199,7 +1199,7 @@ fn execute_internal(
     intent: bool,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
                 execute_fungible_asset_order(
@@ -2940,7 +2940,7 @@ pub fn verify_internal(
     response: &mut Response,
 ) -> Result<(), ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
                 verify_fungible_asset_order(deps, info, funds, channel_id, path, &order, response)
@@ -3201,12 +3201,12 @@ pub fn verify_multiplex(
 
 /// Checks if an opcode is allowed in a batch instruction
 fn is_allowed_batch_instruction(opcode: u8) -> bool {
-    opcode == OP_CALL || opcode == OP_FUNGIBLE_ASSET_ORDER
+    opcode == OP_CALL || opcode == OP_TOKEN_ORDER
 }
 
 /// Checks if an opcode is allowed in a forward instruction
 fn is_allowed_forward_instruction(opcode: u8) -> bool {
-    opcode == OP_CALL || opcode == OP_FUNGIBLE_ASSET_ORDER || opcode == OP_BATCH
+    opcode == OP_CALL || opcode == OP_TOKEN_ORDER || opcode == OP_BATCH
 }
 
 #[allow(clippy::too_many_arguments)]

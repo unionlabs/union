@@ -62,7 +62,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
     ) internal {
         if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
             )
         ) {
             FungibleAssetOrder calldata order =
@@ -70,7 +70,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             _verifyFungibleAssetOrder(channelId, path, order);
         } else if (
             instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
+                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
             )
         ) {
             TokenOrderV2 calldata order =

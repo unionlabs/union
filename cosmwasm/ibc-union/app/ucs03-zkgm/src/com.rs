@@ -10,7 +10,7 @@ pub const INSTR_VERSION_2: u8 = 0x02;
 pub const OP_FORWARD: u8 = 0x00;
 pub const OP_CALL: u8 = 0x01;
 pub const OP_BATCH: u8 = 0x02;
-pub const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
+pub const OP_TOKEN_ORDER: u8 = 0x03;
 
 pub const OP_STAKE: u8 = 0x04;
 pub const OP_UNSTAKE: u8 = 0x05;

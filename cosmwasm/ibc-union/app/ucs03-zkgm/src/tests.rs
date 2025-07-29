@@ -21,7 +21,7 @@ use crate::{
         Ack, Batch, Call, Forward, FungibleAssetMetadata, FungibleAssetOrder,
         FungibleAssetOrderAck, Instruction, TokenOrderV2, ZkgmPacket, FILL_TYPE_MARKETMAKER,
         FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_BATCH, OP_CALL, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
         TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
     },
     contract::{
@@ -1155,7 +1155,7 @@ impl IncomingOrderBuilder {
                 path: self.path,
                 instruction: Instruction {
                     version: INSTR_VERSION_1,
-                    opcode: OP_FUNGIBLE_ASSET_ORDER,
+                    opcode: OP_TOKEN_ORDER,
                     operand: FungibleAssetOrder {
                         sender: self.sender.clone().into_vec().into(),
                         receiver: self
@@ -2036,7 +2036,7 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_market_m
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2187,7 +2187,7 @@ fn test_recv_packet_native_v2_wrap_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2313,7 +2313,7 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2440,7 +2440,7 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2514,7 +2514,7 @@ fn test_recv_packet_native_v2_custom_metadata_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2599,7 +2599,7 @@ fn test_recv_packet_native_v2_market_maker_fill() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2734,7 +2734,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2800,7 +2800,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -2933,7 +2933,7 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
@@ -3031,7 +3031,7 @@ fn test_recv_packet_native_v2_unwrap_no_outstanding_balance() {
             path,
             instruction: Instruction {
                 version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                opcode: OP_TOKEN_ORDER,
                 operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),

@@ -34,7 +34,7 @@ library ZkgmLib {
     uint8 public constant OP_FORWARD = 0x00;
     uint8 public constant OP_CALL = 0x01;
     uint8 public constant OP_BATCH = 0x02;
-    uint8 public constant OP_FUNGIBLE_ASSET_ORDER = 0x03;
+    uint8 public constant OP_TOKEN_ORDER = 0x03;
 
     uint8 public constant OP_STAKE = 0x04;
     uint8 public constant OP_UNSTAKE = 0x05;
@@ -480,7 +480,7 @@ library ZkgmLib {
     function isAllowedBatchInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_CALL || opcode == OP_FUNGIBLE_ASSET_ORDER
+        return opcode == OP_CALL || opcode == OP_TOKEN_ORDER
             || opcode == OP_STAKE || opcode == OP_UNSTAKE
             || opcode == OP_WITHDRAW_STAKE;
     }
@@ -488,7 +488,7 @@ library ZkgmLib {
     function isAllowedForwardInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_CALL || opcode == OP_FUNGIBLE_ASSET_ORDER
+        return opcode == OP_CALL || opcode == OP_TOKEN_ORDER
             || opcode == OP_BATCH;
     }
 
@@ -572,7 +572,7 @@ library ZkgmLib {
         });
         return Instruction({
             version: INSTR_VERSION_1,
-            opcode: OP_FUNGIBLE_ASSET_ORDER,
+            opcode: OP_TOKEN_ORDER,
             operand: encodeFungibleAssetOrder(order)
         });
     }
@@ -585,7 +585,7 @@ library ZkgmLib {
     ) internal returns (Instruction memory) {
         return Instruction({
             version: INSTR_VERSION_0,
-            opcode: OP_FUNGIBLE_ASSET_ORDER,
+            opcode: OP_TOKEN_ORDER,
             operand: encodeCall(
                 Call({
                     sender: abi.encodePacked(sender),

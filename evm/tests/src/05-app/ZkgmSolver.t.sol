@@ -387,7 +387,7 @@ contract ZkgmSolverTest is Test {
                     path: path,
                     instruction: Instruction({
                         version: ZkgmLib.INSTR_VERSION_2,
-                        opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                        opcode: ZkgmLib.OP_TOKEN_ORDER,
                         operand: ZkgmLib.encodeTokenOrderV2(order)
                     })
                 })
@@ -587,7 +587,7 @@ contract ZkgmSolverTest is Test {
             data: abi.encode(
                 Instruction({
                     version: ZkgmLib.INSTR_VERSION_0,
-                    opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                    opcode: ZkgmLib.OP_TOKEN_ORDER,
                     operand: abi.encode(order)
                 })
             ),
@@ -634,7 +634,7 @@ contract ZkgmSolverTest is Test {
             data: abi.encode(
                 Instruction({
                     version: ZkgmLib.INSTR_VERSION_0,
-                    opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                    opcode: ZkgmLib.OP_TOKEN_ORDER,
                     operand: abi.encode(order)
                 })
             ),
@@ -694,7 +694,7 @@ contract ZkgmSolverTest is Test {
             data: abi.encode(
                 Instruction({
                     version: ZkgmLib.INSTR_VERSION_0,
-                    opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                    opcode: ZkgmLib.OP_TOKEN_ORDER,
                     operand: abi.encode(order)
                 })
             ),
@@ -750,7 +750,7 @@ contract ZkgmSolverTest is Test {
             data: abi.encode(
                 Instruction({
                     version: ZkgmLib.INSTR_VERSION_0,
-                    opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                    opcode: ZkgmLib.OP_TOKEN_ORDER,
                     operand: abi.encode(order)
                 })
             ),
