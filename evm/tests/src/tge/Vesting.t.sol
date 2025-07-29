@@ -292,7 +292,7 @@ contract VestingTests is Test {
             Stake({
                 tokenId: tokenId,
                 governanceToken: governanceToken.unwrappedToken,
-                governanceTokenMetadataImage: governanceToken.metadataImage,
+                governanceTokenWrapped: abi.encodePacked(localGovernanceToken),
                 sender: abi.encodePacked(address(account)),
                 beneficiary: abi.encodePacked(address(account)),
                 validator: validator,
@@ -348,7 +348,7 @@ contract VestingTests is Test {
             Stake({
                 tokenId: tokenId,
                 governanceToken: governanceToken.unwrappedToken,
-                governanceTokenMetadataImage: governanceToken.metadataImage,
+                governanceTokenWrapped: abi.encodePacked(localGovernanceToken),
                 sender: abi.encodePacked(address(account)),
                 beneficiary: abi.encodePacked(address(account)),
                 validator: validator,

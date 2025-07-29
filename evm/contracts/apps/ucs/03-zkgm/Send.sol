@@ -351,8 +351,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (
-            stake.governanceTokenMetadataImage
-                != originGovernanceToken.metadataImage
+            !stake.governanceTokenWrapped.eq(
+                abi.encodePacked(address(governanceToken))
+            )
         ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
@@ -389,8 +390,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (
-            unstake.governanceTokenMetadataImage
-                != originGovernanceToken.metadataImage
+            !unstake.governanceTokenWrapped.eq(
+                abi.encodePacked(address(governanceToken))
+            )
         ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
@@ -443,8 +445,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (
-            withdrawStake.governanceTokenMetadataImage
-                != originGovernanceToken.metadataImage
+            !withdrawStake.governanceTokenWrapped.eq(
+                abi.encodePacked(address(governanceToken))
+            )
         ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
@@ -481,8 +484,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (
-            withdrawRewards.governanceTokenMetadataImage
-                != originGovernanceToken.metadataImage
+            !withdrawRewards.governanceTokenWrapped.eq(
+                abi.encodePacked(address(governanceToken))
+            )
         ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }

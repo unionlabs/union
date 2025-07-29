@@ -4990,7 +4990,7 @@ contract ZkgmTests is Test {
                     Stake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary,
                         validator: validator,
@@ -5036,7 +5036,7 @@ contract ZkgmTests is Test {
             vm.assume(amount > 0);
         }
 
-        setupGovernanceToken(channelId);
+        address governanceToken = setupGovernanceToken(channelId);
 
         vm.expectRevert(ZkgmLib.ErrInvalidStakeGovernanceToken.selector);
         vm.prank(staker);
@@ -5052,7 +5052,7 @@ contract ZkgmTests is Test {
                     Stake({
                         tokenId: tokenId,
                         governanceToken: abi.encodePacked(wrongToken),
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary,
                         validator: validator,
@@ -5063,7 +5063,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_verify_stake_invalidMetadataImage(
+    function test_verify_stake_invalidWrappedToken(
         uint32 channelId,
         uint256 tokenId,
         address staker,
@@ -5096,7 +5096,7 @@ contract ZkgmTests is Test {
                     Stake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: wrongMetadataImage,
+                        governanceTokenWrapped: hex"",
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary,
                         validator: validator,
@@ -5122,7 +5122,7 @@ contract ZkgmTests is Test {
             vm.assume(amount > 0);
         }
 
-        setupGovernanceToken(channelId);
+        address governanceToken = setupGovernanceToken(channelId);
 
         vm.expectRevert(ZkgmLib.ErrInvalidForwardInstruction.selector);
         vm.prank(staker);
@@ -5146,7 +5146,7 @@ contract ZkgmTests is Test {
                                 Stake({
                                     tokenId: tokenId,
                                     governanceToken: abi.encodePacked(address(erc20)),
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: beneficiary,
                                     validator: validator,
@@ -5195,7 +5195,7 @@ contract ZkgmTests is Test {
                     Stake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: abi.encodePacked(staker),
                         validator: validator,
@@ -5223,7 +5223,7 @@ contract ZkgmTests is Test {
                                 Stake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(staker),
                                     validator: validator,
@@ -5264,7 +5264,7 @@ contract ZkgmTests is Test {
                     Unstake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         validator: validator
                     })
@@ -5315,7 +5315,7 @@ contract ZkgmTests is Test {
                     Unstake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         validator: validator
                     })
@@ -5377,7 +5377,7 @@ contract ZkgmTests is Test {
                     WithdrawStake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
                     })
@@ -5425,7 +5425,7 @@ contract ZkgmTests is Test {
                     WithdrawStake({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
                     })
@@ -5478,7 +5478,7 @@ contract ZkgmTests is Test {
                     WithdrawRewards({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         validator: validator,
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
@@ -5532,7 +5532,7 @@ contract ZkgmTests is Test {
                     WithdrawRewards({
                         tokenId: tokenId,
                         governanceToken: hex"BABE",
-                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         validator: validator,
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
@@ -5592,7 +5592,7 @@ contract ZkgmTests is Test {
                                 Stake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(beneficiary),
                                     validator: validator,
@@ -5667,7 +5667,7 @@ contract ZkgmTests is Test {
                                 Stake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: beneficiary,
                                     validator: validator,
@@ -5737,7 +5737,7 @@ contract ZkgmTests is Test {
                                 Unstake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     validator: validator
                                 })
@@ -5831,7 +5831,7 @@ contract ZkgmTests is Test {
                                 WithdrawStake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(beneficiary)
                                 })
@@ -5911,7 +5911,7 @@ contract ZkgmTests is Test {
                                 WithdrawRewards({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     validator: validator,
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(beneficiary)
@@ -5988,7 +5988,7 @@ contract ZkgmTests is Test {
                                 Stake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: beneficiary,
                                     validator: validator,
@@ -6053,7 +6053,7 @@ contract ZkgmTests is Test {
                                 Unstake({
                                     tokenId: tokenId,
                                     governanceToken: hex"BABE",
-                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     validator: validator
                                 })
@@ -6154,7 +6154,7 @@ contract ZkgmTests is Test {
                 Stake({
                     tokenId: tokenId1,
                     governanceToken: hex"BABE",
-                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                     sender: abi.encodePacked(staker),
                     beneficiary: beneficiary,
                     validator: validator,
@@ -6169,7 +6169,7 @@ contract ZkgmTests is Test {
                 Stake({
                     tokenId: tokenId2,
                     governanceToken: hex"BABE",
-                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                     sender: abi.encodePacked(staker),
                     beneficiary: beneficiary,
                     validator: validator,
@@ -6430,7 +6430,8 @@ contract ZkgmTests is Test {
         Stake memory stake = Stake({
             tokenId: 1,
             governanceToken: bytes("muno"),
-            governanceTokenMetadataImage: 0xC0DEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE,
+            // TODO: wrapped token repr here
+            governanceTokenWrapped: hex"",
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
                 0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
@@ -6453,7 +6454,8 @@ contract ZkgmTests is Test {
         Unstake memory unstake = Unstake({
             tokenId: 1,
             governanceToken: bytes("muno"),
-            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            // TODO: wrapped token repr here
+            governanceTokenWrapped: hex"",
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730"
         });
@@ -6472,7 +6474,8 @@ contract ZkgmTests is Test {
         WithdrawStake memory withdrawStake = WithdrawStake({
             tokenId: 1,
             governanceToken: bytes("muno"),
-            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            // TODO: wrapped token repr here
+            governanceTokenWrapped: abi.encodePacked(hex""),
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
                 0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
@@ -6493,7 +6496,8 @@ contract ZkgmTests is Test {
         WithdrawRewards memory withdrawRewards = WithdrawRewards({
             tokenId: 1,
             governanceToken: bytes("muno"),
-            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            // TODO: wrapped token repr here
+            governanceTokenWrapped: abi.encodePacked(hex""),
             validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(

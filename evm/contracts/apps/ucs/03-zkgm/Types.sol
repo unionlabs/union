@@ -62,7 +62,7 @@ struct FungibleAssetMetadata {
 struct Stake {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes sender;
     bytes beneficiary;
     bytes validator;
@@ -72,7 +72,7 @@ struct Stake {
 struct Unstake {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes sender;
     bytes validator;
 }
@@ -80,7 +80,7 @@ struct Unstake {
 struct WithdrawStake {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes sender;
     bytes beneficiary;
 }
@@ -88,7 +88,7 @@ struct WithdrawStake {
 struct WithdrawRewards {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes validator;
     bytes sender;
     bytes beneficiary;

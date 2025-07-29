@@ -239,7 +239,7 @@ library ZkgmLib {
         return abi.encode(
             stake.tokenId,
             stake.governanceToken,
-            stake.governanceTokenMetadataImage,
+            stake.governanceTokenWrapped,
             stake.sender,
             stake.beneficiary,
             stake.validator,
@@ -253,7 +253,7 @@ library ZkgmLib {
         return abi.encode(
             unstake.tokenId,
             unstake.governanceToken,
-            unstake.governanceTokenMetadataImage,
+            unstake.governanceTokenWrapped,
             unstake.sender,
             unstake.validator
         );
@@ -265,7 +265,7 @@ library ZkgmLib {
         return abi.encode(
             withdrawStake.tokenId,
             withdrawStake.governanceToken,
-            withdrawStake.governanceTokenMetadataImage,
+            withdrawStake.governanceTokenWrapped,
             withdrawStake.sender,
             withdrawStake.beneficiary
         );
@@ -283,7 +283,7 @@ library ZkgmLib {
         return abi.encode(
             withdrawRewards.tokenId,
             withdrawRewards.governanceToken,
-            withdrawRewards.governanceTokenMetadataImage,
+            withdrawRewards.governanceTokenWrapped,
             withdrawRewards.validator,
             withdrawRewards.sender,
             withdrawRewards.beneficiary
