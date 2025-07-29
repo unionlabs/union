@@ -2065,7 +2065,7 @@ fn execute_fungible_asset_order_v2(
             env.block.time.seconds(),
         )?;
 
-        return protocol_fill_unescrow_v2(
+        protocol_fill_unescrow_v2(
             deps,
             env,
             packet.destination_channel_id,
@@ -2076,7 +2076,7 @@ fn execute_fungible_asset_order_v2(
             relayer,
             base_amount.into(),
             quote_amount.into(),
-        );
+        )
     } else {
         let minter = TOKEN_MINTER.load(deps.storage)?;
         let mut wrapped_token: Option<String> = None;
@@ -2162,7 +2162,7 @@ fn execute_fungible_asset_order_v2(
         }
 
         // Fall back to market maker fill
-        return market_maker_fill_v2(
+        market_maker_fill_v2(
             deps,
             env,
             funds,
@@ -2173,10 +2173,11 @@ fn execute_fungible_asset_order_v2(
             packet,
             order,
             intent,
-        );
+        )
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn protocol_fill_mint(
     deps: DepsMut,
     env: Env,
@@ -2282,6 +2283,7 @@ fn protocol_fill_mint(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn protocol_fill_unescrow_v2(
     deps: DepsMut,
     env: Env,
@@ -3529,7 +3531,7 @@ fn predict_wrapped_token_from_metadata_image_v2(
                         path: path.to_string(),
                         channel_id,
                         token: Binary::new(token.to_vec()),
-                        metadata_image: metadata_image.into(),
+                        metadata_image,
                     },
                 )?,
             },
