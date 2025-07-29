@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
 use unionlabs::primitives::{Bytes, H256};
 
-use crate::com::CwFungibleAssetOrderV2;
+use crate::com::CwTokenOrderV2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -120,6 +120,11 @@ pub enum ExecuteMsg {
     InternalBatch {
         messages: Vec<CosmosMsg>,
     },
+    /// Migrate V1 to V2 balances.
+    /// Can only be called by admin.
+    MigrateV1ToV2 {
+        migrations: Vec<V1ToV2Migration>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -152,7 +157,7 @@ pub enum ZkgmMsg {
 pub enum SolverMsg {
     DoSolve {
         packet: Packet,
-        order: CwFungibleAssetOrderV2,
+        order: CwTokenOrderV2,
         caller: Addr,
         relayer: Addr,
         relayer_msg: Bytes,
@@ -163,12 +168,21 @@ pub enum SolverMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum SolverQuery {
-    IsSolver {},
+    IsSolver,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct V1ToV2Migration {
+    pub channel_id: ChannelId,
+    pub path: Uint256,
+    pub base_token: String,
+    pub quote_token: Bytes,
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -206,6 +220,12 @@ pub enum QueryMsg {
         channel_id: ChannelId,
         path: Uint256,
         denom: String,
+    },
+    GetChannelBalanceV2 {
+        channel_id: ChannelId,
+        path: Uint256,
+        base_token: String,
+        quote_token: Bytes,
     },
     GetConfig {},
 }

@@ -527,6 +527,8 @@ interface ISolver {
         bytes calldata relayerMsg,
         bool intent
     ) external;
+
+    function allowMarketMakers() external returns (bool);
 }
 ```
 
@@ -539,7 +541,7 @@ Solver contracts must:
 
 ```rust
 pub enum SolverQuery {
-    IsSolver {},
+    IsSolver,
 }
 
 pub enum SolverMsg {

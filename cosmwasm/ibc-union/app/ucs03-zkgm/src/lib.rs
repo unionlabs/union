@@ -27,6 +27,8 @@ pub enum ContractError {
     OnlyIBCHost,
     #[error("invalid operation, sender must be self")]
     OnlySelf,
+    #[error("invalid operation, sender must be admin")]
+    OnlyAdmin,
     #[error(transparent)]
     Alloy(#[from] alloy_sol_types::Error),
     #[error("invalid zkgm instruction version: {version}")]
@@ -72,7 +74,7 @@ pub enum ContractError {
     #[error(
         "the multiplex target contract address can't be validated, make sure the bech prefix matches the current chain"
     )]
-    UnableToValidateMultiplexTarget,
+    UnableToValidateCallTarget,
     #[error("contract creation event not found during handling `reply`")]
     ContractCreationEventNotFound,
     #[error("{0:?}")]
@@ -95,9 +97,9 @@ pub enum ContractError {
         sent_packet_data: Bytes,
     },
     #[error("asynchronous multiplexing is not supported")]
-    AsyncMultiplexUnsupported,
+    AsyncCallUnsupported,
     #[error("an error happened while calling the destination contract: {error}")]
-    MultiplexError { error: String },
+    CallError { error: String },
     #[error("channel path is full and can't be updated, too many hops? path: {path}, next_hop_index: {next_hop_index}")]
     ChannelPathIsFull { path: U256, next_hop_index: usize },
     #[error("invalid asset origin path: actual={actual}, expected={expected}")]
@@ -113,7 +115,7 @@ pub enum ContractError {
     #[error("invalid forward instruction")]
     InvalidForwardInstruction,
     #[error("invalid multiplex sender")]
-    InvalidMultiplexSender,
+    InvalidCallSender,
     #[error("async acknowledgements are not allowed in batches as they are atomic")]
     BatchMustBeSync,
     #[error("base amount must be greater or equal than quote amount when unwrapping")]
@@ -122,6 +124,8 @@ pub enum ContractError {
     InvalidMetadataType,
     #[error("invalid metadata image")]
     InvalidMetadataImage,
+    #[error("invalid fill type: {fill_type}")]
+    InvalidFillType { fill_type: U256 },
     #[error("must be unwrap operation")]
     MustBeUnwrap,
     #[error("must be wrap operation")]

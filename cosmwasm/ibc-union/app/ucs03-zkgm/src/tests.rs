@@ -18,24 +18,22 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, Forward, FungibleAssetMetadata, FungibleAssetOrder, FungibleAssetOrderAck,
-        FungibleAssetOrderV2, Instruction, Multiplex, ZkgmPacket, FILL_TYPE_MARKETMAKER,
-        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1,
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE, FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
-        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE,
-        TAG_ACK_SUCCESS,
+        Ack, Batch, Call, Forward, FungibleAssetMetadata, FungibleAssetOrder,
+        FungibleAssetOrderAck, Instruction, TokenOrderV2, ZkgmPacket, FILL_TYPE_MARKETMAKER,
+        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+        OP_BATCH, OP_CALL, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
     },
     contract::{
-        dequeue_channel_from_path, execute, increase_channel_balance, increase_channel_balance_v2,
-        instantiate, is_forwarded_packet, migrate, pop_channel_from_path, query, reply,
-        reverse_channel_path, tint_forward_salt, update_channel_path, verify_batch, verify_forward,
-        verify_internal, verify_multiplex, PROTOCOL_VERSION,
+        dequeue_channel_from_path, execute, increase_channel_balance_v2, instantiate,
+        is_forwarded_packet, migrate, pop_channel_from_path, query, reply, reverse_channel_path,
+        tint_forward_salt, update_channel_path, verify_batch, verify_forward, verify_internal,
+        verify_multiplex, PROTOCOL_VERSION,
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitParams,
     },
-    state::{CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, TOKEN_ORIGIN},
+    state::{CHANNEL_BALANCE_V2, CONFIG, EXECUTING_PACKET, TOKEN_ORIGIN},
     ContractError,
 };
 
@@ -339,8 +337,8 @@ fn test_verify_forward_ok() {
         timeout_timestamp: 0,
         instruction: Instruction {
             version: INSTR_VERSION_0,
-            opcode: OP_MULTIPLEX,
-            operand: Multiplex {
+            opcode: OP_CALL,
+            operand: Call {
                 sender: sender.as_bytes().to_vec().into(),
                 eureka: false,
                 contract_address: sender.as_bytes().to_vec().into(),
@@ -384,8 +382,8 @@ fn test_verify_forward_invalid_version() {
         timeout_timestamp: 0,
         instruction: Instruction {
             version: INSTR_VERSION_1,
-            opcode: OP_MULTIPLEX,
-            operand: Multiplex {
+            opcode: OP_CALL,
+            operand: Call {
                 sender: sender.as_bytes().to_vec().into(),
                 eureka: false,
                 contract_address: sender.as_bytes().to_vec().into(),
@@ -451,7 +449,7 @@ fn test_verify_forward_invalid_instruction() {
 fn test_verify_multiplex_sender_ok() {
     let sender = Addr::unchecked("sender");
     // Test with matching sender
-    let multiplex = Multiplex {
+    let multiplex = Call {
         sender: sender.as_bytes().to_vec().into(),
         eureka: false,
         contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
@@ -469,7 +467,7 @@ fn test_verify_multiplex_sender_ok() {
 fn test_verify_multiplex_invalid_sender() {
     let sender = Addr::unchecked("sender");
     // Test with matching sender
-    let multiplex = Multiplex {
+    let multiplex = Call {
         sender: sender.as_bytes().to_vec().into(),
         eureka: false,
         contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
@@ -477,7 +475,7 @@ fn test_verify_multiplex_invalid_sender() {
     };
     let wrong_sender = Addr::unchecked("wrong_sender");
     let result = verify_multiplex(&multiplex, wrong_sender, &mut Response::new());
-    assert!(matches!(result, Err(ContractError::InvalidMultiplexSender)));
+    assert!(matches!(result, Err(ContractError::InvalidCallSender)));
 }
 
 #[test]
@@ -486,8 +484,8 @@ fn test_verify_batch_ok() {
     // Test with matching sender
     let multiplex = Instruction {
         version: INSTR_VERSION_0,
-        opcode: OP_MULTIPLEX,
-        operand: Multiplex {
+        opcode: OP_CALL,
+        operand: Call {
             sender: sender.as_bytes().to_vec().into(),
             eureka: false,
             contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
@@ -546,7 +544,7 @@ fn test_verify_internal_unsupported_version() {
 
     let instruction = Instruction {
         version: 99, // Unsupported version
-        opcode: OP_MULTIPLEX,
+        opcode: OP_CALL,
         operand: vec![].into(),
     };
 
@@ -1626,11 +1624,12 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
         )
         .unwrap();
 
-    increase_channel_balance(
+    increase_channel_balance_v2(
         st.app.contract_storage_mut(&st.zkgm).as_mut(),
         destination_channel_id,
         reverse_channel_path(path).unwrap(),
         wrapped_token.to_string(),
+        base_token.clone(),
         0xCAFEBABEu128.into(),
     )
     .unwrap();
@@ -1650,7 +1649,7 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
         .unwrap();
 
     let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.to_string())
-        .with_base_token(base_token)
+        .with_base_token(base_token.clone())
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
         .with_base_token_path(reverse_channel_path(path).unwrap())
@@ -1689,16 +1688,19 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
     // receiver's balance is now 0xCAFEBABE
     assert_eq!(st.balance_of(&wrapped_token, order.receiver), 0xCAFEBABE);
 
-    let channel_balance = CHANNEL_BALANCE
+    let channel_balance = CHANNEL_BALANCE_V2
         .load(
             st.app.contract_storage(&st.zkgm).as_ref(),
             (
                 destination_channel_id.raw(),
-                reverse_channel_path(path)
-                    .unwrap()
-                    .to_be_bytes::<32>()
-                    .to_vec(),
-                wrapped_token.to_string(),
+                (
+                    reverse_channel_path(path)
+                        .unwrap()
+                        .to_be_bytes::<32>()
+                        .to_vec(),
+                    wrapped_token.to_string(),
+                    base_token.into_vec(),
+                ),
             ),
         )
         .unwrap();
@@ -1713,9 +1715,23 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
     let mut st = init_test_state(admin.clone());
     let path = U256::ONE;
     let destination_channel_id = ChannelId!(10);
-    let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
 
     let wrapped_token = "muno";
+
+    let base_token = st
+        .app
+        .wrap()
+        .query_wasm_smart::<PredictWrappedTokenResponse>(
+            st.zkgm.clone(),
+            &QueryMsg::PredictWrappedTokenV2 {
+                path: path.to_string(),
+                channel_id: destination_channel_id,
+                token: wrapped_token.as_bytes().to_vec().into(),
+                metadata_image: H256::default(),
+            },
+        )
+        .unwrap()
+        .wrapped_token;
 
     st.app
         .sudo(SudoMsg::Bank(cw_multi_test::BankSudo::Mint {
@@ -1724,11 +1740,12 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         }))
         .unwrap();
 
-    increase_channel_balance(
+    increase_channel_balance_v2(
         st.app.contract_storage_mut(&st.zkgm).as_mut(),
         destination_channel_id,
         reverse_channel_path(path).unwrap(),
         wrapped_token.to_string(),
+        base_token.as_bytes().to_vec().into(),
         0xCAFEBABEu128.into(),
     )
     .unwrap();
@@ -1753,7 +1770,7 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         .unwrap();
 
     let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.to_string())
-        .with_base_token(base_token)
+        .with_base_token(base_token.clone().into_bytes())
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
         .with_base_token_path(reverse_channel_path(path).unwrap())
@@ -1793,16 +1810,19 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         .abi_encode_params()
     );
 
-    let channel_balance = CHANNEL_BALANCE
+    let channel_balance = CHANNEL_BALANCE_V2
         .load(
             st.app.contract_storage(&st.zkgm).as_ref(),
             (
                 destination_channel_id.raw(),
-                reverse_channel_path(path)
-                    .unwrap()
-                    .to_be_bytes::<32>()
-                    .to_vec(),
-                wrapped_token.to_string(),
+                (
+                    reverse_channel_path(path)
+                        .unwrap()
+                        .to_be_bytes::<32>()
+                        .to_vec(),
+                    wrapped_token.to_string(),
+                    base_token.as_bytes().to_vec(),
+                ),
             ),
         )
         .unwrap();
@@ -1841,11 +1861,12 @@ fn test_recv_packet_native_unwrap_channel_no_outstanding() {
         )
         .unwrap();
 
-    increase_channel_balance(
+    increase_channel_balance_v2(
         st.app.contract_storage_mut(&st.zkgm).as_mut(),
         ChannelId!(20),
         reverse_channel_path(path).unwrap(),
         wrapped_token.to_string(),
+        0xCAFEBABEu128.to_be_bytes().to_vec().into(),
         0xCAFEBABEu128.into(),
     )
     .unwrap();
@@ -1922,11 +1943,12 @@ fn test_recv_packet_native_unwrap_path_no_outstanding() {
         )
         .unwrap();
 
-    increase_channel_balance(
+    increase_channel_balance_v2(
         st.app.contract_storage_mut(&st.zkgm).as_mut(),
         destination_channel_id,
         "100".parse().unwrap(),
         wrapped_token.to_string(),
+        0xCAFEBABEu128.to_be_bytes().to_vec().into(),
         0xCAFEBABEu128.into(),
     )
     .unwrap();
@@ -1974,7 +1996,7 @@ fn test_recv_packet_native_unwrap_path_no_outstanding() {
 }
 
 #[test]
-fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_failure_ack() {
+fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_market_maker_ok() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin.clone());
     let path = U256::ONE;
@@ -2015,12 +2037,12 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_failure_
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                    kind: TOKEN_ORDER_KIND_UNESCROW,
                     metadata: vec![0u8; 32].into(), // dummy metadata image
                     quote_token: wrapped_token.as_bytes().to_vec().into(),
                     quote_amount: quote_amount.try_into().unwrap(),
@@ -2064,7 +2086,6 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_failure_
         )
         .unwrap();
 
-    // Verify that a failure acknowledgment is returned instead of a revert
     let ack = PACKET_ACK
         .load(
             st.app.contract_storage(&st.ibc_host).as_ref(),
@@ -2075,24 +2096,20 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_failure_
     assert_eq!(
         ack,
         Ack {
-            tag: TAG_ACK_FAILURE,
-            inner_ack: Default::default(),
+            tag: TAG_ACK_SUCCESS,
+            inner_ack: FungibleAssetOrderAck {
+                fill_type: FILL_TYPE_MARKETMAKER,
+                market_maker: Default::default()
+            }
+            .abi_encode_params()
+            .into(),
         }
         .abi_encode_params()
     );
 
-    // Verify no tokens were transferred
-    let balance: cw20::BalanceResponse = st
-        .app
-        .wrap()
-        .query_wasm_smart(
-            &wrapped_token,
-            &Cw20QueryMsg::Balance {
-                address: st.minter.to_string(),
-            },
-        )
-        .unwrap();
-    assert_eq!(balance.balance.u128(), base_amount + 1000);
+    // Verify that the receiver got the quote tokens
+    let balance = st.app.wrap().query_balance(admin, wrapped_token).unwrap();
+    assert_eq!(balance.amount.u128(), quote_amount);
 }
 
 #[test]
@@ -2171,12 +2188,12 @@ fn test_recv_packet_native_v2_wrap_ok() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                    kind: TOKEN_ORDER_KIND_INITIALIZE,
                     metadata: metadata.abi_encode_params().into(),
                     quote_token: quote_token.as_bytes().to_vec().into(),
                     quote_amount: base_amount.try_into().unwrap(),
@@ -2259,13 +2276,12 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
         .unwrap();
 
     // Simulate outstanding balance using V2 channel balance for V2 operations
-    let metadata_image = H256::new([0u8; 32]); // matches the dummy metadata in the packet
     increase_channel_balance_v2(
         st.app.contract_storage_mut(&st.zkgm).as_mut(),
         destination_channel_id,
         reverse_channel_path(path).unwrap(),
         wrapped_token.to_string(),
-        metadata_image,
+        base_token.to_vec().into(), // quote_token in the context of unwrapping
         amount.into(),
     )
     .unwrap();
@@ -2298,12 +2314,12 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                    kind: TOKEN_ORDER_KIND_UNESCROW,
                     metadata: vec![0u8; 32].into(),
                     quote_token: wrapped_token.as_bytes().to_vec().into(),
                     quote_amount: amount.try_into().unwrap(),
@@ -2386,16 +2402,14 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
         )
         .unwrap();
 
-    // For V2 unwrap operations with IMAGE_UNWRAP, use increase_channel_balance_v2 with metadata image
-    let metadata_image = H256::new([0u8; 32]); // matches the dummy metadata in the packet
-
+    // For V2 unwrap operations, use increase_channel_balance_v2 with base_token as quote_token
     increase_channel_balance_v2(
         st.app.contract_storage_mut(&st.zkgm).as_mut(),
         destination_channel_id,
         reverse_channel_path(path).unwrap(),
         wrapped_token.to_string(),
-        metadata_image,
-        base_amount.into(),
+        base_token.to_vec().into(), // quote_token in the context of unwrapping
+        0xCAFEBABEu128.into(),
     )
     .unwrap();
 
@@ -2427,13 +2441,13 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
-                    metadata: metadata_image.get().to_vec().into(),
+                    kind: TOKEN_ORDER_KIND_UNESCROW,
+                    metadata: vec![0u8; 32].into(),
                     quote_token: wrapped_token.as_bytes().to_vec().into(),
                     quote_amount: quote_amount.try_into().unwrap(),
                 }
@@ -2484,7 +2498,7 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
 }
 
 #[test]
-fn test_recv_packet_native_v2_invalid_metadata_type() {
+fn test_recv_packet_native_v2_custom_metadata_ok() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin.clone());
     let path = U256::ZERO;
@@ -2501,12 +2515,12 @@ fn test_recv_packet_native_v2_invalid_metadata_type() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: 99, // Invalid metadata type
+                    kind: 99, // custom metadata type
                     metadata: vec![0u8; 32].into(),
                     quote_token: vec![0u8; 20].into(),
                     quote_amount: base_amount.try_into().unwrap(),
@@ -2528,27 +2542,17 @@ fn test_recv_packet_native_v2_invalid_metadata_type() {
         relayer_msg: Default::default(),
     });
 
-    st.app
+    let err = st
+        .app
         .execute(
             st.ibc_host.clone(),
             wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
         )
+        .err()
         .unwrap();
-
-    let ack = PACKET_ACK
-        .load(
-            st.app.contract_storage(&st.ibc_host).as_ref(),
-            commit_packets(&[packet]).into(),
-        )
-        .unwrap();
-
     assert_eq!(
-        ack,
-        Ack {
-            tag: TAG_ACK_FAILURE,
-            inner_ack: Default::default(),
-        }
-        .abi_encode_params()
+        err.downcast_ref::<ContractError>().unwrap(),
+        &ContractError::OnlyMaker
     );
 }
 
@@ -2596,12 +2600,12 @@ fn test_recv_packet_native_v2_market_maker_fill() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                    kind: TOKEN_ORDER_KIND_INITIALIZE,
                     metadata: metadata.abi_encode_params().into(),
                     quote_token: quote_token.as_bytes().to_vec().into(),
                     quote_amount: quote_amount.try_into().unwrap(),
@@ -2731,12 +2735,12 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                    kind: TOKEN_ORDER_KIND_INITIALIZE,
                     metadata: preimage_metadata.abi_encode_params().into(),
                     quote_token: quote_token.as_bytes().to_vec().into(),
                     quote_amount: base_amount.try_into().unwrap(),
@@ -2797,12 +2801,12 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_IMAGE,
+                    kind: TOKEN_ORDER_KIND_ESCROW,
                     metadata: metadata_image.as_ref().to_vec().into(),
                     quote_token: quote_token.as_bytes().to_vec().into(),
                     quote_amount: base_amount.try_into().unwrap(),
@@ -2930,142 +2934,15 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                    kind: TOKEN_ORDER_KIND_INITIALIZE,
                     metadata: metadata.abi_encode_params().into(),
                     quote_token: quote_token.as_bytes().to_vec().into(),
                     quote_amount: base_amount.try_into().unwrap(),
-                }
-                .abi_encode_params()
-                .into(),
-            },
-        }
-        .abi_encode_params()
-        .into(),
-        timeout_height: MustBeZero,
-        timeout_timestamp: Default::default(),
-    };
-
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
-        caller: admin.to_string(),
-        packet: packet.clone(),
-        relayer: admin.to_string(),
-        relayer_msg: Default::default(),
-    });
-
-    st.app
-        .execute(
-            st.ibc_host.clone(),
-            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
-        )
-        .unwrap();
-
-    let ack = PACKET_ACK
-        .load(
-            st.app.contract_storage(&st.ibc_host).as_ref(),
-            commit_packets(&[packet]).into(),
-        )
-        .unwrap();
-
-    assert_eq!(
-        ack,
-        Ack {
-            tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
-                fill_type: FILL_TYPE_PROTOCOL,
-                market_maker: Default::default()
-            }
-            .abi_encode_params()
-            .into(),
-        }
-        .abi_encode_params()
-    );
-}
-
-#[test]
-fn test_recv_packet_native_v2_unwrap_with_v1_metadata_image() {
-    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
-    let mut st = init_test_state(admin.clone());
-    let path = U256::ONE;
-    let destination_channel_id = ChannelId!(10);
-    let base_token = hex_literal::hex!("DEAFBABE");
-    let amount = 1000u128;
-
-    let wrapped_token = st
-        .app
-        .instantiate_contract(
-            st.cw20_base_code_id,
-            admin.clone(),
-            &cw20_base::msg::InstantiateMsg {
-                name: "muno".to_string(),
-                symbol: "muno".to_string(),
-                decimals: 8,
-                initial_balances: vec![Cw20Coin {
-                    address: st.minter.to_string(),
-                    amount: (amount + 1000).into(),
-                }],
-                mint: None,
-                marketing: None,
-            },
-            &[],
-            "muno-token",
-            Some(admin.clone().to_string()),
-        )
-        .unwrap();
-
-    increase_channel_balance(
-        st.app.contract_storage_mut(&st.zkgm).as_mut(),
-        destination_channel_id,
-        reverse_channel_path(path).unwrap(),
-        wrapped_token.to_string(),
-        amount.into(),
-    )
-    .unwrap();
-
-    // Set rate limit for the wrapped token
-    st.app
-        .execute(
-            st.rate_limiter.clone(),
-            wasm_execute(
-                st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
-                    denom: wrapped_token.to_string(),
-                    capacity: amount.into(),
-                    refill_rate: 1u32.into(),
-                    reset: false,
-                },
-                vec![],
-            )
-            .unwrap()
-            .into(),
-        )
-        .unwrap();
-
-    let packet = Packet {
-        source_channel_id: ChannelId!(1),
-        destination_channel_id,
-        data: ZkgmPacket {
-            salt: Default::default(),
-            path,
-            instruction: Instruction {
-                version: INSTR_VERSION_2,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
-                    sender: vec![].into(),
-                    receiver: admin.as_bytes().to_vec().into(),
-                    base_token: base_token.to_vec().into(),
-                    base_amount: amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
-                    metadata: FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-                        .get()
-                        .to_vec()
-                        .into(),
-                    quote_token: wrapped_token.as_bytes().to_vec().into(),
-                    quote_amount: amount.try_into().unwrap(),
                 }
                 .abi_encode_params()
                 .into(),
@@ -3155,12 +3032,12 @@ fn test_recv_packet_native_v2_unwrap_no_outstanding_balance() {
             instruction: Instruction {
                 version: INSTR_VERSION_2,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrderV2 {
+                operand: TokenOrderV2 {
                     sender: vec![].into(),
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: amount.try_into().unwrap(),
-                    metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                    kind: TOKEN_ORDER_KIND_UNESCROW,
                     metadata: vec![0u8; 32].into(),
                     quote_token: wrapped_token.as_bytes().to_vec().into(),
                     quote_amount: amount.try_into().unwrap(),
