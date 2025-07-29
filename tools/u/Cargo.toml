@@ -17,6 +17,7 @@ anyhow             = { workspace = true }
 base64             = { workspace = true }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc       = { workspace = true }
+cosmwasm-std       = { workspace = true }
 create3            = { workspace = true }
 deployments        = { workspace = true }
 derive_more        = { workspace = true }
@@ -30,6 +31,8 @@ protos             = { workspace = true, features = ["proto_full", "serde"] }
 rand               = "0.8"
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
+sha2               = { workspace = true, features = ["asm", "asm-aarch64"] }
+subtle-encoding    = { workspace = true, features = ["bech32-preview"] }
 tokio              = { workspace = true, features = ["macros"] }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
@@ -37,7 +40,6 @@ ucs03-zkgm         = { workspace = true }
 ucs04              = { workspace = true, features = ["serde"] }
 unionlabs          = { workspace = true, features = ["bcs", "bincode", "ethabi", "proto", "ssz"] }
 voyager-primitives = { workspace = true, features = ["serde"] }
-
 
 arbitrum-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 berachain-light-client-types              = { workspace = true, features = ["serde", "bincode", "ethabi"] }
