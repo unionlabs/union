@@ -54,7 +54,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
-        channelBalance;
+        _deprecated_channelBalanceV1;
     mapping(uint32 => GovernanceToken) public channelGovernanceToken;
     mapping(uint256 => ZkgmStake) public stakes;
     mapping(address => bytes32) public metadataImageOf;

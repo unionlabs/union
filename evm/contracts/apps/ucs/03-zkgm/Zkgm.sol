@@ -1040,5 +1040,27 @@ contract UCS03Zkgm is
         _setBucketConfig(token, capacity, refillRate, reset);
     }
 
+    function migrateV1ToV2(
+        V1ToV2Migration[] calldata migrations
+    ) public restricted {
+        for (uint256 i = 0; i < migrations.length; i++) {
+            V1ToV2Migration calldata migration = migrations[i];
+            uint256 balance = _deprecated_channelBalanceV1[migration.channelId][migration
+                .path][migration.baseToken];
+            if (balance == 0) {
+                revert("no balance");
+            }
+            _deprecated_channelBalanceV1[migration.channelId][migration.path][migration
+                .baseToken] = 0;
+            _increaseOutstandingV2(
+                migration.channelId,
+                migration.path,
+                migration.baseToken,
+                migration.quoteToken,
+                balance
+            );
+        }
+    }
+
     receive() external payable {}
 }
