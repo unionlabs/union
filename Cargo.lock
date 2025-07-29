@@ -13365,6 +13365,16 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest 0.10.7",
+ "sha2-asm",
+]
+
+[[package]]
+name = "sha2-asm"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b845214d6175804686b2bd482bcffe96651bb2d1200742b712003504a2dac1ab"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -16207,6 +16217,7 @@ dependencies = [
  "clap 4.5.39",
  "cometbft-rpc",
  "cometbls-light-client-types",
+ "cosmwasm-std 2.2.2",
  "create3",
  "deployments",
  "derive_more 0.99.20",
@@ -16226,9 +16237,11 @@ dependencies = [
  "scroll-light-client-types",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "state-lens-ics23-ics23-light-client-types",
  "state-lens-ics23-mpt-light-client-types",
  "state-lens-ics23-smt-light-client-types",
+ "subtle-encoding",
  "tendermint-light-client-types",
  "tokio",
  "tracing",

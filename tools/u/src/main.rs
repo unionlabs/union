@@ -18,6 +18,7 @@ use unionlabs::primitives::{
 
 pub mod codec;
 pub mod deployments;
+pub mod mine;
 pub mod packet;
 pub mod path;
 pub mod vanity;
