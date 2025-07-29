@@ -25,14 +25,13 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, BatchAck, Call, Forward, FungibleAssetMetadata, FungibleAssetOrder,
-        FungibleAssetOrderAck, Instruction, Stake, TokenOrderV2, Unstake, UnstakeAck,
-        WithdrawRewards, WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket,
-        ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC,
-        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD,
-        OP_TOKEN_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE,
-        TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
-        TOKEN_ORDER_KIND_UNESCROW,
+        Ack, Batch, BatchAck, Call, Forward, Instruction, Stake, TokenMetadata, TokenOrderAck,
+        TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards, WithdrawRewardsAck,
+        WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
+        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+        OP_BATCH, OP_CALL, OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS,
+        OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW,
+        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg, SolverQuery,
@@ -575,7 +574,7 @@ fn timeout_internal(
     match instruction.opcode {
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 refund(deps, path, packet.source_channel_id, order)
             }
             INSTR_VERSION_2 => {
@@ -747,9 +746,9 @@ fn acknowledge_internal(
     match instruction.opcode {
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 let order_ack = if successful {
-                    Some(FungibleAssetOrderAck::abi_decode_params_validate(&ack)?)
+                    Some(TokenOrderAck::abi_decode_params_validate(&ack)?)
                 } else {
                     None
                 };
@@ -760,7 +759,7 @@ fn acknowledge_internal(
             INSTR_VERSION_2 => {
                 let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
                 let order_ack = if successful {
-                    Some(FungibleAssetOrderAck::abi_decode_params_validate(&ack)?)
+                    Some(TokenOrderAck::abi_decode_params_validate(&ack)?)
                 } else {
                     None
                 };
@@ -830,7 +829,7 @@ fn refund(
     deps: DepsMut,
     path: U256,
     source_channel: ChannelId,
-    order: FungibleAssetOrder,
+    order: TokenOrderV1,
 ) -> Result<Response, ContractError> {
     // 1. Native minter + sent native tokens: correct
     // 2. Cw20 minter + sent native tokens:
@@ -948,7 +947,7 @@ fn acknowledge_fungible_asset_order_v2(
     _salt: H256,
     path: U256,
     order: TokenOrderV2,
-    order_ack: Option<FungibleAssetOrderAck>,
+    order_ack: Option<TokenOrderAck>,
 ) -> Result<Response, ContractError> {
     if let Some(ack) = order_ack {
         // Successful acknowledgement
@@ -1024,8 +1023,8 @@ fn acknowledge_fungible_asset_order(
     _relayer: Addr,
     _salt: H256,
     path: U256,
-    order: FungibleAssetOrder,
-    order_ack: Option<FungibleAssetOrderAck>,
+    order: TokenOrderV1,
+    order_ack: Option<TokenOrderAck>,
 ) -> Result<Response, ContractError> {
     if let Some(ack) = order_ack {
         // Successful acknowledgement
@@ -1201,7 +1200,7 @@ fn execute_internal(
     match instruction.opcode {
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 execute_fungible_asset_order(
                     deps,
                     env,
@@ -1806,7 +1805,7 @@ fn execute_fungible_asset_order(
     relayer_msg: Bytes,
     _salt: H256,
     path: U256,
-    order: FungibleAssetOrder,
+    order: TokenOrderV1,
     intent: bool,
 ) -> Result<Response, ContractError> {
     // Get the token minter contract
@@ -1997,7 +1996,7 @@ fn execute_fungible_asset_order(
         .add_message(wasm_execute(
             env.contract.address,
             &ExecuteMsg::InternalWriteAck {
-                ack: FungibleAssetOrderAck {
+                ack: TokenOrderAck {
                     fill_type: FILL_TYPE_PROTOCOL,
                     market_maker: Default::default(),
                 }
@@ -2082,8 +2081,8 @@ fn execute_fungible_asset_order_v2(
         let minter = TOKEN_MINTER.load(deps.storage)?;
         let mut wrapped_token: Option<String> = None;
 
-        // Decode metadata (EVM: ZkgmLib.decodeFungibleAssetMetadata(order.metadata))
-        let metadata = FungibleAssetMetadata::abi_decode_params_validate(&order.metadata).ok();
+        // Decode metadata (EVM: ZkgmLib.decodeTokenMetadata(order.metadata))
+        let metadata = TokenMetadata::abi_decode_params_validate(&order.metadata).ok();
 
         if order.kind == TOKEN_ORDER_KIND_ESCROW {
             // Get metadata image for quote token (EVM: metadataImageOf[quoteToken])
@@ -2189,7 +2188,7 @@ fn protocol_fill_mint(
     relayer: Addr,
     base_amount: Uint256,
     quote_amount: Uint256,
-    metadata: Option<FungibleAssetMetadata>,
+    metadata: Option<TokenMetadata>,
     can_deploy: bool,
 ) -> Result<Response, ContractError> {
     let minter = TOKEN_MINTER.load(deps.storage)?;
@@ -2272,7 +2271,7 @@ fn protocol_fill_mint(
         .add_message(wasm_execute(
             env.contract.address,
             &ExecuteMsg::InternalWriteAck {
-                ack: FungibleAssetOrderAck {
+                ack: TokenOrderAck {
                     fill_type: FILL_TYPE_PROTOCOL,
                     market_maker: Default::default(),
                 }
@@ -2346,7 +2345,7 @@ fn protocol_fill_unescrow_v2(
         .add_message(wasm_execute(
             env.contract.address,
             &ExecuteMsg::InternalWriteAck {
-                ack: FungibleAssetOrderAck {
+                ack: TokenOrderAck {
                     fill_type: FILL_TYPE_PROTOCOL,
                     market_maker: Default::default(),
                 }
@@ -2727,7 +2726,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                                 // Ensure all acknowledgements has been written
                                 // This is guaranteed because allowed
                                 // instructions are always yielding an ack in
-                                // this case (multiplex/fungibleAssetOrder). We keep this assertion for future upgrades.
+                                // this case (call/token order). We keep this assertion for future upgrades.
                                 if acks.len() != expected_acks {
                                     return Err(ContractError::BatchMustBeSync);
                                 }
@@ -2867,7 +2866,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                 SubMsgResult::Ok(_) => Ok(Response::new().add_message(wasm_execute(
                     env.contract.address,
                     &ExecuteMsg::InternalWriteAck {
-                        ack: FungibleAssetOrderAck {
+                        ack: TokenOrderAck {
                             fill_type: FILL_TYPE_MARKETMAKER,
                             market_maker: Vec::from(market_maker).into(),
                         }
@@ -2942,7 +2941,7 @@ pub fn verify_internal(
     match instruction.opcode {
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 verify_fungible_asset_order(deps, info, funds, channel_id, path, &order, response)
             }
             INSTR_VERSION_2 => {
@@ -2995,7 +2994,7 @@ pub fn verify_fungible_asset_order(
     funds: &mut Coins,
     channel_id: ChannelId,
     path: U256,
-    order: &FungibleAssetOrder,
+    order: &TokenOrderV1,
     response: &mut Response,
 ) -> Result<(), ContractError> {
     // Validate and get base token address
@@ -3548,7 +3547,7 @@ fn predict_wrapped_token_v2(
     path: U256,
     channel_id: ChannelId,
     token: Bytes,
-    metadata: FungibleAssetMetadata,
+    metadata: TokenMetadata,
 ) -> StdResult<(String, Bytes)> {
     // Hash the metadata to get the metadata image
     let metadata_bytes = metadata.abi_encode_params();

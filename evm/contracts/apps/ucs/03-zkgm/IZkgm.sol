@@ -31,7 +31,7 @@ interface IZkgm is IZkgmStore {
         uint256 path,
         uint32 channel,
         bytes calldata token,
-        FungibleAssetMetadata calldata metadata
+        TokenMetadata calldata metadata
     ) external returns (address, bytes32);
 
     function predictWrappedTokenFromMetadataImageV2(

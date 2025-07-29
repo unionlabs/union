@@ -2,11 +2,7 @@ pragma solidity ^0.8.27;
 
 import "./Store.sol";
 
-contract UCS03ZkgmFungibleAssetOrderImpl is
-    Versioned,
-    TokenBucket,
-    UCS03ZkgmStore
-{
+contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
     using ZkgmLib for *;
     using LibString for *;
     using LibBytes for *;
@@ -40,8 +36,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         if (fee > 0) {
             IZkgmERC20(wrappedToken).mint(relayer, fee);
         }
-        return ZkgmLib.encodeFungibleAssetOrderAck(
-            FungibleAssetOrderAck({
+        return ZkgmLib.encodeTokenOrderAck(
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                 marketMaker: ZkgmLib.ACK_EMPTY
             })
@@ -94,8 +90,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                 IERC20(quoteToken).safeTransfer(relayer, fee);
             }
         }
-        return ZkgmLib.encodeFungibleAssetOrderAck(
-            FungibleAssetOrderAck({
+        return ZkgmLib.encodeTokenOrderAck(
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                 marketMaker: ZkgmLib.ACK_EMPTY
             })
@@ -141,8 +137,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                 return ZkgmLib.ACK_ERR_ONLYMAKER;
             }
         }
-        return ZkgmLib.encodeFungibleAssetOrderAck(
-            FungibleAssetOrderAck({
+        return ZkgmLib.encodeTokenOrderAck(
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                 // The relayer has to provide it's maker address using the
                 // relayerMsg. This address is specific to the counterparty
@@ -221,8 +217,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             }
         }
 
-        return ZkgmLib.encodeFungibleAssetOrderAck(
-            FungibleAssetOrderAck({
+        return ZkgmLib.encodeTokenOrderAck(
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                 // The relayer has to provide it's maker address using the
                 // relayerMsg. This address is specific to the counterparty
@@ -239,7 +235,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         bytes calldata unwrappedToken,
         address wrappedToken,
         bytes32 wrappedTokenSalt,
-        FungibleAssetMetadata memory metadata,
+        TokenMetadata memory metadata,
         bool canDeploy
     ) internal {
         if (!ZkgmLib.isDeployed(wrappedToken)) {
@@ -258,9 +254,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             );
             tokenOrigin[wrappedToken] =
                 ZkgmLib.updateChannelPath(path, channelId);
-            metadataImageOf[wrappedToken] = EfficientHashLib.hash(
-                ZkgmLib.encodeFungibleAssetMetadata(metadata)
-            );
+            metadataImageOf[wrappedToken] =
+                EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         }
     }
 
@@ -270,7 +265,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         bytes calldata unwrappedToken,
         address wrappedToken,
         bytes32 wrappedTokenSalt,
-        FungibleAssetMetadata calldata metadata,
+        TokenMetadata calldata metadata,
         bool canDeploy
     ) internal {
         if (!ZkgmLib.isDeployed(wrappedToken)) {
@@ -289,16 +284,15 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             );
             tokenOrigin[wrappedToken] =
                 ZkgmLib.updateChannelPath(path, channelId);
-            metadataImageOf[wrappedToken] = EfficientHashLib.hash(
-                ZkgmLib.encodeFungibleAssetMetadata(metadata)
-            );
+            metadataImageOf[wrappedToken] =
+                EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         }
     }
 
-    function _makeDefaultFungibleAssetMetadata(
-        FungibleAssetOrder calldata order
-    ) internal view returns (FungibleAssetMetadata memory) {
-        return FungibleAssetMetadata({
+    function _makeDefaultTokenMetadata(
+        TokenOrderV1 calldata order
+    ) internal view returns (TokenMetadata memory) {
+        return TokenMetadata({
             implementation: abi.encodePacked(ERC20_IMPL),
             initializer: abi.encodeCall(
                 ZkgmERC20.initialize,
@@ -319,13 +313,13 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         }
     }
 
-    function executeFungibleAssetOrder(
+    function executeTokenOrderV1(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
         uint256 path,
-        FungibleAssetOrder calldata order,
+        TokenOrderV1 calldata order,
         bool intent
     ) public returns (bytes memory) {
         address quoteToken = address(bytes20(order.quoteToken));
@@ -349,8 +343,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
             _optionalRateLimit(quoteToken, order.quoteAmount);
-            FungibleAssetMetadata memory metadata =
-                _makeDefaultFungibleAssetMetadata(order);
+            TokenMetadata memory metadata = _makeDefaultTokenMetadata(order);
             _deployWrappedTokenV2Memory(
                 ibcPacket.destinationChannelId,
                 path,
@@ -443,8 +436,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             bytes32 wrappedTokenSalt;
             // Decode is noop here as it's directly indexing in the calldata,
             // even if the metadata is empty this will not fail.
-            FungibleAssetMetadata calldata metadata =
-                ZkgmLib.decodeFungibleAssetMetadata(order.metadata);
+            TokenMetadata calldata metadata =
+                ZkgmLib.decodeTokenMetadata(order.metadata);
             if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_ESCROW) {
                 bytes32 metadataImage = metadataImageOf[quoteToken];
                 if (metadataImage == 0) {
@@ -512,18 +505,18 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         }
     }
 
-    function _acknowledgeFungibleAssetOrder(
+    function _acknowledgeTokenOrderV1(
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
         bytes32 salt,
-        FungibleAssetOrder calldata order,
+        TokenOrderV1 calldata order,
         bool successful,
         bytes calldata ack
     ) internal {
         if (successful) {
-            FungibleAssetOrderAck calldata assetOrderAck =
-                ZkgmLib.decodeFungibleAssetOrderAck(ack);
+            TokenOrderAck calldata assetOrderAck =
+                ZkgmLib.decodeTokenOrderAck(ack);
             if (assetOrderAck.fillType == ZkgmLib.FILL_TYPE_PROTOCOL) {
                 // The protocol filled, fee was paid to relayer.
             } else if (assetOrderAck.fillType == ZkgmLib.FILL_TYPE_MARKETMAKER)
@@ -556,16 +549,16 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         }
     }
 
-    function acknowledgeFungibleAssetOrder(
+    function acknowledgeTokenOrderV1(
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
         bytes32 salt,
-        FungibleAssetOrder calldata order,
+        TokenOrderV1 calldata order,
         bool successful,
         bytes calldata ack
     ) public {
-        _acknowledgeFungibleAssetOrder(
+        _acknowledgeTokenOrderV1(
             ibcPacket, relayer, path, salt, order, successful, ack
         );
     }
@@ -580,8 +573,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         bytes calldata ack
     ) public {
         if (successful) {
-            FungibleAssetOrderAck calldata assetOrderAck =
-                ZkgmLib.decodeFungibleAssetOrderAck(ack);
+            TokenOrderAck calldata assetOrderAck =
+                ZkgmLib.decodeTokenOrderAck(ack);
             if (assetOrderAck.fillType == ZkgmLib.FILL_TYPE_PROTOCOL) {
                 // The protocol filled, fee was paid to relayer.
             } else if (assetOrderAck.fillType == ZkgmLib.FILL_TYPE_MARKETMAKER)
@@ -614,10 +607,10 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         }
     }
 
-    function timeoutFungibleAssetOrder(
+    function timeoutTokenOrderV1(
         IBCPacket calldata ibcPacket,
         uint256 path,
-        FungibleAssetOrder calldata order
+        TokenOrderV1 calldata order
     ) public {
         _refund(ibcPacket.sourceChannelId, path, order);
     }
@@ -633,7 +626,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
     function _refund(
         uint32 sourceChannelId,
         uint256 path,
-        FungibleAssetOrder calldata order
+        TokenOrderV1 calldata order
     ) internal {
         address sender = address(bytes20(order.sender));
         address baseToken = address(bytes20(order.baseToken));

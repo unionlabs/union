@@ -96,16 +96,16 @@ library ZkgmLib {
     error ErrMustBeWrap();
     error ErrStakingRewardNotWithdrawable();
 
-    function encodeFungibleAssetOrderAck(
-        FungibleAssetOrderAck memory ack
+    function encodeTokenOrderAck(
+        TokenOrderAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.fillType, ack.marketMaker);
     }
 
-    function decodeFungibleAssetMetadata(
+    function decodeTokenMetadata(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetMetadata calldata) {
-        FungibleAssetMetadata calldata meta;
+    ) internal pure returns (TokenMetadata calldata) {
+        TokenMetadata calldata meta;
         assembly {
             meta := stream.offset
         }
@@ -142,10 +142,10 @@ library ZkgmLib {
         return ack;
     }
 
-    function decodeFungibleAssetOrderAck(
+    function decodeTokenOrderAck(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetOrderAck calldata) {
-        FungibleAssetOrderAck calldata ack;
+    ) internal pure returns (TokenOrderAck calldata) {
+        TokenOrderAck calldata ack;
         assembly {
             ack := stream.offset
         }
@@ -361,8 +361,8 @@ library ZkgmLib {
         return operand;
     }
 
-    function encodeFungibleAssetOrder(
-        FungibleAssetOrder memory order
+    function encodeTokenOrderV1(
+        TokenOrderV1 memory order
     ) internal pure returns (bytes memory) {
         return abi.encode(
             order.sender,
@@ -393,16 +393,16 @@ library ZkgmLib {
         );
     }
 
-    function encodeFungibleAssetMetadata(
-        FungibleAssetMetadata memory meta
+    function encodeTokenMetadata(
+        TokenMetadata memory meta
     ) internal pure returns (bytes memory) {
         return abi.encode(meta.implementation, meta.initializer);
     }
 
-    function decodeFungibleAssetOrder(
+    function decodeTokenOrderV1(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetOrder calldata) {
-        FungibleAssetOrder calldata operand;
+    ) internal pure returns (TokenOrderV1 calldata) {
+        TokenOrderV1 calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -488,8 +488,8 @@ library ZkgmLib {
     function isAllowedForwardInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_CALL || opcode == OP_TOKEN_ORDER
-            || opcode == OP_BATCH;
+        return
+            opcode == OP_CALL || opcode == OP_TOKEN_ORDER || opcode == OP_BATCH;
     }
 
     function tintForwardSalt(
@@ -533,7 +533,7 @@ library ZkgmLib {
         return abi.encode(path, sender, contractCalldata);
     }
 
-    function makeFungibleAssetOrder(
+    function makeTokenOrderV1(
         IZkgm zkgm,
         uint256 path,
         uint32 channelId,
@@ -558,7 +558,7 @@ library ZkgmLib {
         string memory symbol = sentTokenMeta.symbol();
         string memory name = sentTokenMeta.name();
         uint8 decimals = sentTokenMeta.decimals();
-        FungibleAssetOrder memory order = FungibleAssetOrder({
+        TokenOrderV1 memory order = TokenOrderV1({
             sender: abi.encodePacked(sender),
             receiver: receiver,
             baseToken: abi.encodePacked(baseToken),
@@ -573,7 +573,7 @@ library ZkgmLib {
         return Instruction({
             version: INSTR_VERSION_1,
             opcode: OP_TOKEN_ORDER,
-            operand: encodeFungibleAssetOrder(order)
+            operand: encodeTokenOrderV1(order)
         });
     }
 

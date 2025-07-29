@@ -30,7 +30,7 @@ use sqlx::{
     Executor, PgPool, Row,
 };
 use tracing::{debug, info, info_span, instrument, trace, warn, Instrument};
-use ucs03_zkgm::com::{Ack, BatchAck, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
+use ucs03_zkgm::com::{Ack, BatchAck, TokenOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
 use unionlabs::{
     self,
     cosmos::tx::{tx_body::TxBody, tx_raw::TxRaw},
@@ -703,7 +703,7 @@ fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
         return false;
     }
 
-    match FungibleAssetOrderAck::abi_decode_params_validate(&ack.inner_ack) {
+    match TokenOrderAck::abi_decode_params_validate(&ack.inner_ack) {
         Ok(ack) => ack.fill_type == FILL_TYPE_PROTOCOL,
         Err(_) => match BatchAck::abi_decode_params_validate(&ack.inner_ack) {
             Ok(BatchAck { acknowledgements }) => {
@@ -716,7 +716,7 @@ fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
 
 fn is_successful_protocol_fill_batch_ack(acknowledgements: Vec<alloy::primitives::Bytes>) -> bool {
     for (idx, ack) in acknowledgements.iter().enumerate() {
-        if let Ok(ack) = FungibleAssetOrderAck::abi_decode_params_validate(ack) {
+        if let Ok(ack) = TokenOrderAck::abi_decode_params_validate(ack) {
             info!(%idx, %ack.fill_type, %ack.market_maker, "fungible asset order ack");
 
             if ack.fill_type == FILL_TYPE_PROTOCOL {

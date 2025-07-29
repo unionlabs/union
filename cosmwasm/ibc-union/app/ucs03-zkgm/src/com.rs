@@ -69,7 +69,7 @@ alloy_sol_types::sol! {
     }
 
     #[derive(Debug, PartialEq)]
-    struct FungibleAssetOrder {
+    struct TokenOrderV1 {
         bytes sender;
         bytes receiver;
         bytes base_token;
@@ -95,7 +95,7 @@ alloy_sol_types::sol! {
     }
 
     #[derive(Debug, PartialEq)]
-    struct FungibleAssetMetadata {
+    struct TokenMetadata {
         bytes implementation;
         bytes initializer;
     }
@@ -147,7 +147,7 @@ alloy_sol_types::sol! {
     }
 
     #[derive(Debug)]
-    struct FungibleAssetOrderAck {
+    struct TokenOrderAck {
         uint256 fill_type;
         bytes market_maker;
     }

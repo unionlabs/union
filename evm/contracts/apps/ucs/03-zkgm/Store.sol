@@ -175,10 +175,10 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         uint256 path,
         uint32 channel,
         bytes calldata token,
-        FungibleAssetMetadata memory metadata
+        TokenMetadata memory metadata
     ) internal returns (address, bytes32) {
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         return _predictWrappedTokenFromMetadataImageV2(
             path, channel, token, metadataImage
         );

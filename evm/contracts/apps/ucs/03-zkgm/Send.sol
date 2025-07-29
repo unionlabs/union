@@ -60,18 +60,13 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         Instruction calldata instruction
     ) internal {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            _verifyFungibleAssetOrder(channelId, path, order);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
+            _verifyTokenOrderV1(channelId, path, order);
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
             TokenOrderV2 calldata order =
                 ZkgmLib.decodeTokenOrderV2(instruction.operand);
@@ -130,10 +125,10 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         }
     }
 
-    function _verifyFungibleAssetOrder(
+    function _verifyTokenOrderV1(
         uint32 channelId,
         uint256 path,
-        FungibleAssetOrder calldata order
+        TokenOrderV1 calldata order
     ) internal {
         IERC20Metadata baseToken =
             IERC20Metadata(address(bytes20(order.baseToken)));
@@ -514,7 +509,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         uint32 channel,
         bytes calldata token,
-        FungibleAssetMetadata calldata metadata
+        TokenMetadata calldata metadata
     ) public returns (address, bytes32) {
         return _predictWrappedTokenV2(path, channel, token, metadata);
     }

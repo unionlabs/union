@@ -30,7 +30,7 @@ struct Batch {
     Instruction[] instructions;
 }
 
-struct FungibleAssetOrder {
+struct TokenOrderV1 {
     bytes sender;
     bytes receiver;
     bytes baseToken;
@@ -54,7 +54,7 @@ struct TokenOrderV2 {
     bytes metadata;
 }
 
-struct FungibleAssetMetadata {
+struct TokenMetadata {
     bytes implementation;
     bytes initializer;
 }
@@ -103,7 +103,7 @@ struct BatchAck {
     bytes[] acknowledgements;
 }
 
-struct FungibleAssetOrderAck {
+struct TokenOrderAck {
     uint256 fillType;
     bytes marketMaker;
 }

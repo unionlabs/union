@@ -35,7 +35,7 @@ contract TestZkgm is UCS03Zkgm {
                 _ibcHandler, _weth, _erc20Impl, "Ether", "ETH", 18
             ),
             new UCS03ZkgmStakeImpl(_ibcHandler),
-            new UCS03ZkgmFungibleAssetOrderImpl(_weth, _erc20Impl, true)
+            new UCS03ZkgmTokenOrderImpl(_weth, _erc20Impl, true)
         )
     {}
 
@@ -364,8 +364,8 @@ contract ZkgmSolverTest is Test {
 
     function _metadata(
         TokenMeta memory meta
-    ) internal pure returns (FungibleAssetMetadata memory) {
-        return FungibleAssetMetadata({
+    ) internal pure returns (TokenMetadata memory) {
+        return TokenMetadata({
             implementation: abi.encodePacked(address(0)),
             initializer: abi.encode(meta.name, meta.symbol, meta.decimals)
         });
@@ -406,7 +406,7 @@ contract ZkgmSolverTest is Test {
         address relayer,
         bytes memory relayerMsg,
         TokenOrderV2 memory order,
-        FungibleAssetOrderAck memory expectedAck,
+        TokenOrderAck memory expectedAck,
         bool intent
     ) internal {
         handler.setChannel(sourceChannelId, destinationChannelId);
@@ -436,7 +436,7 @@ contract ZkgmSolverTest is Test {
         address relayer,
         bytes memory relayerMsg,
         TokenOrderV2 memory order,
-        FungibleAssetOrderAck memory expectedAck,
+        TokenOrderAck memory expectedAck,
         bool intent
     ) internal {
         expectAckSuccess(
@@ -475,7 +475,7 @@ contract ZkgmSolverTest is Test {
             relayer,
             relayerMsg,
             order,
-            FungibleAssetOrderAck({
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                 marketMaker: abi.encodePacked(order.quoteToken) // solver address
             }),
@@ -502,7 +502,7 @@ contract ZkgmSolverTest is Test {
             relayer,
             relayerMsg,
             order,
-            FungibleAssetOrderAck({
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                 marketMaker: abi.encodePacked(order.quoteToken) // solver address
             }),
@@ -565,7 +565,7 @@ contract ZkgmSolverTest is Test {
         // Configure solver to fail
         mockSolver.setShouldFail(true);
 
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(address(this)),
             initializer: hex""
         });
@@ -576,7 +576,7 @@ contract ZkgmSolverTest is Test {
             baseToken: baseToken,
             baseAmount: baseAmount,
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: quoteAmount
         });
@@ -612,7 +612,7 @@ contract ZkgmSolverTest is Test {
         uint256 baseAmount = 1000;
         uint256 quoteAmount = 500;
 
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(address(this)),
             initializer: hex""
         });
@@ -623,7 +623,7 @@ contract ZkgmSolverTest is Test {
             baseToken: baseToken,
             baseAmount: baseAmount,
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: quoteAmount
         });
@@ -672,7 +672,7 @@ contract ZkgmSolverTest is Test {
         // Configure solver to fail
         mockSolver.setShouldFail(true);
 
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(address(this)),
             initializer: hex""
         });
@@ -683,7 +683,7 @@ contract ZkgmSolverTest is Test {
             baseToken: baseToken,
             baseAmount: baseAmount,
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: quoteAmount
         });
@@ -728,7 +728,7 @@ contract ZkgmSolverTest is Test {
         vm.assume(quoteAmount > 0);
         vm.assume(quoteAmount < 1000000 ether);
 
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(address(this)),
             initializer: hex""
         });
@@ -739,7 +739,7 @@ contract ZkgmSolverTest is Test {
             baseToken: baseToken,
             baseAmount: baseAmount,
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolverWithU)),
             quoteAmount: quoteAmount
         });

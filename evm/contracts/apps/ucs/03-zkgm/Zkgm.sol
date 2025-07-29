@@ -2,7 +2,7 @@ pragma solidity ^0.8.27;
 
 import "./Stake.sol";
 import "./Send.sol";
-import "./FungibleAssetOrder.sol";
+import "./TokenOrder.sol";
 import "./Store.sol";
 
 // Dummy lib to ensure all types are exported
@@ -13,12 +13,12 @@ contract AbiExport {
         Forward calldata,
         Call calldata,
         Batch calldata,
-        FungibleAssetOrder calldata,
+        TokenOrderV1 calldata,
         Ack calldata,
         BatchAck calldata,
-        FungibleAssetOrderAck calldata,
+        TokenOrderAck calldata,
         TokenOrderV2 calldata,
-        FungibleAssetMetadata calldata
+        TokenMetadata calldata
     ) public {}
 }
 
@@ -64,7 +64,7 @@ contract UCS03Zkgm is
         IIBCModulePacket _ibcHandler,
         UCS03ZkgmSendImpl _sendImpl,
         UCS03ZkgmStakeImpl _stakeImpl,
-        UCS03ZkgmFungibleAssetOrderImpl _faoImpl
+        UCS03ZkgmTokenOrderImpl _faoImpl
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
@@ -114,7 +114,7 @@ contract UCS03Zkgm is
         uint256 path,
         uint32 channel,
         bytes calldata token,
-        FungibleAssetMetadata calldata metadata
+        TokenMetadata calldata metadata
     ) public returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
@@ -235,16 +235,13 @@ contract UCS03Zkgm is
         Instruction calldata instruction,
         bool intent
     ) internal returns (bytes memory) {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
             bytes memory rawResult = _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.executeFungibleAssetOrder,
+                    UCS03ZkgmTokenOrderImpl.executeTokenOrderV1,
                     (
                         caller,
                         ibcPacket,
@@ -258,15 +255,13 @@ contract UCS03Zkgm is
             );
             return abi.decode(rawResult, (bytes));
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
             TokenOrderV2 calldata order =
                 ZkgmLib.decodeTokenOrderV2(instruction.operand);
             bytes memory rawResult = _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.executeTokenOrderV2,
+                    UCS03ZkgmTokenOrderImpl.executeTokenOrderV2,
                     (
                         caller,
                         ibcPacket,
@@ -550,30 +545,24 @@ contract UCS03Zkgm is
         bool successful,
         bytes calldata ack
     ) internal {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl
-                        .acknowledgeFungibleAssetOrder,
+                    UCS03ZkgmTokenOrderImpl.acknowledgeTokenOrderV1,
                     (ibcPacket, relayer, path, salt, order, successful, ack)
                 )
             );
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
             TokenOrderV2 calldata order =
                 ZkgmLib.decodeTokenOrderV2(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.acknowledgeTokenOrderV2,
+                    UCS03ZkgmTokenOrderImpl.acknowledgeTokenOrderV2,
                     (ibcPacket, relayer, path, salt, order, successful, ack)
                 )
             );
@@ -796,29 +785,24 @@ contract UCS03Zkgm is
         uint256 path,
         Instruction calldata instruction
     ) internal {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.timeoutFungibleAssetOrder,
+                    UCS03ZkgmTokenOrderImpl.timeoutTokenOrderV1,
                     (ibcPacket, path, order)
                 )
             );
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
             TokenOrderV2 calldata order =
                 ZkgmLib.decodeTokenOrderV2(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.timeoutTokenOrderV2,
+                    UCS03ZkgmTokenOrderImpl.timeoutTokenOrderV2,
                     (ibcPacket, path, order)
                 )
             );

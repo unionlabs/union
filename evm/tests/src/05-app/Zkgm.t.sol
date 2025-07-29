@@ -33,7 +33,7 @@ contract TestZkgm is UCS03Zkgm {
                 _ibcHandler, _weth, _erc20Impl, "Ether", "ETH", 18
             ),
             new UCS03ZkgmStakeImpl(_ibcHandler),
-            new UCS03ZkgmFungibleAssetOrderImpl(_weth, _erc20Impl, true)
+            new UCS03ZkgmTokenOrderImpl(_weth, _erc20Impl, true)
         )
     {}
 
@@ -1184,8 +1184,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: abi.encodePacked(receiver),
                         receiver: sender,
                         baseToken: abi.encodePacked(quoteToken),
@@ -1207,7 +1207,7 @@ contract ZkgmTests is Test {
     function _metadataImage(
         TokenMeta memory baseTokenMeta
     ) internal returns (bytes32) {
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(erc20Impl),
             initializer: abi.encodeCall(
                 ZkgmERC20.initialize,
@@ -1220,8 +1220,7 @@ contract ZkgmTests is Test {
                 )
             )
         });
-        return
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        return EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
     }
 
     function test_verify_order_v2_transfer_wrapped_burn_ok(
@@ -1322,8 +1321,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: sender,
                         receiver: receiver,
                         baseToken: abi.encodePacked(baseToken),
@@ -1364,7 +1363,7 @@ contract ZkgmTests is Test {
             vm.prank(caller);
             erc20.approve(address(zkgm), baseAmount);
         }
-        FungibleAssetMetadata memory metadata = _metadata(
+        TokenMetadata memory metadata = _metadata(
             TokenMeta({
                 symbol: erc20.symbol(),
                 name: erc20.name(),
@@ -1372,7 +1371,7 @@ contract ZkgmTests is Test {
             })
         );
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         vm.expectEmit();
         emit IERC20.Transfer(caller, address(zkgm), baseAmount);
         assertEq(
@@ -1397,7 +1396,7 @@ contract ZkgmTests is Test {
                         baseToken: abi.encodePacked(baseToken),
                         baseAmount: baseAmount,
                         kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                        metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                        metadata: ZkgmLib.encodeTokenMetadata(metadata),
                         quoteToken: abi.encodePacked(quoteToken),
                         quoteAmount: baseAmount
                     })
@@ -1439,8 +1438,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: sender,
                         receiver: receiver,
                         baseToken: abi.encodePacked(baseToken),
@@ -1471,7 +1470,7 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
         }
         address baseToken = address(erc20);
-        FungibleAssetMetadata memory metadata = _metadata(
+        TokenMetadata memory metadata = _metadata(
             TokenMeta({
                 symbol: erc20.symbol(),
                 name: erc20.name(),
@@ -1495,7 +1494,7 @@ contract ZkgmTests is Test {
                         baseToken: abi.encodePacked(baseToken),
                         baseAmount: baseAmount,
                         kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                        metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                        metadata: ZkgmLib.encodeTokenMetadata(metadata),
                         quoteToken: abi.encodePacked(quoteToken),
                         quoteAmount: baseAmount
                     })
@@ -1536,8 +1535,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: sender,
                         receiver: receiver,
                         baseToken: abi.encodePacked(baseToken),
@@ -1586,8 +1585,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: sender,
                         receiver: receiver,
                         baseToken: abi.encodePacked(baseToken),
@@ -1636,8 +1635,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: sender,
                         receiver: receiver,
                         baseToken: abi.encodePacked(baseToken),
@@ -1687,8 +1686,8 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_TOKEN_ORDER,
-                operand: ZkgmLib.encodeFungibleAssetOrder(
-                    FungibleAssetOrder({
+                operand: ZkgmLib.encodeTokenOrderV1(
+                    TokenOrderV1({
                         sender: sender,
                         receiver: receiver,
                         baseToken: abi.encodePacked(baseToken),
@@ -2270,7 +2269,7 @@ contract ZkgmTests is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrder memory order,
+        TokenOrderV1 memory order,
         bool onlyMaker,
         bool intent
     ) internal {
@@ -2287,7 +2286,7 @@ contract ZkgmTests is Test {
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_1,
                             opcode: ZkgmLib.OP_TOKEN_ORDER,
-                            operand: ZkgmLib.encodeFungibleAssetOrder(order)
+                            operand: ZkgmLib.encodeTokenOrderV1(order)
                         })
                     })
                 ),
@@ -2309,7 +2308,7 @@ contract ZkgmTests is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrder memory order
+        TokenOrderV1 memory order
     ) internal {
         expectOnRecvTransferSuccessCustomAck(
             caller,
@@ -2320,7 +2319,7 @@ contract ZkgmTests is Test {
             relayer,
             relayerMsg,
             order,
-            FungibleAssetOrderAck({
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                 marketMaker: ZkgmLib.ACK_EMPTY
             }),
@@ -2347,7 +2346,7 @@ contract ZkgmTests is Test {
             relayer,
             relayerMsg,
             order,
-            FungibleAssetOrderAck({
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                 marketMaker: ZkgmLib.ACK_EMPTY
             }),
@@ -2363,7 +2362,7 @@ contract ZkgmTests is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrder memory order
+        TokenOrderV1 memory order
     ) internal {
         expectOnRecvTransferSuccessCustomAck(
             caller,
@@ -2374,7 +2373,7 @@ contract ZkgmTests is Test {
             relayer,
             relayerMsg,
             order,
-            FungibleAssetOrderAck({
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                 marketMaker: relayerMsg
             }),
@@ -2390,7 +2389,7 @@ contract ZkgmTests is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrder memory order
+        TokenOrderV1 memory order
     ) internal {
         expectOnRecvTransferSuccessCustomAck(
             caller,
@@ -2401,7 +2400,7 @@ contract ZkgmTests is Test {
             relayer,
             relayerMsg,
             order,
-            FungibleAssetOrderAck({
+            TokenOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                 marketMaker: relayerMsg
             }),
@@ -2414,7 +2413,7 @@ contract ZkgmTests is Test {
         uint32 destinationChannelId,
         uint256 path,
         bytes32 salt,
-        FungibleAssetOrder memory order
+        TokenOrderV1 memory order
     ) internal returns (IBCPacket memory) {
         return IBCPacket({
             sourceChannelId: sourceChannelId,
@@ -2426,7 +2425,7 @@ contract ZkgmTests is Test {
                     instruction: Instruction({
                         version: ZkgmLib.INSTR_VERSION_1,
                         opcode: ZkgmLib.OP_TOKEN_ORDER,
-                        operand: ZkgmLib.encodeFungibleAssetOrder(order)
+                        operand: ZkgmLib.encodeTokenOrderV1(order)
                     })
                 })
             ),
@@ -2469,8 +2468,8 @@ contract ZkgmTests is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrder memory order,
-        FungibleAssetOrderAck memory expectedAck,
+        TokenOrderV1 memory order,
+        TokenOrderAck memory expectedAck,
         bool intent
     ) internal {
         expectAckSuccess(
@@ -2480,7 +2479,7 @@ contract ZkgmTests is Test {
             ),
             relayer,
             relayerMsg,
-            ZkgmLib.encodeFungibleAssetOrderAck(expectedAck),
+            ZkgmLib.encodeTokenOrderAck(expectedAck),
             intent
         );
     }
@@ -2494,7 +2493,7 @@ contract ZkgmTests is Test {
         address relayer,
         bytes memory relayerMsg,
         TokenOrderV2 memory order,
-        FungibleAssetOrderAck memory expectedAck,
+        TokenOrderAck memory expectedAck,
         bool intent
     ) internal {
         expectAckSuccess(
@@ -2504,7 +2503,7 @@ contract ZkgmTests is Test {
             ),
             relayer,
             relayerMsg,
-            ZkgmLib.encodeFungibleAssetOrderAck(expectedAck),
+            ZkgmLib.encodeTokenOrderAck(expectedAck),
             intent
         );
     }
@@ -2539,7 +2538,7 @@ contract ZkgmTests is Test {
             }
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -2566,8 +2565,8 @@ contract ZkgmTests is Test {
 
     function _metadata(
         TokenMeta memory tokenMeta
-    ) internal returns (FungibleAssetMetadata memory) {
-        return FungibleAssetMetadata({
+    ) internal returns (TokenMetadata memory) {
+        return TokenMetadata({
             implementation: abi.encodePacked(erc20Impl),
             initializer: abi.encodeCall(
                 ZkgmERC20.initialize,
@@ -2608,7 +2607,7 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         (address quoteToken,) = zkgm.predictWrappedTokenV2(
             path, destinationChannelId, baseToken, metadata
         );
@@ -2624,7 +2623,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
             });
@@ -2667,7 +2666,7 @@ contract ZkgmTests is Test {
             zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(receiver),
                 baseToken: baseToken,
@@ -2716,7 +2715,7 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         (address quoteToken,) = zkgm.predictWrappedTokenV2(
             path, destinationChannelId, baseToken, metadata
         );
@@ -2731,7 +2730,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
             });
@@ -2779,7 +2778,7 @@ contract ZkgmTests is Test {
             zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -2825,7 +2824,7 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         (address quoteToken,) = zkgm.predictWrappedTokenV2(
             path, destinationChannelId, baseToken, metadata
         );
@@ -2841,7 +2840,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
             });
@@ -2862,7 +2861,7 @@ contract ZkgmTests is Test {
         );
         assertEq(
             zkgm.metadataImageOf(quoteToken),
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata))
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata))
         );
     }
 
@@ -2894,7 +2893,7 @@ contract ZkgmTests is Test {
         vm.expectEmit();
         emit IERC20.Transfer(address(0), address(this), baseAmount);
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -2938,7 +2937,7 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         (address quoteToken,) = zkgm.predictWrappedTokenV2(
             path, destinationChannelId, baseToken, metadata
         );
@@ -2954,7 +2953,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
             });
@@ -3007,7 +3006,7 @@ contract ZkgmTests is Test {
             emit IERC20.Transfer(address(0), relayer, fee);
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3052,7 +3051,7 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         (address quoteToken,) = zkgm.predictWrappedTokenV2(
             path, destinationChannelId, baseToken, metadata
         );
@@ -3073,7 +3072,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });
@@ -3176,7 +3175,7 @@ contract ZkgmTests is Test {
             zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3236,7 +3235,7 @@ contract ZkgmTests is Test {
         }
 
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3285,9 +3284,9 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         erc20.mint(address(zkgm), baseAmount);
         address quoteToken = address(erc20);
@@ -3374,7 +3373,7 @@ contract ZkgmTests is Test {
             salt,
             relayer,
             relayerMsg,
-            FungibleAssetOrder({
+            TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3433,7 +3432,7 @@ contract ZkgmTests is Test {
             salt,
             relayer,
             relayerMsg,
-            FungibleAssetOrder({
+            TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3472,9 +3471,9 @@ contract ZkgmTests is Test {
             vm.assume(destinationChannelId != fakeDestinationChannelId);
             vm.assume(baseAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         erc20.mint(address(zkgm), baseAmount);
         address quoteToken = address(erc20);
@@ -3546,9 +3545,9 @@ contract ZkgmTests is Test {
             vm.assume(destinationChannelId > 0);
             vm.assume(baseAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         erc20.mint(address(zkgm), baseAmount);
         address quoteToken = address(erc20);
@@ -3630,7 +3629,7 @@ contract ZkgmTests is Test {
             }
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3684,7 +3683,7 @@ contract ZkgmTests is Test {
                 emit IERC20.Transfer(marketMaker, address(this), quoteAmount);
             }
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         {
             TokenOrderV2 memory order = TokenOrderV2({
                 sender: sender,
@@ -3692,7 +3691,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });
@@ -3705,7 +3704,7 @@ contract ZkgmTests is Test {
                 relayer,
                 relayerMsg,
                 order,
-                FungibleAssetOrderAck({
+                TokenOrderAck({
                     fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                     marketMaker: relayerMsg
                 }),
@@ -3751,7 +3750,7 @@ contract ZkgmTests is Test {
         assertEq(0, address(zkgm).balance);
         uint256 selfBalance = address(this).balance;
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3813,7 +3812,7 @@ contract ZkgmTests is Test {
         assertEq(quoteAmount, weth.balanceOf(marketMaker));
         assertEq(0, address(zkgm).balance);
         uint256 selfBalance = address(this).balance;
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         {
             TokenOrderV2 memory order = TokenOrderV2({
                 sender: sender,
@@ -3821,7 +3820,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
@@ -3834,7 +3833,7 @@ contract ZkgmTests is Test {
                 relayer,
                 relayerMsg,
                 order,
-                FungibleAssetOrderAck({
+                TokenOrderAck({
                     fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                     marketMaker: relayerMsg
                 }),
@@ -3877,7 +3876,7 @@ contract ZkgmTests is Test {
             salt,
             relayer,
             relayerMsg,
-            FungibleAssetOrder({
+            TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -3901,7 +3900,7 @@ contract ZkgmTests is Test {
         uint256 path,
         bytes32 salt,
         address relayer,
-        FungibleAssetOrder memory order,
+        TokenOrderV1 memory order,
         bytes memory ack
     ) internal {
         vm.prank(address(handler));
@@ -3917,7 +3916,7 @@ contract ZkgmTests is Test {
                         instruction: Instruction({
                             version: ZkgmLib.INSTR_VERSION_1,
                             opcode: ZkgmLib.OP_TOKEN_ORDER,
-                            operand: ZkgmLib.encodeFungibleAssetOrder(order)
+                            operand: ZkgmLib.encodeTokenOrderV1(order)
                         })
                     })
                 ),
@@ -4003,7 +4002,7 @@ contract ZkgmTests is Test {
             path,
             salt,
             relayer,
-            FungibleAssetOrder({
+            TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -4018,8 +4017,8 @@ contract ZkgmTests is Test {
             ZkgmLib.encodeAck(
                 Ack({
                     tag: ZkgmLib.ACK_SUCCESS,
-                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
-                        FungibleAssetOrderAck({
+                    innerAck: ZkgmLib.encodeTokenOrderAck(
+                        TokenOrderAck({
                             fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                             marketMaker: ZkgmLib.ACK_EMPTY
                         })
@@ -4066,7 +4065,7 @@ contract ZkgmTests is Test {
             path,
             salt,
             relayer,
-            FungibleAssetOrder({
+            TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: abi.encodePacked(erc20),
@@ -4081,8 +4080,8 @@ contract ZkgmTests is Test {
             ZkgmLib.encodeAck(
                 Ack({
                     tag: ZkgmLib.ACK_SUCCESS,
-                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
-                        FungibleAssetOrderAck({
+                    innerAck: ZkgmLib.encodeTokenOrderAck(
+                        TokenOrderAck({
                             fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                             marketMaker: abi.encodePacked(relayer)
                         })
@@ -4118,7 +4117,7 @@ contract ZkgmTests is Test {
         emit IERC20.Transfer(address(0), relayer, baseAmount);
 
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: abi.encodePacked(erc20),
@@ -4141,8 +4140,8 @@ contract ZkgmTests is Test {
                 ZkgmLib.encodeAck(
                     Ack({
                         tag: ZkgmLib.ACK_SUCCESS,
-                        innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
-                            FungibleAssetOrderAck({
+                        innerAck: ZkgmLib.encodeTokenOrderAck(
+                            TokenOrderAck({
                                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                                 marketMaker: abi.encodePacked(relayer)
                             })
@@ -4184,7 +4183,7 @@ contract ZkgmTests is Test {
         vm.expectEmit();
         emit IERC20.Transfer(address(zkgm), sender, baseAmount);
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: abi.encodePacked(sender),
                 receiver: receiver,
                 baseToken: abi.encodePacked(erc20),
@@ -4242,7 +4241,7 @@ contract ZkgmTests is Test {
         vm.expectEmit();
         emit IERC20.Transfer(address(zkgm), sender, baseAmount);
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: abi.encodePacked(sender),
                 receiver: receiver,
                 baseToken: abi.encodePacked(erc20),
@@ -4302,7 +4301,7 @@ contract ZkgmTests is Test {
         vm.expectEmit();
         emit IERC20.Transfer(address(0), sender, baseAmount);
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: abi.encodePacked(sender),
                 receiver: receiver,
                 baseToken: abi.encodePacked(erc20),
@@ -4349,7 +4348,7 @@ contract ZkgmTests is Test {
             vm.assume(sourceChannelId != 0);
             vm.assume(destinationChannelId != 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         internalOnAckOrderV2(
             caller,
             sourceChannelId,
@@ -4364,9 +4363,7 @@ contract ZkgmTests is Test {
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_UNESCROW,
                 metadata: abi.encodePacked(
-                    EfficientHashLib.hash(
-                        ZkgmLib.encodeFungibleAssetMetadata(metadata)
-                    )
+                    EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata))
                 ),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
@@ -4374,8 +4371,8 @@ contract ZkgmTests is Test {
             ZkgmLib.encodeAck(
                 Ack({
                     tag: ZkgmLib.ACK_SUCCESS,
-                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
-                        FungibleAssetOrderAck({
+                    innerAck: ZkgmLib.encodeTokenOrderAck(
+                        TokenOrderAck({
                             fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                             marketMaker: ZkgmLib.ACK_EMPTY
                         })
@@ -4409,9 +4406,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         zkgm.doIncreaseOutstandingV2(
             sourceChannelId, path, address(erc20), quoteToken, baseAmount
         );
@@ -4431,15 +4428,15 @@ contract ZkgmTests is Test {
                 baseToken: abi.encodePacked(erc20),
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             }),
             ZkgmLib.encodeAck(
                 Ack({
                     tag: ZkgmLib.ACK_SUCCESS,
-                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
-                        FungibleAssetOrderAck({
+                    innerAck: ZkgmLib.encodeTokenOrderAck(
+                        TokenOrderAck({
                             fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                             marketMaker: abi.encodePacked(relayer)
                         })
@@ -4471,9 +4468,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         vm.expectEmit();
         emit IERC20.Transfer(address(0), relayer, baseAmount);
 
@@ -4499,8 +4496,8 @@ contract ZkgmTests is Test {
                 ZkgmLib.encodeAck(
                     Ack({
                         tag: ZkgmLib.ACK_SUCCESS,
-                        innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
-                            FungibleAssetOrderAck({
+                        innerAck: ZkgmLib.encodeTokenOrderAck(
+                            TokenOrderAck({
                                 fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                                 marketMaker: abi.encodePacked(relayer)
                             })
@@ -4535,9 +4532,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         erc20.mint(address(zkgm), baseAmount);
         zkgm.doIncreaseOutstandingV2(
             sourceChannelId, path, address(erc20), quoteToken, baseAmount
@@ -4551,7 +4548,7 @@ contract ZkgmTests is Test {
                 baseToken: abi.encodePacked(erc20),
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });
@@ -4594,9 +4591,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         vm.expectEmit();
         emit IERC20.Transfer(address(0), sender, baseAmount);
         {
@@ -4674,7 +4671,7 @@ contract ZkgmTests is Test {
             emit IERC20.Transfer(marketMaker, address(this), quoteAmount);
         }
         {
-            FungibleAssetOrder memory order = FungibleAssetOrder({
+            TokenOrderV1 memory order = TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -4730,7 +4727,7 @@ contract ZkgmTests is Test {
             salt,
             relayer,
             relayerMsg,
-            FungibleAssetOrder({
+            TokenOrderV1({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
@@ -4774,7 +4771,7 @@ contract ZkgmTests is Test {
             vm.expectEmit();
             emit IERC20.Transfer(marketMaker, address(this), quoteAmount);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         {
             TokenOrderV2 memory order = TokenOrderV2({
                 sender: sender,
@@ -4782,7 +4779,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });
@@ -4795,7 +4792,7 @@ contract ZkgmTests is Test {
                 relayer,
                 relayerMsg,
                 order,
-                FungibleAssetOrderAck({
+                TokenOrderAck({
                     fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                     marketMaker: relayerMsg
                 }),
@@ -4838,7 +4835,7 @@ contract ZkgmTests is Test {
         assertEq(quoteAmount, weth.balanceOf(marketMaker));
         assertEq(0, address(zkgm).balance);
         uint256 selfBalance = address(this).balance;
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         {
             TokenOrderV2 memory order = TokenOrderV2({
                 sender: sender,
@@ -4846,7 +4843,7 @@ contract ZkgmTests is Test {
                 baseToken: baseToken,
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
@@ -4859,7 +4856,7 @@ contract ZkgmTests is Test {
                 relayer,
                 relayerMsg,
                 order,
-                FungibleAssetOrderAck({
+                TokenOrderAck({
                     fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
                     marketMaker: relayerMsg
                 }),
@@ -4892,7 +4889,7 @@ contract ZkgmTests is Test {
         }
         address quoteToken = address(erc20);
         zkgm.doSetBucketConfig(quoteToken, quoteAmount, 1, false);
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
 
         vm.prank(address(handler));
         expectAckFailure(
@@ -4914,7 +4911,7 @@ contract ZkgmTests is Test {
                                     baseToken: baseToken,
                                     baseAmount: baseAmount,
                                     kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                                    metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                                    metadata: ZkgmLib.encodeTokenMetadata(metadata),
                                     quoteToken: abi.encodePacked(quoteToken),
                                     quoteAmount: quoteAmount
                                 })
@@ -6203,7 +6200,7 @@ contract ZkgmTests is Test {
     }
 
     function test_create_foa() public {
-        FungibleAssetOrder memory foa = FungibleAssetOrder({
+        TokenOrderV1 memory foa = TokenOrderV1({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
@@ -6220,13 +6217,13 @@ contract ZkgmTests is Test {
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_1,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeFungibleAssetOrder(foa)
+            operand: ZkgmLib.encodeTokenOrderV1(foa)
         });
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
     function test_create_foa_v2_preimage_evm() public {
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
                 0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
             ),
@@ -6248,7 +6245,7 @@ contract ZkgmTests is Test {
             ),
             baseToken: hex"6d756e6f",
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 100,
             quoteToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
             quoteAmount: 100
@@ -6265,7 +6262,7 @@ contract ZkgmTests is Test {
     }
 
     function test_create_foa_v2_image_evm() public {
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
                 0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
             ),
@@ -6307,7 +6304,7 @@ contract ZkgmTests is Test {
     }
 
     function test_create_foa_v2_preimage_evm_u() public {
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
                 0x9C968B805a625303Ad43Fce99Ae72306256FE5F9
             ),
@@ -6330,7 +6327,7 @@ contract ZkgmTests is Test {
             ),
             baseToken: hex"6d756e6f",
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 100,
             quoteToken: hex"ba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
             quoteAmount: 100
@@ -6353,7 +6350,7 @@ contract ZkgmTests is Test {
         // Note on cosmwasm the minter must be the zkgm cw20 minter
         string memory initMsg =
             "{\"init\":{\"name\":\"Uno\",\"symbol\":\"UNO\",\"decimals\":6,\"initial_balances\":[],\"mint\":{\"minter\":\"union1sctpgdvs23pxv43zclww5jdzghsfuph9rkstjegx35wjkvzv6wtqpq7xxg\",\"cap\":null},\"marketing\":null}}";
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encode(admin, codeId),
             initializer: bytes(initMsg)
         });
@@ -6364,7 +6361,7 @@ contract ZkgmTests is Test {
             ),
             baseToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 10,
             quoteToken: bytes(
                 "union1uyxeud073ttss4stt92hvt4wgzzyrssqata8058305km6xp7vzgs85kpst"
@@ -6392,7 +6389,7 @@ contract ZkgmTests is Test {
         // Note on cosmwasm the minter must be the zkgm cw20 minter
         string memory initMsg =
             "{\"init\":{\"name\":\"Uno\",\"symbol\":\"UNO\",\"decimals\":6,\"initial_balances\":[],\"mint\":{\"minter\":\"union1sctpgdvs23pxv43zclww5jdzghsfuph9rkstjegx35wjkvzv6wtqpq7xxg\",\"cap\":null},\"marketing\":null}}";
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encode(admin, codeId),
             initializer: bytes(initMsg)
         });
@@ -6541,7 +6538,7 @@ contract ZkgmTests is Test {
         vm.prank(caller);
         erc20.approve(address(zkgm), totalAmount);
 
-        FungibleAssetMetadata memory metadata = _metadata(
+        TokenMetadata memory metadata = _metadata(
             TokenMeta({
                 symbol: erc20.symbol(),
                 name: erc20.name(),
@@ -6554,8 +6551,8 @@ contract ZkgmTests is Test {
         instructions[0] = Instruction({
             version: ZkgmLib.INSTR_VERSION_1,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeFungibleAssetOrder(
-                FungibleAssetOrder({
+            operand: ZkgmLib.encodeTokenOrderV1(
+                TokenOrderV1({
                     sender: sender,
                     receiver: receiver,
                     baseToken: abi.encodePacked(baseToken),
@@ -6580,7 +6577,7 @@ contract ZkgmTests is Test {
                     baseToken: abi.encodePacked(baseToken),
                     baseAmount: baseAmount2,
                     kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                    metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                    metadata: ZkgmLib.encodeTokenMetadata(metadata),
                     quoteToken: abi.encodePacked(quoteToken2),
                     quoteAmount: quoteAmount2
                 })
@@ -6679,18 +6676,16 @@ contract ZkgmTests is Test {
         // Verify they are different tokens
         assertTrue(v1QuoteToken != v2QuoteToken);
 
-        // Verify V1 token has the metadata image from _makeDefaultFungibleAssetMetadata
-        FungibleAssetMetadata memory v1Metadata = _metadata(baseTokenMeta);
-        bytes32 expectedV1MetadataImage = EfficientHashLib.hash(
-            ZkgmLib.encodeFungibleAssetMetadata(v1Metadata)
-        );
+        // Verify V1 token has the metadata image from _makeDefaultTokenMetadata
+        TokenMetadata memory v1Metadata = _metadata(baseTokenMeta);
+        bytes32 expectedV1MetadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(v1Metadata));
         assertEq(zkgm.metadataImageOf(v1QuoteToken), expectedV1MetadataImage);
 
         // Verify V2 token has metadata image
-        FungibleAssetMetadata memory v2Metadata = _metadata(differentMeta);
-        bytes32 expectedMetadataImage = EfficientHashLib.hash(
-            ZkgmLib.encodeFungibleAssetMetadata(v2Metadata)
-        );
+        TokenMetadata memory v2Metadata = _metadata(differentMeta);
+        bytes32 expectedMetadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(v2Metadata));
         assertEq(zkgm.metadataImageOf(v2QuoteToken), expectedMetadataImage);
 
         // Verify both have same origin path
@@ -6796,9 +6791,9 @@ contract ZkgmTests is Test {
             vm.assume(destinationChannelId != 0);
             vm.assume(amount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         erc20.mint(address(zkgm), amount);
         address quoteToken = address(erc20);
@@ -6865,9 +6860,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > quoteAmount);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         erc20.mint(address(zkgm), baseAmount);
         address quoteToken = address(erc20);
@@ -6933,9 +6928,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount < quoteAmount);
             vm.assume(baseAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
 
         // Create a V2 order that should fail due to baseAmount < quoteAmount
         TokenOrderV2 memory order = TokenOrderV2({
@@ -7066,9 +7061,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > quoteAmount);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         erc20.mint(address(zkgm), baseAmount);
         address quoteToken = address(erc20);
@@ -7146,9 +7141,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount >= quoteAmount);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         // Fake an increase of outstanding balance as if we transferred out.
         vm.deal(address(this), baseAmount);
         weth.deposit{value: baseAmount}();
@@ -7253,9 +7248,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         erc20.mint(address(zkgm), baseAmount);
         zkgm.doIncreaseOutstandingV2(
             sourceChannelId, path, address(erc20), quoteToken, baseAmount
@@ -7269,7 +7264,7 @@ contract ZkgmTests is Test {
                 baseToken: abi.encodePacked(erc20),
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });
@@ -7315,9 +7310,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         vm.expectEmit();
         emit IERC20.Transfer(address(0), sender, baseAmount);
         {
@@ -7364,9 +7359,9 @@ contract ZkgmTests is Test {
             vm.assume(baseAmount > 0);
             vm.assume(quoteAmount > 0);
         }
-        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         erc20.mint(address(zkgm), baseAmount);
         zkgm.doIncreaseOutstandingV2(
             sourceChannelId, path, address(erc20), quoteToken, baseAmount
@@ -7387,7 +7382,7 @@ contract ZkgmTests is Test {
                 baseToken: abi.encodePacked(erc20),
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });

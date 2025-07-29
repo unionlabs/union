@@ -300,7 +300,7 @@ abstract contract UnionScript is UnionBase {
                                     params.nativeTokenDecimals
                                 ),
                                 new UCS03ZkgmStakeImpl(handler),
-                                new UCS03ZkgmFungibleAssetOrderImpl(
+                                new UCS03ZkgmTokenOrderImpl(
                                     params.weth,
                                     zkgmERC20,
                                     params.rateLimitEnabled
@@ -1188,7 +1188,7 @@ contract GetDeployed is VersionedScript {
         implUCS03FAO.serialize(
             "contract",
             string(
-                "contracts/apps/ucs/03-zkgm/FungibleAssetOrder.sol:UCS03ZkgmFungibleAssetOrderImpl"
+                "contracts/apps/ucs/03-zkgm/TokenOrder.sol:UCS03ZkgmTokenOrderImpl"
             )
         );
         implUCS03FAO = implUCS03FAO.serialize(
@@ -1267,9 +1267,7 @@ contract DryUpgradeUCS03 is VersionedScript {
                     nativeTokenDecimals
                 ),
                 new UCS03ZkgmStakeImpl(handler),
-                new UCS03ZkgmFungibleAssetOrderImpl(
-                    weth, zkgmERC20, rateLimitEnabled
-                )
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
             )
         );
 
@@ -1329,9 +1327,7 @@ contract UpgradeUCS03 is VersionedScript {
                     nativeTokenDecimals
                 ),
                 new UCS03ZkgmStakeImpl(handler),
-                new UCS03ZkgmFungibleAssetOrderImpl(
-                    weth, zkgmERC20, rateLimitEnabled
-                )
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
             )
         );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
@@ -1800,14 +1796,14 @@ contract MintU is UnionScript, VersionedScript {
         console.log(auth);
         console.log(zkgm);
         console.log(impl);
-        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+        TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(impl),
             initializer: abi.encodeCall(
                 U.initialize, (auth, zkgm, "Union", "U", 18, salt)
             )
         });
         bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         bytes32 wrappedTokenSalt = EfficientHashLib.hash(
             abi.encode(path, channelId, token, metadataImage)
         );

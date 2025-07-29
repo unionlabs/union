@@ -18,11 +18,11 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, Call, Forward, FungibleAssetMetadata, FungibleAssetOrder,
-        FungibleAssetOrderAck, Instruction, TokenOrderV2, ZkgmPacket, FILL_TYPE_MARKETMAKER,
-        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
-        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
+        Ack, Batch, Call, Forward, Instruction, TokenMetadata, TokenOrderAck, TokenOrderV1,
+        TokenOrderV2, ZkgmPacket, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC,
+        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD,
+        OP_TOKEN_ORDER, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW,
+        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
     },
     contract::{
         dequeue_channel_from_path, execute, increase_channel_balance_v2, instantiate,
@@ -1156,7 +1156,7 @@ impl IncomingOrderBuilder {
                 instruction: Instruction {
                     version: INSTR_VERSION_1,
                     opcode: OP_TOKEN_ORDER,
-                    operand: FungibleAssetOrder {
+                    operand: TokenOrderV1 {
                         sender: self.sender.clone().into_vec().into(),
                         receiver: self
                             .receiver
@@ -1255,7 +1255,7 @@ fn test_recv_packet_native_new_wrapped() {
             .unwrap(),
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -1672,7 +1672,7 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
             .unwrap(),
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -1800,7 +1800,7 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
             .unwrap(),
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -2097,7 +2097,7 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_market_m
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_MARKETMAKER,
                 market_maker: Default::default()
             }
@@ -2124,7 +2124,7 @@ fn test_recv_packet_native_v2_wrap_ok() {
     // Create metadata for V2 order
     let admin = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
-    let metadata = FungibleAssetMetadata {
+    let metadata = TokenMetadata {
         implementation: (admin.to_string(), code_id).abi_encode_params().into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
@@ -2233,7 +2233,7 @@ fn test_recv_packet_native_v2_wrap_ok() {
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -2359,7 +2359,7 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -2486,7 +2486,7 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -2572,7 +2572,7 @@ fn test_recv_packet_native_v2_market_maker_fill() {
     // Create proper metadata for PREIMAGE type
     let admin_str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
-    let metadata = FungibleAssetMetadata {
+    let metadata = TokenMetadata {
         implementation: (admin_str.to_string(), code_id).abi_encode_params().into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
@@ -2660,7 +2660,7 @@ fn test_recv_packet_native_v2_market_maker_fill() {
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_MARKETMAKER,
                 market_maker: Default::default()
             }
@@ -2687,7 +2687,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
     // First, create the token with PREIMAGE metadata
     let admin_str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
-    let preimage_metadata = FungibleAssetMetadata {
+    let preimage_metadata = TokenMetadata {
         implementation: (admin_str.to_string(), code_id).abi_encode_params().into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
@@ -2848,7 +2848,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
@@ -2871,7 +2871,7 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
     // Create metadata for V2 order that will result in protocol fill
     let admin = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
-    let metadata = FungibleAssetMetadata {
+    let metadata = TokenMetadata {
         implementation: (admin.to_string(), code_id).abi_encode_params().into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
@@ -2979,7 +2979,7 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
         ack,
         Ack {
             tag: TAG_ACK_SUCCESS,
-            inner_ack: FungibleAssetOrderAck {
+            inner_ack: TokenOrderAck {
                 fill_type: FILL_TYPE_PROTOCOL,
                 market_maker: Default::default()
             }
