@@ -20,6 +20,13 @@ export type UserExperience = Entity<"leaderboard">
 export type UserMission = Entity<"user_missions">
 export type UserReward = Entity<"user_rewards_with_queue">
 export type Wallet = Entity<"wallets">
+export type Device = Entity<"devices">
+
+type DeviceInsert = {
+  ipAddress: string
+  userId: string
+  deviceIdentifier: string
+}
 
 export const getUserAchievements = (userId: string) =>
   withLocalStorageCacheStale(
@@ -326,3 +333,61 @@ export const submitWalletVerification = (
       )
     }),
   )
+
+export const createSnagUserDevice = (input: DeviceInsert) => {
+  // Validate all required fields are present
+  if (!input.userId || !input.deviceIdentifier || !input.ipAddress) {
+    return Effect.succeed(null)
+  }
+
+  return pipe(
+    SupabaseClient,
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client
+            .from("devices")
+            .upsert({
+              ipAddress: input.ipAddress,
+              userId: input.userId,
+              deviceIdentifier: input.deviceIdentifier,
+            }),
+        catch: (error) =>
+          new SupabaseError({
+            operation: "upsertDevice",
+            cause: extractErrorDetails(error as Error),
+          }),
+      })
+    ),
+    Effect.retry(retryForever),
+    Effect.flatMap(response => {
+      if (response.error) {
+        const errorDetails = extractErrorDetails(response.error)
+        return Effect.zipRight(
+          Effect.logError("Device registration function returned an error in its response.", {
+            error: errorDetails,
+          }),
+          Effect.fail(
+            new SupabaseError({ operation: "createSnagUserDevice", cause: errorDetails }),
+          ),
+        )
+      }
+      return Effect.succeed(response.data)
+    }),
+    Effect.catchAll((error) => {
+      return pipe(
+        Effect.logError("Error in createSnagUserDevice pipeline.", {
+          error: extractErrorDetails(error as Error),
+        }),
+        Effect.flatMap(() =>
+          Effect.fail(
+            new SupabaseError({
+              operation: "createSnagUserDevice",
+              cause: extractErrorDetails(error as Error),
+            }),
+          )
+        ),
+      )
+    }),
+  )
+}

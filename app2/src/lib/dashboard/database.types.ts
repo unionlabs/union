@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
+  // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -394,6 +394,45 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      devices: {
+        Row: {
+          created_at: string
+          deviceIdentifier: string | null
+          id: number
+          ipAddress: string | null
+          userId: string | null
+        }
+        Insert: {
+          created_at?: string
+          deviceIdentifier?: string | null
+          id?: number
+          ipAddress?: string | null
+          userId?: string | null
+        }
+        Update: {
+          created_at?: string
+          deviceIdentifier?: string | null
+          id?: number
+          ipAddress?: string | null
+          userId?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "user_discord_invites"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "devices_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discord_guilds: {
         Row: {
@@ -1171,6 +1210,114 @@ export type Database = {
           created_at?: string
           id?: number
           title?: string
+        }
+        Relationships: []
+      }
+      snag_updated_users: {
+        Row: {
+          id: number
+          run_id: string
+          update_reason: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          run_id: string
+          update_reason?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: number
+          run_id?: string
+          update_reason?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      snag_user_data: {
+        Row: {
+          created_at: string | null
+          device_identifiers: string[] | null
+          discord_id: string | null
+          display_name: string | null
+          ip_addresses: string[] | null
+          pfp: string | null
+          twitter_id: string | null
+          updated_at: string | null
+          user_id: string
+          wallet_data: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_identifiers?: string[] | null
+          discord_id?: string | null
+          display_name?: string | null
+          ip_addresses?: string[] | null
+          pfp?: string | null
+          twitter_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          wallet_data?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          device_identifiers?: string[] | null
+          discord_id?: string | null
+          display_name?: string | null
+          ip_addresses?: string[] | null
+          pfp?: string | null
+          twitter_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          wallet_data?: string[] | null
+        }
+        Relationships: []
+      }
+      snag_user_operations: {
+        Row: {
+          device_identifiers: string[] | null
+          discord_id: string | null
+          display_name: string | null
+          id: number
+          ip_addresses: string[] | null
+          operation_type: string
+          pfp: string | null
+          processed_at: string | null
+          run_id: string
+          twitter_id: string | null
+          user_id: string
+          wallet_data: string[] | null
+        }
+        Insert: {
+          device_identifiers?: string[] | null
+          discord_id?: string | null
+          display_name?: string | null
+          id?: number
+          ip_addresses?: string[] | null
+          operation_type: string
+          pfp?: string | null
+          processed_at?: string | null
+          run_id: string
+          twitter_id?: string | null
+          user_id: string
+          wallet_data?: string[] | null
+        }
+        Update: {
+          device_identifiers?: string[] | null
+          discord_id?: string | null
+          display_name?: string | null
+          id?: number
+          ip_addresses?: string[] | null
+          operation_type?: string
+          pfp?: string | null
+          processed_at?: string | null
+          run_id?: string
+          twitter_id?: string | null
+          user_id?: string
+          wallet_data?: string[] | null
         }
         Relationships: []
       }
@@ -2344,9 +2491,37 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      process_users_in_batches: {
+        Args: { batch_size?: number }
+        Returns: {
+          batch_num: number
+          processed: number
+          total_done: number
+          success: number
+          failed: number
+          time_sec: number
+        }[]
+      }
       range: {
         Args: Record<PropertyKey, never>
         Returns: string[]
+      }
+      silent_process_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          final_count: number
+          new_inserts: number
+          updates: number
+          time_taken: number
+        }[]
+      }
+      snag_mark_queue_completed: {
+        Args: { queue_ids: number[] }
+        Returns: undefined
+      }
+      snag_mark_queue_failed: {
+        Args: { queue_ids: number[]; error_msg: string }
+        Returns: undefined
       }
       text_to_bytea: {
         Args: { data: string }
