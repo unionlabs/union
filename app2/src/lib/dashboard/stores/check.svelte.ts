@@ -1,7 +1,7 @@
 import { runPromise } from "$lib/runtime"
 import { Effect, pipe } from "effect"
-import { createSnagUserDevice } from "../queries/private"
 import { generateDeviceFingerprint, getUserIPAddress } from "../helpers"
+import { createSnagUserDevice } from "../queries/private"
 
 export class CheckStore {
   deviceRegistered = $state(false)
