@@ -7,9 +7,11 @@ use voyager_sdk::{
     message::{
         call::{Call, SubmitTx},
         data::IbcDatagram,
+        VoyagerMessage,
     },
     primitives::{ChainId, IbcSpecId},
     serde_json::{self},
+    vm::Op,
 };
 
 pub fn create_client(
@@ -63,7 +65,7 @@ pub fn connection_open(
         .args([
             "q",
             "e",
-            &serde_json::to_string(&Call::SubmitTx(SubmitTx {
+            &serde_json::to_string(&Op::<VoyagerMessage>::Call(Call::SubmitTx(SubmitTx {
                 chain_id: on,
                 datagrams: vec![IbcDatagram {
                     ibc_spec_id: IbcSpecId::new_static(IbcSpecId::UNION),
@@ -75,7 +77,7 @@ pub fn connection_open(
                     ))
                     .unwrap(),
                 }],
-            }))
+            })))
             .unwrap(),
         ])
         .status()?;
@@ -99,7 +101,7 @@ pub fn channel_open(
         .args([
             "q",
             "e",
-            &serde_json::to_string(&Call::SubmitTx(SubmitTx {
+            &serde_json::to_string(&Op::<VoyagerMessage>::Call(Call::SubmitTx(SubmitTx {
                 chain_id,
                 datagrams: vec![IbcDatagram {
                     ibc_spec_id: IbcSpecId::new_static(IbcSpecId::UNION),
@@ -111,7 +113,7 @@ pub fn channel_open(
                     }))
                     .unwrap(),
                 }],
-            }))
+            })))
             .unwrap(),
         ])
         .status()?;
