@@ -19,7 +19,7 @@ struct Forward {
     Instruction instruction;
 }
 
-struct Multiplex {
+struct Call {
     bytes sender;
     bool eureka;
     bytes contractAddress;
@@ -43,15 +43,15 @@ struct FungibleAssetOrder {
     uint256 quoteAmount;
 }
 
-struct FungibleAssetOrderV2 {
+struct TokenOrderV2 {
     bytes sender;
     bytes receiver;
     bytes baseToken;
     uint256 baseAmount;
-    uint8 metadataType;
-    bytes metadata;
     bytes quoteToken;
     uint256 quoteAmount;
+    uint8 kind;
+    bytes metadata;
 }
 
 struct FungibleAssetMetadata {

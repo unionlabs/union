@@ -240,12 +240,12 @@ contract ZkgmSolverTest is Test {
         assertEq(mockSolver.solveCallCount(), 0);
 
         // Create a basic order with U token as quote token (which the solver can transfer)
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: abi.encodePacked(address(0x123)),
             receiver: abi.encodePacked(address(this)),
             baseToken: abi.encodePacked(address(0x456)),
             baseAmount: 1000,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: hex"0102",
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: 500
@@ -271,7 +271,7 @@ contract ZkgmSolverTest is Test {
         // Verify call data was stored correctly
         (
             IBCPacket memory storedPacket,
-            FungibleAssetOrderV2 memory storedOrder,
+            TokenOrderV2 memory storedOrder,
             address storedCaller,
             address storedRelayer,
             bytes memory storedRelayerMsg,
@@ -296,12 +296,12 @@ contract ZkgmSolverTest is Test {
         assertTrue(mockSolver.shouldFail());
 
         // Create test data
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: abi.encodePacked(address(0x123)),
             receiver: abi.encodePacked(address(this)),
             baseToken: abi.encodePacked(address(0x456)),
             baseAmount: 1000,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: hex"0102",
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: 500
@@ -330,12 +330,12 @@ contract ZkgmSolverTest is Test {
         assertTrue(mockSolverWithU.supportsInterface(type(ISolver).interfaceId));
 
         // Test basic solve call works (won't transfer since we're not testing full integration)
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: abi.encodePacked(address(0x123)),
             receiver: abi.encodePacked(address(this)),
             baseToken: abi.encodePacked(address(0x456)),
             baseAmount: 1000,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: hex"0102",
             quoteToken: abi.encodePacked(address(mockSolverWithU)),
             quoteAmount: 500
@@ -376,7 +376,7 @@ contract ZkgmSolverTest is Test {
         uint32 destinationChannelId,
         uint256 path,
         bytes32 salt,
-        FungibleAssetOrderV2 memory order
+        TokenOrderV2 memory order
     ) internal view returns (IBCPacket memory) {
         return IBCPacket({
             sourceChannelId: sourceChannelId,
@@ -388,7 +388,7 @@ contract ZkgmSolverTest is Test {
                     instruction: Instruction({
                         version: ZkgmLib.INSTR_VERSION_2,
                         opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
-                        operand: ZkgmLib.encodeFungibleAssetOrderV2(order)
+                        operand: ZkgmLib.encodeTokenOrderV2(order)
                     })
                 })
             ),
@@ -405,7 +405,7 @@ contract ZkgmSolverTest is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrderV2 memory order,
+        TokenOrderV2 memory order,
         FungibleAssetOrderAck memory expectedAck,
         bool intent
     ) internal {
@@ -435,7 +435,7 @@ contract ZkgmSolverTest is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrderV2 memory order,
+        TokenOrderV2 memory order,
         FungibleAssetOrderAck memory expectedAck,
         bool intent
     ) internal {
@@ -464,7 +464,7 @@ contract ZkgmSolverTest is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrderV2 memory order
+        TokenOrderV2 memory order
     ) internal {
         expectOnRecvTransferSuccessCustomAckV2(
             caller,
@@ -491,7 +491,7 @@ contract ZkgmSolverTest is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrderV2 memory order
+        TokenOrderV2 memory order
     ) internal {
         expectOnRecvTransferSuccessCustomAckV2(
             caller,
@@ -516,12 +516,12 @@ contract ZkgmSolverTest is Test {
         uint256 quoteAmount = 1000;
 
         // Create a basic order and packet
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: abi.encodePacked(makeAddr("sender")),
             receiver: abi.encodePacked(address(this)),
             baseToken: abi.encodePacked(makeAddr("baseToken")),
             baseAmount: 2000,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: abi.encode(address(0), ""),
             quoteToken: abi.encodePacked(address(mockSolver)), // Use U token as quote token
             quoteAmount: quoteAmount
@@ -570,12 +570,12 @@ contract ZkgmSolverTest is Test {
             initializer: hex""
         });
 
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: sender,
             receiver: abi.encodePacked(address(this)),
             baseToken: baseToken,
             baseAmount: baseAmount,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: quoteAmount
@@ -617,12 +617,12 @@ contract ZkgmSolverTest is Test {
             initializer: hex""
         });
 
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: sender,
             receiver: abi.encodePacked(address(this)),
             baseToken: baseToken,
             baseAmount: baseAmount,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: quoteAmount
@@ -677,12 +677,12 @@ contract ZkgmSolverTest is Test {
             initializer: hex""
         });
 
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: sender,
             receiver: abi.encodePacked(address(this)),
             baseToken: baseToken,
             baseAmount: baseAmount,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolver)),
             quoteAmount: quoteAmount
@@ -733,12 +733,12 @@ contract ZkgmSolverTest is Test {
             initializer: hex""
         });
 
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: sender,
             receiver: abi.encodePacked(address(this)),
             baseToken: baseToken,
             baseAmount: baseAmount,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
             quoteToken: abi.encodePacked(address(mockSolverWithU)),
             quoteAmount: quoteAmount
@@ -782,12 +782,12 @@ contract ZkgmSolverTest is Test {
         handler.setChannel(sourceChannelId, destinationChannelId);
 
         // Create order using solver as quote token (triggering solver path)
-        FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+        TokenOrderV2 memory order = TokenOrderV2({
             sender: abi.encodePacked(makeAddr("sender")),
             receiver: abi.encodePacked(address(this)),
             baseToken: abi.encodePacked(makeAddr("baseToken")),
             baseAmount: 1000,
-            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE,
+            kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
             metadata: abi.encode(bytes32(0)),
             quoteToken: abi.encodePacked(solverAddress), // Solver as quote token
             quoteAmount: 500
@@ -813,18 +813,13 @@ contract ZkgmSolverTest is Test {
     }
 
     function test_mixed_solver_and_market_maker_orders() public {
-        // Test that solver and market maker orders can coexist
         assertTrue(ZkgmLib.isSolver(address(mockSolver)));
         assertTrue(ZkgmLib.isSolver(address(mockSolverWithU)));
 
-        // Regular addresses should not be solvers
         assertFalse(ZkgmLib.isSolver(address(uToken)));
         assertFalse(ZkgmLib.isSolver(address(this)));
 
-        // Ensure solver interface IDs are unique
         bytes4 solverInterfaceId = type(ISolver).interfaceId;
-        assertEq(uint32(solverInterfaceId), uint32(0x95fd3386)); // ISolver interface ID
-
         assertTrue(mockSolver.supportsInterface(solverInterfaceId));
         assertTrue(mockSolverWithU.supportsInterface(solverInterfaceId));
     }

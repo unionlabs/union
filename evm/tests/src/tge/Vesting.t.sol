@@ -260,10 +260,6 @@ contract VestingTests is Test {
         bytes calldata validator
     ) public {
         vm.assume(governanceToken.unwrappedToken.length > 0);
-        vm.assume(
-            governanceToken.metadataImage
-                != ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-        );
         vm.assume(sourceChannelId != 0);
         vm.assume(destinationChannelId != 0);
         vm.assume(amount > 0);
@@ -323,10 +319,6 @@ contract VestingTests is Test {
         bytes calldata validator
     ) public {
         vm.assume(governanceToken.unwrappedToken.length > 0);
-        vm.assume(
-            governanceToken.metadataImage
-                != ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-        );
         vm.assume(sourceChannelId != 0);
         vm.assume(destinationChannelId != 0);
         vm.assume(amount > 0);

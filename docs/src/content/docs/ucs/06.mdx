@@ -85,7 +85,7 @@ This example shows how to batch multiple orders followed by a funded contract ca
 //   Batch[
 //     Order(TokenA -> FundedDispatch, amountA),
 //     Order(TokenB -> FundedDispatch, amountB),
-//     Multiplex(
+//     Call(
 //       FundedDispatch(
 //         Funds[TokenA, TokenB],
 //         Call[
@@ -125,7 +125,7 @@ FundedDispatchParameters memory params = FundedDispatchParameters({
 });
 
 // Add the funded dispatch as a multiplex instruction
-instructions[2] = makeMultiplexCall(
+instructions[2] = makeCallCall(
     sender,
     false, // not eureka mode
     fundedDispatchContract,
@@ -151,7 +151,7 @@ This example shows how to combine a token transfer with a funded ZKGM call to in
 // ZKGM(
 //   Batch[
 //     Order(Token -> FundedDispatch, amount),
-//     Multiplex(
+//     Call(
 //       FundedDispatch(
 //         Funds[Token],
 //         Call[
@@ -205,7 +205,7 @@ FundedDispatchParameters memory params = FundedDispatchParameters({
 });
 
 // Add the funded dispatch as a multiplex instruction
-instructions[1] = makeMultiplexCall(
+instructions[1] = makeCallCall(
     sender,
     false,
     fundedDispatchContract,
@@ -233,7 +233,7 @@ This example shows a high-level representation of using UCS06 to perform a cross
 // ZKGM(
 //   Batch[
 //     Order(TokenA -> FundedDispatch, amount),
-//     Multiplex(
+//     Call(
 //       FundedDispatch(
 //         Funds[TokenA],
 //         Call[
@@ -296,7 +296,7 @@ FundedDispatchParameters memory params = FundedDispatchParameters({
 });
 
 // Add the funded dispatch as multiplex instruction
-instructions[1] = makeMultiplexCall(
+instructions[1] = makeCallCall(
     sender,
     false,
     fundedDispatchContract,

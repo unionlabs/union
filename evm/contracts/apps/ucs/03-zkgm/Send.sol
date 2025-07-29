@@ -73,9 +73,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
                 ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
             )
         ) {
-            FungibleAssetOrderV2 calldata order =
-                ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
-            _verifyFungibleAssetOrderV2(channelId, path, order);
+            TokenOrderV2 calldata order =
+                ZkgmLib.decodeTokenOrderV2(instruction.operand);
+            _verifyTokenOrderV2(channelId, path, order);
         } else if (
             instruction.isInst(ZkgmLib.OP_BATCH, ZkgmLib.INSTR_VERSION_0)
         ) {
@@ -88,11 +88,10 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             _verifyForward(
                 channelId, ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _verifyMultiplex(
-                channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
+        } else if (instruction.isInst(ZkgmLib.OP_CALL, ZkgmLib.INSTR_VERSION_0))
+        {
+            _verifyCall(
+                channelId, path, ZkgmLib.decodeCall(instruction.operand)
             );
         } else if (
             instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
@@ -160,11 +159,8 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         // We compute the wrapped token from the destination to the source. If
         // the base token matches the predicted wrapper, we want to unwrap only
         // if it's being sent back through the same channel/path.
-        (address wrappedToken,,) = _predictWrappedTokenFromMetadataImageV2(
-            intermediateChannelPath,
-            channelId,
-            order.quoteToken,
-            ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
+        (address wrappedToken,) = _predictWrappedToken(
+            intermediateChannelPath, channelId, order.quoteToken
         );
         bool isInverseIntermediatePath =
             path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
@@ -184,8 +180,12 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             if (order.baseTokenPath != 0) {
                 revert ZkgmLib.ErrInvalidAssetOrigin();
             }
-            _increaseOutstanding(
-                channelId, path, address(baseToken), order.baseAmount
+            _increaseOutstandingV2(
+                channelId,
+                path,
+                address(baseToken),
+                order.quoteToken,
+                order.baseAmount
             );
             if (
                 address(baseToken) == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
@@ -217,43 +217,42 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         }
     }
 
-    function _verifyFungibleAssetOrderV2(
+    function _verifyTokenOrderV2(
         uint32 channelId,
         uint256 path,
-        FungibleAssetOrderV2 calldata order
+        TokenOrderV2 calldata order
     ) internal {
         address baseToken = address(bytes20(order.baseToken));
         (uint256 intermediateChannelPath, uint32 destinationChannelId) =
             ZkgmLib.popChannelFromPath(tokenOrigin[baseToken]);
-        bytes32 metadataImage;
-        if (
-            order.metadataType
-                == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP
-                || order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
-        ) {
-            metadataImage = bytes32(order.metadata);
-        } else if (
-            order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
-        ) {
-            metadataImage = EfficientHashLib.hash(order.metadata);
-        }
-        (address wrappedToken,, bool v1) =
-        _predictWrappedTokenFromMetadataImageV2(
-            intermediateChannelPath, channelId, order.quoteToken, metadataImage
-        );
+
         bool isInverseIntermediatePath =
             path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
         bool isSendingBackToSameChannel = destinationChannelId == channelId;
-        bool isUnwrapping = order.baseToken.eq(abi.encodePacked(wrappedToken));
+
+        // Predict V1
+        (address wrappedTokenV1,) = _predictWrappedToken(
+            intermediateChannelPath, channelId, order.quoteToken
+        );
+
+        // Predict V2
+        bytes32 metadataImage = metadataImageOf[baseToken];
+        (address wrappedTokenV2,) = _predictWrappedTokenFromMetadataImageV2(
+            intermediateChannelPath, channelId, order.quoteToken, metadataImage
+        );
+
+        bool isUnwrappingV1 =
+            order.baseToken.eq(abi.encodePacked(wrappedTokenV1));
+        bool isUnwrappingV2 =
+            order.baseToken.eq(abi.encodePacked(wrappedTokenV2));
+        bool isUnwrapping = isUnwrappingV1 || isUnwrappingV2;
+
         if (
-            isInverseIntermediatePath && isSendingBackToSameChannel
-                && isUnwrapping
+            isUnwrapping && isInverseIntermediatePath
+                && isSendingBackToSameChannel
         ) {
             // Ensure we specificy that we unwrap in the metadata tag.
-            if (
-                order.metadataType
-                    != ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP
-            ) {
+            if (order.kind != ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
                 revert ZkgmLib.ErrInvalidMetadataType();
             }
             // We don't have to verify that metadataImage matches the stored one
@@ -261,34 +260,14 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             // back in the else branch.
             IZkgmERC20(baseToken).burn(msg.sender, order.baseAmount);
         } else {
-            if (
-                order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
-            ) {
-                metadataImage = bytes32(order.metadata);
-            } else if (
-                order.metadataType
-                    == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
-            ) {
-                // Metadata is already abi encoded for the counterparty, no need
-                // to decode/encode again here before computing the image.
-                metadataImage = EfficientHashLib.hash(order.metadata);
-            } else {
-                // IMAGE_UNWRAP or any other variant not allowed
+            // Privileged tag that must only be set if we are unwrapping.
+            if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
                 revert ZkgmLib.ErrInvalidMetadataType();
             }
 
-            if (
-                metadataImage
-                    == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-            ) {
-                _increaseOutstanding(
-                    channelId, path, baseToken, order.baseAmount
-                );
-            } else {
-                _increaseOutstandingV2(
-                    channelId, path, baseToken, metadataImage, order.baseAmount
-                );
-            }
+            _increaseOutstandingV2(
+                channelId, path, baseToken, order.quoteToken, order.baseAmount
+            );
             if (
                 baseToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
                     && msg.value >= order.baseAmount
@@ -330,13 +309,13 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         _verifyInternal(channelId, forward.path, forward.instruction);
     }
 
-    function _verifyMultiplex(
+    function _verifyCall(
         uint32 channelId,
         uint256 path,
-        Multiplex calldata multiplex
+        Call calldata call
     ) internal {
-        if (!multiplex.sender.eq(abi.encodePacked(msg.sender))) {
-            revert ZkgmLib.ErrInvalidMultiplexSender();
+        if (!call.sender.eq(abi.encodePacked(msg.sender))) {
+            revert ZkgmLib.ErrInvalidCallSender();
         }
     }
 
@@ -541,7 +520,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint32 channel,
         bytes calldata token,
         bytes32 metadataImage
-    ) public returns (address, bytes32, bool) {
+    ) public returns (address, bytes32) {
         return _predictWrappedTokenFromMetadataImageV2(
             path, channel, token, metadataImage
         );

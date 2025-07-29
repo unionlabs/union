@@ -169,7 +169,7 @@ Fields:
 
 - `opcode`: Instruction type identifier as `uint8`
   - 0x00: [Forward](#0x00---forward)
-  - 0x01: [Multiplex](#0x01---multiplex)
+  - 0x01: [Call](#0x01---multiplex)
   - 0x02: [Batch](#0x02---batch)
   - 0x03: [FungibleAssetOrder](#0x03---fungible-asset-order)
   - 0x04: [Stake](#0x04---stake)
@@ -179,7 +179,7 @@ Fields:
 
 - `operand`: Instruction-specific data as `bytes`
   - Forward: Path, timeouts and instruction to forward
-  - Multiplex: Sender, callback mode and contract call data
+  - Call: Sender, callback mode and contract call data
   - Batch: Array of instructions to execute atomically
   - FungibleAssetOrder: Transfer details like tokens, amounts and parties
   - Stake/Unstake/WithdrawStake/WithdrawRewards: Staking operation parameters
@@ -224,13 +224,13 @@ Fields:
   - Must be greater than current time when executed
 
 - `instruction`: The [Instruction](#instruction) to forward
-  - Can be Multiplex, FungibleAssetOrder, or Batch
+  - Can be Call, FungibleAssetOrder, or Batch
   - Will be executed on final destination chain
   - Cannot be another Forward instruction
 
 :::tip
 
-The forward instruction can wrap Multiplex, FungibleAssetOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
+The forward instruction can wrap Call, FungibleAssetOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
 
 The protocol verifies that only these specific instructions can be forwarded and that the channel pairs are valid.
 
@@ -245,12 +245,12 @@ sequenceDiagram
     Chain B ->> Chain A: Forward Acknowledgement
 `}/>
 
-### 0x01 - Multiplex
+### 0x01 - Call
 
 The multiplex instruction uses opcode `0x01` and requires version `INSTR_VERSION_0`.
 
 ```solidity
-struct Multiplex {
+struct Call {
     bytes sender;            // Source chain sender address (must match msg.sender)
     bool eureka;            // Whether to use IBC-style callbacks
     bytes contractAddress;   // Target contract address on destination
@@ -342,7 +342,7 @@ sequenceDiagram
     participant B as Chain B
     participant Y as Contract Y
 
-    X ->> B: Multiplex Message
+    X ->> B: Call Message
     alt IS NOT EUREKA
         B ->> Y: onZkgm()
         B ->> X: Success Ack
@@ -365,7 +365,7 @@ struct Batch {
 
 Fields:
 - `instructions`: Array of [Instructions](#instruction) to execute atomically
-  - Only specific instructions allowed (Multiplex, FungibleAssetOrder, Stake, Unstake, WithdrawStake)
+  - Only specific instructions allowed (Call, FungibleAssetOrder, Stake, Unstake, WithdrawStake)
   - Executed in sequential order
   - All must succeed or entire batch reverts
   - Individual acknowledgements collected in array
@@ -413,24 +413,24 @@ struct FungibleAssetOrder {
 2. Version 2 (INSTR_VERSION_2):
 
 ```solidity
-struct FungibleAssetOrderV2 {
+struct TokenOrderV2 {
     bytes sender;             // Source chain sender address
     bytes receiver;           // Destination chain receiver address
     bytes baseToken;          // Token being sent
     uint256 baseAmount;       // Amount being sent
-    uint8 metadataType;       // Type of metadata (image, preimage, image_unwrap)
+    uint8 kind;       // Type of metadata (image, preimage, image_unwrap)
     bytes metadata;           // Token metadata based on type
     bytes quoteToken;         // Token requested in return
     uint256 quoteAmount;      // Minimum amount requested
 }
 ```
 
-#### FungibleAssetOrderV2: Advanced Token Mapping and Customization
+#### TokenOrderV2: Advanced Token Mapping and Customization
 
 The V2 version introduces a significantly more flexible metadata system with three types:
-- `FUNGIBLE_ASSET_METADATA_TYPE_IMAGE` (0x00): Uses a metadata image hash for existing token identification
-- `FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE` (0x01): Provides full metadata implementation and initializer for custom token deployment
-- `FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP` (0x02): Specifically for unwrapping operations
+- `TOKEN_ORDER_KIND_INITIALIZE` (0x00): Provides full metadata implementation and initializer for custom token deployment
+- `TOKEN_ORDER_KIND_ESCROW` (0x01): Uses a metadata image hash for existing token identification
+- `TOKEN_ORDER_KIND_UNESCROW` (0x02): Specifically for unwrapping operations
 
 ```solidity
 struct FungibleAssetMetadata {
@@ -513,7 +513,7 @@ If the order fails or times out:
 
 #### Solver Interface
 
-FungibleAssetOrderV2 introduces support for solver contracts - smart contracts that can programmatically fill orders with custom logic. This enables sophisticated market-making strategies beyond simple token transfers.
+TokenOrderV2 introduces support for solver contracts - smart contracts that can programmatically fill orders with custom logic. This enables sophisticated market-making strategies beyond simple token transfers.
 
 **Solidity Implementation:**
 
@@ -521,7 +521,7 @@ FungibleAssetOrderV2 introduces support for solver contracts - smart contracts t
 interface ISolver {
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
@@ -545,7 +545,7 @@ pub enum SolverQuery {
 pub enum SolverMsg {
     DoSolve {
         packet: Packet,
-        order: CwFungibleAssetOrderV2,
+        order: CwTokenOrderV2,
         caller: Addr,
         relayer: Addr,
         relayer_msg: Bytes,
@@ -590,7 +590,7 @@ contract MultiDEXSolver is ISolver, ERC165 {
 
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,

@@ -48,74 +48,26 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         );
     }
 
-    function _protocolFillUnescrow(
-        uint32 channelId,
-        uint256 path,
-        address quoteToken,
-        address receiver,
-        address relayer,
-        uint256 baseAmount,
-        uint256 quoteAmount
-    ) internal returns (bytes memory) {
-        uint256 fee = baseAmount - quoteAmount;
-        // If the base token path is being unwrapped, it's going to be non-zero.
-        _decreaseOutstanding(
-            channelId, ZkgmLib.reverseChannelPath(path), quoteToken, baseAmount
-        );
-        if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
-            if (quoteAmount + fee > 0) {
-                WETH.withdraw(quoteAmount + fee);
-            }
-            if (quoteAmount > 0) {
-                payable(receiver).sendValue(quoteAmount);
-            }
-
-            if (fee > 0) {
-                if (
-                    !SafeTransferLib.trySafeTransferETH(
-                        relayer,
-                        fee,
-                        SafeTransferLib.GAS_STIPEND_NO_STORAGE_WRITES
-                    )
-                ) {
-                    return ZkgmLib.ACK_ERR_ONLYMAKER;
-                }
-            }
-        } else {
-            if (quoteAmount > 0) {
-                IERC20(quoteToken).safeTransfer(receiver, quoteAmount);
-            }
-            if (fee > 0) {
-                IERC20(quoteToken).safeTransfer(relayer, fee);
-            }
-        }
-        return ZkgmLib.encodeFungibleAssetOrderAck(
-            FungibleAssetOrderAck({
-                fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
-                marketMaker: ZkgmLib.ACK_EMPTY
-            })
-        );
-    }
-
     function _protocolFillUnescrowV2(
         uint32 channelId,
         uint256 path,
+        bytes calldata baseToken,
         address quoteToken,
-        bytes32 metadataImage,
         address receiver,
         address relayer,
         uint256 baseAmount,
         uint256 quoteAmount
     ) internal returns (bytes memory) {
         uint256 fee = baseAmount - quoteAmount;
-        // If the base token path is being unwrapped, it's going to be non-zero.
+        // If the base token path is being unwrapped, it's escrowed balance will be non zero.
         _decreaseOutstandingV2(
             channelId,
             ZkgmLib.reverseChannelPath(path),
             quoteToken,
-            metadataImage,
+            baseToken,
             baseAmount
         );
+        // Specific case for native token.
         if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
             if (quoteAmount + fee > 0) {
                 WETH.withdraw(baseAmount);
@@ -208,7 +160,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         bytes calldata relayerMsg,
         address quoteToken,
         address payable receiver,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         bool intent
     ) internal returns (bytes memory) {
         uint256 quoteAmount = order.quoteAmount;
@@ -239,12 +191,13 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             }
         } else {
             bool solver = ZkgmLib.isSolver(quoteToken);
+            bool solverFilled = false;
             if (solver) {
                 // Even if the quote amount is zero, this may be some sort of
                 // mechanism to interact with a contract, hence, we allows the
                 // call to happen because the solver may constraint the
                 // execution.
-                (bool success,,) = quoteToken.tryCall(
+                (solverFilled,,) = quoteToken.tryCall(
                     0,
                     gasleft(),
                     type(uint16).max,
@@ -253,10 +206,11 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                         (packet, order, caller, relayer, relayerMsg, intent)
                     )
                 );
-                if (!success) {
+                if (!solverFilled && !ISolver(quoteToken).allowMarketMakers()) {
                     return ZkgmLib.ACK_ERR_ONLYMAKER;
                 }
-            } else if (quoteAmount > 0) {
+            }
+            if (!solverFilled && quoteAmount > 0) {
                 if (
                     !IERC20(quoteToken).trySafeTransferFrom(
                         caller, receiver, quoteAmount
@@ -279,17 +233,48 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         );
     }
 
-    function _deployWrappedTokenV2(
+    function _deployWrappedTokenV2Memory(
         uint32 channelId,
         uint256 path,
         bytes calldata unwrappedToken,
         address wrappedToken,
         bytes32 wrappedTokenSalt,
         FungibleAssetMetadata memory metadata,
-        bool cannotDeploy
+        bool canDeploy
     ) internal {
         if (!ZkgmLib.isDeployed(wrappedToken)) {
-            if (cannotDeploy) {
+            if (!canDeploy) {
+                revert ZkgmLib.ErrCannotDeploy();
+            }
+            CREATE3.deployDeterministic(
+                abi.encodePacked(
+                    type(ERC1967Proxy).creationCode,
+                    abi.encode(
+                        address(bytes20(metadata.implementation)),
+                        metadata.initializer
+                    )
+                ),
+                wrappedTokenSalt
+            );
+            tokenOrigin[wrappedToken] =
+                ZkgmLib.updateChannelPath(path, channelId);
+            metadataImageOf[wrappedToken] = EfficientHashLib.hash(
+                ZkgmLib.encodeFungibleAssetMetadata(metadata)
+            );
+        }
+    }
+
+    function _deployWrappedTokenV2(
+        uint32 channelId,
+        uint256 path,
+        bytes calldata unwrappedToken,
+        address wrappedToken,
+        bytes32 wrappedTokenSalt,
+        FungibleAssetMetadata calldata metadata,
+        bool canDeploy
+    ) internal {
+        if (!ZkgmLib.isDeployed(wrappedToken)) {
+            if (!canDeploy) {
                 revert ZkgmLib.ErrCannotDeploy();
             }
             CREATE3.deployDeterministic(
@@ -366,14 +351,14 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             _optionalRateLimit(quoteToken, order.quoteAmount);
             FungibleAssetMetadata memory metadata =
                 _makeDefaultFungibleAssetMetadata(order);
-            _deployWrappedTokenV2(
+            _deployWrappedTokenV2Memory(
                 ibcPacket.destinationChannelId,
                 path,
                 order.baseToken,
                 wrappedToken,
                 wrappedTokenSalt,
                 metadata,
-                false
+                true
             );
             return _protocolFillMint(
                 ibcPacket.destinationChannelId,
@@ -386,9 +371,10 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             );
         } else if (order.baseTokenPath != 0 && baseAmountCoversQuoteAmount) {
             _optionalRateLimit(quoteToken, order.quoteAmount);
-            return _protocolFillUnescrow(
+            return _protocolFillUnescrowV2(
                 ibcPacket.destinationChannelId,
                 path,
+                order.baseToken,
                 quoteToken,
                 receiver,
                 relayer,
@@ -405,13 +391,13 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         }
     }
 
-    function executeFungibleAssetOrderV2(
+    function executeTokenOrderV2(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
         uint256 path,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         bool intent
     ) public returns (bytes memory) {
         address quoteToken = address(bytes20(order.quoteToken));
@@ -437,100 +423,92 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
 
         bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
 
-        address wrappedToken;
-        bytes32 wrappedTokenSalt;
-        FungibleAssetMetadata memory metadata;
-        bool v1 = false;
-        if (order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE) {
-            bytes32 metadataImage = bytes32(order.metadata);
-            (wrappedToken, wrappedTokenSalt, v1) =
-            _predictWrappedTokenFromMetadataImageV2(
-                path,
-                ibcPacket.destinationChannelId,
-                order.baseToken,
-                metadataImage
-            );
-        } else if (
-            order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
+        if (
+            order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW
+                && baseAmountCoversQuoteAmount
         ) {
-            metadata = ZkgmLib.decodeFungibleAssetMetadata(order.metadata);
-            (wrappedToken, wrappedTokenSalt) = _predictWrappedTokenV2(
-                path, ibcPacket.destinationChannelId, order.baseToken, metadata
-            );
-        } else if (
-            order.metadataType
-                == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP
-        ) {
-            if (!baseAmountCoversQuoteAmount) {
-                revert ZkgmLib.ErrUnwrapBaseAmountSmallerThanQuoteAmount();
-            }
-            bytes32 metadataImage = bytes32(order.metadata);
-            v1 = metadataImage
-                == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
             _optionalRateLimit(quoteToken, order.quoteAmount);
-            if (v1) {
-                return _protocolFillUnescrow(
-                    ibcPacket.destinationChannelId,
-                    path,
-                    quoteToken,
-                    receiver,
-                    relayer,
-                    order.baseAmount,
-                    order.quoteAmount
-                );
-            } else {
-                return _protocolFillUnescrowV2(
-                    ibcPacket.destinationChannelId,
-                    path,
-                    quoteToken,
-                    metadataImage,
-                    receiver,
-                    relayer,
-                    order.baseAmount,
-                    order.quoteAmount
-                );
-            }
-        } else {
-            revert ZkgmLib.ErrInvalidMetadataType();
-        }
-
-        if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
-            _optionalRateLimit(quoteToken, order.quoteAmount);
-            // The asset can only be deployed if the metadata preimage is provided.
-            bool cannotDeploy =
-                order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE;
-            _deployWrappedTokenV2(
+            return _protocolFillUnescrowV2(
                 ibcPacket.destinationChannelId,
                 path,
                 order.baseToken,
-                wrappedToken,
-                wrappedTokenSalt,
-                metadata,
-                cannotDeploy
-            );
-            return _protocolFillMint(
-                ibcPacket.destinationChannelId,
-                path,
-                wrappedToken,
+                quoteToken,
                 receiver,
                 relayer,
                 order.baseAmount,
                 order.quoteAmount
             );
         } else {
-            // We also allow market makers to fill orders after finality. This
-            // allow orders that combines protocol and mm filling (wrapped vs
-            // non wrapped assets).
-            return _marketMakerFillV2(
-                ibcPacket,
-                caller,
-                relayer,
-                relayerMsg,
-                quoteToken,
-                receiver,
-                order,
-                intent
-            );
+            address wrappedToken;
+            bytes32 wrappedTokenSalt;
+            // Decode is noop here as it's directly indexing in the calldata,
+            // even if the metadata is empty this will not fail.
+            FungibleAssetMetadata calldata metadata =
+                ZkgmLib.decodeFungibleAssetMetadata(order.metadata);
+            if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_ESCROW) {
+                bytes32 metadataImage = metadataImageOf[quoteToken];
+                if (metadataImage == 0) {
+                    // V1
+                    (wrappedToken, wrappedTokenSalt) = _predictWrappedToken(
+                        path, ibcPacket.destinationChannelId, order.baseToken
+                    );
+                } else {
+                    // V2
+                    (wrappedToken, wrappedTokenSalt) =
+                    _predictWrappedTokenFromMetadataImageV2(
+                        path,
+                        ibcPacket.destinationChannelId,
+                        order.baseToken,
+                        metadataImage
+                    );
+                }
+            } else if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE) {
+                (wrappedToken, wrappedTokenSalt) = _predictWrappedTokenV2(
+                    path,
+                    ibcPacket.destinationChannelId,
+                    order.baseToken,
+                    metadata
+                );
+            }
+
+            if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
+                _optionalRateLimit(quoteToken, order.quoteAmount);
+                // The asset can only be deployed if the metadata preimage is provided.
+                bool canDeploy =
+                    order.kind == ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE;
+                _deployWrappedTokenV2(
+                    ibcPacket.destinationChannelId,
+                    path,
+                    order.baseToken,
+                    wrappedToken,
+                    wrappedTokenSalt,
+                    metadata,
+                    canDeploy
+                );
+                return _protocolFillMint(
+                    ibcPacket.destinationChannelId,
+                    path,
+                    wrappedToken,
+                    receiver,
+                    relayer,
+                    order.baseAmount,
+                    order.quoteAmount
+                );
+            } else {
+                // We also allow market makers to fill orders after finality. This
+                // allow orders that combines protocol and mm filling (wrapped vs
+                // non wrapped assets).
+                return _marketMakerFillV2(
+                    ibcPacket,
+                    caller,
+                    relayer,
+                    relayerMsg,
+                    quoteToken,
+                    receiver,
+                    order,
+                    intent
+                );
+            }
         }
     }
 
@@ -559,10 +537,11 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                         marketMaker, order.baseAmount
                     );
                 } else {
-                    _decreaseOutstanding(
+                    _decreaseOutstandingV2(
                         ibcPacket.sourceChannelId,
                         path,
                         baseToken,
+                        order.quoteToken,
                         order.baseAmount
                     );
                     IERC20(baseToken).safeTransfer(
@@ -591,12 +570,12 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         );
     }
 
-    function acknowledgeFungibleAssetOrderV2(
+    function acknowledgeTokenOrderV2(
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
         bytes32 salt,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         bool successful,
         bytes calldata ack
     ) public {
@@ -611,48 +590,18 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                 address marketMaker =
                     address(bytes20(assetOrderAck.marketMaker));
                 address baseToken = address(bytes20(order.baseToken));
-                if (
-                    order.metadataType
-                        == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP
-                ) {
+                if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
                     IZkgmERC20(address(baseToken)).mint(
                         marketMaker, order.baseAmount
                     );
                 } else {
-                    bytes32 metadataImage;
-                    if (
-                        order.metadataType
-                            == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
-                    ) {
-                        metadataImage = bytes32(order.metadata);
-                    } else if (
-                        order.metadataType
-                            == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
-                    ) {
-                        metadataImage = EfficientHashLib.hash(order.metadata);
-                    } else {
-                        revert ZkgmLib.ErrInvalidMetadataType();
-                    }
-                    // Check if this is a V1 token
-                    if (
-                        metadataImage
-                            == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-                    ) {
-                        _decreaseOutstanding(
-                            ibcPacket.sourceChannelId,
-                            path,
-                            baseToken,
-                            order.baseAmount
-                        );
-                    } else {
-                        _decreaseOutstandingV2(
-                            ibcPacket.sourceChannelId,
-                            path,
-                            baseToken,
-                            metadataImage,
-                            order.baseAmount
-                        );
-                    }
+                    _decreaseOutstandingV2(
+                        ibcPacket.sourceChannelId,
+                        path,
+                        baseToken,
+                        order.quoteToken,
+                        order.baseAmount
+                    );
                     IERC20(baseToken).safeTransfer(
                         marketMaker, order.baseAmount
                     );
@@ -673,10 +622,10 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         _refund(ibcPacket.sourceChannelId, path, order);
     }
 
-    function timeoutFungibleAssetOrderV2(
+    function timeoutTokenOrderV2(
         IBCPacket calldata ibcPacket,
         uint256 path,
-        FungibleAssetOrderV2 calldata order
+        TokenOrderV2 calldata order
     ) public {
         _refundV2(ibcPacket.sourceChannelId, path, order);
     }
@@ -691,8 +640,12 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         if (order.baseTokenPath != 0) {
             IZkgmERC20(address(baseToken)).mint(sender, order.baseAmount);
         } else {
-            _decreaseOutstanding(
-                sourceChannelId, path, baseToken, order.baseAmount
+            _decreaseOutstandingV2(
+                sourceChannelId,
+                path,
+                baseToken,
+                order.quoteToken,
+                order.baseAmount
             );
             IERC20(baseToken).safeTransfer(sender, order.baseAmount);
         }
@@ -701,46 +654,20 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
     function _refundV2(
         uint32 sourceChannelId,
         uint256 path,
-        FungibleAssetOrderV2 calldata order
+        TokenOrderV2 calldata order
     ) internal {
         address sender = address(bytes20(order.sender));
         address baseToken = address(bytes20(order.baseToken));
-        if (
-            order.metadataType
-                == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP
-        ) {
+        if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
             IZkgmERC20(address(baseToken)).mint(sender, order.baseAmount);
         } else {
-            bytes32 metadataImage;
-            if (
-                order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
-            ) {
-                metadataImage = bytes32(order.metadata);
-            } else if (
-                order.metadataType
-                    == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
-            ) {
-                metadataImage = EfficientHashLib.hash(order.metadata);
-            } else {
-                revert ZkgmLib.ErrInvalidMetadataType();
-            }
-            // Check if this is a V1 token
-            if (
-                metadataImage
-                    == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-            ) {
-                _decreaseOutstanding(
-                    sourceChannelId, path, baseToken, order.baseAmount
-                );
-            } else {
-                _decreaseOutstandingV2(
-                    sourceChannelId,
-                    path,
-                    baseToken,
-                    metadataImage,
-                    order.baseAmount
-                );
-            }
+            _decreaseOutstandingV2(
+                sourceChannelId,
+                path,
+                baseToken,
+                order.quoteToken,
+                order.baseAmount
+            );
             IERC20(baseToken).safeTransfer(sender, order.baseAmount);
         }
     }

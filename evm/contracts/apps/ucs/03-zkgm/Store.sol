@@ -60,9 +60,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     mapping(address => bytes32) public metadataImageOf;
     mapping(
         uint32
-            => mapping(
-                uint256 => mapping(address => mapping(bytes32 => uint256))
-            )
+            => mapping(uint256 => mapping(address => mapping(bytes => uint256)))
     ) public channelBalanceV2;
 
     function _getGovernanceToken(
@@ -73,7 +71,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         if (governanceToken.unwrappedToken.length == 0) {
             revert ZkgmLib.ErrChannelGovernanceTokenNotSet();
         }
-        (address wrappedGovernanceToken,,) =
+        (address wrappedGovernanceToken,) =
         _predictWrappedTokenFromMetadataImageV2(
             0,
             channelId,
@@ -124,50 +122,24 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         return stakeManager;
     }
 
-    // Increase the outstanding balance of a channel. This ensure that malicious
-    // channels can't unescrow/mint more tokens than previously escrowed/burnt.
-    function _increaseOutstanding(
-        uint32 sourceChannelId,
-        uint256 path,
-        address token,
-        uint256 amount
-    ) internal {
-        channelBalance[sourceChannelId][path][token] += amount;
-    }
-
     function _increaseOutstandingV2(
         uint32 sourceChannelId,
         uint256 path,
-        address token,
-        bytes32 metadataImage,
+        address baseToken,
+        bytes calldata quoteToken,
         uint256 amount
     ) internal {
-        channelBalanceV2[sourceChannelId][path][token][metadataImage] += amount;
-    }
-
-    // Decrease the outstanding balance of a (channel, path). If the function is
-    // called when receiving funds, hence, to decrease we need to first inverse
-    // the path. If we increased the balance for (0, [1, 2, 3]) and funds are
-    // sent back over [3, 2, 1], this will only work if the path is the inverse.
-    // If the function is called on refund, simplify subtract the refunded
-    // amount.
-    function _decreaseOutstanding(
-        uint32 sourceChannelId,
-        uint256 path,
-        address token,
-        uint256 amount
-    ) internal {
-        channelBalance[sourceChannelId][path][token] -= amount;
+        channelBalanceV2[sourceChannelId][path][baseToken][quoteToken] += amount;
     }
 
     function _decreaseOutstandingV2(
         uint32 sourceChannelId,
         uint256 path,
-        address token,
-        bytes32 metadataImage,
+        address baseToken,
+        bytes calldata quoteToken,
         uint256 amount
     ) internal {
-        channelBalanceV2[sourceChannelId][path][token][metadataImage] -= amount;
+        channelBalanceV2[sourceChannelId][path][baseToken][quoteToken] -= amount;
     }
 
     // Predict a wrapped token address given the path/channel and counterparty
@@ -190,18 +162,13 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         uint32 channel,
         bytes memory token,
         bytes32 metadataImage
-    ) internal view returns (address, bytes32, bool) {
-        if (metadataImage == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1) {
-            (address quoteTokenV1, bytes32 saltV1) =
-                _predictWrappedTokenMemory(path, channel, token);
-            return (quoteTokenV1, saltV1, true);
-        }
+    ) internal view returns (address, bytes32) {
         bytes32 wrappedTokenSalt = EfficientHashLib.hash(
             abi.encode(path, channel, token, metadataImage)
         );
         address wrappedToken =
             CREATE3.predictDeterministicAddress(wrappedTokenSalt);
-        return (wrappedToken, wrappedTokenSalt, false);
+        return (wrappedToken, wrappedTokenSalt);
     }
 
     function _predictWrappedTokenV2(
@@ -212,22 +179,8 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     ) internal returns (address, bytes32) {
         bytes32 metadataImage =
             EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
-        (address wrappedToken, bytes32 salt,) =
-        _predictWrappedTokenFromMetadataImageV2(
+        return _predictWrappedTokenFromMetadataImageV2(
             path, channel, token, metadataImage
         );
-        return (wrappedToken, salt);
-    }
-
-    function _predictWrappedTokenMemory(
-        uint256 path,
-        uint32 channel,
-        bytes memory token
-    ) internal view returns (address, bytes32) {
-        bytes32 wrappedTokenSalt =
-            EfficientHashLib.hash(abi.encode(path, channel, token));
-        address wrappedToken =
-            CREATE3.predictDeterministicAddress(wrappedTokenSalt);
-        return (wrappedToken, wrappedTokenSalt);
     }
 }
