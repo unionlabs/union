@@ -158,6 +158,11 @@ pub enum ContractError {
     OnlyWhitelistedRelayer,
     #[error("sender is not the relayer admin")]
     OnlyRelayerAdmin,
+    #[error(
+        "{} invalid committed status value: {value}",
+        ContractErrorKind::from(self)
+    )]
+    InvalidClientStatusValue { value: u32 },
 }
 
 impl ContractErrorKind {

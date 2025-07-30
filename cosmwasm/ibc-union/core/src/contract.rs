@@ -36,14 +36,15 @@ use ibc_union_spec::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{Bytes, H256},
+    primitives::{Bytes, H256, U256},
 };
 
 use crate::{
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
-        ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
-        NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers, WhitelistedRelayersAdmin,
+        ClientStatuses, ClientStore, ClientTypes, Commitments, Connections, ContractChannels,
+        NextChannelId, NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers,
+        WhitelistedRelayersAdmin,
     },
     ContractError,
 };
@@ -623,6 +624,19 @@ pub fn execute(
                     .add_attribute("action", "revoke")
                     .add_attribute("relayer", relayer),
             ))
+        }
+        ExecuteMsg::CommitClientStatus(msg) => {
+            let status = query_light_client::<Status>(
+                deps.as_ref(),
+                client_impl(deps.as_ref(), msg.client_id)?,
+                LightClientQuery::GetStatus {
+                    client_id: msg.client_id,
+                },
+            )?;
+            let encoded = U256::from(status as u32);
+            deps.storage
+                .write::<ClientStatuses>(&msg.client_id, &encoded);
+            Ok(Response::default())
         }
     }
 }
@@ -2184,6 +2198,13 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
                 client_impl,
                 LightClientQuery::GetStatus { client_id },
             )?;
+            Ok(to_json_binary(&status)?)
+        }
+        QueryMsg::GetCommittedStatus { client_id } => {
+            let val = deps.storage.read::<ClientStatuses>(&client_id)?;
+            let raw = val.to_le_bytes()[0];
+            let status = Status::try_from(raw)
+                .map_err(|_| ContractError::InvalidClientStatusValue { value: raw as u32 })?;
             Ok(to_json_binary(&status)?)
         }
         QueryMsg::GetChannels { contract } => {

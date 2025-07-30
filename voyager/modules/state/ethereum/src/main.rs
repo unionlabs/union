@@ -623,6 +623,15 @@ impl Module {
             )),
         }
     }
+
+    #[instrument(skip_all,fields(chain_id = %self.chain_id, %height, %client_id))]
+    async fn query_committed_client_status(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Option<Status>> {
+        unimplemented!("query_client_status is not implemented yet");
+    }
 }
 
 fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {

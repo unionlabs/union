@@ -5,7 +5,7 @@ use depolama::{value::ValueCodecViaEncoding, KeyCodec, Prefix, Store, ValueCodec
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
 use unionlabs::{
     encoding::Bincode,
-    primitives::{ByteArrayExt, Bytes, H256},
+    primitives::{ByteArrayExt, Bytes, H256, U256},
 };
 
 macro_rules! id_key {
@@ -173,6 +173,24 @@ impl Store for ClientStates {
 }
 id_key!(ClientStates);
 bytes_value!(ClientStates);
+
+pub enum ClientStatuses {}
+impl Store for ClientStatuses {
+    const PREFIX: Prefix = Prefix::new(b"client_status");
+
+    type Key = ClientId;
+    type Value = U256;
+}
+id_key!(ClientStatuses);
+impl ValueCodec<U256> for ClientStatuses {
+    fn encode_value(value: &U256) -> Bytes {
+        value.to_le_bytes().into()
+    }
+
+    fn decode_value(raw: &Bytes) -> StdResult<U256> {
+        read_fixed_bytes(raw).map(U256::from_le_bytes)
+    }
+}
 
 pub enum ClientConsensusStates {}
 impl Store for ClientConsensusStates {

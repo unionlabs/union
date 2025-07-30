@@ -96,6 +96,7 @@ id!(ChannelId);
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[repr(u8)]
 pub enum Status {
     Active = 1,
     Expired = 2,
@@ -109,5 +110,18 @@ impl fmt::Display for Status {
             Status::Expired => "expired",
             Status::Frozen => "frozen",
         })
+    }
+}
+
+impl TryFrom<u8> for Status {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Status::Active),
+            2 => Ok(Status::Expired),
+            3 => Ok(Status::Frozen),
+            _ => Err("Invalid status value"),
+        }
     }
 }
