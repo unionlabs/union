@@ -2,9 +2,6 @@
 title: "Voyager"
 ---
 
-
-import Mermaid from "#/components/Mermaid.astro";
-
 Relaying is hard. There are several key properties to a reliable relayer, the most important of
 which being:
 
@@ -19,7 +16,7 @@ which being:
   https://github.com/clemensgg/xion-relayer-postmortem)
 
 Voyager takes a novel approach to solving these problems. Internally, everything is modeled as a
-finite state machine, ([`voyager-vm`](https://github.com/unionlabs/union/tree/ab76fd72e114a2b8db8ad469dc587aec865e2095/lib/voyager-vm)), which is stored in postgres to ensure transactional integrity ([`pg-queue`](https://github.com/unionlabs/union/tree/main/lib/pg-queue)). Every chain
+finite state machine, ([`voyager-vm`](https://github.com/unionlabs/union/blob/main/lib/voyager-vm/README.md)), which is stored in postgres to ensure transactional integrity ([`pg-queue`](https://github.com/unionlabs/union/blob/main/lib/pg-queue/README.md)). Every chain
 query, transaction submission, and even the data itself is represented as a state within the queue.
 This design solves two of the properties mentioned above out of the box: **Data Integrity** and
 **Quick Startup Times**. Since no state is stored in Voyager itself, it is able to crash and restart
@@ -31,7 +28,7 @@ messages can safely be executed in parallel. This means, for instance, that whil
 fetching events from a block, another could be submitting a light client update, and another could
 be generating a state proof, and so on.
 
-For more information on voyager's architecture, see [CONCEPTS.md](https://github.com/unionlabs/union/blob/ab76fd72e114a2b8db8ad469dc587aec865e2095/voyager/CONCEPTS.md)
+For more information on voyager's architecture, see [Concepts](/architecture/voyager/concepts).
 
 ## Light Clients
 
@@ -44,7 +41,8 @@ ethereum and tendermint, with additional logic specific to the protocol's finali
 
 ### L2 Clients
 
-Voyager supports several Ethereum L2s, which are implemented as [conditional light clients](/concepts/conditional-light-clients/).
+Voyager supports several Ethereum L2s, which are implemented as conditional light clients (TODO:
+link to our doc on conditional clients)
 
 The settlement condition and update logic is different for each L2, but the basic principles are
 the same:
