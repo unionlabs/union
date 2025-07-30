@@ -4,7 +4,7 @@ import type { Pipeable } from "effect/Pipeable"
 import { Covariant } from "effect/Types"
 import * as Batch from "./Batch.js"
 import type * as ChannelRegistry from "./ChannelRegistry.js"
-import * as internal from "./internal/clientRequest.js"
+import * as internal from "./internal/tokenOrder.js"
 import { Chain } from "./schema/chain.js"
 import type { Channel } from "./schema/channel.js"
 import * as Token from "./Token.js"
@@ -85,40 +85,48 @@ export declare namespace TokenOrder {
  */
 export declare namespace Options {
   /**
-   * @category models
-   * @since 2.0.0
+   * Keys that **must** be present before the order can leave the caller’s
+   * hands.  These map directly to domain requirements – rename as needed.
    */
-  export interface Send extends
-    Omit<
-      Options,
-      | "source"
-      | "destination"
-      | "sender"
-      | "receiver"
-      | "baseToken"
-      | "baseAmount"
-    >
-  {}
+  export type RequiredKeys =
+    | "source"
+    | "destination"
+    | "sender"
+    | "receiver"
+    | "baseToken"
+    | "baseAmount"
+
+  /**
+   * Helper mapped type:
+   * – removes the `?` (optional) modifier,
+   * – keeps `readonly`,
+   * – preserves the exact field types.
+   */
+  export type Required = {
+    -readonly [K in RequiredKeys]-?: NonNullable<Options[K]>
+  }
+
+  /**
+   * Everything **except** the required six keys; stays optional.
+   */
+  export type Optional = Omit<Options, RequiredKeys>
+
+  /**
+   * A fully‑specified options object: required fields present,
+   * optional ones still optional.
+   */
+  export type Complete = Required & Optional
 }
 
 /**
  * @category constructors
  * @since 2.0.0
  */
-export declare const make: (
-  source: Chain,
-  destination: Chain,
-  sender: string,
-  receiver: string,
-  options?: Options.Send | undefined,
-) => TokenOrder
-
-/**
- * @category constructors
- * @since 2.0.0
- */
-export const send: (sender: string, receiver: string, options?: Options.Send) => TokenOrder =
-  internal.send
+export declare const make: <
+  P extends Partial<Options>,
+>(
+  value: P,
+) => TokenOrder.Build<Exclude<keyof Options, keyof P>>
 
 /**
  * @category combinators
@@ -138,7 +146,7 @@ export const setReceiver: {
   (self: TokenOrder, receiver: string): TokenOrder
 } = internal.setReceiver
 
-export declare const withAutoQuoteToken: <A extends keyof Options.Send>(
+export declare const withAutoQuoteToken: <A extends keyof Options.Required>(
   a: TokenOrder.Build<A | "quoteToken">,
 ) => Effect.Effect<TokenOrder.Build<Exclude<A, "quoteToken">>, never, "quote registry">
 
@@ -149,14 +157,3 @@ export declare const withFee: (
 ) => (
   b: TokenOrder,
 ) => Effect.Effect<Batch.Batch<TokenOrder>, never, ChannelRegistry.ChannelRegistry>
-
-export declare function makePartial<P extends Partial<TokenOrder>>(
-  value: P,
-): TokenOrder.Build<Exclude<keyof TokenOrder, keyof P>>
-
-const a = make(
-  void 0 as unknown as Chain,
-  void 0 as unknown as Chain,
-  "",
-  "",
-)
