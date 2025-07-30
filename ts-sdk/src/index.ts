@@ -107,7 +107,7 @@ export * as ZkgmClient from "./ZkgmClient.js"
  *
  * @since 2.0.0
  */
-export * as ClientRequest from "./ClientRequest.js"
+export * as ZkgmRequest from "./ZkgmRequest.js"
 /**
  * TODO
  *

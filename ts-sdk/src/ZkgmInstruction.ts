@@ -9,6 +9,6 @@ export type ZkgmInstruction =
   | Batch.Batch<ZkgmInstruction>
   | TokenOrder.TokenOrder
 
-export interface Encodeable {
-  encode: Effect.Effect<Hex, any, any>
+export interface Encodeable<E, R> {
+  encode: Effect.Effect<Hex, E, R>
 }

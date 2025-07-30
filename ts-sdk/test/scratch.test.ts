@@ -1,49 +1,26 @@
-import { Batch, Token, TokenOrder, Ucs03, Ucs05, ZkgmClient } from "@unionlabs/sdk"
+import { Batch, Token, TokenOrder, Ucs03, Ucs05, ZkgmClient, ZkgmRequest } from "@unionlabs/sdk"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
 // import { EvmClient } from "@unionlabs/sdk-evm"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { Arbitrary, Effect, Match, pipe } from "effect"
 
-type ZkgmInstruction =
-  // | Forward
-  // | Call
-  | Batch.Batch<ZkgmInstruction>
-  | TokenOrder.TokenOrder
-
-declare const a: ZkgmInstruction
-
-const b = a._tag
-
-const f = Match.type<ZkgmInstruction>().pipe(
-  Match.tagsExhaustive({
-    Batch: () => 0,
-    TokenOrder: () => 0,
-  }),
-)
-
 // has a function .encode() -> ethabi (uses Ucs03 module)
 // has a function .extractRequiredTokens() -> Token[]
 //                                           example output: [{ token: Token.Erc20(`0x1234`), amount: 42342n }, { token: Token.EvmGas, amount: 200n }]
 
-type ZkgmRequest = {
-  sourceChain: Chain<"evm">
-  destinationChain: Chain<"cosmos">
-  instruction: ZkgmInstruction
-}
-
 const program = Effect.gen(function*() {
-  const sourceChain = yield* ChainRegistry.byUniversalId(
+  const source = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("bob.97"),
   )
-  const destinationChain = yield* ChainRegistry.byUniversalId(
+  const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("babylon.bbn-1"),
   )
 
   const incompleteTokenOrder = // : PartialTokenOrder<"quoteToken" | "channel" | "quoteAmount"> =
     TokenOrder.make({
-      sourceChain,
-      destinationChain,
+      source,
+      destination,
       sender: Ucs05.EvmDisplay.make("0x123abcd"),
       receiver: Ucs05.CosmosDisplay.make("bbn1abcde"),
       baseToken: Token.Erc20.make({ address: "0x123" }),
