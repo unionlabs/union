@@ -10,6 +10,7 @@ import type * as ClientError from "./ClientError.js"
 import type * as ClientRequest from "./ClientRequest.js"
 import type * as ClientResponse from "./ClientResponse.js"
 import * as internal from "./internal/client.js"
+import { Chain } from "./schema/chain.js"
 
 /**
  * @since 2.0.0
@@ -44,6 +45,15 @@ export declare namespace Client {
     ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
     readonly simulate: (
       request: ClientRequest.ClientRequest,
+    ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
+
+    readonly send: (
+      source: Chain,
+      destination: Chain,
+      sender: string,
+      receiver: string,
+      amount: bigint,
+      options?: ClientRequest.Options.Send,
     ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
   }
 
@@ -83,14 +93,14 @@ export const execute: (
  * @since 1.0.0
  * @category constructors
  */
-export const make: (
+export declare const make: (
   f: (
     request: ClientRequest.ClientRequest,
     url: URL,
     signal: AbortSignal,
     fiber: RuntimeFiber<ClientResponse.ClientResponse, ClientError.ClientError>,
   ) => Effect.Effect<ClientResponse.ClientResponse, ClientError.ClientError>,
-) => Client = internal.make
+) => Client // = internal.make
 
 /**
  * @since 1.0.0
@@ -111,3 +121,16 @@ export const transform: {
     ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
   ): Client.With<E | E1, R | R1>
 } = internal.transform
+
+/**
+ * @since 1.0.0
+ * @category accessors
+ */
+export const send: (
+  url: string | URL,
+  options?: ClientRequest.Options.Send | undefined,
+) => Effect.Effect<
+  ClientResponse.ClientResponse,
+  ClientError.ClientError,
+  Client
+> = internal.send

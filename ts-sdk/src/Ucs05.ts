@@ -62,46 +62,46 @@ export type Bech32 = typeof Bech32.Type
  * @category models
  * @since 2.0.0
  */
-export const AddressCanonicalBytes = Hex.pipe(S.brand("CanonicalBytes"))
+export const CanonicalBytes = Hex.pipe(S.brand("CanonicalBytes"))
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressCanonicalBytes = typeof AddressCanonicalBytes.Type
+export type CanonicalBytes = typeof CanonicalBytes.Type
 
 // Cosmos Address Types
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressCosmosCanonical = AddressCanonicalBytes.pipe(S.brand("AddressCosmosCanonical"))
+export const CosmosCanonical = CanonicalBytes.pipe(S.brand("CosmosCanonical"))
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressCosmosCanonical = typeof AddressCosmosCanonical.Type
+export type CosmosCanonical = typeof CosmosCanonical.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressCosmosDisplay = Bech32.pipe(S.brand("AddressCosmosDisplay"))
+export const CosmosDisplay = Bech32.pipe(S.brand("CosmosDisplay"))
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressCosmosDisplay = typeof AddressCosmosDisplay.Type
+export type CosmosDisplay = typeof CosmosDisplay.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressCosmosZkgm = Hex.pipe(S.brand("AddressCosmosZkgm")) // TODO: Hex<Bech32<Hrp, Cosmos.Canonical>>
+export const CosmosZkgm = Hex.pipe(S.brand("CosmosZkgm")) // TODO: Hex<Bech32<Hrp, Cosmos.Canonical>>
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressCosmosZkgm = typeof AddressCosmosZkgm.Type
+export type CosmosZkgm = typeof CosmosZkgm.Type
 
 // export const AddressCosmosDisplayFromCanonical = flow(
 //   Bech32FromAddressCanonicalBytesWithPrefix,
@@ -112,11 +112,11 @@ export type AddressCosmosZkgm = typeof AddressCosmosZkgm.Type
  * @category utils
  * @since 2.0.0
  */
-export const AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix = (prefix: string) =>
+export const CosmosZkgmFromCanonicalBytesWithPrefix = (prefix: string) =>
   pipe(
-    Bech32FromAddressCanonicalBytesWithPrefix(prefix),
+    Bech32FromCanonicalBytesWithPrefix(prefix),
     S.compose(HexFromString),
-    S.compose(AddressCosmosZkgm),
+    S.compose(CosmosZkgm),
   )
 
 // Evm Address Types
@@ -124,51 +124,51 @@ export const AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix = (prefix: str
  * @category models
  * @since 2.0.0
  */
-export const AddressEvmCanonical = AddressCanonicalBytes.pipe(S.brand("AddressEvmCanonical"))
+export const EvmCanonical = CanonicalBytes.pipe(S.brand("EvmCanonical"))
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressEvmCanonical = typeof AddressEvmCanonical.Type
+export type EvmCanonical = typeof EvmCanonical.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressEvmDisplay = HexChecksum.pipe(S.brand("AddressEvmDisplay"))
+export const EvmDisplay = HexChecksum.pipe(S.brand("EvmDisplay"))
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressEvmDisplay = typeof AddressEvmDisplay.Type
+export type EvmDisplay = typeof EvmDisplay.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressEvmZkgm = AddressEvmCanonical.pipe(S.brand("AddressEvmZkgm"))
+export const EvmZkgm = EvmCanonical.pipe(S.brand("EvmZkgm"))
 /**
  * @category models
  * @since 2.0.0
  */
-export type AddressEvmZkgm = typeof AddressEvmZkgm.Type
+export type EvmZkgm = typeof EvmZkgm.Type
 
 // Aptos Address Types
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressAptosCanonical = AddressCanonicalBytes.pipe(S.brand("AddressAptosCanonical"))
+export const AptosCanonical = CanonicalBytes.pipe(S.brand("AptosCanonical"))
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressAptosDisplay = AddressAptosCanonical
+export const AptosDisplay = AptosCanonical
 /**
  * @category models
  * @since 2.0.0
  */
-export const AddressAptosZkgm = AddressAptosCanonical
+export const AptosZkgm = AptosCanonical
 
 /**
  * @category models
@@ -218,7 +218,7 @@ export class Bech32DecodeError extends S.TaggedClass<Bech32DecodeError>()("Bech3
  * @category models
  * @since 2.0.0
  */
-export const Bech32FromAddressCanonicalBytesWithPrefix = (
+export const Bech32FromCanonicalBytesWithPrefix = (
   prefix: HRP,
   options: {
     validateHrp: boolean
@@ -226,7 +226,7 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
     validateHrp: true,
   },
 ) =>
-  S.transformOrFail(AddressCanonicalBytes, Bech32, {
+  S.transformOrFail(CanonicalBytes, Bech32, {
     strict: true,
     decode: (fromA, _options, ast, _fromI) =>
       Effect.try({
@@ -266,7 +266,7 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
               arr => arr.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "0x"),
               hex => hex as Hex,
             )
-          return Effect.succeed(AddressCanonicalBytes.make(bytesToCanonicalHex(bytes)))
+          return Effect.succeed(CanonicalBytes.make(bytesToCanonicalHex(bytes)))
         }),
         Effect.mapError(e => new ParseResult.Type(ast, toI, e.message)),
       )
