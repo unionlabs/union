@@ -1,12 +1,13 @@
 import { Context, Effect, Fiber, Inspectable, Predicate } from "effect"
-import { dual } from "effect/Function"
-import { globalValue } from "effect/GlobalValue"
+import { dual, pipe } from "effect/Function"
 import { pipeArguments } from "effect/Pipeable"
 import type * as Client from "../Client.js"
 import type * as ClientError from "../ClientError.js"
 import type * as ClientRequest from "../ClientRequest.js"
 import type * as ClientResponse from "../ClientResponse.js"
+import * as PriceOracle from "../PriceOracle.js"
 import * as internalRequest from "./clientRequest.js"
+import { Chain } from "../schema/chain.js"
 
 /** @internal */
 export const TypeId: Client.TypeId = Symbol.for(
@@ -36,8 +37,11 @@ const ClientProto = {
   },
   send(
     this: Client.Client,
+    source: Chain,
+    destination: Chain,
     sender: string,
     receiver: string,
+    amount: bigint,
     options?: ClientRequest.Options.Send,
   ) {
     return this.execute(internalRequest.send(sender, receiver, options))
@@ -90,3 +94,21 @@ export const transform = dual<
     client.preprocess,
   )
 })
+
+type FeeCalculator = {
+  _tag: "GasPrice"
+} | PriceOracle.PriceOracle
+
+/** @internal */
+export const withFee = <E, R>(
+  self: Client.Client.With<E, R>,
+): Client.Client.With<E, R | FeeCalculator> =>
+  transform(
+    self,
+    (effect, request) => Effect.flatMap(
+      effect,
+      (response) => pipe(
+        Gas
+      ))
+    },
+  )

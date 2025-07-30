@@ -7,7 +7,6 @@ describe("ChannelRegistry", () => {
   it.layer(ChannelRegistry.Test)("Test", (it) => {
     it.effect("pick", () =>
       Effect.gen(function*() {
-        const registry = yield* ChannelRegistry
         const source = yield* Schema.decode(Chain)(
           {
             chain_id: "xion-testnet-2",
@@ -106,7 +105,7 @@ describe("ChannelRegistry", () => {
           },
         )
 
-        const result = yield* registry.pick(source, destination)
+        const result = yield* ChannelRegistry.pick(source, destination)
 
         console.log("channel", result)
       }))

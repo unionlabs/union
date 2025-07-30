@@ -73,7 +73,7 @@ export const Abi = [
     }, {
       name: "",
       type: "tuple",
-      internalType: "struct Multiplex",
+      internalType: "struct Call",
       components: [
         { name: "sender", type: "bytes", internalType: "bytes" },
         { name: "eureka", type: "bool", internalType: "bool" },
@@ -97,7 +97,7 @@ export const Abi = [
     }, {
       name: "",
       type: "tuple",
-      internalType: "struct FungibleAssetOrder",
+      internalType: "struct TokenOrderV1",
       components: [
         { name: "sender", type: "bytes", internalType: "bytes" },
         { name: "receiver", type: "bytes", internalType: "bytes" },
@@ -127,7 +127,7 @@ export const Abi = [
     }, {
       name: "",
       type: "tuple",
-      internalType: "struct FungibleAssetOrderAck",
+      internalType: "struct TokenOrderAck",
       components: [{ name: "fillType", type: "uint256", internalType: "uint256" }, {
         name: "marketMaker",
         type: "bytes",
@@ -136,21 +136,21 @@ export const Abi = [
     }, {
       name: "",
       type: "tuple",
-      internalType: "struct FungibleAssetOrderV2",
+      internalType: "struct TokenOrderV2",
       components: [
         { name: "sender", type: "bytes", internalType: "bytes" },
         { name: "receiver", type: "bytes", internalType: "bytes" },
         { name: "baseToken", type: "bytes", internalType: "bytes" },
         { name: "baseAmount", type: "uint256", internalType: "uint256" },
-        { name: "metadataType", type: "uint8", internalType: "uint8" },
-        { name: "metadata", type: "bytes", internalType: "bytes" },
         { name: "quoteToken", type: "bytes", internalType: "bytes" },
         { name: "quoteAmount", type: "uint256", internalType: "uint256" },
+        { name: "kind", type: "uint8", internalType: "uint8" },
+        { name: "metadata", type: "bytes", internalType: "bytes" },
       ],
     }, {
       name: "",
       type: "tuple",
-      internalType: "struct FungibleAssetMetadata",
+      internalType: "struct TokenMetadata",
       components: [{ name: "implementation", type: "bytes", internalType: "bytes" }, {
         name: "initializer",
         type: "bytes",
@@ -166,11 +166,7 @@ export const Abi = [
       { name: "_ibcHandler", type: "address", internalType: "contract IIBCModulePacket" },
       { name: "_sendImpl", type: "address", internalType: "contract UCS03ZkgmSendImpl" },
       { name: "_stakeImpl", type: "address", internalType: "contract UCS03ZkgmStakeImpl" },
-      {
-        name: "_faoImpl",
-        type: "address",
-        internalType: "contract UCS03ZkgmFungibleAssetOrderImpl",
-      },
+      { name: "_faoImpl", type: "address", internalType: "contract UCS03ZkgmTokenOrderImpl" },
     ],
     stateMutability: "nonpayable",
   },
@@ -219,14 +215,7 @@ export const Abi = [
   },
   {
     type: "function",
-    name: "authority",
-    inputs: [],
-    outputs: [{ name: "", type: "address", internalType: "address" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "channelBalance",
+    name: "_deprecated_channelBalanceV1",
     inputs: [{ name: "", type: "uint32", internalType: "uint32" }, {
       name: "",
       type: "uint256",
@@ -237,12 +226,19 @@ export const Abi = [
   },
   {
     type: "function",
+    name: "authority",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "channelBalanceV2",
     inputs: [
       { name: "", type: "uint32", internalType: "uint32" },
       { name: "", type: "uint256", internalType: "uint256" },
       { name: "", type: "address", internalType: "address" },
-      { name: "", type: "bytes32", internalType: "bytes32" },
+      { name: "", type: "bytes", internalType: "bytes" },
     ],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
@@ -362,6 +358,23 @@ export const Abi = [
     inputs: [{ name: "", type: "address", internalType: "address" }],
     outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
     stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "migrateV1ToV2",
+    inputs: [{
+      name: "migrations",
+      type: "tuple[]",
+      internalType: "struct V1ToV2Migration[]",
+      components: [
+        { name: "channelId", type: "uint32", internalType: "uint32" },
+        { name: "path", type: "uint256", internalType: "uint256" },
+        { name: "baseToken", type: "address", internalType: "address" },
+        { name: "quoteToken", type: "bytes", internalType: "bytes" },
+      ],
+    }],
+    outputs: [],
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -596,7 +609,7 @@ export const Abi = [
       {
         name: "metadata",
         type: "tuple",
-        internalType: "struct FungibleAssetMetadata",
+        internalType: "struct TokenMetadata",
         components: [{ name: "implementation", type: "bytes", internalType: "bytes" }, {
           name: "initializer",
           type: "bytes",
@@ -779,7 +792,7 @@ export const Abi = [
   },
   { type: "error", name: "ERC1967NonPayable", inputs: [] },
   { type: "error", name: "EnforcedPause", inputs: [] },
-  { type: "error", name: "ErrAsyncMultiplexUnsupported", inputs: [] },
+  { type: "error", name: "ErrAsyncCallUnsupported", inputs: [] },
   { type: "error", name: "ErrBatchMustBeSync", inputs: [] },
   { type: "error", name: "ErrChannelGovernanceTokenAlreadySet", inputs: [] },
   { type: "error", name: "ErrChannelGovernanceTokenNotSet", inputs: [] },
@@ -843,19 +856,19 @@ const byStructName = <const S extends keyof StructMap>(name: S): StructMap[S] =>
  * @category abis
  * @since 2.0.0
  */
-export const FungibleAssetOrderV1Abi = constant(byStructName("FungibleAssetOrder"))
+export const TokenOrderV1Abi = constant(byStructName("TokenOrderV1"))
 
 /**
  * @category abis
  * @since 2.0.0
  */
-export const FungibleAssetOrderV2Abi = constant(byStructName("FungibleAssetOrderV2"))
+export const TokenOrderV2Abi = constant(byStructName("TokenOrderV2"))
 
 /**
  * @category abis
  * @since 2.0.0
  */
-export const FungibleAssetMetadataAbi = constant(byStructName("FungibleAssetMetadata"))
+export const TokenMetadataAbi = constant(byStructName("TokenMetadata"))
 
 /**
  * @category abis
@@ -876,7 +889,7 @@ export const ForwardAbi = constant(byStructName("Forward"))
  * @category abis
  * @since 2.0.0
  */
-export const MultiplexAbi = constant(byStructName("Multiplex"))
+export const CallAbi = constant(byStructName("Call"))
 /**
  * @category abis
  * @since 2.0.0
@@ -896,7 +909,7 @@ export const BatchAckAbi = constant(byStructName("BatchAck"))
  * @category abis
  * @since 2.0.0
  */
-export const FungibleAssetOrderAckAbi = constant(byStructName("FungibleAssetOrderAck"))
+export const TokenOrderOrderAckAbi = constant(byStructName("TokenOrderAck"))
 
 /**
  * @category models
@@ -926,7 +939,7 @@ type OpCode = typeof OpCode.Type
  * @category models
  * @since 2.0.0
  */
-const MultiplexOperand = S.Union(
+const CallOperand = S.Union(
   S.Tuple(
     Hex,
     S.Boolean,
@@ -938,13 +951,13 @@ const MultiplexOperand = S.Union(
  * @category models
  * @since 2.0.0
  */
-type MultiplexOperand = typeof MultiplexOperand.Type
+type CallOperand = typeof CallOperand.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-const FungibleAssetOrderOperandV1 = S.Union(
+const TokenOrderOperandV1 = S.Union(
   S.Tuple(
     Hex.pipe(
       S.annotations({
@@ -1012,36 +1025,33 @@ const FungibleAssetOrderOperandV1 = S.Union(
  * @category models
  * @since 2.0.0
  */
-type FungibleAssetOrderOperandV1 = typeof FungibleAssetOrderOperandV1.Type
+type TokenOrderOperandV1 = typeof TokenOrderOperandV1.Type
 
-export const MetadataType = S.Union(
+export const TokenMetadataKind = S.Union(
   S.Literal(0).pipe(
     S.annotations({
-      title: "FUNGIBLE_ASSET_METADATA_TYPE_IMAGE",
+      title: "Initialize",
       description: "Uses a metadata image hash for existing token identification",
     }),
   ),
   S.Literal(1).pipe(
     S.annotations({
-      title: "FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE",
-      description:
-        "Provides full metadata implementation and initializer for custom token deployment",
+      title: "Escrow",
     }),
   ),
   S.Literal(2).pipe(
     S.annotations({
-      title: "FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP",
-      description: "Specifically for unwrapping operations",
+      title: "Unescrow",
     }),
   ),
 )
-export type MetadaatType = typeof MetadataType.Type
+export type TokenMetadataKind = typeof TokenMetadataKind.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-const FungibleAssetOrderOperandV2 = S.Union(
+const TokenOrderOperandV2 = S.Union(
   S.Tuple(
     Hex.pipe(
       S.annotations({
@@ -1067,18 +1077,6 @@ const FungibleAssetOrderOperandV2 = S.Union(
         description: "amount being sent",
       }),
     ),
-    MetadataType.pipe(
-      S.annotations({
-        title: "metadataType",
-        description: "type of metadata (image, preimage, image_unwrap)",
-      }),
-    ),
-    Hex.pipe(
-      S.annotations({
-        title: "metadata",
-        description: "token metadata based on type",
-      }),
-    ),
     HexChecksum.pipe(
       S.annotations({
         title: "quoteToken",
@@ -1091,13 +1089,24 @@ const FungibleAssetOrderOperandV2 = S.Union(
         description: "minimum amount requested",
       }),
     ),
+    TokenMetadataKind.pipe(
+      S.annotations({
+        title: "kind",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "metadata",
+        description: "metadata based on kind. for 0 token init args, 1&2 empty.",
+      }),
+    ),
   ),
 )
 /**
  * @category models
  * @since 2.0.0
  */
-type FungibleAssetOrderOperandV2 = typeof FungibleAssetOrderOperandV2.Type
+type TokenOrderOperandV2 = typeof TokenOrderOperandV2.Type
 
 /**
  * @category models
@@ -1115,11 +1124,11 @@ export const Operand = S.Union(
     S.BigIntFromSelf,
     S.Struct({ version: Version, opcode: OpCode, operand: Hex }),
   ),
-  MultiplexOperand,
+  CallOperand,
   // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
   S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
-  FungibleAssetOrderOperandV1,
-  FungibleAssetOrderOperandV2,
+  TokenOrderOperandV1,
+  TokenOrderOperandV2,
   // [bigint, `0x${string}`]
   S.Tuple(S.BigIntFromSelf, Hex),
   // [readonly `0x${string}`[]]
@@ -1135,7 +1144,7 @@ export type Operand = typeof Operand.Type
  * @category models
  * @since 2.0.0
  */
-export class Forward extends S.TaggedClass<Forward>()("Forward", {
+export class Forward extends S.TaggedClass<Forward>()("@unionlabs/sdk/Ucs03/Forward", {
   opcode: S.Literal(0).pipe(
     S.optional,
     S.withDefaults({
@@ -1177,7 +1186,7 @@ export class Forward extends S.TaggedClass<Forward>()("Forward", {
  * @category models
  * @since 2.0.0
  */
-export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
+export class Call extends S.TaggedClass<Call>()("@unionlabs/sdk/Ucs03/Call", {
   opcode: S.Literal(1).pipe(
     S.optional,
     S.withDefaults({
@@ -1192,7 +1201,7 @@ export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
       decoding: () => 0 as const,
     }),
   ),
-  operand: MultiplexOperand,
+  operand: CallOperand,
 }) {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
@@ -1201,7 +1210,7 @@ export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
  * @category models
  * @since 2.0.0
  */
-export class Batch extends S.TaggedClass<Batch>()("Batch", {
+export class Batch extends S.TaggedClass<Batch>()("@unionlabs/sdk/Ucs03/Batch", {
   opcode: S.Literal(2).pipe(
     S.optional,
     S.withDefaults({
@@ -1225,58 +1234,54 @@ export class Batch extends S.TaggedClass<Batch>()("Batch", {
  * @category models
  * @since 2.0.0
  */
-export class FungibleAssetOrderV1
-  extends S.TaggedClass<FungibleAssetOrderV1>()("FungibleAssetOrder", {
-    opcode: S.Literal(3).pipe(
-      S.optional,
-      S.withDefaults({
-        constructor: () => 3 as const,
-        decoding: () => 3 as const,
-      }),
-    ),
-    version: S.Literal(1).pipe(
-      S.optional,
-      S.withDefaults({
-        constructor: () => 1 as const,
-        decoding: () => 1 as const,
-      }),
-    ),
-    operand: FungibleAssetOrderOperandV1,
-  })
-{
+export class TokenOrderV1 extends S.TaggedClass<TokenOrderV1>()("@unionlabs/sdk/Ucs03/TokenOrder", {
+  opcode: S.Literal(3).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 3 as const,
+      decoding: () => 3 as const,
+    }),
+  ),
+  version: S.Literal(1).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 1 as const,
+      decoding: () => 1 as const,
+    }),
+  ),
+  operand: TokenOrderOperandV1,
+}) {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
-export class FungibleAssetOrderV2
-  extends S.TaggedClass<FungibleAssetOrderV2>()("FungibleAssetOrder", {
-    opcode: S.Literal(3).pipe(
-      S.optional,
-      S.withDefaults({
-        constructor: () => 3 as const,
-        decoding: () => 3 as const,
-      }),
-    ),
-    version: S.Literal(2).pipe(
-      S.optional,
-      S.withDefaults({
-        constructor: () => 2 as const,
-        decoding: () => 2 as const,
-      }),
-    ),
-    operand: FungibleAssetOrderOperandV2,
-  })
-{
+export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/Ucs03/TokenOrder", {
+  opcode: S.Literal(3).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 3 as const,
+      decoding: () => 3 as const,
+    }),
+  ),
+  version: S.Literal(2).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 2 as const,
+      decoding: () => 2 as const,
+    }),
+  ),
+  operand: TokenOrderOperandV2,
+}) {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
-export const FungibleAssetOrder = S.Union(FungibleAssetOrderV1, FungibleAssetOrderV2)
-export type FungibleAssetOrder = typeof FungibleAssetOrder.Type
+export const TokenOrder = S.Union(TokenOrderV1, TokenOrderV2)
+export type TokenOrder = typeof TokenOrder.Type
 
 /**
  * @category models
  * @since 2.0.0
  */
-export type Schema = Forward | Multiplex | Batch | FungibleAssetOrder
+export type Schema = Forward | Call | Batch | TokenOrder
 
 /**
  * @category models
@@ -1284,25 +1289,25 @@ export type Schema = Forward | Multiplex | Batch | FungibleAssetOrder
  */
 type SchemaEncoded =
   | {
-    readonly _tag: "Forward"
+    readonly _tag: "@unionlabs/sdk/Ucs03/Forward"
     readonly opcode?: 0 | undefined
     readonly version?: 0 | undefined
     readonly operand: readonly [bigint, bigint, bigint, SchemaEncoded]
   }
-  | typeof Multiplex.Encoded
+  | typeof Call.Encoded
   | {
-    readonly _tag: "Batch"
+    readonly _tag: "@unionlabs/sdk/Ucs03/Batch"
     readonly opcode?: 2 | undefined
     readonly version?: 0 | undefined
     readonly operand: A.NonEmptyReadonlyArray<SchemaEncoded>
   }
-  | typeof FungibleAssetOrder.Encoded
+  | typeof TokenOrder.Encoded
 
 /**
  * @category models
  * @since 2.0.0
  */
-export const Schema = S.Union(Forward, Multiplex, Batch, FungibleAssetOrder)
+export const Schema = S.Union(Forward, Call, Batch, TokenOrder)
 
 /**
  * @category models
@@ -1314,47 +1319,6 @@ export const Instruction = Data.taggedEnum<Instruction>()
  * @since 2.0.0
  */
 export type Instruction = typeof Schema.Type
-
-/**
- * Encodes an {@link Instruction} as as {@link Hex} for dispatching.
- *
- * @deprecated Use {@link InstructionFromHex} instead.
- *
- * @category utils
- * @since 2.0.0
- */
-export const encode: (_: Instruction) => Hex = Instruction.$match({
-  Forward: ({ operand }) =>
-    encodeAbiParameters(ForwardAbi(), [
-      operand[0],
-      operand[1],
-      operand[2],
-      {
-        opcode: operand[3].opcode,
-        version: operand[3].version,
-        operand: encode(operand[3]),
-      },
-    ]),
-  Multiplex: ({ operand }) => encodeAbiParameters(MultiplexAbi(), operand),
-  Batch: ({ operand }) =>
-    encodeAbiParameters(BatchAbi(), [
-      operand.map((i: Schema) => ({
-        version: i.version,
-        opcode: i.opcode,
-        operand: encode(i),
-      })),
-    ]),
-  FungibleAssetOrder: ({ operand, version }) =>
-    pipe(
-      Match.value(version),
-      // TODO(ehegnes): improve narrowing
-      Match.when(1, () =>
-        encodeAbiParameters(FungibleAssetOrderV1Abi(), operand as FungibleAssetOrderV1["operand"])),
-      Match.when(2, () =>
-        encodeAbiParameters(FungibleAssetOrderV2Abi(), operand as FungibleAssetOrderV2["operand"])),
-      Match.exhaustive,
-    ),
-})
 
 const ForwardFromHex = S.transformOrFail(
   Hex,
@@ -1404,22 +1368,22 @@ const ForwardFromHex = S.transformOrFail(
   },
 )
 
-const MultiplexFromHex = S.transformOrFail(
+const CallFromHex = S.transformOrFail(
   Hex,
-  Multiplex,
+  Call,
   {
     decode: (fromA, _, ast) =>
       pipe(
-        Effect.try(() => decodeAbiParameters(MultiplexAbi(), fromA)),
+        Effect.try(() => decodeAbiParameters(CallAbi(), fromA)),
         Effect.catchTag(
           "UnknownException",
           (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
         ),
-        Effect.map(Multiplex.fromOperand),
+        Effect.map(Call.fromOperand),
       ),
     encode: (toI, _, ast, toA) =>
       pipe(
-        Effect.try(() => encodeAbiParameters(MultiplexAbi(), toA.operand)),
+        Effect.try(() => encodeAbiParameters(CallAbi(), toA.operand)),
         Effect.catchTag(
           "UnknownException",
           (error) => ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error))),
@@ -1471,25 +1435,23 @@ const BatchFromHex = S.transformOrFail(
   },
 )
 
-export const FungibleAssetOrderFromHex = S.transformOrFail(
+export const TokenOrderFromHex = S.transformOrFail(
   Hex,
-  FungibleAssetOrder,
+  TokenOrder,
   {
     decode: (fromA, _, ast) => {
       const a = pipe(
         Effect.raceAll(
           [
             Effect.try(
-              () => decodeAbiParameters(FungibleAssetOrderV1Abi(), fromA),
+              () => decodeAbiParameters(TokenOrderV1Abi(), fromA),
             ),
             Effect.try(
-              () => decodeAbiParameters(FungibleAssetOrderV2Abi(), fromA),
+              () => decodeAbiParameters(TokenOrderV2Abi(), fromA),
             ),
           ],
         ),
-        Effect.flatMap((operand) =>
-          S.decodeUnknown(FungibleAssetOrder)({ _tag: "FungibleAssetOrder", operand })
-        ),
+        Effect.flatMap((operand) => S.decodeUnknown(TokenOrder)({ _tag: "TokenOrder", operand })),
         Effect.catchTag(
           "UnknownException",
           (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
@@ -1508,8 +1470,8 @@ export const FungibleAssetOrderFromHex = S.transformOrFail(
           () =>
             Effect.try(() =>
               encodeAbiParameters(
-                FungibleAssetOrderV1Abi(),
-                toA.operand as FungibleAssetOrderV1["operand"],
+                TokenOrderV1Abi(),
+                toA.operand as TokenOrderV1["operand"],
               )
             ),
         ),
@@ -1518,8 +1480,8 @@ export const FungibleAssetOrderFromHex = S.transformOrFail(
           () =>
             Effect.try(() =>
               encodeAbiParameters(
-                FungibleAssetOrderV2Abi(),
-                toA.operand as FungibleAssetOrderV2["operand"],
+                TokenOrderV2Abi(),
+                toA.operand as TokenOrderV2["operand"],
               )
             ),
         ),
@@ -1537,7 +1499,7 @@ export const InstructionFromHex: S.Union<[
   >,
   S.transformOrFail<
     typeof Hex,
-    typeof FungibleAssetOrder
+    typeof TokenOrder
   >,
   S.transformOrFail<
     typeof Hex,
@@ -1545,12 +1507,12 @@ export const InstructionFromHex: S.Union<[
   >,
   S.transformOrFail<
     typeof Hex,
-    typeof Multiplex
+    typeof Call
   >,
 ]> = S
   .Union(
     BatchFromHex,
-    FungibleAssetOrderFromHex,
+    TokenOrderFromHex,
     ForwardFromHex,
-    MultiplexFromHex,
+    CallFromHex,
   )

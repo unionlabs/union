@@ -60,7 +60,7 @@ describe("Dispatching an Asset Transfer", () => {
       // We're actually enqueuing two transfers, the main transfer, and fee.
       const instruction = Ucs03.Batch.fromOperand([
         // Our main transfer.
-        Ucs03.FungibleAssetOrder.fromOperand([
+        Ucs03.TokenOrder.fromOperand([
           sepoliaWallet.account.address,
           holeskyWallet.account.address,
           WETH_ADDRESS,
@@ -79,7 +79,7 @@ describe("Dispatching an Asset Transfer", () => {
           4n,
         ]),
         // Our fee transfer.
-        Ucs03.FungibleAssetOrder.fromOperand([
+        Ucs03.TokenOrder.fromOperand([
           sepoliaWallet.account.address,
           holeskyWallet.account.address,
           WETH_ADDRESS,
