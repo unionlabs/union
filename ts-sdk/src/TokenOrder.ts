@@ -1,12 +1,14 @@
 import { Effect } from "effect"
 import type { Inspectable } from "effect/Inspectable"
 import type { Pipeable } from "effect/Pipeable"
+import * as S from "effect/Schema"
 import { Covariant } from "effect/Types"
 import * as Batch from "./Batch.js"
 import type * as ChannelRegistry from "./ChannelRegistry.js"
 import * as internal from "./internal/tokenOrder.js"
 import { Chain } from "./schema/chain.js"
-import type { Channel } from "./schema/channel.js"
+import { Channel } from "./schema/channel.js"
+import { Hex } from "./schema/hex.js"
 import * as Token from "./Token.js"
 
 /**
@@ -21,7 +23,7 @@ export const TypeId: unique symbol = Symbol.for("@unionlabs/sdk/TokenOrder")
  */
 export type TypeId = typeof TypeId
 
-export const enum Type {
+export enum Type {
   Initialize,
   Escrow,
   Unescrow,
@@ -45,6 +47,22 @@ export interface TokenOrder extends TokenOrder.Variance<never>, Inspectable, Pip
   readonly type: Type
   readonly metadata: string
 }
+
+const a = S.Struct({
+  source: Chain,
+  destination: Chain,
+  channel: Channel,
+  sender: S.String,
+  receiver: S.String,
+  baseToken: S.Union(Token.Any, Token.TokenFromString),
+  baseAmount: S.BigIntFromSelf,
+  quoteToken: S.Union(Token.Any, Token.TokenFromString),
+  quoteAmount: S.BigIntFromSelf,
+  type: S.Enums(Type),
+  metadata: Hex,
+})
+
+type A = typeof a.Type
 
 /**
  * @since 2.0.0
