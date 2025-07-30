@@ -14,6 +14,7 @@ export class ChannelRegistry
     sync: () => ({
       pick: hole<(source: Chain, destination: Chain) => Effect.Effect<Channel>>(),
     }),
+    accessors: true,
   })
 {
   static Test = Layer.effect(

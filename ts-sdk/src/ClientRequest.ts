@@ -1,9 +1,10 @@
-import type { Brand, Option } from "effect"
+import { NonEmptyReadonlyArray } from "effect/Array"
 import type { Inspectable } from "effect/Inspectable"
 import type { Pipeable } from "effect/Pipeable"
-import type { ReadonlyRecord } from "effect/Record"
 import * as internal from "./internal/clientRequest.js"
+import { Chain } from "./schema/chain.js"
 import type { Channel } from "./schema/channel.js"
+import { Hex } from "./schema/hex.js"
 import * as Token from "./Token.js"
 
 /**
@@ -13,54 +14,48 @@ import * as Token from "./Token.js"
 export const TypeId: unique symbol = Symbol.for("@unionlabs/sdk/ClientRequest")
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type ids
  */
 export type TypeId = typeof TypeId
 
 /**
- * TODO: move into own module
- * @since 1.0.0
- * @category models
- */
-export type Method = "SEND"
-
-/**
- * @since 1.0.0
+ * @since 2.0.0
  * @category models
  */
 export interface ClientRequest extends Inspectable, Pipeable {
   readonly [TypeId]: TypeId
   readonly method: Method
+  readonly source: Chain
+  readonly destination: Chain
+  readonly channel: Channel
   readonly sender: string
   readonly receiver: string
   readonly amount: bigint
+  readonly fees: NonEmptyReadonlyArray<{
+    token: Token.Any
+    amount: bigint
+  }>
   readonly baseToken: Token.Any | string
   readonly quoteToken: Token.Any | string | "auto"
+  readonly metadata: Hex
 }
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category models
  */
 export interface Options {
-  /** Type of transfer */
   readonly method?: Method | undefined
-  /** Address to send from. */
+  readonly source?: Chain | undefined
+  readonly destination?: Chain | undefined
+  readonly channel?: Channel | undefined
   readonly sender?: string | undefined
-  /** Base token */
-  readonly baseToken?: string | undefined
-  /** Quote tooken. */
-  readonly quoteToken?: string | undefined
-  /** Address to send from. */
   readonly receiver?: string | undefined
-  /** Fee priority for gas calculation. */
-  readonly feePriority?: "low" | "average" | "high" | undefined
-  /** Explicit channel. */
-  readonly channel?: Channel
-  /** Batch this request with others. */
-  readonly batch?: boolean | undefined
-  readonly meta?: ReadonlyRecord<string, unknown>
+  readonly amount?: bigint | undefined
+  readonly baseToken?: Token.Any | string | undefined
+  readonly quoteToken?: Token.Any | string | "auto" | undefined
+  readonly metadata?: Hex | undefined
 }
 
 /**
@@ -72,12 +67,6 @@ export declare namespace Options {
    * @since 2.0.0
    */
   export interface Send extends Omit<Options, "method" | "sender" | "receiver"> {}
-
-  /**
-   * @category models
-   * @since 2.0.0
-   */
-  export interface NoQuote extends Omit<Options, "method" | "sender" | "receiver" | "quoteToken"> {}
 }
 
 /**
@@ -87,6 +76,8 @@ export declare namespace Options {
 export const make: <M extends Method>(
   method: M,
 ) => (
+  source: Chain,
+  destination: Chain,
   sender: string,
   receiver: string,
   options?: (M extends "SEND" ? Options.Send : Options.NoQuote) | undefined,

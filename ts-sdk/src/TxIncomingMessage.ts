@@ -15,6 +15,7 @@ type LifecycleEvent = Data.TaggedEnum<{
   // | { _tag: "Confirmed"        ; block: bigint }
   // | { _tag: "Finalised"        ; height: bigint ; success: boolean }
   // | { _tag: "Failed"           ; reason: string }
+  Broadcast: {}
   Receipt: {}
   Indexed: {}
   Finalized: {}

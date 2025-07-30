@@ -1,20 +1,20 @@
 import { Inspectable } from "effect"
 import { dual } from "effect/Function"
 import { pipeArguments } from "effect/Pipeable"
-import type * as ClientRequest from "../ClientRequest.js"
 import { Chain } from "../schema/chain.js"
+import type * as TokenOrder from "../TokenOrder.js"
 
 /** @internal */
-export const TypeId: ClientRequest.TypeId = Symbol.for(
-  "@effect/platform/HttpClientRequest",
-) as ClientRequest.TypeId
+export const TypeId: TokenOrder.TypeId = Symbol.for(
+  "@unionlabs/sdk/TokenOrder",
+) as TokenOrder.TypeId
 
 const Proto = {
   [TypeId]: TypeId,
   ...Inspectable.BaseProto,
-  toJSON(this: ClientRequest.ClientRequest): unknown {
+  toJSON(this: TokenOrder.TokenOrder): unknown {
     return {
-      _id: "@unionlabs/sdk/ClientRequest",
+      _id: "@unionlabs/sdk/TokenOrder",
       source: this.source,
       destination: this.destination,
       sender: this.sender,
@@ -28,15 +28,13 @@ const Proto = {
 }
 
 function makeProto(
-  method: ClientRequest.Method,
   source: Chain,
   destination: Chain,
   sender: string,
   receiver: string,
   amount: bigint,
-): ClientRequest.ClientRequest {
+): TokenOrder.TokenOrder {
   const self = Object.create(Proto)
-  self.method = method
   self.source = source
   self.destination = destination
   self.sender = sender
@@ -46,11 +44,11 @@ function makeProto(
 }
 
 /** @internal */
-export const isClientRequest = (u: unknown): u is ClientRequest.ClientRequest =>
+export const isTokenOrder = (u: unknown): u is TokenOrder.TokenOrder =>
   typeof u === "object" && u !== null && TypeId in u
 
 /** @internal */
-export const empty: ClientRequest.ClientRequest = makeProto(
+export const empty: TokenOrder.TokenOrder = makeProto(
   "SEND",
   void 0 as unknown as Chain,
   void 0 as unknown as Chain,
@@ -60,11 +58,11 @@ export const empty: ClientRequest.ClientRequest = makeProto(
 )
 
 /** @internal */
-export const make = <M extends ClientRequest.Method>(method: M) =>
+export const make = <M extends TokenOrder.Method>(method: M) =>
 (
   sender: string,
   receiver: string,
-  options?: M extends "SEND" ? ClientRequest.Options.Send : ClientRequest.Options.NoUrl,
+  options?: M extends "SEND" ? TokenOrder.Options.Send : TokenOrder.Options.NoUrl,
 ) =>
   modify(empty, {
     method,
@@ -79,9 +77,9 @@ export const send = make("SEND")
 /** @internal */
 export const modify = dual<
   (
-    options: ClientRequest.Options,
-  ) => (self: ClientRequest.ClientRequest) => ClientRequest.ClientRequest,
-  (self: ClientRequest.ClientRequest, options: ClientRequest.Options) => ClientRequest.ClientRequest
+    options: TokenOrder.Options,
+  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  (self: TokenOrder.TokenOrder, options: TokenOrder.Options) => TokenOrder.TokenOrder
 >(2, (self, options) => {
   let result = self
 
@@ -99,8 +97,8 @@ export const modify = dual<
 export const setSender = dual<
   (
     sender: string,
-  ) => (self: ClientRequest.ClientRequest) => ClientRequest.ClientRequest,
-  (self: ClientRequest.ClientRequest, sender: string) => ClientRequest.ClientRequest
+  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  (self: TokenOrder.TokenOrder, sender: string) => TokenOrder.TokenOrder
 >(2, (self, sender) =>
   makeProto(
     self.method,
@@ -112,8 +110,8 @@ export const setSender = dual<
 export const setReceiver = dual<
   (
     receiver: string,
-  ) => (self: ClientRequest.ClientRequest) => ClientRequest.ClientRequest,
-  (self: ClientRequest.ClientRequest, receiver: string) => ClientRequest.ClientRequest
+  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  (self: TokenOrder.TokenOrder, receiver: string) => TokenOrder.TokenOrder
 >(2, (self, receiver) =>
   makeProto(
     self.method,

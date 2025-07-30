@@ -13,7 +13,7 @@ describe("UCS03", () => {
   describe("FungibleAssetOrder (0x03)", () => {
     it.effect("encodes V1", () =>
       Effect.gen(function*() {
-        const fao = Ucs03.FungibleAssetOrderV1.fromOperand([
+        const fao = Ucs03.TokenOrderV1.fromOperand([
           toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
           toHex("0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD"),
           "0x6d756e6f",
@@ -32,7 +32,7 @@ describe("UCS03", () => {
         /**
          * @see https://github.com/unionlabs/union/blob/f0c86086cd4110d4173a9138537925e163ef7220/evm/tests/src/05-app/Zkgm.t.sol#L6267-L6307
          */
-        const fao = Ucs03.FungibleAssetOrderV2.fromOperand([
+        const fao = Ucs03.TokenOrderV2.fromOperand([
           toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
           toHex("0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD"),
           "0x6d756e6f",
@@ -58,7 +58,7 @@ describe("UCS03", () => {
           "0x16628cB81ffDA9B8470e16299eFa5F76bF45A579",
           100n,
         ] as const
-        const r1 = yield* S.decode(Ucs03.FungibleAssetOrder)({
+        const r1 = yield* S.decode(Ucs03.TokenOrder)({
           _tag: "FungibleAssetOrder",
           operand: v1,
         })
@@ -74,7 +74,7 @@ describe("UCS03", () => {
           "0x49aCf968c7E8807B39e980b2a924E97C8ead3a22",
           100n,
         ] as const
-        const r2 = yield* S.decode(Ucs03.FungibleAssetOrder)({
+        const r2 = yield* S.decode(Ucs03.TokenOrder)({
           _tag: "FungibleAssetOrder",
           operand: v2,
         })
@@ -83,7 +83,7 @@ describe("UCS03", () => {
 
     it.effect("encodes", () =>
       Effect.gen(function*() {
-        const v1 = Ucs03.FungibleAssetOrderV1.fromOperand([
+        const v1 = Ucs03.TokenOrderV1.fromOperand([
           toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
           toHex("0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD"),
           "0x6d756e6f",
@@ -95,7 +95,7 @@ describe("UCS03", () => {
           "0x16628cB81ffDA9B8470e16299eFa5F76bF45A579",
           100n,
         ])
-        const v2 = Ucs03.FungibleAssetOrderV2.fromOperand([
+        const v2 = Ucs03.TokenOrderV2.fromOperand([
           toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
           toHex("0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD"),
           "0x6d756e6f",
@@ -121,7 +121,7 @@ describe("UCS03", () => {
       }))
     it.effect("decodes", () =>
       Effect.gen(function*() {
-        const fao = Ucs03.FungibleAssetOrderV1.fromOperand([
+        const fao = Ucs03.TokenOrderV1.fromOperand([
           toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
           toHex("0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD"),
           "0x6d756e6f",
@@ -163,7 +163,7 @@ describe("UCS03", () => {
           toHex("bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh"),
         )
 
-        const instruction = Ucs03.FungibleAssetOrderV2.fromOperand([
+        const instruction = Ucs03.TokenOrderV2.fromOperand([
           SENDER,
           RECEIVER,
           "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",

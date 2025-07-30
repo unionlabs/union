@@ -81,7 +81,7 @@ export const evmToEvm = (intent: EvmToEvmIntent) =>
       onNone: constant(0n),
     })
 
-    return yield* S.decode(Ucs03.FungibleAssetOrder)({
+    return yield* S.decode(Ucs03.TokenOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
@@ -148,7 +148,7 @@ export const evmToCosmos = (intent: EvmToCosmosIntent) =>
       onNone: constant(0n),
     })
 
-    return yield* S.decode(Ucs03.FungibleAssetOrder)({
+    return yield* S.decode(Ucs03.TokenOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
@@ -232,7 +232,7 @@ export const cosmosToEvm = (intent: CosmosToEvmIntent) =>
       onNone: constant(0n),
     })
 
-    return yield* S.decode(Ucs03.FungibleAssetOrder)({
+    return yield* S.decode(Ucs03.TokenOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
@@ -312,7 +312,7 @@ export const cosmosToCosmos = (intent: CosmosToCosmosIntent) =>
       onNone: constant(0n),
     })
 
-    return yield* S.decode(Ucs03.FungibleAssetOrder)({
+    return yield* S.decode(Ucs03.TokenOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
@@ -354,7 +354,7 @@ export const suiToCosmos = (intent: {
     const baseToken = intent.baseTokenType.split("::")[0]
     const quoteToken = yield* Cosmos.predictQuoteToken(baseToken)
 
-    return yield* S.decode(Ucs03.FungibleAssetOrder)({
+    return yield* S.decode(Ucs03.TokenOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         // @ts-expect-error
@@ -407,7 +407,7 @@ export const cosmosToSui = (intent: {
       intent.baseToken,
     )
 
-    return yield* S.decode(Ucs03.FungibleAssetOrder)({
+    return yield* S.decode(Ucs03.TokenOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,

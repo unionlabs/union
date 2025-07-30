@@ -40,7 +40,7 @@ const sourceChannel = Evm.ChannelSource.Live({
 })
 
 const main = pipe(
-  Ucs03.FungibleAssetOrderV2.fromOperand([
+  Ucs03.TokenOrderV2.fromOperand([
     SENDER,
     RECEIVER,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",

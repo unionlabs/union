@@ -100,7 +100,7 @@ export * as Types from "./Types.js"
  *
  * @since 2.0.0
  */
-export * as Client from "./Client.js"
+export * as ZkgmClient from "./ZkgmClient.js"
 
 /**
  * TODO
@@ -120,4 +120,25 @@ export * as ChannelRegistry from "./ChannelRegistry.js"
  *
  * @since 2.0.0
  */
+export * as ChainRegistry from "./ChainRegistry.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
 export * as Token from "./Token.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as TokenOrder from "./TokenOrder.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as Batch from "./Batch.js"
