@@ -150,6 +150,10 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			// set tokens to zero as the delegate call at the end of the migration will set this
 			// validator.Tokens = math.ZeroInt()
 			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
+			if sdkCtx.ChainID() != UNION_TESTNET {
+				validator.Commission.Rate = sdkmath.LegacyMustNewDecFromStr("0.05")
+				validator.Commission.MaxRate = sdkmath.LegacyMustNewDecFromStr("0.05")
+			}
 			err = keepers.StakingKeeper.SetValidator(ctx, validator)
 			if err != nil {
 				return nil, err
