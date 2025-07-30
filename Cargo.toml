@@ -274,7 +274,7 @@ members = [
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
   "lib/sui-verifier",
-  "tools/update-deployments",
+  "tools/update-deployments", "tools/iaviewer-rs",
 ]
 
 [workspace.package]
