@@ -22,6 +22,11 @@ pub struct PacketRecv {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct PacketTimeout {
+    pub packet_hash: FixedBytes<32>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct PacketAck {
     pub packet_hash: FixedBytes<32>,
 }
