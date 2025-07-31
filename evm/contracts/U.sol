@@ -144,7 +144,7 @@ contract U is
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external override onlyZkgm {
+    ) external override onlyZkgm returns (bytes memory) {
         if (intent) {
             bytes32 packetHash = IBCPacketLib.commitPacket(packet);
             if (!_getUStorage().intentWhitelist[packetHash]) {
@@ -156,12 +156,6 @@ contract U is
             .fungibleCounterparties[packet.destinationChannelId][order.baseToken];
         if (counterparty.beneficiary.length == 0) {
             revert U_CounterpartyIsNotFungible();
-        }
-
-        // Maker address is provided by the relayer in relayerMsg.
-        // Ensure it's the configured address that will gets the funds on acknowledgement.
-        if (!relayerMsg.eq(abi.encodePacked(counterparty.beneficiary))) {
-            revert U_InvalidCounterpartyBeneficiary();
         }
 
         if (order.quoteAmount > order.baseAmount) {
@@ -178,6 +172,10 @@ contract U is
         if (quoteAmountMinusFee > 0) {
             _mint(address(bytes20(order.receiver)), quoteAmountMinusFee);
         }
+
+        // The market maker address will be the preconfigured beneficiary.
+        // Likely another U contract/vault.
+        return counterparty.beneficiary;
     }
 
     modifier onlyZkgm() {
