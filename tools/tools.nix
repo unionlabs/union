@@ -15,6 +15,7 @@ _: {
           ;
         inherit
           (crane.buildWorkspaceMember "tools/u" {
+            extraBuildInputs = [ pkgs.perl ];
             # clap-completions kinda sucks and is non-trivial to get to work nicely
             # extraNativeBuildInputs = [ pkgs.installShellFiles ];
             # postInstall = ''
