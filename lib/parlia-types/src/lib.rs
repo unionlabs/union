@@ -5,7 +5,7 @@ use rlp::{RlpDecodable, RlpDecodableWrapper, RlpEncodable, RlpEncodableWrapper};
 use sha3::Digest as _;
 use unionlabs_primitives::{ByteArrayExt, Bytes, H160, H2048, H256, H384, H64, H768, U256};
 
-#[derive(Debug, Clone, RlpDecodable, RlpEncodable)]
+#[derive(Debug, Clone, PartialEq, RlpDecodable, RlpEncodable)]
 pub struct VoteAttestation {
     // The bitset marks the voted validators.
     pub vote_address_set: ValidatorsBitSet,
@@ -17,15 +17,19 @@ pub struct VoteAttestation {
     pub extra: Bytes,
 }
 
-#[derive(Clone, RlpDecodableWrapper, RlpEncodableWrapper)]
+#[derive(Clone, PartialEq, RlpDecodableWrapper, RlpEncodableWrapper)]
 pub struct ValidatorsBitSet(u64);
 
 impl ValidatorsBitSet {
-    pub fn is_set(&self, idx: usize) -> bool {
+    pub const fn new(bits: u64) -> Self {
+        Self(bits)
+    }
+
+    pub const fn is_set(&self, idx: usize) -> bool {
         self.0 & (1 << idx) != 0
     }
 
-    pub fn count(&self) -> u32 {
+    pub const fn count(&self) -> u32 {
         self.0.count_ones()
     }
 }
@@ -91,7 +95,7 @@ impl Valset {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
+    serde(rename_all = "camelCase", deny_unknown_fields)
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ParliaHeader {
