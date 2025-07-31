@@ -124,6 +124,8 @@ pub enum ContractError {
     InvalidMetadataType,
     #[error("invalid metadata image")]
     InvalidMetadataImage,
+    #[error("invalid unescrow order, the base token is not the representation of the quote token")]
+    InvalidUnescrow,
     #[error("invalid fill type: {fill_type}")]
     InvalidFillType { fill_type: U256 },
     #[error("must be unwrap operation")]

@@ -385,49 +385,48 @@ pub fn verify_token_order_v2(
     // Get the token minter contract
     let minter = TOKEN_MINTER.load(deps.storage)?;
 
-    // Get the origin path for the base token (from EVM: tokenOrigin[baseToken])
-    let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_str.to_string())?;
-    let (intermediate_channel_path, destination_channel_id) = if let Some(origin) = origin {
-        let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
-        pop_channel_from_path(origin_u256)
-    } else {
-        (U256::ZERO, None)
-    };
+    if order.kind == TOKEN_ORDER_KIND_UNESCROW {
+        // Get the origin path for the base token (from EVM: tokenOrigin[baseToken])
+        let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_str.to_string())?;
+        let (intermediate_channel_path, destination_channel_id) = if let Some(origin) = origin {
+            let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
+            pop_channel_from_path(origin_u256)
+        } else {
+            (U256::ZERO, None)
+        };
 
-    let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path)?;
-    let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
+        let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path)?;
+        let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
 
-    // Predict V1 wrapped token (EVM: _predictWrappedToken)
-    let (wrapped_token_v1, _) = predict_wrapped_token(
-        deps.as_ref(),
-        &minter,
-        intermediate_channel_path,
-        channel_id,
-        order.quote_token.to_vec().into(),
-    )?;
+        // Predict V1 wrapped token (EVM: _predictWrappedToken)
+        let (wrapped_token_v1, _) = predict_wrapped_token(
+            deps.as_ref(),
+            &minter,
+            intermediate_channel_path,
+            channel_id,
+            order.quote_token.to_vec().into(),
+        )?;
 
-    // Predict V2 wrapped token (EVM: _predictWrappedTokenFromMetadataImageV2)
-    let metadata_image = METADATA_IMAGE_OF
-        .may_load(deps.storage, base_token_str.to_string())?
-        .unwrap_or_default();
+        // Predict V2 wrapped token (EVM: _predictWrappedTokenFromMetadataImageV2)
+        let metadata_image = METADATA_IMAGE_OF
+            .may_load(deps.storage, base_token_str.to_string())?
+            .unwrap_or_default();
 
-    let (wrapped_token_v2, _) = predict_wrapped_token_from_metadata_image_v2(
-        deps.as_ref(),
-        &minter,
-        intermediate_channel_path,
-        channel_id,
-        order.quote_token.to_vec().into(),
-        metadata_image,
-    )?;
+        let (wrapped_token_v2, _) = predict_wrapped_token_from_metadata_image_v2(
+            deps.as_ref(),
+            &minter,
+            intermediate_channel_path,
+            channel_id,
+            order.quote_token.to_vec().into(),
+            metadata_image,
+        )?;
 
-    // Check if we're unwrapping (EVM: isUnwrappingV1 || isUnwrappingV2)
-    let is_unwrapping_v1 = base_token_str == wrapped_token_v1;
-    let is_unwrapping_v2 = base_token_str == wrapped_token_v2;
-    let is_unwrapping = is_unwrapping_v1 || is_unwrapping_v2;
+        // Check if we're unwrapping (EVM: isUnwrappingV1 || isUnwrappingV2)
+        let is_unwrapping_v1 = base_token_str == wrapped_token_v1;
+        let is_unwrapping_v2 = base_token_str == wrapped_token_v2;
+        let is_unwrapping = is_unwrapping_v1 || is_unwrapping_v2;
 
-    if is_unwrapping && is_inverse_intermediate_path && is_sending_back_to_same_channel {
-        // Ensure we specify that we unwrap in the metadata tag
-        if order.kind != TOKEN_ORDER_KIND_UNESCROW {
+        if !(is_unwrapping && is_inverse_intermediate_path && is_sending_back_to_same_channel) {
             return Err(ContractError::InvalidMetadataType);
         }
 
@@ -459,11 +458,6 @@ pub fn verify_token_order_v2(
             funds_to_burn,
         )?);
     } else {
-        // Privileged tag that must only be set if we are unwrapping
-        if order.kind == TOKEN_ORDER_KIND_UNESCROW {
-            return Err(ContractError::InvalidMetadataType);
-        }
-
         // Escrow tokens (EVM: _increaseOutstandingV2 + transfer logic)
         let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
 

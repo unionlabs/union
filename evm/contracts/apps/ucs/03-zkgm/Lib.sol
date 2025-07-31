@@ -91,6 +91,7 @@ library ZkgmLib {
     error ErrInvalidStakeValidator();
     error ErrCannotDeploy();
     error ErrInvalidMetadataType();
+    error ErrInvalidUnescrow();
     error ErrInvalidMetadataImage();
     error ErrMustBeUnwrap();
     error ErrMustBeWrap();

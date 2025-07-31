@@ -218,48 +218,45 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         TokenOrderV2 calldata order
     ) internal {
         address baseToken = address(bytes20(order.baseToken));
-        (uint256 intermediateChannelPath, uint32 destinationChannelId) =
-            ZkgmLib.popChannelFromPath(tokenOrigin[baseToken]);
 
-        bool isInverseIntermediatePath =
-            path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
-        bool isSendingBackToSameChannel = destinationChannelId == channelId;
+        if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
+            (uint256 intermediateChannelPath, uint32 destinationChannelId) =
+                ZkgmLib.popChannelFromPath(tokenOrigin[baseToken]);
+            bool isInverseIntermediatePath =
+                path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
+            bool isSendingBackToSameChannel = destinationChannelId == channelId;
 
-        // Predict V1
-        (address wrappedTokenV1,) = _predictWrappedToken(
-            intermediateChannelPath, channelId, order.quoteToken
-        );
+            // Predict V1
+            (address wrappedTokenV1,) = _predictWrappedToken(
+                intermediateChannelPath, channelId, order.quoteToken
+            );
 
-        // Predict V2
-        bytes32 metadataImage = metadataImageOf[baseToken];
-        (address wrappedTokenV2,) = _predictWrappedTokenFromMetadataImageV2(
-            intermediateChannelPath, channelId, order.quoteToken, metadataImage
-        );
+            // Predict V2
+            bytes32 metadataImage = metadataImageOf[baseToken];
+            (address wrappedTokenV2,) = _predictWrappedTokenFromMetadataImageV2(
+                intermediateChannelPath,
+                channelId,
+                order.quoteToken,
+                metadataImage
+            );
 
-        bool isUnwrappingV1 =
-            order.baseToken.eq(abi.encodePacked(wrappedTokenV1));
-        bool isUnwrappingV2 =
-            order.baseToken.eq(abi.encodePacked(wrappedTokenV2));
-        bool isUnwrapping = isUnwrappingV1 || isUnwrappingV2;
+            bool isUnwrappingV1 =
+                order.baseToken.eq(abi.encodePacked(wrappedTokenV1));
+            bool isUnwrappingV2 =
+                order.baseToken.eq(abi.encodePacked(wrappedTokenV2));
+            bool isUnwrapping = isUnwrappingV1 || isUnwrappingV2;
 
-        if (
-            isUnwrapping && isInverseIntermediatePath
-                && isSendingBackToSameChannel
-        ) {
-            // Ensure we specificy that we unwrap in the metadata tag.
-            if (order.kind != ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
-                revert ZkgmLib.ErrInvalidMetadataType();
+            if (
+                !(
+                    isUnwrapping && isInverseIntermediatePath
+                        && isSendingBackToSameChannel
+                )
+            ) {
+                revert ZkgmLib.ErrInvalidUnescrow();
             }
-            // We don't have to verify that metadataImage matches the stored one
-            // because the prediction would fail otherwise and we would fall
-            // back in the else branch.
+
             IZkgmERC20(baseToken).burn(msg.sender, order.baseAmount);
         } else {
-            // Privileged tag that must only be set if we are unwrapping.
-            if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
-                revert ZkgmLib.ErrInvalidMetadataType();
-            }
-
             _increaseOutstandingV2(
                 channelId, path, baseToken, order.quoteToken, order.baseAmount
             );
