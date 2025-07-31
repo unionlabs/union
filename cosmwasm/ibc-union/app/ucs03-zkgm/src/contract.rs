@@ -53,7 +53,8 @@ pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
 pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
-pub const MM_FILL_REPLY_ID: u64 = 0xdead;
+pub const MM_RELAYER_FILL_REPLY_ID: u64 = 0xdead;
+pub const MM_SOLVER_FILL_REPLY_ID: u64 = 0xb0cad0;
 pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
@@ -1685,7 +1686,107 @@ fn market_maker_fill(
             &ExecuteMsg::InternalBatch { messages },
             vec![],
         )?,
-        MM_FILL_REPLY_ID,
+        MM_RELAYER_FILL_REPLY_ID,
+    )))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn relayer_market_maker_fill_v2(
+    deps: DepsMut,
+    env: Env,
+    funds: &mut Coins,
+    caller: Addr,
+    minter: Addr,
+    order: TokenOrderV2,
+) -> Result<Response, ContractError> {
+    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
+        .map_err(|_| ContractError::InvalidQuoteToken)?;
+
+    let receiver = deps
+        .api
+        .addr_validate(
+            str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
+        )
+        .map_err(|_| ContractError::UnableToValidateReceiver)?;
+
+    let quote_amount =
+        u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+    /* Gas Station
+
+    Determine the native denom that we transfer to the minter contract.
+    The MM may fill multiple order within the packet, we need to
+    provide each token individually, subtracting from the total funds.
+     */
+    let mut funds_to_escrow = vec![];
+    if !funds.amount_of(&quote_token_str).is_zero() {
+        let native_denom = Coin {
+            denom: quote_token_str.clone(),
+            amount: quote_amount.into(),
+        };
+        funds.sub(native_denom.clone())?;
+        funds_to_escrow.push(native_denom);
+    }
+
+    let mut messages = Vec::with_capacity(2);
+    if quote_amount > 0 {
+        // Make sure the market maker provide the funds
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Escrow {
+                from: caller.to_string(),
+                denom: quote_token_str.clone(),
+                recipient: minter.to_string(),
+                amount: quote_amount.into(),
+            },
+            &minter,
+            funds_to_escrow,
+        )?);
+        // Release the funds to the user
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: quote_token_str,
+                recipient: receiver.to_string(),
+                amount: quote_amount.into(),
+            },
+            minter,
+            vec![],
+        )?);
+    }
+    Ok(Response::new().add_submessage(SubMsg::reply_always(
+        wasm_execute(
+            &env.contract.address,
+            &ExecuteMsg::InternalBatch { messages },
+            vec![],
+        )?,
+        MM_RELAYER_FILL_REPLY_ID,
+    )))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn solver_market_maker_fill_v2(
+    caller: Addr,
+    relayer: Addr,
+    relayer_msg: Bytes,
+    packet: Packet,
+    order: TokenOrderV2,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
+        .map_err(|_| ContractError::InvalidQuoteToken)?;
+    Ok(Response::new().add_submessage(SubMsg::reply_always(
+        wasm_execute(
+            quote_token_str.clone(),
+            &SolverMsg::DoSolve {
+                packet,
+                order: order.into(),
+                caller,
+                relayer,
+                relayer_msg,
+                intent,
+            },
+            vec![],
+        )?,
+        MM_SOLVER_FILL_REPLY_ID,
     )))
 }
 
@@ -1702,89 +1803,35 @@ fn market_maker_fill_v2(
     order: TokenOrderV2,
     intent: bool,
 ) -> Result<Response, ContractError> {
-    MARKET_MAKER.save(deps.storage, &relayer_msg)?;
-    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
+    let quote_token_str = String::from_utf8(order.quote_token.clone().into())
         .map_err(|_| ContractError::InvalidQuoteToken)?;
     let is_solver = deps
         .querier
         .query_wasm_smart::<()>(quote_token_str.clone(), &SolverQuery::IsSolver)
         .is_ok();
-    let mut messages = Vec::with_capacity(if is_solver { 1 } else { 2 });
-    if is_solver {
-        messages.push(
-            wasm_execute(
-                quote_token_str.clone(),
-                &SolverMsg::DoSolve {
-                    packet,
-                    order: order.into(),
-                    caller,
-                    relayer,
-                    relayer_msg,
-                    intent,
-                },
-                vec![],
-            )?
-            .into(),
+    let allow_market_maker = deps
+        .querier
+        .query_wasm_smart::<bool>(quote_token_str.clone(), &SolverQuery::AllowMarketMakers)
+        .unwrap_or(false);
+    let (relayer_fill_for_solver, arbitrary_relayer_payload) =
+        match <(bool, alloy_primitives::Bytes)>::abi_decode_params(&relayer_msg) {
+            Ok((x, y)) => (x, y),
+            Err(_) => (false, relayer_msg.into_vec().into()),
+        };
+    let arbitrary_relayer_payload = arbitrary_relayer_payload.0.to_vec().into();
+    if is_solver && (!allow_market_maker || !relayer_fill_for_solver) {
+        solver_market_maker_fill_v2(
+            caller,
+            relayer,
+            arbitrary_relayer_payload,
+            packet,
+            order,
+            intent,
         )
     } else {
-        let receiver = deps
-            .api
-            .addr_validate(
-                str::from_utf8(order.receiver.as_ref())
-                    .map_err(|_| ContractError::InvalidReceiver)?,
-            )
-            .map_err(|_| ContractError::UnableToValidateReceiver)?;
-
-        let quote_amount =
-            u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
-
-        /* Gas Station
-
-        Determine the native denom that we transfer to the minter contract.
-        The MM may fill multiple order within the packet, we need to
-        provide each token individually, subtracting from the total funds.
-         */
-        let mut funds_to_escrow = vec![];
-        if !funds.amount_of(&quote_token_str).is_zero() {
-            let native_denom = Coin {
-                denom: quote_token_str.clone(),
-                amount: quote_amount.into(),
-            };
-            funds.sub(native_denom.clone())?;
-            funds_to_escrow.push(native_denom);
-        }
-        if quote_amount > 0 {
-            // Make sure the market maker provide the funds
-            messages.push(make_wasm_msg(
-                LocalTokenMsg::Escrow {
-                    from: caller.to_string(),
-                    denom: quote_token_str.clone(),
-                    recipient: minter.to_string(),
-                    amount: quote_amount.into(),
-                },
-                &minter,
-                funds_to_escrow,
-            )?);
-            // Release the funds to the user
-            messages.push(make_wasm_msg(
-                LocalTokenMsg::Unescrow {
-                    denom: quote_token_str,
-                    recipient: receiver.to_string(),
-                    amount: quote_amount.into(),
-                },
-                minter,
-                vec![],
-            )?);
-        }
+        MARKET_MAKER.save(deps.storage, &arbitrary_relayer_payload)?;
+        relayer_market_maker_fill_v2(deps, env, funds, caller, minter, order)
     }
-    Ok(Response::new().add_submessage(SubMsg::reply_always(
-        wasm_execute(
-            &env.contract.address,
-            &ExecuteMsg::InternalBatch { messages },
-            vec![],
-        )?,
-        MM_FILL_REPLY_ID,
-    )))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -2855,7 +2902,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                 SubMsgResult::Err(error) => Err(ContractError::CallError { error }),
             }
         }
-        MM_FILL_REPLY_ID => {
+        MM_RELAYER_FILL_REPLY_ID => {
             let market_maker = MARKET_MAKER.load(deps.storage)?;
             MARKET_MAKER.remove(deps.storage);
             match reply.result {
@@ -2871,6 +2918,36 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                     },
                     vec![],
                 )?)),
+                // Leave a chance for another MM to fill by telling the top level handler to revert.
+                SubMsgResult::Err(error) => Ok(Response::new()
+                    .add_attribute("maker_execution_failure", error)
+                    .add_message(wasm_execute(
+                        env.contract.address,
+                        &ExecuteMsg::InternalWriteAck {
+                            ack: ACK_ERR_ONLY_MAKER.into(),
+                        },
+                        vec![],
+                    )?)),
+            }
+        }
+        MM_SOLVER_FILL_REPLY_ID => {
+            match reply.result {
+                SubMsgResult::Ok(reply_data) => {
+                    #[allow(deprecated)]
+                    let market_maker = reply_data.data.unwrap_or_default();
+                    Ok(Response::new().add_message(wasm_execute(
+                        env.contract.address,
+                        &ExecuteMsg::InternalWriteAck {
+                            ack: TokenOrderAck {
+                                fill_type: FILL_TYPE_MARKETMAKER,
+                                market_maker: Vec::from(market_maker).into(),
+                            }
+                            .abi_encode_params()
+                            .into(),
+                        },
+                        vec![],
+                    )?))
+                }
                 // Leave a chance for another MM to fill by telling the top level handler to revert.
                 SubMsgResult::Err(error) => Ok(Response::new()
                     .add_attribute("maker_execution_failure", error)
