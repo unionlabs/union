@@ -134,10 +134,8 @@ impl IbcClient for ParliaLightClient {
         let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
 
         // verify attestation
-        let res = parlia_verifier::verify_header(
-            &header.source,
-            &header.target,
-            &header.attestation,
+        let (verified_header, maybe_epoch_rotation_data) = parlia_verifier::verify_header(
+            &header.chain,
             client_state.unbond_period,
             header.trusted_valset_epoch_number,
             CwContext { ctx: &ctx },
@@ -146,24 +144,25 @@ impl IbcClient for ParliaLightClient {
 
         // verify ibc storage root
         evm_storage_verifier::verify_account_storage_root(
-            header.source.state_root,
+            verified_header.state_root,
             &client_state.ibc_contract_address,
             header.ibc_account_proof.proof,
             &header.ibc_account_proof.storage_root,
         )
         .map_err(Into::<Error>::into)?;
 
-        let update_height = header.source.number.try_into().expect("impossible");
+        let update_height = verified_header.number.try_into().expect("impossible");
 
         let mut consensus_state = ConsensusState {
             valset_epoch_block_number: header.trusted_valset_epoch_number,
-            timestamp: Timestamp::from_secs(header.attestation.timestamp),
-            state_root: header.attestation.state_root,
+            timestamp: verified_header.full_timestamp(),
+            state_root: verified_header.state_root,
             ibc_storage_root: header.ibc_account_proof.storage_root,
         };
 
         // valset rotated
-        let state_update = if let Some((new_trusted_valset_block_number, new_trusted_valset)) = res
+        let state_update = if let Some((new_trusted_valset_block_number, new_trusted_valset)) =
+            maybe_epoch_rotation_data
         {
             consensus_state.valset_epoch_block_number = new_trusted_valset_block_number;
 
@@ -199,13 +198,21 @@ impl IbcClient for ParliaLightClient {
             return Err(Error::MisbehaviourHeadersMustBeDifferent.into());
         }
 
+        let frozen_height = misbehaviour
+            .source_1
+            .number
+            .try_into()
+            .expect("checked in verify_header; qed;");
+
         let cw_ctx = CwContext { ctx: &ctx };
 
         // verify first attestation
         parlia_verifier::verify_header(
-            &misbehaviour.source_1,
-            &misbehaviour.target_1,
-            &misbehaviour.attestation_1,
+            &[
+                misbehaviour.source_1,
+                misbehaviour.target_1,
+                misbehaviour.attestation_1,
+            ],
             client_state.unbond_period,
             misbehaviour.trusted_valset_epoch_number,
             cw_ctx.clone(),
@@ -214,9 +221,11 @@ impl IbcClient for ParliaLightClient {
 
         // verify second attestation
         parlia_verifier::verify_header(
-            &misbehaviour.source_2,
-            &misbehaviour.target_2,
-            &misbehaviour.attestation_2,
+            &[
+                misbehaviour.source_2,
+                misbehaviour.target_2,
+                misbehaviour.attestation_2,
+            ],
             client_state.unbond_period,
             misbehaviour.trusted_valset_epoch_number,
             cw_ctx,
@@ -224,11 +233,7 @@ impl IbcClient for ParliaLightClient {
         .map_err(Into::<Error>::into)?;
 
         Ok(ClientState::V1(ClientStateV1 {
-            frozen_height: misbehaviour
-                .source_1
-                .number
-                .try_into()
-                .expect("checked in verify_header; qed;"),
+            frozen_height,
             ..client_state
         }))
     }

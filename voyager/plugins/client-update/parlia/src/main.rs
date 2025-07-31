@@ -272,11 +272,11 @@ impl Module {
 
         for block in windows(update_from.height(), update_to.height()) {
             if headers.len() >= 10 {
-                let last = headers.last().unwrap().source.number;
+                let last = headers.last().unwrap().chain.first().unwrap().number;
 
                 info!(
                     "fetched updates between {first} to {last}, continuing from {last} to {update_to}",
-                    first = headers.first().unwrap().source.number,
+                    first = headers.first().unwrap().chain.first().unwrap().number,
                 );
 
                 return Ok(vm::call(PluginMessage::new(
@@ -323,9 +323,11 @@ impl Module {
 
             headers.push(Header {
                 trusted_valset_epoch_number,
-                source: convert_header(source),
-                target: convert_header(target),
-                attestation: convert_header(attestation),
+                chain: vec![
+                    convert_header(source),
+                    convert_header(target),
+                    convert_header(attestation),
+                ],
                 ibc_account_proof,
             });
         }
@@ -337,7 +339,9 @@ impl Module {
                 .map(|h| {
                     (
                         DecodedHeaderMeta {
-                            height: Height::new(h.source.number.try_into().unwrap()),
+                            height: Height::new(
+                                h.chain.first().unwrap().number.try_into().unwrap(),
+                            ),
                         },
                         into_value(h),
                     )
