@@ -31,7 +31,7 @@ pub struct Cmd {
     #[arg(long, default_value_t = num_cpus::get())]
     pub threads: usize,
     #[arg(long, default_value_t = U256::ZERO)]
-    pub initial_salt: U256,
+    pub seed: U256,
 }
 
 impl Cmd {
@@ -97,7 +97,7 @@ impl Cmd {
             .collect::<Vec<_>>();
         let range = (salt_preimage.len() - 32)..salt_preimage.len();
 
-        let initial_salt = self.initial_salt;
+        let seed = self.seed;
 
         let mut handles = Vec::new();
         for i in 0..self.threads {
@@ -112,9 +112,9 @@ impl Cmd {
             let handle = thread::spawn(move || -> Option<H256> {
                 let mut local_attempts = 0u64;
 
-                let mut salt = U256::from_be_bytes(
-                    keccak256((initial_salt + U256::from(i)).to_be_bytes::<32>()).into(),
-                );
+                let mut salt = (0..(i + 1)).fold(seed, |acc, _| {
+                    U256::from_be_bytes(sha2::Sha256::digest(acc.to_be_bytes::<32>()).into())
+                });
                 println!("{i}: {salt}");
 
                 while !found.load(Ordering::Relaxed) {
@@ -134,7 +134,7 @@ impl Cmd {
 
                             let mut address_out: GenericArray<u8, typenum::U32> = [0_u8; 32].into();
                             keccak_asm::Keccak256::new()
-                                .chain_update(&[0xd6, 0x94])
+                                .chain_update([0xd6, 0x94])
                                 .chain_update(&out[12..])
                                 .chain_update([0x01])
                                 .finalize_into(&mut address_out);

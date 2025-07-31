@@ -522,6 +522,7 @@
                 xh
                 self'.packages.tdc
                 yq
+                perl
               ])
               ++ (with pkgsUnstable; [
                 bun

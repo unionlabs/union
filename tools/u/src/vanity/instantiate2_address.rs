@@ -1,5 +1,4 @@
 use std::{
-    io::Write,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
@@ -10,6 +9,7 @@ use std::{
 
 use alloy::{hex, primitives::U256};
 use anyhow::bail;
+use bech32::ByteIterExt;
 use clap::Args;
 use sha2::Digest;
 use unionlabs::primitives::{Bech32, Bytes, H256};
@@ -17,11 +17,14 @@ use unionlabs::primitives::{Bech32, Bytes, H256};
 #[derive(Debug, Args)]
 pub struct Cmd {
     pub creator: Bech32<Bytes>,
+    #[arg(long)]
     pub prefix: String,
     // pub suffix: String,
     /// Number of threads to use for parallel processing
     #[arg(long, default_value_t = num_cpus::get())]
     threads: usize,
+    #[arg(long, default_value_t = U256::ZERO)]
+    pub seed: U256,
 }
 
 impl Cmd {
@@ -75,39 +78,47 @@ impl Cmd {
             let mut preimage = preimage.clone();
             let range = (preimage.len() - 8 - 32)..(preimage.len() - 8);
 
+            let seed = self.seed;
+
+            let mut hasher = sha2::Sha256::default();
+            let mut digest = Default::default();
+
             let handle = thread::spawn(move || -> Option<H256> {
                 let mut local_attempts = 0u64;
 
-                let mut salt = U256::from(u64::MAX) * U256::from(i);
+                let mut salt = (0..(i + 1)).fold(seed, |acc, _| {
+                    U256::from_be_bytes(sha2::Sha256::digest(acc.to_be_bytes::<32>()).into())
+                });
+                println!("{i}: {salt}");
 
                 while !found.load(Ordering::Relaxed) {
-                    loop {
+                    'inner: while local_attempts < 100000 {
                         local_attempts += 1;
                         preimage[range.clone()].copy_from_slice(&salt.to_be_bytes::<32>());
-                        let res: H256 = sha2::Sha256::digest(&preimage).into();
-
-                        let addr = subtle_encoding::bech32::encode(creator.hrp(), res);
-
-                        if addr[creator.hrp().len() + 1..].starts_with(&prefix)
-                        // && addr.ends_with(&suffix)
+                        hasher.update(&preimage);
+                        hasher.finalize_into_reset(&mut digest);
+                        if digest
+                            .iter()
+                            .copied()
+                            .bytes_to_fes()
+                            .zip(prefix.as_bytes())
+                            .any(|(c, prefix)| c.to_char() != *prefix as char)
                         {
-                            let salt_bytes = H256::new(salt.to_be_bytes());
+                            unsafe { salt.as_limbs_mut()[0] += 1 };
 
-                            println!("{addr}");
+                            continue 'inner;
+                        } else {
+                            let salt_bytes = H256::new(salt.to_be_bytes());
+                            println!("{}", creator.map_data(|_| sha2::Sha256::digest(&preimage)));
                             println!("{}", salt_bytes);
                             found.store(true, Ordering::Relaxed);
                             total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
                             return Some(salt_bytes);
                         }
-
-                        salt += U256::ONE;
-
-                        if local_attempts % 20000 == 0 {
-                            total_attempts.fetch_add(20000, Ordering::Relaxed);
-                            local_attempts = 0;
-                            break;
-                        }
                     }
+
+                    total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
+                    local_attempts = 0;
                 }
 
                 total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
@@ -120,6 +131,8 @@ impl Cmd {
         let found_reporter = Arc::clone(&found);
         let total_attempts_reporter = Arc::clone(&total_attempts);
         let status_handle = thread::spawn(move || {
+            use std::io::Write;
+
             while !found_reporter.load(Ordering::Relaxed) {
                 thread::sleep(std::time::Duration::from_secs(1));
                 let attempts = total_attempts_reporter.load(Ordering::Relaxed);
