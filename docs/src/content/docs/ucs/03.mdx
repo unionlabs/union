@@ -429,18 +429,12 @@ struct TokenOrderV2 {
 
 The V2 version introduces a significantly more flexible metadata system with three types:
 - `TOKEN_ORDER_KIND_INITIALIZE` (0x00): Provides full metadata implementation and initializer for custom token deployment
-- `TOKEN_ORDER_KIND_ESCROW` (0x01): Uses a metadata image hash for existing token identification
-- `TOKEN_ORDER_KIND_UNESCROW` (0x02): Specifically for unwrapping operations
-
 ```solidity
 struct TokenMetadata {
     bytes implementation;    // Implementation contract address
     bytes initializer;       // Initialization data for proxy
 }
 ```
-
-The V2 version introduces a significantly more flexible metadata system with three types:
-- `TOKEN_ORDER_KIND_INITIALIZE` (0x00): Provides full metadata implementation and initializer for custom token deployment
 - `TOKEN_ORDER_KIND_ESCROW` (0x01): Uses a metadata image hash for existing token identification
 - `TOKEN_ORDER_KIND_UNESCROW` (0x02): Specifically for unwrapping operations
 
@@ -457,8 +451,7 @@ This flexibility is achieved by allowing the specification of:
 - Custom initialization data
 - A deterministic salt based on the metadata
 
-With V2, the protocol uses CREATE3 to deploy the token contracts at deterministic addresses, ensuring that the same token metadata always results in the same deployed address.
-
+Similarly to V1, in V2 the protocol uses CREATE3 to deploy the token contracts at deterministic addresses, ensuring that the same token metadata always results in the same deployed address.
 
 Common Fields (both versions):
 - `sender`: Source chain sender address as `bytes`
@@ -776,7 +769,6 @@ TokenOrderV2 memory order = TokenOrderV2({
 
 This dual-purpose design makes TokenOrderV2 both protocol-compliant and highly extensible, enabling sophisticated use cases while maintaining security and predictability.
 
-```
 <Mermaid
   content={`
 sequenceDiagram
@@ -803,7 +795,6 @@ sequenceDiagram
         A ->> Sol: Transfer Base Token
     end
 `}/>
-```
 
 :::tip
 
