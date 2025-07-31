@@ -41,6 +41,7 @@ pub struct Config {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
+    pub privileged_acc_keyring: KeyringConfig,
     pub rpc_url: String,
     pub gas_config: GasFillerConfig,
     #[serde(default)]
@@ -67,6 +68,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
+    pub privileged_acc_keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
     pub rpc: Rpc,
     pub gas_config: any::GasFiller,
     pub bech32_prefix: String,
@@ -122,6 +124,18 @@ impl Module {
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
+                    let signer =
+                        LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
+
+                    KeyringEntry {
+                        address: signer.address(),
+                        signer,
+                    }
+                }),
+            ),
+            privileged_acc_keyring: ConcurrentKeyring::new(
+                config.privileged_acc_keyring.name,
+                config.privileged_acc_keyring.keys.into_iter().map(|entry| {
                     let signer =
                         LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
 
