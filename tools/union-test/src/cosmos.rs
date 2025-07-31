@@ -16,6 +16,9 @@ use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use protos::{
     cosmos::base::v1beta1::Coin,
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
+    cosmos::bank::v1beta1::{
+        QueryBalanceRequest, QueryBalanceResponse, QueryAllBalancesRequest, QueryAllBalancesResponse,
+    },
 };
 use serde::{Deserialize, Serialize};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
@@ -345,6 +348,35 @@ impl Module {
             .unwrap())
     }
 
+    pub async fn wait_for_packet_timeout(
+        &self,
+        packet_hash_param: H256,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        println!("Waiting for packet timeout event with hash: {packet_hash_param:?}");
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::WasmPacketTimeout { packet_hash, .. } = evt {
+                        println!("Packet timeout event came with hash: {packet_hash:?}");
+                        if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            return Some(helpers::PacketTimeout {
+                                packet_hash: *packet_hash,
+                            });
+                        }
+                        None
+                    } else {
+                        None
+                    }
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash_param: H256,
@@ -480,6 +512,31 @@ impl Module {
         }
     }
 
+    pub async fn get_balance(
+        &self,
+        address: impl Into<String>,
+        denom: &str,
+    ) -> anyhow::Result<protos::cosmos::base::v1beta1::Coin> {
+        let req = QueryBalanceRequest {
+            address: address.into(),
+            denom: denom.to_string(),
+        };
+        let resp: QueryBalanceResponse = self
+            .rpc
+            .client()
+            .grpc_abci_query(
+                "/cosmos.bank.v1beta1.Query/Balance",
+                &req,
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap();
+        resp.balance
+            .ok_or_else(|| anyhow::anyhow!("no balance for denom {}", denom))
+    }
+    
     pub async fn send_transaction_with_retry(
         &self,
         contract: Bech32<H256>,
@@ -610,6 +667,13 @@ pub enum ModuleEvent {
         channel_id: ChannelId,
         packet_hash: H256,
     },
+    #[serde(rename = "wasm-packet_timeout")]
+    WasmPacketTimeout {
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+    },
+
 
     #[serde(rename = "wasm-create_client")]
     WasmCreateClient {
