@@ -97,6 +97,7 @@ pub enum Command {
     /// Construct an op to index events on a chain.
     ///
     /// This will build the necessary op to index blocks on a chain. Note that the voyager instance this is queued on must have a plugin loaded that will pick this up in it's interest filter in order for the op to do anything.
+    #[command(alias = "init-fetch")]
     Index {
         /// The chain to create an index op for.
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
