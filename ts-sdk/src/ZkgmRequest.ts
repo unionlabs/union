@@ -55,6 +55,7 @@ export declare namespace Options {
 export declare const make: (options: {
   source: Chain
   destination: Chain
+  instruction: ZkgmInstruction.ZkgmInstruction
 }) => ZkgmRequest
 
 /**

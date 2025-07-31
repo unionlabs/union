@@ -7,7 +7,10 @@
 import { bech32, bytes } from "@scure/base"
 import { Effect, ParseResult, pipe, Schema as S } from "effect"
 import { isAddress } from "viem"
+import { Chain } from "./schema/chain.js"
 import { Hex, HexChecksum, HexFromString } from "./schema/hex.js"
+
+// const AddressFromChain = (chain: Chain) =>
 
 /**
  * @category models
@@ -169,6 +172,13 @@ export const AptosDisplay = AptosCanonical
  * @since 2.0.0
  */
 export const AptosZkgm = AptosCanonical
+
+export const AnyDisplay = S.Union(
+  AptosDisplay,
+  CosmosDisplay,
+  EvmDisplay,
+)
+export type AnyDisplay = typeof AnyDisplay.Type
 
 /**
  * @category models

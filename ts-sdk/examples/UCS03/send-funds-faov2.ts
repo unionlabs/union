@@ -34,6 +34,7 @@ const walletClient = Evm.WalletClient.Live({
   chain: bscTestnet,
   transport: http("https://rpc.97.bsc.chain.kitchen"),
 })
+
 const sourceChannel = Evm.ChannelSource.Live({
   ucs03address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
   channelId: 1,
