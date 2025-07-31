@@ -25,24 +25,23 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, BatchAck, Forward, FungibleAssetMetadata, FungibleAssetOrder,
-        FungibleAssetOrderAck, FungibleAssetOrderV2, Instruction, Multiplex, Stake, Unstake,
-        UnstakeAck, WithdrawRewards, WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck,
-        ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
-        FORWARD_SALT_MAGIC, FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1,
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE, FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
-        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, OP_STAKE, OP_UNSTAKE,
-        OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        Ack, Batch, BatchAck, Call, Forward, Instruction, Stake, TokenMetadata, TokenOrderAck,
+        TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards, WithdrawRewardsAck,
+        WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
+        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+        OP_BATCH, OP_CALL, OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS,
+        OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW,
+        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg, SolverQuery,
-        ZkgmMsg,
+        V1ToV2Migration, ZkgmMsg,
     },
     state::{
-        BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CHANNEL_BALANCE_V2, CONFIG, EXECUTING_PACKET,
-        EXECUTING_PACKET_IS_BATCH, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET,
-        MARKET_MAKER, METADATA_IMAGE_OF, TOKEN_BUCKET, TOKEN_MINTER, TOKEN_ORIGIN,
+        BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, DEPRECATED_CHANNEL_BALANCE_V1,
+        EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
+        IN_FLIGHT_PACKET, MARKET_MAKER, METADATA_IMAGE_OF, TOKEN_BUCKET, TOKEN_MINTER,
+        TOKEN_ORIGIN,
     },
     token_bucket::TokenBucket,
     ContractError,
@@ -306,6 +305,13 @@ pub fn execute(
                     .add_attribute("refill_rate", token_bucket.refill_rate),
             ))
         }
+        ExecuteMsg::MigrateV1ToV2 { migrations } => {
+            let config = CONFIG.load(deps.storage)?;
+            if info.sender != config.admin {
+                return Err(ContractError::OnlyAdmin);
+            }
+            migrate_v1_to_v2(deps, migrations)
+        }
     }
 }
 
@@ -361,15 +367,15 @@ fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<
     Ok(())
 }
 
-/// Verifies a fungible asset order v2 instruction.
+/// Verifies a token order v2 instruction.
 /// Handles different metadata types and validates unwrapping conditions.
-pub fn verify_fungible_asset_order_v2(
+pub fn verify_token_order_v2(
     deps: DepsMut,
     info: MessageInfo,
     funds: &mut Coins,
     channel_id: ChannelId,
     path: U256,
-    order: &FungibleAssetOrderV2,
+    order: &TokenOrderV2,
     response: &mut Response,
 ) -> Result<(), ContractError> {
     // Validate and get base token address
@@ -379,216 +385,115 @@ pub fn verify_fungible_asset_order_v2(
     // Get the token minter contract
     let minter = TOKEN_MINTER.load(deps.storage)?;
 
-    // Handle different metadata types
-    match order.metadata_type {
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE => {
-            // Handle image metadata type (hash only)
-            let metadata_image = H256::try_from(order.metadata.0.as_ref())
-                .map_err(|_| ContractError::InvalidMetadataType)?;
+    if order.kind == TOKEN_ORDER_KIND_UNESCROW {
+        // Get the origin path for the base token (from EVM: tokenOrigin[baseToken])
+        let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_str.to_string())?;
+        let (intermediate_channel_path, destination_channel_id) = if let Some(origin) = origin {
+            let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
+            pop_channel_from_path(origin_u256)
+        } else {
+            (U256::ZERO, None)
+        };
 
-            // Check if this is a V1 token (for backward compatibility)
-            let is_v1 = metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
+        let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path)?;
+        let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
 
-            // Get the origin path for the base token
-            let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_str.to_string())?;
+        // Predict V1 wrapped token (EVM: _predictWrappedToken)
+        let (wrapped_token_v1, _) = predict_wrapped_token(
+            deps.as_ref(),
+            &minter,
+            intermediate_channel_path,
+            channel_id,
+            order.quote_token.to_vec().into(),
+        )?;
 
-            // Compute the wrapped token from the destination to source
-            let (wrapped_token, _) = if is_v1 {
-                predict_wrapped_token(
-                    deps.as_ref(),
-                    &minter,
-                    path,
-                    channel_id,
-                    order.quote_token.to_vec().into(),
-                )?
-            } else {
-                predict_wrapped_token_from_metadata_image_v2(
-                    deps.as_ref(),
-                    &minter,
-                    path,
-                    channel_id,
-                    order.quote_token.to_vec().into(),
-                    metadata_image,
-                )?
-            };
+        // Predict V2 wrapped token (EVM: _predictWrappedTokenFromMetadataImageV2)
+        let metadata_image = METADATA_IMAGE_OF
+            .may_load(deps.storage, base_token_str.to_string())?
+            .unwrap_or_default();
 
-            // Check if base token matches predicted wrapper
-            let is_unwrapping = base_token_str == wrapped_token;
+        let (wrapped_token_v2, _) = predict_wrapped_token_from_metadata_image_v2(
+            deps.as_ref(),
+            &minter,
+            intermediate_channel_path,
+            channel_id,
+            order.quote_token.to_vec().into(),
+            metadata_image,
+        )?;
 
-            // Get the intermediate path and destination channel from origin
-            let (intermediate_path, destination_channel_id) = if let Some(origin) = origin {
-                let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
-                let (intermediate_path, destination_channel_id) =
-                    pop_channel_from_path(origin_u256);
-                (intermediate_path, destination_channel_id)
-            } else {
-                (U256::ZERO, None)
-            };
+        // Check if we're unwrapping (EVM: isUnwrappingV1 || isUnwrappingV2)
+        let is_unwrapping_v1 = base_token_str == wrapped_token_v1;
+        let is_unwrapping_v2 = base_token_str == wrapped_token_v2;
+        let is_unwrapping = is_unwrapping_v1 || is_unwrapping_v2;
 
-            // Check if we're taking same path starting from same channel using wrapped asset
-            let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_path)?;
-            let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
-
-            if is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping {
-                // This is an unwrapping operation
-                if order.metadata_type != FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP {
-                    return Err(ContractError::InvalidMetadataType);
-                }
-
-                // For V2 tokens, verify the metadata image matches what's stored
-                if !is_v1 {
-                    if let Some(stored_image) =
-                        METADATA_IMAGE_OF.may_load(deps.storage, base_token_str.to_string())?
-                    {
-                        if stored_image != metadata_image.as_ref() {
-                            return Err(ContractError::InvalidMetadataType);
-                        }
-                    } else {
-                        return Err(ContractError::InvalidMetadataType);
-                    }
-                }
-
-                let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
-
-                let mut funds_to_burn = vec![];
-                if !funds.amount_of(base_token_str).is_zero() {
-                    let native_denom = Coin {
-                        denom: base_token_str.to_string(),
-                        amount: base_amount
-                            .try_into()
-                            .map_err(|_| ContractError::AmountOverflow)?,
-                    };
-                    funds.sub(native_denom.clone())?;
-                    funds_to_burn.push(native_denom);
-                }
-
-                // Burn tokens as we are going to unescrow on the counterparty
-                *response = response.clone().add_message(make_wasm_msg(
-                    WrappedTokenMsg::BurnTokens {
-                        denom: base_token_str.to_string(),
-                        amount: base_amount
-                            .try_into()
-                            .map_err(|_| ContractError::AmountOverflow)?,
-                        burn_from_address: minter.clone(),
-                        sender: info.sender,
-                    },
-                    &minter,
-                    funds_to_burn,
-                )?);
-            } else {
-                // This is a wrapping operation
-                if order.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP {
-                    return Err(ContractError::InvalidMetadataType);
-                }
-
-                // Escrow tokens as the counterparty will mint them
-                let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
-
-                if is_v1 {
-                    increase_channel_balance(
-                        deps.storage,
-                        channel_id,
-                        path,
-                        base_token_str.to_string(),
-                        base_amount,
-                    )?;
-                } else {
-                    increase_channel_balance_v2(
-                        deps.storage,
-                        channel_id,
-                        path,
-                        base_token_str.to_string(),
-                        metadata_image,
-                        base_amount,
-                    )?;
-                }
-
-                let mut funds_to_escrow = vec![];
-                if !funds.amount_of(base_token_str).is_zero() {
-                    let native_denom = Coin {
-                        denom: base_token_str.to_string(),
-                        amount: base_amount
-                            .try_into()
-                            .map_err(|_| ContractError::AmountOverflow)?,
-                    };
-                    funds.sub(native_denom.clone())?;
-                    funds_to_escrow.push(native_denom);
-                }
-
-                *response = response.clone().add_message(make_wasm_msg(
-                    LocalTokenMsg::Escrow {
-                        from: info.sender.to_string(),
-                        denom: base_token_str.to_string(),
-                        recipient: minter.to_string(),
-                        amount: base_amount
-                            .try_into()
-                            .map_err(|_| ContractError::AmountOverflow)?,
-                    },
-                    &minter,
-                    funds_to_escrow,
-                )?);
-            }
-        }
-        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE => {
-            // Handle preimage metadata type (full metadata)
-            let metadata = FungibleAssetMetadata::abi_decode_params_validate(&order.metadata)?;
-
-            // Compute metadata image hash
-            let metadata_bytes = metadata.abi_encode_params();
-            let metadata_image = keccak256(metadata_bytes);
-
-            // Escrow tokens as the counterparty will mint them
-            let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
-
-            if metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1 {
-                increase_channel_balance(
-                    deps.storage,
-                    channel_id,
-                    path,
-                    base_token_str.to_string(),
-                    base_amount,
-                )?;
-            } else {
-                increase_channel_balance_v2(
-                    deps.storage,
-                    channel_id,
-                    path,
-                    base_token_str.to_string(),
-                    metadata_image,
-                    base_amount,
-                )?;
-            }
-
-            let mut funds_to_escrow = vec![];
-            if !funds.amount_of(base_token_str).is_zero() {
-                let native_denom = Coin {
-                    denom: base_token_str.to_string(),
-                    amount: base_amount
-                        .try_into()
-                        .map_err(|_| ContractError::AmountOverflow)?,
-                };
-                funds.sub(native_denom.clone())?;
-                funds_to_escrow.push(native_denom);
-            }
-
-            *response = response.clone().add_message(make_wasm_msg(
-                LocalTokenMsg::Escrow {
-                    from: info.sender.to_string(),
-                    denom: base_token_str.to_string(),
-                    recipient: minter.to_string(),
-                    amount: base_amount
-                        .try_into()
-                        .map_err(|_| ContractError::AmountOverflow)?,
-                },
-                &minter,
-                funds_to_escrow,
-            )?);
-        }
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP => {
-            // This should be handled in the IMAGE case when is_unwrapping is true
+        if !(is_unwrapping && is_inverse_intermediate_path && is_sending_back_to_same_channel) {
             return Err(ContractError::InvalidMetadataType);
         }
-        _ => return Err(ContractError::InvalidMetadataType),
+
+        // Burn the wrapped token (EVM: IZkgmERC20(baseToken).burn(msg.sender, order.baseAmount))
+        let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
+
+        let mut funds_to_burn = vec![];
+        if !funds.amount_of(base_token_str).is_zero() {
+            let native_denom = Coin {
+                denom: base_token_str.to_string(),
+                amount: base_amount
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+            };
+            funds.sub(native_denom.clone())?;
+            funds_to_burn.push(native_denom);
+        }
+
+        *response = response.clone().add_message(make_wasm_msg(
+            WrappedTokenMsg::BurnTokens {
+                denom: base_token_str.to_string(),
+                amount: base_amount
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+                burn_from_address: minter.clone(),
+                sender: info.sender,
+            },
+            &minter,
+            funds_to_burn,
+        )?);
+    } else {
+        // Escrow tokens (EVM: _increaseOutstandingV2 + transfer logic)
+        let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
+
+        increase_channel_balance_v2(
+            deps.storage,
+            channel_id,
+            path,
+            base_token_str.to_string(),
+            order.quote_token.clone().into(),
+            base_amount,
+        )?;
+
+        let mut funds_to_escrow = vec![];
+        if !funds.amount_of(base_token_str).is_zero() {
+            let native_denom = Coin {
+                denom: base_token_str.to_string(),
+                amount: base_amount
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+            };
+            funds.sub(native_denom.clone())?;
+            funds_to_escrow.push(native_denom);
+        }
+
+        *response = response.clone().add_message(make_wasm_msg(
+            LocalTokenMsg::Escrow {
+                from: info.sender.to_string(),
+                denom: base_token_str.to_string(),
+                recipient: minter.to_string(),
+                amount: base_amount
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+            },
+            &minter,
+            funds_to_escrow,
+        )?);
     }
 
     Ok(())
@@ -661,13 +566,13 @@ fn timeout_internal(
     instruction: Instruction,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 refund(deps, path, packet.source_channel_id, order)
             }
             INSTR_VERSION_2 => {
-                let order = FungibleAssetOrderV2::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
                 refund_v2(deps, path, packet.source_channel_id, order)
             }
             _ => Err(ContractError::UnsupportedVersion {
@@ -701,13 +606,13 @@ fn timeout_internal(
             }
             Ok(response)
         }
-        OP_MULTIPLEX => {
+        OP_CALL => {
             if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
+            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
             timeout_multiplex(deps, caller, packet, relayer, path, multiplex)
         }
         _ => Err(ContractError::UnknownOpcode {
@@ -722,7 +627,7 @@ fn timeout_multiplex(
     packet: Packet,
     relayer: Addr,
     path: U256,
-    multiplex: Multiplex,
+    multiplex: Call,
 ) -> Result<Response, ContractError> {
     if multiplex.eureka {
         // For eureka mode, forward the timeout to the sender contract
@@ -833,11 +738,11 @@ fn acknowledge_internal(
     ack: Bytes,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 let order_ack = if successful {
-                    Some(FungibleAssetOrderAck::abi_decode_params_validate(&ack)?)
+                    Some(TokenOrderAck::abi_decode_params_validate(&ack)?)
                 } else {
                     None
                 };
@@ -846,9 +751,9 @@ fn acknowledge_internal(
                 )
             }
             INSTR_VERSION_2 => {
-                let order = FungibleAssetOrderV2::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
                 let order_ack = if successful {
-                    Some(FungibleAssetOrderAck::abi_decode_params_validate(&ack)?)
+                    Some(TokenOrderAck::abi_decode_params_validate(&ack)?)
                 } else {
                     None
                 };
@@ -897,13 +802,13 @@ fn acknowledge_internal(
             }
             Ok(response)
         }
-        OP_MULTIPLEX => {
+        OP_CALL => {
             if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
+            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
             acknowledge_multiplex(
                 deps, caller, packet, relayer, path, multiplex, successful, ack,
             )
@@ -918,7 +823,7 @@ fn refund(
     deps: DepsMut,
     path: U256,
     source_channel: ChannelId,
-    order: FungibleAssetOrder,
+    order: TokenOrderV1,
 ) -> Result<Response, ContractError> {
     // 1. Native minter + sent native tokens: correct
     // 2. Cw20 minter + sent native tokens:
@@ -948,11 +853,12 @@ fn refund(
             )?);
         } else {
             // If the token is native to this chain, unescrow it and decrease the channel balance
-            decrease_channel_balance(
+            decrease_channel_balance_v2(
                 deps,
                 source_channel,
                 path,
                 base_denom.clone(),
+                order.quote_token.clone().into(),
                 base_amount.into(),
             )?;
 
@@ -974,81 +880,54 @@ fn refund_v2(
     deps: DepsMut,
     path: U256,
     source_channel: ChannelId,
-    order: FungibleAssetOrderV2,
+    order: TokenOrderV2,
 ) -> Result<Response, ContractError> {
-    // 1. Native minter + sent native tokens: correct
-    // 2. Cw20 minter + sent native tokens:
+    // Extract sender and base token (EVM: address sender = address(bytes20(order.sender)))
     let sender = deps
         .api
         .addr_validate(str::from_utf8(&order.sender).map_err(|_| ContractError::InvalidSender)?)
         .map_err(|_| ContractError::UnableToValidateSender)?;
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-    let base_token = order.base_token;
+    let base_denom = String::from_utf8(order.base_token.to_vec())
+        .map_err(|_| ContractError::InvalidBaseToken)?;
     let base_amount =
         u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
-    let base_denom =
-        String::from_utf8(base_token.to_vec()).map_err(|_| ContractError::InvalidBaseToken)?;
+
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     let mut messages = Vec::<CosmosMsg>::new();
 
-    if base_amount > 0 {
-        match order.metadata_type {
-            FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP => {
-                // If the token is from a different chain (wrapped token), mint it back
-                messages.push(make_wasm_msg(
-                    WrappedTokenMsg::MintTokens {
-                        denom: base_denom,
-                        amount: base_amount.into(),
-                        mint_to_address: sender,
-                    },
-                    minter,
-                    vec![],
-                )?);
-            }
-            FUNGIBLE_ASSET_METADATA_TYPE_IMAGE | FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE => {
-                // If the token is native to this chain, unescrow it and decrease the channel balance
-                let metadata_image = if order.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_IMAGE {
-                    H256::try_from(order.metadata.0.as_ref())
-                        .map_err(|_| ContractError::InvalidMetadataType)
-                } else {
-                    // For PREIMAGE type, compute the hash
-                    Ok(keccak256(order.metadata))
-                }?;
+    if order.kind == TOKEN_ORDER_KIND_UNESCROW {
+        // Mint tokens back to sender (EVM: IZkgmERC20(address(baseToken)).mint(sender, order.baseAmount))
+        messages.push(make_wasm_msg(
+            WrappedTokenMsg::MintTokens {
+                denom: base_denom,
+                amount: base_amount.into(),
+                mint_to_address: sender,
+            },
+            minter,
+            vec![],
+        )?);
+    } else {
+        // Decrease channel balance and unescrow (EVM: _decreaseOutstandingV2 + safeTransfer)
+        decrease_channel_balance_v2(
+            deps,
+            source_channel,
+            path,
+            base_denom.clone(),
+            order.quote_token.clone().into(),
+            base_amount.into(),
+        )?;
 
-                // Check if this is a V1 token (for backward compatibility)
-                let is_v1 = metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-
-                if is_v1 {
-                    decrease_channel_balance(
-                        deps,
-                        source_channel,
-                        path,
-                        base_denom.clone(),
-                        base_amount.into(),
-                    )?;
-                } else {
-                    decrease_channel_balance_v2(
-                        deps,
-                        source_channel,
-                        path,
-                        base_denom.clone(),
-                        metadata_image,
-                        base_amount.into(),
-                    )?;
-                }
-
-                messages.push(make_wasm_msg(
-                    LocalTokenMsg::Unescrow {
-                        denom: base_denom,
-                        recipient: sender.into_string(),
-                        amount: base_amount.into(),
-                    },
-                    minter,
-                    vec![],
-                )?);
-            }
-            _ => return Err(ContractError::InvalidMetadataType),
-        }
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: base_denom,
+                recipient: sender.into_string(),
+                amount: base_amount.into(),
+            },
+            minter,
+            vec![],
+        )?);
     }
+
     Ok(Response::new().add_messages(messages))
 }
 
@@ -1061,98 +940,71 @@ fn acknowledge_fungible_asset_order_v2(
     _relayer: Addr,
     _salt: H256,
     path: U256,
-    order: FungibleAssetOrderV2,
-    order_ack: Option<FungibleAssetOrderAck>,
+    order: TokenOrderV2,
+    order_ack: Option<TokenOrderAck>,
 ) -> Result<Response, ContractError> {
-    match order_ack {
-        Some(successful_ack) => {
-            let mut messages = Vec::<CosmosMsg>::new();
-            match successful_ack.fill_type {
-                FILL_TYPE_PROTOCOL => {
-                    // Protocol filled, fee was paid on destination to the relayer.
+    if let Some(ack) = order_ack {
+        // Successful acknowledgement
+        match ack.fill_type {
+            // The protocol filled, fee was paid to relayer.
+            FILL_TYPE_PROTOCOL => Ok(Response::new()),
+            // A market maker filled, we pay with the sent asset.
+            FILL_TYPE_MARKETMAKER => {
+                let market_maker = deps
+                    .api
+                    .addr_validate(
+                        str::from_utf8(ack.market_maker.as_ref())
+                            .map_err(|_| ContractError::InvalidReceiver)?,
+                    )
+                    .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
+                let base_denom = String::from_utf8(order.base_token.to_vec())
+                    .map_err(|_| ContractError::InvalidBaseToken)?;
+                let base_amount =
+                    u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+                let minter = TOKEN_MINTER.load(deps.storage)?;
+                let mut messages = Vec::<CosmosMsg>::new();
+
+                if order.kind == TOKEN_ORDER_KIND_UNESCROW {
+                    // Mint tokens to market maker (EVM: IZkgmERC20(address(baseToken)).mint(marketMaker, order.baseAmount))
+                    messages.push(make_wasm_msg(
+                        WrappedTokenMsg::MintTokens {
+                            denom: base_denom,
+                            amount: base_amount.into(),
+                            mint_to_address: market_maker,
+                        },
+                        minter,
+                        vec![],
+                    )?);
+                } else {
+                    // Decrease channel balance and transfer (EVM: _decreaseOutstandingV2 + safeTransfer)
+                    decrease_channel_balance_v2(
+                        deps,
+                        packet.source_channel_id,
+                        path,
+                        base_denom.clone(),
+                        order.quote_token.clone().into(),
+                        base_amount.into(),
+                    )?;
+
+                    messages.push(make_wasm_msg(
+                        LocalTokenMsg::Unescrow {
+                            denom: base_denom,
+                            recipient: market_maker.into_string(),
+                            amount: base_amount.into(),
+                        },
+                        minter,
+                        vec![],
+                    )?);
                 }
-                FILL_TYPE_MARKETMAKER => {
-                    // A market maker filled, we pay (unescrow|mint) with the base asset.
-                    let base_amount = u128::try_from(order.base_amount)
-                        .map_err(|_| ContractError::AmountOverflow)?;
-                    let market_maker = deps
-                        .api
-                        .addr_validate(
-                            str::from_utf8(successful_ack.market_maker.as_ref())
-                                .map_err(|_| ContractError::InvalidReceiver)?,
-                        )
-                        .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
-                    let minter = TOKEN_MINTER.load(deps.storage)?;
-                    let base_denom = order.base_token;
-                    let base_denom = String::from_utf8(base_denom.to_vec())
-                        .map_err(|_| ContractError::InvalidBaseToken)?;
 
-                    match order.metadata_type {
-                        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP => {
-                            // If the token is from a different chain (wrapped token), mint it
-                            messages.push(make_wasm_msg(
-                                WrappedTokenMsg::MintTokens {
-                                    denom: base_denom,
-                                    amount: base_amount.into(),
-                                    mint_to_address: market_maker,
-                                },
-                                minter,
-                                vec![],
-                            )?);
-                        }
-                        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
-                        | FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE => {
-                            // If the token is native to this chain, decrease the channel balance and unescrow
-                            let metadata_image =
-                                if order.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_IMAGE {
-                                    H256::try_from(order.metadata.0.as_ref())
-                                        .map_err(|_| ContractError::InvalidMetadataType)
-                                } else {
-                                    // For PREIMAGE type, compute the hash
-                                    Ok(keccak256(order.metadata))
-                                }?;
-
-                            // Check if this is a V1 token (for backward compatibility)
-                            let is_v1 = metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-
-                            if is_v1 {
-                                decrease_channel_balance(
-                                    deps,
-                                    packet.source_channel_id,
-                                    path,
-                                    base_denom.clone(),
-                                    base_amount.into(),
-                                )?;
-                            } else {
-                                decrease_channel_balance_v2(
-                                    deps,
-                                    packet.source_channel_id,
-                                    path,
-                                    base_denom.clone(),
-                                    metadata_image,
-                                    base_amount.into(),
-                                )?;
-                            }
-
-                            messages.push(make_wasm_msg(
-                                LocalTokenMsg::Unescrow {
-                                    denom: base_denom,
-                                    recipient: market_maker.into_string(),
-                                    amount: base_amount.into(),
-                                },
-                                minter,
-                                vec![],
-                            )?);
-                        }
-                        _ => return Err(ContractError::InvalidMetadataType),
-                    }
-                }
-                _ => return Err(StdError::generic_err("unknown fill_type, impossible?").into()),
+                Ok(Response::new().add_messages(messages))
             }
-            Ok(Response::new().add_messages(messages))
+            fill_type => Err(ContractError::InvalidFillType { fill_type }),
         }
-        // Transfer failed, refund
-        None => refund_v2(deps, path, packet.source_channel_id, order),
+    } else {
+        // Failed acknowledgement - refund (EVM: _refundV2(ibcPacket.sourceChannelId, path, order))
+        refund_v2(deps, path, packet.source_channel_id, order)
     }
 }
 
@@ -1165,70 +1017,73 @@ fn acknowledge_fungible_asset_order(
     _relayer: Addr,
     _salt: H256,
     path: U256,
-    order: FungibleAssetOrder,
-    order_ack: Option<FungibleAssetOrderAck>,
+    order: TokenOrderV1,
+    order_ack: Option<TokenOrderAck>,
 ) -> Result<Response, ContractError> {
-    match order_ack {
-        Some(successful_ack) => {
-            let mut messages = Vec::<CosmosMsg>::new();
-            match successful_ack.fill_type {
-                FILL_TYPE_PROTOCOL => {
-                    // Protocol filled, fee was paid on destination to the relayer.
-                }
-                FILL_TYPE_MARKETMAKER => {
-                    // A market maker filled, we pay (unescrow|mint) with the base asset.
-                    let base_amount = u128::try_from(order.base_amount)
-                        .map_err(|_| ContractError::AmountOverflow)?;
-                    let market_maker = deps
-                        .api
-                        .addr_validate(
-                            str::from_utf8(successful_ack.market_maker.as_ref())
-                                .map_err(|_| ContractError::InvalidReceiver)?,
-                        )
-                        .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
-                    let minter = TOKEN_MINTER.load(deps.storage)?;
-                    let base_denom = order.base_token;
-                    let base_denom = String::from_utf8(base_denom.to_vec())
-                        .map_err(|_| ContractError::InvalidBaseToken)?;
-
-                    if !order.base_token_path.is_zero() {
-                        // If the token is from a different chain (wrapped token), mint it
-                        messages.push(make_wasm_msg(
-                            WrappedTokenMsg::MintTokens {
-                                denom: base_denom,
-                                amount: base_amount.into(),
-                                mint_to_address: market_maker,
-                            },
-                            minter,
-                            vec![],
-                        )?);
-                    } else {
-                        // If the token is native to this chain, decrease the channel balance and unescrow
-                        decrease_channel_balance(
-                            deps,
-                            packet.source_channel_id,
-                            path,
-                            base_denom.clone(),
-                            base_amount.into(),
-                        )?;
-
-                        messages.push(make_wasm_msg(
-                            LocalTokenMsg::Unescrow {
-                                denom: base_denom,
-                                recipient: market_maker.into_string(),
-                                amount: base_amount.into(),
-                            },
-                            minter,
-                            vec![],
-                        )?);
-                    }
-                }
-                _ => return Err(StdError::generic_err("unknown fill_type, impossible?").into()),
+    if let Some(ack) = order_ack {
+        // Successful acknowledgement
+        match ack.fill_type {
+            FILL_TYPE_PROTOCOL => {
+                // The protocol filled, fee was paid to relayer.
+                Ok(Response::new())
             }
-            Ok(Response::new().add_messages(messages))
+            FILL_TYPE_MARKETMAKER => {
+                // A market maker filled, we pay with the sent asset.
+                let market_maker = deps
+                    .api
+                    .addr_validate(
+                        str::from_utf8(ack.market_maker.as_ref())
+                            .map_err(|_| ContractError::InvalidReceiver)?,
+                    )
+                    .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
+                let base_denom = String::from_utf8(order.base_token.to_vec())
+                    .map_err(|_| ContractError::InvalidBaseToken)?;
+                let base_amount =
+                    u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+                let minter = TOKEN_MINTER.load(deps.storage)?;
+                let mut messages = Vec::<CosmosMsg>::new();
+
+                if !order.base_token_path.is_zero() {
+                    // Mint tokens to market maker (EVM: IZkgmERC20(address(baseToken)).mint(marketMaker, order.baseAmount))
+                    messages.push(make_wasm_msg(
+                        WrappedTokenMsg::MintTokens {
+                            denom: base_denom,
+                            amount: base_amount.into(),
+                            mint_to_address: market_maker,
+                        },
+                        minter,
+                        vec![],
+                    )?);
+                } else {
+                    // Decrease channel balance and transfer (EVM: _decreaseOutstandingV2 + safeTransfer)
+                    decrease_channel_balance_v2(
+                        deps,
+                        packet.source_channel_id,
+                        path,
+                        base_denom.clone(),
+                        order.quote_token.clone().into(),
+                        base_amount.into(),
+                    )?;
+
+                    messages.push(make_wasm_msg(
+                        LocalTokenMsg::Unescrow {
+                            denom: base_denom,
+                            recipient: market_maker.into_string(),
+                            amount: base_amount.into(),
+                        },
+                        minter,
+                        vec![],
+                    )?);
+                }
+
+                Ok(Response::new().add_messages(messages))
+            }
+            fill_type => Err(ContractError::InvalidFillType { fill_type }),
         }
-        // Transfer failed, refund
-        None => refund(deps, path, packet.source_channel_id, order),
+    } else {
+        // Failed acknowledgement - refund (EVM: _refund(ibcPacket.sourceChannelId, path, order))
+        refund(deps, path, packet.source_channel_id, order)
     }
 }
 
@@ -1239,7 +1094,7 @@ fn acknowledge_multiplex(
     packet: Packet,
     relayer: Addr,
     path: U256,
-    multiplex: Multiplex,
+    multiplex: Call,
     successful: bool,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
@@ -1320,7 +1175,7 @@ fn execute_packet(
 /// This is the core execution function that handles different instruction types:
 /// - Fungible asset orders (transfers)
 /// - Batch operations
-/// - Multiplex operations
+/// - Call operations
 /// - Forward operations
 fn execute_internal(
     deps: DepsMut,
@@ -1337,9 +1192,9 @@ fn execute_internal(
     intent: bool,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 execute_fungible_asset_order(
                     deps,
                     env,
@@ -1356,7 +1211,7 @@ fn execute_internal(
                 )
             }
             INSTR_VERSION_2 => {
-                let order = FungibleAssetOrderV2::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
                 execute_fungible_asset_order_v2(
                     deps,
                     env,
@@ -1398,13 +1253,13 @@ fn execute_internal(
                 intent,
             )
         }
-        OP_MULTIPLEX => {
+        OP_CALL => {
             if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
+            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
             execute_multiplex(
                 deps,
                 env,
@@ -1646,7 +1501,7 @@ fn execute_multiplex(
     relayer: Addr,
     relayer_msg: Bytes,
     path: U256,
-    multiplex: Multiplex,
+    multiplex: Call,
     intent: bool,
 ) -> Result<Response, ContractError> {
     let contract_address = deps
@@ -1655,7 +1510,7 @@ fn execute_multiplex(
             str::from_utf8(&multiplex.contract_address)
                 .map_err(|_| ContractError::InvalidContractAddress)?,
         )
-        .map_err(|_| ContractError::UnableToValidateMultiplexTarget)?;
+        .map_err(|_| ContractError::UnableToValidateCallTarget)?;
 
     if multiplex.eureka {
         // Create a virtual packet with the multiplex data, consistent with ack and timeout handling
@@ -1844,7 +1699,7 @@ fn market_maker_fill_v2(
     relayer_msg: Bytes,
     minter: Addr,
     packet: Packet,
-    order: FungibleAssetOrderV2,
+    order: TokenOrderV2,
     intent: bool,
 ) -> Result<Response, ContractError> {
     MARKET_MAKER.save(deps.storage, &relayer_msg)?;
@@ -1852,7 +1707,7 @@ fn market_maker_fill_v2(
         .map_err(|_| ContractError::InvalidQuoteToken)?;
     let is_solver = deps
         .querier
-        .query_wasm_smart::<()>(quote_token_str.clone(), &SolverQuery::IsSolver {})
+        .query_wasm_smart::<()>(quote_token_str.clone(), &SolverQuery::IsSolver)
         .is_ok();
     let mut messages = Vec::with_capacity(if is_solver { 1 } else { 2 });
     if is_solver {
@@ -1944,7 +1799,7 @@ fn execute_fungible_asset_order(
     relayer_msg: Bytes,
     _salt: H256,
     path: U256,
-    order: FungibleAssetOrder,
+    order: TokenOrderV1,
     intent: bool,
 ) -> Result<Response, ContractError> {
     // Get the token minter contract
@@ -2079,11 +1934,12 @@ fn execute_fungible_asset_order(
         )?;
 
         // Decrease the outstanding balance for this channel and path
-        decrease_channel_balance(
+        decrease_channel_balance_v2(
             deps,
             packet.destination_channel_id,
             reverse_channel_path(path)?,
             quote_token_str.clone(),
+            order.base_token.clone().into(),
             base_amount.into(),
         )?;
 
@@ -2134,7 +1990,7 @@ fn execute_fungible_asset_order(
         .add_message(wasm_execute(
             env.contract.address,
             &ExecuteMsg::InternalWriteAck {
-                ack: FungibleAssetOrderAck {
+                ack: TokenOrderAck {
                     fill_type: FILL_TYPE_PROTOCOL,
                     market_maker: Default::default(),
                 }
@@ -2157,16 +2013,25 @@ fn execute_fungible_asset_order_v2(
     relayer_msg: Bytes,
     _salt: H256,
     path: U256,
-    order: FungibleAssetOrderV2,
+    order: TokenOrderV2,
     intent: bool,
 ) -> Result<Response, ContractError> {
-    // Get the token minter contract
-    let minter = TOKEN_MINTER.load(deps.storage)?;
+    // Extract quote token and receiver (EVM: address quoteToken = address(bytes20(order.quoteToken)))
+    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
+        .map_err(|_| ContractError::InvalidQuoteToken)?;
+    let receiver = deps
+        .api
+        .addr_validate(
+            str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
+        )
+        .map_err(|_| ContractError::UnableToValidateReceiver)?;
 
+    // For intent packets, only market maker can fill
     if intent {
+        let minter = TOKEN_MINTER.load(deps.storage)?;
         return market_maker_fill_v2(
             deps,
-            env.clone(),
+            env,
             funds,
             caller,
             relayer,
@@ -2177,276 +2042,222 @@ fn execute_fungible_asset_order_v2(
             intent,
         );
     }
-    // Convert quote token to string for comparison
-    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
-        .map_err(|_| ContractError::InvalidQuoteToken)?;
-    // Validate the receiver address
-    let receiver = deps
-        .api
-        .addr_validate(
-            str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
+
+    let base_amount_covers_quote_amount = order.base_amount >= order.quote_amount;
+
+    // Direct unescrow path (EVM: order.kind == TOKEN_ORDER_KIND_UNESCROW && baseAmountCoversQuoteAmount)
+    if order.kind == TOKEN_ORDER_KIND_UNESCROW && base_amount_covers_quote_amount {
+        let base_amount =
+            u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+        let quote_amount =
+            u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+        rate_limit(
+            deps.storage,
+            quote_token_str.clone(),
+            quote_amount,
+            env.block.time.seconds(),
+        )?;
+
+        protocol_fill_unescrow_v2(
+            deps,
+            env,
+            packet.destination_channel_id,
+            path,
+            Vec::from(order.base_token.clone()).into(),
+            quote_token_str,
+            receiver,
+            relayer,
+            base_amount.into(),
+            quote_amount.into(),
         )
-        .map_err(|_| ContractError::UnableToValidateReceiver)?;
-    // Calculate amounts
-    let base_amount =
-        u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
-    let quote_amount =
-        u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
-    let base_covers_quote = base_amount >= quote_amount;
-    let fee_amount = base_amount.saturating_sub(quote_amount);
+    } else {
+        let minter = TOKEN_MINTER.load(deps.storage)?;
+        let mut wrapped_token: Option<String> = None;
+
+        // Decode metadata (EVM: ZkgmLib.decodeTokenMetadata(order.metadata))
+        let metadata = TokenMetadata::abi_decode_params_validate(&order.metadata).ok();
+
+        if order.kind == TOKEN_ORDER_KIND_ESCROW {
+            // Get metadata image for quote token (EVM: metadataImageOf[quoteToken])
+            let metadata_image = METADATA_IMAGE_OF
+                .may_load(deps.storage, quote_token_str.clone())?
+                .unwrap_or_default();
+
+            if metadata_image.is_zero() {
+                // V1 prediction
+                let (pred_wrapped, _) = predict_wrapped_token(
+                    deps.as_ref(),
+                    &minter,
+                    path,
+                    packet.destination_channel_id,
+                    Vec::from(order.base_token.clone()).into(),
+                )?;
+                wrapped_token = Some(pred_wrapped);
+            } else {
+                // V2 prediction
+                let (pred_wrapped, _) = predict_wrapped_token_from_metadata_image_v2(
+                    deps.as_ref(),
+                    &minter,
+                    path,
+                    packet.destination_channel_id,
+                    Vec::from(order.base_token.clone()).into(),
+                    metadata_image,
+                )?;
+                wrapped_token = Some(pred_wrapped);
+            }
+        } else if order.kind == TOKEN_ORDER_KIND_INITIALIZE {
+            if let Some(ref metadata) = metadata {
+                let (pred_wrapped, _) = predict_wrapped_token_v2(
+                    deps.as_ref(),
+                    &minter,
+                    path,
+                    packet.destination_channel_id,
+                    Vec::from(order.base_token.clone()).into(),
+                    metadata.clone(),
+                )?;
+                wrapped_token = Some(pred_wrapped);
+            }
+        }
+
+        // Protocol fill if quote token matches wrapped token and base covers quote
+        if let Some(wrapped_denom) = wrapped_token {
+            if quote_token_str == wrapped_denom && base_amount_covers_quote_amount {
+                let base_amount =
+                    u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+                let quote_amount = u128::try_from(order.quote_amount)
+                    .map_err(|_| ContractError::AmountOverflow)?;
+
+                rate_limit(
+                    deps.storage,
+                    quote_token_str.clone(),
+                    quote_amount,
+                    env.block.time.seconds(),
+                )?;
+
+                // The asset can only be deployed if the metadata preimage is provided
+                let can_deploy = order.kind == TOKEN_ORDER_KIND_INITIALIZE;
+
+                return protocol_fill_mint(
+                    deps,
+                    env,
+                    packet.destination_channel_id,
+                    path,
+                    Vec::from(order.base_token.clone()).into(),
+                    wrapped_denom,
+                    receiver,
+                    relayer,
+                    base_amount.into(),
+                    quote_amount.into(),
+                    metadata,
+                    can_deploy,
+                );
+            }
+        }
+
+        // Fall back to market maker fill
+        market_maker_fill_v2(
+            deps,
+            env,
+            funds,
+            caller,
+            relayer,
+            relayer_msg,
+            minter,
+            packet,
+            order,
+            intent,
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn protocol_fill_mint(
+    deps: DepsMut,
+    env: Env,
+    channel_id: ChannelId,
+    path: U256,
+    base_token: Bytes,
+    wrapped_token: String,
+    receiver: Addr,
+    relayer: Addr,
+    base_amount: Uint256,
+    quote_amount: Uint256,
+    metadata: Option<TokenMetadata>,
+    can_deploy: bool,
+) -> Result<Response, ContractError> {
+    let minter = TOKEN_MINTER.load(deps.storage)?;
     let mut messages = Vec::new();
 
-    // Handle different metadata types
-    match order.metadata_type {
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE => {
-            // Handle image metadata type (hash only)
-            // If the token is native to this chain, decrease the channel balance and unescrow
-            let metadata_image = H256::try_from(order.metadata.0.as_ref())
-                .map_err(|_| ContractError::InvalidMetadataType)?;
+    let fee_amount = base_amount
+        .checked_sub(quote_amount)
+        .map_err(|_| ContractError::AmountOverflow)?;
 
-            // Check if this is a V1 token (for backward compatibility)
-            let is_v1 = metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-
-            // Predict the wrapped token denom
-            let (wrapped_denom, _) = if is_v1 {
-                predict_wrapped_token(
-                    deps.as_ref(),
-                    &minter,
-                    path,
-                    packet.destination_channel_id,
-                    Vec::from(order.base_token.clone()).into(),
-                )?
-            } else {
-                // For V2 tokens with image metadata, we need to implement a V2 prediction function
-                predict_wrapped_token_from_metadata_image_v2(
-                    deps.as_ref(),
-                    &minter,
-                    path,
-                    packet.destination_channel_id,
-                    Vec::from(order.base_token.clone()).into(),
-                    metadata_image,
-                )?
-            };
-
-            if quote_token_str == wrapped_denom && base_covers_quote {
-                // Protocol Fill - mint wrapped tokens
-                rate_limit(
-                    deps.storage,
-                    wrapped_denom.clone(),
-                    quote_amount,
-                    env.block.time.seconds(),
-                )?;
-
-                // For new assets: Deploy wrapped token contract and mint quote amount to receiver
-                if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
-                    return Err(ContractError::WrappedTokenNotDeployed);
-                }
-
-                // Mint the quote amount to the receiver
-                if quote_amount > 0 {
-                    messages.push(SubMsg::reply_never(make_wasm_msg(
-                        WrappedTokenMsg::MintTokens {
-                            denom: wrapped_denom.clone(),
-                            amount: quote_amount.into(),
-                            mint_to_address: receiver,
-                        },
-                        &minter,
-                        vec![],
-                    )?));
-                }
-
-                // Mint any fee to the relayer
-                if fee_amount > 0 {
-                    messages.push(SubMsg::reply_never(make_wasm_msg(
-                        WrappedTokenMsg::MintTokens {
-                            denom: wrapped_denom,
-                            amount: fee_amount.into(),
-                            mint_to_address: relayer,
-                        },
-                        &minter,
-                        vec![],
-                    )?));
-                }
-            } else {
-                // Market Maker Fill
-                return market_maker_fill_v2(
-                    deps,
-                    env.clone(),
-                    funds,
-                    caller,
-                    relayer,
-                    relayer_msg,
-                    minter,
-                    packet,
-                    order,
-                    intent,
-                );
-            }
-        }
-        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE => {
-            // Handle preimage metadata type (full metadata)
-            let metadata = FungibleAssetMetadata::abi_decode_params_validate(&order.metadata)?;
-
-            // Predict the wrapped token denom based on metadata
-            let (wrapped_denom, _) = predict_wrapped_token_v2(
-                deps.as_ref(),
-                &minter,
-                path,
-                packet.destination_channel_id,
-                Vec::from(order.base_token.clone()).into(),
-                metadata.clone(),
-            )?;
-
-            if quote_token_str == wrapped_denom && base_covers_quote {
-                // Protocol Fill - mint wrapped tokens
-                rate_limit(
-                    deps.storage,
-                    wrapped_denom.clone(),
-                    quote_amount,
-                    env.block.time.seconds(),
-                )?;
-
-                // For new assets: Deploy wrapped token contract and mint quote amount to receiver
-                if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
-                    // Create the wrapped token if it doesn't exist
-                    HASH_TO_FOREIGN_TOKEN.save(
-                        deps.storage,
-                        wrapped_denom.clone(),
-                        &Vec::from(order.base_token.clone()).into(),
-                    )?;
-
-                    // Create the token with metadata from the preimage
-                    messages.push(SubMsg::reply_never(make_wasm_msg(
-                        WrappedTokenMsg::CreateDenomV2 {
-                            subdenom: wrapped_denom.clone(),
-                            path: path.to_be_bytes_vec().into(),
-                            channel_id: packet.destination_channel_id,
-                            token: Vec::from(order.base_token.clone()).into(),
-                            implementation: metadata.implementation.to_vec().into(),
-                            initializer: metadata.initializer.to_vec().into(),
-                        },
-                        &minter,
-                        vec![],
-                    )?));
-
-                    // Save the token origin for future unwrapping
-                    TOKEN_ORIGIN.save(
-                        deps.storage,
-                        wrapped_denom.clone(),
-                        &Uint256::from_be_bytes(
-                            update_channel_path(path, packet.destination_channel_id)?.to_be_bytes(),
-                        ),
-                    )?;
-                }
-
-                // Mint the quote amount to the receiver
-                if quote_amount > 0 {
-                    messages.push(SubMsg::reply_never(make_wasm_msg(
-                        WrappedTokenMsg::MintTokens {
-                            denom: wrapped_denom.clone(),
-                            amount: quote_amount.into(),
-                            mint_to_address: receiver,
-                        },
-                        &minter,
-                        vec![],
-                    )?));
-                }
-
-                // Mint any fee to the relayer
-                if fee_amount > 0 {
-                    messages.push(SubMsg::reply_never(make_wasm_msg(
-                        WrappedTokenMsg::MintTokens {
-                            denom: wrapped_denom,
-                            amount: fee_amount.into(),
-                            mint_to_address: relayer,
-                        },
-                        &minter,
-                        vec![],
-                    )?));
-                }
-            } else {
-                // Market Maker Fill
-                return market_maker_fill_v2(
-                    deps,
-                    env.clone(),
-                    funds,
-                    caller,
-                    relayer,
-                    relayer_msg,
-                    minter,
-                    packet,
-                    order,
-                    intent,
-                );
-            }
-        }
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP => {
-            if !base_covers_quote {
-                return Err(ContractError::BaseAmountLessThanQuoteAmount);
-            }
-
-            // Handle unwrapping case
-            let metadata_image = H256::try_from(order.metadata.0.as_ref())
-                .map_err(|_| ContractError::InvalidMetadataType)?;
-
-            // Check if this is a V1 token (for backward compatibility)
-            let is_v1 = metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-
-            // Ensure rate limit is respected
-            rate_limit(
+    // Deploy wrapped token if needed and can deploy
+    if can_deploy && !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_token.clone()) {
+        if let Some(metadata) = metadata {
+            // Create the wrapped token if it doesn't exist
+            HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
-                quote_token_str.clone(),
-                quote_amount,
-                env.block.time.seconds(),
+                wrapped_token.clone(),
+                &Vec::from(base_token.clone()).into(),
             )?;
 
-            // Decrease the outstanding balance for this channel and path
-            if is_v1 {
-                decrease_channel_balance(
-                    deps,
-                    packet.destination_channel_id,
-                    reverse_channel_path(path)?,
-                    quote_token_str.clone(),
-                    base_amount.into(),
-                )?;
-            } else {
-                decrease_channel_balance_v2(
-                    deps,
-                    packet.destination_channel_id,
-                    reverse_channel_path(path)?,
-                    quote_token_str.clone(),
-                    metadata_image,
-                    base_amount.into(),
-                )?;
-            }
+            // Create the token with metadata from the preimage
+            messages.push(SubMsg::reply_never(make_wasm_msg(
+                WrappedTokenMsg::CreateDenomV2 {
+                    subdenom: wrapped_token.clone(),
+                    path: path.to_be_bytes::<32>().to_vec().into(),
+                    channel_id,
+                    token: Vec::from(base_token.clone()).into(),
+                    implementation: metadata.implementation.to_vec().into(),
+                    initializer: metadata.initializer.to_vec().into(),
+                },
+                &minter,
+                vec![],
+            )?));
 
-            // Transfer the quote amount to the receiver
-            if quote_amount > 0 {
-                messages.push(SubMsg::reply_never(make_wasm_msg(
-                    LocalTokenMsg::Unescrow {
-                        denom: quote_token_str.clone(),
-                        recipient: receiver.into_string(),
-                        amount: quote_amount.into(),
-                    },
-                    &minter,
-                    vec![],
-                )?));
-            }
+            // Save the token origin for future unwrapping
+            TOKEN_ORIGIN.save(
+                deps.storage,
+                wrapped_token.clone(),
+                &Uint256::from_be_bytes(update_channel_path(path, channel_id)?.to_be_bytes()),
+            )?;
 
-            // Transfer any fee to the relayer
-            if fee_amount > 0 {
-                messages.push(SubMsg::reply_never(make_wasm_msg(
-                    LocalTokenMsg::Unescrow {
-                        denom: quote_token_str,
-                        recipient: relayer.into_string(),
-                        amount: fee_amount.into(),
-                    },
-                    &minter,
-                    vec![],
-                )?));
-            }
+            // Save metadata image
+            METADATA_IMAGE_OF.save(
+                deps.storage,
+                wrapped_token.clone(),
+                &keccak256(metadata.abi_encode_params()),
+            )?;
         }
-        _ => return Err(ContractError::InvalidMetadataType),
+    }
+
+    // Mint the quote amount to the receiver
+    if !quote_amount.is_zero() {
+        messages.push(SubMsg::reply_never(make_wasm_msg(
+            WrappedTokenMsg::MintTokens {
+                denom: wrapped_token.clone(),
+                amount: Uint128::try_from(quote_amount)
+                    .map_err(|_| ContractError::AmountOverflow)?,
+                mint_to_address: receiver,
+            },
+            &minter,
+            vec![],
+        )?));
+    }
+
+    // Mint any fee to the relayer
+    if !fee_amount.is_zero() {
+        messages.push(SubMsg::reply_never(make_wasm_msg(
+            WrappedTokenMsg::MintTokens {
+                denom: wrapped_token,
+                amount: Uint128::try_from(fee_amount).map_err(|_| ContractError::AmountOverflow)?,
+                mint_to_address: relayer,
+            },
+            &minter,
+            vec![],
+        )?));
     }
 
     // Return success acknowledgement with protocol fill type
@@ -2455,7 +2266,82 @@ fn execute_fungible_asset_order_v2(
         .add_message(wasm_execute(
             env.contract.address,
             &ExecuteMsg::InternalWriteAck {
-                ack: FungibleAssetOrderAck {
+                ack: TokenOrderAck {
+                    fill_type: FILL_TYPE_PROTOCOL,
+                    market_maker: Default::default(),
+                }
+                .abi_encode_params()
+                .into(),
+            },
+            vec![],
+        )?))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn protocol_fill_unescrow_v2(
+    deps: DepsMut,
+    env: Env,
+    channel_id: ChannelId,
+    path: U256,
+    base_token: Bytes,
+    quote_token_str: String,
+    receiver: Addr,
+    relayer: Addr,
+    base_amount: Uint256,
+    quote_amount: Uint256,
+) -> Result<Response, ContractError> {
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+    let mut messages = Vec::new();
+
+    let fee_amount = base_amount
+        .checked_sub(quote_amount)
+        .map_err(|_| ContractError::AmountOverflow)?;
+
+    // If the base token path is being unwrapped, it's escrowed balance will be non zero.
+    // EVM: _decreaseOutstandingV2(channelId, ZkgmLib.reverseChannelPath(path), quoteToken, baseToken, baseAmount)
+    decrease_channel_balance_v2(
+        deps,
+        channel_id,
+        reverse_channel_path(path)?,
+        quote_token_str.clone(), // EVM param: quoteToken (address) -> EVM function param: baseToken
+        base_token,              // EVM param: baseToken (bytes) -> EVM function param: quoteToken
+        base_amount,
+    )?;
+
+    // Transfer the quote amount to the receiver
+    if !quote_amount.is_zero() {
+        messages.push(SubMsg::reply_never(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: quote_token_str.clone(),
+                recipient: receiver.into_string(),
+                amount: Uint128::try_from(quote_amount)
+                    .map_err(|_| ContractError::AmountOverflow)?,
+            },
+            &minter,
+            vec![],
+        )?));
+    }
+
+    // Transfer any fee to the relayer
+    if !fee_amount.is_zero() {
+        messages.push(SubMsg::reply_never(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: quote_token_str,
+                recipient: relayer.into_string(),
+                amount: Uint128::try_from(fee_amount).map_err(|_| ContractError::AmountOverflow)?,
+            },
+            &minter,
+            vec![],
+        )?));
+    }
+
+    // Return success acknowledgement with protocol fill type
+    Ok(Response::new()
+        .add_submessages(messages)
+        .add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: TokenOrderAck {
                     fill_type: FILL_TYPE_PROTOCOL,
                     market_maker: Default::default(),
                 }
@@ -2489,7 +2375,6 @@ fn execute_stake(
         str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&stake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
-    let governance_token_metadata_image = stake.governance_metadata_image.0.into();
     let stake_amount = u128::try_from(stake.amount).map_err(|_| ContractError::AmountOverflow)?;
 
     let stake_account = predict_stake_account(
@@ -2546,25 +2431,15 @@ fn execute_stake(
 
     // 2. Unescrow the gov tokens to the stake account.
     let minter = TOKEN_MINTER.load(deps.storage)?;
-    let is_v1 = governance_token_metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-    if is_v1 {
-        decrease_channel_balance(
-            deps,
-            packet.destination_channel_id,
-            U256::ZERO,
-            governance_token.into(),
-            stake_amount.into(),
-        )?;
-    } else {
-        decrease_channel_balance_v2(
-            deps,
-            packet.destination_channel_id,
-            U256::ZERO,
-            governance_token.into(),
-            governance_token_metadata_image,
-            stake_amount.into(),
-        )?;
-    }
+    decrease_channel_balance_v2(
+        deps,
+        packet.destination_channel_id,
+        U256::ZERO,
+        governance_token.into(),
+        stake.governance_token_wrapped.0.to_vec().into(),
+        stake_amount.into(),
+    )?;
+
     messages.push(make_wasm_msg(
         LocalTokenMsg::Unescrow {
             denom: governance_token.into(),
@@ -2681,10 +2556,10 @@ fn execute_withdraw_stake(
             vec![],
         )?));
     }
+    let minter = TOKEN_MINTER.load(deps.storage)?;
 
     let governance_token = str::from_utf8(&withdraw_stake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
-    let governance_token_metadata_image = withdraw_stake.governance_metadata_image.0.into();
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2697,28 +2572,14 @@ fn execute_withdraw_stake(
         .querier
         .query_balance(stake_account.clone(), governance_token)?;
 
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-
-    let is_v1 = governance_token_metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-    // The amount will be unescrowed + minted (for additional reward) on the counterparty
-    if is_v1 {
-        increase_channel_balance(
-            deps.storage,
-            packet.destination_channel_id,
-            U256::ZERO,
-            governance_token.to_string(),
-            coin.amount.u128().into(),
-        )?;
-    } else {
-        increase_channel_balance_v2(
-            deps.storage,
-            packet.destination_channel_id,
-            U256::ZERO,
-            governance_token.to_string(),
-            governance_token_metadata_image,
-            coin.amount.u128().into(),
-        )?;
-    }
+    increase_channel_balance_v2(
+        deps.storage,
+        packet.destination_channel_id,
+        U256::ZERO,
+        governance_token.to_string(),
+        withdraw_stake.governance_token_wrapped.0.to_vec().into(),
+        coin.amount.u128().into(),
+    )?;
 
     Ok(Response::new()
         .add_message(wasm_execute(
@@ -2763,12 +2624,12 @@ fn execute_withdraw_rewards(
             vec![],
         )?));
     }
+    let minter = TOKEN_MINTER.load(deps.storage)?;
 
     let validator =
         str::from_utf8(&withdraw_rewards.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&withdraw_rewards.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
-    let governance_token_metadata_image = withdraw_rewards.governance_metadata_image.0.into();
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2795,28 +2656,14 @@ fn execute_withdraw_rewards(
         governance_token,
     );
 
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-
-    // The amount will be minted on the counterparty
-    let is_v1 = governance_token_metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
-    if is_v1 {
-        increase_channel_balance(
-            deps.storage,
-            packet.destination_channel_id,
-            U256::ZERO,
-            governance_token.to_string(),
-            reward.amount.u128().into(),
-        )?;
-    } else {
-        increase_channel_balance_v2(
-            deps.storage,
-            packet.destination_channel_id,
-            U256::ZERO,
-            governance_token.to_string(),
-            governance_token_metadata_image,
-            reward.amount.u128().into(),
-        )?;
-    }
+    increase_channel_balance_v2(
+        deps.storage,
+        packet.destination_channel_id,
+        U256::ZERO,
+        governance_token.to_string(),
+        withdraw_rewards.governance_token_wrapped.0.to_vec().into(),
+        reward.amount.u128().into(),
+    )?;
 
     Ok(Response::new()
         .add_message(wasm_execute(
@@ -2875,7 +2722,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                                 // Ensure all acknowledgements has been written
                                 // This is guaranteed because allowed
                                 // instructions are always yielding an ack in
-                                // this case (multiplex/fungibleAssetOrder). We keep this assertion for future upgrades.
+                                // this case (call/token order). We keep this assertion for future upgrades.
                                 if acks.len() != expected_acks {
                                     return Err(ContractError::BatchMustBeSync);
                                 }
@@ -2994,7 +2841,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
 
                     // If the acknowledgement is empty, we can't proceed
                     if acknowledgement.is_empty() {
-                        return Err(ContractError::AsyncMultiplexUnsupported);
+                        return Err(ContractError::AsyncCallUnsupported);
                     }
 
                     Ok(Response::new().add_message(wasm_execute(
@@ -3005,7 +2852,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                         vec![],
                     )?))
                 }
-                SubMsgResult::Err(error) => Err(ContractError::MultiplexError { error }),
+                SubMsgResult::Err(error) => Err(ContractError::CallError { error }),
             }
         }
         MM_FILL_REPLY_ID => {
@@ -3015,7 +2862,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                 SubMsgResult::Ok(_) => Ok(Response::new().add_message(wasm_execute(
                     env.contract.address,
                     &ExecuteMsg::InternalWriteAck {
-                        ack: FungibleAssetOrderAck {
+                        ack: TokenOrderAck {
                             fill_type: FILL_TYPE_MARKETMAKER,
                             market_maker: Vec::from(market_maker).into(),
                         }
@@ -3088,16 +2935,14 @@ pub fn verify_internal(
     response: &mut Response,
 ) -> Result<(), ContractError> {
     match instruction.opcode {
-        OP_FUNGIBLE_ASSET_ORDER => match instruction.version {
+        OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
-                let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
+                let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
                 verify_fungible_asset_order(deps, info, funds, channel_id, path, &order, response)
             }
             INSTR_VERSION_2 => {
-                let order = FungibleAssetOrderV2::abi_decode_params_validate(&instruction.operand)?;
-                verify_fungible_asset_order_v2(
-                    deps, info, funds, channel_id, path, &order, response,
-                )
+                let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
+                verify_token_order_v2(deps, info, funds, channel_id, path, &order, response)
             }
             _ => Err(ContractError::UnsupportedVersion {
                 version: instruction.version,
@@ -3121,13 +2966,13 @@ pub fn verify_internal(
             let forward = Forward::abi_decode_params_validate(&instruction.operand)?;
             verify_forward(deps, info, funds, channel_id, &forward, response)
         }
-        OP_MULTIPLEX => {
+        OP_CALL => {
             if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
+            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
             verify_multiplex(&multiplex, info.sender, response)
         }
         _ => Err(ContractError::UnknownOpcode {
@@ -3145,7 +2990,7 @@ pub fn verify_fungible_asset_order(
     funds: &mut Coins,
     channel_id: ChannelId,
     path: U256,
-    order: &FungibleAssetOrder,
+    order: &TokenOrderV1,
     response: &mut Response,
 ) -> Result<(), ContractError> {
     // Validate and get base token address
@@ -3252,11 +3097,12 @@ pub fn verify_fungible_asset_order(
                 expected: U256::ZERO,
             });
         }
-        increase_channel_balance(
+        increase_channel_balance_v2(
             deps.storage,
             channel_id,
             path,
             base_token_str.to_string(),
+            order.quote_token.clone().into(),
             base_amount,
         )?;
         *response = response.clone().add_message(make_wasm_msg(
@@ -3335,7 +3181,7 @@ pub fn verify_forward(
 /// Verifies a multiplex instruction by checking the sender matches the transaction sender.
 /// This prevents unauthorized parties from impersonating others in multiplex operations.
 pub fn verify_multiplex(
-    multiplex: &Multiplex,
+    multiplex: &Call,
     sender: Addr,
     _response: &mut Response,
 ) -> Result<(), ContractError> {
@@ -3343,19 +3189,19 @@ pub fn verify_multiplex(
     let multiplex_sender =
         str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?;
     if multiplex_sender != sender.as_str() {
-        return Err(ContractError::InvalidMultiplexSender);
+        return Err(ContractError::InvalidCallSender);
     }
     Ok(())
 }
 
 /// Checks if an opcode is allowed in a batch instruction
 fn is_allowed_batch_instruction(opcode: u8) -> bool {
-    opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+    opcode == OP_CALL || opcode == OP_TOKEN_ORDER
 }
 
 /// Checks if an opcode is allowed in a forward instruction
 fn is_allowed_forward_instruction(opcode: u8) -> bool {
-    opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER || opcode == OP_BATCH
+    opcode == OP_CALL || opcode == OP_TOKEN_ORDER || opcode == OP_BATCH
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -3545,9 +3391,28 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             path,
             denom,
         } => {
-            let balance = CHANNEL_BALANCE.load(
+            let balance = DEPRECATED_CHANNEL_BALANCE_V1.load(
                 deps.storage,
                 (channel_id.get().into(), path.to_be_bytes().into(), denom),
+            )?;
+            Ok(to_json_binary(&balance)?)
+        }
+        QueryMsg::GetChannelBalanceV2 {
+            channel_id,
+            path,
+            base_token,
+            quote_token,
+        } => {
+            let balance = CHANNEL_BALANCE_V2.load(
+                deps.storage,
+                (
+                    channel_id.get().into(),
+                    (
+                        path.to_be_bytes().into(),
+                        base_token,
+                        quote_token.into_vec(),
+                    ),
+                ),
             )?;
             Ok(to_json_binary(&balance)?)
         }
@@ -3579,73 +3444,25 @@ fn rate_limit(
     Ok(())
 }
 
-/// Increases the outstanding balance for a (channel, path, token) combination.
-/// This is used when escrowing tokens to track how many tokens can be unescrowed later.
-/// The balance is used to prevent double-spending and ensure token conservation across chains.
-pub fn increase_channel_balance(
-    storage: &mut dyn Storage,
-    channel_id: ChannelId,
-    path: U256,
-    base_token: String,
-    base_amount: Uint256,
-) -> Result<(), ContractError> {
-    CHANNEL_BALANCE.update(
-        storage,
-        (
-            channel_id.raw(),
-            path.to_be_bytes::<32>().to_vec(),
-            base_token,
-        ),
-        |balance| match balance {
-            Some(value) => value
-                .checked_add(base_amount)
-                .map_err(|_| ContractError::InvalidChannelBalance),
-            None => Ok(base_amount),
-        },
-    )?;
-    Ok(())
-}
-
-/// Decrease the outstanding balance of a (channel, path, token) combination.
-/// This is used when unwrapping tokens to ensure we don't unescrow more tokens than were originally escrowed.
-fn decrease_channel_balance(
-    deps: DepsMut,
-    channel_id: ChannelId,
-    path: U256,
-    token: String,
-    amount: Uint256,
-) -> Result<(), ContractError> {
-    CHANNEL_BALANCE.update(
-        deps.storage,
-        (channel_id.raw(), path.to_be_bytes::<32>().to_vec(), token),
-        |balance| match balance {
-            Some(value) => value
-                .checked_sub(amount)
-                .map_err(|_| ContractError::InvalidChannelBalance),
-            None => Err(ContractError::InvalidChannelBalance),
-        },
-    )?;
-    Ok(())
-}
-
-/// Decrease the outstanding balance of a (channel, path, token, metadata_image) combination for V2 tokens.
+/// Decrease the outstanding balance of a (channel, path, base_token, quote_token) combination for V2 tokens.
+/// Matches EVM: _decreaseOutstandingV2(uint32 sourceChannelId, uint256 path, address baseToken, bytes calldata quoteToken, uint256 amount)
 pub fn decrease_channel_balance_v2(
     deps: DepsMut,
     channel_id: ChannelId,
     path: U256,
-    token: String,
-    metadata_image: H256,
+    base_token: String, // EVM: address baseToken
+    quote_token: Bytes, // EVM: bytes calldata quoteToken
     amount: Uint256,
 ) -> Result<(), ContractError> {
-    // For V2 tokens, we need to track balances with metadata image
+    // Storage key: channelBalanceV2[sourceChannelId][path][baseToken][quoteToken]
     CHANNEL_BALANCE_V2.update(
         deps.storage,
         (
             channel_id.raw(),
             (
                 path.to_be_bytes::<32>().to_vec(),
-                token,
-                metadata_image.get().to_vec(),
+                base_token,
+                quote_token.to_vec(),
             ),
         ),
         |balance| match balance {
@@ -3658,15 +3475,17 @@ pub fn decrease_channel_balance_v2(
     Ok(())
 }
 
-/// Increase the outstanding balance for a (channel, path, token, metadata_image) combination for V2 tokens.
+/// Increase the outstanding balance for a (channel, path, base_token, quote_token) combination for V2 tokens.
+/// Matches EVM: _increaseOutstandingV2(uint32 sourceChannelId, uint256 path, address baseToken, bytes calldata quoteToken, uint256 amount)
 pub fn increase_channel_balance_v2(
     storage: &mut dyn Storage,
     channel_id: ChannelId,
     path: U256,
-    base_token: String,
-    metadata_image: H256,
-    base_amount: Uint256,
+    base_token: String, // EVM: address baseToken
+    quote_token: Bytes, // EVM: bytes calldata quoteToken
+    amount: Uint256,
 ) -> Result<(), ContractError> {
+    // Storage key: channelBalanceV2[sourceChannelId][path][baseToken][quoteToken]
     CHANNEL_BALANCE_V2.update(
         storage,
         (
@@ -3674,14 +3493,14 @@ pub fn increase_channel_balance_v2(
             (
                 path.to_be_bytes::<32>().to_vec(),
                 base_token,
-                metadata_image.get().to_vec(),
+                quote_token.to_vec(),
             ),
         ),
         |balance| match balance {
             Some(value) => value
-                .checked_add(base_amount)
+                .checked_add(amount)
                 .map_err(|_| ContractError::InvalidChannelBalance),
-            None => Ok(base_amount),
+            None => Ok(amount),
         },
     )?;
     Ok(())
@@ -3724,7 +3543,7 @@ fn predict_wrapped_token_v2(
     path: U256,
     channel_id: ChannelId,
     token: Bytes,
-    metadata: FungibleAssetMetadata,
+    metadata: TokenMetadata,
 ) -> StdResult<(String, Bytes)> {
     // Hash the metadata to get the metadata image
     let metadata_bytes = metadata.abi_encode_params();
@@ -3829,6 +3648,57 @@ pub fn is_forwarded_packet(salt: H256) -> bool {
 
 pub fn derive_forward_salt(salt: H256) -> H256 {
     tint_forward_salt(keccak256(salt.abi_encode()))
+}
+
+fn migrate_v1_to_v2(
+    deps: DepsMut,
+    migrations: Vec<V1ToV2Migration>,
+) -> Result<Response, ContractError> {
+    let migration_count = migrations.len();
+    for migration in migrations {
+        let key = (
+            migration.channel_id.raw(),
+            migration.path.to_be_bytes().to_vec(),
+            migration.base_token.clone(),
+        );
+
+        let balance = DEPRECATED_CHANNEL_BALANCE_V1.may_load(deps.storage, key.clone())?;
+
+        if let Some(balance) = balance {
+            if balance.is_zero() {
+                return Err(StdError::generic_err("no balance").into());
+            }
+
+            // Remove from V1 storage
+            DEPRECATED_CHANNEL_BALANCE_V1.remove(deps.storage, key);
+
+            // Add to V2 storage
+            CHANNEL_BALANCE_V2.update(
+                deps.storage,
+                (
+                    migration.channel_id.raw(),
+                    (
+                        migration.path.to_be_bytes().to_vec(),
+                        migration.base_token,
+                        migration.quote_token.to_vec(),
+                    ),
+                ),
+                |existing_balance| match existing_balance {
+                    Some(existing) => existing
+                        .checked_add(balance)
+                        .map_err(|_| ContractError::InvalidChannelBalance),
+                    None => Ok(balance),
+                },
+            )?;
+        } else {
+            return Err(StdError::generic_err("no balance").into());
+        }
+    }
+
+    Ok(Response::new().add_event(
+        Event::new("v1_to_v2_migration")
+            .add_attribute("migration_count", migration_count.to_string()),
+    ))
 }
 
 pub fn encode_multiplex_calldata(path: U256, sender: Bytes, contract_calldata: Bytes) -> Vec<u8> {

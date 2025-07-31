@@ -19,7 +19,7 @@ struct Forward {
     Instruction instruction;
 }
 
-struct Multiplex {
+struct Call {
     bytes sender;
     bool eureka;
     bytes contractAddress;
@@ -30,7 +30,7 @@ struct Batch {
     Instruction[] instructions;
 }
 
-struct FungibleAssetOrder {
+struct TokenOrderV1 {
     bytes sender;
     bytes receiver;
     bytes baseToken;
@@ -43,18 +43,18 @@ struct FungibleAssetOrder {
     uint256 quoteAmount;
 }
 
-struct FungibleAssetOrderV2 {
+struct TokenOrderV2 {
     bytes sender;
     bytes receiver;
     bytes baseToken;
     uint256 baseAmount;
-    uint8 metadataType;
-    bytes metadata;
     bytes quoteToken;
     uint256 quoteAmount;
+    uint8 kind;
+    bytes metadata;
 }
 
-struct FungibleAssetMetadata {
+struct TokenMetadata {
     bytes implementation;
     bytes initializer;
 }
@@ -62,7 +62,7 @@ struct FungibleAssetMetadata {
 struct Stake {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes sender;
     bytes beneficiary;
     bytes validator;
@@ -72,7 +72,7 @@ struct Stake {
 struct Unstake {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes sender;
     bytes validator;
 }
@@ -80,7 +80,7 @@ struct Unstake {
 struct WithdrawStake {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes sender;
     bytes beneficiary;
 }
@@ -88,7 +88,7 @@ struct WithdrawStake {
 struct WithdrawRewards {
     uint256 tokenId;
     bytes governanceToken;
-    bytes32 governanceTokenMetadataImage;
+    bytes governanceTokenWrapped;
     bytes validator;
     bytes sender;
     bytes beneficiary;
@@ -103,7 +103,7 @@ struct BatchAck {
     bytes[] acknowledgements;
 }
 
-struct FungibleAssetOrderAck {
+struct TokenOrderAck {
     uint256 fillType;
     bytes marketMaker;
 }
@@ -151,4 +151,11 @@ struct ZkgmStake {
 struct GovernanceToken {
     bytes unwrappedToken;
     bytes32 metadataImage;
+}
+
+struct V1ToV2Migration {
+    uint32 channelId;
+    uint256 path;
+    address baseToken;
+    bytes quoteToken;
 }

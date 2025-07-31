@@ -334,9 +334,9 @@ contract ZkgmAuthorityTest is Test {
 
         Instruction memory instruction = Instruction({
             version: ZkgmLib.INSTR_VERSION_0,
-            opcode: ZkgmLib.OP_MULTIPLEX,
-            operand: ZkgmLib.encodeMultiplex(
-                Multiplex({
+            opcode: ZkgmLib.OP_CALL,
+            operand: ZkgmLib.encodeCall(
+                Call({
                     sender: abi.encodePacked(caller),
                     eureka: false,
                     contractAddress: abi.encodePacked(address(0x1234)),

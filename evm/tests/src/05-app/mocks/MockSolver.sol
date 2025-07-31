@@ -12,7 +12,7 @@ contract MockSolver is ISolver, ERC165 {
 
     struct SolveCall {
         IBCPacket packet;
-        FungibleAssetOrderV2 order;
+        TokenOrderV2 order;
         address caller;
         address relayer;
         bytes relayerMsg;
@@ -29,9 +29,13 @@ contract MockSolver is ISolver, ERC165 {
         shouldFail = _shouldFail;
     }
 
+    function allowMarketMakers() external override returns (bool) {
+        return true;
+    }
+
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
@@ -66,9 +70,13 @@ contract MockSolverWithU is ISolver, ERC165 {
         uToken = IERC20(_uToken);
     }
 
+    function allowMarketMakers() external override returns (bool) {
+        return true;
+    }
+
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,

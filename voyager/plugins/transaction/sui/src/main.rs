@@ -41,7 +41,7 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
 };
 use tracing::{info, instrument};
-use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
+use ucs03_zkgm::com::{TokenOrderV1, ZkgmPacket};
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes, U256},
     ErrorReporter,
@@ -659,7 +659,7 @@ async fn register_token_if_zkgm(
         return;
     };
 
-    let Ok(fao) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand) else {
+    let Ok(fao) = TokenOrderV1::abi_decode_params(&zkgm_packet.instruction.operand) else {
         return;
     };
 

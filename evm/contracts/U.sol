@@ -10,6 +10,7 @@ import "solady/utils/LibBytes.sol";
 
 import "./internal/Versioned.sol";
 import "./apps/ucs/03-zkgm/ISolver.sol";
+import "./core/04-channel/IBCPacket.sol";
 
 contract U is
     Initializable,
@@ -22,7 +23,7 @@ contract U is
     using LibBytes for *;
 
     error U_OnlyZkgm();
-    error U_IntentNotYetSupported();
+    error U_IntentWhitelistedOnly();
     error U_CounterpartyIsNotFungible();
     error U_BaseAmountMustCoverQuoteAmount();
     error U_InvalidCounterpartyBeneficiary();
@@ -42,6 +43,7 @@ contract U is
         // (channelId, baseToken) => FungibleCounterparty
         mapping(uint32 => mapping(bytes => FungibleCounterparty))
             fungibleCounterparties;
+        mapping(bytes32 => bool) intentWhitelist;
     }
 
     function _getUStorage() private pure returns (UStorage storage $) {
@@ -122,18 +124,32 @@ contract U is
         _getUStorage().fungibleCounterparties[channelId][token] = counterparty;
     }
 
+    function whitelistIntent(
+        bytes32[] calldata packetHashes,
+        bool whitelist
+    ) public restricted {
+        for (uint256 i = 0; i < packetHashes.length; i++) {
+            _getUStorage().intentWhitelist[packetHashes[i]] = whitelist;
+        }
+    }
+
+    function allowMarketMakers() external override returns (bool) {
+        return true;
+    }
+
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external onlyZkgm {
+    ) external override onlyZkgm {
         if (intent) {
-            // TODO: have a mapping from packet hash to bool then have a script
-            // pushing packets we want to fill.
-            revert U_IntentNotYetSupported();
+            bytes32 packetHash = IBCPacketLib.commitPacket(packet);
+            if (!_getUStorage().intentWhitelist[packetHash]) {
+                revert U_IntentWhitelistedOnly();
+            }
         }
 
         FungibleCounterparty memory counterparty = _getUStorage()

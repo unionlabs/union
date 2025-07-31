@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
 use ibc_union_spec::Packet;
-use unionlabs::primitives::Bytes;
+use unionlabs::primitives::{Bytes, H256};
 
 use crate::{msg::Config, token_bucket::TokenBucket};
 
@@ -16,18 +16,18 @@ pub const TOKEN_MINTER: Item<Addr> = Item::new("token_minter");
 /// should be unwrapped when sent back to its origin chain.
 pub const TOKEN_ORIGIN: Map<String, Uint256> = Map::new("token_origin");
 
-/// Tracks the balance of tokens escrowed for each (channel, path, denom) combination.
-/// This is used to ensure we don't unescrow more tokens than were originally escrowed.
-/// The path is used to track tokens across multiple hops, matching the Solidity implementation.
-pub const CHANNEL_BALANCE: Map<(u32, Vec<u8>, String), Uint256> = Map::new("channel_balance_v2");
+/// Deprecated V1 channel balance storage for migration purposes.
+/// Maps (channel_id, path, denom) to balance amount.
+pub const DEPRECATED_CHANNEL_BALANCE_V1: Map<(u32, Vec<u8>, String), Uint256> =
+    Map::new("channel_balance");
 
-/// Tracks the balance of V2 tokens escrowed for each (channel, path, denom, metadata_image) combination.
+/// Tracks the balance of V2 tokens escrowed for each (channel, path, base_token, quote_token) combination.
 #[allow(clippy::type_complexity)]
 pub const CHANNEL_BALANCE_V2: Map<(u32, (Vec<u8>, String, Vec<u8>)), Uint256> =
     Map::new("channel_balance_v2");
 
 /// Maps wrapped token denoms to their metadata image hash.
-pub const METADATA_IMAGE_OF: Map<String, Vec<u8>> = Map::new("metadata_image_of");
+pub const METADATA_IMAGE_OF: Map<String, H256> = Map::new("metadata_image_of");
 
 /// Temporarily stores the packet being executed to prevent reentrancy attacks.
 /// This is cleared after execution is complete.

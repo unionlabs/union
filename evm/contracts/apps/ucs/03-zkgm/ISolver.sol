@@ -4,12 +4,18 @@ import "../../../core/Types.sol";
 import "./Types.sol";
 
 interface ISolver {
+    // Try to fill the order. Reverts if impossible.
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
         bool intent
     ) external;
+
+    // Specificy whether the local ISolver is implemented by a token (likely
+    // ERC20) and enables third party marker makers to provide the funds if the
+    // solver itself failed to fill.
+    function allowMarketMakers() external returns (bool);
 }

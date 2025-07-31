@@ -1,16 +1,16 @@
 use alloy::sol_types::SolValue;
 use anyhow::Result;
 use clap::{Args, Subcommand};
-use ucs03_zkgm::com::{FungibleAssetOrder, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER};
+use ucs03_zkgm::com::{Instruction, TokenOrderV1, INSTR_VERSION_1, OP_TOKEN_ORDER};
 use unionlabs::primitives::{Bytes, U256};
 
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
-    V1(FungibleAssetOrderV1Args),
+    V1(TokenOrderV1V1Args),
 }
 
 #[derive(Debug, Args)]
-pub struct FungibleAssetOrderV1Args {
+pub struct TokenOrderV1V1Args {
     #[arg(long)]
     sender: Bytes,
     #[arg(long)]
@@ -39,8 +39,8 @@ impl Cmd {
             Cmd::V1(fungible_asset_order_v1_args) => {
                 let instruction: Bytes = Instruction {
                     version: INSTR_VERSION_1,
-                    opcode: OP_FUNGIBLE_ASSET_ORDER,
-                    operand: FungibleAssetOrder {
+                    opcode: OP_TOKEN_ORDER,
+                    operand: TokenOrderV1 {
                         sender: fungible_asset_order_v1_args.sender.into(),
                         receiver: fungible_asset_order_v1_args.receiver.into(),
                         base_token: fungible_asset_order_v1_args.base_token.into(),

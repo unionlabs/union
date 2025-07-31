@@ -169,9 +169,9 @@ Fields:
 
 - `opcode`: Instruction type identifier as `uint8`
   - 0x00: [Forward](#0x00---forward)
-  - 0x01: [Multiplex](#0x01---multiplex)
+  - 0x01: [Call](#0x01---call)
   - 0x02: [Batch](#0x02---batch)
-  - 0x03: [FungibleAssetOrder](#0x03---fungible-asset-order)
+  - 0x03: [TokenOrder](#0x03---token-order)
   - 0x04: [Stake](#0x04---stake)
   - 0x05: [Unstake](#0x05---unstake)
   - 0x06: [WithdrawStake](#0x06---withdraw-stake)
@@ -179,9 +179,9 @@ Fields:
 
 - `operand`: Instruction-specific data as `bytes`
   - Forward: Path, timeouts and instruction to forward
-  - Multiplex: Sender, callback mode and contract call data
+  - Call: Sender, callback mode and contract call data
   - Batch: Array of instructions to execute atomically
-  - FungibleAssetOrder: Transfer details like tokens, amounts and parties
+  - TokenOrder: Transfer details like tokens, amounts and parties
   - Stake/Unstake/WithdrawStake/WithdrawRewards: Staking operation parameters
 
 :::note
@@ -224,13 +224,13 @@ Fields:
   - Must be greater than current time when executed
 
 - `instruction`: The [Instruction](#instruction) to forward
-  - Can be Multiplex, FungibleAssetOrder, or Batch
+  - Can be Call, TokenOrder, or Batch
   - Will be executed on final destination chain
   - Cannot be another Forward instruction
 
 :::tip
 
-The forward instruction can wrap Multiplex, FungibleAssetOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
+The forward instruction can wrap Call, TokenOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
 
 The protocol verifies that only these specific instructions can be forwarded and that the channel pairs are valid.
 
@@ -245,12 +245,12 @@ sequenceDiagram
     Chain B ->> Chain A: Forward Acknowledgement
 `}/>
 
-### 0x01 - Multiplex
+### 0x01 - Call
 
-The multiplex instruction uses opcode `0x01` and requires version `INSTR_VERSION_0`.
+The call instruction uses opcode `0x01` and requires version `INSTR_VERSION_0`.
 
 ```solidity
-struct Multiplex {
+struct Call {
     bytes sender;            // Source chain sender address (must match msg.sender)
     bool eureka;            // Whether to use IBC-style callbacks
     bytes contractAddress;   // Target contract address on destination
@@ -280,7 +280,7 @@ Fields:
   - Interpreted by target contract's implementation
   - Available in both standard and eureka modes
 
-The multiplex instruction has two modes:
+The multiplexcall instruction has two modes:
 
 1. Standard Mode (eureka = false):
    - Target must implement IZkgmable interface
@@ -342,7 +342,7 @@ sequenceDiagram
     participant B as Chain B
     participant Y as Contract Y
 
-    X ->> B: Multiplex Message
+    X ->> B: Call Message
     alt IS NOT EUREKA
         B ->> Y: onZkgm()
         B ->> X: Success Ack
@@ -365,7 +365,7 @@ struct Batch {
 
 Fields:
 - `instructions`: Array of [Instructions](#instruction) to execute atomically
-  - Only specific instructions allowed (Multiplex, FungibleAssetOrder, Stake, Unstake, WithdrawStake)
+  - Only specific instructions allowed (Call, TokenOrder, Stake, Unstake, WithdrawStake)
   - Executed in sequential order
   - All must succeed or entire batch reverts
   - Individual acknowledgements collected in array
@@ -389,14 +389,14 @@ In combination with forward envelopes or multiplexing, this batching mechanism i
 
 :::
 
-### 0x03 - Fungible Asset Order
+### 0x03 - Token Order
 
-The fungible asset order instruction has two versions:
+The token order instruction has two versions:
 
 1. Version 1 (INSTR_VERSION_1) - **DEPRECATED**:
 
 ```solidity
-struct FungibleAssetOrder {
+struct TokenOrderV1 {
     bytes sender;             // Source chain sender address
     bytes receiver;           // Destination chain receiver address
     bytes baseToken;          // Token being sent
@@ -413,31 +413,30 @@ struct FungibleAssetOrder {
 2. Version 2 (INSTR_VERSION_2):
 
 ```solidity
-struct FungibleAssetOrderV2 {
+struct TokenOrderV2 {
     bytes sender;             // Source chain sender address
     bytes receiver;           // Destination chain receiver address
     bytes baseToken;          // Token being sent
     uint256 baseAmount;       // Amount being sent
-    uint8 metadataType;       // Type of metadata (image, preimage, image_unwrap)
-    bytes metadata;           // Token metadata based on type
     bytes quoteToken;         // Token requested in return
     uint256 quoteAmount;      // Minimum amount requested
+    uint8 kind;               // Type of metadata (initialize, escrow, unescrow)
+    bytes metadata;           // Token metadata based on type
 }
 ```
 
-#### FungibleAssetOrderV2: Advanced Token Mapping and Customization
+#### TokenOrderV2: Advanced Token Mapping and Customization
 
 The V2 version introduces a significantly more flexible metadata system with three types:
-- `FUNGIBLE_ASSET_METADATA_TYPE_IMAGE` (0x00): Uses a metadata image hash for existing token identification
-- `FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE` (0x01): Provides full metadata implementation and initializer for custom token deployment
-- `FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP` (0x02): Specifically for unwrapping operations
-
+- `TOKEN_ORDER_KIND_INITIALIZE` (0x00): Provides full metadata implementation and initializer for custom token deployment
 ```solidity
-struct FungibleAssetMetadata {
+struct TokenMetadata {
     bytes implementation;    // Implementation contract address
     bytes initializer;       // Initialization data for proxy
 }
 ```
+- `TOKEN_ORDER_KIND_ESCROW` (0x01): Uses a metadata image hash for existing token identification
+- `TOKEN_ORDER_KIND_UNESCROW` (0x02): Specifically for unwrapping operations
 
 The key innovation in V2 is the ability to support 1:N token mappings, allowing the same source token to be represented by different implementations on the destination chain. This enables several powerful use cases:
 
@@ -452,7 +451,7 @@ This flexibility is achieved by allowing the specification of:
 - Custom initialization data
 - A deterministic salt based on the metadata
 
-With V2, the protocol uses CREATE3 to deploy the token contracts at deterministic addresses, ensuring that the same token metadata always results in the same deployed address.
+Similarly to V1, in V2 the protocol uses CREATE3 to deploy the token contracts at deterministic addresses, ensuring that the same token metadata always results in the same deployed address.
 
 Common Fields (both versions):
 - `sender`: Source chain sender address as `bytes`
@@ -499,7 +498,7 @@ The order can be filled in three ways:
    - Solver contracts are detected via interface support (ERC165 in Solidity, query in CosmWasm)
    - Solvers receive full context: packet, order, caller, relayer, relayerMsg, and intent flag
    - Solvers can implement complex logic like multi-hop swaps, arbitrage, or liquidity aggregation
-   - On failure, solvers return `ACK_ERR_ONLYMAKER` to allow other market makers to fill
+   - On solver failure, the protocol return `ACK_ERR_ONLYMAKER` to allow other market makers to fill
    - Solvers use the same `FILL_TYPE_MARKETMAKER` acknowledgment type as regular market makers
 
 The acknowledgement includes:
@@ -513,7 +512,7 @@ If the order fails or times out:
 
 #### Solver Interface
 
-FungibleAssetOrderV2 introduces support for solver contracts - smart contracts that can programmatically fill orders with custom logic. This enables sophisticated market-making strategies beyond simple token transfers.
+TokenOrderV2 introduces support for solver contracts - smart contracts that can programmatically fill orders with custom logic. This enables sophisticated market-making strategies beyond simple token transfers.
 
 **Solidity Implementation:**
 
@@ -521,12 +520,14 @@ FungibleAssetOrderV2 introduces support for solver contracts - smart contracts t
 interface ISolver {
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
         bool intent
     ) external;
+
+    function allowMarketMakers() external returns (bool);
 }
 ```
 
@@ -539,13 +540,13 @@ Solver contracts must:
 
 ```rust
 pub enum SolverQuery {
-    IsSolver {},
+    IsSolver,
 }
 
 pub enum SolverMsg {
     DoSolve {
         packet: Packet,
-        order: CwFungibleAssetOrderV2,
+        order: CwTokenOrderV2,
         caller: Addr,
         relayer: Addr,
         relayer_msg: Bytes,
@@ -590,7 +591,7 @@ contract MultiDEXSolver is ISolver, ERC165 {
 
     function solve(
         IBCPacket calldata packet,
-        FungibleAssetOrderV2 calldata order,
+        TokenOrderV2 calldata order,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
@@ -621,6 +622,152 @@ contract MultiDEXSolver is ISolver, ERC165 {
 }
 ```
 
+#### Token Order Kinds: Protocol Rules and Solver Communication
+
+The `kind` field in TokenOrderV2 serves two critical purposes: **protocol-level validation** and **solver communication**. Understanding when and how to use each kind is essential for proper protocol operation.
+
+##### Protocol Validation Rules
+
+The protocol enforces strict validation rules based on the token order kind:
+
+**TOKEN_ORDER_KIND_INITIALIZE (0x00)**:
+- **Required when**: Deploying a new wrapped token with custom metadata
+- **Metadata**: Must contain valid `TokenMetadata` with implementation contract and initializer data
+- **Validation**: Protocol verifies the wrapped token doesn't already exist
+- **Use case**: First-time token bridging with custom token contracts
+
+**TOKEN_ORDER_KIND_ESCROW (0x01)**:
+- **Required when**: Sending tokens that will be escrowed (locked) on the source chain to receive quote tokens on the destination
+- **Metadata**: Can contain arbitrary data for solver interpretation
+- **Validation**: Protocol checks if the token has a V1 (metadata image = 0) or V2 (non-zero metadata image) representation
+- **Use case**: Regular token transfers where base tokens are locked on source chain
+
+**TOKEN_ORDER_KIND_UNESCROW (0x02)**:
+- **Required when**: Unwrapping tokens back to their original form
+- **Metadata**: Can contain arbitrary data for solver interpretation
+- **Validation**: Protocol verifies the token is being sent back through its origin path
+- **Use case**: Returning wrapped tokens to their source chain
+
+##### Solver Communication Channel
+
+Beyond protocol validation, the `kind` and `metadata` fields create a powerful communication channel between users and solvers:
+
+**Arbitrary Metadata Threading**:
+```solidity
+// Example: User wants specific slippage tolerance for a solver
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: abi.encodePacked(token),
+    baseAmount: amount,
+    quoteToken: abi.encodePacked(solverContract),
+    quoteAmount: minOutput,
+    kind: TOKEN_ORDER_KIND_ESCROW,
+    metadata: abi.encode(SlippageParams({
+        maxSlippage: 300, // 3%
+        deadline: block.timestamp + 3600,
+        preferredDEX: "uniswap"
+    }))
+});
+```
+
+**Solver Interpretation**:
+```solidity
+contract CustomSolver is ISolver {
+    struct SlippageParams {
+        uint256 maxSlippage;
+        uint256 deadline;
+        string preferredDEX;
+    }
+
+    function solve(
+        IBCPacket calldata packet,
+        TokenOrderV2 calldata order,
+        address caller,
+        address relayer,
+        bytes calldata relayerMsg,
+        bool intent
+    ) external override {
+        // Decode user preferences from metadata
+        SlippageParams memory params = abi.decode(order.metadata, (SlippageParams));
+
+        // Use the metadata to customize execution
+        if (keccak256(bytes(params.preferredDEX)) == keccak256("uniswap")) {
+            executeUniswapTrade(order, params);
+        } else {
+            executeBestRouteTrade(order, params);
+        }
+    }
+}
+```
+
+##### Advanced Solver Use Cases
+
+**1. Multi-Step Execution Instructions**:
+```solidity
+struct MultiStepParams {
+    uint8 steps;
+    address[] intermediateTokens;
+    uint256[] minOutputs;
+    bytes[] customData;
+}
+
+// User encodes complex trading strategy in metadata
+TokenOrderV2 memory order = TokenOrderV2({
+    // ... other fields
+    kind: TOKEN_ORDER_KIND_ESCROW,
+    metadata: abi.encode(MultiStepParams({
+        steps: 3,
+        intermediateTokens: [USDC, WETH, TARGET_TOKEN],
+        minOutputs: [1000e6, 0.5e18, 100e18],
+        customData: [swapParams1, swapParams2, swapParams3]
+    }))
+});
+```
+
+**2. Conditional Execution Logic**:
+```solidity
+struct ConditionalParams {
+    uint256 triggerPrice;
+    bool triggerAbove;
+    uint256 maxDelay;
+    bytes fallbackAction;
+}
+
+// Solver can implement limit order logic
+TokenOrderV2 memory order = TokenOrderV2({
+    // ... other fields
+    kind: TOKEN_ORDER_KIND_ESCROW,
+    metadata: abi.encode(ConditionalParams({
+        triggerPrice: 2000e18, // Execute only if ETH > $2000
+        triggerAbove: true,
+        maxDelay: 3600,
+        fallbackAction: abi.encode("refund")
+    }))
+});
+```
+##### Best Practices
+
+**For Protocol Compliance**:
+1. Always use `TOKEN_ORDER_KIND_UNESCROW` when unwrapping tokens
+2. Use `TOKEN_ORDER_KIND_INITIALIZE` only for first deployment with custom metadata
+3. Use `TOKEN_ORDER_KIND_ESCROW` for regular transfers and solver communication
+
+**For Solver Integration**:
+1. Define clear metadata schemas for your solver contract
+2. Validate metadata format in your solver's `solve()` function
+3. Provide fallback behavior for invalid or missing metadata
+4. Document your metadata schema for user integration
+5. Consider versioning your metadata format for upgradability
+
+**Security Considerations**:
+1. Solvers should validate all metadata fields before execution
+2. Never trust metadata without proper validation
+3. Implement bounds checking for numeric parameters
+4. Consider gas costs when decoding complex metadata structures
+5. Provide clear error messages when metadata validation fails
+
+This dual-purpose design makes TokenOrderV2 both protocol-compliant and highly extensible, enabling sophisticated use cases while maintaining security and predictability.
 
 <Mermaid
   content={`
@@ -672,7 +819,7 @@ The stake instruction uses opcode `0x04` and requires version `INSTR_VERSION_0`.
 struct Stake {
     uint256 tokenId;                      // NFT token ID for the staking position
     bytes governanceToken;                // Governance token address
-    bytes32 governanceTokenMetadataImage; // Metadata image hash for token
+    bytes governanceTokenWrapped;         // Wrapped governance token address
     bytes sender;                         // Source chain sender address
     bytes beneficiary;                    // Address that will receive the staking NFT
     bytes validator;                      // Validator address to stake with
@@ -712,10 +859,9 @@ The unstake instruction uses opcode `0x05` and requires version `INSTR_VERSION_0
 struct Unstake {
     uint256 tokenId;                      // NFT token ID for the staking position
     bytes governanceToken;                // Governance token address
-    bytes32 governanceTokenMetadataImage; // Metadata image hash for token
+    bytes governanceTokenWrapped;         // Wrapped governance token address
     bytes sender;                         // Source chain sender address
     bytes validator;                      // Validator address to unstake from
-    uint256 amount;                       // Amount to unstake
 }
 ```
 
@@ -751,7 +897,7 @@ The withdraw stake instruction uses opcode `0x06` and requires version `INSTR_VE
 struct WithdrawStake {
     uint256 tokenId;                      // NFT token ID for the staking position
     bytes governanceToken;                // Governance token address
-    bytes32 governanceTokenMetadataImage; // Metadata image hash for token
+    bytes governanceTokenWrapped;         // Wrapped governance token address
     bytes sender;                         // Source chain sender address
     bytes beneficiary;                    // Address that will receive the tokens
 }
@@ -790,7 +936,7 @@ The withdraw rewards instruction uses opcode `0x07` and requires version `INSTR_
 struct WithdrawRewards {
     uint256 tokenId;                      // NFT token ID for the staking position
     bytes governanceToken;                // Governance token address
-    bytes32 governanceTokenMetadataImage; // Metadata image hash for token
+    bytes governanceTokenWrapped;         // Wrapped governance token address
     bytes validator;                      // Validator address
     bytes sender;                         // Source chain sender address
     bytes beneficiary;                    // Address that will receive the rewards

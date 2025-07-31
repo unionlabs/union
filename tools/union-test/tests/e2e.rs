@@ -17,9 +17,9 @@ use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake, Unstake, WithdrawStake,
-        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_FUNGIBLE_ASSET_ORDER, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE,
+        Instruction, Stake, TokenOrderV1, TokenOrderV2, Unstake, WithdrawStake, INSTR_VERSION_0,
+        INSTR_VERSION_1, INSTR_VERSION_2, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_STAKE,
+        TOKEN_ORDER_KIND_INITIALIZE,
     },
 };
 use union_test::{
@@ -308,8 +308,8 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
@@ -361,8 +361,8 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: evm_address.to_vec().into(),
             receiver: cosmos_address_bytes.clone().into(),
             base_token: quote_token_addr.as_ref().to_vec().into(),
@@ -463,8 +463,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: evm_address.to_vec().into(),
             receiver: cosmos_address_bytes.clone().into(),
             base_token: deployed_erc20.as_ref().to_vec().into(),
@@ -544,8 +544,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: quote_token_bytes.into(),
@@ -643,8 +643,8 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: evm_address.to_vec().into(),
             receiver: evm_address.to_vec().into(), // Here providing evm_address as receiver on purpose to
             // make recv_packet fail on the destination chain and get refund.
@@ -746,7 +746,7 @@ async fn test_stake_from_evm_to_union() {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
@@ -794,13 +794,13 @@ async fn test_stake_from_evm_to_union() {
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrderV2 {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.into(),
             quote_token: quote_token_addr.as_ref().to_vec().into(),
             quote_amount: "10".parse().unwrap(),
@@ -877,7 +877,7 @@ async fn test_stake_from_evm_to_union() {
         operand: Stake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             beneficiary: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
@@ -962,7 +962,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
@@ -1010,13 +1010,13 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrderV2 {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.into(),
             quote_token: quote_token_addr.as_ref().to_vec().into(),
             quote_amount: "10".parse().unwrap(),
@@ -1093,7 +1093,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
         operand: Stake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             beneficiary: evm_address.to_vec().into(),
             validator: evm_address.to_vec().into(), // Here providing validator address wrong on purpose to
@@ -1188,7 +1188,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
@@ -1238,13 +1238,13 @@ async fn test_stake_and_unstake_from_evm_to_union() {
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrderV2 {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.into(),
             quote_token: quote_token_addr.as_ref().to_vec().into(),
             quote_amount: "10".parse().unwrap(),
@@ -1321,7 +1321,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
         operand: Stake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             beneficiary: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
@@ -1414,7 +1414,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
         operand: Unstake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
         }
@@ -1463,7 +1463,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
 
     let pair = ctx.get_channel().await.expect("channel available");
 
-    let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
@@ -1510,13 +1510,13 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrderV2 {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.into(),
             quote_token: quote_token_addr.as_ref().to_vec().into(),
             quote_amount: "10".parse().unwrap(),
@@ -1593,7 +1593,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
         operand: Stake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             beneficiary: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
@@ -1694,7 +1694,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
         operand: Unstake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             validator: given_validator.as_bytes().into(),
         }
@@ -1752,7 +1752,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
         operand: WithdrawStake {
             token_id: random_token_id,
             governance_token: b"muno".into(),
-            governance_metadata_image: img.into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
             sender: evm_address.to_vec().into(),
             beneficiary: evm_address.to_vec().into(),
         }

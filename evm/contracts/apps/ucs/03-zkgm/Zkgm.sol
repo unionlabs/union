@@ -2,7 +2,7 @@ pragma solidity ^0.8.27;
 
 import "./Stake.sol";
 import "./Send.sol";
-import "./FungibleAssetOrder.sol";
+import "./TokenOrder.sol";
 import "./Store.sol";
 
 // Dummy lib to ensure all types are exported
@@ -11,14 +11,14 @@ contract AbiExport {
         ZkgmPacket calldata,
         Instruction calldata,
         Forward calldata,
-        Multiplex calldata,
+        Call calldata,
         Batch calldata,
-        FungibleAssetOrder calldata,
+        TokenOrderV1 calldata,
         Ack calldata,
         BatchAck calldata,
-        FungibleAssetOrderAck calldata,
-        FungibleAssetOrderV2 calldata,
-        FungibleAssetMetadata calldata
+        TokenOrderAck calldata,
+        TokenOrderV2 calldata,
+        TokenMetadata calldata
     ) public {}
 }
 
@@ -64,7 +64,7 @@ contract UCS03Zkgm is
         IIBCModulePacket _ibcHandler,
         UCS03ZkgmSendImpl _sendImpl,
         UCS03ZkgmStakeImpl _stakeImpl,
-        UCS03ZkgmFungibleAssetOrderImpl _faoImpl
+        UCS03ZkgmTokenOrderImpl _faoImpl
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
@@ -114,7 +114,7 @@ contract UCS03Zkgm is
         uint256 path,
         uint32 channel,
         bytes calldata token,
-        FungibleAssetMetadata calldata metadata
+        TokenMetadata calldata metadata
     ) public returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
@@ -177,7 +177,7 @@ contract UCS03Zkgm is
         }
         if (success) {
             bytes memory acknowledgement = abi.decode(returnData, (bytes));
-            // The acknowledgement may be asynchronous (forward/multiplex).
+            // The acknowledgement may be asynchronous (forward/call).
             if (acknowledgement.length == 0) {
                 return ZkgmLib.ACK_EMPTY;
             }
@@ -235,16 +235,13 @@ contract UCS03Zkgm is
         Instruction calldata instruction,
         bool intent
     ) internal returns (bytes memory) {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
             bytes memory rawResult = _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.executeFungibleAssetOrder,
+                    UCS03ZkgmTokenOrderImpl.executeTokenOrderV1,
                     (
                         caller,
                         ibcPacket,
@@ -258,15 +255,13 @@ contract UCS03Zkgm is
             );
             return abi.decode(rawResult, (bytes));
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
-            FungibleAssetOrderV2 calldata order =
-                ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
+            TokenOrderV2 calldata order =
+                ZkgmLib.decodeTokenOrderV2(instruction.operand);
             bytes memory rawResult = _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.executeFungibleAssetOrderV2,
+                    UCS03ZkgmTokenOrderImpl.executeTokenOrderV2,
                     (
                         caller,
                         ibcPacket,
@@ -305,17 +300,16 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeForward(instruction.operand),
                 intent
             );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            return _executeMultiplex(
+        } else if (instruction.isInst(ZkgmLib.OP_CALL, ZkgmLib.INSTR_VERSION_0))
+        {
+            return _executeCall(
                 caller,
                 ibcPacket,
                 relayer,
                 relayerMsg,
                 path,
                 salt,
-                ZkgmLib.decodeMultiplex(instruction.operand),
+                ZkgmLib.decodeCall(instruction.operand),
                 intent
             );
         } else {
@@ -351,7 +345,7 @@ contract UCS03Zkgm is
                 intent
             );
             // We should have the guarantee that the acks are non empty because
-            // the only instructions allowed in a batch are multiplex and
+            // the only instructions allowed in a batch are call and
             // fungibleAssetOrder which returns non-empty acks only.
             if (acks[i].length == 0) {
                 revert ZkgmLib.ErrBatchMustBeSync();
@@ -438,26 +432,26 @@ contract UCS03Zkgm is
         return ZkgmLib.ACK_EMPTY;
     }
 
-    function _executeMultiplex(
+    function _executeCall(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
         uint256 path,
         bytes32 salt,
-        Multiplex calldata multiplex,
+        Call calldata call,
         bool intent
     ) internal returns (bytes memory) {
-        address contractAddress = address(bytes20(multiplex.contractAddress));
-        if (!multiplex.eureka) {
+        address contractAddress = address(bytes20(call.contractAddress));
+        if (!call.eureka) {
             if (intent) {
                 IZkgmable(contractAddress).onIntentZkgm(
                     caller,
                     path,
                     ibcPacket.sourceChannelId,
                     ibcPacket.destinationChannelId,
-                    multiplex.sender,
-                    multiplex.contractCalldata,
+                    call.sender,
+                    call.contractCalldata,
                     relayer,
                     relayerMsg
                 );
@@ -467,19 +461,19 @@ contract UCS03Zkgm is
                     path,
                     ibcPacket.sourceChannelId,
                     ibcPacket.destinationChannelId,
-                    multiplex.sender,
-                    multiplex.contractCalldata,
+                    call.sender,
+                    call.contractCalldata,
                     relayer,
                     relayerMsg
                 );
             }
             return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {
-            IBCPacket memory multiplexIbcPacket = IBCPacket({
+            IBCPacket memory callIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: ZkgmLib.encodeMultiplexCalldata(
-                    path, multiplex.sender, multiplex.contractCalldata
+                data: ZkgmLib.encodeCallCalldata(
+                    path, call.sender, call.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
@@ -487,16 +481,14 @@ contract UCS03Zkgm is
             bytes memory acknowledgement;
             if (intent) {
                 acknowledgement = IIBCModuleRecv(contractAddress)
-                    .onRecvIntentPacket(
-                    caller, multiplexIbcPacket, relayer, relayerMsg
-                );
+                    .onRecvIntentPacket(caller, callIbcPacket, relayer, relayerMsg);
             } else {
                 acknowledgement = IIBCModuleRecv(contractAddress).onRecvPacket(
-                    caller, multiplexIbcPacket, relayer, relayerMsg
+                    caller, callIbcPacket, relayer, relayerMsg
                 );
             }
             if (acknowledgement.length == 0) {
-                revert ZkgmLib.ErrAsyncMultiplexUnsupported();
+                revert ZkgmLib.ErrAsyncCallUnsupported();
             }
             return acknowledgement;
         }
@@ -553,31 +545,24 @@ contract UCS03Zkgm is
         bool successful,
         bytes calldata ack
     ) internal {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl
-                        .acknowledgeFungibleAssetOrder,
+                    UCS03ZkgmTokenOrderImpl.acknowledgeTokenOrderV1,
                     (ibcPacket, relayer, path, salt, order, successful, ack)
                 )
             );
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
-            FungibleAssetOrderV2 calldata order =
-                ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
+            TokenOrderV2 calldata order =
+                ZkgmLib.decodeTokenOrderV2(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl
-                        .acknowledgeFungibleAssetOrderV2,
+                    UCS03ZkgmTokenOrderImpl.acknowledgeTokenOrderV2,
                     (ibcPacket, relayer, path, salt, order, successful, ack)
                 )
             );
@@ -606,16 +591,15 @@ contract UCS03Zkgm is
                 successful,
                 ack
             );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _acknowledgeMultiplex(
+        } else if (instruction.isInst(ZkgmLib.OP_CALL, ZkgmLib.INSTR_VERSION_0))
+        {
+            _acknowledgeCall(
                 caller,
                 ibcPacket,
                 relayer,
                 path,
                 salt,
-                ZkgmLib.decodeMultiplex(instruction.operand),
+                ZkgmLib.decodeCall(instruction.operand),
                 successful,
                 ack
             );
@@ -737,28 +721,29 @@ contract UCS03Zkgm is
         );
     }
 
-    function _acknowledgeMultiplex(
+    function _acknowledgeCall(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
         bytes32 salt,
-        Multiplex calldata multiplex,
+        Call calldata call,
         bool successful,
         bytes calldata ack
     ) internal {
-        if (successful && multiplex.eureka) {
-            IBCPacket memory multiplexIbcPacket = IBCPacket({
+        if (successful && call.eureka) {
+            IBCPacket memory callIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: ZkgmLib.encodeMultiplexCalldata(
-                    path, multiplex.sender, multiplex.contractCalldata
+                data: ZkgmLib.encodeCallCalldata(
+                    path, call.sender, call.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
-            IIBCModule(address(bytes20(multiplex.sender)))
-                .onAcknowledgementPacket(caller, multiplexIbcPacket, ack, relayer);
+            IIBCModule(address(bytes20(call.sender))).onAcknowledgementPacket(
+                caller, callIbcPacket, ack, relayer
+            );
         }
     }
 
@@ -800,29 +785,24 @@ contract UCS03Zkgm is
         uint256 path,
         Instruction calldata instruction
     ) internal {
-        if (
-            instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
-            )
-        ) {
-            FungibleAssetOrder calldata order =
-                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+        if (instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_1))
+        {
+            TokenOrderV1 calldata order =
+                ZkgmLib.decodeTokenOrderV1(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.timeoutFungibleAssetOrder,
+                    UCS03ZkgmTokenOrderImpl.timeoutTokenOrderV1,
                     (ibcPacket, path, order)
                 )
             );
         } else if (
-            instruction.isInst(
-                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_2
-            )
+            instruction.isInst(ZkgmLib.OP_TOKEN_ORDER, ZkgmLib.INSTR_VERSION_2)
         ) {
-            FungibleAssetOrderV2 calldata order =
-                ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
+            TokenOrderV2 calldata order =
+                ZkgmLib.decodeTokenOrderV2(instruction.operand);
             _callFAOImpl(
                 abi.encodeCall(
-                    UCS03ZkgmFungibleAssetOrderImpl.timeoutFungibleAssetOrderV2,
+                    UCS03ZkgmTokenOrderImpl.timeoutTokenOrderV2,
                     (ibcPacket, path, order)
                 )
             );
@@ -845,15 +825,14 @@ contract UCS03Zkgm is
                 relayer,
                 ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _timeoutMultiplex(
+        } else if (instruction.isInst(ZkgmLib.OP_CALL, ZkgmLib.INSTR_VERSION_0))
+        {
+            _timeoutCall(
                 caller,
                 ibcPacket,
                 relayer,
                 path,
-                ZkgmLib.decodeMultiplex(instruction.operand)
+                ZkgmLib.decodeCall(instruction.operand)
             );
         } else if (
             instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
@@ -932,25 +911,25 @@ contract UCS03Zkgm is
         );
     }
 
-    function _timeoutMultiplex(
+    function _timeoutCall(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
-        Multiplex calldata multiplex
+        Call calldata call
     ) internal {
-        if (multiplex.eureka) {
-            IBCPacket memory multiplexIbcPacket = IBCPacket({
+        if (call.eureka) {
+            IBCPacket memory callIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: ZkgmLib.encodeMultiplexCalldata(
-                    path, multiplex.contractAddress, multiplex.contractCalldata
+                data: ZkgmLib.encodeCallCalldata(
+                    path, call.contractAddress, call.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
-            IIBCModule(address(bytes20(multiplex.sender))).onTimeoutPacket(
-                caller, multiplexIbcPacket, relayer
+            IIBCModule(address(bytes20(call.sender))).onTimeoutPacket(
+                caller, callIbcPacket, relayer
             );
         }
     }
@@ -1043,6 +1022,28 @@ contract UCS03Zkgm is
         bool reset
     ) public restricted {
         _setBucketConfig(token, capacity, refillRate, reset);
+    }
+
+    function migrateV1ToV2(
+        V1ToV2Migration[] calldata migrations
+    ) public restricted {
+        for (uint256 i = 0; i < migrations.length; i++) {
+            V1ToV2Migration calldata migration = migrations[i];
+            uint256 balance = _deprecated_channelBalanceV1[migration.channelId][migration
+                .path][migration.baseToken];
+            if (balance == 0) {
+                revert("no balance");
+            }
+            _deprecated_channelBalanceV1[migration.channelId][migration.path][migration
+                .baseToken] = 0;
+            _increaseOutstandingV2(
+                migration.channelId,
+                migration.path,
+                migration.baseToken,
+                migration.quoteToken,
+                balance
+            );
+        }
     }
 
     receive() external payable {}

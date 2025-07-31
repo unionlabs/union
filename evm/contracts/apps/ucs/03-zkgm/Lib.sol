@@ -26,18 +26,15 @@ library ZkgmLib {
     uint256 public constant FILL_TYPE_PROTOCOL = 0xB0CAD0;
     uint256 public constant FILL_TYPE_MARKETMAKER = 0xD1CEC45E;
 
-    uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_IMAGE = 0x00;
-    uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE = 0x01;
-    uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP = 0x02;
-
-    bytes32 public constant FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1 =
-        0xC0DEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE;
+    uint8 public constant TOKEN_ORDER_KIND_INITIALIZE = 0x00;
+    uint8 public constant TOKEN_ORDER_KIND_ESCROW = 0x01;
+    uint8 public constant TOKEN_ORDER_KIND_UNESCROW = 0x02;
 
     // Public instructions
     uint8 public constant OP_FORWARD = 0x00;
-    uint8 public constant OP_MULTIPLEX = 0x01;
+    uint8 public constant OP_CALL = 0x01;
     uint8 public constant OP_BATCH = 0x02;
-    uint8 public constant OP_FUNGIBLE_ASSET_ORDER = 0x03;
+    uint8 public constant OP_TOKEN_ORDER = 0x03;
 
     uint8 public constant OP_STAKE = 0x04;
     uint8 public constant OP_UNSTAKE = 0x05;
@@ -57,7 +54,7 @@ library ZkgmLib {
     string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
     bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
 
-    error ErrAsyncMultiplexUnsupported();
+    error ErrAsyncCallUnsupported();
     error ErrBatchMustBeSync();
     error ErrUnknownOpcode();
     error ErrInfiniteGame();
@@ -74,7 +71,7 @@ library ZkgmLib {
     error ErrInvalidAssetName();
     error ErrInvalidBatchInstruction();
     error ErrInvalidForwardInstruction();
-    error ErrInvalidMultiplexSender();
+    error ErrInvalidCallSender();
     error ErrInvalidForwardDestinationChannelId();
     error ErrInvalidMarketMakerOperation();
     error ErrChannelGovernanceTokenNotSet();
@@ -94,21 +91,22 @@ library ZkgmLib {
     error ErrInvalidStakeValidator();
     error ErrCannotDeploy();
     error ErrInvalidMetadataType();
+    error ErrInvalidUnescrow();
     error ErrInvalidMetadataImage();
     error ErrMustBeUnwrap();
     error ErrMustBeWrap();
     error ErrStakingRewardNotWithdrawable();
 
-    function encodeFungibleAssetOrderAck(
-        FungibleAssetOrderAck memory ack
+    function encodeTokenOrderAck(
+        TokenOrderAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.fillType, ack.marketMaker);
     }
 
-    function decodeFungibleAssetMetadata(
+    function decodeTokenMetadata(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetMetadata calldata) {
-        FungibleAssetMetadata calldata meta;
+    ) internal pure returns (TokenMetadata calldata) {
+        TokenMetadata calldata meta;
         assembly {
             meta := stream.offset
         }
@@ -145,10 +143,10 @@ library ZkgmLib {
         return ack;
     }
 
-    function decodeFungibleAssetOrderAck(
+    function decodeTokenOrderAck(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetOrderAck calldata) {
-        FungibleAssetOrderAck calldata ack;
+    ) internal pure returns (TokenOrderAck calldata) {
+        TokenOrderAck calldata ack;
         assembly {
             ack := stream.offset
         }
@@ -242,7 +240,7 @@ library ZkgmLib {
         return abi.encode(
             stake.tokenId,
             stake.governanceToken,
-            stake.governanceTokenMetadataImage,
+            stake.governanceTokenWrapped,
             stake.sender,
             stake.beneficiary,
             stake.validator,
@@ -256,7 +254,7 @@ library ZkgmLib {
         return abi.encode(
             unstake.tokenId,
             unstake.governanceToken,
-            unstake.governanceTokenMetadataImage,
+            unstake.governanceTokenWrapped,
             unstake.sender,
             unstake.validator
         );
@@ -268,7 +266,7 @@ library ZkgmLib {
         return abi.encode(
             withdrawStake.tokenId,
             withdrawStake.governanceToken,
-            withdrawStake.governanceTokenMetadataImage,
+            withdrawStake.governanceTokenWrapped,
             withdrawStake.sender,
             withdrawStake.beneficiary
         );
@@ -286,7 +284,7 @@ library ZkgmLib {
         return abi.encode(
             withdrawRewards.tokenId,
             withdrawRewards.governanceToken,
-            withdrawRewards.governanceTokenMetadataImage,
+            withdrawRewards.governanceTokenWrapped,
             withdrawRewards.validator,
             withdrawRewards.sender,
             withdrawRewards.beneficiary
@@ -303,21 +301,21 @@ library ZkgmLib {
         return operand;
     }
 
-    function encodeMultiplex(
-        Multiplex memory multiplex
+    function encodeCall(
+        Call memory call
     ) internal pure returns (bytes memory) {
         return abi.encode(
-            multiplex.sender,
-            multiplex.eureka,
-            multiplex.contractAddress,
-            multiplex.contractCalldata
+            call.sender,
+            call.eureka,
+            call.contractAddress,
+            call.contractCalldata
         );
     }
 
-    function decodeMultiplex(
+    function decodeCall(
         bytes calldata stream
-    ) internal pure returns (Multiplex calldata) {
-        Multiplex calldata operand;
+    ) internal pure returns (Call calldata) {
+        Call calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -364,8 +362,8 @@ library ZkgmLib {
         return operand;
     }
 
-    function encodeFungibleAssetOrder(
-        FungibleAssetOrder memory order
+    function encodeTokenOrderV1(
+        TokenOrderV1 memory order
     ) internal pure returns (bytes memory) {
         return abi.encode(
             order.sender,
@@ -381,41 +379,41 @@ library ZkgmLib {
         );
     }
 
-    function encodeFungibleAssetOrderV2(
-        FungibleAssetOrderV2 memory order
+    function encodeTokenOrderV2(
+        TokenOrderV2 memory order
     ) internal pure returns (bytes memory) {
         return abi.encode(
             order.sender,
             order.receiver,
             order.baseToken,
             order.baseAmount,
-            order.metadataType,
-            order.metadata,
             order.quoteToken,
-            order.quoteAmount
+            order.quoteAmount,
+            order.kind,
+            order.metadata
         );
     }
 
-    function encodeFungibleAssetMetadata(
-        FungibleAssetMetadata memory meta
+    function encodeTokenMetadata(
+        TokenMetadata memory meta
     ) internal pure returns (bytes memory) {
         return abi.encode(meta.implementation, meta.initializer);
     }
 
-    function decodeFungibleAssetOrder(
+    function decodeTokenOrderV1(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetOrder calldata) {
-        FungibleAssetOrder calldata operand;
+    ) internal pure returns (TokenOrderV1 calldata) {
+        TokenOrderV1 calldata operand;
         assembly {
             operand := stream.offset
         }
         return operand;
     }
 
-    function decodeFungibleAssetOrderV2(
+    function decodeTokenOrderV2(
         bytes calldata stream
-    ) internal pure returns (FungibleAssetOrderV2 calldata) {
-        FungibleAssetOrderV2 calldata operand;
+    ) internal pure returns (TokenOrderV2 calldata) {
+        TokenOrderV2 calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -483,7 +481,7 @@ library ZkgmLib {
     function isAllowedBatchInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+        return opcode == OP_CALL || opcode == OP_TOKEN_ORDER
             || opcode == OP_STAKE || opcode == OP_UNSTAKE
             || opcode == OP_WITHDRAW_STAKE;
     }
@@ -491,8 +489,8 @@ library ZkgmLib {
     function isAllowedForwardInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
-            || opcode == OP_BATCH;
+        return
+            opcode == OP_CALL || opcode == OP_TOKEN_ORDER || opcode == OP_BATCH;
     }
 
     function tintForwardSalt(
@@ -520,7 +518,7 @@ library ZkgmLib {
         return EfficientHashLib.hash(bytes32(index), salt);
     }
 
-    function encodeMultiplexCalldata(
+    function encodeCallCalldata(
         uint256 path,
         bytes calldata sender,
         bytes calldata contractCalldata
@@ -528,7 +526,7 @@ library ZkgmLib {
         return abi.encode(path, sender, contractCalldata);
     }
 
-    function encodeMultiplexCalldataMemory(
+    function encodeCallCalldataMemory(
         uint256 path,
         bytes memory sender,
         bytes memory contractCalldata
@@ -536,7 +534,7 @@ library ZkgmLib {
         return abi.encode(path, sender, contractCalldata);
     }
 
-    function makeFungibleAssetOrder(
+    function makeTokenOrderV1(
         IZkgm zkgm,
         uint256 path,
         uint32 channelId,
@@ -561,7 +559,7 @@ library ZkgmLib {
         string memory symbol = sentTokenMeta.symbol();
         string memory name = sentTokenMeta.name();
         uint8 decimals = sentTokenMeta.decimals();
-        FungibleAssetOrder memory order = FungibleAssetOrder({
+        TokenOrderV1 memory order = TokenOrderV1({
             sender: abi.encodePacked(sender),
             receiver: receiver,
             baseToken: abi.encodePacked(baseToken),
@@ -575,12 +573,12 @@ library ZkgmLib {
         });
         return Instruction({
             version: INSTR_VERSION_1,
-            opcode: OP_FUNGIBLE_ASSET_ORDER,
-            operand: encodeFungibleAssetOrder(order)
+            opcode: OP_TOKEN_ORDER,
+            operand: encodeTokenOrderV1(order)
         });
     }
 
-    function makeMultiplexCall(
+    function makeCallCall(
         address sender,
         bool eureka,
         bytes memory contractAddress,
@@ -588,9 +586,9 @@ library ZkgmLib {
     ) internal returns (Instruction memory) {
         return Instruction({
             version: INSTR_VERSION_0,
-            opcode: OP_FUNGIBLE_ASSET_ORDER,
-            operand: encodeMultiplex(
-                Multiplex({
+            opcode: OP_TOKEN_ORDER,
+            operand: encodeCall(
+                Call({
                     sender: abi.encodePacked(sender),
                     eureka: eureka,
                     contractAddress: contractAddress,
