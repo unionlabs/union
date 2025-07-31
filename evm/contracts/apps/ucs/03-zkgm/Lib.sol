@@ -98,18 +98,18 @@ library ZkgmLib {
     error ErrStakingRewardNotWithdrawable();
 
     function encodeTokenOrderAck(
-                                 TokenOrderAck memory ack
+        TokenOrderAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.fillType, ack.marketMaker);
     }
 
     function decodeTokenMetadata(
-                                 bytes calldata stream
+        bytes calldata stream
     ) internal pure returns (TokenMetadata calldata) {
         TokenMetadata calldata meta;
         assembly {
-        meta := stream.offset
-                }
+            meta := stream.offset
+        }
         return meta;
     }
 
