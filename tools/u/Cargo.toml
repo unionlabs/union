@@ -57,3 +57,4 @@ state-lens-ics23-mpt-light-client-types   = { workspace = true, features = ["ser
 state-lens-ics23-smt-light-client-types   = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 tendermint-light-client-types             = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 trusted-mpt-light-client-types            = { workspace = true, features = ["serde", "bincode", "ethabi"] }
+bech32 = "0.11.0"

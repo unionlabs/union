@@ -80,15 +80,18 @@ impl Cmd {
 
                 let mut salt = U256::from(u64::MAX) * U256::from(i);
 
+                let hrp = bech32::Hrp::parse("a").unwrap();
+
                 while !found.load(Ordering::Relaxed) {
                     loop {
                         local_attempts += 1;
                         preimage[range.clone()].copy_from_slice(&salt.to_be_bytes::<32>());
                         let res: H256 = sha2::Sha256::digest(&preimage).into();
 
-                        let addr = subtle_encoding::bech32::encode(creator.hrp(), res);
+                        let addr = bech32::encode::<bech32::NoChecksum>(hrp, res.get().as_slice())
+                            .unwrap();
 
-                        if addr[creator.hrp().len() + 1..].starts_with(&prefix)
+                        if addr[2..].starts_with(&prefix)
                         // && addr.ends_with(&suffix)
                         {
                             let salt_bytes = H256::new(salt.to_be_bytes());
