@@ -1755,7 +1755,7 @@ contract DeployU is UnionScript, VersionedScript {
     }
 }
 
-contract MintU is UnionScript, VersionedScript {
+contract MintedWrappedToken is VersionedScript {
     using LibString for *;
     using LibBytes for *;
 
@@ -1773,10 +1773,6 @@ contract MintU is UnionScript, VersionedScript {
         token = vm.envBytes("TOKEN");
         channelId = uint32(vm.envUint("CHANNEL_ID"));
         salt = vm.envBytes("SALT");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
     }
 
     function getDeployed(
@@ -1812,5 +1808,32 @@ contract MintU is UnionScript, VersionedScript {
         bytes memory wrappedTokenBytes = abi.encodePacked(wrappedToken);
         console.logBytes(salt);
         console.log(wrappedToken);
+    }
+}
+
+contract MintedAddress is VersionedScript {
+    using LibString for *;
+    using LibBytes for *;
+
+    address immutable deployer;
+    address immutable sender;
+    bytes salt;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        salt = vm.envBytes("SALT");
+    }
+
+    function run() public {
+        vm.pauseGasMetering();
+        address mintedAddress = CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+        console.log("Salt");
+        console.logBytes(salt);
+        console.log("Minted address");
+        console.log(mintedAddress);
     }
 }
