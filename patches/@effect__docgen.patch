@@ -1,0 +1,300 @@
+diff --git a/bin.cjs b/bin.cjs
+index d38c42763c39fddc36a12edccab423f5c313f55b..1faa3f45430f90ef01ad972d0c9b306a24d75c90 100755
+--- a/bin.cjs
++++ b/bin.cjs
+@@ -297020,9 +297020,13 @@ var MarkdownPrinter = {
+   h3: createHeaderPrinter(3),
+   h4: createHeaderPrinter(4)
+ };
++const __printSourceAnchor = (loc) =>
++  MarkdownPrinter.paragraph(
++    `**Source:** [\`${loc.replace("#L", ":")}\`](https://github.com/unionlabs/union/blob/main/ts-sdk/${loc})`
++  );
+ var printSince = match2({
+   onNone: () => "",
+-  onSome: (v) => MarkdownPrinter.paragraph(`Added in v${v}`)
++  onSome: (v) => MarkdownPrinter.paragraph(`*Added in [v${v}](https://github.com/unionlabs/union/releases/tag/@unionlabs/sdk@${v})*`)
+ });
+ var printTitle = (s, deprecated, type2) => {
+   const name = s.trim() === "hasOwnProperty" ? `${s} (function)` : s;
+@@ -297039,7 +297043,13 @@ var printSignature = (s) => MarkdownPrinter.paragraph(MarkdownPrinter.bold("Sign
+ var printSignatures = (ss) => MarkdownPrinter.paragraph(MarkdownPrinter.bold("Signature")) + MarkdownPrinter.paragraph(MarkdownPrinter.fence("```ts", ss.join("\n"), "```"));
+ var printExamples = (es) => es.map(
+   ({ body, fences }) => MarkdownPrinter.paragraph(MarkdownPrinter.bold("Example")) + MarkdownPrinter.paragraph(
+-    MarkdownPrinter.fence(fences?.start ?? "```ts", body, fences?.end ?? "```")
++    MarkdownPrinter.fence([
++      "```ts twoslash",
++      "/// <reference types=\"effect\" />",
++      "// @paths: {\"@unionlabs/sdk\": [\"../ts-sdk/src\"], \"@unionlabs/sdk/*\": [\"../ts-sdk/src/*\"]}",
++      "import * as assert from \"node:assert\"",
++      "// ---cut---"
++    ].join("\n"), body, fences?.end ?? "```")
+   )
+ ).join("\n\n");
+ var printStaticMethod = (m) => MarkdownPrinter.paragraph(
+@@ -297070,7 +297080,6 @@ var printProperties = (properties) => map3(
+   (property) => printProperty(property) + "\n\n"
+ ).join("");
+ var printModuleDescription = (module2) => MarkdownPrinter.paragraph(
+-  MarkdownPrinter.h2(printTitle(module2.name, module2.deprecated, "overview")),
+   printDescription(module2.description),
+   printExamples(module2.examples),
+   printSince(module2.since)
+@@ -297082,10 +297091,16 @@ var printMeta = (title, order) => MarkdownPrinter.paragraph(
+   `title: ${title}`,
+   `
+ `,
+-  `nav_order: ${order}`,
++  `sidebar:`,
++  `
++`,
++  `  order: ${order}`,
++  `
++`,
++  `tableOfContents:`,
+   `
+ `,
+-  `parent: Modules`,
++  `  minHeadingLevel: 1`,
+   `
+ `,
+   "---"
+@@ -297100,6 +297115,7 @@ var printClass = (model) => MarkdownPrinter.paragraph(
+   ),
+   printStaticMethods(model.staticMethods),
+   printMethods(model.methods),
++  __printSourceAnchor(model.location),
+   printProperties(model.properties)
+ );
+ var printConstant = (model) => MarkdownPrinter.paragraph(
+@@ -297107,6 +297123,7 @@ var printConstant = (model) => MarkdownPrinter.paragraph(
+   printDescription(model.description),
+   printSignature(model.signature),
+   printExamples(model.examples),
++  __printSourceAnchor(model.location),
+   printSince(model.since)
+ );
+ var printExport = (model) => MarkdownPrinter.paragraph(
+@@ -297114,6 +297131,7 @@ var printExport = (model) => MarkdownPrinter.paragraph(
+   printDescription(model.description),
+   printSignature(model.signature),
+   printExamples(model.examples),
++  __printSourceAnchor(model.location),
+   printSince(model.since)
+ );
+ var printFunction = (model) => MarkdownPrinter.paragraph(
+@@ -297121,6 +297139,7 @@ var printFunction = (model) => MarkdownPrinter.paragraph(
+   printDescription(model.description),
+   printSignatures(model.signatures),
+   printExamples(model.examples),
++  __printSourceAnchor(model.location),
+   printSince(model.since)
+ );
+ var printInterface = (model, indentation) => MarkdownPrinter.paragraph(
+@@ -297128,6 +297147,7 @@ var printInterface = (model, indentation) => MarkdownPrinter.paragraph(
+   printDescription(model.description),
+   printSignature(model.signature),
+   printExamples(model.examples),
++  __printSourceAnchor(model.location),
+   printSince(model.since)
+ );
+ var printTypeAlias = (model, indentation) => MarkdownPrinter.paragraph(
+@@ -297135,6 +297155,7 @@ var printTypeAlias = (model, indentation) => MarkdownPrinter.paragraph(
+   printDescription(model.description),
+   printSignature(model.signature),
+   printExamples(model.examples),
++  __printSourceAnchor(model.location),
+   printSince(model.since)
+ );
+ var getHeaderByIndentation = (indentation) => {
+@@ -297233,9 +297254,9 @@ var printModule = (module2, order) => gen2(function* (_) {
+     [
+       header,
+       description,
+-      "---\n",
+-      tableOfContents(content),
+-      "---\n",
++      // "---\n",
++      // tableOfContents(content),
++      // "---\n",
+       content
+     ].join("\n")
+   ));
+@@ -297258,7 +297279,7 @@ var ast = __toESM(require_ts_morph(), 1);
+ 
+ // src/Domain.ts
+ var createDoc = (description, since, deprecated, examples, category) => ({ description, since, deprecated, examples, category });
+-var createNamedDoc = (name, description, since, deprecated, examples, category) => ({ name, description, since, deprecated, examples, category });
++var createNamedDoc = (name, description, since, deprecated, examples, category, location) => ({ name, description, since, deprecated, examples, category, location });
+ var createModule = (doc, path8, classes, interfaces, functions, typeAliases, constants2, exports2, namespaces) => ({
+   ...doc,
+   path: path8,
+@@ -297311,6 +297332,15 @@ var ByPath = mapInput2(
+ );
+ 
+ // src/Parser.ts
++const __path = require("path");
++const __loc = (node) => {
++  const sourceFile = node.getSourceFile();
++  const absolutePath = sourceFile.getFilePath();
++  const relativePath = __path.relative(process.cwd(), absolutePath);
++  const lineNumber = node.getStartLineNumber();
++  const githubRelative = `${relativePath}#L${lineNumber}`;
++  return githubRelative;
++};
+ var Source = class extends Tag2("Source")() {
+ };
+ var sortByName = sort(
+@@ -297403,7 +297433,7 @@ var parseExample = (body) => {
+   return {
+     body: example?.groups?.body ?? "",
+     fences: {
+-      start: example?.groups?.fenceStart?.trim() ?? "```ts",
++      start: example?.groups?.fenceStart?.trim() ?? "```ts twoslash",
+       end: example?.groups?.fenceEnd?.trim() ?? "```"
+     }
+   };
+@@ -297447,7 +297477,8 @@ var parseInterfaceDeclaration = (id2) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(id2)
+     ),
+     signature
+   );
+@@ -297513,7 +297544,8 @@ var parseFunctionDeclaration = (fd) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(fd)
+     ),
+     signatures
+   );
+@@ -297533,7 +297565,8 @@ var parseFunctionVariableDeclaration = (vd) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(vd)
+     ),
+     [signature]
+   );
+@@ -297583,7 +297616,8 @@ var parseTypeAliasDeclaration = (ta) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(ta)
+     ),
+     signature
+   );
+@@ -297615,7 +297649,8 @@ var parseConstantVariableDeclaration = (vd) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(vd)
+     ),
+     signature
+   );
+@@ -297664,7 +297699,8 @@ var parseExportSpecifier = (es) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(es)
+     ),
+     signature
+   );
+@@ -297699,7 +297735,8 @@ var parseExportStar = (ed) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category.pipe(orElse(() => some2("exports")))
++      doc.category.pipe(orElse(() => some2("exports"))),
++      __loc(ed)
+     ),
+     signature
+   );
+@@ -297746,7 +297783,8 @@ var parseModuleDeclaration = (ed) => flatMap9(Source, (_source) => {
+         info2.since,
+         info2.deprecated,
+         info2.examples,
+-        info2.category
++        info2.category,
++        __loc(ed)
+       ),
+       interfaces,
+       typeAliases,
+@@ -297809,7 +297847,8 @@ var parseMethod = (md) => gen2(function* (_) {
+           doc.since,
+           doc.deprecated,
+           doc.examples,
+-          doc.category
++          doc.category,
++          __loc(md)
+         ),
+         signatures
+       )
+@@ -297839,7 +297878,8 @@ var parseProperty = (classname) => (pd) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(pd)
+     ),
+     signature
+   );
+@@ -297909,7 +297949,8 @@ var parseClass = (c) => gen2(function* (_) {
+       doc.since,
+       doc.deprecated,
+       doc.examples,
+-      doc.category
++      doc.category,
++      __loc(c)
+     ),
+     signature,
+     methods,
+@@ -297969,7 +298010,7 @@ var parseModuleDocumentation = gen2(function* (_) {
+         doc.since,
+         doc.deprecated,
+         doc.examples,
+-        doc.category
++        doc.category,
+       );
+     }
+   }
+@@ -298448,14 +298489,16 @@ var getMarkdownConfigYML = gen2(function* (_) {
+     );
+   }
+ });
+-var getModuleMarkdownOutputPath = (module2) => map16(
+-  all5([Configuration, Path3]),
+-  ([config2, path8]) => path8.normalize(path8.join(
+-    config2.outDir,
+-    "modules",
+-    `${module2.path.slice(1).join(path8.sep)}.md`
+-  ))
+-);
++var getModuleMarkdownOutputPath = (module2) => {
++  return map16(
++    all5([Configuration, Path3]),
++    ([config2, path8]) => path8.normalize(path8.join(
++      config2.outDir,
++      "modules",
++      `${module2.path.slice(1).join(path8.sep)}.md`
++    ))
++  );
++}
+ var getModuleMarkdownFiles = (modules) => forEach8(modules, (module2, order) => gen2(function* (_) {
+   const outputPath = yield* _(getModuleMarkdownOutputPath(module2));
+   const content = yield* _(printModule(module2, order + 1));

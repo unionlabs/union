@@ -1,8 +1,20 @@
 {
-  "extends": ["astro/tsconfigs/strict", "astro/tsconfigs/base"],
+  "extends": [
+    "astro/tsconfigs/strict",
+    "astro/tsconfigs/base"
+  ],
+  "references": [
+    {
+      "path": "../ts-sdk"
+    }
+  ],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -22,26 +34,47 @@
     "resolvePackageJsonExports": true,
     "resolvePackageJsonImports": true,
     "paths": {
-      "#/*": ["./src/*"],
-      "~root/*": ["../*"],
-      "tailwind.config": ["./tailwind.config.ts"],
-      "markdown.config": ["./markdown.config.ts"]
+      "#/*": [
+        "./src/*"
+      ],
+      "~root/*": [
+        "../*"
+      ],
+      "tailwind.config": [
+        "./tailwind.config.ts"
+      ],
+      "markdown.config": [
+        "./markdown.config.ts"
+      ]
     },
     "plugins": [
       {
         "name": "@astrojs/ts-plugin"
       }
     ],
-    "types": ["node", "typed-query-selector/strict", "@types/react"]
+    "types": [
+      "node",
+      "typed-query-selector/strict",
+      "@types/react"
+    ]
   },
-  "include": ["src", "public", "scripts"],
+  "include": [
+    "src",
+    "public",
+    "scripts"
+  ],
   "files": [
     "reset.d.ts",
     "astro.config.ts",
     "svelte.config.js",
     "tailwind.config.ts",
     "postcss.config.cjs",
-    "markdown.config.ts"
+    "markdown.config.ts",
+    "typedoc-example-pages.mjs"
   ],
-  "exclude": ["_", "dist", "node_modules"]
+  "exclude": [
+    "_",
+    "dist",
+    "node_modules"
+  ]
 }

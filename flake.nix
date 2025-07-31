@@ -182,6 +182,7 @@
         ./site/site.nix
         ./app2/app2.nix
         ./ts-sdk/ts-sdk.nix
+        ./sdk-evm/sdk-evm.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
@@ -529,6 +530,7 @@
                 deno
                 nixd
                 procs
+                graphviz
                 emmet-language-server
                 nodePackages_latest.nodejs
                 nodePackages_latest.graphqurl

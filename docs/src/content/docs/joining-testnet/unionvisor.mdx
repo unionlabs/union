@@ -48,18 +48,15 @@ Now, using the `unionvisor` image and the folder we just created, we can initial
 
 To do this, we'll be using Docker volumes.
 
-<Code
-  lang='sh'
-  code={dedent(`
-    docker run \\
-      --volume ~/.unionvisor:/.unionvisor \\
-      --volume /tmp:/tmp \\
-      -it ghcr.io/unionlabs/bundle-testnet-10:$UNIONVISOR_VERSION \\
-      init --moniker $MONIKER \\
-      --network union-testnet-10 \\
-      --seeds "${chainVersion({chainId: 'union-testnet-10'}).seeds}"
-  `)}
-/>
+```sh frame="none"
+docker run \
+  --volume ~/.unionvisor:/.unionvisor \
+  --volume /tmp:/tmp \
+  -it ghcr.io/unionlabs/bundle-testnet-10:$UNIONVISOR_VERSION \
+  init --moniker $MONIKER \
+  --network union-testnet-10 \
+  --seeds "${chainVersion({chainId: 'union-testnet-10'}).seeds}"
+```
 _Where `MONIKER` is the preferred moniker you'd like to use on this node._
 
 :::note
