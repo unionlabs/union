@@ -45,6 +45,7 @@ pub struct Module<'a> {
     pub provider: DynProvider<AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
+    pub privileged_acc_keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
     pub max_gas_price: Option<u128>,
 
@@ -66,6 +67,7 @@ pub struct Config {
     pub ws_url: String,
 
     pub keyring: KeyringConfig,
+    pub privileged_acc_keyring: KeyringConfig,
 
     #[serde(default)]
     pub max_gas_price: Option<u128>,
@@ -103,6 +105,22 @@ impl<'a> Module<'a> {
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|config| {
+                    let signing_key = <ecdsa::SigningKey as bip32::PrivateKey>::from_bytes(
+                        &config.value().as_slice().try_into().unwrap(),
+                    )
+                    .unwrap();
+
+                    let signer = LocalSigner::from_signing_key(signing_key);
+
+                    KeyringEntry {
+                        address: signer.address(),
+                        signer,
+                    }
+                }),
+            ),
+            privileged_acc_keyring: ConcurrentKeyring::new(
+                config.privileged_acc_keyring.name,
+                config.privileged_acc_keyring.keys.into_iter().map(|config| {
                     let signing_key = <ecdsa::SigningKey as bip32::PrivateKey>::from_bytes(
                         &config.value().as_slice().try_into().unwrap(),
                     )
@@ -391,6 +409,17 @@ impl<'a> Module<'a> {
             )
             .await?;
         Ok(ret._0.0.into())
+    }
+
+    pub async fn get_provider_privileged(&self) -> DynProvider<AnyNetwork> {
+        self.get_provider_with_wallet(
+            &self
+                .privileged_acc_keyring
+                .with(|w| async move { w.clone() })
+                .await
+                .expect("ZKGM deployer keyring not found"),
+        )
+        .await
     }
 
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
@@ -830,23 +859,40 @@ impl<'a> Module<'a> {
         metadata_image: FixedBytes<32>,
         provider: DynProvider<AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
+        let mut attempts = 0;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
+        loop {
+            attempts += 1;
+            let pending = zkgm
+                .registerGovernanceToken(
+                    channel_id,
+                    zkgm::GovernanceToken {
+                        unwrappedToken: b"muno".into(),
+                        metadataImage: metadata_image.into(),
+                    },
+                )
+                .send()
+                .await;
+            match pending {
+                Ok(pending) => {
+                    let tx_hash = <H256>::from(*pending.tx_hash());
+                    println!("pending: {:?}", pending);
+                    self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!("Registered governance token on channel {channel_id} with metadata image {metadata_image:?}");
+                    return Ok(tx_hash);
+                }
+                Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
+                    println!("Nonce too low, retrying... Attempt: {attempts}");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    continue;
+                }
+                Err(err) => {
+                    println!("Failed to register governance token: {:?}", err);
+                    return Err(err.into());
+                }
+            }
+        }
 
-        let pending = zkgm
-            .registerGovernanceToken(
-                channel_id,
-                zkgm::GovernanceToken {
-                    unwrappedToken: b"muno".into(),
-                    metadataImage: metadata_image.into(),
-                },
-            )
-            .send()
-            .await?;
-
-        let tx_hash = <H256>::from(*pending.tx_hash());
-
-        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-        Ok(tx_hash)
     }
 }
 
