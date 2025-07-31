@@ -142,3 +142,10 @@ export * as TokenOrder from "./TokenOrder.js"
  * @since 2.0.0
  */
 export * as Batch from "./Batch.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as ZkgmInstruction from "./ZkgmInstruction.js"
