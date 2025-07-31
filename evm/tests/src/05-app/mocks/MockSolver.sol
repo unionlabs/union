@@ -40,7 +40,7 @@ contract MockSolver is ISolver, ERC165 {
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external override {
+    ) external override returns (bytes memory makerAddress) {
         solveCallCount++;
         // Store the call data - can't store calldata directly in storage
         lastCall.packet = packet;
@@ -81,7 +81,7 @@ contract MockSolverWithU is ISolver, ERC165 {
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external override {
+    ) external override returns (bytes memory makerAddress) {
         // Simulate solver using U token to fulfill order
         address receiver = address(uint160(bytes20(order.receiver)));
 
