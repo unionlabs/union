@@ -251,6 +251,10 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
+		if sdkCtx.ChainID() != UNION_TESTNET {
+			sdk.DefaultPowerReduction = PowerReduction
+		}
+
 		// Redelegate to validators from Union foundation account
 		// NOTE: This is the original delegations list, since we want to reconstruct the same validator delegations but with the foundation account being the owner of all delegations
 		for idx, delegation := range delegations {
@@ -286,11 +290,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			} else {
 				shares := delegation.Shares.RoundInt()
 				if sdkCtx.ChainID() != UNION_TESTNET {
-					sharesBig, ok := new(big.Int).SetString("1000000000000000000000000", 10)
-					if !ok {
-						return nil, errorsmod.New("upgrade", 1, "failed to convert shares from bigint string")
-					}
-					shares = sdkmath.NewIntFromBigInt(sharesBig)
+					shares = getUFromU64(50_000_000).Amount
 				}
 				_, err = keepers.StakingKeeper.Delegate(
 					ctx,
@@ -306,14 +306,36 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 		}
 
+		for _, delegation := range delegations {
+			valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
+			if err != nil {
+				return nil, err
+			}
+			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
+			if err != nil {
+				if err == stakingtypes.ErrNoValidatorFound {
+					sdkCtx.Logger().Info(
+						"validator not found",
+						"addr", valAddr,
+					)
+					continue
+				}
+			}
+			err = keepers.StakingKeeper.DeleteValidatorByPowerIndex(ctx, validator)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		validators, err = keepers.StakingKeeper.GetBondedValidatorsByPower(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		// Burn old tokens
 		burnToken(ctx, *keepers, "muno") // union-minimal-devnet-1 (local devnet) and union-testnet-10 gas token
 		burnToken(ctx, *keepers, "upoa") // union-1 and union-testnet-10 PoA token
 		burnToken(ctx, *keepers, "ugas") // union-1 gas token
-
-		if sdkCtx.ChainID() != UNION_TESTNET {
-			sdk.DefaultPowerReduction = PowerReduction
-		}
 
 		return migrations, nil
 	}
