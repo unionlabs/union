@@ -30,18 +30,42 @@ export enum Kind {
   Unescrow,
 }
 
-export const Input = S.Struct({
+const EscrowInput = S.Struct({
+  kind: S.Literal(Kind.Escrow),
+})
+
+const UnescrowInput = S.Struct({
+  kind: S.Literal(Kind.Unescrow),
+})
+
+const InitializeInput = S.Struct({
+  kind: S.Literal(Kind.Initialize),
+  metadata: Hex,
+})
+
+const KindInput = S.Union(
+  EscrowInput,
+  UnescrowInput,
+  InitializeInput,
+)
+
+const RequiredInput = S.Struct({
   source: Chain,
   destination: Chain,
   sender: Ucs05.ValidAddress,
   receiver: Ucs05.ValidAddress,
   baseToken: S.Union(Token.Any, Token.TokenFromString),
   baseAmount: S.BigIntFromSelf,
+}).pipe(
+  S.extend(KindInput),
+)
+
+const OptionalInput = S.Struct({
   quoteToken: S.Union(Token.Any, Token.TokenFromString),
   quoteAmount: S.BigIntFromSelf,
-  kind: S.Enums(Kind),
-  metadata: S.optional(Hex), // TODO: default to none
 })
+
+export const Input = 
 export type InputEncoded = typeof Input.Encoded
 export type InputDecoded = typeof Input.Type
 const Options = S.partial(Input)
