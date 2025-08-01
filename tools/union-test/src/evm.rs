@@ -412,15 +412,21 @@ impl<'a> Module<'a> {
     }
 
     pub async fn get_provider_privileged(&self) -> DynProvider<AnyNetwork> {
-        self.get_provider_with_wallet(
-            &self
-                .privileged_acc_keyring
-                .with(|w| async move { w.clone() })
-                .await
-                .expect("ZKGM deployer keyring not found"),
-        )
-        .await
-    }
+    let wallet = loop {
+        if let Some(w) = self
+            .privileged_acc_keyring
+            .with(|w| async move { w.clone() })
+            .await
+        {
+            break w;
+        } else {
+            tokio::time::sleep(Duration::from_secs(10)).await;
+        }
+    };
+
+    self.get_provider_with_wallet(&wallet).await
+}
+
 
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
         let wallet = loop {
