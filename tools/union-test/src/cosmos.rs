@@ -529,7 +529,7 @@ impl Module {
     pub async fn get_minter(&self, contract: Bech32<H256>) -> anyhow::Result<String> {
         let req = QuerySmartContractStateRequest {
             address: contract.to_string(),
-            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?.into(),
+            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?,
         };
 
         let raw = self
