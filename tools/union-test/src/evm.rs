@@ -478,7 +478,7 @@ impl<'a> Module<'a> {
     fn is_nonce_too_low(&self, e: &Error) -> bool {
         if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
             println!("Nonce is too low, error entered here.: {:?}", rpc);
-            rpc.message.contains("nonce too low")
+            rpc.message.contains("nonce too low") || rpc.message.contains("replacement transaction underpriced")
         } else {
             false
         }
@@ -881,7 +881,7 @@ impl<'a> Module<'a> {
                     println!("Registered governance token on channel {channel_id} with metadata image {metadata_image:?}");
                     return Ok(tx_hash);
                 }
-                Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
+                Err(err) if attempts <= 10 && self.is_nonce_too_low(&err) => {
                     println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;

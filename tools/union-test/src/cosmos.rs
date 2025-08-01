@@ -526,6 +526,37 @@ impl Module {
         }
     }
 
+    pub async fn get_minter(
+        &self,
+        contract: Bech32<H256>,
+    ) -> anyhow::Result<String> {
+        let req = QuerySmartContractStateRequest {
+            address: contract.to_string(),
+            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?
+                .into(),
+        };
+
+        let raw = self
+            .rpc
+            .client()
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &req,
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .data;
+
+        // 3) Deserialize the JSON `{ "minter": "union1..." }` into our struct
+        let resp = serde_json::from_slice(&raw)
+            .context("deserializing GetMinterResponse")?;
+
+        Ok(resp)
+    }
+
     pub async fn get_balance(
         &self,
         address: impl Into<String>,
