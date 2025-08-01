@@ -18,6 +18,8 @@ pub enum QueryMsg {
     GetConsensusState { client_id: ClientId, height: u64 },
     #[cfg_attr(feature = "cw-orch-interface", returns(crate::lightclient::Status))]
     GetStatus { client_id: ClientId },
+    #[cfg_attr(feature = "cw-orch-interface", returns(crate::lightclient::Status))]
+    GetCommittedStatus { client_id: ClientId },
     #[cfg_attr(feature = "cw-orch-interface", returns(String))]
     GetClientType { client_id: ClientId },
     #[cfg_attr(feature = "cw-orch-interface", returns(ibc_union_spec::Connection))]
