@@ -449,6 +449,7 @@ _: {
         }
         rec {
           chain-id = "56";
+          ucs04-chain-id = "bsc.56";
 
           name = "bsc";
           rpc-url = "https://bsc-rpc.publicnode.com";
@@ -553,7 +554,7 @@ _: {
               ${ucs04-chain-id} \
               --rpc-url ${rpc-url} \
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
-              --ucs03 --ucs00 "$@"
+              --ucs03 "$@"
           '';
         };
 
