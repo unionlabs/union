@@ -181,6 +181,7 @@
         ./ceremony/ceremony.nix
         ./site/site.nix
         ./app2/app2.nix
+        ./foundation/foundation.nix
         ./ts-sdk/ts-sdk.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix

@@ -14,6 +14,12 @@
       "@cosmjs/amino@0.33.1": "patches/@cosmjs__amino@0.33.1.patch",
       "@cosmjs/tendermint-rpc@0.33.1": "patches/@cosmjs__tendermint-rpc@0.33.1.patch"
     },
-    "onlyBuiltDependencies": ["bufferutil", "utf-8-validate", "esbuild", "keccak", "core-js"]
+    "onlyBuiltDependencies": [
+      "bufferutil",
+      "utf-8-validate",
+      "esbuild",
+      "keccak",
+      "core-js"
+    ]
   }
 }
