@@ -70,8 +70,8 @@ module zkgm::batch {
         Batch { instructions }
     }
 
-    public fun instructions(batch: &Batch): vector<Instruction> {
-        batch.instructions
+    public fun instructions(batch: &Batch): &vector<Instruction> {
+        &batch.instructions
     }
 
     public fun encode(batch: &Batch): vector<u8> {

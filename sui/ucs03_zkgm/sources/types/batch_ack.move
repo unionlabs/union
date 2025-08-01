@@ -85,10 +85,10 @@ module zkgm::batch_ack {
         buf
     }
 
+    #[allow(unused_mut_ref)]
     public fun decode(buf: &vector<u8>): BatchAck {
-        let mut index = 0x20; 
         BatchAck {
-            acknowledgements: zkgm_ethabi::decode_dyn_array!(buf, &mut index, |b| zkgm_ethabi::decode_bytes(&b, &mut 0))
+            acknowledgements: zkgm_ethabi::decode_dyn_array!(buf, &mut 0x20, |b| zkgm_ethabi::decode_bytes(&b, &mut 0))
         }
     }
 
