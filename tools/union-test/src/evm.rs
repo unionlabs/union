@@ -45,7 +45,8 @@ pub struct Module<'a> {
     pub provider: DynProvider<AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
-    pub privileged_acc_keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
+    pub privileged_acc_keyring:
+        ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
     pub max_gas_price: Option<u128>,
 
@@ -120,19 +121,23 @@ impl<'a> Module<'a> {
             ),
             privileged_acc_keyring: ConcurrentKeyring::new(
                 config.privileged_acc_keyring.name,
-                config.privileged_acc_keyring.keys.into_iter().map(|config| {
-                    let signing_key = <ecdsa::SigningKey as bip32::PrivateKey>::from_bytes(
-                        &config.value().as_slice().try_into().unwrap(),
-                    )
-                    .unwrap();
+                config
+                    .privileged_acc_keyring
+                    .keys
+                    .into_iter()
+                    .map(|config| {
+                        let signing_key = <ecdsa::SigningKey as bip32::PrivateKey>::from_bytes(
+                            &config.value().as_slice().try_into().unwrap(),
+                        )
+                        .unwrap();
 
-                    let signer = LocalSigner::from_signing_key(signing_key);
+                        let signer = LocalSigner::from_signing_key(signing_key);
 
-                    KeyringEntry {
-                        address: signer.address(),
-                        signer,
-                    }
-                }),
+                        KeyringEntry {
+                            address: signer.address(),
+                            signer,
+                        }
+                    }),
             ),
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
@@ -304,7 +309,6 @@ impl<'a> Module<'a> {
             .unwrap())
     }
 
-
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash: H256,
@@ -438,21 +442,20 @@ impl<'a> Module<'a> {
     }
 
     pub async fn get_provider_privileged(&self) -> DynProvider<AnyNetwork> {
-    let wallet = loop {
-        if let Some(w) = self
-            .privileged_acc_keyring
-            .with(|w| async move { w.clone() })
-            .await
-        {
-            break w;
-        } else {
-            tokio::time::sleep(Duration::from_secs(10)).await;
-        }
-    };
+        let wallet = loop {
+            if let Some(w) = self
+                .privileged_acc_keyring
+                .with(|w| async move { w.clone() })
+                .await
+            {
+                break w;
+            } else {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+        };
 
-    self.get_provider_with_wallet(&wallet).await
-}
-
+        self.get_provider_with_wallet(&wallet).await
+    }
 
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
         let wallet = loop {
@@ -510,7 +513,8 @@ impl<'a> Module<'a> {
     fn is_nonce_too_low(&self, e: &Error) -> bool {
         if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
             println!("Nonce is too low, error entered here.: {:?}", rpc);
-            rpc.message.contains("nonce too low") || rpc.message.contains("replacement transaction underpriced")
+            rpc.message.contains("nonce too low")
+                || rpc.message.contains("replacement transaction underpriced")
         } else {
             false
         }
@@ -924,7 +928,6 @@ impl<'a> Module<'a> {
                 }
             }
         }
-
     }
 }
 

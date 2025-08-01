@@ -833,8 +833,6 @@ where
             Err(e) => anyhow::bail!("wait_for_packet_timeout failed: {:?}", e),
         };
 
-        
-
         packet_timeout
     }
 

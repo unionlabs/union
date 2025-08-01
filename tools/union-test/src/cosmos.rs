@@ -14,11 +14,11 @@ use cosmos_client::{
 use cosmos_sdk_event::CosmosSdkEvent;
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use protos::{
-    cosmos::base::v1beta1::Coin,
-    cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
-    cosmos::bank::v1beta1::{
-        QueryBalanceRequest, QueryBalanceResponse,
+    cosmos::{
+        bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse},
+        base::v1beta1::Coin,
     },
+    cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
 use serde::{Deserialize, Serialize};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
@@ -526,14 +526,10 @@ impl Module {
         }
     }
 
-    pub async fn get_minter(
-        &self,
-        contract: Bech32<H256>,
-    ) -> anyhow::Result<String> {
+    pub async fn get_minter(&self, contract: Bech32<H256>) -> anyhow::Result<String> {
         let req = QuerySmartContractStateRequest {
             address: contract.to_string(),
-            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?
-                .into(),
+            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?.into(),
         };
 
         let raw = self
@@ -551,8 +547,7 @@ impl Module {
             .data;
 
         // 3) Deserialize the JSON `{ "minter": "union1..." }` into our struct
-        let resp = serde_json::from_slice(&raw)
-            .context("deserializing GetMinterResponse")?;
+        let resp = serde_json::from_slice(&raw).context("deserializing GetMinterResponse")?;
 
         Ok(resp)
     }
@@ -569,19 +564,14 @@ impl Module {
         let resp: QueryBalanceResponse = self
             .rpc
             .client()
-            .grpc_abci_query(
-                "/cosmos.bank.v1beta1.Query/Balance",
-                &req,
-                None,
-                false,
-            )
+            .grpc_abci_query("/cosmos.bank.v1beta1.Query/Balance", &req, None, false)
             .await?
             .into_result()?
             .unwrap();
         resp.balance
             .ok_or_else(|| anyhow::anyhow!("no balance for denom {}", denom))
     }
-    
+
     pub async fn send_transaction_with_retry(
         &self,
         contract: Bech32<H256>,
@@ -718,7 +708,6 @@ pub enum ModuleEvent {
         channel_id: ChannelId,
         packet_hash: H256,
     },
-
 
     #[serde(rename = "wasm-create_client")]
     WasmCreateClient {
