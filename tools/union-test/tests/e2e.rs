@@ -798,8 +798,8 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     let sending_amount = "9999999999999999999999";
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
@@ -1045,11 +1045,14 @@ async fn test_stake_from_evm_to_union() {
     println!("EVM Address: {:?}", evm_address);
 
     ensure_channels_opened(ctx.channel_count).await;
-
     let available_channel = ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
-
     let pair = ctx.get_channel().await.expect("channel available");
+
+    // let pair = ChannelPair {
+    //     src: 29.try_into().unwrap(),
+    //     dest: 37.try_into().unwrap(),
+    // };
 
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
@@ -1507,7 +1510,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     //     src: 2.try_into().unwrap(),
     //     dest: 2.try_into().unwrap(),
     // };
-    let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
