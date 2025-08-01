@@ -168,6 +168,7 @@ _: {
             # "movement"
             "state-lens-ics23-mpt"
             # "state-lens-ics23-smt"
+            "parlia"
           ];
         }
         {

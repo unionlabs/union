@@ -447,6 +447,25 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "56";
+          ucs04-chain-id = "bsc.56";
+
+          name = "bsc";
+          rpc-url = "https://bsc-rpc.publicnode.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+
+          # Wrapped BNB
+          weth = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+
+          native-token-name = "BNB";
+          native-token-symbol = "BNB";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
 
         # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
         # {
@@ -535,7 +554,7 @@ _: {
               ${ucs04-chain-id} \
               --rpc-url ${rpc-url} \
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
-              --ucs03 --ucs00 "$@"
+              --ucs03 "$@"
           '';
         };
 
