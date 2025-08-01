@@ -44,6 +44,8 @@ pub struct Module<'a> {
     pub provider: DynProvider<AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
+    pub privileged_acc_keyring:
+        ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
     pub max_gas_price: Option<u128>,
 
@@ -65,6 +67,7 @@ pub struct Config {
     pub ws_url: String,
 
     pub keyring: KeyringConfig,
+    pub privileged_acc_keyring: KeyringConfig,
 
     #[serde(default)]
     pub max_gas_price: Option<u128>,
@@ -114,6 +117,26 @@ impl<'a> Module<'a> {
                         signer,
                     }
                 }),
+            ),
+            privileged_acc_keyring: ConcurrentKeyring::new(
+                config.privileged_acc_keyring.name,
+                config
+                    .privileged_acc_keyring
+                    .keys
+                    .into_iter()
+                    .map(|config| {
+                        let signing_key = <ecdsa::SigningKey as bip32::PrivateKey>::from_bytes(
+                            &config.value().as_slice().try_into().unwrap(),
+                        )
+                        .unwrap();
+
+                        let signer = LocalSigner::from_signing_key(signing_key);
+
+                        KeyringEntry {
+                            address: signer.address(),
+                            signer,
+                        }
+                    }),
             ),
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
@@ -260,6 +283,31 @@ impl<'a> Module<'a> {
             .unwrap())
     }
 
+    pub async fn wait_for_packet_timeout(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::PacketTimeout(ev)
+                        if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
+                    {
+                        Some(helpers::PacketTimeout {
+                            packet_hash: ev.packet_hash.into(),
+                        })
+                    }
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash: H256,
@@ -392,6 +440,22 @@ impl<'a> Module<'a> {
         Ok(ret._0.0.into())
     }
 
+    pub async fn get_provider_privileged(&self) -> DynProvider<AnyNetwork> {
+        let wallet = loop {
+            if let Some(w) = self
+                .privileged_acc_keyring
+                .with(|w| async move { w.clone() })
+                .await
+            {
+                break w;
+            } else {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+        };
+
+        self.get_provider_with_wallet(&wallet).await
+    }
+
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
         let wallet = loop {
             if let Some(w) = self.keyring.with(|w| async move { w.clone() }).await {
@@ -449,6 +513,7 @@ impl<'a> Module<'a> {
         if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
             println!("Nonce is too low, error entered here.: {:?}", rpc);
             rpc.message.contains("nonce too low")
+                || rpc.message.contains("replacement transaction underpriced")
         } else {
             false
         }
@@ -807,23 +872,39 @@ impl<'a> Module<'a> {
         metadata_image: FixedBytes<32>,
         provider: DynProvider<AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
+        let mut attempts = 0;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
-
-        let pending = zkgm
-            .registerGovernanceToken(
-                channel_id,
-                zkgm::GovernanceToken {
-                    unwrappedToken: b"muno".into(),
-                    metadataImage: metadata_image.into(),
-                },
-            )
-            .send()
-            .await?;
-
-        let tx_hash = <H256>::from(*pending.tx_hash());
-
-        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-        Ok(tx_hash)
+        loop {
+            attempts += 1;
+            let pending = zkgm
+                .registerGovernanceToken(
+                    channel_id,
+                    zkgm::GovernanceToken {
+                        unwrappedToken: b"muno".into(),
+                        metadataImage: metadata_image.into(),
+                    },
+                )
+                .send()
+                .await;
+            match pending {
+                Ok(pending) => {
+                    let tx_hash = <H256>::from(*pending.tx_hash());
+                    println!("pending: {:?}", pending);
+                    self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!("Registered governance token on channel {channel_id} with metadata image {metadata_image:?}");
+                    return Ok(tx_hash);
+                }
+                Err(err) if attempts <= 10 && self.is_nonce_too_low(&err) => {
+                    println!("Nonce too low, retrying... Attempt: {attempts}");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    continue;
+                }
+                Err(err) => {
+                    println!("Failed to register governance token: {:?}", err);
+                    return Err(err.into());
+                }
+            }
+        }
     }
 }
 

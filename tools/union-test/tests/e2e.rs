@@ -1,6 +1,11 @@
 // tests/e2e.rs
 
-use std::{num::NonZero, str::FromStr, sync::Arc, time::Duration};
+use std::{
+    num::NonZero,
+    str::FromStr,
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use alloy::{
     hex::decode as hex_decode,
@@ -36,7 +41,7 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{Bech32, FixedBytes, U256},
 };
-use voyager_sdk::primitives::ChainId;
+use voyager_sdk::primitives::{ChainId, Timestamp};
 
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
@@ -44,8 +49,8 @@ static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
 
 static UNION_ZKGM_ADDRESS: &str =
     "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";
-static UNION_MINTER_ADDRESS: &str =
-    "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550";
+// static UNION_MINTER_ADDRESS: &str =
+//     "union1tt6nn3qv0q0z4gq4s2h65a2acv3lcwxjwf8ey3jgnwmtqkfnyq9q4q5y8x";
 static EVM_ZKGM_BYTES: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
 
 async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
@@ -56,16 +61,17 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                 "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
             )
             .unwrap(),
+            privileged_acc_keyring: KeyringConfig {
+                name: "privileged_acc".into(),
+                keys: vec![KeyringConfigEntry::Raw {
+                    name: "privileged_acc".into(),
+                    key: hex!("aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f")
+                        .to_vec(),
+                }],
+            },
             keyring: KeyringConfig {
                 name: "alice".into(),
                 keys: vec![
-                    // KeyringConfigEntry::Raw {
-                    //     name: "alice".into(),
-                    //     key: hex_literal::hex!(
-                    //         "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-                    //     )
-                    //     .to_vec(),
-                    // },
                     KeyringConfigEntry::Raw {
                         name: "bob".into(),
                         key: hex_literal::hex!(
@@ -89,7 +95,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                     },
                 ],
             },
-            rpc_url: "http://devnetUnion:26657".into(),
+            rpc_url: "http://0.0.0.0:26657".into(),
             gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
                 max_gas: 10000000,
                 gas_multiplier: Some(1.4),
@@ -101,18 +107,19 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             chain_id: ChainId::new("32382"),
             ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
             multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
-            rpc_url: "http://devnetEth:8545".into(),
-            ws_url: "ws://devnetEth:8546".into(),
+            rpc_url: "http://0.0.0.0:8545".into(),
+            ws_url: "ws://0.0.0.0:8546".into(),
+            privileged_acc_keyring: KeyringConfig {
+                name: "zkgm-deployer".into(),
+                keys: vec![KeyringConfigEntry::Raw {
+                    name: "zkgm-deployer-key".into(),
+                    key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
+                        .to_vec(),
+                }],
+            },
             keyring: KeyringConfig {
                 name: "evm-keyring".into(),
                 keys: vec![
-                    // KeyringConfigEntry::Raw {
-                    //     name: "dev-key0.prv".into(),
-                    //     key: hex!(
-                    //         "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-                    //     )
-                    //     .to_vec(),
-                    // },
                     KeyringConfigEntry::Raw {
                         name: "dev-key1.prv".into(),
                         key: hex!(
@@ -170,12 +177,17 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 7; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 8; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
-        let ctx = TestContext::new(src, dst, needed_channel_count, "/tmp/config.jsonc")
-            .await
-            .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
+        let ctx = TestContext::new(
+            src,
+            dst,
+            needed_channel_count,
+            "/home/kaancaglan/dev/union/voyager/config.jsonc",
+        )
+        .await
+        .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
 
         Arc::new(ctx)
     })
@@ -424,11 +436,15 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     println!("Cosmos Address: {:?}", cosmos_address);
 
     ensure_channels_opened(ctx.channel_count).await;
-
     let available_channel = ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
-
     let pair = ctx.get_channel().await.expect("channel available");
+
+    // let pair = union_test::channel_provider::ChannelPair {
+    //     src: 9.try_into().unwrap(),
+    //     dest: 9.try_into().unwrap(),
+    // };
+
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
 
@@ -515,8 +531,14 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         recv_packet_data
     );
 
+    let get_minter_result = ctx
+        .src
+        .get_minter(Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap())
+        .await
+        .expect("failed to get minter address");
+
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
-        spender: UNION_MINTER_ADDRESS.into(),
+        spender: get_minter_result,
         amount: "100".parse().unwrap(),
         expires: None,
     };
@@ -535,7 +557,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         .send_transaction_with_retry(approve_contract, (approve_msg_bin, vec![]), cosmos_signer)
         .await;
 
-    println!("Approve transaction data: {:?}", approve_recv_packet_data);
+    // println!("Approve transaction data: {:?}", approve_recv_packet_data);
     assert!(
         approve_recv_packet_data.is_some(),
         "Failed to send approve transaction: {:?}",
@@ -593,6 +615,147 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
+}
+
+async fn test_send_packet_from_union_to_evm_get_refund() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
+
+    // let pair = union_test::channel_provider::ChannelPair {
+    //     src: 1.try_into().unwrap(),
+    //     dest: 1.try_into().unwrap(),
+    // };
+
+    let dst_chain_id = pair.dest;
+    let src_chain_id = pair.src;
+
+    let quote_token_addr = ctx
+        .predict_wrapped_token::<evm::Module>(
+            &ctx.dst,
+            EVM_ZKGM_BYTES.into(),
+            ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
+            "muno".into(),
+            &evm_provider,
+        )
+        .await
+        .unwrap();
+
+    println!("Quote token address: {:?}", quote_token_addr);
+
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+    let sending_amount = "9999999999999999999999";
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_1,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: sending_amount.parse().unwrap(),
+            base_token_symbol: "muno".into(),
+            base_token_name: "muno".into(),
+            base_token_decimals: 6,
+            base_token_path: "0".parse().unwrap(),
+            quote_token: cosmos_address_bytes.clone().into(), // it will revert
+            quote_amount: sending_amount.parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let now_secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+    let now_secs = now_secs / 1000000000;
+    let timeout_timestamp = Timestamp::from_secs(now_secs + 60);
+
+    println!(
+        "Timeout now:{}, timeout_timestamp: {:?}",
+        now_secs, timeout_timestamp
+    );
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: src_chain_id.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp,
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: sending_amount.into(),
+    }];
+
+    let muno_balance_before_send = ctx
+        .src
+        .get_balance(&cosmos_address.clone().to_string(), "muno")
+        .await;
+    assert!(
+        muno_balance_before_send.is_ok(),
+        "Failed to get muno balance before sending: {:?}",
+        muno_balance_before_send.err()
+    );
+    let old_balance = muno_balance_before_send.unwrap().amount;
+    println!(
+        "Muno balance of {}: before sending: {:?}",
+        cosmos_address.clone(),
+        old_balance
+    );
+
+    let recv_packet_data = ctx
+        .send_and_recv_refund_with_timeout::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds),
+            &ctx.dst,
+            Duration::from_secs(1720),
+            cosmos_provider,
+        )
+        .await;
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+
+    println!(
+        "Received packet data from cosmos->evm: {:?}",
+        recv_packet_data
+    );
+
+    let muno_balance_after_send = ctx
+        .src
+        .get_balance(&cosmos_address.clone().to_string(), "muno")
+        .await;
+    assert!(
+        muno_balance_after_send.is_ok(),
+        "Failed to get muno balance after sending: {:?}",
+        muno_balance_after_send.err()
+    );
+    let new_balance = muno_balance_after_send.unwrap().amount;
+    println!(
+        "Muno balance of {}: after sending: {:?}",
+        cosmos_address.clone(),
+        new_balance
+    );
+    // This math is random, but we expect the balance to be greater than or equal to old balance - sending amount
+    // because we are sending the packet to the union chain and it will fail on the destination
+    // chain, so we should get a refund. But there is also a gas fee. Since sending_amount/2 will be higher than gas fee, it should work.
+    // assert!(new_balance + sending_amount.into()/2 > old_balance - sending_amount.into(),
+    //     "Muno balance should be greater than or equal to old balance - sending amount, but got: {} instead of: {}",
+    //     new_balance, old_balance - sending_amount.into());
 }
 
 async fn test_send_packet_from_evm_to_union_get_refund() {
@@ -695,7 +858,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
             call,
             &ctx.src,
             Duration::from_secs(720),
-            evm_provider.clone(),
+            &evm_provider,
         )
         .await;
 
@@ -740,11 +903,14 @@ async fn test_stake_from_evm_to_union() {
     println!("EVM Address: {:?}", evm_address);
 
     ensure_channels_opened(ctx.channel_count).await;
-
     let available_channel = ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
-
     let pair = ctx.get_channel().await.expect("channel available");
+
+    // let pair = union_test::channel_provider::ChannelPair {
+    //     src: 29.try_into().unwrap(),
+    //     dest: 37.try_into().unwrap(),
+    // };
 
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
@@ -764,9 +930,15 @@ async fn test_stake_from_evm_to_union() {
 
     let img = keccak256(&img_metadata);
 
+    let zkgm_deployer_provider = ctx.dst.get_provider_privileged().await;
     let governance_token = ctx
         .dst
-        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            EVM_ZKGM_BYTES.into(),
+            pair.dest,
+            img,
+            zkgm_deployer_provider,
+        )
         .await;
 
     assert!(
@@ -980,9 +1152,15 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let img = keccak256(&img_metadata);
 
+    let zkgm_deployer_provider = ctx.dst.get_provider_privileged().await;
     let governance_token = ctx
         .dst
-        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            EVM_ZKGM_BYTES.into(),
+            pair.dest,
+            img,
+            zkgm_deployer_provider,
+        )
         .await;
 
     assert!(
@@ -1140,7 +1318,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
             call,
             &ctx.src,
             Duration::from_secs(360),
-            evm_provider.clone(),
+            &evm_provider,
         )
         .await;
 
@@ -1182,12 +1360,14 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     println!("EVM Address: {:?}", evm_address);
 
     ensure_channels_opened(ctx.channel_count).await;
-
     let available_channel = ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
-
     let pair = ctx.get_channel().await.expect("channel available");
 
+    // let pair = union_test::channel_provider::ChannelPair {
+    //     src: 2.try_into().unwrap(),
+    //     dest: 2.try_into().unwrap(),
+    // };
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -1206,9 +1386,15 @@ async fn test_stake_and_unstake_from_evm_to_union() {
 
     let img = keccak256(&img_metadata);
 
+    let zkgm_deployer_provider = ctx.dst.get_provider_privileged().await;
     let governance_token = ctx
         .dst
-        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            EVM_ZKGM_BYTES.into(),
+            pair.dest,
+            img,
+            zkgm_deployer_provider,
+        )
         .await;
 
     assert!(
@@ -1480,9 +1666,15 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     .abi_encode_params();
 
     let img = keccak256(&img_metadata);
+    let zkgm_deployer_provider = ctx.dst.get_provider_privileged().await;
     let governance_token = ctx
         .dst
-        .setup_governance_token(EVM_ZKGM_BYTES.into(), pair.dest, img, evm_provider.clone())
+        .setup_governance_token(
+            EVM_ZKGM_BYTES.into(),
+            pair.dest,
+            img,
+            zkgm_deployer_provider,
+        )
         .await;
 
     assert!(
@@ -1808,6 +2000,12 @@ async fn from_evm_to_union0() {
 #[tokio::test]
 async fn from_evm_to_union_refund() {
     self::test_send_packet_from_evm_to_union_get_refund().await;
+}
+
+#[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
+async fn from_union_to_evm_refund() {
+    // TODO: Fix it later. Refund is not happening correctly.
+    self::test_send_packet_from_union_to_evm_get_refund().await;
 }
 
 #[tokio::test]

@@ -14,7 +14,10 @@ use cosmos_client::{
 use cosmos_sdk_event::CosmosSdkEvent;
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use protos::{
-    cosmos::base::v1beta1::Coin,
+    cosmos::{
+        bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse},
+        base::v1beta1::Coin,
+    },
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
 use serde::{Deserialize, Serialize};
@@ -38,6 +41,7 @@ pub struct Config {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
+    pub privileged_acc_keyring: KeyringConfig,
     pub rpc_url: String,
     pub gas_config: GasFillerConfig,
     #[serde(default)]
@@ -64,6 +68,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
+    pub privileged_acc_keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
     pub rpc: Rpc,
     pub gas_config: any::GasFiller,
     pub bech32_prefix: String,
@@ -119,6 +124,18 @@ impl Module {
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
+                    let signer =
+                        LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
+
+                    KeyringEntry {
+                        address: signer.address(),
+                        signer,
+                    }
+                }),
+            ),
+            privileged_acc_keyring: ConcurrentKeyring::new(
+                config.privileged_acc_keyring.name,
+                config.privileged_acc_keyring.keys.into_iter().map(|entry| {
                     let signer =
                         LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
 
@@ -320,6 +337,35 @@ impl Module {
             .unwrap())
     }
 
+    pub async fn wait_for_packet_timeout(
+        &self,
+        packet_hash_param: H256,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        println!("Waiting for packet timeout event with hash: {packet_hash_param:?}");
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::WasmPacketTimeout { packet_hash, .. } = evt {
+                        println!("Packet timeout event came with hash: {packet_hash:?}");
+                        if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            return Some(helpers::PacketTimeout {
+                                packet_hash: *packet_hash,
+                            });
+                        }
+                        None
+                    } else {
+                        None
+                    }
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash_param: H256,
@@ -455,6 +501,52 @@ impl Module {
         }
     }
 
+    pub async fn get_minter(&self, contract: Bech32<H256>) -> anyhow::Result<String> {
+        let req = QuerySmartContractStateRequest {
+            address: contract.to_string(),
+            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?,
+        };
+
+        let raw = self
+            .rpc
+            .client()
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &req,
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .data;
+
+        // 3) Deserialize the JSON `{ "minter": "union1..." }` into our struct
+        let resp = serde_json::from_slice(&raw).context("deserializing GetMinterResponse")?;
+
+        Ok(resp)
+    }
+
+    pub async fn get_balance(
+        &self,
+        address: impl Into<String>,
+        denom: &str,
+    ) -> anyhow::Result<protos::cosmos::base::v1beta1::Coin> {
+        let req = QueryBalanceRequest {
+            address: address.into(),
+            denom: denom.to_string(),
+        };
+        let resp: QueryBalanceResponse = self
+            .rpc
+            .client()
+            .grpc_abci_query("/cosmos.bank.v1beta1.Query/Balance", &req, None, false)
+            .await?
+            .into_result()?
+            .unwrap();
+        resp.balance
+            .ok_or_else(|| anyhow::anyhow!("no balance for denom {}", denom))
+    }
+
     pub async fn send_transaction_with_retry(
         &self,
         contract: Bech32<H256>,
@@ -581,6 +673,12 @@ pub enum ModuleEvent {
         packet_timeout_height: u64,
         #[serde(with = "serde_utils::string")]
         packet_timeout_timestamp: Timestamp,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+    },
+    #[serde(rename = "wasm-packet_timeout")]
+    WasmPacketTimeout {
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,
