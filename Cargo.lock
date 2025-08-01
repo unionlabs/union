@@ -16918,6 +16918,7 @@ dependencies = [
  "ibc-classic-spec",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
+ "keccak-asm",
  "linea-light-client-types",
  "movement-light-client-types",
  "num_cpus",

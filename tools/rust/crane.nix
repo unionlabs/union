@@ -660,6 +660,7 @@
 
             buildInputs = [
               pkgs.pkg-config
+              pkgs.perl
               pkgs.openssl
               pkgs.protobuf
               pkgs.perl
