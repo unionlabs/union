@@ -680,7 +680,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         .expect("failed to get minter address");
 
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
-        spender: get_minter_result.into(),
+        spender: get_minter_result,
         amount: "100".parse().unwrap(),
         expires: None,
     };
@@ -842,7 +842,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
 
     let muno_balance_before_send = ctx
         .src
-        .get_balance(&cosmos_address.clone().to_string(), "muno".into())
+        .get_balance(&cosmos_address.clone().to_string(), "muno")
         .await;
     assert!(
         muno_balance_before_send.is_ok(),
@@ -879,7 +879,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
 
     let muno_balance_after_send = ctx
         .src
-        .get_balance(&cosmos_address.clone().to_string(), "muno".into())
+        .get_balance(&cosmos_address.clone().to_string(), "muno")
         .await;
     assert!(
         muno_balance_after_send.is_ok(),
