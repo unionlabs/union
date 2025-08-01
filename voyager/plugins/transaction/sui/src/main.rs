@@ -239,23 +239,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     AssertUnwindSafe(async move {
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
-                        let msgs = process_msgs(self, &mut ptb, pk, msgs, sender).await;
-
-                        for (contract_addr, _, module, entry_fn, arguments, type_args) in
-                            msgs.into_iter()
-                        {
-                            let arguments = arguments
-                                .into_iter()
-                                .map(|arg| ptb.input(arg).expect("input works"))
-                                .collect();
-                            ptb.command(Command::move_call(
-                                contract_addr.into(),
-                                module,
-                                entry_fn,
-                                type_args,
-                                arguments,
-                            ));
-                        }
+                        process_msgs(self, &mut ptb, pk, msgs, sender).await;
 
                         let builder = ptb.finish();
                         let _ = send_transactions(self, pk, builder).await?;
@@ -283,10 +267,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
-// module: Identifier,
-// function: Identifier,
-// type_arguments: Vec<TypeTag>,
-
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
     module: &Module,
@@ -294,136 +274,140 @@ async fn process_msgs(
     pk: &Arc<SuiKeyPair>,
     msgs: Vec<Datagram>,
     fee_recipient: SuiAddress,
-) -> Vec<(
-    SuiAddress,
-    Datagram,
-    Identifier,
-    Identifier,
-    Vec<CallArg>,
-    Vec<TypeTag>,
-)> {
-    let mut data = vec![];
+) {
     for msg in msgs {
-        let item = match msg.clone() {
-            Datagram::CreateClient(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("create_client").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.client_state_bytes).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.consensus_state_bytes).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::UpdateClient(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("update_client").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: ObjectID::from_str("0x6").unwrap(),
-                        initial_shared_version: 1.into(),
-                        mutable: false,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
-                    CallArg::Pure(H256::<HexPrefixed>::default().into_bytes().to_vec()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenInit(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_init").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenTry(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_try").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenAck(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_ack").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenConfirm(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_confirm").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                ],
-                vec![],
-            ),
+        match msg {
+            Datagram::CreateClient(data) => {
+                ptb.move_call(
+                    module.ibc_handler_address.into(),
+                    ident_str!("ibc").into(),
+                    ident_str!("create_client").into(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
+                        (&data.client_state_bytes.into_vec()).into(),
+                        (&data.consensus_state_bytes.into_vec()).into(),
+                    ],
+                )
+                .unwrap();
+            }
+            Datagram::UpdateClient(data) => {
+                ptb.move_call(
+                    module.ibc_handler_address.into(),
+                    ident_str!("ibc").into(),
+                    ident_str!("update_client").into(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: ObjectID::from_str("0x6").unwrap(),
+                            initial_shared_version: 1.into(),
+                            mutable: false,
+                        }),
+                        data.client_id.raw().into(),
+                        (&data.client_message.into_vec()).into(),
+                        CallArg::Pure(H256::<HexPrefixed>::default().into_bytes().to_vec()),
+                    ],
+                )
+                .unwrap();
+            }
+            Datagram::ConnectionOpenInit(data) => {
+                ptb.move_call(
+                    module.ibc_handler_address.into(),
+                    ident_str!("ibc").into(),
+                    ident_str!("connection_open_init").into(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
+                    ],
+                )
+                .unwrap();
+            }
+            Datagram::ConnectionOpenTry(data) => {
+                ptb.move_call(
+                    module.ibc_handler_address.into(),
+                    ident_str!("ibc").into(),
+                    ident_str!("connection_open_try").into(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    ],
+                )
+                .unwrap();
+            }
+            Datagram::ConnectionOpenAck(data) => {
+                ptb.move_call(
+                    module.ibc_handler_address.into(),
+                    ident_str!("ibc").into(),
+                    ident_str!("connection_open_ack").into(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    ],
+                )
+                .unwrap();
+            }
+            Datagram::ConnectionOpenConfirm(data) => {
+                ptb.move_call(
+                    module.ibc_handler_address.into(),
+                    ident_str!("ibc").into(),
+                    ident_str!("connection_open_confirm").into(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    ],
+                )
+                .unwrap();
+            }
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
                 let module_info = parse_port(&module.graphql_url, &port_id).await;
 
-                (
-                    module_info.latest_address,
-                    msg,
+                ptb.move_call(
+                    module_info.latest_address.into(),
                     Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_init").unwrap(),
+                    ident_str!("channel_open_init").into(),
+                    vec![],
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
                             id: module.ibc_store.into(),
@@ -435,19 +419,19 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.version).unwrap()),
                     ],
-                    vec![],
                 )
+                .unwrap();
             }
             Datagram::ChannelOpenTry(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
                 let module_info = parse_port(&module.graphql_url, &port_id).await;
 
-                (
-                    module_info.latest_address,
-                    msg,
+                ptb.move_call(
+                    module_info.latest_address.into(),
                     Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_try").unwrap(),
+                    ident_str!("channel_open_try").into(),
+                    vec![],
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
                             id: module.ibc_store.into(),
@@ -465,8 +449,8 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
-                    vec![],
                 )
+                .unwrap();
             }
             Datagram::ChannelOpenAck(data) => {
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
@@ -484,11 +468,12 @@ async fn process_msgs(
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
                 let module_info = parse_port(&module.graphql_url, &port_id).await;
-                (
-                    module_info.latest_address,
-                    msg,
+
+                ptb.move_call(
+                    module_info.latest_address.into(),
                     Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_ack").unwrap(),
+                    ident_str!("channel_open_ack").into(),
+                    vec![],
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
                             id: module.ibc_store.into(),
@@ -502,8 +487,8 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
-                    vec![],
                 )
+                .unwrap();
             }
             Datagram::ChannelOpenConfirm(data) => {
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
@@ -521,11 +506,11 @@ async fn process_msgs(
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
                 let module_info = parse_port(&module.graphql_url, &port_id).await;
-                (
-                    module_info.latest_address,
-                    msg,
+                ptb.move_call(
+                    module_info.latest_address.into(),
                     Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_confirm").unwrap(),
+                    ident_str!("channel_open_confirm").into(),
+                    vec![],
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
                             id: module.ibc_store.into(),
@@ -536,8 +521,8 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
-                    vec![],
                 )
+                .unwrap();
             }
             Datagram::PacketRecv(data) => {
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
@@ -603,11 +588,11 @@ async fn process_msgs(
                     })
                     .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
 
-                (
-                    module_info.latest_address,
-                    msg,
+                ptb.move_call(
+                    module_info.latest_address.into(),
                     Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("recv_packet").unwrap(),
+                    ident_str!("recv_packet").into(),
+                    vec![coin_t.unwrap()],
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
                             id: module.ibc_store.into(),
@@ -634,15 +619,12 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
                     ],
-                    vec![coin_t.unwrap()],
                 )
+                .unwrap();
             }
             _ => todo!(),
-        };
-        data.push(item);
+        }
     }
-
-    data
 }
 
 fn predict_wrapped_denom(
