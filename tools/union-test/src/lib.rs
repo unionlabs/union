@@ -232,7 +232,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketTimeout> {
-        unimplemented!("wait_for_packet_timeout is not implemented for EVM chains")
+        self.wait_for_packet_timeout(packet_hash, timeout).await
     }
 
     async fn wait_for_packet_ack(

@@ -17,7 +17,7 @@ use protos::{
     cosmos::base::v1beta1::Coin,
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
     cosmos::bank::v1beta1::{
-        QueryBalanceRequest, QueryBalanceResponse, QueryAllBalancesRequest, QueryAllBalancesResponse,
+        QueryBalanceRequest, QueryBalanceResponse,
     },
 };
 use serde::{Deserialize, Serialize};

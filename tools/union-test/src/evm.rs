@@ -279,6 +279,32 @@ impl<'a> Module<'a> {
             .unwrap())
     }
 
+    pub async fn wait_for_packet_timeout(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::PacketTimeout(ev)
+                        if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
+                    {
+                        Some(helpers::PacketTimeout {
+                            packet_hash: ev.packet_hash.into(),
+                        })
+                    }
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
+
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash: H256,
