@@ -1,5 +1,3 @@
-import { ContentfulLivePreview } from "@contentful/live-preview"
-import { contentfulClient } from "./client.ts"
 
 type ConfigOptions = {
   locale: string
@@ -21,15 +19,11 @@ export function initializeContentfulLivePreview({
     debugMode,
     enableLiveUpdates: true,
     enableInspectorMode: true,
-    targetOrigin: "https://app.contentful.com",
   })
 
-  contentfulClient
     .getEntry(entryId)
     .then(entry => {
-      console.info("[initializeContentfulLivePreview.contentful]", entry)
       fields.forEach(fieldId => {
-        displayFieldData({ entry, client: contentfulClient, fieldId, entryId })
         setupLivePreview({ entry, fieldId, entryId, subscriptions })
       })
     })

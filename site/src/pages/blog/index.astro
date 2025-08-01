@@ -2,12 +2,10 @@
 import Card from "#/components/Card.astro"
 import ContainedSection from "#/components/ContainedSection.astro"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
-import { contentfulClient } from "#/lib/contentful/client.ts"
 import type { BlogPost } from "#/lib/types.ts"
 
 export const prerender = false
 
-const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog",
   // @ts-expect-error
   order: "-fields.date",

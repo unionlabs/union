@@ -1,15 +1,12 @@
 ---
 import ContainedSection from "../components/ContainedSection.astro"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
-import { contentfulClient } from "#/lib/contentful/client.ts"
-import type { CategoryFields, EcosystemFields, EcosystemSkeleton } from "#/lib/contentful/types.ts"
 
 let ecosystemData: Array<EcosystemFields> | null = null
 let ecosystemCategories: Array<CategoryFields> | null = null
 let error: string | null = null
 
 try {
-  const ecosystemEntries = await contentfulClient.getEntries<EcosystemSkeleton>({
     content_type: "ecosystem"
   })
 
