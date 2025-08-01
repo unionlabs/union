@@ -177,7 +177,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 8; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(src, dst, needed_channel_count, "/home/kaancaglan/dev/union/voyager/config.jsonc")
@@ -430,15 +430,15 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     println!("EVM Address: {:?}", evm_address);
     println!("Cosmos Address: {:?}", cosmos_address);
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
-    let pair = ChannelPair {
-        src: 9.try_into().unwrap(),
-        dest: 9.try_into().unwrap(),
-    };
+    // let pair = ChannelPair {
+    //     src: 9.try_into().unwrap(),
+    //     dest: 9.try_into().unwrap(),
+    // };
 
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
@@ -526,8 +526,14 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         recv_packet_data
     );
 
+    let get_minter_result = ctx
+        .src
+        .get_minter(Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap())
+        .await
+        .expect("failed to get minter address");
+
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
-        spender: UNION_MINTER_ADDRESS.into(),
+        spender: get_minter_result.into(),
         amount: "100".parse().unwrap(),
         expires: None,
     };
@@ -1950,43 +1956,43 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
 }
 
-// #[tokio::test]
-// async fn send_stake_and_unstake_from_evm_to_union0() {
-//     self::test_stake_and_unstake_from_evm_to_union().await;
-// }
+#[tokio::test]
+async fn send_stake_and_unstake_from_evm_to_union0() {
+    self::test_stake_and_unstake_from_evm_to_union().await;
+}
 
-// #[tokio::test]
-// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
-// }
+#[tokio::test]
+async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+}
 
 #[tokio::test]
 async fn from_evm_to_union0() {
     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
 }
 
-// #[tokio::test]
-// async fn from_evm_to_union_refund() {
-//     self::test_send_packet_from_evm_to_union_get_refund().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_refund() {
+    self::test_send_packet_from_evm_to_union_get_refund().await;
+}
 
-// #[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
-// async fn from_union_to_evm_refund() { 
-//     // TODO: Fix it later. Refund is not happening correctly.
-//     self::test_send_packet_from_union_to_evm_get_refund().await;
-// }
+#[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
+async fn from_union_to_evm_refund() { 
+    // TODO: Fix it later. Refund is not happening correctly.
+    self::test_send_packet_from_union_to_evm_get_refund().await;
+}
 
-// #[tokio::test]
-// async fn from_union_to_evm0() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+async fn from_union_to_evm0() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_stake0() {
-//     self::test_stake_from_evm_to_union().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_stake0() {
+    self::test_stake_from_evm_to_union().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_stake_and_refund() {
-//     self::test_stake_from_evm_to_union_and_refund().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_stake_and_refund() {
+    self::test_stake_from_evm_to_union_and_refund().await;
+}
