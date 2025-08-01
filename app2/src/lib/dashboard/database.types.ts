@@ -38,6 +38,7 @@ export type Database = {
           category: number | null
           created_at: string
           description: string | null
+          end_at: string | null
           id: number
           image: string | null
           meta: Json | null
@@ -55,6 +56,7 @@ export type Database = {
           category?: number | null
           created_at?: string
           description?: string | null
+          end_at?: string | null
           id?: number
           image?: string | null
           meta?: Json | null
@@ -72,6 +74,7 @@ export type Database = {
           category?: number | null
           created_at?: string
           description?: string | null
+          end_at?: string | null
           id?: number
           image?: string | null
           meta?: Json | null
@@ -1085,6 +1088,24 @@ export type Database = {
         }
         Relationships: []
       }
+      raccoons_nft_staging: {
+        Row: {
+          count: number
+          ethereum_address: string
+          initia_address: string
+        }
+        Insert: {
+          count: number
+          ethereum_address: string
+          initia_address: string
+        }
+        Update: {
+          count?: number
+          ethereum_address?: string
+          initia_address?: string
+        }
+        Relationships: []
+      }
       resend_audiences: {
         Row: {
           created_at: string
@@ -1211,6 +1232,27 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_followers: {
+        Row: {
+          smart_follower_count: number
+          twitter_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          smart_follower_count?: number
+          twitter_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          smart_follower_count?: number
+          twitter_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       snag_updated_users: {
         Row: {
           id: number
@@ -1243,6 +1285,7 @@ export type Database = {
           display_name: string | null
           ip_addresses: string[] | null
           pfp: string | null
+          smart_followers: number | null
           twitter_id: string | null
           updated_at: string | null
           user_id: string
@@ -1255,6 +1298,7 @@ export type Database = {
           display_name?: string | null
           ip_addresses?: string[] | null
           pfp?: string | null
+          smart_followers?: number | null
           twitter_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -1267,6 +1311,7 @@ export type Database = {
           display_name?: string | null
           ip_addresses?: string[] | null
           pfp?: string | null
+          smart_followers?: number | null
           twitter_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -1285,6 +1330,7 @@ export type Database = {
           pfp: string | null
           processed_at: string | null
           run_id: string
+          smart_followers: number | null
           twitter_id: string | null
           user_id: string
           wallet_data: string[] | null
@@ -1299,6 +1345,7 @@ export type Database = {
           pfp?: string | null
           processed_at?: string | null
           run_id: string
+          smart_followers?: number | null
           twitter_id?: string | null
           user_id: string
           wallet_data?: string[] | null
@@ -1313,6 +1360,7 @@ export type Database = {
           pfp?: string | null
           processed_at?: string | null
           run_id?: string
+          smart_followers?: number | null
           twitter_id?: string | null
           user_id?: string
           wallet_data?: string[] | null
@@ -2098,6 +2146,14 @@ export type Database = {
         }
         Relationships: []
       }
+      name_clusters: {
+        Row: {
+          base_name: string | null
+          names: string[] | null
+          similar_users: number | null
+        }
+        Relationships: []
+      }
       pg_stat_monitor: {
         Row: {
           application_name: string | null
@@ -2173,6 +2229,14 @@ export type Database = {
           amount: number | null
           guild_id: number | null
           type: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      user_ip: {
+        Row: {
+          ip_addresses: unknown[] | null
+          ip_count: number | null
           user_id: string | null
         }
         Relationships: []
@@ -2353,8 +2417,8 @@ export type Database = {
       get_unearned_achievements: {
         Args: { achievement_type: number } | { p_user_id: string }
         Returns: {
-          user_id: string
-          achievement_id: number
+          id: number
+          type: string
           meta: Json
         }[]
       }
@@ -2451,6 +2515,10 @@ export type Database = {
           start_time: string
           end_time: string
         }
+        Returns: undefined
+      }
+      migrate_raccoons_nfts: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       pg_stat_monitor_internal: {
