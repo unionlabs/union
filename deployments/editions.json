@@ -38,6 +38,9 @@
       "bob.60808": {
         "environment": "production"
       },
+      "bsc.56": {
+        "environment": "staging"
+      },
       "corn.21000000": {
         "environment": "production"
       },
