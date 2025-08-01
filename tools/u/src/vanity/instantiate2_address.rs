@@ -11,7 +11,7 @@ use std::{
 use alloy::{hex, primitives::U256};
 use anyhow::bail;
 use clap::Args;
-use sha2::Digest;
+use sha2::{Digest, Sha256};
 use unionlabs::primitives::{Bech32, Bytes, H256};
 
 #[derive(Debug, Args)]
@@ -23,6 +23,8 @@ pub struct Cmd {
     /// Number of threads to use for parallel processing
     #[arg(long, default_value_t = num_cpus::get())]
     threads: usize,
+    #[arg(long, default_value_t = U256::ZERO)]
+    pub seed: U256,
 }
 
 impl Cmd {
@@ -76,10 +78,14 @@ impl Cmd {
             let mut preimage = preimage.clone();
             let range = (preimage.len() - 8 - 32)..(preimage.len() - 8);
 
+            let seed = self.seed;
+
             let handle = thread::spawn(move || -> Option<H256> {
                 let mut local_attempts = 0u64;
 
-                let mut salt = U256::from(u64::MAX) * U256::from(i);
+                let mut salt = U256::from_be_bytes(Sha256::digest(seed.to_be_bytes::<32>()).into())
+                    + U256::from(i);
+                println!("{i}: {salt}");
 
                 let hrp = bech32::Hrp::parse("a").unwrap();
 

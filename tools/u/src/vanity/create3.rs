@@ -31,7 +31,7 @@ pub struct Cmd {
     #[arg(long, default_value_t = num_cpus::get())]
     pub threads: usize,
     #[arg(long, default_value_t = U256::ZERO)]
-    pub initial_salt: U256,
+    pub seed: U256,
 }
 
 impl Cmd {
@@ -97,7 +97,7 @@ impl Cmd {
             .collect::<Vec<_>>();
         let range = (salt_preimage.len() - 32)..salt_preimage.len();
 
-        let initial_salt = self.initial_salt;
+        let seed = self.seed;
 
         let mut handles = Vec::new();
         for i in 0..self.threads {
@@ -112,9 +112,8 @@ impl Cmd {
             let handle = thread::spawn(move || -> Option<H256> {
                 let mut local_attempts = 0u64;
 
-                let mut salt = U256::from_be_bytes(
-                    keccak256((initial_salt + U256::from(i)).to_be_bytes::<32>()).into(),
-                );
+                let mut salt =
+                    U256::from_be_bytes(keccak256(seed.to_be_bytes::<32>()).into()) + U256::from(i);
                 println!("{i}: {salt}");
 
                 while !found.load(Ordering::Relaxed) {
