@@ -112,8 +112,10 @@ impl Cmd {
             let handle = thread::spawn(move || -> Option<H256> {
                 let mut local_attempts = 0u64;
 
-                let mut salt =
-                    U256::from_be_bytes(keccak256(seed.to_be_bytes::<32>()).into()) + U256::from(i);
+                let mut salt = (0..(i + 1)).into_iter().fold(seed, |acc, _| {
+                    U256::from_be_bytes(sha2::Sha256::digest(acc.to_be_bytes::<32>()).into())
+                });
+                // let mut salt = ;
                 println!("{i}: {salt}");
 
                 while !found.load(Ordering::Relaxed) {
