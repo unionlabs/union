@@ -29,8 +29,7 @@ use union_test::{
         zkgm::{Instruction as InstructionEvm, UCS03Zkgm},
         zkgmerc20::ZkgmERC20,
     },
-    TestContext,
-    channel_provider::ChannelPair
+    TestContext
 };
 use unionlabs::{
     encoding::{Encode, Json},
@@ -45,8 +44,8 @@ static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
 
 static UNION_ZKGM_ADDRESS: &str =
     "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";
-static UNION_MINTER_ADDRESS: &str =
-    "union1tt6nn3qv0q0z4gq4s2h65a2acv3lcwxjwf8ey3jgnwmtqkfnyq9q4q5y8x";
+// static UNION_MINTER_ADDRESS: &str =
+//     "union1tt6nn3qv0q0z4gq4s2h65a2acv3lcwxjwf8ey3jgnwmtqkfnyq9q4q5y8x";
 static EVM_ZKGM_BYTES: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
 
 async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
@@ -435,7 +434,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = ChannelPair {
+    // let pair = union_test::channel_provider::ChannelPair {
     //     src: 9.try_into().unwrap(),
     //     dest: 9.try_into().unwrap(),
     // };
@@ -624,7 +623,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = ChannelPair {
+    // let pair = union_test::channel_provider::ChannelPair {
     //     src: 1.try_into().unwrap(),
     //     dest: 1.try_into().unwrap(),
     // };
@@ -892,7 +891,7 @@ async fn test_stake_from_evm_to_union() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = ChannelPair {
+    // let pair = union_test::channel_provider::ChannelPair {
     //     src: 29.try_into().unwrap(),
     //     dest: 37.try_into().unwrap(),
     // };
@@ -1345,7 +1344,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = ChannelPair {
+    // let pair = union_test::channel_provider::ChannelPair {
     //     src: 2.try_into().unwrap(),
     //     dest: 2.try_into().unwrap(),
     // };
