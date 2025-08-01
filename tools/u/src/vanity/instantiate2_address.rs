@@ -17,6 +17,7 @@ use unionlabs::primitives::{Bech32, Bytes, H256};
 #[derive(Debug, Args)]
 pub struct Cmd {
     pub creator: Bech32<Bytes>,
+    #[arg(long)]
     pub prefix: String,
     // pub suffix: String,
     /// Number of threads to use for parallel processing
@@ -70,7 +71,7 @@ impl Cmd {
             let total_attempts = Arc::clone(&total_attempts);
             let prefix = self.prefix.clone();
             // let suffix = self.suffix.clone();
-            let creator = self.creator.clone();
+            // let creator = self.creator.clone();
 
             let mut preimage = preimage.clone();
             let range = (preimage.len() - 8 - 32)..(preimage.len() - 8);
