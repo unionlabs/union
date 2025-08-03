@@ -1729,6 +1729,115 @@ contract DeployRoles is UnionScript {
     }
 }
 
+contract DeployRegisterClients is UnionScript {
+    using LibString for *;
+
+    Deployer immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = Deployer(vm.envAddress("DEPLOYER"));
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return deployer;
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            address(deployer)
+        );
+    }
+
+    function getContracts() internal returns (Contracts memory) {
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
+        CometblsClient cometblsClient =
+            CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
+        PingPong ucs00 = PingPong(getDeployed(Protocols.UCS00));
+        ZkgmERC20 ucs03Erc20Impl =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+        UCS06FundedDispatch ucs06 =
+            UCS06FundedDispatch(getDeployed(Protocols.UCS06));
+        Multicall multicall = Multicall(getDeployed(LIB_SALT.MULTICALL));
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+        StateLensIcs23MptClient(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_MPT)
+        );
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+        StateLensIcs23Ics23Client(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23)
+        );
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+        StateLensIcs23SmtClient(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT)
+        );
+        return Contracts({
+            manager: manager,
+            multicall: multicall,
+            handler: handler,
+            cometblsClient: cometblsClient,
+            stateLensIcs23MptClient: stateLensIcs23MptClient,
+            stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
+            stateLensIcs23SmtClient: stateLensIcs23SmtClient,
+            ucs00: ucs00,
+            ucs03Erc20Impl: ucs03Erc20Impl,
+            ucs03: ucs03,
+            ucs06: ucs06
+        });
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        Contracts memory contracts = getContracts();
+
+        vm.startBroadcast(privateKey);
+
+        try contracts.handler.registerClient(
+            LightClients.COMETBLS, contracts.cometblsClient
+        ) {} catch Error(string memory reason) {
+            console.log(
+                "error deploying client ", LightClients.COMETBLS, ": ", reason
+            );
+        }
+
+        try contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_MPT, contracts.stateLensIcs23MptClient
+        ) {} catch Error(string memory reason) {
+            console.log(
+                "error deploying client ", LightClients.COMETBLS, ": ", reason
+            );
+        }
+
+        try contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_ICS23,
+            contracts.stateLensIcs23Ics23Client
+        ) {} catch Error(string memory reason) {
+            console.log(
+                "error deploying client ", LightClients.COMETBLS, ": ", reason
+            );
+        }
+
+        try contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_SMT, contracts.stateLensIcs23SmtClient
+        ) {} catch Error(string memory reason) {
+            console.log(
+                "error deploying client ", LightClients.COMETBLS, ": ", reason
+            );
+        }
+
+        vm.stopBroadcast();
+    }
+}
+
 contract DeployU is UnionScript, VersionedScript {
     using LibString for *;
 
