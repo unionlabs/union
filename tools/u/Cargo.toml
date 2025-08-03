@@ -15,6 +15,7 @@ workspace = true
 alloy              = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 anyhow             = { workspace = true }
 base64             = { workspace = true }
+bech32             = "0.11.0"
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc       = { workspace = true }
 cosmwasm-std       = { workspace = true }
@@ -26,6 +27,7 @@ hex                = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union-spec     = { workspace = true, features = ["serde"] }
 jsonrpsee          = { workspace = true, features = ["client", "full", "tracing"] }
+keccak-asm         = "0.1.4"
 num_cpus           = "1.16"
 protos             = { workspace = true, features = ["proto_full", "serde"] }
 rand               = "0.8"
