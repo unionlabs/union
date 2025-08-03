@@ -1176,6 +1176,7 @@ _: {
                   })
                   {
                     roles = "Roles";
+                    register-clients = "RegisterClients";
                   }
                 )
                 # upgrades, all with a -dry version
