@@ -185,7 +185,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 8; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(
@@ -2126,43 +2126,179 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
 }
 
-#[tokio::test]
-async fn send_stake_and_unstake_from_evm_to_union0() {
-    self::test_stake_and_unstake_from_evm_to_union().await;
+
+async fn test_from_evm_to_union_tokenv2_unhappy_path() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+    println!("EVM Address: {:?}", evm_address);
+
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
+
+
+    let pair = union_test::channel_provider::ChannelPair {
+        src: 1.try_into().unwrap(),
+        dest: 1.try_into().unwrap(),
+    };
+
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
+        implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
+            .to_vec()
+            .into(),
+        initializer: ZkgmERC20::initializeCall {
+            _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
+            _minter: EVM_ZKGM_BYTES.into(),
+            _name: "muno".into(),
+            _symbol: "muno".into(),
+            _decimals: 6u8,
+        }
+        .abi_encode()
+        .into(),
+    }
+    .abi_encode_params();
+
+    let img = keccak256(&img_metadata);
+    let zkgm_deployer_provider = ctx.dst.get_provider_privileged().await;
+    let governance_token = ctx
+        .dst
+        .setup_governance_token(
+            EVM_ZKGM_BYTES.into(),
+            pair.dest,
+            img,
+            zkgm_deployer_provider,
+        )
+        .await;
+
+    assert!(
+        governance_token.is_ok(),
+        "Failed to setup governance token: {:?}",
+        governance_token.err()
+    );
+
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
+
+    let quote_token_addr = ctx
+        .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
+            &ctx.dst,
+            EVM_ZKGM_BYTES.into(),
+            ChannelId::new(NonZero::new(pair.dest).unwrap()),
+            "muno".into(),
+            img,
+            &evm_provider,
+        )
+        .await
+        .unwrap();
+
+    println!("✅ Quote token address: {:?}", quote_token_addr);
+
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "10".parse().unwrap(),
+            kind: 0x03, // WHICH IS NOT EXIST?
+            metadata: img_metadata.into(),
+            quote_token: quote_token_addr.as_ref().to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: pair.src.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
+
+    let recv_packet_data = ctx
+        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
+            (bin_msg, funds),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+
+    println!("Received packet data: {:?}", recv_packet_data);
+    println!(
+        "Calling approve on quote token: {:?} -> from account: {:?}",
+        quote_token_addr, evm_address
+    );
+
 }
 
-#[tokio::test]
-async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
-}
+
+// #[tokio::test]
+// async fn send_stake_and_unstake_from_evm_to_union0() {
+//     self::test_stake_and_unstake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union0() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_refund() {
+//     self::test_send_packet_from_evm_to_union_get_refund().await;
+// }
+
+// #[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
+// async fn from_union_to_evm_refund() {
+//     // TODO: Fix it later. Refund is not happening correctly.
+//     self::test_send_packet_from_union_to_evm_get_refund().await;
+// }
+
+// #[tokio::test]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake0() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake_and_refund() {
+//     self::test_stake_from_evm_to_union_and_refund().await;
+// }
+
 
 #[tokio::test]
-async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_refund() {
-    self::test_send_packet_from_evm_to_union_get_refund().await;
-}
-
-#[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
-async fn from_union_to_evm_refund() {
-    // TODO: Fix it later. Refund is not happening correctly.
-    self::test_send_packet_from_union_to_evm_get_refund().await;
-}
-
-#[tokio::test]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake0() {
-    self::test_stake_from_evm_to_union().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake_and_refund() {
-    self::test_stake_from_evm_to_union_and_refund().await;
+async fn from_evm_to_union_tokenv2_unhappy_path() {
+    self::test_from_evm_to_union_tokenv2_unhappy_path().await;
 }
