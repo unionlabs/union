@@ -163,3 +163,10 @@ export * as ZkgmClientError from "./ZkgmClientError.js"
  * @since 2.0.0
  */
 export * as ZkgmIncomingMessage from "./ZkgmIncomingMessage.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as ZkgmClientResponse from "./ZkgmClientResponse.js"
