@@ -845,6 +845,35 @@ impl<'a> Module<'a> {
             Err(err) => Err(TxSubmitError::Error(err)),
         }
     }
+    pub async fn migrate_v1_to_v2(
+        &self,
+        zkgm_addr: H160,
+        migrations: Vec<zkgm::V1ToV2Migration>,
+        provider: DynProvider<AnyNetwork>,
+    ) -> Result<H256, TxSubmitError> {
+        let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
+        let mut attempts = 0;
+        loop {
+            attempts += 1;
+            let pending = zkgm.migrateV1ToV2(migrations.clone()).send().await;
+            match pending {
+                Ok(pending) => {
+                    let tx_hash = <H256>::from(*pending.tx_hash());
+                    self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!("migrateV1ToV2 executed, tx_hash = {tx_hash:?}");
+                    return Ok(tx_hash);
+                }
+                Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
+                    println!("nonce too low – retrying ({attempts}/5)");
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    continue;
+                }
+                Err(err) => return Err(err.into()),
+            }
+        }
+    }
+
+
 
     pub async fn predict_stake_manager_address(
         &self,
@@ -951,6 +980,13 @@ pub mod zkgm {
             bytes initializer;
         }
 
+        struct V1ToV2Migration {
+            uint32  channelId;
+            uint256 path;
+            address baseToken;
+            bytes   quoteToken;
+        }
+
 
         contract ZkgmERC721 {
             function mint(uint256 tokenId, address to ) external;
@@ -972,6 +1008,10 @@ pub mod zkgm {
                 bytes32 salt,
                 Instruction calldata instruction
             ) public payable;
+
+            function migrateV1ToV2(
+                V1ToV2Migration[] calldata migrations
+            ) external;
 
             function registerGovernanceToken(
                 uint32 channelId,
