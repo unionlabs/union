@@ -10,6 +10,7 @@ import {
 } from "@unionlabs/sdk"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
+import { FeeEstimator } from "@unionlabs/sdk/FeeEstimator"
 import { TokenRegistry } from "@unionlabs/sdk/TokenRegistry"
 // import { EvmClient } from "@unionlabs/sdk-evm"
 import { EvmZkgmClient } from "@unionlabs/sdk-evm"
@@ -62,6 +63,7 @@ const program = Effect.gen(function*() {
 }).pipe(
   Effect.provide(EvmZkgmClient.layer),
   Effect.provide(ChannelRegistry.Default),
+  Effect.provide(FeeEstimator.Default),
   Effect.provide(TokenRegistry.Default),
   Effect.provide(ChainRegistry.Default),
 )

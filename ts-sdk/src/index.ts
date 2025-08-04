@@ -134,6 +134,13 @@ export * as TokenRegistry from "./TokenRegistry.js"
  *
  * @since 2.0.0
  */
+export * as FeeEstimator from "./FeeEstimator.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
 export * as Token from "./Token.js"
 
 /**

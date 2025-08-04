@@ -5,6 +5,7 @@ import * as S from "effect/Schema"
 import { Covariant } from "effect/Types"
 import * as Batch from "./Batch.js"
 import { ChannelRegistry } from "./ChannelRegistry.js"
+import { FeeEstimator } from "./FeeEstimator.js"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/tokenOrder.js"
 import { Chain } from "./schema/chain.js"
@@ -158,4 +159,4 @@ export declare const withFee: (
   } | undefined,
 ) => <A extends TokenOrder.Complete>(
   self: A,
-) => Effect.Effect<Batch.Batch<TokenOrder>, unknown, "with fee" | ChannelRegistry>
+) => Effect.Effect<Batch.Batch<TokenOrder>, unknown, FeeEstimator | ChannelRegistry>
