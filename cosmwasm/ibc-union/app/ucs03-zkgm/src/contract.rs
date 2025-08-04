@@ -2712,7 +2712,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
             EXECUTING_PACKET.remove(deps.storage);
             match reply.result {
                 SubMsgResult::Ok(_) => {
-                    // If the execution succedeed one of the acks is guaranteed to exist.
+                    // If the execution succeeded one of the acks is guaranteed to exist.
                     let execution_ack = (|| -> Result<Bytes, ContractError> {
                         match EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
                             Some(expected_acks) => {
