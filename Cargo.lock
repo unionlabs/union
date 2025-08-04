@@ -4666,6 +4666,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-escrow-vault"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw20",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal",
+ "ibc-union-spec",
+ "serde",
+ "thiserror 2.0.12",
+ "ucs03-zkgm",
+ "unionlabs",
+]
+
+[[package]]
 name = "cw-multi-test"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
