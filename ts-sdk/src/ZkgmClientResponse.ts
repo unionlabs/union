@@ -24,5 +24,4 @@ export interface ZkgmClientResponse
 {
   readonly [TypeId]: TypeId
   readonly request: ClientRequest.ZkgmClientRequest
-  readonly status: number
 }

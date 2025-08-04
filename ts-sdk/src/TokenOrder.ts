@@ -30,42 +30,19 @@ export enum Kind {
   Unescrow,
 }
 
-const EscrowInput = S.Struct({
-  kind: S.Literal(Kind.Escrow),
-})
-
-const UnescrowInput = S.Struct({
-  kind: S.Literal(Kind.Unescrow),
-})
-
-const InitializeInput = S.Struct({
-  kind: S.Literal(Kind.Initialize),
-  metadata: Hex,
-})
-
-const KindInput = S.Union(
-  EscrowInput,
-  UnescrowInput,
-  InitializeInput,
-)
-
-const RequiredInput = S.Struct({
+const Input = S.Struct({
   source: Chain,
   destination: Chain,
   sender: Ucs05.ValidAddress,
   receiver: Ucs05.ValidAddress,
   baseToken: S.Union(Token.Any, Token.TokenFromString),
   baseAmount: S.BigIntFromSelf,
-}).pipe(
-  S.extend(KindInput),
-)
-
-const OptionalInput = S.Struct({
   quoteToken: S.Union(Token.Any, Token.TokenFromString),
   quoteAmount: S.BigIntFromSelf,
+  kind: S.Literal(Kind.Initialize),
+  metadata: S.optional(Hex),
 })
 
-export const Input = 
 export type InputEncoded = typeof Input.Encoded
 export type InputDecoded = typeof Input.Type
 const Options = S.partial(Input)
@@ -81,7 +58,7 @@ export interface TokenOrder
     Inspectable,
     Pipeable,
     InputDecoded,
-    ZkgmInstruction.Encodeable<any, never>
+    ZkgmInstruction.Encodeable<never, never>
 {
   _tag: "TokenOrder"
 }
@@ -108,10 +85,6 @@ export declare namespace TokenOrder {
  * @since 2.0.0
  */
 export declare namespace Options {
-  /**
-   * Keys that **must** be present before the order can leave the caller’s
-   * hands.  These map directly to domain requirements – rename as needed.
-   */
   export type RequiredKeys =
     | "source"
     | "destination"
@@ -121,10 +94,7 @@ export declare namespace Options {
     | "baseAmount"
 
   /**
-   * Helper mapped type:
-   * – removes the `?` (optional) modifier,
-   * – keeps `readonly`,
-   * – preserves the exact field types.
+   * removes the `?` (optional) modifier,
    */
   export type Required = {
     -readonly [K in RequiredKeys]-?: NonNullable<Options[K]>
@@ -151,7 +121,7 @@ export declare const make: <
 >(
   value: P,
 ) => Effect.Effect<
-  TokenOrder.Build<Exclude<keyof Options.Optional, keyof P>>,
+  TokenOrder.Build<Exclude<keyof Options.Required, keyof P>>,
   ParseResult.ParseError,
   never
 >
@@ -187,4 +157,4 @@ export declare const withFee: (
   } | undefined,
 ) => <A extends TokenOrder.Complete>(
   self: A,
-) => Effect.Effect<Batch.Batch<TokenOrder.Complete>, unknown, "with fee" | ChannelRegistry>
+) => Effect.Effect<Batch.Batch<TokenOrder>, unknown, "with fee" | ChannelRegistry>

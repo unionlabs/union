@@ -1,6 +1,7 @@
 import { NonEmptyReadonlyArray } from "effect/Array"
 import { Inspectable } from "effect/Inspectable"
 import { Pipeable } from "effect/Pipeable"
+import { ZkgmInstruction } from "./index.js"
 
 /**
  * @category type ids
@@ -18,7 +19,7 @@ export type TypeId = typeof TypeId
  * @since 2.0.0
  * @category models
  */
-export interface Batch<A> extends Inspectable, Pipeable {
+export interface Batch<A> extends Inspectable, Pipeable, ZkgmInstruction.Encodeable<never, never> {
   readonly [TypeId]: TypeId
   _tag: "Batch"
   readonly instructions: NonEmptyReadonlyArray<A>
