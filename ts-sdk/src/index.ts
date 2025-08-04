@@ -127,6 +127,13 @@ export * as ChainRegistry from "./ChainRegistry.js"
  *
  * @since 2.0.0
  */
+export * as TokenRegistry from "./TokenRegistry.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
 export * as Token from "./Token.js"
 
 /**
