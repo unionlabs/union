@@ -73,6 +73,16 @@ export const isBroadcast = LifecycleEvent.$match({
   EvmWriteContractInProgress: constFalse,
 })
 
+export const isComplete = LifecycleEvent.$match({
+  CosmosWriteContractComplete: constTrue,
+  CosmosWriteContractInProgress: constFalse,
+  EvmTransactionReceiptComplete: constTrue,
+  EvmTransactionReceiptInProgress: constFalse,
+  EvmWaitForSafeWalletHash: constFalse,
+  EvmWriteContractComplete: constFalse,
+  EvmWriteContractInProgress: constFalse,
+})
+
 /**
  * @since 2.0.0
  */

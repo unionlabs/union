@@ -39,7 +39,7 @@ const Input = S.Struct({
   baseAmount: S.BigIntFromSelf,
   quoteToken: S.Union(Token.Any, Token.TokenFromString),
   quoteAmount: S.BigIntFromSelf,
-  kind: S.Literal(Kind.Initialize),
+  kind: S.Enums(Kind),
   metadata: S.optional(Hex),
 })
 
