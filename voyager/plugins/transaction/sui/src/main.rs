@@ -41,7 +41,9 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
 };
 use tracing::{debug, info, instrument};
-use ucs03_zkgm::com::{TokenMetadata, TokenOrderV2, ZkgmPacket, TOKEN_ORDER_KIND_INITIALIZE};
+use ucs03_zkgm::com::{
+    Batch, Instruction, TokenMetadata, TokenOrderV2, ZkgmPacket, TOKEN_ORDER_KIND_INITIALIZE,
+};
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes, H256},
     ErrorReporter,
@@ -557,7 +559,7 @@ async fn process_msgs(
                     .start_version()
                     .expect("object is shared, hence it has a start version");
 
-                let coin_t = register_token_if_zkgm(
+                let coin_t = register_tokens_if_zkgm(
                     module,
                     ptb,
                     pk,
@@ -592,7 +594,7 @@ async fn process_msgs(
                     module_info.latest_address.into(),
                     Identifier::new(module_info.module_name).unwrap(),
                     ident_str!("recv_packet").into(),
-                    vec![coin_t.unwrap()],
+                    coin_t,
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
                             id: module.ibc_store.into(),
@@ -652,20 +654,55 @@ struct SuiFungibleAssetMetadata {
     description: String,
 }
 
-/// Deploy and register the token if needed in `ZKGM`
-async fn register_token_if_zkgm(
+async fn register_tokens_if_zkgm(
     module: &Module,
     ptb: &mut ProgrammableTransactionBuilder,
     pk: &Arc<SuiKeyPair>,
     packet: &ibc_union_spec::Packet,
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
-) -> anyhow::Result<Option<TypeTag>> {
+) -> anyhow::Result<Vec<TypeTag>> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
-        return Ok(None);
+        return Ok(vec![]);
     };
 
-    let Ok(fao) = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand) else {
+    let Ok(batch) = Batch::abi_decode_params(&zkgm_packet.instruction.operand) else {
+        return Ok(vec![]);
+    };
+
+    let mut coin_ts = vec![];
+    for instr in batch.instructions {
+        if let Some(type_tag) = register_token_if_zkgm(
+            module,
+            ptb,
+            pk,
+            packet,
+            &zkgm_packet,
+            instr,
+            module_info,
+            store_initial_seq,
+        )
+        .await?
+        {
+            coin_ts.push(type_tag);
+        }
+    }
+
+    Ok(coin_ts)
+}
+
+/// Deploy and register the token if needed in `ZKGM`
+async fn register_token_if_zkgm(
+    module: &Module,
+    ptb: &mut ProgrammableTransactionBuilder,
+    pk: &Arc<SuiKeyPair>,
+    packet: &ibc_union_spec::Packet,
+    zkgm_packet: &ZkgmPacket,
+    instruction: Instruction,
+    module_info: &ModuleInfo,
+    store_initial_seq: SequenceNumber,
+) -> anyhow::Result<Option<TypeTag>> {
+    let Ok(fao) = TokenOrderV2::abi_decode_params(&instruction.operand) else {
         return Ok(None);
     };
 
