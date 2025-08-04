@@ -5,8 +5,9 @@ import {
   Ucs03,
   Ucs05,
   ZkgmClient,
+  ZkgmClientRequest,
+  ZkgmClientResponse,
   ZkgmInstruction,
-  ZkgmRequest,
 } from "@unionlabs/sdk"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
@@ -45,13 +46,13 @@ const program = Effect.gen(function*() {
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
-  const request = ZkgmRequest.make({
+  const request = ZkgmClientRequest.make({
     source,
     destination,
     instruction: batch,
   })
 
-  const response: ClientResponse = yield* zkgmClient.execute(request)
+  const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
 }).pipe(
   EvmZkgmClient.fromBrowser({}),
   ChannelRegistry.Default,
