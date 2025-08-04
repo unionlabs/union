@@ -1,8 +1,37 @@
+use alloy_primitives::U256;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Uint128};
+use cosmwasm_std::{Addr, Binary, Event, Uint128};
 use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
-use unionlabs::primitives::H256;
+use unionlabs::primitives::{encoding::HexPrefixed, Bytes, H256};
+
+pub const EVENT_SECURE_WRAPPED_TOKEN: &str = "new_secure_wrapped_token";
+pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_CHANNEL_ID: &str = "channel_id";
+pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_PATH: &str = "path";
+pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_BASE_TOKEN: &str = "base_token";
+pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN: &str = "quote_token";
+
+pub fn new_secure_wrapped_token_event(
+    channel_id: ChannelId,
+    path: U256,
+    base_token: Vec<u8>,
+    quote_token_denom: &str,
+) -> Event {
+    Event::new(EVENT_SECURE_WRAPPED_TOKEN)
+        .add_attribute(
+            EVENT_SECURE_WRAPPED_TOKEN_ATTR_CHANNEL_ID,
+            channel_id.to_string(),
+        )
+        .add_attribute(EVENT_SECURE_WRAPPED_TOKEN_ATTR_PATH, path.to_string())
+        .add_attribute(
+            EVENT_SECURE_WRAPPED_TOKEN_ATTR_BASE_TOKEN,
+            Bytes::<HexPrefixed>::from(base_token).to_string(),
+        )
+        .add_attribute(
+            EVENT_SECURE_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN,
+            quote_token_denom,
+        )
+}
 
 #[cw_serde]
 pub enum TokenMinterInitMsg {

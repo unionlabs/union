@@ -97,6 +97,13 @@ library ZkgmLib {
     error ErrMustBeWrap();
     error ErrStakingRewardNotWithdrawable();
 
+    event NewSecureWrappedToken(
+        uint32 indexed channelId,
+        uint256 path,
+        bytes indexed baseToken,
+        address indexed quoteToken
+    );
+
     function encodeTokenOrderAck(
         TokenOrderAck memory ack
     ) internal pure returns (bytes memory) {

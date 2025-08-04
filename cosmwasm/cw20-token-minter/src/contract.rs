@@ -2,7 +2,7 @@ use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
+    entry_point, from_json, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
     CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Empty, Env, MessageInfo,
     QueryRequest, Response, StdResult, Storage, WasmMsg,
 };
@@ -10,8 +10,8 @@ use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
-    ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
-    TokenMinterInitMsg, WrappedTokenMsg,
+    new_secure_wrapped_token_event, ExecuteMsg, LocalTokenMsg, MetadataResponse,
+    PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenMsg,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
@@ -101,32 +101,72 @@ pub fn execute(
             } => {
                 let (admin, code_id) =
                     <(String, u64)>::abi_decode_params_validate(implementation.as_ref()).unwrap();
+
+                let cw20_admin = CW20_ADMIN.load(deps.storage)?;
+                let is_cw20_base_code_id = code_id == config.cw20_base_code_id;
+                let is_cw20_admin = admin == cw20_admin.as_str();
+                let is_local_minter =
+                    from_json::<UpgradeMsg<cw20_base::msg::InstantiateMsg, Empty>>(&initializer)
+                        .map(|msg| match msg {
+                            UpgradeMsg::Init(init) => init
+                                .mint
+                                .map(|minter| {
+                                    minter.minter == env.contract.address.clone().into_string()
+                                })
+                                .unwrap_or(false),
+                            UpgradeMsg::Migrate(_) => false,
+                        })
+                        .unwrap_or(false);
+
+                let is_secure_wrapped_token =
+                    is_cw20_base_code_id && is_cw20_admin && is_local_minter;
+
                 let metadata_image = calculate_metadata_image(implementation, initializer.clone());
-                Response::new()
-                    .add_message(WasmMsg::Instantiate2 {
-                        admin: Some(env.contract.address.to_string()),
-                        code_id: config.dummy_code_id,
-                        label: subdenom.clone(),
-                        msg: to_json_binary(&cosmwasm_std::Empty {})?,
-                        funds: vec![],
-                        salt: Binary::new(calculate_salt_v2(
-                            U256::from_be_bytes::<{ U256::BYTES }>(
-                                path.as_slice().try_into().expect("correctly encoded; qed"),
-                            ),
-                            channel_id,
-                            token.to_vec(),
-                            metadata_image,
-                        )),
-                    })
-                    .add_message(WasmMsg::Migrate {
-                        contract_addr: subdenom.clone(),
-                        new_code_id: code_id,
-                        msg: initializer,
-                    })
-                    .add_message(WasmMsg::UpdateAdmin {
-                        contract_addr: subdenom,
-                        admin,
-                    })
+
+                let path = U256::from_be_bytes::<{ U256::BYTES }>(
+                    path.as_slice().try_into().expect("correctly encoded; qed"),
+                );
+
+                let instantiate_msg = WasmMsg::Instantiate2 {
+                    admin: Some(env.contract.address.to_string()),
+                    code_id: config.dummy_code_id,
+                    label: subdenom.clone(),
+                    msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                    funds: vec![],
+                    salt: Binary::new(calculate_salt_v2(
+                        path,
+                        channel_id,
+                        token.to_vec(),
+                        metadata_image,
+                    )),
+                };
+
+                let migrate_msg = WasmMsg::Migrate {
+                    contract_addr: subdenom.clone(),
+                    new_code_id: code_id,
+                    msg: initializer,
+                };
+
+                let update_admin_msg = WasmMsg::UpdateAdmin {
+                    contract_addr: subdenom.clone(),
+                    admin,
+                };
+
+                let mut response = Response::new()
+                    .add_message(instantiate_msg)
+                    .add_message(migrate_msg)
+                    .add_message(update_admin_msg);
+
+                if is_secure_wrapped_token {
+                    response = response.add_event(new_secure_wrapped_token_event(
+                        channel_id,
+                        path,
+                        token.to_vec(),
+                        &subdenom,
+                    ));
+                }
+
+                response
             }
             WrappedTokenMsg::CreateDenom {
                 metadata,
@@ -146,6 +186,9 @@ pub fn execute(
                     restrict_symbol(metadata.symbol)
                 };
                 let cw20_admin = CW20_ADMIN.load(deps.storage)?;
+                let path = U256::from_be_bytes::<{ U256::BYTES }>(
+                    path.as_slice().try_into().expect("correctly encoded; qed"),
+                );
                 Response::new()
                     .add_message(
                         // Instantiating the dummy contract first to be able to get the deterministic address
@@ -155,13 +198,7 @@ pub fn execute(
                             label: subdenom.clone(),
                             msg: to_json_binary(&cosmwasm_std::Empty {})?,
                             funds: vec![],
-                            salt: Binary::new(calculate_salt(
-                                U256::from_be_bytes::<{ U256::BYTES }>(
-                                    path.as_slice().try_into().expect("correctly encoded; qed"),
-                                ),
-                                channel_id,
-                                token.to_vec(),
-                            )),
+                            salt: Binary::new(calculate_salt(path, channel_id, token.to_vec())),
                         },
                     )
                     .add_message(
@@ -190,9 +227,15 @@ pub fn execute(
                     .add_message(WasmMsg::UpdateAdmin {
                         // We temporarily set ourselves as admin previously to be able to migrate the contract.
                         // Updating the admin to the correct admin finally.
-                        contract_addr: subdenom,
+                        contract_addr: subdenom.clone(),
                         admin: cw20_admin.to_string(),
                     })
+                    .add_event(new_secure_wrapped_token_event(
+                        channel_id,
+                        path,
+                        token.to_vec(),
+                        &subdenom,
+                    ))
             }
             WrappedTokenMsg::MintTokens {
                 denom,

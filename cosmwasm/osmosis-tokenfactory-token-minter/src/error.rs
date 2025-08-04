@@ -1,5 +1,5 @@
+use alloy::primitives::ruint::ParseError;
 use cosmwasm_std::{Addr, StdError, Uint128};
-use unionlabs::primitives::uint::FromDecStrErr;
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
@@ -13,7 +13,7 @@ pub enum Error {
     InvalidFunds { needed: Uint128, given: Uint128 },
 
     #[error("invalid path: {0}")]
-    InvalidPath(FromDecStrErr),
+    InvalidPath(ParseError),
 
     #[error("invalid denom: {0}")]
     InvalidDenom(String),
