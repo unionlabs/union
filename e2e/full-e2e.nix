@@ -4,14 +4,12 @@
   ...
 }:
 {
-  voyager-queue-works = e2e.mkE2eTestEthUnion {
-    name = "voyager-queue-works";
+  all-works = e2e.mkE2eTestEthUnion {
+    name = "all-works";
 
     testScript = '''';
 
     nodes = {
-      # empty node used to communicate with the other nodes
-      client = _: { };
     };
   };
 }

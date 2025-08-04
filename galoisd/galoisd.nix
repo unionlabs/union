@@ -9,6 +9,14 @@
       mkCi,
       ...
     }:
+    let
+      galoisKeys = pkgs.runCommand "galois-keys" { } ''
+          mkdir $out
+          cp ${../vk.bin} $out/vk.bin
+          cp ${../pk.bin} $out/pk.bin
+          cp ${../r1cs.bin} $out/r1cs.bin
+        '';
+    in
     {
       # TODO(aeryz): This builds the keys for now bc of my shitty internet. Otherwise, it takes me forever to try
       # In the real CI version, this will just use `galois-testnet-standalone` and download the keys.
@@ -22,6 +30,7 @@
                 pkgs.coreutils-full
                 pkgs.cacert
                 self'.packages.galoisd
+                galoisKeys
               ];
             };
 
@@ -37,7 +46,7 @@
                 "sh"
                 "-c"
                 ''
-                  ${pkgs.lib.getExe self'.packages.galoisd} serve 0.0.0.0:9999 --cs-path=/tmp/r1cs.bin --pk-path=/tmp/pk.bin --vk-path=/tmp/vk.bin  --max-conn 3
+                  ${pkgs.lib.getExe self'.packages.galoisd} serve 0.0.0.0:9999 --cs-path=${galoisKeys}/r1cs.bin --pk-path=${galoisKeys}/pk.bin --vk-path=${galoisKeys}/vk.bin  --max-conn 3
                 ''
               ];
             };
