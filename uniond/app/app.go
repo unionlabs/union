@@ -7,6 +7,10 @@ import (
 	"slices"
 	"strings"
 
+	"math/big"
+
+	sdkmath "cosmossdk.io/math"
+
 	_ "cosmossdk.io/api/cosmos/tx/config/v1" // import for side-effects
 	clienthelpers "cosmossdk.io/client/v2/helpers"
 	_ "cosmossdk.io/core/store"
@@ -157,6 +161,10 @@ type App struct {
 	configurator module.Configurator
 }
 
+var PowerReduction = sdkmath.NewIntFromBigInt(
+	new(big.Int).SetUint64(1_000_000_000_000_000_000),
+)
+
 func init() {
 	var err error
 	clienthelpers.EnvPrefix = Name
@@ -164,6 +172,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	sdk.DefaultPowerReduction = PowerReduction
 }
 
 // getGovProposalHandlers return the chain proposal handlers.

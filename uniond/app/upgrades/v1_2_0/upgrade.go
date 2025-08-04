@@ -1,6 +1,7 @@
 package v1_2_0
 
 import (
+	"bytes"
 	"context"
 	"math"
 	"math/big"
@@ -8,6 +9,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 
+	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -46,11 +48,7 @@ var feemarketDistFees = map[string]bool{
 	UNION_DEVNET:  false,
 }
 
-var PowerReduction = sdkmath.NewIntFromBigInt(
-	new(big.Int).SetUint64(1_000_000_000_000_000_000),
-)
-
-func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
+func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers, getKey upgrades.GetKeyFunc) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		migrations, err := mm.RunMigrations(ctx, configurator, vm)
 		if err != nil {
@@ -62,6 +60,55 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(unionFoundationSigMap[sdkCtx.ChainID()])
 		if err != nil {
 			return nil, err
+		}
+
+		// Resets the validator state with the new power reduction
+		// Adapted from https://github.com/DoraFactory/doravota/blob/final-fix/app/app.go#L1095-L1136
+		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		sdkCtx.Logger().Info("resetting validator state")
+		for _, validator := range validators {
+
+			store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
+
+			deleted := false
+
+			iterator := storetypes.KVStorePrefixIterator(store, stakingtypes.ValidatorsByPowerIndexKey)
+			defer iterator.Close()
+
+			for ; iterator.Valid(); iterator.Next() {
+				valAddr := stakingtypes.ParseValidatorPowerRankKey(iterator.Key())
+
+				bz, err := keepers.StakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+				if err != nil {
+					panic(err)
+				}
+
+				if bytes.Equal(valAddr, bz) {
+					if deleted {
+						sdkCtx.Logger().Info("deleting duplicate validator")
+					} else {
+						deleted = true
+						sdkCtx.Logger().Info("deleting validator first record")
+					}
+
+					store.Delete(iterator.Key())
+					sdkCtx.Logger().Info("deleted the key")
+				}
+			}
+
+			keepers.StakingKeeper.SetValidatorByPowerIndex(ctx, validator)
+			sdkCtx.Logger().Info("reset validator")
+			_, err := keepers.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+			sdkCtx.Logger().Info("update valset")
+			if err != nil {
+				panic(err)
+			}
+
+			sdkCtx.Logger().Info("done with validator")
 		}
 
 		// Undelegate existing delegations
@@ -139,7 +186,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 		}
 
-		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
+		validators, err = keepers.StakingKeeper.GetAllValidators(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -251,10 +298,6 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		if sdkCtx.ChainID() != UNION_TESTNET {
-			sdk.DefaultPowerReduction = PowerReduction
-		}
-
 		// Redelegate to validators from Union foundation account
 		// NOTE: This is the original delegations list, since we want to reconstruct the same validator delegations but with the foundation account being the owner of all delegations
 		for idx, delegation := range delegations {
@@ -304,32 +347,6 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 					return nil, err
 				}
 			}
-		}
-
-		for _, delegation := range delegations {
-			valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
-			if err != nil {
-				return nil, err
-			}
-			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
-			if err != nil {
-				if err == stakingtypes.ErrNoValidatorFound {
-					sdkCtx.Logger().Info(
-						"validator not found",
-						"addr", valAddr,
-					)
-					continue
-				}
-			}
-			err = keepers.StakingKeeper.DeleteValidatorByPowerIndex(ctx, validator)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		validators, err = keepers.StakingKeeper.GetBondedValidatorsByPower(ctx)
-		if err != nil {
-			return nil, err
 		}
 
 		// Burn old tokens
