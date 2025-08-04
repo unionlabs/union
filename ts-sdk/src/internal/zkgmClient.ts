@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Exit, Fiber, Inspectable, Predicate, Stream } from "effect"
+import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Predicate, Stream } from "effect"
 import { dual } from "effect/Function"
 import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
@@ -167,14 +167,7 @@ export const make = (
       Effect.withFiberRuntime((fiber) => {
         const scopedController = scopedRequests.get(request)
         const controller = scopedController ?? new AbortController()
-        // TODO: Return Either with request decode
-        // const urlResult = UrlParams.makeUrl(request.url, request.urlParams, request.hash)
-        // if (urlResult._tag === "Left") {
-        //   return Effect.fail(
-        //     new Error.RequestError({ request, reason: "InvalidUrl", cause: urlResult.left }),
-        //   )
-        // }
-        // const url = urlResult.right
+        // TODO: at some point, return encode request, return Either, map error to `ZkgmClientError`
         const effect = f(request, controller.signal, fiber)
         if (scopedController) {
           return effect
@@ -217,6 +210,40 @@ export const transform = dual<
     client.preprocess,
   )
 })
+
+/** @internal */
+export const transformResponse = dual<
+  <E, R, E1, R1>(
+    f: (
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ) => (self: Client.ZkgmClient.With<E, R>) => Client.ZkgmClient.With<E1, R1>,
+  <E, R, E1, R1>(
+    self: Client.ZkgmClient.With<E, R>,
+    f: (
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ) => Client.ZkgmClient.With<E1, R1>
+>(2, (self, f) => {
+  const client = self as ZkgmClientImpl<any, any>
+  return makeWith((request) => f(client.postprocess(request)), client.preprocess)
+})
+
+/** @internal */
+export const layerMergedContext = <E, R>(
+  effect: Effect.Effect<Client.ZkgmClient, E, R>,
+): Layer.Layer<Client.ZkgmClient, E, R> =>
+  Layer.effect(
+    tag,
+    Effect.flatMap(Effect.context<never>(), (context) =>
+      Effect.map(effect, (client) =>
+        transformResponse(
+          client,
+          Effect.mapInputContext((input: Context.Context<never>) =>
+            Context.merge(context, input)
+          ),
+        ))),
+  )
 
 // /** @internal */
 // export const withFee = <E, R>(

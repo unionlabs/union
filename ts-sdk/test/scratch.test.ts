@@ -35,8 +35,6 @@ const program = Effect.gen(function*() {
     baseToken: Token.Erc20.make({ address: "0x123" }),
     kind: TokenOrder.Kind.Escrow,
     baseAmount: 100n,
-    quoteAmount: 100n,
-    metadata: "0x",
   })
 
   const batch: ZkgmInstruction.ZkgmInstruction = yield* pipe(
@@ -45,7 +43,7 @@ const program = Effect.gen(function*() {
     Effect.flatMap(TokenOrder.withFee({ priority: "high" })),
   )
 
-  const zkgmClient = yield* ZkgmClient.Client
+  const zkgmClient = yield* ZkgmClient.ZkgmClient
 
   const request = ZkgmRequest.make({
     source,

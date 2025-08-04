@@ -72,3 +72,11 @@ export const isBroadcast = LifecycleEvent.$match({
   EvmWriteContractComplete: constTrue,
   EvmWriteContractInProgress: constFalse,
 })
+
+/**
+ * @since 2.0.0
+ */
+export const inspect = <E>(self: ZkgmIncomingMessage<E>, that: object): object => {
+  // TODO: fulfill
+  return Object.create({})
+}

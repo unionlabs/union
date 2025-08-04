@@ -1,10 +1,11 @@
 /**
- * @since 1.0.0
+ * @since 2.0.0
  */
 import type * as Context from "effect/Context"
 import type * as Effect from "effect/Effect"
 import { RuntimeFiber } from "effect/Fiber"
 import type { Inspectable } from "effect/Inspectable"
+import { Layer } from "effect/Layer"
 import type { Pipeable } from "effect/Pipeable"
 import * as internal from "./internal/zkgmClient.js"
 import type * as ClientError from "./ZkgmClientError.js"
@@ -35,7 +36,7 @@ export interface ZkgmClient extends ZkgmClient.With<ClientError.ClientError> {}
 export declare namespace ZkgmClient {
   /**
    * @category models
-   * @since 1.0.0
+   * @since 2.0.0
    */
   export interface With<E, R = never> extends Pipeable, Inspectable {
     readonly [TypeId]: TypeId
@@ -77,7 +78,7 @@ export const execute: (
   internal.execute
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category constructors
  */
 export const makeWith: <E2, R2, E, R>(
@@ -88,7 +89,7 @@ export const makeWith: <E2, R2, E, R>(
 ) => ZkgmClient.With<E, R> = internal.makeWith
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category constructors
  */
 export const make: (
@@ -100,7 +101,7 @@ export const make: (
 ) => ZkgmClient = internal.make
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category mapping & sequencing
  */
 export const transform: {
@@ -118,3 +119,28 @@ export const transform: {
     ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
   ): ZkgmClient.With<E | E1, R | R1>
 } = internal.transform
+
+/**
+ * @since 1.0.0
+ * @category mapping & sequencing
+ */
+export const transformResponse: {
+  <E, R, E1, R1>(
+    f: (
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ): (self: ZkgmClient.With<E, R>) => ZkgmClient.With<E1, R1>
+  <E, R, E1, R1>(
+    self: ZkgmClient.With<E, R>,
+    f: (
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ): ZkgmClient.With<E1, R1>
+} = internal.transformResponse
+
+/**
+ * @since 2.0.0
+ */
+export const layerMergedContext: <E, R>(
+  effect: Effect.Effect<ZkgmClient, E, R>,
+) => Layer<ZkgmClient, E, R> = internal.layerMergedContext
