@@ -340,7 +340,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_fungible_asset_transfer() {
+    fn test_token_order() {
         let packet = hex::decode("0b00dd4772d3b8ebf5add472a720f986c0846c9b9c1c0ed98f1a011df8486bfc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014e6831e169d77a861a0e71326afa6d80bcc8bc6aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000014e6831e169d77a861a0e71326afa6d80bcc8bc6aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000014779877a7b0d9e8603169ddbd7836e478b462478900000000000000000000000000000000000000000000000000000000000000000000000000000000000000044c494e4b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f436861696e4c696e6b20546f6b656e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014d1b482d1b947a96e96c9b76d15de34f7f70a20a1000000000000000000000000").unwrap();
 
         let json = decode(&packet, None, &PacketHash([0; 32]), None).unwrap();
@@ -355,7 +355,7 @@ mod tests {
                 "_instruction_hash": "0x02ce32bed30842ace78d6dd11b5c473f23a7fe47341f70996d39525428e373ed",
                 "opcode": 3,
                 "operand": {
-                "_type": "FungibleAssetOrder",
+                "_type": "TokenOrder",
                 "baseAmount": "0x0",
                   "baseToken": "0x779877a7b0d9e8603169ddbd7836e478b4624789",
                   "baseTokenName": "ChainLink Token",
@@ -404,13 +404,13 @@ mod tests {
                   "acknowledgements": [
                     {
                       "_index": "0",
-                      "_type": "FungibleAssetOrder",
+                      "_type": "TokenOrder",
                       "fillType": "0xb0cad0",
                       "marketMaker": "0x"
                     },
                     {
                       "_index": "1",
-                      "_type": "Multiplex",
+                      "_type": "Call",
                       "data": "0x0000000000000000000000000000000000000000000000000000000000000001"
                     }
                   ]
@@ -431,7 +431,7 @@ mod tests {
                       "_instruction_hash": "0x69e40f6af822c360edf576c71482d9bb176e54a4630c0b7ed4194b02df0c30f7",
                       "opcode": 3,
                       "operand": {
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "baseAmount": "0x1",
                         "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                         "baseTokenName": "",
@@ -453,7 +453,7 @@ mod tests {
                       "_instruction_hash": "0xdb2bc9ced66bc9a4e1f66497f5ebe43206c2061cab847b3ed3cb165c4ffad3db",
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                         "contractCalldata": "0xcafebabe",
                         "eureka": true,
@@ -494,7 +494,7 @@ mod tests {
                       "_instruction_hash": "0x69e40f6af822c360edf576c71482d9bb176e54a4630c0b7ed4194b02df0c30f7",
                       "opcode": 3,
                       "operand": {
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "baseAmount": "0x1",
                         "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                         "baseTokenName": "",
@@ -512,7 +512,7 @@ mod tests {
                       "_instruction_hash": "0xdb2bc9ced66bc9a4e1f66497f5ebe43206c2061cab847b3ed3cb165c4ffad3db",
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                         "contractCalldata": "0xcafebabe",
                         "eureka": true,
@@ -549,13 +549,13 @@ mod tests {
                   "acknowledgements": [
                     {
                       "_index": "0",
-                      "_type": "FungibleAssetOrder",
+                      "_type": "TokenOrder",
                       "fillType": "0xb0cad0",
                       "marketMaker": "0x"
                     },
                     {
                       "_index": "1",
-                      "_type": "Multiplex",
+                      "_type": "Call",
                       "data": "0x0000000000000000000000000000000000000000000000000000000000000001"
                     }
                   ]
@@ -580,7 +580,7 @@ mod tests {
                       "_instruction_hash": "0x69e40f6af822c360edf576c71482d9bb176e54a4630c0b7ed4194b02df0c30f7",
                       "opcode": 3,
                       "operand": {
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "baseAmount": "0x1",
                         "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                         "baseTokenName": "",
@@ -602,7 +602,7 @@ mod tests {
                       "_instruction_hash": "0xdb2bc9ced66bc9a4e1f66497f5ebe43206c2061cab847b3ed3cb165c4ffad3db",
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                         "contractCalldata": "0xcafebabe",
                         "eureka": true,
@@ -628,7 +628,7 @@ mod tests {
                 },
                 "opcode": 3,
                 "operand": {
-                  "_type": "FungibleAssetOrder",
+                  "_type": "TokenOrder",
                   "baseAmount": "0x1",
                   "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                   "baseTokenName": "",
@@ -654,7 +654,7 @@ mod tests {
                 },
                 "opcode": 1,
                 "operand": {
-                  "_type": "Multiplex",
+                  "_type": "Call",
                   "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                   "contractCalldata": "0xcafebabe",
                   "eureka": true,
@@ -686,13 +686,13 @@ mod tests {
                     "acknowledgements": [
                       {
                         "_index": "0",
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "fillType": "0xb0cad0",
                         "marketMaker": "0x"
                       },
                       {
                         "_index": "1",
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "data": "0x0000000000000000000000000000000000000000000000000000000000000001"
                       }
                     ]
@@ -717,7 +717,7 @@ mod tests {
                         "_instruction_hash": "0x69e40f6af822c360edf576c71482d9bb176e54a4630c0b7ed4194b02df0c30f7",
                         "opcode": 3,
                         "operand": {
-                          "_type": "FungibleAssetOrder",
+                          "_type": "TokenOrder",
                           "baseAmount": "0x1",
                           "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                           "baseTokenName": "",
@@ -739,7 +739,7 @@ mod tests {
                         "_instruction_hash": "0xdb2bc9ced66bc9a4e1f66497f5ebe43206c2061cab847b3ed3cb165c4ffad3db",
                         "opcode": 1,
                         "operand": {
-                          "_type": "Multiplex",
+                          "_type": "Call",
                           "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                           "contractCalldata": "0xcafebabe",
                           "eureka": true,
@@ -765,7 +765,7 @@ mod tests {
                   },
                   "opcode": 3,
                   "operand": {
-                    "_type": "FungibleAssetOrder",
+                    "_type": "TokenOrder",
                     "baseAmount": "0x1",
                     "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                     "baseTokenName": "",
@@ -791,7 +791,7 @@ mod tests {
                   },
                   "opcode": 1,
                   "operand": {
-                    "_type": "Multiplex",
+                    "_type": "Call",
                     "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                     "contractCalldata": "0xcafebabe",
                     "eureka": true,
@@ -808,13 +808,13 @@ mod tests {
                     "acknowledgements": [
                       {
                         "_index": "0",
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "fillType": "0xb0cad0",
                         "marketMaker": "0x"
                       },
                       {
                         "_index": "1",
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "data": "0x0000000000000000000000000000000000000000000000000000000000000001"
                       }
                     ]
@@ -835,7 +835,7 @@ mod tests {
                         "_instruction_hash": "0x69e40f6af822c360edf576c71482d9bb176e54a4630c0b7ed4194b02df0c30f7",
                         "opcode": 3,
                         "operand": {
-                          "_type": "FungibleAssetOrder",
+                          "_type": "TokenOrder",
                           "baseAmount": "0x1",
                           "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                           "baseTokenName": "",
@@ -857,7 +857,7 @@ mod tests {
                         "_instruction_hash": "0xdb2bc9ced66bc9a4e1f66497f5ebe43206c2061cab847b3ed3cb165c4ffad3db",
                         "opcode": 1,
                         "operand": {
-                          "_type": "Multiplex",
+                          "_type": "Call",
                           "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                           "contractCalldata": "0xcafebabe",
                           "eureka": true,
@@ -920,7 +920,7 @@ mod tests {
                       "_instruction_hash": "0x69e40f6af822c360edf576c71482d9bb176e54a4630c0b7ed4194b02df0c30f7",
                       "opcode": 3,
                       "operand": {
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "baseAmount": "0x3e8",
                         "baseToken": "0xf2865969cf99a28bb77e25494fe12d5180fe0efd",
                         "baseTokenName": "",
@@ -941,7 +941,7 @@ mod tests {
                       "_instruction_hash": "0xdb2bc9ced66bc9a4e1f66497f5ebe43206c2061cab847b3ed3cb165c4ffad3db",
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "contractAddress": "0x756e696f6e316777716334776774797a6d747a76676d6b326a6565746c6b343570723063646834387a6d357471716d7464736a6675366a6c357338306337336c",
                         "contractCalldata": "0x7b22626f6e64223a7b22616d6f756e74223a7b22616d6f756e74223a2231323334222c2264656e6f6d223a226d756e6f227d2c2273616c74223a22307832316463643631653363313164623431356533366161316364323835656437633337613238353031633031376364653538663761323936373534356137653237227d7d",
                         "eureka": true,
@@ -960,8 +960,8 @@ mod tests {
     }
 
     #[test]
-    fn test_fungible_asset_transfer_v2_preimage_with_ack() {
-        let packet = hex::decode("b4536add4924363adf36c5525508616d702ea6c1e60b6544cd1b542f761a02ab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db6192800000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba000000000000000000000000").unwrap();
+    fn test_token_order_v2_initialize_with_ack() {
+        let packet = hex::decode("b4536add4924363adf36c5525508616d702ea6c1e60b6544cd1b542f761a02ab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000020457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280").unwrap();
 
         let ack: &[u8] = &hex::decode("0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000b0cad000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000").unwrap();
 
@@ -983,14 +983,14 @@ mod tests {
                 "opcode": 3,
                 "operand": {
                   "_metadata": {
-                    "_type": "Image",
-                    "image": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
+                    "_type": "Escrow",
+                    "data": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
                   },
-                  "_type": "FungibleAssetOrder",
+                  "_type": "TokenOrder",
                   "base_amount": "0x64",
                   "base_token": "0x6d756e6f",
+                  "kind": 1,
                   "metadata": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280",
-                  "metadata_type": 0,
                   "quote_amount": "0x64",
                   "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
