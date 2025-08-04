@@ -107,7 +107,7 @@ export * as ZkgmClient from "./ZkgmClient.js"
  *
  * @since 2.0.0
  */
-export * as ZkgmRequest from "./ZkgmRequest.js"
+export * as ZkgmClientRequest from "./ZkgmClientRequest.js"
 /**
  * TODO
  *
@@ -149,3 +149,17 @@ export * as Batch from "./Batch.js"
  * @since 2.0.0
  */
 export * as ZkgmInstruction from "./ZkgmInstruction.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as ZkgmClientError from "./ZkgmClientError.js"
+
+/**
+ * TODO
+ *
+ * @since 2.0.0
+ */
+export * as ZkgmIncomingMessage from "./ZkgmIncomingMessage.js"

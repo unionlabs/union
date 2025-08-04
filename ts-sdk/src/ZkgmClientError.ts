@@ -2,10 +2,10 @@
  * @since 2.0.0
  */
 import { hasProperty } from "effect/Predicate"
-import type * as ClientRequest from "./ClientRequest.js"
-import type * as ClientResponse from "./ClientResponse.js"
 import * as Error from "./Error.js"
-import * as internal from "./internal/clientError.js"
+import * as internal from "./internal/zkgmClientError.js"
+import type * as ClientRequest from "./ZkgmClientRequest.js"
+import type * as ClientResponse from "./ZkgmClientResponse.js"
 
 /**
  * @since 1.0.0
@@ -36,19 +36,15 @@ export type ClientError = RequestError | ResponseError
  * @category error
  */
 export class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
-  readonly request: ClientRequest.ClientRequest
+  readonly request: ClientRequest.ZkgmClientRequest
   readonly reason: "Transport" | "Encode" | "InvalidUrl"
   readonly cause?: unknown
   readonly description?: string
 }> {
-  get methodAndUrl() {
-    return `${this.request.method}`
-  }
-
   get message() {
     return this.description
-      ? `${this.reason}: ${this.description} (${this.methodAndUrl})`
-      : `${this.reason} error (${this.methodAndUrl})`
+      ? `${this.reason}: ${this.description}`
+      : `${this.reason} error`
   }
 }
 
@@ -57,18 +53,14 @@ export class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
  * @category error
  */
 export class ResponseError extends Error.TypeIdError(TypeId, "ResponseError")<{
-  readonly request: ClientRequest.ClientRequest
-  readonly response: ClientResponse.ClientResponse
+  readonly request: ClientRequest.ZkgmClientRequest
+  readonly response: ClientResponse.ZkgmClientResponse
   readonly reason: "StatusCode" | "Decode" | "EmptyBody"
   readonly cause?: unknown
   readonly description?: string
 }> {
-  get methodAndUrl() {
-    return `${this.request.method}`
-  }
-
   get message() {
-    const info = `${this.response.status} ${this.methodAndUrl}`
+    const info = `${this.response.status}`
     return this.description
       ? `${this.reason}: ${this.description} (${info})`
       : `${this.reason} error (${info})`

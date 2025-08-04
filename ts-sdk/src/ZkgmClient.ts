@@ -6,11 +6,10 @@ import type * as Effect from "effect/Effect"
 import { RuntimeFiber } from "effect/Fiber"
 import type { Inspectable } from "effect/Inspectable"
 import type { Pipeable } from "effect/Pipeable"
-import type * as ClientError from "./ClientError.js"
-import type * as ClientResponse from "./ClientResponse.js"
 import * as internal from "./internal/zkgmClient.js"
-import { Chain } from "./schema/chain.js"
-import type * as ZkgmRequest from "./ZkgmRequest.js"
+import type * as ClientError from "./ZkgmClientError.js"
+import type * as ClientRequest from "./ZkgmClientRequest.js"
+import type * as ClientResponse from "./ZkgmClientResponse.js"
 
 /**
  * @since 2.0.0
@@ -28,12 +27,12 @@ export type TypeId = typeof TypeId
  * @since 2.0.0
  * @category models
  */
-export interface Client extends Client.With<ClientError.ClientError> {}
+export interface ZkgmClient extends ZkgmClient.With<ClientError.ClientError> {}
 
 /**
  * @since 2.0.0
  */
-export declare namespace Client {
+export declare namespace ZkgmClient {
   /**
    * @category models
    * @since 1.0.0
@@ -41,20 +40,8 @@ export declare namespace Client {
   export interface With<E, R = never> extends Pipeable, Inspectable {
     readonly [TypeId]: TypeId
     readonly execute: (
-      request: ZkgmRequest.ZkgmRequest,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
-    readonly simulate: (
-      request: ZkgmRequest.ZkgmRequest,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
-
-    readonly send: (
-      source: Chain,
-      destination: Chain,
-      sender: string,
-      receiver: string,
-      amount: bigint,
-      options?: ZkgmRequest.Options.Send,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
+      request: ClientRequest.ZkgmClientRequest,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>
   }
 
   /**
@@ -62,45 +49,55 @@ export declare namespace Client {
    * @since 2.0.0
    */
   export type Preprocess<E, R> = (
-    request: ZkgmRequest.ZkgmRequest,
-  ) => Effect.Effect<ZkgmRequest.ZkgmRequest, E, R>
+    request: ClientRequest.ZkgmClientRequest,
+  ) => Effect.Effect<ClientRequest.ZkgmClientRequest, E, R>
 
   /**
    * @category models
    * @since 2.0.0
    */
   export type Postprocess<E = never, R = never> = (
-    request: Effect.Effect<ZkgmRequest.ZkgmRequest, E, R>,
-  ) => Effect.Effect<ClientResponse.ClientResponse, E, R>
+    request: Effect.Effect<ClientRequest.ZkgmClientRequest, E, R>,
+  ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>
 }
 
 /**
  * @category tags
  * @since 2.0.0
  */
-export const Client: Context.Tag<Client, Client> = internal.tag
+export const ZkgmClient: Context.Tag<ZkgmClient, ZkgmClient> = internal.tag
 
 /**
  * @category accessors
  * @since 2.0.0
  */
 export const execute: (
-  request: ZkgmRequest.ZkgmRequest,
-) => Effect.Effect<ClientResponse.ClientResponse, ClientError.ClientError, Client> =
+  request: ClientRequest.ZkgmClientRequest,
+) => Effect.Effect<ClientResponse.ZkgmClientResponse, ClientError.ClientError, ZkgmClient> =
   internal.execute
 
 /**
  * @since 1.0.0
  * @category constructors
  */
-export declare const make: (
+export const makeWith: <E2, R2, E, R>(
+  postprocess: (
+    request: Effect.Effect<ClientRequest.ZkgmClientRequest, E2, R2>,
+  ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+  preprocess: ZkgmClient.Preprocess<E2, R2>,
+) => ZkgmClient.With<E, R> = internal.makeWith
+
+/**
+ * @since 1.0.0
+ * @category constructors
+ */
+export const make: (
   f: (
-    request: ZkgmRequest.ZkgmRequest,
-    url: URL,
+    request: ClientRequest.ZkgmClientRequest,
     signal: AbortSignal,
-    fiber: RuntimeFiber<ClientResponse.ClientResponse, ClientError.ClientError>,
-  ) => Effect.Effect<ClientResponse.ClientResponse, ClientError.ClientError>,
-) => Client // = internal.make
+    fiber: RuntimeFiber<ClientResponse.ZkgmClientResponse, ClientError.ClientError>,
+  ) => Effect.Effect<ClientResponse.ZkgmClientResponse, ClientError.ClientError>,
+) => ZkgmClient = internal.make
 
 /**
  * @since 1.0.0
@@ -109,28 +106,15 @@ export declare const make: (
 export const transform: {
   <E, R, E1, R1>(
     f: (
-      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
-      request: ZkgmRequest.ZkgmRequest,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
-  ): (self: Client.With<E, R>) => Client.With<E | E1, R | R1>
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+      request: ClientRequest.ZkgmClientRequest,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ): (self: ZkgmClient.With<E, R>) => ZkgmClient.With<E | E1, R | R1>
   <E, R, E1, R1>(
-    self: Client.With<E, R>,
+    self: ZkgmClient.With<E, R>,
     f: (
-      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
-      request: ZkgmRequest.ZkgmRequest,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
-  ): Client.With<E | E1, R | R1>
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+      request: ClientRequest.ZkgmClientRequest,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ): ZkgmClient.With<E | E1, R | R1>
 } = internal.transform
-
-/**
- * @since 1.0.0
- * @category accessors
- */
-export const send: (
-  url: string | URL,
-  options?: ZkgmRequest.Options.Send | undefined,
-) => Effect.Effect<
-  ClientResponse.ClientResponse,
-  ClientError.ClientError,
-  Client
-> = internal.send

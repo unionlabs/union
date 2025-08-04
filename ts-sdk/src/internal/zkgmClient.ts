@@ -1,27 +1,27 @@
-import { Context, Effect, Fiber, Inspectable, Predicate } from "effect"
-import { dual, pipe } from "effect/Function"
+import { Cause, Context, Effect, Exit, Fiber, Inspectable, Predicate, Stream } from "effect"
+import { dual } from "effect/Function"
+import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
-import type * as Client from "../Client.js"
-import type * as ClientError from "../ClientError.js"
-import type * as ClientRequest from "../ClientRequest.js"
-import type * as ClientResponse from "../ClientResponse.js"
 import * as PriceOracle from "../PriceOracle.js"
-import * as internalRequest from "./clientRequest.js"
-import { Chain } from "../schema/chain.js"
+import type * as Client from "../ZkgmClient.js"
+import type * as ClientError from "../ZkgmClientError.js"
+import type * as ClientRequest from "../ZkgmClientRequest.js"
+import type * as ClientResponse from "../ZkgmClientResponse.js"
+import * as IncomingMessage from "../ZkgmIncomingMessage.js"
+import * as internalRequest from "./zkgmClientRequest.js"
+import * as internalResponse from "./zkgmClientResponse.js"
 
 /** @internal */
 export const TypeId: Client.TypeId = Symbol.for(
-  "@unionlabs/sdk/Client",
+  "@unionlabs/sdk/ZkgmClient",
 ) as Client.TypeId
 
 /** @internal */
-export const tag = Context.GenericTag<Client.Client>("@unionlabs/sdk/Client")
+export const tag = Context.GenericTag<Client.ZkgmClient>("@unionlabs/sdk/ZkgmClient")
 
 export const {
   /** @internal */
   execute,
-  /** @internal */
-  simulate,
 } = Effect.serviceFunctions(tag)
 
 const ClientProto = {
@@ -32,83 +32,202 @@ const ClientProto = {
   ...Inspectable.BaseProto,
   toJSON() {
     return {
-      _id: "@unionlabs/sdk/Client",
+      _id: "@unionlabs/sdk/ZkgmClient",
     }
-  },
-  send(
-    this: Client.Client,
-    source: Chain,
-    destination: Chain,
-    sender: string,
-    receiver: string,
-    amount: bigint,
-    options?: ClientRequest.Options.Send,
-  ) {
-    return this.execute(internalRequest.send(sender, receiver, options))
   },
 }
 
-const isClient = (u: unknown): u is Client.Client.With<unknown, unknown> =>
+const isClient = (u: unknown): u is Client.ZkgmClient.With<unknown, unknown> =>
   Predicate.hasProperty(u, TypeId)
 
-interface ClientImpl<E, R> extends Client.Client.With<E, R> {
-  readonly preprocess: Client.Client.Preprocess<E, R>
-  readonly postprocess: Client.Client.Postprocess<E, R>
+interface ZkgmClientImpl<E, R> extends Client.ZkgmClient.With<E, R> {
+  readonly preprocess: Client.ZkgmClient.Preprocess<E, R>
+  readonly postprocess: Client.ZkgmClient.Postprocess<E, R>
 }
 
 /** @internal */
 export const makeWith = <E2, R2, E, R>(
   postprocess: (
-    request: Effect.Effect<ClientRequest.ClientRequest, E2, R2>,
-  ) => Effect.Effect<ClientResponse.ClientResponse, E, R>,
-  preprocess: Client.Client.Preprocess<E2, R2>,
-): Client.Client.With<E, R> => {
+    request: Effect.Effect<ClientRequest.ZkgmClientRequest, E2, R2>,
+  ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+  preprocess: Client.ZkgmClient.Preprocess<E2, R2>,
+): Client.ZkgmClient.With<E, R> => {
   const self = Object.create(ClientProto)
   self.preprocess = preprocess
   self.postprocess = postprocess
-  self.execute = function(request: ClientRequest.ClientRequest) {
+  self.execute = function(request: ClientRequest.ZkgmClientRequest) {
     return postprocess(preprocess(request))
   }
   return self
 }
 
+const scopedRequests = globalValue(
+  "@unionlabs/sdk/ZkgmClient/scopedRequests",
+  () => new WeakMap<ClientRequest.ZkgmClientRequest, AbortController>(),
+)
+
+const responseRegistry = globalValue(
+  "@unionlabs/sdk/ZkgmClient/responseRegistry",
+  () => {
+    if ("FinalizationRegistry" in globalThis && globalThis.FinalizationRegistry) {
+      const registry = new FinalizationRegistry((controller: AbortController) => {
+        controller.abort()
+      })
+      return {
+        register(response: ClientResponse.ZkgmClientResponse, controller: AbortController) {
+          registry.register(response, controller, response)
+        },
+        unregister(response: ClientResponse.ZkgmClientResponse) {
+          registry.unregister(response)
+        },
+      }
+    }
+
+    const timers = new Map<ClientResponse.ZkgmClientResponse, any>()
+    return {
+      register(response: ClientResponse.ZkgmClientResponse, controller: AbortController) {
+        timers.set(response, setTimeout(() => controller.abort(), 5000))
+      },
+      unregister(response: ClientResponse.ZkgmClientResponse) {
+        const timer = timers.get(response)
+        if (timer === undefined) {
+          return
+        }
+        clearTimeout(timer)
+        timers.delete(response)
+      },
+    }
+  },
+)
+
+class InterruptibleResponse implements ClientResponse.ZkgmClientResponse {
+  constructor(
+    readonly original: ClientResponse.ZkgmClientResponse,
+    readonly controller: AbortController,
+  ) {}
+
+  readonly [internalResponse.TypeId]: ClientResponse.TypeId = internalResponse.TypeId
+  readonly [IncomingMessage.TypeId]: IncomingMessage.TypeId = IncomingMessage.TypeId
+
+  private applyInterrupt<A, E, R>(effect: Effect.Effect<A, E, R>) {
+    return Effect.suspend(() => {
+      responseRegistry.unregister(this.original)
+      return Effect.onInterrupt(effect, () =>
+        Effect.sync(() => {
+          this.controller.abort()
+        }))
+    })
+  }
+
+  get request() {
+    return this.original.request
+  }
+
+  get status() {
+    return this.original.status
+  }
+
+  get stream() {
+    return Stream.suspend(() => {
+      responseRegistry.unregister(this.original)
+      return Stream.ensuringWith(this.original.stream, (exit) => {
+        if (Exit.isInterrupted(exit)) {
+          this.controller.abort()
+        }
+        return Effect.void
+      })
+    })
+  }
+
+  waitFor(
+    pred: (a: IncomingMessage.LifecycleEvent) => boolean,
+  ) {
+    return this.applyInterrupt(this.original.waitFor(pred))
+  }
+
+  toJSON() {
+    return this.original.toJSON()
+  }
+
+  [Inspectable.NodeInspectSymbol]() {
+    return this.original[Inspectable.NodeInspectSymbol]()
+  }
+}
+
+/** @internal */
+export const make = (
+  f: (
+    request: ClientRequest.ZkgmClientRequest,
+    signal: AbortSignal,
+    fiber: Fiber.RuntimeFiber<ClientResponse.ZkgmClientResponse, ClientError.ClientError>,
+  ) => Effect.Effect<ClientResponse.ZkgmClientResponse, ClientError.ClientError>,
+): Client.ZkgmClient =>
+  makeWith((effect) =>
+    Effect.flatMap(effect, (request) =>
+      Effect.withFiberRuntime((fiber) => {
+        const scopedController = scopedRequests.get(request)
+        const controller = scopedController ?? new AbortController()
+        // TODO: Return Either with request decode
+        // const urlResult = UrlParams.makeUrl(request.url, request.urlParams, request.hash)
+        // if (urlResult._tag === "Left") {
+        //   return Effect.fail(
+        //     new Error.RequestError({ request, reason: "InvalidUrl", cause: urlResult.left }),
+        //   )
+        // }
+        // const url = urlResult.right
+        const effect = f(request, controller.signal, fiber)
+        if (scopedController) {
+          return effect
+        }
+        return Effect.uninterruptibleMask((restore) =>
+          Effect.matchCauseEffect(restore(effect), {
+            onSuccess(response) {
+              responseRegistry.register(response, controller)
+              return Effect.succeed(new InterruptibleResponse(response, controller))
+            },
+            onFailure(cause) {
+              if (Cause.isInterrupted(cause)) {
+                controller.abort()
+              }
+              return Effect.failCause(cause)
+            },
+          })
+        )
+      })), Effect.succeed as Client.ZkgmClient.Preprocess<never, never>)
+
 /** @internal */
 export const transform = dual<
   <E, R, E1, R1>(
     f: (
-      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
-      request: ClientRequest.ClientRequest,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
-  ) => (self: Client.Client.With<E, R>) => Client.Client.With<E | E1, R | R1>,
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+      request: ClientRequest.ZkgmClientRequest,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ) => (self: Client.ZkgmClient.With<E, R>) => Client.ZkgmClient.With<E | E1, R | R1>,
   <E, R, E1, R1>(
-    self: Client.Client.With<E, R>,
+    self: Client.ZkgmClient.With<E, R>,
     f: (
-      effect: Effect.Effect<ClientResponse.ClientResponse, E, R>,
-      request: ClientRequest.ClientRequest,
-    ) => Effect.Effect<ClientResponse.ClientResponse, E1, R1>,
-  ) => Client.Client.With<E | E1, R | R1>
+      effect: Effect.Effect<ClientResponse.ZkgmClientResponse, E, R>,
+      request: ClientRequest.ZkgmClientRequest,
+    ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
+  ) => Client.ZkgmClient.With<E | E1, R | R1>
 >(2, (self, f) => {
-  const client = self as ClientImpl<any, any>
+  const client = self as ZkgmClientImpl<any, any>
   return makeWith(
     Effect.flatMap((request) => f(client.postprocess(Effect.succeed(request)), request)),
     client.preprocess,
   )
 })
 
-type FeeCalculator = {
-  _tag: "GasPrice"
-} | PriceOracle.PriceOracle
-
-/** @internal */
-export const withFee = <E, R>(
-  self: Client.Client.With<E, R>,
-): Client.Client.With<E, R | FeeCalculator> =>
-  transform(
-    self,
-    (effect, request) => Effect.flatMap(
-      effect,
-      (response) => pipe(
-        Gas
-      ))
-    },
-  )
+// /** @internal */
+// export const withFee = <E, R>(
+//   self: Client.ZkgmClient.With<E, R>,
+// ): Client.ZkgmClient.With<E, R | FeeCalculator> =>
+//   transform(
+//     self,
+//     (effect, request) => Effect.flatMap(
+//       effect,
+//       (response) => pipe(
+//         Gas
+//       ))
+//     },
+//   )

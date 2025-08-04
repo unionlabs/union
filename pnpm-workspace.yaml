@@ -1,6 +1,6 @@
 packages:
   - 'ts-sdk'
-  - 'sdk-evm'
+  - 'ts-sdk-evm'
   - 'typescript-sdk'
   - 'app2'
   - 'docs'
