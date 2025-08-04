@@ -168,7 +168,10 @@ pub enum SolverMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum SolverQuery {
+    /// Returns unit if the contract is a solver.
     IsSolver,
+    /// Whether the solver allows the relayer to fulfill the order on our behalf.
+    AllowMarketMakers,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
