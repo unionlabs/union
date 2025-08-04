@@ -95,8 +95,11 @@ impl Cmd {
                     'inner: while local_attempts < 100000 {
                         local_attempts += 1;
                         preimage[range.clone()].copy_from_slice(&salt.to_be_bytes::<32>());
-                        hasher.update(&preimage);
-                        hasher.finalize_into_reset(&mut digest);
+                        <sha2::Sha256 as sha2::digest::Update>::update(&mut hasher, &preimage);
+                        <sha2::Sha256 as sha2::digest::FixedOutputReset>::finalize_into_reset(
+                            &mut hasher,
+                            &mut digest,
+                        );
                         if digest
                             .iter()
                             .copied()
@@ -109,7 +112,7 @@ impl Cmd {
                             continue 'inner;
                         } else {
                             let salt_bytes = H256::new(salt.to_be_bytes());
-                            println!("{}", creator.map_data(|_| sha2::Sha256::digest(&preimage)));
+                            println!("{}", creator.map_data(|_| sha2::Sha256::digest(preimage)));
                             println!("{}", salt_bytes);
                             found.store(true, Ordering::Relaxed);
                             total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
