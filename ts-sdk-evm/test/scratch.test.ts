@@ -1,12 +1,11 @@
 import {
-  Batch,
   Token,
   TokenOrder,
-  Ucs03,
   Ucs05,
   ZkgmClient,
   ZkgmClientRequest,
   ZkgmClientResponse,
+  ZkgmIncomingMessage,
   ZkgmInstruction,
 } from "@unionlabs/sdk"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
@@ -53,8 +52,16 @@ const program = Effect.gen(function*() {
   })
 
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
+
+  const completion = yield* response.waitFor(ZkgmIncomingMessage.isComplete)
+
+  yield* Effect.log(completion.txHash)
 }).pipe(
-  EvmZkgmClient.fromBrowser({}),
-  ChannelRegistry.Default,
-  ChainRegistry.Default,
+  Effect.provide(EvmZkgmClient.layer),
+  Effect.provide(ChannelRegistry.Default),
+  Effect.provide(ChainRegistry.Default),
 )
+
+Effect.runPromise(program)
+  .then(console.log)
+  .catch(console.error)
