@@ -10,6 +10,7 @@ import {
 } from "@unionlabs/sdk"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
+import { TokenRegistry } from "@unionlabs/sdk/TokenRegistry"
 // import { EvmClient } from "@unionlabs/sdk-evm"
 import { EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
@@ -35,6 +36,8 @@ const program = Effect.gen(function*() {
     baseToken: Token.Erc20.make({ address: "0x123" }),
     kind: TokenOrder.Kind.Escrow,
     baseAmount: 100n,
+    quoteAmount: 100n,
+    metadata: undefined,
   })
 
   const batch: ZkgmInstruction.ZkgmInstruction = yield* pipe(
@@ -59,6 +62,7 @@ const program = Effect.gen(function*() {
 }).pipe(
   Effect.provide(EvmZkgmClient.layer),
   Effect.provide(ChannelRegistry.Default),
+  Effect.provide(TokenRegistry.Default),
   Effect.provide(ChainRegistry.Default),
 )
 

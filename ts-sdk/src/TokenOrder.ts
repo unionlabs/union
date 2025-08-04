@@ -10,6 +10,7 @@ import * as internal from "./internal/tokenOrder.js"
 import { Chain } from "./schema/chain.js"
 import { Hex } from "./schema/hex.js"
 import * as Token from "./Token.js"
+import { TokenRegistry } from "./TokenRegistry.js"
 import * as Ucs05 from "./Ucs05.js"
 
 /**
@@ -121,7 +122,7 @@ export declare const make: <
 >(
   value: P,
 ) => Effect.Effect<
-  TokenOrder.Build<Exclude<keyof Options.Required, keyof P>>,
+  TokenOrder.Build<Exclude<keyof Options, keyof P>>,
   ParseResult.ParseError,
   never
 >
@@ -146,7 +147,7 @@ export const setReceiver: {
 
 export declare const withAutoQuoteToken: <A extends keyof Options.Optional>(
   a: TokenOrder.Build<A | "quoteToken">,
-) => Effect.Effect<TokenOrder.Build<Exclude<A, "quoteToken">>, never, "quote registry">
+) => Effect.Effect<TokenOrder.Build<Exclude<A, "quoteToken">>, never, TokenRegistry>
 
 /**
  * correct to calc fee based on channel
