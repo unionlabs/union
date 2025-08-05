@@ -14,7 +14,7 @@ import { TokenRegistry } from "@unionlabs/sdk/TokenRegistry"
 // import { EvmClient } from "@unionlabs/sdk-evm"
 import { EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
-import { Effect, pipe } from "effect"
+import { Effect, Logger, pipe } from "effect"
 
 // has a function .encode() -> ethabi (uses Ucs03 module)
 // has a function .extractRequiredTokens() -> Token[]
@@ -22,50 +22,58 @@ import { Effect, pipe } from "effect"
 
 const program = Effect.gen(function*() {
   const source = yield* ChainRegistry.byUniversalId(
-    UniversalChainId.make("bob.97"),
+    UniversalChainId.make("ethereum.11155111"),
   )
   const destination = yield* ChainRegistry.byUniversalId(
-    UniversalChainId.make("babylon.bbn-1"),
+    UniversalChainId.make("ethereum.17000"),
   )
 
   const incompleteTokenOrder = TokenOrder.make({
     source,
     destination,
-    sender: Ucs05.EvmDisplay.make("0x123abcd"),
-    receiver: Ucs05.CosmosDisplay.make("bbn1abcde"),
-    baseToken: Token.Erc20.make({ address: "0x123" }),
-    kind: TokenOrder.Kind.Escrow,
+    sender: Ucs05.EvmDisplay.make("0x06627714f3F17a701f7074a12C02847a5D2Ca487", {
+      disableValidation: true,
+    }),
+    receiver: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
+    baseToken: Token.Erc20.make({ address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }),
     baseAmount: 100n,
+    kind: TokenOrder.Kind.Escrow,
     quoteAmount: 100n,
-    quoteToken: "",
     metadata: undefined,
+  })
+
+  yield* Effect.log({
+    incompleteTokenOrder: yield* incompleteTokenOrder,
   })
 
   const tokenOrder = yield* pipe(
     incompleteTokenOrder,
-    // Effect.flatMap(TokenOrder.withAutoQuoteToken),
-    // Effect.flatMap(TokenOrder.withFee({ priority: "high" })),
+    Effect.tap((incomplete) => Effect.log({ incomplete })),
+    Effect.flatMap(TokenOrder.withAutoQuoteToken),
+    Effect.tap((withQuoteToken) => Effect.log({ withQuoteToken })),
+    Effect.flatMap(TokenOrder.withFee({ priority: "high" })),
   )
 
-  const zkgmClient = yield* ZkgmClient.ZkgmClient
+  // const zkgmClient = yield* ZkgmClient.ZkgmClient
 
-  const request = ZkgmClientRequest.make({
-    source,
-    destination,
-    instruction: tokenOrder,
-  })
+  // const request = ZkgmClientRequest.make({
+  //   source,
+  //   destination,
+  //   instruction: tokenOrder,
+  // })
 
-  const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
+  // const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
 
-  const completion = yield* response.waitFor(ZkgmIncomingMessage.isComplete)
+  // const completion = yield* response.waitFor(ZkgmIncomingMessage.isComplete)
 
-  yield* Effect.log(completion.txHash)
+  // yield* Effect.log(completion.txHash)
 }).pipe(
-  Effect.provide(EvmZkgmClient.layerWithoutWallet),
-  Effect.provide(ChannelRegistry.Default),
-  Effect.provide(FeeEstimator.Default),
-  Effect.provide(TokenRegistry.Default),
+  // Effect.provide(EvmZkgmClient.layerWithoutWallet),
+  // Effect.provide(ChannelRegistry.Default),
+  // Effect.provide(FeeEstimator.Default),
+  // Effect.provide(TokenRegistry.Default),
   Effect.provide(ChainRegistry.Default),
+  Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
 Effect.runPromise(program)
