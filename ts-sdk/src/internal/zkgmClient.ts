@@ -2,7 +2,6 @@ import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Predicate, Str
 import { dual } from "effect/Function"
 import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
-import * as PriceOracle from "../PriceOracle.js"
 import type * as Client from "../ZkgmClient.js"
 import type * as ClientError from "../ZkgmClientError.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"

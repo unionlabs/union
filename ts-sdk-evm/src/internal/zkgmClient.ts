@@ -4,32 +4,14 @@ import * as Error from "@unionlabs/sdk/ZkgmClientError"
 import type * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
-import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
-import * as FiberRef from "effect/FiberRef"
-import { type LazyArg } from "effect/Function"
 import * as Inspectable from "effect/Inspectable"
 import * as Stream from "effect/Stream"
 
-/** @internal */
-export const walletTagKey = "@unionlabs/sdk-evm/EvmWalletClient"
-
-const walletTag = Context.GenericTag<LazyArg<Evm.WalletClient>>(walletTagKey)
-
-const makeWalletRequest = Client.make((request, signal, fiber) =>
-  Effect.suspend(() => Effect.gen(function* () {
-    const wallet = Context.getOrElse(
-      fiber.getFiberRef(FiberRef.currentContext),
-      walletTag,
-      // TODO: default as browser
-      () => () => void 0 as unknown as Evm.WalletClient,
-    )()
-
-    const instruction = yield* request.instruction.encode
-
+const fromWallet = (wallet: Evm.WalletClient): Client.ZkgmClient =>
+  Client.make((request, signal, fiber) => {
     return Effect.succeed(void 0 as unknown as ClientResponseImpl)
-  })))
-)
+  })
 
 // const makeXMLHttpRequest = Client.make((request, signal, fiber) =>
 //   Effect.suspend(() => {
@@ -109,12 +91,14 @@ class ClientResponseImpl extends IncomingMessageImpl<Error.ResponseError>
   constructor(
     readonly request: ClientRequest.ZkgmClientRequest,
   ) {
-    super((error) => new Error.ResponseError({
-      reason: "Decode",
-      request,
-      response: this,
-      cause: error,
-    }))
+    super((error) =>
+      new Error.ResponseError({
+        reason: "Decode",
+        request,
+        response: this,
+        cause: error,
+      })
+    )
     this[ClientResponse.TypeId] = ClientResponse.TypeId
   }
 
@@ -131,4 +115,7 @@ class ClientResponseImpl extends IncomingMessageImpl<Error.ResponseError>
 }
 
 /** @internal */
-export const layer = Client.layerMergedContext(Effect.succeed(makeWalletRequest))
+export const make = Effect.map(Evm.WalletClient.Service, fromWallet)
+
+/** @internal */
+export const layerWithoutWallet = Client.layerMergedContext(make)

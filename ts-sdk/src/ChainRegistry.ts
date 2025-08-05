@@ -1,5 +1,26 @@
-import { Data, Effect, Hash, hole, Layer, pipe } from "effect"
+import {
+  Array as A,
+  Data,
+  Effect,
+  Hash,
+  Layer,
+  Option as O,
+  pipe,
+  Request,
+  RequestResolver,
+  Schema,
+  Struct,
+} from "effect"
+import * as Predicate from "effect/Predicate"
+import { graphql } from "gql.tada"
+import { GraphQL } from "./GraphQL.js"
 import { Chain, UniversalChainId } from "./schema/chain.js"
+
+interface GetChainById extends Request.Request<Chain, ChainRegistryError> {
+  readonly _tag: "GetChainById"
+  readonly id: UniversalChainId
+}
+const GetChainById = Request.tagged<GetChainById>("GetChainById")
 
 export class ChainRegistryError
   extends Data.TaggedError("@unionlabs/sdk/ChainRegistry/ChainRegistryError")<{
@@ -9,8 +30,80 @@ export class ChainRegistryError
 {}
 
 export class ChainRegistry extends Effect.Service<ChainRegistry>()("@unionlabs/sdk/ChainRegistry", {
-  sync: () => ({
-    byUniversalId: hole<(id: UniversalChainId) => Effect.Effect<Chain>>(),
+  effect: Effect.gen(function*() {
+    const client = yield* GraphQL
+
+    const byUniversalId = Effect.fn((id: UniversalChainId) =>
+      pipe(
+        client.fetch({
+          document: graphql(`
+query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
+    v2_chains(args: { p_universal_chain_id: $id }) {
+        chain_id
+        universal_chain_id
+        minter_address_display
+        display_name
+        addr_prefix
+        rpc_type
+        testnet
+        editions {
+            environment
+            name
+        }
+        features(where: { environment: { _eq: "PRODUCTION" } }) {
+            channel_list
+            connection_list
+            index_status
+            packet_list
+            transfer_submission
+            transfer_list
+        }
+        rpcs {
+            type
+            url
+        }
+        explorers {
+            address_url
+            block_url
+            description
+            display_name
+            home_url
+            name
+            tx_url
+        }
+    }
+}
+    `),
+          variables: {
+            id,
+          },
+        }),
+        Effect.map(Struct.get("v2_chains")),
+        Effect.flatMap(O.liftPredicate(Predicate.isTupleOf(1))),
+        Effect.map(A.headNonEmpty),
+        Effect.flatMap(Schema.decodeUnknown(Chain)),
+        Effect.catchTags({
+          GraphQLError: (cause) =>
+            new ChainRegistryError({
+              message: cause.message,
+              cause,
+            }),
+          NoSuchElementException: () =>
+            new ChainRegistryError({
+              message: `non-deterministic fetch by ID`,
+            }),
+          ParseError: (cause) =>
+            new ChainRegistryError({
+              message: "failed to decode",
+              cause,
+            }),
+        }),
+      )
+    )
+
+    return {
+      byUniversalId,
+    } as const
   }),
   accessors: true,
 }) {
@@ -54,3 +147,69 @@ export class ChainRegistry extends Effect.Service<ChainRegistry>()("@unionlabs/s
     }),
   )
 }
+
+const GetChainByIdResolver =
+  // we create a normal resolver like we did before
+  RequestResolver.fromEffect((request: GetChainById) =>
+    Effect.andThen(GraphQL, (gql) =>
+      pipe(
+        gql.fetch({
+          document: graphql(`
+query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
+    v2_chains(args: { p_universal_chain_id: $id }) {
+        chain_id
+        universal_chain_id
+        minter_address_display
+        display_name
+        addr_prefix
+        rpc_type
+        testnet
+        editions {
+            environment
+            name
+        }
+        features(where: { environment: { _eq: "PRODUCTION" } }) {
+            channel_list
+            connection_list
+            index_status
+            packet_list
+            transfer_submission
+            transfer_list
+        }
+        rpcs {
+            type
+            url
+        }
+        explorers {
+            address_url
+            block_url
+            description
+            display_name
+            home_url
+            name
+            tx_url
+        }
+    }
+}
+    `),
+          variables: {
+            id: request.id,
+          },
+        }),
+        Effect.flatMap(({ v2_chains }) => Schema.decodeUnknown(Chain)(v2_chains[0])),
+        Effect.mapError((e) =>
+          new ChainRegistryError({
+            message: e.message,
+            cause: e,
+          })
+        ),
+      ))
+  ).pipe(
+    RequestResolver.contextFromServices(GraphQL),
+  )
+
+export const getChainById: (
+  id: UniversalChainId,
+) => Effect.Effect<Chain, ChainRegistryError, GraphQL> = Effect.fn(
+  (id) => Effect.request(GetChainById({ id }), GetChainByIdResolver),
+)
