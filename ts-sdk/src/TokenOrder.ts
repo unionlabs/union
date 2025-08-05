@@ -18,7 +18,7 @@ import * as Ucs05 from "./Ucs05.js"
  * @category type ids
  * @since 2.0.0
  */
-export const TypeId: unique symbol = Symbol.for("@unionlabs/sdk/TokenOrder")
+export const TypeId: unique symbol = internal.TypeId
 
 /**
  * @since 2.0.0

@@ -6,7 +6,6 @@ import {
   ZkgmClientRequest,
   ZkgmClientResponse,
   ZkgmIncomingMessage,
-  ZkgmInstruction,
 } from "@unionlabs/sdk"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
@@ -38,13 +37,14 @@ const program = Effect.gen(function*() {
     kind: TokenOrder.Kind.Escrow,
     baseAmount: 100n,
     quoteAmount: 100n,
+    quoteToken: "",
     metadata: undefined,
   })
 
-  const batch: ZkgmInstruction.ZkgmInstruction = yield* pipe(
+  const tokenOrder = yield* pipe(
     incompleteTokenOrder,
-    Effect.flatMap(TokenOrder.withAutoQuoteToken),
-    Effect.flatMap(TokenOrder.withFee({ priority: "high" })),
+    // Effect.flatMap(TokenOrder.withAutoQuoteToken),
+    // Effect.flatMap(TokenOrder.withFee({ priority: "high" })),
   )
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient
@@ -52,7 +52,7 @@ const program = Effect.gen(function*() {
   const request = ZkgmClientRequest.make({
     source,
     destination,
-    instruction: batch,
+    instruction: tokenOrder,
   })
 
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
@@ -61,7 +61,7 @@ const program = Effect.gen(function*() {
 
   yield* Effect.log(completion.txHash)
 }).pipe(
-  Effect.provide(EvmZkgmClient.layer),
+  Effect.provide(EvmZkgmClient.layerWithoutWallet),
   Effect.provide(ChannelRegistry.Default),
   Effect.provide(FeeEstimator.Default),
   Effect.provide(TokenRegistry.Default),

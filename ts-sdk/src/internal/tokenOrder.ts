@@ -2,6 +2,7 @@ import { Inspectable } from "effect"
 import { dual } from "effect/Function"
 import { pipeArguments } from "effect/Pipeable"
 import { Chain } from "../schema/chain.js"
+import * as Token from "../Token.js"
 import type * as TokenOrder from "../TokenOrder.js"
 
 /** @internal */
@@ -15,11 +16,14 @@ const Proto = {
   toJSON(this: TokenOrder.TokenOrder): unknown {
     return {
       _id: "@unionlabs/sdk/TokenOrder",
+      _missing: Object.entries(this)
+        .filter(([k, v]) => v === "undefined")
+        .map(([k, v]) => k),
       source: this.source,
       destination: this.destination,
       sender: this.sender,
       receiver: this.receiver,
-      amount: this.amount,
+      baseAmount: this.baseAmount,
     }
   },
   pipe() {
@@ -32,14 +36,15 @@ function makeProto(
   destination: Chain,
   sender: string,
   receiver: string,
-  amount: bigint,
+  baseAmount: bigint,
+  baseToken: Token.Any,
 ): TokenOrder.TokenOrder {
   const self = Object.create(Proto)
   self.source = source
   self.destination = destination
   self.sender = sender
   self.receiver = receiver
-  self.amount = amount
+  self.baseAmount = baseAmount
   return self
 }
 
@@ -52,7 +57,7 @@ export const empty: TokenOrder.TokenOrder = makeProto(
   "SEND",
   void 0 as unknown as Chain,
   void 0 as unknown as Chain,
-  "",
+  void 0 as unknown as,
   "",
   0n,
 )

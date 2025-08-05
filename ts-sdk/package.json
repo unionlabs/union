@@ -39,6 +39,7 @@
   },
   "peerDependencies": {
     "@effect/platform": "^0.84",
+    "@effect/experimental": "^0.48",
     "effect": "^3.16",
     "viem": "^2"
   },
@@ -49,6 +50,7 @@
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@cosmjs/math": "^0.33.1",
     "@effect/build-utils": "^0.8.3",
+    "@effect/experimental": "0.48.6",
     "@effect/platform": "0.84.6",
     "@types/node": "^22.13.1",
     "babel-plugin-annotate-pure-calls": "^0.5.0",

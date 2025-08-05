@@ -60,7 +60,7 @@ export class ResponseError extends Error.TypeIdError(TypeId, "ResponseError")<{
   readonly description?: string
 }> {
   get message() {
-    const info = `${this.response.status}`
+    const info = `TODO`
     return this.description
       ? `${this.reason}: ${this.description} (${info})`
       : `${this.reason} error (${info})`

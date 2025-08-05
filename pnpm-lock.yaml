@@ -540,65 +540,6 @@ importers:
         specifier: ^6.3.5
         version: 6.3.5(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.30.1)(tsx@4.20.3)(yaml@2.8.0)
 
-  sdk-evm:
-    dependencies:
-      '@scure/base':
-        specifier: 1.2.4
-        version: 1.2.4
-      '@unionlabs/sdk':
-        specifier: workspace:^
-        version: link:../ts-sdk
-      crc:
-        specifier: ^4.3.2
-        version: 4.3.2(buffer@6.0.3)
-      viem:
-        specifier: ^2
-        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.32)
-    devDependencies:
-      '@babel/cli':
-        specifier: ^7.27.2
-        version: 7.27.2(@babel/core@7.27.4)
-      '@babel/core':
-        specifier: ^7.27.1
-        version: 7.27.4
-      '@babel/plugin-transform-export-namespace-from':
-        specifier: ^7.27.1
-        version: 7.27.1(@babel/core@7.27.4)
-      '@babel/plugin-transform-modules-commonjs':
-        specifier: ^7.27.1
-        version: 7.27.1(@babel/core@7.27.4)
-      '@cosmjs/math':
-        specifier: ^0.33.1
-        version: 0.33.1
-      '@effect/build-utils':
-        specifier: ^0.8.3
-        version: 0.8.3
-      '@effect/platform':
-        specifier: 0.84.6
-        version: 0.84.6(effect@3.16.3)
-      '@types/node':
-        specifier: ^22.13.1
-        version: 22.13.14
-      babel-plugin-annotate-pure-calls:
-        specifier: ^0.5.0
-        version: 0.5.0(@babel/core@7.27.4)
-      dpdm:
-        specifier: ^3.14.0
-        version: 3.14.0
-      effect:
-        specifier: 3.16.3
-        version: 3.16.3
-      madge:
-        specifier: ^8.0.0
-        version: 8.0.0(typescript@5.8.3)
-      ts-patch:
-        specifier: ^3.3.0
-        version: 3.3.0
-      vitest:
-        specifier: ^3.0.5
-        version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(tsx@4.20.3)(yaml@2.8.0)
-    publishDirectory: dist
-
   ts-sdk:
     dependencies:
       '@aptos-labs/ts-sdk':
@@ -640,6 +581,68 @@ importers:
       graphql-request:
         specifier: ^7.1.2
         version: 7.1.2(graphql@16.10.0)
+      viem:
+        specifier: ^2
+        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.32)
+    devDependencies:
+      '@babel/cli':
+        specifier: ^7.27.2
+        version: 7.27.2(@babel/core@7.27.4)
+      '@babel/core':
+        specifier: ^7.27.1
+        version: 7.27.4
+      '@babel/plugin-transform-export-namespace-from':
+        specifier: ^7.27.1
+        version: 7.27.1(@babel/core@7.27.4)
+      '@babel/plugin-transform-modules-commonjs':
+        specifier: ^7.27.1
+        version: 7.27.1(@babel/core@7.27.4)
+      '@cosmjs/math':
+        specifier: ^0.33.1
+        version: 0.33.1
+      '@effect/build-utils':
+        specifier: ^0.8.3
+        version: 0.8.3
+      '@effect/experimental':
+        specifier: 0.48.6
+        version: 0.48.6(@effect/platform@0.84.6(effect@3.16.3))(effect@3.16.3)
+      '@effect/platform':
+        specifier: 0.84.6
+        version: 0.84.6(effect@3.16.3)
+      '@types/node':
+        specifier: ^22.13.1
+        version: 22.13.14
+      babel-plugin-annotate-pure-calls:
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.27.4)
+      dpdm:
+        specifier: ^3.14.0
+        version: 3.14.0
+      effect:
+        specifier: 3.16.3
+        version: 3.16.3
+      madge:
+        specifier: ^8.0.0
+        version: 8.0.0(typescript@5.8.3)
+      ts-patch:
+        specifier: ^3.3.0
+        version: 3.3.0
+      vitest:
+        specifier: ^3.0.5
+        version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(tsx@4.20.3)(yaml@2.8.0)
+    publishDirectory: dist
+
+  ts-sdk-evm:
+    dependencies:
+      '@scure/base':
+        specifier: 1.2.4
+        version: 1.2.4
+      '@unionlabs/sdk':
+        specifier: workspace:^
+        version: link:../ts-sdk
+      crc:
+        specifier: ^4.3.2
+        version: 4.3.2(buffer@6.0.3)
       viem:
         specifier: ^2
         version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.32)

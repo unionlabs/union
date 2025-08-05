@@ -184,3 +184,9 @@ export * as ZkgmIncomingMessage from "./ZkgmIncomingMessage.js"
  * @since 2.0.0
  */
 export * as ZkgmClientResponse from "./ZkgmClientResponse.js"
+
+/**
+ * TODO
+ * @since 2.0.0
+ */
+export * as GraphQL from "./GraphQL.js"
