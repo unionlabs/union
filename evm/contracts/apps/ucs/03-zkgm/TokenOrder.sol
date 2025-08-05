@@ -275,7 +275,21 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         );
     }
 
-    function _deployWrappedTokenV2Memory(
+    function decodeZkgmERC20InitializeCall(
+        bytes memory call
+    )
+        public
+        pure
+        returns (address, address, string memory, string memory, uint8)
+    {
+        bytes4 selector = bytes4(call.slice(0, 4));
+        bytes4 expectedSelector = ZkgmERC20.initialize.selector;
+        require(selector == expectedSelector);
+        return
+            abi.decode(call.slice(4), (address, address, string, string, uint8));
+    }
+
+    function _deployWrappedTokenV2(
         uint32 channelId,
         uint256 path,
         bytes calldata unwrappedToken,
@@ -288,13 +302,11 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
             if (!canDeploy) {
                 revert ZkgmLib.ErrCannotDeploy();
             }
+            address implementation = address(bytes20(metadata.implementation));
             CREATE3.deployDeterministic(
                 abi.encodePacked(
                     type(ERC1967Proxy).creationCode,
-                    abi.encode(
-                        address(bytes20(metadata.implementation)),
-                        metadata.initializer
-                    )
+                    abi.encode(implementation, metadata.initializer)
                 ),
                 wrappedTokenSalt
             );
@@ -302,36 +314,28 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 ZkgmLib.updateChannelPath(path, channelId);
             metadataImageOf[wrappedToken] =
                 EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
-        }
-    }
 
-    function _deployWrappedTokenV2(
-        uint32 channelId,
-        uint256 path,
-        bytes calldata unwrappedToken,
-        address wrappedToken,
-        bytes32 wrappedTokenSalt,
-        TokenMetadata calldata metadata,
-        bool canDeploy
-    ) internal {
-        if (!ZkgmLib.isDeployed(wrappedToken)) {
-            if (!canDeploy) {
-                revert ZkgmLib.ErrCannotDeploy();
+            // If we deploy a ZkgmERC20 with the zkgm authority/minter, yield an
+            // event stating the token is a secure wrapped representation.
+            if (implementation == address(ERC20_IMPL)) {
+                try this.decodeZkgmERC20InitializeCall(metadata.initializer)
+                returns (
+                    address tokenAuthority,
+                    address tokenMinter,
+                    string memory,
+                    string memory,
+                    uint8
+                ) {
+                    if (
+                        tokenAuthority == authority()
+                            && tokenMinter == address(this)
+                    ) {
+                        emit ZkgmLib.NewSecureWrappedToken(
+                            channelId, path, unwrappedToken, wrappedToken
+                        );
+                    }
+                } catch {}
             }
-            CREATE3.deployDeterministic(
-                abi.encodePacked(
-                    type(ERC1967Proxy).creationCode,
-                    abi.encode(
-                        address(bytes20(metadata.implementation)),
-                        metadata.initializer
-                    )
-                ),
-                wrappedTokenSalt
-            );
-            tokenOrigin[wrappedToken] =
-                ZkgmLib.updateChannelPath(path, channelId);
-            metadataImageOf[wrappedToken] =
-                EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
         }
     }
 
@@ -390,7 +394,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
             _optionalRateLimit(quoteToken, order.quoteAmount);
             TokenMetadata memory metadata = _makeDefaultTokenMetadata(order);
-            _deployWrappedTokenV2Memory(
+            _deployWrappedTokenV2(
                 ibcPacket.destinationChannelId,
                 path,
                 order.baseToken,

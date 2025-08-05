@@ -1,4 +1,4 @@
-use alloy::sol_types::SolValue;
+use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
     entry_point, from_json, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
     Env, Event, MessageInfo, QueryRequest, Response, StdResult, Uint128,
@@ -8,12 +8,12 @@ use prost::Message;
 use protos::osmosis::tokenfactory::v1beta1::MsgSetDenomMetadata;
 use token_factory_api::{BurnTokensMsg, MintTokensMsg, TokenFactoryMsg, TokenFactoryQuery};
 use ucs03_zkgm_token_minter_api::{
-    ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg, Metadata, MetadataResponse,
-    PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenMsg,
+    new_secure_wrapped_token_event, ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg, Metadata,
+    MetadataResponse, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenMsg,
 };
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{encoding::Base58, H256, U256},
+    primitives::{encoding::Base58, H256},
     prost::Name,
 };
 
@@ -52,14 +52,39 @@ pub fn execute(
     match msg {
         ExecuteMsg::ZkgmExecuteMsg(msg) => match msg {
             ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom {
-                subdenom, metadata, ..
-            }) => wrapped_create_denom(deps, info, env, subdenom, metadata),
+                subdenom,
+                metadata,
+                token,
+                channel_id,
+                path,
+            }) => wrapped_create_denom(
+                deps,
+                info,
+                env,
+                channel_id,
+                U256::from_be_bytes::<32>(path.to_vec().try_into().expect("impossible")),
+                token,
+                subdenom,
+                metadata,
+            ),
             ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenomV2 {
                 subdenom,
                 implementation,
                 initializer,
-                ..
-            }) => wrapped_create_denom_v2(deps, info, env, subdenom, implementation, initializer),
+                token,
+                channel_id,
+                path,
+            }) => wrapped_create_denom_v2(
+                deps,
+                info,
+                env,
+                channel_id,
+                U256::from_be_bytes::<32>(path.to_vec().try_into().expect("impossible")),
+                token,
+                subdenom,
+                implementation,
+                initializer,
+            ),
             ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::MintTokens {
                 denom,
                 amount,
@@ -221,10 +246,14 @@ fn wrapped_burn_tokens(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn wrapped_create_denom(
     deps: DepsMut,
     info: MessageInfo,
     env: Env,
+    channel_id: ChannelId,
+    path: U256,
+    base_token: Binary,
     denom: String,
     metadata: Metadata,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
@@ -234,30 +263,41 @@ fn wrapped_create_denom(
 
     let subdenom = deconstruct_factory_denom(&env, &denom)?;
 
-    Ok(Response::new().add_messages(vec![
-        CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
-            subdenom: subdenom.to_owned(),
-            metadata: None,
-        }),
-        // We are using stargate for now instead of `Any` to be safe in case we would want to
-        // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
-        #[allow(deprecated)]
-        CosmosMsg::Stargate {
-            type_url: MsgSetDenomMetadata::type_url(),
-            value: MsgSetDenomMetadata {
-                sender: env.contract.address.to_string(),
-                metadata: Some(new_proto_metadata(denom.clone(), metadata)?),
-            }
-            .encode_to_vec()
-            .into(),
-        },
-    ]))
+    Ok(Response::new()
+        .add_messages(vec![
+            CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
+                subdenom: subdenom.to_owned(),
+                metadata: None,
+            }),
+            // We are using stargate for now instead of `Any` to be safe in case we would want to
+            // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
+            #[allow(deprecated)]
+            CosmosMsg::Stargate {
+                type_url: MsgSetDenomMetadata::type_url(),
+                value: MsgSetDenomMetadata {
+                    sender: env.contract.address.to_string(),
+                    metadata: Some(new_proto_metadata(denom.clone(), metadata)?),
+                }
+                .encode_to_vec()
+                .into(),
+            },
+        ])
+        .add_event(new_secure_wrapped_token_event(
+            channel_id,
+            path,
+            base_token.to_vec(),
+            subdenom,
+        )))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn wrapped_create_denom_v2(
     deps: DepsMut,
     info: MessageInfo,
     env: Env,
+    channel_id: ChannelId,
+    path: U256,
+    base_token: Binary,
     denom: String,
     implementation: Binary,
     initializer: Binary,
@@ -279,7 +319,7 @@ fn wrapped_create_denom_v2(
 
     let subdenom = deconstruct_factory_denom(&env, &denom)?;
 
-    Ok(Response::new().add_messages(vec![
+    let mut response = Response::new().add_messages(vec![
         CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
             subdenom: subdenom.to_owned(),
             metadata: None,
@@ -296,7 +336,18 @@ fn wrapped_create_denom_v2(
             .encode_to_vec()
             .into(),
         },
-    ]))
+    ]);
+
+    if admin == env.contract.address {
+        response = response.add_event(new_secure_wrapped_token_event(
+            channel_id,
+            path,
+            base_token.to_vec(),
+            subdenom,
+        ));
+    }
+
+    Ok(response)
 }
 
 #[cosmwasm_schema::cw_serde]
@@ -497,7 +548,7 @@ mod tests {
                 WrappedTokenMsg::CreateDenom {
                     subdenom: denom.clone(),
                     metadata: metadata.clone(),
-                    path: vec![].into(),
+                    path: U256::ZERO.to_be_bytes::<32>().into(),
                     channel_id: ChannelId!(1),
                     token: vec![].into(),
                 },
@@ -564,7 +615,7 @@ mod tests {
                     WrappedTokenMsg::CreateDenom {
                         subdenom: denom.clone(),
                         metadata: metadata.clone(),
-                        path: vec![].into(),
+                        path: U256::ZERO.to_be_bytes::<32>().into(),
                         channel_id: ChannelId!(1),
                         token: vec![].into(),
                     },
