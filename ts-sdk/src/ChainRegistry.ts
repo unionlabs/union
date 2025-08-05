@@ -90,7 +90,7 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
             }),
           NoSuchElementException: () =>
             new ChainRegistryError({
-              message: `non-deterministic fetch by ID`,
+              message: `no such element or duplicate elements for ${id}`,
             }),
           ParseError: (cause) =>
             new ChainRegistryError({

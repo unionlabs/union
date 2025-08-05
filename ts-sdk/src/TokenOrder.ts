@@ -1,5 +1,6 @@
-import { Effect, ParseResult } from "effect"
+import { Effect, ParseResult, pipe, Struct } from "effect"
 import type { Inspectable } from "effect/Inspectable"
+import { ParseError } from "effect/ParseResult"
 import type { Pipeable } from "effect/Pipeable"
 import * as S from "effect/Schema"
 import { Covariant } from "effect/Types"
@@ -32,7 +33,7 @@ export enum Kind {
   Unescrow,
 }
 
-const Input = S.Struct({
+export const Input = S.Struct({
   source: Chain,
   destination: Chain,
   sender: Ucs05.ValidAddress,
@@ -118,7 +119,7 @@ export declare namespace Options {
  * @category constructors
  * @since 2.0.0
  */
-export declare const make: <
+export const make: <
   P extends Options.Required & Partial<Options.Optional>,
 >(
   value: P,
@@ -126,8 +127,16 @@ export declare const make: <
   TokenOrder.Build<Exclude<keyof Options, keyof P>>,
   ParseResult.ParseError,
   never
->
-
+> = (value) =>
+  internal.make(
+    value.source,
+    value.destination,
+    value.sender,
+    value.receiver,
+    value.baseToken,
+    value.baseAmount,
+    value.kind,
+  )
 /**
  * @category combinators
  * @since 2.0.0

@@ -1,9 +1,10 @@
-import { Inspectable } from "effect"
+import { Effect, Inspectable, Schema } from "effect"
 import { dual } from "effect/Function"
+import { ParseError } from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
 import { Chain } from "../schema/chain.js"
 import * as Token from "../Token.js"
-import type * as TokenOrder from "../TokenOrder.js"
+import * as TokenOrder from "../TokenOrder.js"
 
 /** @internal */
 export const TypeId: TokenOrder.TypeId = Symbol.for(
@@ -36,15 +37,18 @@ function makeProto(
   destination: Chain,
   sender: string,
   receiver: string,
-  baseAmount: bigint,
   baseToken: Token.Any,
+  baseAmount: bigint,
+  kind: TokenOrder.Kind,
 ): TokenOrder.TokenOrder {
   const self = Object.create(Proto)
   self.source = source
   self.destination = destination
   self.sender = sender
   self.receiver = receiver
+  self.baseToken = baseToken
   self.baseAmount = baseAmount
+  self.kind = kind
   return self
 }
 
@@ -54,49 +58,112 @@ export const isTokenOrder = (u: unknown): u is TokenOrder.TokenOrder =>
 
 /** @internal */
 export const empty: TokenOrder.TokenOrder = makeProto(
-  "SEND",
   void 0 as unknown as Chain,
   void 0 as unknown as Chain,
-  void 0 as unknown as,
-  "",
-  0n,
+  void 0 as unknown as string,
+  void 0 as unknown as string,
+  void 0 as unknown as Token.Any,
+  void 0 as unknown as bigint,
+  -1 as unknown as TokenOrder.Kind,
 )
 
 /** @internal */
-export const make = <M extends TokenOrder.Method>(method: M) =>
-(
+export const make = (
+  source: Chain,
+  destination: Chain,
   sender: string,
   receiver: string,
-  options?: M extends "SEND" ? TokenOrder.Options.Send : TokenOrder.Options.NoUrl,
+  baseAmount: bigint,
+  baseToken: Token.Any,
+  kind: TokenOrder.Kind,
 ) =>
   modify(empty, {
-    method,
+    source,
+    destination,
     sender,
     receiver,
-    ...(options ?? undefined),
+    baseToken,
+    baseAmount,
+    kind,
   })
-
-/** @internal */
-export const send = make("SEND")
 
 /** @internal */
 export const modify = dual<
   (
-    options: TokenOrder.Options,
+    options: TokenOrder.Options.Complete,
   ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
-  (self: TokenOrder.TokenOrder, options: TokenOrder.Options) => TokenOrder.TokenOrder
->(2, (self, options) => {
-  let result = self
+  (
+    self: TokenOrder.TokenOrder,
+    options: TokenOrder.Options.Complete,
+  ) => Effect.Effect<TokenOrder.TokenOrder, ParseError, never>
+>(2, (self, options) =>
+  Effect.gen(function*() {
+    let result = self
 
-  if (options.sender) {
-    result = setSender(result, options.sender)
-  }
-  if (options.receiver) {
-    result = setReceiver(result, options.receiver)
-  }
+    if (options.source) {
+      const source = yield* Schema.decodeUnknown(TokenOrder.Input.fields.source)(options.source)
+      result = setSource(result, source)
+    }
 
-  return result
-})
+    if (options.destination) {
+      const destination = yield* Schema.decodeUnknown(TokenOrder.Input.fields.destination)(
+        options.destination,
+      )
+      result = setDestination(result, destination)
+    }
+
+    if (options.sender) {
+      const sender = yield* Schema.decodeUnknown(TokenOrder.Input.fields.sender)(options.sender)
+      result = setSender(result, sender)
+    }
+
+    if (options.receiver) {
+      result = setReceiver(result, options.receiver)
+    }
+
+    if (options.baseToken) {
+      const baseToken = yield* Schema.decodeUnknown(TokenOrder.Input.fields.baseToken)(
+        options.baseToken,
+      )
+      result = setBaseToken(result, baseToken)
+    }
+
+    return result
+  }))
+
+/** @internal */
+export const setSource = dual<
+  (
+    source: Chain,
+  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  (self: TokenOrder.TokenOrder, source: Chain) => TokenOrder.TokenOrder
+>(2, (self, source) =>
+  makeProto(
+    source,
+    self.destination,
+    self.sender,
+    self.receiver,
+    self.baseToken,
+    self.baseAmount,
+    self.kind,
+  ))
+
+/** @internal */
+export const setDestination = dual<
+  (
+    destination: Chain,
+  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  (self: TokenOrder.TokenOrder, destination: Chain) => TokenOrder.TokenOrder
+>(2, (self, destination) =>
+  makeProto(
+    self.source,
+    destination,
+    self.sender,
+    self.receiver,
+    self.baseToken,
+    self.baseAmount,
+    self.kind,
+  ))
 
 /** @internal */
 export const setSender = dual<
@@ -106,9 +173,13 @@ export const setSender = dual<
   (self: TokenOrder.TokenOrder, sender: string) => TokenOrder.TokenOrder
 >(2, (self, sender) =>
   makeProto(
-    self.method,
+    self.source,
+    self.destination,
     sender,
     self.receiver,
+    self.baseToken,
+    self.baseAmount,
+    self.kind,
   ))
 
 /** @internal */
@@ -119,7 +190,28 @@ export const setReceiver = dual<
   (self: TokenOrder.TokenOrder, receiver: string) => TokenOrder.TokenOrder
 >(2, (self, receiver) =>
   makeProto(
-    self.method,
+    self.source,
+    self.destination,
     self.sender,
     receiver,
+    self.baseToken,
+    self.baseAmount,
+    self.kind,
+  ))
+
+/** @internal */
+export const setBaseToken = dual<
+  (
+    baseToken: Token.Any | string,
+  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  (self: TokenOrder.TokenOrder, baseToken: Token.Any | string) => TokenOrder.TokenOrder
+>(2, (self, baseToken) =>
+  makeProto(
+    self.source,
+    self.destination,
+    self.sender,
+    self.receiver,
+    baseToken,
+    self.baseAmount,
+    self.kind,
   ))
