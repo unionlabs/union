@@ -333,7 +333,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			} else {
 				shares := delegation.Shares.RoundInt()
 				if sdkCtx.ChainID() != UNION_TESTNET {
-					shares = getUFromU64(50_000_000).Amount
+					shares = getUFromU64(100_000).Amount
 				}
 				_, err = keepers.StakingKeeper.Delegate(
 					ctx,
