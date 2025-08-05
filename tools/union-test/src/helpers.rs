@@ -46,3 +46,8 @@ pub struct WithdrawRewards {
     pub validator: String,
     pub amount: String,
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct UpdateClient {
+    pub height: u64,
+}

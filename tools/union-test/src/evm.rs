@@ -284,6 +284,31 @@ impl<'a> Module<'a> {
             .unwrap())
     }
 
+    pub async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::UpdateClient(ev)
+                        if ev.height == height =>
+                    {
+                        Some(helpers::UpdateClient {
+                            height: ev.height,
+                        })
+                    }
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+    
     pub async fn wait_for_packet_timeout(
         &self,
         packet_hash: H256,
