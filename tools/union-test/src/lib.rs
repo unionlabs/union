@@ -79,7 +79,7 @@ pub trait ChainEndpoint: Send + Sync {
         contract: Self::Contract,
         msg: Self::Msg,
         signer: &Self::ProviderType,
-    ) -> anyhow::Result<H256>;
+    ) -> anyhow::Result<(H256, u64)>;
 
     async fn wait_for_packet_recv(
         &self,
@@ -213,7 +213,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         contract: Self::Contract,
         msg: Self::Msg,
         signer: &Self::ProviderType,
-    ) -> anyhow::Result<H256> {
+    ) -> anyhow::Result<(H256, u64)> {
         self.send_ibc_transaction(contract, msg, signer)
             .await
             .map_err(Into::into)
@@ -322,7 +322,7 @@ impl ChainEndpoint for cosmos::Module {
         contract: Bech32<H256>,
         msg: Self::Msg,
         signer: &Self::ProviderType,
-    ) -> anyhow::Result<H256> {
+    ) -> anyhow::Result<(H256, u64)> {
         self.send_ibc_transaction(contract, msg, signer).await
     }
 
@@ -592,7 +592,7 @@ where
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
@@ -672,7 +672,7 @@ where
         validator: String,
         signer: Src::ProviderType,
     ) -> anyhow::Result<helpers::Delegate> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {
@@ -718,7 +718,7 @@ where
         validator: String,
         signer: Src::ProviderType,
     ) -> anyhow::Result<helpers::WithdrawRewards> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {
@@ -762,7 +762,7 @@ where
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
@@ -806,7 +806,7 @@ where
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketTimeout> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
@@ -836,6 +836,42 @@ where
         packet_timeout
     }
 
+    pub async fn send_and_expect_revert<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<()> {
+        let (packet_hash, _height) = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        match destination_chain.wait_for_packet_ack(packet_hash, timeout).await {
+            Ok(_) => anyhow::bail!("Expected transaction to revert, but it succeeded"),
+            Err(e) => {
+                println!("Transaction reverted as expected: {:?}", e);
+                Ok(())
+            }
+        }
+    }
     pub async fn send_and_recv_withdraw<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
@@ -845,7 +881,7 @@ where
         timeout: Duration,
         signer: Src::ProviderType,
     ) -> anyhow::Result<()> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {

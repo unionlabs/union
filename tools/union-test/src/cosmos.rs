@@ -653,10 +653,11 @@ impl Module {
         contract: Bech32<H256>,
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
-    ) -> anyhow::Result<H256> {
+    ) -> anyhow::Result<(H256, u64)> {
         let result = self.send_transaction(contract, msg, signer).await;
-
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
+        let height = tx_result.height.ok_or_else(|| anyhow!("transaction height not found"))?;
+        println!("Height: {:?}", height);
 
         let send_event = tx_result
             .tx_result
@@ -672,7 +673,7 @@ impl Module {
             .ok_or_else(|| anyhow!("wasm-packet_send event not found"))?;
 
         Ok(match send_event {
-            ModuleEvent::WasmPacketSend { packet_hash, .. } => packet_hash,
+            ModuleEvent::WasmPacketSend { packet_hash, .. } => (packet_hash, height.get()),
             _ => bail!("unexpected event variant"),
         })
     }
@@ -756,4 +757,12 @@ pub enum ModuleEvent {
         packet_hash: H256,
         acknowledgement: Bytes<HexUnprefixed>,
     },
+
+    // #[serde(rename = "update_client")]
+    // UpdateClient {
+    //     client_id: unionlabs::id::ClientId,
+    //     client_type: String,
+    //     #[serde(with = "height_list_comma_separated")]
+    //     consensus_heights: Vec<Height>,
+    // },
 }

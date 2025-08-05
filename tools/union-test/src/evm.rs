@@ -308,7 +308,7 @@ impl<'a> Module<'a> {
             .pop()
             .unwrap())
     }
-    
+
     pub async fn wait_for_packet_timeout(
         &self,
         packet_hash: H256,
@@ -722,7 +722,7 @@ impl<'a> Module<'a> {
         _contract: H160,
         msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
         _provider: &DynProvider<AnyNetwork>,
-    ) -> RpcResult<FixedBytes<32>> {
+    ) -> RpcResult<(FixedBytes<32>, u64)> {
         let res = self
             .keyring
             .with({
@@ -747,11 +747,14 @@ impl<'a> Module<'a> {
                     .ok_or_else(|| ErrorObjectOwned::owned(-1, "receipt not found", None::<()>))?;
 
                 let logs = &receipt_with.inner.inner.inner.receipt.logs;
+                let block_number = receipt_with.inner.inner.inner.receipt.logs[0].block_number.unwrap();
+                println!("Block number: {:?}", block_number);
 
                 for raw in logs {
                     if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
                         if let IbcEvents::PacketSend(ev) = alloy_log.data {
-                            return Ok(ev.packet_hash.into());
+                            return Ok((ev.packet_hash.into(), block_number));
+
                         }
                     }
                 }
