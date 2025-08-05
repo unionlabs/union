@@ -512,6 +512,9 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                     order.baseToken,
                     metadata
                 );
+                if (quoteToken != wrappedToken) {
+                    revert ZkgmLib.ErrInvalidTokenOrderKind();
+                }
             }
 
             if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {

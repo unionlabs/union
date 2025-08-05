@@ -3690,8 +3690,8 @@ contract ZkgmTests is Test {
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
                 baseAmount: baseAmount,
-                kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeTokenMetadata(metadata),
+                kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+                metadata: hex"",
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: quoteAmount
             });
@@ -3819,8 +3819,8 @@ contract ZkgmTests is Test {
                 receiver: abi.encodePacked(address(this)),
                 baseToken: baseToken,
                 baseAmount: baseAmount,
-                kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                metadata: ZkgmLib.encodeTokenMetadata(metadata),
+                kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+                metadata: hex"",
                 quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });

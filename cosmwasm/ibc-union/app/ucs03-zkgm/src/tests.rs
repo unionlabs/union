@@ -2569,28 +2569,6 @@ fn test_recv_packet_native_v2_market_maker_fill() {
     // Create a native token for quote that doesn't match the predicted wrapped token
     let quote_token = "native_token";
 
-    // Create proper metadata for PREIMAGE type
-    let admin_str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
-    let code_id = st.cw20_base_code_id;
-    let metadata = TokenMetadata {
-        implementation: (admin_str.to_string(), code_id).abi_encode_params().into(),
-        initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
-            cw20_base::msg::InstantiateMsg {
-                name: "Test Token".to_string(),
-                symbol: "TEST".to_string(),
-                decimals: 6,
-                initial_balances: vec![],
-                mint: Some(cw20::MinterResponse {
-                    minter: st.minter.to_string(),
-                    cap: None,
-                }),
-                marketing: None,
-            },
-        ))
-        .unwrap()
-        .into(),
-    };
-
     let packet = Packet {
         source_channel_id: ChannelId!(1),
         destination_channel_id,
@@ -2605,8 +2583,8 @@ fn test_recv_packet_native_v2_market_maker_fill() {
                     receiver: admin.as_bytes().to_vec().into(),
                     base_token: base_token.to_vec().into(),
                     base_amount: base_amount.try_into().unwrap(),
-                    kind: TOKEN_ORDER_KIND_INITIALIZE,
-                    metadata: metadata.abi_encode_params().into(),
+                    kind: TOKEN_ORDER_KIND_ESCROW,
+                    metadata: Default::default(),
                     quote_token: quote_token.as_bytes().to_vec().into(),
                     quote_amount: quote_amount.try_into().unwrap(),
                 }
