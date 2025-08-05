@@ -713,6 +713,10 @@ impl StateModuleServer<IbcUnion> for Module {
                 .query_batch_packets(at, path.batch_hash)
                 .await
                 .map(into_value),
+            StorePath::ClientStatus(path) => self
+                .query_committed_client_status(at, path.client_id)
+                .await
+                .map(into_value),
         }
     }
 

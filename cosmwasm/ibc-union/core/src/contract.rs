@@ -28,7 +28,8 @@ use ibc_union_msg::{
 use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        ClientStatusPath, ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC,
+        COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     MustBeZero, Packet, Status, Timestamp,
@@ -42,9 +43,8 @@ use unionlabs::{
 use crate::{
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
-        ClientStatuses, ClientStore, ClientTypes, Commitments, Connections, ContractChannels,
-        NextChannelId, NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers,
-        WhitelistedRelayersAdmin,
+        ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
+        NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers, WhitelistedRelayersAdmin,
     },
     ContractError,
 };
@@ -633,9 +633,13 @@ pub fn execute(
                     client_id: msg.client_id,
                 },
             )?;
-            let encoded = U256::from(status as u32);
-            deps.storage
-                .write::<ClientStatuses>(&msg.client_id, &encoded);
+            let key = ClientStatusPath {
+                client_id: msg.client_id,
+            }
+            .key();
+            let value = U256::from(status as u32).to_le_bytes();
+            let value_h256 = H256::new(value);
+            store_commit(deps, &key, &value_h256);
             Ok(Response::default())
         }
     }
@@ -2201,10 +2205,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             Ok(to_json_binary(&status)?)
         }
         QueryMsg::GetCommittedStatus { client_id } => {
-            let val = deps.storage.read::<ClientStatuses>(&client_id)?;
-            let raw = val.to_le_bytes()[0];
-            let status = Status::try_from(raw)
-                .map_err(|_| ContractError::InvalidClientStatusValue { value: raw as u32 })?;
+            let commit = read_commit(deps, &ClientStatusPath { client_id }.key())
+                .ok_or(ContractError::CommittedClientStatusNotFound { client_id })?;
+            let commit_bytes: [u8; 32] = *commit.get();
+            let u256 = U256::from_le_bytes(commit_bytes);
+            let status = Status::try_from(u256)
+                .map_err(|err| ContractError::InvalidClientStatusValue { value: err.value })?;
             Ok(to_json_binary(&status)?)
         }
         QueryMsg::GetChannels { contract } => {

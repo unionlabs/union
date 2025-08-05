@@ -159,10 +159,15 @@ pub enum ContractError {
     #[error("sender is not the relayer admin")]
     OnlyRelayerAdmin,
     #[error(
+        "{} committed client status not found for client id {client_id}",
+        ContractErrorKind::from(self)
+    )]
+    CommittedClientStatusNotFound { client_id: ClientId },
+    #[error(
         "{} invalid committed status value: {value}",
         ContractErrorKind::from(self)
     )]
-    InvalidClientStatusValue { value: u32 },
+    InvalidClientStatusValue { value: u8 },
 }
 
 impl ContractErrorKind {

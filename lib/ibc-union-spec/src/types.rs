@@ -65,7 +65,6 @@ macro_rules! id {
                 id.raw().into()
             }
         }
-
         impl From<NonZeroU32> for $T {
             fn from(id: NonZeroU32) -> Self {
                 <$T>::new(id)
@@ -113,15 +112,29 @@ impl fmt::Display for Status {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct UnknownEnumVariant {
+    pub value: u8,
+}
+
 impl TryFrom<u8> for Status {
-    type Error = &'static str;
+    type Error = UnknownEnumVariant;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(Status::Active),
             2 => Ok(Status::Expired),
             3 => Ok(Status::Frozen),
-            _ => Err("Invalid status value"),
+            _ => Err(UnknownEnumVariant { value }),
         }
+    }
+}
+
+impl TryFrom<U256> for Status {
+    type Error = UnknownEnumVariant;
+
+    fn try_from(value: U256) -> Result<Self, Self::Error> {
+        let byte = value.to_le_bytes()[0];
+        Status::try_from(byte)
     }
 }
