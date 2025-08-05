@@ -428,7 +428,7 @@ pub fn verify_token_order_v2(
         let is_unwrapping = is_unwrapping_v1 || is_unwrapping_v2;
 
         if !(is_unwrapping && is_inverse_intermediate_path && is_sending_back_to_same_channel) {
-            return Err(ContractError::InvalidMetadataType);
+            return Err(ContractError::InvalidTokenOrderUnescrow);
         }
 
         // Burn the wrapped token (EVM: IZkgmERC20(baseToken).burn(msg.sender, order.baseAmount))
@@ -2163,6 +2163,9 @@ fn execute_fungible_asset_order_v2(
                     Vec::from(order.base_token.clone()).into(),
                     metadata.clone(),
                 )?;
+                if quote_token_str != pred_wrapped {
+                    return Err(ContractError::InvalidTokenOrderKind);
+                }
                 wrapped_token = Some(pred_wrapped);
             }
         }

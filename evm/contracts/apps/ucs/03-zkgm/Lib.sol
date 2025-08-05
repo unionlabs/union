@@ -90,7 +90,7 @@ library ZkgmLib {
     error ErrInvalidStakeAmount();
     error ErrInvalidStakeValidator();
     error ErrCannotDeploy();
-    error ErrInvalidMetadataType();
+    error ErrInvalidTokenOrderKind();
     error ErrInvalidUnescrow();
     error ErrInvalidMetadataImage();
     error ErrMustBeUnwrap();

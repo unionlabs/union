@@ -120,8 +120,10 @@ pub enum ContractError {
     BatchMustBeSync,
     #[error("base amount must be greater or equal than quote amount when unwrapping")]
     BaseAmountLessThanQuoteAmount,
-    #[error("invalid metadata type")]
-    InvalidMetadataType,
+    #[error("invalid token order kind, when initializing, the token must be wrapped")]
+    InvalidTokenOrderKind,
+    #[error("invalid token order for unescrow, the quote token must unwraps the base token")]
+    InvalidTokenOrderUnescrow,
     #[error("invalid metadata image")]
     InvalidMetadataImage,
     #[error("invalid unescrow order, the base token is not the representation of the quote token")]
