@@ -26,6 +26,7 @@ use unionlabs::{
     self,
     google::protobuf::any::mk_any,
     primitives::{encoding::HexUnprefixed, Bech32, Bytes, H160, H256},
+    ibc::core::client::height::Height
 };
 use voyager_sdk::{
     anyhow::{self, anyhow, bail, Context},
@@ -33,6 +34,7 @@ use voyager_sdk::{
     serde_json,
     vm::BoxDynError,
 };
+
 
 use crate::helpers;
 
@@ -362,6 +364,39 @@ impl Module {
             .unwrap())
     }
 
+    pub async fn wait_for_update_client(
+        &self,
+        expected_revision_height: u64,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::UpdateClient {
+                        consensus_heights, ..
+                    } = evt
+                    {
+                        if let Some(first) = consensus_heights.first() {
+                            if first.height() >= expected_revision_height {
+                                return Some(helpers::UpdateClient {
+                                    height: first.height(),
+                                });
+                            }
+                        }
+                    }
+                    None
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
+
+
+
     pub async fn wait_for_packet_timeout(
         &self,
         packet_hash_param: H256,
@@ -657,7 +692,6 @@ impl Module {
         let result = self.send_transaction(contract, msg, signer).await;
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
         let height = tx_result.height.ok_or_else(|| anyhow!("transaction height not found"))?;
-        println!("Height: {:?}", height);
 
         let send_event = tx_result
             .tx_result
@@ -758,11 +792,46 @@ pub enum ModuleEvent {
         acknowledgement: Bytes<HexUnprefixed>,
     },
 
-    // #[serde(rename = "update_client")]
-    // UpdateClient {
-    //     client_id: unionlabs::id::ClientId,
-    //     client_type: String,
-    //     #[serde(with = "height_list_comma_separated")]
-    //     consensus_heights: Vec<Height>,
-    // },
+    #[serde(rename = "update_client")]
+    UpdateClient {
+        client_id: unionlabs::id::ClientId,
+        client_type: String,
+        #[serde(with = "height_list_comma_separated")]
+        consensus_heights: Vec<Height>,
+    },
+}
+
+
+// TODO: Check if human readable
+pub mod height_list_comma_separated {
+    use std::string::String;
+
+    use serde::{
+        de::{self, Deserialize},
+        Deserializer, Serialize, Serializer,
+    };
+    use unionlabs::ibc::core::client::height::Height;
+
+    #[allow(clippy::ptr_arg)] // required by serde
+    pub fn serialize<S>(data: &Vec<Height>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        data.iter()
+            .map(|height| format!("{height:#}"))
+            .collect::<Vec<_>>()
+            .join(",")
+            .serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Height>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .split(',')
+            .map(Height::from_str_allow_zero_revision)
+            .collect::<Result<_, _>>()
+            .map_err(de::Error::custom)
+    }
 }

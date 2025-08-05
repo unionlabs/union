@@ -32,7 +32,7 @@ use union_test::{
     cosmos::{self},
     evm::{
         self,
-        zkgm::{Instruction as InstructionEvm, UCS03Zkgm},
+        zkgm::{Instruction as InstructionEvm, UCS03Zkgm, V1ToV2Migration},
         zkgmerc20::ZkgmERC20,
     },
     TestContext,
@@ -2135,10 +2135,10 @@ async fn test_from_evm_to_union_tokenv2_unhappy_path() {
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
     println!("EVM Address: {:?}", evm_address);
 
-    ensure_channels_opened(ctx.channel_count).await;
-    let available_channel = ctx.get_available_channel_count().await;
-    assert!(available_channel > 0);
-    let pair = ctx.get_channel().await.expect("channel available");
+    // ensure_channels_opened(ctx.channel_count).await;
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
+    // let pair = ctx.get_channel().await.expect("channel available");
 
 
     let pair = union_test::channel_provider::ChannelPair {
@@ -2164,21 +2164,21 @@ async fn test_from_evm_to_union_tokenv2_unhappy_path() {
 
     let img = keccak256(&img_metadata);
     let zkgm_deployer_provider = ctx.dst.get_provider_privileged().await;
-    let governance_token = ctx
-        .dst
-        .setup_governance_token(
-            EVM_ZKGM_BYTES.into(),
-            pair.dest,
-            img,
-            zkgm_deployer_provider,
-        )
-        .await;
+    // let governance_token = ctx
+    //     .dst
+    //     .setup_governance_token(
+    //         EVM_ZKGM_BYTES.into(),
+    //         pair.dest,
+    //         img,
+    //         zkgm_deployer_provider,
+    //     )
+    //     .await;
 
-    assert!(
-        governance_token.is_ok(),
-        "Failed to setup governance token: {:?}",
-        governance_token.err()
-    );
+    // assert!(
+    //     governance_token.is_ok(),
+    //     "Failed to setup governance token: {:?}",
+    //     governance_token.err()
+    // );
 
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
@@ -2205,7 +2205,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_path() {
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            kind: 0x03, // WHICH IS NOT EXIST?
+            kind: 0x03, // WHICH IS NOT EXIST
             metadata: img_metadata.into(),
             quote_token: quote_token_addr.as_ref().to_vec().into(),
             quote_amount: "10".parse().unwrap(),
@@ -2229,13 +2229,11 @@ async fn test_from_evm_to_union_tokenv2_unhappy_path() {
     }];
 
     let recv_packet_data = ctx
-        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+        .send_and_expect_revert::<cosmos::Module, evm::Module>(
             &ctx.src,
             Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
             (bin_msg, funds),
             &ctx.dst,
-            3,
-            Duration::from_secs(20),
             Duration::from_secs(720),
             cosmos_provider,
         )

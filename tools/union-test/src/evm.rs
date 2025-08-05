@@ -293,7 +293,7 @@ impl<'a> Module<'a> {
             .wait_for_event(
                 |e| match e {
                     IbcEvents::UpdateClient(ev)
-                        if ev.height == height =>
+                        if ev.height >= height =>
                     {
                         Some(helpers::UpdateClient {
                             height: ev.height,
@@ -748,7 +748,6 @@ impl<'a> Module<'a> {
 
                 let logs = &receipt_with.inner.inner.inner.receipt.logs;
                 let block_number = receipt_with.inner.inner.inner.receipt.logs[0].block_number.unwrap();
-                println!("Block number: {:?}", block_number);
 
                 for raw in logs {
                     if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
