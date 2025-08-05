@@ -438,30 +438,30 @@
     "core": {
       "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
       "height": 8088108,
-      "commit": "e6d7b21598b95b2244bf82b242d97606585e6c25"
+      "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
     },
     "lightclient": {
       "cometbls": {
         "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
         "height": 8088108,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       },
       "state-lens/ics23/ics23": {
         "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
         "height": 8088108,
-        "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       },
       "state-lens/ics23/mpt": {
         "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
         "height": 8088108,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       }
     },
     "app": {
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 8088109,
-        "commit": "3ba126b285cc21173d3b352591eb72b1627d4166"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       }
     }
   },
@@ -478,30 +478,30 @@
     "core": {
       "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
       "height": 3646604,
-      "commit": "e6d7b21598b95b2244bf82b242d97606585e6c25"
+      "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
     },
     "lightclient": {
       "cometbls": {
         "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
         "height": 3646605,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       },
       "state-lens/ics23/ics23": {
         "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
         "height": 3646605,
-        "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       },
       "state-lens/ics23/mpt": {
         "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
         "height": 3646605,
-        "commit": "64cdc7d6fa1d0219d09c0c8f00016c11b6fcf6c8"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       }
     },
     "app": {
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 3646606,
-        "commit": "3ba126b285cc21173d3b352591eb72b1627d4166"
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       }
     }
   },
