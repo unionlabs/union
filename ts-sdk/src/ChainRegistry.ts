@@ -105,6 +105,7 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
       byUniversalId,
     } as const
   }),
+  dependencies: [GraphQL.Default],
   accessors: true,
 }) {
   static Test = Layer.effect(
