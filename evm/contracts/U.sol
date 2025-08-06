@@ -85,6 +85,27 @@ contract U is
         $.salt = _salt;
     }
 
+    function zkgm() public view returns (address) {
+        return _getUStorage().zkgm;
+    }
+
+    function salt() public view returns (bytes memory) {
+        return _getUStorage().salt;
+    }
+
+    function fungibleCounterparty(
+        uint32 channelId,
+        bytes calldata baseToken
+    ) public view returns (FungibleCounterparty memory) {
+        return _getUStorage().fungibleCounterparties[channelId][baseToken];
+    }
+
+    function intentWhitelist(
+        bytes32 packetHash
+    ) public view returns (bool) {
+        return _getUStorage().intentWhitelist[packetHash];
+    }
+
     function decimals()
         public
         view
