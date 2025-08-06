@@ -1,4 +1,4 @@
-import { Effect, ParseResult, pipe, Struct } from "effect"
+import { Effect, ParseResult } from "effect"
 import type { Inspectable } from "effect/Inspectable"
 import { ParseError } from "effect/ParseResult"
 import type { Pipeable } from "effect/Pipeable"
@@ -61,7 +61,7 @@ export interface TokenOrder
     Inspectable,
     Pipeable,
     InputDecoded,
-    ZkgmInstruction.Encodeable<never, never>
+    ZkgmInstruction.Encodeable<ParseError, never>
 {
   _tag: "TokenOrder"
 }
@@ -135,7 +135,10 @@ export const make: <
     value.receiver,
     value.baseToken,
     value.baseAmount,
+    value.quoteToken,
+    value.quoteAmount,
     value.kind,
+    value.metadata,
   )
 /**
  * @category combinators

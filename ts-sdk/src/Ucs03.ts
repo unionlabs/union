@@ -1094,11 +1094,14 @@ const TokenOrderOperandV2 = S.Union(
         title: "kind",
       }),
     ),
-    Hex.pipe(
-      S.annotations({
-        title: "metadata",
-        description: "metadata based on kind. for 0 token init args, 1&2 empty.",
-      }),
+    S.Union(
+      S.Literal("0x"),
+      Hex.pipe(
+        S.annotations({
+          title: "metadata",
+          description: "metadata based on kind. for 0 token init args, 1&2 empty.",
+        }),
+      ),
     ),
   ),
 )

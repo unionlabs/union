@@ -50,8 +50,6 @@ const program = Effect.gen(function*() {
     incompleteTokenOrder,
     Effect.tap((incomplete) => Effect.log({ incomplete })),
     Effect.flatMap(TokenOrder.withAutoQuoteToken),
-    Effect.tap((withQuoteToken) => Effect.log({ withQuoteToken })),
-    Effect.flatMap(TokenOrder.withFee({ priority: "high" })),
   )
 
   // const zkgmClient = yield* ZkgmClient.ZkgmClient
