@@ -1454,7 +1454,9 @@ export const TokenOrderFromHex = S.transformOrFail(
             ),
           ],
         ),
-        Effect.flatMap((operand) => S.decodeUnknown(TokenOrder)({ _tag: "TokenOrder", operand })),
+        Effect.flatMap((operand) =>
+          S.decodeUnknown(TokenOrder)({ _tag: "@unionlabs/sdk/Ucs03/TokenOrder", operand })
+        ),
         Effect.catchTag(
           "UnknownException",
           (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
