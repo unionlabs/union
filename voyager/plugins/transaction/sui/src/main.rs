@@ -559,7 +559,9 @@ async fn process_msgs(
                     .start_version()
                     .expect("object is shared, hence it has a start version");
 
-                let coin_t = register_tokens_if_zkgm(
+                // If the module is ZKGM, then we register the tokens if needed. Otherwise,
+                // the registered tokens are returned.
+                let coin_ts = register_tokens_if_zkgm(
                     module,
                     ptb,
                     pk,
@@ -584,45 +586,148 @@ async fn process_msgs(
                             p.source_channel_id,
                             p.destination_channel_id,
                             p.data.clone(),
-                            0,
+                            0 as u64,
                             p.timeout_timestamp,
                         )
                     })
                     .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
 
-                ptb.move_call(
-                    module_info.latest_address.into(),
-                    Identifier::new(module_info.module_name).unwrap(),
-                    ident_str!("recv_packet").into(),
-                    coin_t,
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module_info.stores[0].into(),
-                            initial_shared_version: store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: ObjectID::from_str("0x6").unwrap(),
-                            initial_shared_version: 1.into(),
-                            mutable: false,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
-                    ],
-                )
+                let module_name = Identifier::new(module_info.module_name).unwrap();
+
+                let arguments = vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: module_info.stores[0].into(),
+                        initial_shared_version: store_initial_seq,
+                        mutable: true,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&source_channels[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dest_channels[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&packet_data[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&timeout_heights[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&timeout_timestamps[0]).unwrap()),
+                ]
+                .into_iter()
+                .map(|a| ptb.input(a))
+                .collect::<Result<_, _>>()
                 .unwrap();
+
+                // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
+                // which means, we have to consume it within the same PTB via `end_recv`.
+                let session = ptb.command(Command::move_call(
+                    module_info.latest_address.into(),
+                    module_name.clone(),
+                    ident_str!("begin_recv").into(),
+                    vec![],
+                    arguments,
+                ));
+
+                // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
+                // endpoint must be called as many times as the partitions. Since the number of coins will be the
+                // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
+                for coin_t in coin_ts {
+                    ptb.move_call(
+                        module_info.latest_address.into(),
+                        module_name.clone(),
+                        ident_str!("recv_packet_2").into(),
+                        vec![coin_t],
+                        vec![
+                            CallArg::Object(ObjectArg::SharedObject {
+                                id: module.ibc_store.into(),
+                                initial_shared_version: module.ibc_store_initial_seq,
+                                mutable: true,
+                            }),
+                            CallArg::Object(ObjectArg::SharedObject {
+                                id: module_info.stores[0].into(),
+                                initial_shared_version: store_initial_seq,
+                                mutable: true,
+                            }),
+                            CallArg::Object(ObjectArg::SharedObject {
+                                id: ObjectID::from_str("0x6").unwrap(),
+                                initial_shared_version: 1.into(),
+                                mutable: false,
+                            }),
+                            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                            CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
+                        ],
+                    )
+                    .unwrap();
+                }
+
+                // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
+                // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
+                // it, this PTB will fail and no partial state will be persisted.
+                let arguments = vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
+                        mutable: true,
+                    }),
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: module_info.stores[0].into(),
+                        initial_shared_version: store_initial_seq,
+                        mutable: true,
+                    }),
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ObjectID::from_str("0x6").unwrap(),
+                        initial_shared_version: 1.into(),
+                        mutable: false,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&source_channels[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dest_channels[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&packet_data[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&timeout_heights[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&timeout_timestamps[0]).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
+                ]
+                .into_iter()
+                .map(|a| ptb.input(a).unwrap())
+                .chain(vec![session])
+                .collect();
+
+                ptb.command(Command::move_call(
+                    module_info.latest_address.into(),
+                    module_name.clone(),
+                    ident_str!("end_recv").into(),
+                    vec![],
+                    arguments,
+                ));
+
+                // ptb.move_call(
+                //     module_info.latest_address.into(),
+                //     Identifier::new(module_info.module_name).unwrap(),
+                //     ident_str!("recv_packet").into(),
+                //     vec![coin_t.unwrap()],
+                //     vec![
+                //         CallArg::Object(ObjectArg::SharedObject {
+                //             id: module.ibc_store.into(),
+                //             initial_shared_version: module.ibc_store_initial_seq,
+                //             mutable: true,
+                //         }),
+                //         CallArg::Object(ObjectArg::SharedObject {
+                //             id: module_info.stores[0].into(),
+                //             initial_shared_version: store_initial_seq,
+                //             mutable: true,
+                //         }),
+                //         CallArg::Object(ObjectArg::SharedObject {
+                //             id: ObjectID::from_str("0x6").unwrap(),
+                //             initial_shared_version: 1.into(),
+                //             mutable: false,
+                //         }),
+                //         CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                //         CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
+                //     ],
+                // )
+                // .unwrap();
             }
             _ => todo!(),
         }

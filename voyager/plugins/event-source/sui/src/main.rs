@@ -925,7 +925,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,
-                                    timeout_height: packet.timeout_height,
                                     timeout_timestamp: packet.timeout_timestamp,
                                 },
                                 maker_msg: event.maker_msg.into(),

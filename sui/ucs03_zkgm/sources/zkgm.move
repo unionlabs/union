@@ -463,7 +463,6 @@ module zkgm::zkgm_relay {
     public fun end_recv(
         zkgm: &mut RelayStore,
         ibc: &mut ibc::IBCStore,
-        session: Session,
         clock: &Clock,
         packet_source_channel: u32,
         packet_destination_channel: u32,
@@ -474,6 +473,7 @@ module zkgm::zkgm_relay {
         proof_height: u64,
         relayer: address,
         relayer_msg: vector<u8>,
+        session: Session,
     ) {
         let Session { .. } = session;
 

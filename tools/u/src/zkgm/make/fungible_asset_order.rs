@@ -3,8 +3,8 @@ use anyhow::Result;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use ucs03_zkgm::com::{
-    Instruction, TokenMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_1, INSTR_VERSION_2,
-    OP_TOKEN_ORDER, TOKEN_ORDER_KIND_INITIALIZE,
+    Batch, Instruction, TokenMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_0,
+    INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_INITIALIZE,
 };
 use unionlabs::primitives::{Bytes, H256, U256};
 
@@ -128,7 +128,7 @@ impl Cmd {
                     }
                 };
 
-                let instruction: Bytes = Instruction {
+                let instruction = Instruction {
                     version: INSTR_VERSION_2,
                     opcode: OP_TOKEN_ORDER,
                     operand: TokenOrderV2 {
@@ -143,11 +143,21 @@ impl Cmd {
                     }
                     .abi_encode_params()
                     .into(),
+                };
+
+                let batch: Bytes = Instruction {
+                    version: INSTR_VERSION_0,
+                    opcode: OP_BATCH,
+                    operand: Batch {
+                        instructions: vec![instruction.clone(), instruction],
+                    }
+                    .abi_encode_params()
+                    .into(),
                 }
                 .abi_encode_params()
                 .into();
 
-                println!("{instruction}");
+                println!("{batch}");
             }
         }
 
