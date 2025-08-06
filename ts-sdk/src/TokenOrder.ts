@@ -142,8 +142,8 @@ export const make: <
  * @since 2.0.0
  */
 export const setSender: {
-  (sender: string): (self: TokenOrder) => TokenOrder
-  (self: TokenOrder, sender: string): TokenOrder
+  (sender: Ucs05.AnyDisplay | string): (self: TokenOrder) => Effect.Effect<TokenOrder, ParseError>
+  (self: TokenOrder, sender: Ucs05.AnyDisplay | string): Effect.Effect<TokenOrder, ParseError>
 } = internal.setSender
 
 /**
@@ -151,8 +151,8 @@ export const setSender: {
  * @since 2.0.0
  */
 export const setReceiver: {
-  (receiver: string): (self: TokenOrder) => TokenOrder
-  (self: TokenOrder, receiver: string): TokenOrder
+  (receiver: Ucs05.AnyDisplay | string): (self: TokenOrder) => Effect.Effect<TokenOrder, ParseError>
+  (self: TokenOrder, receiver: Ucs05.AnyDisplay | string): Effect.Effect<TokenOrder, ParseError>
 } = internal.setReceiver
 
 export declare const withAutoQuoteToken: <A extends keyof Options.Optional>(

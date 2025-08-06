@@ -31,14 +31,14 @@ const program = Effect.gen(function*() {
   const incompleteTokenOrder = TokenOrder.make({
     source,
     destination,
-    sender: Ucs05.EvmDisplay.make("0x06627714f3F17a701f7074a12C02847a5D2Ca487", {
+    sender: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
+    receiver: Ucs05.EvmDisplay.make("0x06627714f3F17a701f7074a12C02847a5D2Ca487", {
       disableValidation: true,
     }),
-    receiver: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
-    baseToken: Token.Erc20.make({ address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }),
+    baseToken: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     baseAmount: 100n,
     kind: TokenOrder.Kind.Escrow,
-    quoteAmount: 100n,
+    quoteAmount: 50n,
     metadata: undefined,
   })
 
