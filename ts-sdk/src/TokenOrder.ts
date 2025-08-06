@@ -34,8 +34,8 @@ export enum Kind {
 }
 
 export const Input = S.Struct({
-  source: Chain,
-  destination: Chain,
+  source: S.typeSchema(Chain),
+  destination: S.typeSchema(Chain),
   sender: Ucs05.ValidAddress,
   receiver: Ucs05.ValidAddress,
   baseToken: S.Union(Token.Any, Token.TokenFromString),
@@ -71,16 +71,22 @@ export declare namespace TokenOrder {
     readonly [TypeId]: VarianceStruct<M>
   }
 
+  /** Enusres `TokenOrder` is covariant over set of missing keys */
   export interface VarianceStruct<out M> {
     readonly _M: Covariant<M>
   }
 
+  /** Collapses to `TokeOnder` when complete, otherwise tracks variance and partiality. */
+  // export type Build<M extends keyof Options = never> = [M] extends [never] ? TokenOrder
+  //   : Variance<M>
   export interface Build<
     M extends keyof TokenOrder = never,
-  > extends Variance<M> {}
+  > extends Variance<M>, Pipeable {}
 
+  /** Extracts missing keys from a partial `TokenOrder`. */
   export type Missing<T extends Build<any>> = T extends Build<infer M> ? M : never
 
+  /** Alias for a completed `TokenOrder`. */
   export type Complete = Build<never>
 }
 
@@ -124,7 +130,8 @@ export const make: <
 >(
   value: P,
 ) => Effect.Effect<
-  TokenOrder.Build<Exclude<keyof Options, keyof P>>,
+  Exclude<keyof Options, keyof P> extends never ? TokenOrder
+    : TokenOrder.Build<Exclude<keyof Options, keyof P>>,
   ParseResult.ParseError,
   never
 > = (value) =>

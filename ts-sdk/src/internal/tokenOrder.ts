@@ -52,6 +52,7 @@ function makeProto(
   quoteToken: Token.Any,
   quoteAmount: bigint,
   kind: TokenOrder.Kind,
+  metadata?: Hex | undefined,
 ): TokenOrder.TokenOrder {
   const self = Object.create(Proto)
   console.log({ makeProto: Object.getOwnPropertyNames(self) })
@@ -64,6 +65,7 @@ function makeProto(
   self.quoteToken = quoteToken
   self.quoteAmount = quoteAmount
   self.kind = kind
+  self.metadata = metadata
   return self
 }
 
@@ -82,6 +84,7 @@ export const empty: TokenOrder.TokenOrder = makeProto(
   void 0 as unknown as Token.Any,
   void 0 as unknown as bigint,
   -1 as unknown as TokenOrder.Kind,
+  undefined,
 )
 
 /** @internal */
@@ -95,7 +98,7 @@ export const make = (
   quoteToken: Token.Any,
   quoteAmount: bigint,
   kind: TokenOrder.Kind,
-  metadata?: `0x${string}` | undefined,
+  metadata?: Hex | undefined,
 ) =>
   modify(empty, {
     source,
@@ -159,10 +162,17 @@ export const modify = dual<
       result = yield* setQuoteAmount(result, options.quoteAmount)
     }
 
-    if (options.kind) {
+    if (options.kind !== undefined) {
       result = {
         ...result,
         kind: options.kind,
+      }
+    }
+
+    if (options.metadata !== undefined) {
+      result = {
+        ...result,
+        metadata: options.metadata,
       }
     }
 
@@ -188,6 +198,7 @@ export const setSource = dual<
     self.quoteToken,
     self.quoteAmount,
     self.kind,
+    self.metadata,
   ))
 
 /** @internal */
@@ -207,6 +218,7 @@ export const setDestination = dual<
     self.quoteToken,
     self.quoteAmount,
     self.kind,
+    self.metadata,
   ))
 
 /** @internal */
@@ -233,6 +245,7 @@ export const setSender = dual<
         self.quoteToken,
         self.quoteAmount,
         self.kind,
+        self.metadata,
       )
     ),
   ))
@@ -261,6 +274,7 @@ export const setReceiver = dual<
         self.quoteToken,
         self.quoteAmount,
         self.kind,
+        self.metadata,
       )
     ),
   ))
@@ -289,6 +303,7 @@ export const setBaseToken = dual<
         self.quoteToken,
         self.quoteAmount,
         self.kind,
+        self.metadata,
       )
     ),
   ))
@@ -317,6 +332,7 @@ export const setBaseAmount = dual<
         self.quoteToken,
         self.quoteAmount,
         self.kind,
+        self.metadata,
       )
     ),
   ))
@@ -345,6 +361,7 @@ export const setQuoteToken = dual<
         quoteToken,
         self.quoteAmount,
         self.kind,
+        self.metadata,
       )
     ),
   ))
@@ -373,6 +390,7 @@ export const setQuoteAmount = dual<
         self.quoteToken,
         quoteAmount,
         self.kind,
+        self.metadata,
       )
     ),
   ))
