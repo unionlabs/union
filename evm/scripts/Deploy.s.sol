@@ -907,6 +907,8 @@ contract GetDeployed is VersionedScript {
         address ucs00 = getDeployed(Protocols.UCS00);
         address ucs03 = getDeployed(Protocols.UCS03);
 
+        address u = getDeployed(string(INSTANCE_SALT.U));
+
         console.log(
             string(abi.encodePacked("Manager: ", manager.toHexString()))
         );
@@ -966,6 +968,19 @@ contract GetDeployed is VersionedScript {
             )
         );
         impls.serialize(manager.toHexString(), proxyManager);
+
+        string memory proxyU = "proxyU";
+        proxyU.serialize(
+            "contract",
+            string("libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy")
+        );
+        proxyU = proxyU.serialize(
+            "args",
+            abi.encode(
+                implOf(u), abi.encodeCall(U.initialize, (manager, ucs03, "Union", "U", 18, hex""))
+            )
+        );
+        impls.serialize(manager.toHexString(), proxyU);
 
         string memory proxyMulticall = "proxyMulticall";
         proxyMulticall.serialize(
@@ -1108,6 +1123,13 @@ contract GetDeployed is VersionedScript {
         );
         implManager = implManager.serialize("args", bytes(hex""));
         impls.serialize(implOf(manager).toHexString(), implManager);
+
+        string memory implU = "implU";
+        implU.serialize(
+            "contract", string("contracts/U.sol:U")
+        );
+        implU = implU.serialize("args", bytes(hex""));
+        impls.serialize(implOf(u).toHexString(), implU);
 
         string memory implHandler = "implHandler";
         implHandler.serialize(
