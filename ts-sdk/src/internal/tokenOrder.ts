@@ -1,10 +1,11 @@
 import { Effect, Inspectable, Schema } from "effect"
-import { dual } from "effect/Function"
+import { dual, pipe } from "effect/Function"
 import { ParseError } from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
 import { Chain } from "../schema/chain.js"
 import * as Token from "../Token.js"
 import * as TokenOrder from "../TokenOrder.js"
+import type * as Ucs05 from "../Ucs05.js"
 
 /** @internal */
 export const TypeId: TokenOrder.TypeId = Symbol.for(
@@ -18,12 +19,13 @@ const Proto = {
     return {
       _id: "@unionlabs/sdk/TokenOrder",
       _missing: Object.entries(this)
-        .filter(([k, v]) => v === "undefined")
-        .map(([k, v]) => k),
+        .filter(([_k, v]) => v === "undefined")
+        .map(([k, _v]) => k),
       source: this.source,
       destination: this.destination,
       sender: this.sender,
       receiver: this.receiver,
+      baseToken: this.baseToken,
       baseAmount: this.baseAmount,
     }
   },
@@ -73,8 +75,8 @@ export const make = (
   destination: Chain,
   sender: string,
   receiver: string,
-  baseAmount: bigint,
   baseToken: Token.Any,
+  baseAmount: bigint,
   kind: TokenOrder.Kind,
 ) =>
   modify(empty, {
@@ -91,7 +93,7 @@ export const make = (
 export const modify = dual<
   (
     options: TokenOrder.Options.Complete,
-  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
+  ) => (self: TokenOrder.TokenOrder) => Effect.Effect<TokenOrder.TokenOrder, ParseError>,
   (
     self: TokenOrder.TokenOrder,
     options: TokenOrder.Options.Complete,
@@ -113,19 +115,19 @@ export const modify = dual<
     }
 
     if (options.sender) {
-      const sender = yield* Schema.decodeUnknown(TokenOrder.Input.fields.sender)(options.sender)
-      result = setSender(result, sender)
+      result = yield* setSender(result, options.sender)
     }
 
     if (options.receiver) {
-      result = setReceiver(result, options.receiver)
+      result = yield* setReceiver(result, options.receiver)
     }
 
     if (options.baseToken) {
-      const baseToken = yield* Schema.decodeUnknown(TokenOrder.Input.fields.baseToken)(
-        options.baseToken,
-      )
-      result = setBaseToken(result, baseToken)
+      result = yield* setBaseToken(result, options.baseToken)
+    }
+
+    if (options.baseToken) {
+      result = yield* setBaseAmount(result, options.baseAmount)
     }
 
     return result
@@ -168,50 +170,103 @@ export const setDestination = dual<
 /** @internal */
 export const setSender = dual<
   (
-    sender: string,
-  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
-  (self: TokenOrder.TokenOrder, sender: string) => TokenOrder.TokenOrder
+    sender: Ucs05.AnyDisplay | string,
+  ) => (self: TokenOrder.TokenOrder) => Effect.Effect<TokenOrder.TokenOrder, ParseError>,
+  (
+    self: TokenOrder.TokenOrder,
+    sender: Ucs05.AnyDisplay | string,
+  ) => Effect.Effect<TokenOrder.TokenOrder, ParseError>
 >(2, (self, sender) =>
-  makeProto(
-    self.source,
-    self.destination,
+  pipe(
     sender,
-    self.receiver,
-    self.baseToken,
-    self.baseAmount,
-    self.kind,
+    Schema.decode(TokenOrder.Input.fields.sender),
+    Effect.map((sender) =>
+      makeProto(
+        self.source,
+        self.destination,
+        sender,
+        self.receiver,
+        self.baseToken,
+        self.baseAmount,
+        self.kind,
+      )
+    ),
   ))
 
 /** @internal */
 export const setReceiver = dual<
   (
+    receiver: Ucs05.AnyDisplay | string,
+  ) => (self: TokenOrder.TokenOrder) => Effect.Effect<TokenOrder.TokenOrder, ParseError>,
+  (
+    self: TokenOrder.TokenOrder,
     receiver: string,
-  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
-  (self: TokenOrder.TokenOrder, receiver: string) => TokenOrder.TokenOrder
+  ) => Effect.Effect<TokenOrder.TokenOrder, ParseError>
 >(2, (self, receiver) =>
-  makeProto(
-    self.source,
-    self.destination,
-    self.sender,
+  pipe(
     receiver,
-    self.baseToken,
-    self.baseAmount,
-    self.kind,
+    Schema.decode(TokenOrder.Input.fields.receiver),
+    Effect.map((receiver) =>
+      makeProto(
+        self.source,
+        self.destination,
+        self.sender,
+        receiver,
+        self.baseToken,
+        self.baseAmount,
+        self.kind,
+      )
+    ),
   ))
 
 /** @internal */
 export const setBaseToken = dual<
   (
     baseToken: Token.Any | string,
-  ) => (self: TokenOrder.TokenOrder) => TokenOrder.TokenOrder,
-  (self: TokenOrder.TokenOrder, baseToken: Token.Any | string) => TokenOrder.TokenOrder
+  ) => (self: TokenOrder.TokenOrder) => Effect.Effect<TokenOrder.TokenOrder, ParseError>,
+  (
+    self: TokenOrder.TokenOrder,
+    baseToken: Token.Any | string,
+  ) => Effect.Effect<TokenOrder.TokenOrder, ParseError>
 >(2, (self, baseToken) =>
-  makeProto(
-    self.source,
-    self.destination,
-    self.sender,
-    self.receiver,
+  pipe(
     baseToken,
-    self.baseAmount,
-    self.kind,
+    Schema.decode(TokenOrder.Input.fields.baseToken),
+    Effect.map((baseToken) =>
+      makeProto(
+        self.source,
+        self.destination,
+        self.sender,
+        self.receiver,
+        baseToken,
+        self.baseAmount,
+        self.kind,
+      )
+    ),
+  ))
+
+/** @internal */
+export const setBaseAmount = dual<
+  (
+    baseAmount: bigint,
+  ) => (self: TokenOrder.TokenOrder) => Effect.Effect<TokenOrder.TokenOrder, ParseError>,
+  (
+    self: TokenOrder.TokenOrder,
+    baseAmount: bigint,
+  ) => Effect.Effect<TokenOrder.TokenOrder, ParseError>
+>(2, (self, baseAmount) =>
+  pipe(
+    baseAmount,
+    Schema.decode(TokenOrder.Input.fields.baseAmount),
+    Effect.map((baseAmount) =>
+      makeProto(
+        self.source,
+        self.destination,
+        self.sender,
+        self.receiver,
+        self.baseToken,
+        baseAmount,
+        self.kind,
+      )
+    ),
   ))
