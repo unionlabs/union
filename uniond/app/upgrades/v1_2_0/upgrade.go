@@ -62,53 +62,56 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		// Resets the validator state with the new power reduction
-		// Adapted from https://github.com/DoraFactory/doravota/blob/final-fix/app/app.go#L1095-L1136
 		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		sdkCtx.Logger().Info("resetting validator state")
-		for _, validator := range validators {
+		// Resets the validator state with the new power reduction
+		// Adapted from https://github.com/DoraFactory/doravota/blob/final-fix/app/app.go#L1095-L1136
+		if sdkCtx.ChainID() != UNION_TESTNET {
 
-			store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
+			sdkCtx.Logger().Info("resetting validator state")
+			for _, validator := range validators {
 
-			deleted := false
+				store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
 
-			iterator := storetypes.KVStorePrefixIterator(store, stakingtypes.ValidatorsByPowerIndexKey)
-			defer iterator.Close()
+				deleted := false
 
-			for ; iterator.Valid(); iterator.Next() {
-				valAddr := stakingtypes.ParseValidatorPowerRankKey(iterator.Key())
+				iterator := storetypes.KVStorePrefixIterator(store, stakingtypes.ValidatorsByPowerIndexKey)
+				defer iterator.Close()
 
-				bz, err := keepers.StakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+				for ; iterator.Valid(); iterator.Next() {
+					valAddr := stakingtypes.ParseValidatorPowerRankKey(iterator.Key())
+
+					bz, err := keepers.StakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+					if err != nil {
+						panic(err)
+					}
+
+					if bytes.Equal(valAddr, bz) {
+						if deleted {
+							sdkCtx.Logger().Info("deleting duplicate validator")
+						} else {
+							deleted = true
+							sdkCtx.Logger().Info("deleting validator first record")
+						}
+
+						store.Delete(iterator.Key())
+						sdkCtx.Logger().Info("deleted the key")
+					}
+				}
+
+				keepers.StakingKeeper.SetValidatorByPowerIndex(ctx, validator)
+				sdkCtx.Logger().Info("reset validator")
+				_, err := keepers.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+				sdkCtx.Logger().Info("update valset")
 				if err != nil {
 					panic(err)
 				}
 
-				if bytes.Equal(valAddr, bz) {
-					if deleted {
-						sdkCtx.Logger().Info("deleting duplicate validator")
-					} else {
-						deleted = true
-						sdkCtx.Logger().Info("deleting validator first record")
-					}
-
-					store.Delete(iterator.Key())
-					sdkCtx.Logger().Info("deleted the key")
-				}
+				sdkCtx.Logger().Info("done with validator")
 			}
-
-			keepers.StakingKeeper.SetValidatorByPowerIndex(ctx, validator)
-			sdkCtx.Logger().Info("reset validator")
-			_, err := keepers.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
-			sdkCtx.Logger().Info("update valset")
-			if err != nil {
-				panic(err)
-			}
-
-			sdkCtx.Logger().Info("done with validator")
 		}
 
 		// Undelegate existing delegations
