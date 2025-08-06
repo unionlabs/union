@@ -85,6 +85,27 @@ contract U is
         $.salt = _salt;
     }
 
+    function zkgm() public view returns (address) {
+        return _getUStorage().zkgm;
+    }
+
+    function salt() public view returns (bytes memory) {
+        return _getUStorage().salt;
+    }
+
+    function fungibleCounterparty(
+        uint32 channelId,
+        bytes calldata baseToken
+    ) public view returns (FungibleCounterparty memory) {
+        return _getUStorage().fungibleCounterparties[channelId][baseToken];
+    }
+
+    function intentWhitelist(
+        bytes32 packetHash
+    ) public view returns (bool) {
+        return _getUStorage().intentWhitelist[packetHash];
+    }
+
     function decimals()
         public
         view
@@ -92,20 +113,6 @@ contract U is
         returns (uint8)
     {
         return _getUStorage().decimals;
-    }
-
-    function transfer(
-        address to,
-        uint256 value
-    ) public override returns (bool) {
-        address from = _msgSender();
-        // Allow zkgm transferring to the zero address (burning).
-        if (from == _getUStorage().zkgm) {
-            _update(from, to, value);
-        } else {
-            _transfer(from, to, value);
-        }
-        return true;
     }
 
     function mint(address to, uint256 amount) external onlyZkgm {

@@ -50,10 +50,14 @@ struct UCS03Parameters {
     uint8 nativeTokenDecimals;
 }
 
+library INSTANCE_SALT {
+    bytes constant U =
+        hex"12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047";
+}
+
 library LIB_SALT {
     string constant MULTICALL = "lib/multicall-v2";
     string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
-    string constant U_IMPL = "lib/u-impl";
 }
 
 library IBC_SALT {
@@ -168,10 +172,30 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployU() internal returns (U) {
+    function deployU(
+        Manager authority,
+        UCS03Zkgm zkgm,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) internal returns (U) {
         return U(
-            getDeployer().deploy(
-                LIB_SALT.U_IMPL, abi.encodePacked(type(U).creationCode), 0
+            deploy(
+                string(INSTANCE_SALT.U),
+                abi.encode(
+                    address(new U()),
+                    abi.encodeCall(
+                        U.initialize,
+                        (
+                            address(authority),
+                            address(zkgm),
+                            name,
+                            symbol,
+                            decimals,
+                            hex""
+                        )
+                    )
+                )
             )
         );
     }
@@ -883,6 +907,8 @@ contract GetDeployed is VersionedScript {
         address ucs00 = getDeployed(Protocols.UCS00);
         address ucs03 = getDeployed(Protocols.UCS03);
 
+        address u = getDeployed(string(INSTANCE_SALT.U));
+
         console.log(
             string(abi.encodePacked("Manager: ", manager.toHexString()))
         );
@@ -942,6 +968,24 @@ contract GetDeployed is VersionedScript {
             )
         );
         impls.serialize(manager.toHexString(), proxyManager);
+
+        string memory proxyU = "proxyU";
+        proxyU.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyU = proxyU.serialize(
+            "args",
+            abi.encode(
+                implOf(u),
+                abi.encodeCall(
+                    U.initialize, (manager, ucs03, "Union", "U", 18, hex"")
+                )
+            )
+        );
+        impls.serialize(manager.toHexString(), proxyU);
 
         string memory proxyMulticall = "proxyMulticall";
         proxyMulticall.serialize(
@@ -1084,6 +1128,11 @@ contract GetDeployed is VersionedScript {
         );
         implManager = implManager.serialize("args", bytes(hex""));
         impls.serialize(implOf(manager).toHexString(), implManager);
+
+        string memory implU = "implU";
+        implU.serialize("contract", string("contracts/U.sol:U"));
+        implU = implU.serialize("args", bytes(hex""));
+        impls.serialize(implOf(u).toHexString(), implU);
 
         string memory implHandler = "implHandler";
         implHandler.serialize(
@@ -1655,6 +1704,40 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 }
 
+contract UpgradeU is VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address u = getDeployed(string(INSTANCE_SALT.U));
+
+        console.log(string(abi.encodePacked("U: ", u.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new U());
+        U(u).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
 contract DeployRoles is UnionScript {
     using LibString for *;
 
@@ -1853,35 +1936,42 @@ contract DeployU is UnionScript, VersionedScript {
         return Deployer(deployer);
     }
 
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
         vm.startBroadcast(privateKey);
-        U u = deployU();
+        U u = deployU(manager, ucs03, "Union", "U", 18);
         vm.stopBroadcast();
 
         console.log("U: ", address(u));
     }
 }
 
-contract MintedWrappedToken is VersionedScript {
+contract DryDeployU is UnionScript, VersionedScript {
     using LibString for *;
-    using LibBytes for *;
 
     address immutable deployer;
     address immutable sender;
-    uint256 immutable path;
-    uint32 immutable channelId;
-    bytes token;
-    bytes salt;
 
     constructor() {
         deployer = vm.envAddress("DEPLOYER");
         sender = vm.envAddress("SENDER");
-        path = vm.envUint("FORWARD_PATH");
-        token = vm.envBytes("TOKEN");
-        channelId = uint32(vm.envUint("CHANNEL_ID"));
-        salt = vm.envBytes("SALT");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
     }
 
     function getDeployed(
@@ -1894,29 +1984,14 @@ contract MintedWrappedToken is VersionedScript {
     }
 
     function run() public {
-        vm.pauseGasMetering();
-        address auth = getDeployed(IBC_SALT.MANAGER);
-        address zkgm = getDeployed(Protocols.UCS03);
-        address impl = getDeployed(LIB_SALT.U_IMPL);
-        console.log(auth);
-        console.log(zkgm);
-        console.log(impl);
-        TokenMetadata memory metadata = TokenMetadata({
-            implementation: abi.encodePacked(impl),
-            initializer: abi.encodeCall(
-                U.initialize, (auth, zkgm, "Union", "U", 18, salt)
-            )
-        });
-        bytes32 metadataImage =
-            EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
-        bytes32 wrappedTokenSalt = EfficientHashLib.hash(
-            abi.encode(path, channelId, token, metadataImage)
-        );
-        address wrappedToken =
-            CREATE3.predictDeterministicAddress(wrappedTokenSalt, zkgm);
-        bytes memory wrappedTokenBytes = abi.encodePacked(wrappedToken);
-        console.logBytes(salt);
-        console.log(wrappedToken);
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
+        vm.startPrank(sender);
+        U u = deployU(manager, ucs03, "Union", "U", 18);
+        vm.stopPrank();
+
+        console.log("U: ", address(u));
     }
 }
 
