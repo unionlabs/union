@@ -1704,6 +1704,40 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 }
 
+contract UpgradeU is VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address u = getDeployed(string(INSTANCE_SALT.U));
+
+        console.log(string(abi.encodePacked("U: ", u.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new U());
+        U(u).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
 contract DeployRoles is UnionScript {
     using LibString for *;
 
