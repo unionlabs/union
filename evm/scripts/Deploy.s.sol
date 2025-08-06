@@ -972,12 +972,17 @@ contract GetDeployed is VersionedScript {
         string memory proxyU = "proxyU";
         proxyU.serialize(
             "contract",
-            string("libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy")
+            string(
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
         );
         proxyU = proxyU.serialize(
             "args",
             abi.encode(
-                implOf(u), abi.encodeCall(U.initialize, (manager, ucs03, "Union", "U", 18, hex""))
+                implOf(u),
+                abi.encodeCall(
+                    U.initialize, (manager, ucs03, "Union", "U", 18, hex"")
+                )
             )
         );
         impls.serialize(manager.toHexString(), proxyU);
@@ -1125,9 +1130,7 @@ contract GetDeployed is VersionedScript {
         impls.serialize(implOf(manager).toHexString(), implManager);
 
         string memory implU = "implU";
-        implU.serialize(
-            "contract", string("contracts/U.sol:U")
-        );
+        implU.serialize("contract", string("contracts/U.sol:U"));
         implU = implU.serialize("args", bytes(hex""));
         impls.serialize(implOf(u).toHexString(), implU);
 
