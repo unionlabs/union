@@ -1,4 +1,5 @@
-import { Effect, flow, ParseResult, pipe, Schema as S, Struct } from "effect"
+import { Effect, flow, Match, ParseResult, pipe, Schema as S, Struct } from "effect"
+import { constFalse, constTrue } from "effect/Function"
 
 export const Erc20 = S.Struct({
   _tag: S.tag("Erc20"),
@@ -85,4 +86,15 @@ export const TokenFromString = S.transformOrFail(
       ),
     encode: flow(Struct.get("address"), Effect.succeed),
   },
+)
+
+export const isNative = Match.type<Any>().pipe(
+  Match.tagsExhaustive({
+    CosmosBank: constTrue,
+    CosmosIbcClassic: constTrue,
+    CosmosTokenFactory: constTrue,
+    Cw20: constFalse,
+    Erc20: constFalse,
+    EvmGas: constTrue,
+  }),
 )

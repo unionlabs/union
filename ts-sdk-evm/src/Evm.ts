@@ -263,7 +263,7 @@ export class PublicClientDestination
  * @category context
  * @since 2.0.0
  */
-export class PublicClient extends Context.Tag("@unionlabs/sdk/Evm/PublicClient")<
+export class PublicClient extends Context.Tag("@unionlabs/sdk-evm/Evm/PublicClient")<
   PublicClient,
   Evm.PublicClient
 >() {

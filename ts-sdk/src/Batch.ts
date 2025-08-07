@@ -22,8 +22,12 @@ export type TypeId = typeof TypeId
  * @since 2.0.0
  * @category models
  */
-export interface Batch<A>
-  extends Inspectable.Inspectable, Pipeable, ZkgmInstruction.Encodeable<ParseError, never>
+export interface Batch
+  extends
+    Inspectable.Inspectable,
+    Pipeable,
+    Iterable<ZkgmInstruction.ZkgmInstruction>,
+    ZkgmInstruction.Encodeable<ParseError, never>
 {
   readonly [TypeId]: TypeId
   _tag: "Batch"
@@ -34,7 +38,10 @@ const Proto = {
   [TypeId]: TypeId,
   _tag: "Batch",
   ...Inspectable.BaseProto,
-  toJSON(this: Batch<any>): unknown {
+  [Symbol.iterator](this: Batch) {
+    return this.instructions[Symbol.iterator]()
+  },
+  toJSON(this: Batch): unknown {
     return {
       _id: "@unionlabs/sdk/Batch",
       instructions: A.map(this.instructions, (x) => x.toJSON()),
@@ -47,7 +54,7 @@ const Proto = {
 
 export const make = <
   A extends ZkgmInstruction.ZkgmInstruction,
->(iterable: Iterable<A>): Batch<A> =>
+>(iterable: Iterable<A>): Batch =>
   Object.assign(Object.create(Proto), {
     _tag: "Batch",
     instructions: iterable,

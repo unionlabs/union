@@ -61,6 +61,7 @@ export interface TokenOrder
     Inspectable,
     Pipeable,
     InputDecoded,
+    Iterable<ZkgmInstruction.ZkgmInstruction>,
     ZkgmInstruction.Encodeable<ParseError, never>
 {
   _tag: "TokenOrder"

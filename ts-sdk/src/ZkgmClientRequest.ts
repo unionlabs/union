@@ -1,9 +1,12 @@
+import { Option } from "effect"
+import { NonEmptyReadonlyArray } from "effect/Array"
 import type { Inspectable } from "effect/Inspectable"
 import type { Pipeable } from "effect/Pipeable"
 import * as internal from "./internal/zkgmClientRequest.js"
 import { Chain } from "./schema/chain.js"
 import { ChannelId } from "./schema/channel.js"
 import { Hex } from "./schema/hex.js"
+import type * as Token from "./Token.js"
 import type * as ZkgmInstruction from "./ZkgmInstruction.js"
 
 /**
@@ -72,3 +75,12 @@ export const setDestination: {
   (destination: Chain): (self: ZkgmClientRequest) => ZkgmClientRequest
   (self: ZkgmClientRequest, destination: Chain): ZkgmClientRequest
 } = internal.setDestination
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const requiredFunds: (
+  self: ZkgmClientRequest,
+) => Option.Option<NonEmptyReadonlyArray<readonly [token: Token.Any, amount: bigint]>> =
+  internal.requiredFunds
