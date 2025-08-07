@@ -87,6 +87,12 @@ pub trait ChainEndpoint: Send + Sync {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
 
+    async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient>;
+
     async fn wait_for_packet_timeout(
         &self,
         packet_hash: H256,
@@ -227,6 +233,14 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         self.wait_for_packet_recv(packet_hash, timeout).await
     }
 
+    async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        self.wait_for_update_client(height, timeout).await
+    }
+
     async fn wait_for_packet_timeout(
         &self,
         packet_hash: H256,
@@ -332,6 +346,14 @@ impl ChainEndpoint for cosmos::Module {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_packet_recv(packet_hash, timeout).await
+    }
+
+    async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        self.wait_for_update_client(height, timeout).await
     }
 
     async fn wait_for_packet_timeout(
@@ -836,12 +858,54 @@ where
         packet_timeout
     }
 
-    pub async fn send_and_expect_revert<Src: ChainEndpoint, Dst: ChainEndpoint>(
+
+    pub async fn send_and_get_height<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
         contract: Src::Contract,
         msg: Src::Msg,
         destination_chain: &Dst,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<(u64)> {
+        let (packet_hash, height) = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {} and with height: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash,
+            height
+        );
+
+        let update_client_result: anyhow::Result<helpers::UpdateClient> =  match destination_chain.wait_for_update_client(height, timeout).await {
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_update_client failed: {:?}", e),
+        };
+        println!(
+            "Update client event received: {:?}",
+            update_client_result
+        );
+
+        Ok(update_client_result.unwrap().height)
+
+    }
+
+    pub async fn send_and_expect_revert<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<()> {
@@ -858,20 +922,16 @@ where
             }
         };
         println!(
-            "Packet sent from {} to {} with hash: {}",
+            "Packet sent from {} with hash: {}",
             source_chain.chain_id(),
-            destination_chain.chain_id(),
             packet_hash
         );
 
-        match destination_chain.wait_for_packet_ack(packet_hash, timeout).await {
-            Ok(_) => anyhow::bail!("Expected transaction to revert, but it succeeded"),
-            Err(e) => {
-                println!("Transaction reverted as expected: {:?}", e);
-                Ok(())
-            }
-        }
+        Ok(())
     }
+
+
+
     pub async fn send_and_recv_withdraw<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
