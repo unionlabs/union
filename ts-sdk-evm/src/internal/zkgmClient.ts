@@ -1,3 +1,4 @@
+import { Hex } from "@unionlabs/sdk/schema/hex"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
 import * as Client from "@unionlabs/sdk/ZkgmClient"
@@ -9,12 +10,17 @@ import { pipe } from "effect"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
 import * as Stream from "effect/Stream"
-import * as EvmWallet from "../EvmWallet.js"
-import { ZkgmIncomingMessageImpl } from "./zkgmIncomingMessage.js"
+import * as Evm from "../Evm.js"
 
-const fromWallet = (wallet: EvmWallet.EvmWallet): Client.ZkgmClient =>
+const fromWallet = (
+  opts: { client: Evm.Evm.PublicClient; wallet: Evm.Evm.WalletClient },
+): Client.ZkgmClient =>
   Client.make((request, signal, fiber) =>
     Effect.gen(function*() {
+      const {
+        wallet,
+        client,
+      } = opts
       const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
       const salt = yield* Utils.generateSalt("evm").pipe(
         Effect.mapError((cause) =>
@@ -37,7 +43,7 @@ const fromWallet = (wallet: EvmWallet.EvmWallet): Client.ZkgmClient =>
           })
         ),
       )
-      const a = EvmWallet.writeContract({
+      const sendInstruction = Evm.writeContract({
         account: wallet.account,
         abi: Ucs03.Abi,
         chain: wallet.chain,
@@ -55,6 +61,7 @@ const fromWallet = (wallet: EvmWallet.EvmWallet): Client.ZkgmClient =>
           },
         ],
       }).pipe(
+        Effect.tap((x) => Effect.log("txhash", x)),
         Effect.mapError((cause) =>
           new ClientError.RequestError({
             reason: "Transport",
@@ -63,10 +70,13 @@ const fromWallet = (wallet: EvmWallet.EvmWallet): Client.ZkgmClient =>
             description: "writeContract",
           })
         ),
-        Effect.provideService(EvmWallet.EvmWallet, wallet),
+        Effect.provideService(Evm.WalletClient, wallet),
       )
 
-      return void 0 as unknown as ClientResponseImpl
+      return yield* pipe(
+        sendInstruction,
+        Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
+      )
     })
   )
 
@@ -122,6 +132,8 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
   readonly [IncomingMessage.TypeId]: IncomingMessage.TypeId
 
   constructor(
+    readonly client: Evm.Evm.PublicClient,
+    readonly txHash: Hex,
     readonly onError: (error: unknown) => E,
   ) {
     super()
@@ -147,15 +159,16 @@ class ClientResponseImpl extends IncomingMessageImpl<ClientError.ResponseError>
 
   constructor(
     readonly request: ClientRequest.ZkgmClientRequest,
+    readonly client: Evm.Evm.PublicClient,
+    readonly txHash: Hex,
   ) {
-    super((error) =>
+    super(client, txHash, (error) =>
       new ClientError.ResponseError({
         reason: "Decode",
         request,
         response: this,
         cause: error,
-      })
-    )
+      }))
     this[ClientResponse.TypeId] = ClientResponse.TypeId
   }
 
@@ -169,14 +182,13 @@ class ClientResponseImpl extends IncomingMessageImpl<ClientError.ResponseError>
       request: this.request.toJSON(),
     })
   }
-
-  stream() {
-    return
-  }
 }
 
 /** @internal */
-export const make = Effect.map(EvmWallet.EvmWallet, fromWallet)
+export const make = Effect.map(
+  Effect.all({ client: Evm.PublicClient, wallet: Evm.WalletClient }),
+  fromWallet,
+)
 
 /** @internal */
 export const layerWithoutWallet = Client.layerMergedContext(make)

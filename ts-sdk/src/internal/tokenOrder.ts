@@ -58,6 +58,7 @@ function makeProto(
 ): TokenOrder.TokenOrder {
   const self = Object.create(Proto)
   console.log({ makeProto: Object.getOwnPropertyNames(self) })
+  self._tag = "TokenOrder"
   self.source = source
   self.destination = destination
   self.sender = sender

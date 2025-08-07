@@ -1,9 +1,13 @@
-import { Inspectable } from "effect"
-import { dual } from "effect/Function"
+import { Inspectable, Match } from "effect"
+import { NonEmptyReadonlyArray } from "effect/Array"
+import * as A from "effect/Array"
+import { dual, pipe } from "effect/Function"
+import * as O from "effect/Option"
 import { pipeArguments } from "effect/Pipeable"
 import { Chain } from "../schema/chain.js"
 import { ChannelId } from "../schema/channel.js"
 import { Hex } from "../schema/hex.js"
+import type * as Token from "../Token.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"
 import { ZkgmInstruction } from "../ZkgmInstruction.js"
 
@@ -175,3 +179,31 @@ export const setInstruction = dual<
     self.ucs03Address,
     instruction,
   ))
+
+export const requiredFunds = (
+  self: ClientRequest.ZkgmClientRequest,
+): O.Option<A.NonEmptyReadonlyArray<readonly [Token.Any, bigint]>> => {
+  const gatherFunds = (
+    instr: ZkgmInstruction,
+  ): ReadonlyArray<O.Option<readonly [Token.Any, bigint]>> =>
+    Match.value(instr).pipe(
+      Match.tagsExhaustive({
+        Batch: (batch) =>
+          pipe(
+            A.fromIterable(batch),
+            A.reduce([] as ReadonlyArray<O.Option<readonly [Token.Any, bigint]>>, (acc, child) => [
+              ...acc,
+              ...gatherFunds(child),
+            ]),
+          ),
+
+        TokenOrder: (x) => [O.some([x.baseToken, x.baseAmount] as const)],
+      }),
+    )
+
+  return pipe(
+    gatherFunds(self.instruction),
+    A.getSomes,
+    O.liftPredicate(A.isNonEmptyReadonlyArray<readonly [Token.Any, bigint]>),
+  )
+}
