@@ -1,25 +1,26 @@
 use std::{sync::Arc, time::Duration};
 
-use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
+use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider, transports::http::Client};
 use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
-use ibc_union_spec::ChannelId;
 use protos::cosmos::base::v1beta1::Coin;
-use unionlabs::primitives::{Bech32, Bytes, FixedBytes, H160, H256};
+use unionlabs::{ibc::core::client::height::Height, primitives::{Bech32, Bytes, FixedBytes, H160, H256}, prost::bytes};
 use voyager_sdk::{
     anyhow::{self},
-    primitives::ChainId,
+    primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight}, serde_json,
+    rpc::VoyagerRpcClient
 };
-
+use jsonrpsee::http_client::HttpClient;
+use ibc_union_spec::{path::{BatchPacketsPath, StorePath}, ChannelId, Packet, MustBeZero};
 pub mod channel_provider;
 pub mod cosmos;
 pub mod evm;
 pub mod helpers;
 pub mod voyager;
-
+use ucs03_zkgm::com::Instruction as InstructionCosmos;
 use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
-    evm::zkgm::FungibleAssetMetadata,
+    evm::zkgm::{FungibleAssetMetadata, Instruction as InstructionEvm, ZkgmPacket},
 };
 
 #[async_trait]
@@ -29,7 +30,7 @@ pub trait ChainEndpoint: Send + Sync {
     type PredictWrappedTokenResponse;
     type PredictWrappedTokenFromMetadataImageV2Response;
     type ProviderType;
-
+    
     fn chain_id(&self) -> &ChainId;
 
     async fn predict_wrapped_token(
@@ -116,6 +117,15 @@ pub trait ChainEndpoint: Send + Sync {
         validator: String,
         timeout: Duration,
     ) -> anyhow::Result<helpers::WithdrawRewards>;
+
+    async fn calculate_proof(
+        &self,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str
+    ) -> anyhow::Result<Bytes>;
 }
 
 pub trait IbcEventHash {
@@ -133,6 +143,43 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
     }
+
+    async fn calculate_proof(
+        &self,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str
+    ) -> anyhow::Result<Bytes> {
+        let voyager_client = HttpClient::builder().build("http://localhost:7178").expect("REASON");
+
+        let packets = &[
+            Packet {
+                source_channel_id: source_channel_id.try_into().unwrap(),
+                destination_channel_id: destination_channel_id.try_into().unwrap(),
+                data: encoded_packet.into(),
+                timeout_height: MustBeZero,
+                timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into())
+            }
+        ];
+        let path = serde_json::to_value(StorePath::BatchPackets(BatchPacketsPath::from_packets(packets))).unwrap();
+
+        let response = voyager_client.query_ibc_proof(
+            ChainId::new(chain_id.to_string()),
+            IbcSpecId::new(IbcSpecId::UNION),
+            QueryHeight::Specific(Height::new(height)),
+            path
+        ).await.unwrap();
+
+        Ok(voyager_client.encode_proof(
+            ClientType::new(ClientType::COMETBLS),
+            IbcInterface::new(IbcInterface::IBC_SOLIDITY),
+            IbcSpecId::new(IbcSpecId::UNION),
+            response.clone().into_result().unwrap().proof,
+        ).await.unwrap())
+    }
+    
 
     async fn wait_for_delegate(
         &self,
@@ -269,6 +316,18 @@ impl ChainEndpoint for cosmos::Module {
     type PredictWrappedTokenResponse = String;
     type PredictWrappedTokenFromMetadataImageV2Response = String;
     type ProviderType = LocalSigner;
+
+    
+    async fn calculate_proof(
+        &self,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str
+    ) -> anyhow::Result<Bytes>{
+        unimplemented!("calculate_proof is not implemented for Cosmos chains")
+    }
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -969,4 +1028,21 @@ where
             }
         }
     }
+
+
+
+    pub async fn calculate_proof<Src: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str
+    ) -> anyhow::Result<Bytes>{
+        source_chain
+            .calculate_proof(source_channel_id, destination_channel_id, encoded_packet, height, chain_id)
+            .await
+    }
+
 }
