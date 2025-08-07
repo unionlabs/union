@@ -466,7 +466,7 @@ impl<'a> Module<'a> {
         Ok(ret._0.0.into())
     }
 
-    pub async fn get_provider_privileged(&self) -> DynProvider<AnyNetwork> {
+    pub async fn get_provider_privileged(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
         let wallet = loop {
             if let Some(w) = self
                 .privileged_acc_keyring
@@ -478,8 +478,11 @@ impl<'a> Module<'a> {
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
         };
+        let wallet_addr = wallet.address();
+        let provider = self.get_provider_with_wallet(&wallet).await;
+        (wallet_addr, provider)
 
-        self.get_provider_with_wallet(&wallet).await
+        // self.get_provider_with_wallet(&wallet).await
     }
 
     pub async fn get_provider(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
@@ -995,6 +998,28 @@ pub mod zkgm {
             bytes32  metadataImage;
         }
 
+        #[derive(Debug)]
+        struct IBCPacket {
+            uint32 sourceChannelId;
+            uint32 destinationChannelId;
+            bytes data;
+            uint64 timeoutHeight;
+            uint64 timeoutTimestamp;
+        }
+
+        #[derive(Debug)]
+        struct MsgPacketRecv {
+            IBCPacket[] packets;
+            bytes[] relayerMsgs;
+            address relayer;
+            bytes proof;
+            uint64 proofHeight;
+        }
+        struct ZkgmPacket {
+            bytes32 salt;
+            uint256 path;
+            Instruction instruction;
+        }
 
         struct Instruction {
             uint8 version;
@@ -1015,6 +1040,11 @@ pub mod zkgm {
         }
 
 
+        contract IBC {
+            function recvPacket(
+                MsgPacketRecv calldata msg_
+            ) external;
+    }
         contract ZkgmERC721 {
             function mint(uint256 tokenId, address to ) external;
             function burn(uint256 tokenId) external;
