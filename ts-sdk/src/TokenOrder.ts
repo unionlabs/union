@@ -36,8 +36,8 @@ export enum Kind {
 export const Input = S.Struct({
   source: S.typeSchema(Chain),
   destination: S.typeSchema(Chain),
-  sender: Ucs05.ValidAddress,
-  receiver: Ucs05.ValidAddress,
+  sender: S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString),
+  receiver: S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString),
   baseToken: S.Union(Token.Any, Token.TokenFromString),
   baseAmount: S.BigIntFromSelf,
   quoteToken: S.Union(Token.Any, Token.TokenFromString),
@@ -64,6 +64,8 @@ export interface TokenOrder
     ZkgmInstruction.Encodeable<ParseError, never>
 {
   _tag: "TokenOrder"
+  opcode: 3
+  version: 2
 }
 
 export declare namespace TokenOrder {

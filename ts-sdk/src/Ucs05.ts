@@ -5,8 +5,18 @@
  */
 
 import { bech32, bytes } from "@scure/base"
-import { Effect, ParseResult, pipe, Schema as S } from "effect"
-import { isAddress } from "viem"
+import {
+  absurd,
+  Effect,
+  flow,
+  identity,
+  Match,
+  ParseResult,
+  pipe,
+  Schema as S,
+  Struct,
+} from "effect"
+import { isAddress, toHex } from "viem"
 import { Chain } from "./schema/chain.js"
 import { Hex, HexChecksum, HexFromString } from "./schema/hex.js"
 
@@ -88,17 +98,6 @@ export type CosmosCanonical = typeof CosmosCanonical.Type
  * @category models
  * @since 2.0.0
  */
-export const CosmosDisplay = Bech32.pipe(S.brand("CosmosDisplay"))
-/**
- * @category models
- * @since 2.0.0
- */
-export type CosmosDisplay = typeof CosmosDisplay.Type
-
-/**
- * @category models
- * @since 2.0.0
- */
 export const CosmosZkgm = Hex.pipe(S.brand("CosmosZkgm")) // TODO: Hex<Bech32<Hrp, Cosmos.Canonical>>
 /**
  * @category models
@@ -138,17 +137,6 @@ export type EvmCanonical = typeof EvmCanonical.Type
  * @category models
  * @since 2.0.0
  */
-export const EvmDisplay = HexChecksum.pipe(S.brand("EvmDisplay"))
-/**
- * @category models
- * @since 2.0.0
- */
-export type EvmDisplay = typeof EvmDisplay.Type
-
-/**
- * @category models
- * @since 2.0.0
- */
 export const EvmZkgm = EvmCanonical.pipe(S.brand("EvmZkgm"))
 /**
  * @category models
@@ -173,13 +161,6 @@ export const AptosDisplay = AptosCanonical
  */
 export const AptosZkgm = AptosCanonical
 
-export const AnyDisplay = S.Union(
-  AptosDisplay,
-  CosmosDisplay,
-  EvmDisplay,
-)
-export type AnyDisplay = typeof AnyDisplay.Type
-
 /**
  * @category models
  * @since 2.0.0
@@ -195,6 +176,57 @@ export const ERC55 = S.NonEmptyString.pipe(
  */
 export type ERC55 = typeof ERC55.Type
 
+export const EvmDisplay = S.Struct({
+  _tag: S.tag("EvmDisplay"),
+  address: ERC55,
+})
+export type EvmDisplay = typeof EvmDisplay.Type
+
+export const CosmosDisplay = S.Struct({
+  _tag: S.tag("CosmosDisplay"),
+  address: Bech32,
+})
+export type CosmosDisplay = typeof CosmosDisplay.Type
+
+export const AnyDisplay = S.Union(
+  CosmosDisplay,
+  EvmDisplay,
+)
+export type AnyDisplay = typeof AnyDisplay.Type
+
+export const AnyDisplayFromString = S.transformOrFail(
+  S.String,
+  AnyDisplay,
+  {
+    decode: (address) =>
+      pipe(
+        Effect.raceAll([
+          S.decodeUnknownEither(EvmDisplay)({ _tag: "EvmDisplay", address }),
+          S.decodeUnknownEither(CosmosDisplay)({ _tag: "CosmosDisplay", address }),
+        ]),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      ),
+    encode: flow(Struct.get("address"), Effect.succeed),
+  },
+)
+
+export const Zkgm = Hex.pipe(S.brand("Zkgm"))
+export type Zkgm = typeof Zkgm.Type
+
+export const ZkgmFromAnyDisplay = S.transform(
+  AnyDisplay,
+  Zkgm,
+  {
+    decode: (fromA) =>
+      Match.value(fromA).pipe(
+        Match.tagsExhaustive({
+          CosmosDisplay: ({ address }) => toHex(address),
+          EvmDisplay: ({ address }) => identity<Hex>(address),
+        }),
+      ),
+    encode: (_) => absurd<AnyDisplay>(void 0 as never),
+  },
+)
 /**
  * Union of possible valid address schemas.
  *

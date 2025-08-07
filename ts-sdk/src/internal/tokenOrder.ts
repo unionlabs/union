@@ -2,13 +2,13 @@ import { Effect, Inspectable, Schema } from "effect"
 import { dual, pipe } from "effect/Function"
 import { ParseError } from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
-import { toHex } from "viem"
+import * as Str from "effect/String"
 import { Chain } from "../schema/chain.js"
 import { Hex } from "../schema/hex.js"
 import * as Token from "../Token.js"
 import * as TokenOrder from "../TokenOrder.js"
 import * as Ucs03 from "../Ucs03.js"
-import type * as Ucs05 from "../Ucs05.js"
+import * as Ucs05 from "../Ucs05.js"
 import * as Utils from "../Utils.js"
 
 /** @internal */
@@ -35,6 +35,8 @@ const Proto = {
       quoteAmount: this.quoteAmount,
       kind: this.kind,
       metadata: this.metadata,
+      opcode: this.opcode,
+      version: this.version,
     }
   },
   pipe() {
@@ -45,8 +47,8 @@ const Proto = {
 function makeProto(
   source: Chain,
   destination: Chain,
-  sender: string,
-  receiver: string,
+  sender: Ucs05.AnyDisplay,
+  receiver: Ucs05.AnyDisplay,
   baseToken: Token.Any,
   baseAmount: bigint,
   quoteToken: Token.Any,
@@ -66,6 +68,8 @@ function makeProto(
   self.quoteAmount = quoteAmount
   self.kind = kind
   self.metadata = metadata
+  self.version = 2
+  self.opcode = 3
   return self
 }
 
@@ -77,8 +81,8 @@ export const isTokenOrder = (u: unknown): u is TokenOrder.TokenOrder =>
 export const empty: TokenOrder.TokenOrder = makeProto(
   void 0 as unknown as Chain,
   void 0 as unknown as Chain,
-  void 0 as unknown as string,
-  void 0 as unknown as string,
+  void 0 as unknown as Ucs05.AnyDisplay,
+  void 0 as unknown as Ucs05.AnyDisplay,
   void 0 as unknown as Token.Any,
   void 0 as unknown as bigint,
   void 0 as unknown as Token.Any,
@@ -257,7 +261,7 @@ export const setReceiver = dual<
   ) => (self: TokenOrder.TokenOrder) => Effect.Effect<TokenOrder.TokenOrder, ParseError>,
   (
     self: TokenOrder.TokenOrder,
-    receiver: string,
+    receiver: Ucs05.AnyDisplay | string,
   ) => Effect.Effect<TokenOrder.TokenOrder, ParseError>
 >(2, (self, receiver) =>
   pipe(
@@ -396,19 +400,26 @@ export const setQuoteAmount = dual<
   ))
 
 /** @internal */
-const encode = (self: TokenOrder.TokenOrder): Effect.Effect<Hex, ParseError, never> => {
-  console.log("encode", self)
-  return pipe(
-    Ucs03.TokenOrderV2.fromOperand([
-      toHex(self.sender),
-      toHex(self.receiver),
-      Utils.ensureHex(self.baseToken.address),
-      self.baseAmount,
-      Utils.ensureHex(self.quoteToken.address),
-      self.quoteAmount,
-      self.kind,
-      self.metadata || "0x",
-    ]),
-    Schema.encode(Ucs03.InstructionFromHex),
-  )
-}
+const encode = (self: TokenOrder.TokenOrder): Effect.Effect<Hex, ParseError, never> =>
+  Effect.gen(function*() {
+    const sender = yield* Schema.decode(Ucs05.ZkgmFromAnyDisplay)(self.sender)
+    const receiver = yield* Schema.decode(Ucs05.ZkgmFromAnyDisplay)(self.receiver)
+
+    return yield* pipe(
+      Ucs03.TokenOrderV2.fromOperand([
+        // TODO: runtime switching fo encoding based on address type
+        // - evm is single-encoded hex
+        // - cosmos is hex encoded bech32
+        sender,
+        receiver,
+        Utils.ensureHex(self.baseToken.address),
+        self.baseAmount,
+        Utils.ensureHex(self.quoteToken.address),
+        self.quoteAmount,
+        self.kind,
+        self.metadata || "0x",
+      ]),
+      Schema.encode(Ucs03.InstructionFromHex),
+      Effect.map(Str.toLowerCase),
+    )
+  })
