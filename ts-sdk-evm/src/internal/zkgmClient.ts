@@ -1,17 +1,74 @@
-import * as Evm from "@unionlabs/sdk/Evm"
+import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import * as Utils from "@unionlabs/sdk/Utils"
 import * as Client from "@unionlabs/sdk/ZkgmClient"
-import * as Error from "@unionlabs/sdk/ZkgmClientError"
+import * as ClientError from "@unionlabs/sdk/ZkgmClientError"
 import type * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
+import { pipe } from "effect"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
 import * as Stream from "effect/Stream"
+import * as EvmWallet from "../EvmWallet.js"
+import { ZkgmIncomingMessageImpl } from "./zkgmIncomingMessage.js"
 
-const fromWallet = (wallet: Evm.WalletClient): Client.ZkgmClient =>
-  Client.make((request, signal, fiber) => {
-    return Effect.succeed(void 0 as unknown as ClientResponseImpl)
-  })
+const fromWallet = (wallet: EvmWallet.EvmWallet): Client.ZkgmClient =>
+  Client.make((request, signal, fiber) =>
+    Effect.gen(function*() {
+      const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+      const salt = yield* Utils.generateSalt("evm").pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "crypto error",
+          })
+        ),
+      )
+      const operand = yield* pipe(
+        request.instruction.encode,
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "instruction encode",
+          })
+        ),
+      )
+      const a = EvmWallet.writeContract({
+        account: wallet.account,
+        abi: Ucs03.Abi,
+        chain: wallet.chain,
+        functionName: "send",
+        address: request.ucs03Address,
+        args: [
+          request.channelId,
+          0n,
+          timeoutTimestamp,
+          salt,
+          {
+            opcode: request.instruction.opcode,
+            version: request.instruction.version,
+            operand,
+          },
+        ],
+      }).pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "writeContract",
+          })
+        ),
+        Effect.provideService(EvmWallet.EvmWallet, wallet),
+      )
+
+      return void 0 as unknown as ClientResponseImpl
+    })
+  )
 
 // const makeXMLHttpRequest = Client.make((request, signal, fiber) =>
 //   Effect.suspend(() => {
@@ -83,7 +140,7 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
   }
 }
 
-class ClientResponseImpl extends IncomingMessageImpl<Error.ResponseError>
+class ClientResponseImpl extends IncomingMessageImpl<ClientError.ResponseError>
   implements ClientResponse.ZkgmClientResponse
 {
   readonly [ClientResponse.TypeId]: ClientResponse.TypeId
@@ -92,7 +149,7 @@ class ClientResponseImpl extends IncomingMessageImpl<Error.ResponseError>
     readonly request: ClientRequest.ZkgmClientRequest,
   ) {
     super((error) =>
-      new Error.ResponseError({
+      new ClientError.ResponseError({
         reason: "Decode",
         request,
         response: this,
@@ -112,10 +169,14 @@ class ClientResponseImpl extends IncomingMessageImpl<Error.ResponseError>
       request: this.request.toJSON(),
     })
   }
+
+  stream() {
+    return
+  }
 }
 
 /** @internal */
-export const make = Effect.map(Evm.WalletClient.Service, fromWallet)
+export const make = Effect.map(EvmWallet.EvmWallet, fromWallet)
 
 /** @internal */
 export const layerWithoutWallet = Client.layerMergedContext(make)

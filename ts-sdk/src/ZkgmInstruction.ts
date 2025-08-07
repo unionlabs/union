@@ -11,6 +11,8 @@ export type ZkgmInstruction =
   | TokenOrder.TokenOrder
 
 export interface Encodeable<E, R> {
+  opcode: number
+  version: number
   encode: Effect.Effect<Hex, E, R>
 }
 

@@ -1,4 +1,5 @@
 import * as internal from "./internal/zkgmClientResponse.js"
+import { Hex } from "./schema/hex.js"
 import type * as ClientError from "./ZkgmClientError.js"
 import type * as ClientRequest from "./ZkgmClientRequest.js"
 import * as IncomingMessage from "./ZkgmIncomingMessage.js"
@@ -24,4 +25,5 @@ export interface ZkgmClientResponse
 {
   readonly [TypeId]: TypeId
   readonly request: ClientRequest.ZkgmClientRequest
+  readonly txHash: Hex
 }

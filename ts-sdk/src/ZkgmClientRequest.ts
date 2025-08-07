@@ -2,6 +2,8 @@ import type { Inspectable } from "effect/Inspectable"
 import type { Pipeable } from "effect/Pipeable"
 import * as internal from "./internal/zkgmClientRequest.js"
 import { Chain } from "./schema/chain.js"
+import { ChannelId } from "./schema/channel.js"
+import { Hex } from "./schema/hex.js"
 import type * as ZkgmInstruction from "./ZkgmInstruction.js"
 
 /**
@@ -24,6 +26,8 @@ export interface ZkgmClientRequest extends Inspectable, Pipeable {
   readonly [TypeId]: TypeId
   readonly source: Chain
   readonly destination: Chain
+  readonly channelId: ChannelId
+  readonly ucs03Address: Hex
   readonly instruction: ZkgmInstruction.ZkgmInstruction
 }
 
@@ -34,6 +38,8 @@ export interface ZkgmClientRequest extends Inspectable, Pipeable {
 export interface Options {
   readonly source?: Chain | undefined
   readonly destination?: Chain | undefined
+  readonly channelId: ChannelId
+  readonly ucs03Address: Hex
   readonly instruction?: ZkgmInstruction.ZkgmInstruction | undefined
 }
 
@@ -41,11 +47,13 @@ export interface Options {
  * @category constructors
  * @since 2.0.0
  */
-export declare const make: (options: {
+export const make: (options: {
   source: Chain
   destination: Chain
+  channelId: ChannelId
+  ucs03Address: Hex
   instruction: ZkgmInstruction.ZkgmInstruction
-}) => ZkgmClientRequest
+}) => ZkgmClientRequest = internal.make
 
 /**
  * @category combinators

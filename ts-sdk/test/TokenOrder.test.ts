@@ -25,7 +25,6 @@ describe("TokenOrder", () => {
           kind: TokenOrder.Kind.Escrow,
           baseAmount: 100n,
           // USDC on Sepolia
-          quoteToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
           quoteAmount: 100n,
           metadata: undefined,
         })
@@ -44,8 +43,8 @@ describe("TokenOrder", () => {
       const order = yield* TokenOrder.make({
         source,
         destination,
-        sender: Ucs05.CosmosDisplay.make("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
-        receiver: Ucs05.EvmDisplay.make("0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD"),
+        sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+        receiver: "0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD",
         baseToken: "muno",
         kind: TokenOrder.Kind.Escrow,
         baseAmount: 100n,

@@ -2,6 +2,8 @@ import { Inspectable } from "effect"
 import { dual } from "effect/Function"
 import { pipeArguments } from "effect/Pipeable"
 import { Chain } from "../schema/chain.js"
+import { ChannelId } from "../schema/channel.js"
+import { Hex } from "../schema/hex.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"
 import { ZkgmInstruction } from "../ZkgmInstruction.js"
 
@@ -18,6 +20,8 @@ const Proto = {
       _id: "@unionlabs/sdk/ClientRequest",
       source: this.source,
       destination: this.destination,
+      channelId: this.channelId,
+      ucs03Address: this.ucs03Address,
       instruction: this.instruction,
     }
   },
@@ -29,11 +33,15 @@ const Proto = {
 function makeProto(
   source: Chain,
   destination: Chain,
+  channelId: ChannelId,
+  ucs03Address: Hex,
   instruction: ZkgmInstruction,
 ): ClientRequest.ZkgmClientRequest {
   const self = Object.create(Proto)
   self.source = source
   self.destination = destination
+  self.channelId = channelId
+  self.ucs03Address = ucs03Address
   self.instruction = instruction
   return self
 }
@@ -46,20 +54,19 @@ export const isZkgmClientRequest = (u: unknown): u is ClientRequest.ZkgmClientRe
 export const empty: ClientRequest.ZkgmClientRequest = makeProto(
   void 0 as unknown as Chain,
   void 0 as unknown as Chain,
+  void 0 as unknown as ChannelId,
+  void 0 as unknown as Hex,
   void 0 as unknown as ZkgmInstruction,
 )
 
 /** @internal */
-export const make = (
-  source: Chain,
-  destination: Chain,
-  instruction: ZkgmInstruction,
-) =>
-  modify(empty, {
-    source,
-    destination,
-    instruction,
-  })
+export const make = (options: {
+  source: Chain
+  destination: Chain
+  channelId: ChannelId
+  ucs03Address: Hex
+  instruction: ZkgmInstruction
+}) => modify(empty, options)
 
 /** @internal */
 export const modify = dual<
@@ -79,6 +86,15 @@ export const modify = dual<
   if (options.destination) {
     result = setDestination(result, options.destination)
   }
+  if (options.channelId) {
+    result = setChannelId(result, options.channelId)
+  }
+  if (options.ucs03Address) {
+    result = setUcs03Address(result, options.ucs03Address)
+  }
+  if (options.instruction) {
+    result = setInstruction(result, options.instruction)
+  }
 
   return result
 })
@@ -93,6 +109,8 @@ export const setSource = dual<
   makeProto(
     source,
     self.destination,
+    self.channelId,
+    self.ucs03Address,
     self.instruction,
   ))
 
@@ -106,5 +124,54 @@ export const setDestination = dual<
   makeProto(
     self.source,
     destination,
+    self.channelId,
+    self.ucs03Address,
     self.instruction,
+  ))
+
+/** @internal */
+export const setChannelId = dual<
+  (
+    channelId: ChannelId,
+  ) => (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
+  (self: ClientRequest.ZkgmClientRequest, channelId: ChannelId) => ClientRequest.ZkgmClientRequest
+>(2, (self, channelId) =>
+  makeProto(
+    self.source,
+    self.destination,
+    channelId,
+    self.ucs03Address,
+    self.instruction,
+  ))
+/** @internal */
+export const setUcs03Address = dual<
+  (
+    ucs03Address: Hex,
+  ) => (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
+  (self: ClientRequest.ZkgmClientRequest, ucs03Address: Hex) => ClientRequest.ZkgmClientRequest
+>(2, (self, ucs03Address) =>
+  makeProto(
+    self.source,
+    self.destination,
+    self.channelId,
+    ucs03Address,
+    self.instruction,
+  ))
+
+/** @internal */
+export const setInstruction = dual<
+  (
+    instruction: ZkgmInstruction,
+  ) => (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
+  (
+    self: ClientRequest.ZkgmClientRequest,
+    instruction: ZkgmInstruction,
+  ) => ClientRequest.ZkgmClientRequest
+>(2, (self, instruction) =>
+  makeProto(
+    self.source,
+    self.destination,
+    self.channelId,
+    self.ucs03Address,
+    instruction,
   ))

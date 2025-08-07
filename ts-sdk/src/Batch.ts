@@ -1,6 +1,7 @@
 import { Inspectable } from "effect"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import * as A from "effect/Array"
+import { ParseError } from "effect/ParseResult"
 import { Pipeable, pipeArguments } from "effect/Pipeable"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/batch.js"
@@ -22,7 +23,7 @@ export type TypeId = typeof TypeId
  * @category models
  */
 export interface Batch<A>
-  extends Inspectable.Inspectable, Pipeable, ZkgmInstruction.Encodeable<never, never>
+  extends Inspectable.Inspectable, Pipeable, ZkgmInstruction.Encodeable<ParseError, never>
 {
   readonly [TypeId]: TypeId
   _tag: "Batch"

@@ -1,6 +1,5 @@
 export * as Erc20 from "./Erc20.js"
 export * as Evm from "./Evm.js"
-export * as EvmClient from "./EvmClient.js"
+export * as EvmWallet from "./EvmWallet.js"
 export * as EvmZkgmClient from "./EvmZkgmClient.js"
 export * as Tx from "./Tx.js"
-export * as Wallet from "./Wallet.js"
