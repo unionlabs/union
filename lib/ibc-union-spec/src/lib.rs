@@ -1,3 +1,7 @@
+//! [`IbcSpec`] implementation for `ibc-union`.
+
+#![warn(missing_docs)]
+
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_primitives::{IbcSpec, IbcSpecId};
 
@@ -60,6 +64,7 @@ impl IbcSpec for IbcUnion {
     }
 }
 
+/// Produce a structured [`tracing`] log of an event.
 #[cfg(feature = "tracing")]
 pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
     use tracing::info;
