@@ -31,6 +31,7 @@ use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
     evm::zkgm::{FungibleAssetMetadata, Instruction as InstructionEvm, ZkgmPacket},
 };
+use regex::Regex;
 use ucs03_zkgm::com::Instruction as InstructionCosmos;
 
 #[async_trait]
@@ -980,10 +981,10 @@ where
         source_chain: &Src,
         contract: Src::Contract,
         msg: Src::Msg,
-        timeout: Duration,
+        expected_revert_code: u32,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<()> {
-        let (packet_hash, _height) = match source_chain
+        match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
@@ -992,16 +993,29 @@ where
                 hash
             }
             Err(e) => {
-                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+                let err_str = format!("{:#}", e);
+                let re = Regex::new(r"(0x[0-9A-Fa-f]+)").unwrap();
+                if let Some(caps) = re.captures(&err_str) {
+                    let code_hex = &caps[1];
+                    let actual =
+                        u32::from_str_radix(&code_hex[2..], 16).context("parsing revert hex")?;
+                    if actual == expected_revert_code {
+                        Ok(())
+                    } else {
+                        anyhow::bail!(
+                            "Expected revert code 0x{:x}, but got {}",
+                            expected_revert_code,
+                            code_hex
+                        )
+                    }
+                } else {
+                    anyhow::bail!(
+                        "Transaction reverted but no rawValue found in error: {}",
+                        err_str
+                    )
+                }
             }
-        };
-        println!(
-            "Packet sent from {} with hash: {}",
-            source_chain.chain_id(),
-            packet_hash
-        );
-
-        Ok(())
+        }
     }
 
     pub async fn send_and_recv_withdraw<Src: ChainEndpoint, Dst: ChainEndpoint>(
