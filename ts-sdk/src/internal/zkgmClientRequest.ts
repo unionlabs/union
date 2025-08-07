@@ -183,7 +183,7 @@ export const setInstruction = dual<
 export const requiredFunds = (
   self: ClientRequest.ZkgmClientRequest,
 ): O.Option<A.NonEmptyReadonlyArray<readonly [Token.Any, bigint]>> => {
-  const gatherFunds = (
+  const reduceToFunds = (
     instr: ZkgmInstruction,
   ): ReadonlyArray<O.Option<readonly [Token.Any, bigint]>> =>
     Match.value(instr).pipe(
@@ -193,7 +193,7 @@ export const requiredFunds = (
             A.fromIterable(batch),
             A.reduce([] as ReadonlyArray<O.Option<readonly [Token.Any, bigint]>>, (acc, child) => [
               ...acc,
-              ...gatherFunds(child),
+              ...reduceToFunds(child),
             ]),
           ),
 
@@ -202,7 +202,7 @@ export const requiredFunds = (
     )
 
   return pipe(
-    gatherFunds(self.instruction),
+    reduceToFunds(self.instruction),
     A.getSomes,
     O.liftPredicate(A.isNonEmptyReadonlyArray<readonly [Token.Any, bigint]>),
   )

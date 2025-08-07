@@ -41,12 +41,12 @@ const program = Effect.gen(function*() {
     source,
     destination,
     sender: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
-    receiver: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
+    receiver: "0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302",
     // LINK on Holesky
     baseToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
-    baseAmount: 100n,
-    quoteToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
-    quoteAmount: 100n,
+    baseAmount: 101n,
+    quoteToken: "0x80fdbf104ec58a527ec40f7b03f88c404ef4ba63",
+    quoteAmount: 101n,
     kind: TokenOrder.Kind.Escrow,
     metadata: undefined,
   })

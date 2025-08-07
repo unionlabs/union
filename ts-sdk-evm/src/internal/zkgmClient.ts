@@ -9,6 +9,7 @@ import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import { pipe } from "effect"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
+import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import * as Evm from "../Evm.js"
 
@@ -43,6 +44,7 @@ const fromWallet = (
           })
         ),
       )
+
       const sendInstruction = Evm.writeContract({
         account: wallet.account,
         abi: Ucs03.Abi,

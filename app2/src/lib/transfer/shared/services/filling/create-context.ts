@@ -26,6 +26,8 @@ export type Intent = {
   sourceChain: Chain
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
+  // TODO: add kind (e.g. escrow/unescrow); derived in `TransferData`
+  // TODO: add quoteToken
   destinationChain: Chain
   channel: Channel
   ucs03address: string
@@ -40,13 +42,16 @@ export type Allowance = {
 
 export type TransferContext = {
   intents: Array<Intent>
+  // TODO: remove becaues derived from `ZkgmClientRequest` once it is a `Batch` including the fee
   funds: Option.Option<
     Array<{
       baseToken: TokenRawDenom | string
       amount: TokenRawAmount
     }>
   >
+  // TODO: calculated in-app based on `TransferData`
   allowances: Option.Option<Array<Allowance>>
+  // TODO: becomes `ZkgmClientRequest`
   instruction: Option.Option<Instruction>
   // XXX: where is message fulfilled?
   message: Option.Option<string>
