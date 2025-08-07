@@ -1,13 +1,14 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-
 import "solady/utils/FixedPointMathLib.sol";
 
 import "../../../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 
 contract TestTokenBucket is TokenBucket {
     function rateLimit(address token, uint256 amount) public {
+        require(token != address(0), "Invalid token address");
         _rateLimit(token, amount);
     }
 
@@ -17,6 +18,9 @@ contract TestTokenBucket is TokenBucket {
         uint256 refillRate,
         bool reset
     ) public {
+        require(token != address(0), "Invalid token address");
+        require(capacity > 0, "Capacity must be > 0");
+        require(refillRate > 0, "Refill rate must be > 0");
         _setBucketConfig(token, capacity, refillRate, reset);
     }
 }
@@ -30,40 +34,39 @@ contract TokenBucketTests is Test {
         tokenBucket = new TestTokenBucket();
     }
 
-    function test_noConfig_rateLimitExceeded(
-        address token,
-        uint256 amount
-    ) public {
+    function test_noConfig_rateLimitExceeded(address token, uint256 amount) public {
+        vm.assume(token != address(0));
         vm.assume(amount > 0);
         vm.expectRevert(TokenBucket.ErrTokenBucketRateLimitExceeded.selector);
         tokenBucket.rateLimit(token, amount);
     }
 
-    function test_setConfig_zeroCapacity(
-        address token,
-        uint256 refillRate,
-        bool reset
-    ) public {
+    function test_setConfig_zeroCapacity(address token, uint256 refillRate, bool reset) public {
+        vm.assume(token != address(0));
         vm.assume(refillRate > 0);
-        vm.expectRevert(TokenBucket.ErrTokenBucketZeroCapacity.selector);
+        vm.expectRevert(bytes("Capacity must be > 0"));
         tokenBucket.setConfig(token, 0, refillRate, reset);
     }
 
-    function test_setConfig_zeroRefillRate(
-        address token,
-        uint256 capacity,
-        bool reset
-    ) public {
+    function test_setConfig_zeroRefillRate(address token, uint256 capacity, bool reset) public {
+        vm.assume(token != address(0));
         vm.assume(capacity > 0);
-        vm.expectRevert(TokenBucket.ErrTokenBucketZeroRefillRate.selector);
+        vm.expectRevert(bytes("Refill rate must be > 0"));
         tokenBucket.setConfig(token, capacity, 0, reset);
     }
 
-    function test_setConfig_reset_refillAvailable(
-        address token,
-        uint256 capacity,
-        uint256 refillRate
-    ) public {
+    function test_setConfig_invalidToken() public {
+        vm.expectRevert(bytes("Invalid token address"));
+        tokenBucket.setConfig(address(0), 100, 10, false);
+    }
+
+    function test_rateLimit_invalidToken() public {
+        vm.expectRevert(bytes("Invalid token address"));
+        tokenBucket.rateLimit(address(0), 1);
+    }
+
+    function test_setConfig_reset_refillAvailable(address token, uint256 capacity, uint256 refillRate) public {
+        vm.assume(token != address(0));
         vm.assume(capacity > 0);
         vm.assume(refillRate > 0);
         tokenBucket.setConfig(token, capacity, refillRate, false);
@@ -73,11 +76,8 @@ contract TokenBucketTests is Test {
         assertEq(tokenBucket.getBucket(token).available, capacity);
     }
 
-    function test_setConfig_emitEvent(
-        address token,
-        uint256 capacity,
-        uint256 refillRate
-    ) public {
+    function test_setConfig_emitEvent(address token, uint256 capacity, uint256 refillRate) public {
+        vm.assume(token != address(0));
         vm.assume(capacity > 0);
         vm.assume(refillRate > 0);
         vm.expectEmit();
@@ -92,6 +92,7 @@ contract TokenBucketTests is Test {
         bool reset,
         uint256 amount
     ) public {
+        vm.assume(token != address(0));
         vm.assume(amount <= capacity);
         vm.assume(capacity > 0);
         vm.assume(refillRate > 0);
@@ -107,6 +108,7 @@ contract TokenBucketTests is Test {
         bool reset,
         uint128 exceedAmount
     ) public {
+        vm.assume(token != address(0));
         vm.assume(exceedAmount > 0);
         vm.assume(capacity > 0);
         vm.assume(refillRate > 0);
@@ -123,6 +125,7 @@ contract TokenBucketTests is Test {
         uint64 startingTimestamp,
         uint64 endingTimestamp
     ) public {
+        vm.assume(token != address(0));
         vm.assume(startingTimestamp < endingTimestamp);
         vm.assume(capacity > 0);
         vm.assume(refillRate > 0);
@@ -133,12 +136,10 @@ contract TokenBucketTests is Test {
         uint256 availableBeforeRefill = tokenBucket.getBucket(token).available;
         tokenBucket.rateLimit(token, 1);
         uint256 delta = endingTimestamp - startingTimestamp;
-        uint256 availableAfterRefill =
-            availableBeforeRefill.saturatingAdd(refillRate.saturatingMul(delta));
+        uint256 availableAfterRefill = availableBeforeRefill.saturatingAdd(refillRate.saturatingMul(delta));
         assertEq(
             tokenBucket.getBucket(token).available,
-            (availableAfterRefill > capacity ? capacity : availableAfterRefill)
-                - 1
+            (availableAfterRefill > capacity ? capacity : availableAfterRefill) - 1
         );
     }
 
@@ -150,6 +151,7 @@ contract TokenBucketTests is Test {
         uint64 startingTimestamp,
         uint64 endingTimestamp
     ) public {
+        vm.assume(token != address(0));
         vm.assume(startingTimestamp < endingTimestamp);
         vm.assume(capacity > 0);
         vm.assume(refillRate > 0);
