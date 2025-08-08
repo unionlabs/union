@@ -2,6 +2,8 @@ module github.com/unionlabs/union/11-cometbls
 
 go 1.21
 
+toolchain go1.23.1
+
 require (
 	cosmossdk.io/core v0.11.0
 	cosmossdk.io/errors v1.0.1
@@ -24,8 +26,10 @@ require (
 require (
 	cosmossdk.io/api v0.7.4 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
+	cosmossdk.io/core/testing v0.0.0-20240920111503-465ca23154d5 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
 	cosmossdk.io/math v1.3.0 // indirect
+	cosmossdk.io/schema v0.3.0 // indirect
 	cosmossdk.io/x/tx v0.13.2 // indirect
 	cosmossdk.io/x/upgrade v0.1.0 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
