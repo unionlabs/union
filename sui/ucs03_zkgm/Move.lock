@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "8BF594D023F92FC74B9E441615069AB0ED64FBDE8D19EA2C1BC0462DC9ACCF6B"
+manifest_digest = "87047AA2B08BA6C4B1D0C3BE6928D4011C9F3B455B9D2E8FF66039577C2DCA10"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -55,7 +55,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.53.2"
+compiler-version = "1.55.0"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -63,6 +63,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0xe8a2c91b2ce1adf3163d1593c50942905093825f07eaecc4129298e913c17fbf"
-latest-published-id = "0x39214bf2f5cc6080b053690340901125952264496c46f06ede9d341321cc0e10"
-published-version = "3"
+original-published-id = "0x0000000000000000000000000000000000000000000000000000000000000000"
+latest-published-id = "0x68673e8471e511e11c5a8c26b5c136fbb97a3aa6708756f56263f38eac82586d"
+published-version = "6"

@@ -280,13 +280,28 @@ module ibc::commitment {
     public fun commit_packets(packets: &vector<Packet>): vector<u8> {
         let mut buf = vector::empty();
 
-        encode_dyn_array!(
-            &mut buf,
-            packets,
-            |buf, item| {
-                vector::append(buf, packet::encode(item));
-            }
-        );
+        let mut rest_buf = vector::empty();
+
+        let mut i = 0;
+        let len = vector::length($vec);
+        encode_uint($buf, len);
+
+        while (i < len) {
+            encode_uint($buf, len * 32 + vector::length(&rest_buf));
+            buf.append(rest_buf);
+            $encode_fn(&mut rest_buf, vector::borrow($vec, i));
+            i = i + 1;
+        };
+
+        vector::append(&mut buf, rest_buf);
+
+        // encode_dyn_array!(
+        //     &mut buf,
+        //     packets,
+        //     |buf, item| {
+        //         vector::append(buf, packet::encode(item));
+        //     }
+        // );
 
         keccak256(&buf)
     }

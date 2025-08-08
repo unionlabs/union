@@ -350,7 +350,7 @@ module zkgm::zkgm_relay {
             abort E_ONLY_ONE_SESSION_IS_ALLOWED
         };
 
-        let zkgm_packet = zkgm_packet::decode(&packet_data);
+        // let zkgm_packet = zkgm_packet::decode(&packet_data);
 
         let ibc_packet =
             packet::new(
@@ -360,15 +360,15 @@ module zkgm::zkgm_relay {
                 packet_timeout_height,
                 packet_timeout_timestamp
             );
-        let packet_hash = commitment::commit_packet(&ibc_packet);
+        // let packet_hash = commitment::commit_packet(&ibc_packet);
 
         zkgm.session = option::some(ExecutionCtx {
-            instruction_set: partition_instructions(zkgm_packet.instruction()),
+            instruction_set: vector::empty(),
             cursor: 0,
             acks: vector::empty(),
-            packet_hash,
-            path: zkgm_packet.path(),
-            salt: zkgm_packet.salt(),
+            packet_hash: vector::empty(),
+            path: 0,
+            salt: vector::empty(),
             ibc_packet
         });
 
@@ -398,7 +398,7 @@ module zkgm::zkgm_relay {
             let mut i = 0;
             let mut partitions = vector::empty();
             let mut temp_instrs = vector::empty(); 
-            while (i == instructions.length()) {
+            while (i < instructions.length()) {
                 if (!helper::is_allowed_batch_instruction(instructions[i].opcode())) {
                     abort E_INVALID_BATCH_INSTRUCTION
                 } else if (instructions[i].opcode() == OP_FUNGIBLE_ASSET_ORDER) {
@@ -414,6 +414,10 @@ module zkgm::zkgm_relay {
                 temp_instrs.push_back(instructions[i]);
 
                 i = i + 1;
+            };
+            
+            if (!temp_instrs.is_empty()) {
+                partitions.push_back(temp_instrs);
             };
 
             partitions

@@ -12,8 +12,7 @@ use sui_light_client_types::{checkpoint_summary::CheckpointContents, CertifiedCh
 use sui_sdk::{
     rpc_types::CheckpointId,
     types::{
-        base_types::ObjectID, committee::EpochId, digests::CheckpointDigest,
-        full_checkpoint_content::CheckpointTransaction,
+        base_types::ObjectID, committee::EpochId, full_checkpoint_content::CheckpointTransaction,
     },
     SuiClient, SuiClientBuilder,
 };
@@ -53,7 +52,7 @@ pub struct Module {
     pub chain_id: ChainId,
 
     /// The address of the IBC smart contract.
-    pub ibc_handler_address: ObjectID,
+    pub ibc_contract: ObjectID,
 
     pub sui_object_store_rpc_url: String,
 
@@ -84,7 +83,7 @@ impl Plugin for Module {
 
         Ok(Self {
             chain_id: config.chain_id,
-            ibc_handler_address: config.ibc_handler_address,
+            ibc_contract: config.ibc_contract,
             sui_object_store_rpc_url: config.sui_object_store_rpc_url,
             graphql_url: config.graphql_url,
             sui_client,
@@ -119,7 +118,7 @@ pub struct Config {
     pub chain_id: ChainId,
 
     /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: ObjectID,
+    pub ibc_contract: ObjectID,
 
     pub sui_object_store_rpc_url: String,
 

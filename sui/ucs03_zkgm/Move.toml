@@ -18,7 +18,7 @@ ibc = { local = "../ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc      = "0x8065a90cf0a646cc32e59fb0c341d13f0fa99d52802af9e5efdc184e5868ba94"
+ibc      = "0xff70f882de96c6eeaa447745b4cf77b3b706dc51b765cf9ea6bc08fe5c6f0ede"
 zkgm     = "0x0"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
