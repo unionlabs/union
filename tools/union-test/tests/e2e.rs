@@ -2508,6 +2508,212 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet(
     );
 }
 
+<<<<<<< HEAD
+=======
+async fn test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+    println!("EVM Address: {:?}", evm_address);
+
+    // ensure_channels_opened(ctx.channel_count).await;
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
+    // let pair = ctx.get_channel().await.expect("channel available");
+
+
+    let pair = union_test::channel_provider::ChannelPair {
+        src: 1.try_into().unwrap(),
+        dest: 1.try_into().unwrap(),
+    };
+
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
+        implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
+            .to_vec()
+            .into(),
+        initializer: ZkgmERC20::initializeCall {
+            _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
+            _minter: EVM_ZKGM_BYTES.into(),
+            _name: "muno".into(),
+            _symbol: "muno".into(),
+            _decimals: 6u8,
+        }
+        .abi_encode()
+        .into(),
+    }
+    .abi_encode_params();
+
+    let (zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+
+
+    let img = keccak256(&img_metadata);
+
+    // let governance_token = ctx
+    //     .dst
+    //     .setup_governance_token(
+    //         EVM_ZKGM_BYTES.into(),
+    //         pair.dest,
+    //         img,
+    //         zkgm_deployer_provider.clone(),
+    //     )
+    //     .await;
+
+    // assert!(
+    //     governance_token.is_ok(),
+    //     "Failed to setup governance token: {:?}",
+    //     governance_token.err()
+    // );
+
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
+    let quote_token_addr = ctx
+        .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
+            &ctx.dst,
+            EVM_ZKGM_BYTES.into(),
+            ChannelId::new(NonZero::new(pair.dest).unwrap()),
+            "muno".into(),
+            img,
+            &evm_provider,
+        )
+        .await
+        .unwrap();
+
+    println!("✅ Quote token address: {:?}", quote_token_addr);
+    
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "10".parse().unwrap(),
+            kind: TOKEN_ORDER_KIND_INITIALIZE, 
+            metadata: img_metadata.clone().into(),
+            quote_token: quote_token_addr.as_ref().to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+    
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: pair.src.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
+
+    let recv_packet_data = ctx
+        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap(),
+            (bin_msg, funds),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+
+    println!("Received packet data: {:?}", recv_packet_data);
+    println!(
+        "Calling approve on quote token: {:?} -> from account: {:?}",
+        quote_token_addr, evm_address
+    );
+
+    // Not sending approve on purpose, to get the error.
+    // let approve_tx_hash = ctx
+    //     .dst
+    //     .zkgmerc20_approve(
+    //         quote_token_addr,
+    //         EVM_ZKGM_BYTES.into(),
+    //         U256::from(100000000000u64),
+    //         evm_provider.clone(),
+    //     )
+    //     .await;
+
+    // assert!(
+    //     approve_tx_hash.is_ok(),
+    //     "Failed to send approve transaction: {:?}, from_account: {:?}",
+    //     approve_tx_hash.err(),
+    //     evm_address
+    // );
+
+    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
+    let mut buf: [u8; 32] = [0u8; 32];
+    rand::rng().fill_bytes(&mut buf);
+
+    let random_token_id = U256::from_be_bytes(buf).into();
+    println!("✅ random_token_id: {:?}", random_token_id);
+    let instruction_from_evm_to_union = InstructionEvm {
+        version: INSTR_VERSION_0,
+        opcode: OP_STAKE,
+        operand: Stake {
+            token_id: random_token_id,
+            governance_token: b"muno".into(),
+            governance_token_wrapped: quote_token_addr.into_bytes().into_vec().into(),
+            sender: evm_address.to_vec().into(),
+            beneficiary: evm_address.to_vec().into(),
+            validator: given_validator.as_bytes().into(),
+            amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
+
+    rand::rng().fill_bytes(&mut salt_bytes);
+    let call = ucs03_zkgm
+        .send(
+            pair.dest,
+            0u64,
+            4294967295000000000u64,
+            salt_bytes.into(),
+            instruction_from_evm_to_union.clone(),
+        )
+        .clear_decoder();
+
+
+    let expected_revert_code = 0xfb8f41b2; // ERC20InsufficientBalance
+    let recv_packet_data = ctx
+        .send_and_expect_revert::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            EVM_ZKGM_BYTES.into(),
+            call,
+            expected_revert_code,
+            &zkgm_deployer_provider
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+}
+
+
+
+>>>>>>> a7ddcd283d (chore(e2e): added one more unhappy path with fixing expect revert issue)
 // #[tokio::test]
 // async fn send_stake_and_unstake_from_evm_to_union0() {
 //     self::test_stake_and_unstake_from_evm_to_union().await;
@@ -2549,12 +2755,25 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet(
 //     self::test_stake_from_evm_to_union_and_refund().await;
 // }
 
+<<<<<<< HEAD
+=======
+
+
+
+// UNHAPPY PATHS
+
+>>>>>>> a7ddcd283d (chore(e2e): added one more unhappy path with fixing expect revert issue)
 // #[tokio::test]
 // async fn from_evm_to_union_tokenv2_unhappy_path() {
 //     self::test_from_evm_to_union_tokenv2_unhappy_ONLY_MAKER_ERR().await;
 // }
 
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path2() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet().await;
+// }
+
 #[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path2() {
-    self::test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet().await;
+async fn from_evm_to_union_tokenv2_unhappy_path3() {
+    self::test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance().await;
 }

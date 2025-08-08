@@ -17,7 +17,7 @@ use unionlabs::{
     prost::bytes,
 };
 use voyager_sdk::{
-    anyhow::{self},
+    anyhow::{self, anyhow},
     primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     rpc::VoyagerRpcClient,
     serde_json,
@@ -988,30 +988,45 @@ where
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
-            Ok(hash) => {
-                println!("send_ibc_tx succeeded with hash: {:?}", hash);
-                hash
-            }
+            Ok((_, _)) => anyhow::bail!(
+                "Expected revert 0x{:08x}, but transaction succeeded",
+                expected_revert_code
+            ),
+
             Err(e) => {
                 let err_str = format!("{:#}", e);
+
                 let re = Regex::new(r"(0x[0-9A-Fa-f]+)").unwrap();
-                if let Some(caps) = re.captures(&err_str) {
-                    let code_hex = &caps[1];
-                    let actual =
-                        u32::from_str_radix(&code_hex[2..], 16).context("parsing revert hex")?;
-                    if actual == expected_revert_code {
-                        Ok(())
-                    } else {
-                        anyhow::bail!(
-                            "Expected revert code 0x{:x}, but got {}",
-                            expected_revert_code,
-                            code_hex
-                        )
-                    }
+                let caps = re.captures(&err_str).ok_or_else(|| {
+                    anyhow!(
+                        "Transaction reverted but no rawValue hex found: {}",
+                        err_str
+                    )
+                })?;
+
+                let hex_full = caps
+                    .get(1)
+                    .map(|m| m.as_str())
+                    .ok_or_else(|| anyhow!("regex matched but capture group missing"))?;
+
+                let hexdigits = hex_full.trim_start_matches("0x");
+                if hexdigits.len() < 8 {
+                    anyhow::bail!("rawValue too short for a selector: {}", hex_full);
+                }
+                let selector_hex = &hexdigits[..8]; // first 4 bytes
+
+                let actual = u32::from_str_radix(selector_hex, 16).with_context(|| {
+                    format!("parsing revert selector `{selector_hex}` from `{hex_full}`")
+                })?;
+
+                if actual == expected_revert_code {
+                    Ok(())
                 } else {
                     anyhow::bail!(
-                        "Transaction reverted but no rawValue found in error: {}",
-                        err_str
+                        "Expected selector 0x{:08x}, got 0x{:08x} (raw: {})",
+                        expected_revert_code,
+                        actual,
+                        hex_full
                     )
                 }
             }
