@@ -151,7 +151,7 @@ fn get_parent(i: usize) -> usize {
 ///
 /// It is a logic error to provide `i == 0`.
 ///
-/// E.g., if `i` is 1, depth is 0. If `i` is is 1, depth is 1.
+/// E.g., if `i` is 1, depth is 0. If `i` is 1, depth is 1.
 fn get_depth(i: usize) -> usize {
     let total_bits = mem::size_of::<usize>() * 8;
     total_bits - i.leading_zeros() as usize - 1
