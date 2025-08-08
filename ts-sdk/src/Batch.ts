@@ -1,3 +1,8 @@
+/**
+ * This module interfaces with the indexer via the GraphQL protocol.
+ *
+ * @since 2.0.0
+ */
 import { Inspectable } from "effect"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import * as A from "effect/Array"
@@ -13,14 +18,14 @@ import * as internal from "./internal/batch.js"
 export const TypeId: unique symbol = internal.TypeId
 
 /**
- * @since 2.0.0
  * @category type ids
+ * @since 2.0.0
  */
 export type TypeId = typeof TypeId
 
 /**
- * @since 2.0.0
  * @category models
+ * @since 2.0.0
  */
 export interface Batch
   extends
@@ -52,6 +57,10 @@ const Proto = {
   },
 }
 
+/**
+ * @category utils
+ * @since 2.0.0
+ */
 export const make = <
   A extends ZkgmInstruction.ZkgmInstruction,
 >(iterable: Iterable<A>): Batch =>

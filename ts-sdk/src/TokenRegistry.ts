@@ -1,7 +1,16 @@
+/**
+ * This module sources {@link Token} data.
+ *
+ * @since 2.0.0
+ */
 import { Data, Effect, Hash, hole, Layer, pipe } from "effect"
 import { Chain } from "./schema/chain.js"
 import { Token } from "./schema/token.js"
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class TokenRegistryError
   extends Data.TaggedError("@unionlabs/sdk/TokenRegistry/TokenRegistryError")<{
     message: string
@@ -9,6 +18,10 @@ export class TokenRegistryError
   }>
 {}
 
+/**
+ * @category services
+ * @since 2.0.0
+ */
 export class TokenRegistry extends Effect.Service<TokenRegistry>()("@unionlabs/sdk/TokenRegistry", {
   sync: () => ({
     pickQuote: hole<(source: Chain, destination: Chain) => Effect.Effect<Token>>(),

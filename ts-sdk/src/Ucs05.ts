@@ -3,7 +3,6 @@
  *
  * @since 2.0.0
  */
-
 import { bech32, bytes } from "@scure/base"
 import {
   absurd,
@@ -176,24 +175,52 @@ export const ERC55 = S.NonEmptyString.pipe(
  */
 export type ERC55 = typeof ERC55.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const EvmDisplay = S.Struct({
   _tag: S.tag("EvmDisplay"),
   address: ERC55,
 })
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type EvmDisplay = typeof EvmDisplay.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const CosmosDisplay = S.Struct({
   _tag: S.tag("CosmosDisplay"),
   address: Bech32,
 })
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type CosmosDisplay = typeof CosmosDisplay.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const AnyDisplay = S.Union(
   CosmosDisplay,
   EvmDisplay,
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type AnyDisplay = typeof AnyDisplay.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const AnyDisplayFromString = S.transformOrFail(
   S.String,
   AnyDisplay,
@@ -210,9 +237,21 @@ export const AnyDisplayFromString = S.transformOrFail(
   },
 )
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const Zkgm = Hex.pipe(S.brand("Zkgm"))
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type Zkgm = typeof Zkgm.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const ZkgmFromAnyDisplay = S.transform(
   AnyDisplay,
   Zkgm,

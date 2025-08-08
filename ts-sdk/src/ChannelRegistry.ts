@@ -1,7 +1,17 @@
+/**
+ * This module sources {@link Channel} data.
+ *
+ * @since 2.0.0
+ */
+
 import { Data, Effect, Hash, hole, Layer, pipe } from "effect"
 import { Chain } from "./schema/chain.js"
 import { Channel } from "./schema/channel.js"
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class ChannelRegistryError
   extends Data.TaggedError("@unionlabs/sdk/ChannelRegistry/ChannelRegistryError")<{
     message: string
@@ -9,6 +19,10 @@ export class ChannelRegistryError
   }>
 {}
 
+/**
+ * @category Services
+ * @since 2.0.0
+ */
 export class ChannelRegistry
   extends Effect.Service<ChannelRegistry>()("@unionlabs/sdk/ChannelRegistry", {
     sync: () => ({

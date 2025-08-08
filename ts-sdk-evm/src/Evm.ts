@@ -1,7 +1,7 @@
 /**
  * This module handles EVM related functionality.
  *
- * @since 2.0.0
+ * @since 0.0.0
  */
 import { GAS_DENOMS } from "@unionlabs/sdk/Constants"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
@@ -30,12 +30,12 @@ import * as internal from "./internal/evm.js"
 
 /**
  * @category models
- * @since 2.0.0
+ * @since 0.0.0
  */
 export namespace Evm {
   /**
    * @category models
-   * @since 2.0.0
+   * @since 0.0.0
    */
   export interface PublicClient {
     readonly client: ViemPublicClient
@@ -43,7 +43,7 @@ export namespace Evm {
 
   /**
    * @category models
-   * @since 2.0.0
+   * @since 0.0.0
    */
   export interface WalletClient {
     readonly client: ViemWalletClient
@@ -53,7 +53,7 @@ export namespace Evm {
 
   /**
    * @category models
-   * @since 2.0.0
+   * @since 0.0.0
    */
   export interface Channel {
     readonly ucs03address: Address
@@ -63,7 +63,7 @@ export namespace Evm {
 
 /**
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const channelBalance = (path: bigint, token: Hex) =>
   Effect.gen(function*() {
@@ -82,7 +82,7 @@ export const channelBalance = (path: bigint, token: Hex) =>
 
 /**
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: bigint) =>
   Effect.gen(function*() {
@@ -102,7 +102,7 @@ export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: big
 
 /**
  * @category errors
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class WaitForTransactionReceiptError extends Data.TaggedError(
   "WaitForTransactionReceiptError",
@@ -116,7 +116,7 @@ export class WaitForTransactionReceiptError extends Data.TaggedError(
  * @returns An Effect that resolves to the transaction receipt
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const waitForTransactionReceipt = (hash: Hash) =>
   Effect.gen(function*() {
@@ -142,7 +142,7 @@ export const waitForTransactionReceipt = (hash: Hash) =>
  * @returns An Effect that resolves to the properly typed return value
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readContract = <
   TAbi extends Abi,
@@ -174,7 +174,7 @@ export const readContract = <
  * @returns An Effect that resolves to the transaction hash
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const writeContract = <
   TAbi extends Abi,
@@ -205,7 +205,7 @@ export const writeContract = <
 
 /**
  * @category context
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Evm/ChannelDestination")<
   ChannelDestination,
@@ -219,7 +219,7 @@ export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Evm/ChannelD
 
 /**
  * @category context
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class ChannelSource extends Context.Tag("@unionlabs/sdk/Evm/ChannelSource")<
   ChannelSource,
@@ -233,7 +233,7 @@ export class ChannelSource extends Context.Tag("@unionlabs/sdk/Evm/ChannelSource
 
 /**
  * @category context
- * @since 2.0.0
+ * @since 0.0.0
  */
 
 export class PublicClientSource extends Context.Tag("@unionlabs/sdk/Evm/PublicClientSource")<
@@ -245,7 +245,7 @@ export class PublicClientSource extends Context.Tag("@unionlabs/sdk/Evm/PublicCl
 
 /**
  * @category context
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class PublicClientDestination
   extends Context.Tag("@unionlabs/sdk/Evm/PublicClientDestination")<
@@ -261,7 +261,7 @@ export class PublicClientDestination
  * that don't specifically target source or destination chains
  *
  * @category context
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class PublicClient extends Context.Tag("@unionlabs/sdk-evm/Evm/PublicClient")<
   PublicClient,
@@ -274,7 +274,7 @@ export class PublicClient extends Context.Tag("@unionlabs/sdk-evm/Evm/PublicClie
  * A wallet client that can be used for signing transactions
  *
  * @category context
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class WalletClient extends Context.Tag("@unionlabs/sdk/Evm/WalletClient")<
   WalletClient,
@@ -285,7 +285,7 @@ export class WalletClient extends Context.Tag("@unionlabs/sdk/Evm/WalletClient")
 
 /**
  * @category errors
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class ReadContractError extends Data.TaggedError("@unionlabs/sdk/Evm/ReadContractError")<{
   cause: ReadContractErrorType
@@ -293,7 +293,7 @@ export class ReadContractError extends Data.TaggedError("@unionlabs/sdk/Evm/Read
 
 /**
  * @category errors
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class WriteContractError extends Data.TaggedError("@unionlabs/sdk/Evm/WriteContractError")<{
   cause: WriteContractErrorType
@@ -301,7 +301,7 @@ export class WriteContractError extends Data.TaggedError("@unionlabs/sdk/Evm/Wri
 
 /**
  * @category errors
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class CreatePublicClientError
   extends Data.TaggedError("@unionlabs/sdk/Evm/CreatePublicClientError")<{
@@ -311,7 +311,7 @@ export class CreatePublicClientError
 
 /**
  * @category errors
- * @since 2.0.0
+ * @since 0.0.0
  */
 export class CreateWalletClientError
   extends Data.TaggedError("@unionlabs/sdk/Evm/CreateWalletClientError")<{
@@ -326,7 +326,7 @@ export class CreateWalletClientError
  * @returns An Effect that resolves to the token metadata
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) =>
   Effect.gen(function*() {
@@ -358,7 +358,7 @@ export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) 
  * @returns An Effect that resolves to the token balance
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =>
   Effect.gen(function*() {
@@ -380,7 +380,7 @@ export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =
  * @returns An Effect that resolves to the token balance
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20BalanceAtBlock = (
   tokenAddress: Address,
@@ -405,7 +405,7 @@ export const readErc20BalanceAtBlock = (
  * @returns An Effect that resolves to the token name
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20Name = (tokenAddress: Address) =>
   Effect.gen(function*() {
@@ -424,7 +424,7 @@ export const readErc20Name = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the token symbol
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20Symbol = (tokenAddress: Address) =>
   Effect.gen(function*() {
@@ -443,7 +443,7 @@ export const readErc20Symbol = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the token decimals
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20Decimals = (tokenAddress: Address) =>
   Effect.gen(function*() {
@@ -463,7 +463,7 @@ export const readErc20Decimals = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the totalSupply
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20TotalSupplyAtBlock = (tokenAddress: Address, blockNumber: bigint) =>
   Effect.gen(function*() {
@@ -483,7 +483,7 @@ export const readErc20TotalSupplyAtBlock = (tokenAddress: Address, blockNumber: 
  * @returns An Effect that resolves to the totalSupply
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20TotalSupply = (tokenAddress: Address) =>
   Effect.gen(function*() {
@@ -504,7 +504,7 @@ export const readErc20TotalSupply = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the token allowance
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const readErc20Allowance = (
   tokenAddress: Address,
@@ -530,7 +530,7 @@ export const readErc20Allowance = (
  * @returns An Effect that resolves to the transaction hash
  *
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const increaseErc20Allowance = (
   tokenAddress: Address,
@@ -552,7 +552,7 @@ export const increaseErc20Allowance = (
 
 /**
  * @category utils
- * @since 2.0.0
+ * @since 0.0.0
  */
 export const sendInstruction = (instruction: Ucs03.Instruction) =>
   Effect.gen(function*() {

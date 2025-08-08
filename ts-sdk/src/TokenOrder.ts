@@ -1,3 +1,8 @@
+/**
+ * This module provides a high-level API for UCS03 `TokenOrderV2` instruction construction.
+ *
+ * @since 2.0.0
+ */
 import { Effect, ParseResult } from "effect"
 import type { Inspectable } from "effect/Inspectable"
 import { ParseError } from "effect/ParseResult"
@@ -16,14 +21,14 @@ import { TokenRegistry } from "./TokenRegistry.js"
 import * as Ucs05 from "./Ucs05.js"
 
 /**
- * @category type ids
  * @since 2.0.0
+ * @category type ids
  */
 export const TypeId: unique symbol = internal.TypeId
 
 /**
- * @since 2.0.0
  * @category type ids
+ * @since 2.0.0
  */
 export type TypeId = typeof TypeId
 
@@ -33,6 +38,10 @@ export enum Kind {
   Unescrow,
 }
 
+/**
+ * @category schemas
+ * @since 2.0.0
+ */
 export const Input = S.Struct({
   source: S.typeSchema(Chain),
   destination: S.typeSchema(Chain),
@@ -46,14 +55,30 @@ export const Input = S.Struct({
   metadata: S.optional(Hex),
 })
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type InputEncoded = typeof Input.Encoded
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type InputDecoded = typeof Input.Type
+/**
+ * @category schemas
+ * @since 2.0.0
+ */
 const Options = S.partial(Input)
+/**
+ * @category models
+ * @since 2.0.0
+ */
 type Options = typeof Options.Encoded
 
 /**
- * @since 2.0.0
  * @category models
+ * @since 2.0.0
  */
 export interface TokenOrder
   extends
@@ -69,27 +94,45 @@ export interface TokenOrder
   version: 2
 }
 
+/**
+ * @since 2.0.0
+ */
 export declare namespace TokenOrder {
+  /**
+   * @since 2.0.0
+   */
   export interface Variance<out M> {
     readonly [TypeId]: VarianceStruct<M>
   }
 
-  /** Enusres `TokenOrder` is covariant over set of missing keys */
+  /**
+   * @since 2.0.0
+   */
   export interface VarianceStruct<out M> {
     readonly _M: Covariant<M>
   }
 
-  /** Collapses to `TokeOnder` when complete, otherwise tracks variance and partiality. */
-  // export type Build<M extends keyof Options = never> = [M] extends [never] ? TokenOrder
-  //   : Variance<M>
+  /**
+   * Collapses to `TokeOnder` when complete, otherwise tracks variance and partiality.
+   *
+   * @since 2.0.0
+   */
   export interface Build<
     M extends keyof TokenOrder = never,
   > extends Variance<M>, Pipeable {}
 
-  /** Extracts missing keys from a partial `TokenOrder`. */
+  /**
+   * Extracts missing keys from a partial `TokenOrder`
+   *
+   * @since 2.0.0
+   */
   export type Missing<T extends Build<any>> = T extends Build<infer M> ? M : never
 
-  /** Alias for a completed `TokenOrder`. */
+  /**
+   * Alias for a completed `TokenOrder`
+   *
+   * @since 2.0.0
+   */
   export type Complete = Build<never>
 }
 
@@ -97,6 +140,9 @@ export declare namespace TokenOrder {
  * @since 2.0.0
  */
 export declare namespace Options {
+  /**
+   * @since 2.0.0
+   */
   export type RequiredKeys =
     | "source"
     | "destination"
@@ -106,20 +152,19 @@ export declare namespace Options {
     | "baseAmount"
 
   /**
-   * removes the `?` (optional) modifier,
+   * @since 2.0.0
    */
   export type Required = {
     -readonly [K in RequiredKeys]-?: NonNullable<Options[K]>
   }
 
   /**
-   * Everything **except** the required six keys; stays optional.
+   * @since 2.0.0
    */
   export type Optional = Omit<Options, RequiredKeys>
 
   /**
-   * A fully‑specified options object: required fields present,
-   * optional ones still optional.
+   * @since 2.0.0
    */
   export type Complete = Required & Optional
 }

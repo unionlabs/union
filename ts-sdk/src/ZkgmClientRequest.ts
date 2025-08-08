@@ -1,3 +1,8 @@
+/**
+ * This module prepares cross-chain request submissions.
+ *
+ * @since 2.0.0
+ */
 import { Option } from "effect"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import type { Inspectable } from "effect/Inspectable"

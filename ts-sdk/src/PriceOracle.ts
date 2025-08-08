@@ -101,6 +101,7 @@ export declare namespace PriceOracle {
 }
 
 /**
+ * @category services
  * @since 2.0.0
  */
 export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
@@ -108,6 +109,12 @@ export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
   PriceOracle.Service
 >() {}
 
+/**
+ * {@see https://www.pyth.network/}
+ *
+ * @category layers
+ * @since 2.0.0
+ */
 export const Pyth = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
@@ -137,22 +144,20 @@ export const Pyth = Layer.effect(
     })
 
     const queryPriceFeed = yield* (Effect.cachedFunction((symbol: string) =>
-      pipe(
-        Effect.tryPromise({
-          try: () =>
-            client.getPriceFeeds({
-              query: `${symbol}/USD`,
-              assetType: "crypto",
-            }),
+      Effect.tryPromise({
+        try: () =>
+          client.getPriceFeeds({
+            query: `${symbol}/USD`,
+            assetType: "crypto",
+          }),
 
-          catch: (cause) =>
-            new PriceError({
-              message: `Failed to fetch pricing feed for ${symbol}.`,
-              source: "Pyth",
-              cause,
-            }),
-        }),
-      )
+        catch: (cause) =>
+          new PriceError({
+            message: `Failed to fetch pricing feed for ${symbol}.`,
+            source: "Pyth",
+            cause,
+          }),
+      })
     ))
 
     // TODO: move URL resource into dependency
@@ -293,8 +298,11 @@ export const Pyth = Layer.effect(
     })
   }),
 )
+
 /**
- * https://app.redstone.finance
+ * {@see https://www.redstone.finance/}
+ * @category layers
+ * @since 2.0.0
  */
 export const Redstone = Layer.effect(
   PriceOracle,
@@ -473,6 +481,11 @@ export const Redstone = Layer.effect(
   }),
 )
 
+/**
+ * {@see https://www.bandprotocol.com/}
+ * @category layers
+ * @since 2.0.0
+ */
 export const Band = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
@@ -481,7 +494,7 @@ export const Band = Layer.effect(
     const DEFAULT_MIN = 3
 
     const BandPriceRaw = S.Struct({
-      symbol: S.NonEmptyString.pipe(),
+      symbol: S.NonEmptyString,
       multiplier: S.PositiveBigInt,
       px: S.PositiveBigInt,
       request_id: S.PositiveBigInt,
@@ -489,7 +502,7 @@ export const Band = Layer.effect(
     })
 
     const BandPriceFromSelf = S.Struct({
-      symbol: S.NonEmptyString.pipe(),
+      symbol: S.NonEmptyString,
       price: S.PositiveBigDecimalFromSelf,
       multiplier: S.PositiveBigIntFromSelf,
       px: S.PositiveBigIntFromSelf,

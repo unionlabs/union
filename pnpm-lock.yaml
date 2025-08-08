@@ -271,6 +271,9 @@ importers:
       '@unionlabs/sdk':
         specifier: workspace:*
         version: link:../ts-sdk
+      '@unionlabs/sdk-evm':
+        specifier: workspace:*
+        version: link:../ts-sdk-evm
       '@webcontainer/api':
         specifier: ^1.5.1
         version: 1.6.1

@@ -1,3 +1,8 @@
+/**
+ * This module interfaces with the indexer via the GraphQL protocol.
+ *
+ * @since 2.0.0
+ */
 import { PersistedCache, Persistence } from "@effect/experimental"
 import { KeyValueStore } from "@effect/platform"
 import {
@@ -26,6 +31,10 @@ import { type ArgumentNode, type DirectiveNode, Kind, print } from "graphql"
 import { GraphQLClient, type Variables } from "graphql-request"
 import type { ClientError } from "graphql-request"
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class GraphQLError
   extends S.TaggedError<GraphQLError>("@unionlabs/sdk/GraphQL/GraphQLError")("GraphQLError", {
     message: S.String,
@@ -61,66 +70,73 @@ export const operationNamesFromDocumentNode = <T extends TadaDocumentNode<any, a
 /**
  * Define TTL strategy given some GQL document.
  * NOTE: Determines TTL by virtue of custom `@cached` directive.
- * TODO: Should probably define full cache behavior.
+ *
+ * @category services
+ * @since 2.0.0
  */
-class GraphQLCache extends Effect.Service<GraphQLCache>()("app/GraphQL/Cache", {
-  effect: Effect.gen(function*() {
-    const timeToLive = <
-      D,
-      V extends Variables = Variables,
-    >(document: TadaDocumentNode<D, V>): Duration.DurationInput => {
-      const ttlFromArgumentNode = pipe(
-        Match.type<ArgumentNode>(),
-        Match.when(
-          {
-            name: { value: "ttl" },
-            value: { kind: Kind.INT },
-          },
-          ({ value: { value } }) => +value,
-        ),
-        Match.option,
-      )
-
-      return pipe(
-        document.definitions,
-        A.filterMap(x =>
-          x.kind === Kind.OPERATION_DEFINITION
-            ? O.fromNullable(x.directives)
-            : O.none()
-        ),
-        A.flatten,
-        A.filterMap(pipe(
-          Match.type<DirectiveNode>(),
+export class GraphQLCache
+  extends Effect.Service<GraphQLCache>()("@unionlabs/sdk/GraphQL/GraphQLCache", {
+    effect: Effect.gen(function*() {
+      const timeToLive = <
+        D,
+        V extends Variables = Variables,
+      >(document: TadaDocumentNode<D, V>): Duration.DurationInput => {
+        const ttlFromArgumentNode = pipe(
+          Match.type<ArgumentNode>(),
           Match.when(
             {
-              name: { value: "cached" },
-              arguments: Match.defined,
+              name: { value: "ttl" },
+              value: { kind: Kind.INT },
             },
-            ({ arguments: args }) =>
-              pipe(
-                args,
-                A.filterMap(ttlFromArgumentNode),
-                A.head,
-              ),
+            ({ value: { value } }) => +value,
           ),
           Match.option,
-        )),
-        A.getSomes,
-        O.liftPredicate(A.isNonEmptyArray),
-        O.map(A.min(Order.number)),
-        O.getOrElse(() => 0),
-        (seconds) => `${seconds} seconds` as const,
-      )
-    }
+        )
 
-    return { timeToLive } as const
-  }),
-  dependencies: [KeyValueStore.layerStorage(() => globalThis.sessionStorage)],
-}) {}
+        return pipe(
+          document.definitions,
+          A.filterMap(x =>
+            x.kind === Kind.OPERATION_DEFINITION
+              ? O.fromNullable(x.directives)
+              : O.none()
+          ),
+          A.flatten,
+          A.filterMap(pipe(
+            Match.type<DirectiveNode>(),
+            Match.when(
+              {
+                name: { value: "cached" },
+                arguments: Match.defined,
+              },
+              ({ arguments: args }) =>
+                pipe(
+                  args,
+                  A.filterMap(ttlFromArgumentNode),
+                  A.head,
+                ),
+            ),
+            Match.option,
+          )),
+          A.getSomes,
+          O.liftPredicate(A.isNonEmptyArray),
+          O.map(A.min(Order.number)),
+          O.getOrElse(() => 0),
+          (seconds) => `${seconds} seconds` as const,
+        )
+      }
+
+      return { timeToLive } as const
+    }),
+    dependencies: [KeyValueStore.layerStorage(() => globalThis.sessionStorage)],
+  })
+{}
 
 /**
  * A "generic" GraphQL request containing document and variables.
  * TODO: This should be defined on a per-request basis, which not only will provide better type safety but also abstract over GraphQL backing.
+ *
+ * @category models
+ * @since 2.0.0
  */
 export class GraphQLRequest extends S.TaggedRequest<GraphQLRequest>()("GraphQLRequest", {
   failure: GraphQLError,
@@ -130,6 +146,9 @@ export class GraphQLRequest extends S.TaggedRequest<GraphQLRequest>()("GraphQLRe
     variables: S.Any,
   },
 }) {
+  /**
+   * @since 2.0.0
+   */
   [PrimaryKey.symbol]() {
     const structure = {
       document: print(this.document),
@@ -143,6 +162,10 @@ export class GraphQLRequest extends S.TaggedRequest<GraphQLRequest>()("GraphQLRe
   }
 }
 
+/**
+ * @category services
+ * @since 2.0.0
+ */
 export class GraphQL extends Effect.Service<GraphQL>()("@unionlabs/sdk/GraphQL", {
   scoped: Effect.gen(function*() {
     const { timeToLive } = yield* GraphQLCache

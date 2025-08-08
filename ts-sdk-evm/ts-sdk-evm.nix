@@ -13,10 +13,10 @@ _: {
     in
     {
       packages = {
-        sdk-evm = buildPnpmPackage {
+        ts-sdk-evm = buildPnpmPackage {
           inherit pnpm;
           packageJsonPath = ./package.json;
-          extraSrcs = [ ../ts-sdk ../sdk-evm ];
+          extraSrcs = [ ../ts-sdk ../ts-sdk-evm ];
           pnpmWorkspaces = [ "@unionlabs/sdk" "@unionlabs/sdk-evm" ];
           #hash = "sha256-Qy3/L29jvGfev2eSeu7SkzYp8lUu5jaM7VzjcksoC4g=";
           doCheck = true;

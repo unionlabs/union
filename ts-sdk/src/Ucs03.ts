@@ -1027,6 +1027,10 @@ const TokenOrderOperandV1 = S.Union(
  */
 type TokenOrderOperandV1 = typeof TokenOrderOperandV1.Type
 
+/**
+ * @category schemas
+ * @since 2.0.0
+ */
 export const TokenMetadataKind = S.Union(
   S.Literal(0).pipe(
     S.annotations({
@@ -1045,6 +1049,10 @@ export const TokenMetadataKind = S.Union(
     }),
   ),
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type TokenMetadataKind = typeof TokenMetadataKind.Type
 
 /**
@@ -1257,6 +1265,10 @@ export class TokenOrderV1 extends S.TaggedClass<TokenOrderV1>()("@unionlabs/sdk/
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/Ucs03/TokenOrder", {
   opcode: S.Literal(3).pipe(
     S.optional,
@@ -1277,7 +1289,15 @@ export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
+/**
+ * @category schemas
+ * @since 2.0.0
+ */
 export const TokenOrder = S.Union(TokenOrderV1, TokenOrderV2)
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type TokenOrder = typeof TokenOrder.Type
 
 /**
@@ -1307,7 +1327,7 @@ type SchemaEncoded =
   | typeof TokenOrder.Encoded
 
 /**
- * @category models
+ * @category schemas
  * @since 2.0.0
  */
 export const Schema = S.Union(Forward, Call, Batch, TokenOrder)
@@ -1323,7 +1343,11 @@ export const Instruction = Data.taggedEnum<Instruction>()
  */
 export type Instruction = typeof Schema.Type
 
-const ForwardFromHex = S.transformOrFail(
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
+export const ForwardFromHex = S.transformOrFail(
   Hex,
   Forward,
   {
@@ -1371,7 +1395,11 @@ const ForwardFromHex = S.transformOrFail(
   },
 )
 
-const CallFromHex = S.transformOrFail(
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
+export const CallFromHex = S.transformOrFail(
   Hex,
   Call,
   {
@@ -1395,7 +1423,11 @@ const CallFromHex = S.transformOrFail(
   },
 )
 
-const BatchFromHex = S.transformOrFail(
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
+export const BatchFromHex = S.transformOrFail(
   Hex,
   Batch,
   {
@@ -1438,6 +1470,10 @@ const BatchFromHex = S.transformOrFail(
   },
 )
 
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
 export const TokenOrderFromHex = S.transformOrFail(
   Hex,
   TokenOrder,
@@ -1497,6 +1533,10 @@ export const TokenOrderFromHex = S.transformOrFail(
   },
 )
 
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
 export const InstructionFromHex: S.Union<[
   S.transformOrFail<
     typeof Hex,

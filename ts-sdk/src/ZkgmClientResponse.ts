@@ -1,3 +1,8 @@
+/**
+ * This module describes a superset of events during finite-state machine execution following {@link ZkgmClient} execution.
+ *
+ * @since 2.0.0
+ */
 import * as internal from "./internal/zkgmClientResponse.js"
 import { Hex } from "./schema/hex.js"
 import type * as ClientError from "./ZkgmClientError.js"

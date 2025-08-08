@@ -1,3 +1,8 @@
+/**
+ * This module interfaces with the indexer via the GraphQL protocol.
+ *
+ * @since 2.0.0
+ */
 import {
   Array as A,
   Data,
@@ -16,12 +21,24 @@ import { graphql } from "gql.tada"
 import { GraphQL } from "./GraphQL.js"
 import { Chain, UniversalChainId } from "./schema/chain.js"
 
+/**
+ * @category requests
+ * @since 2.0.0
+ */
 interface GetChainById extends Request.Request<Chain, ChainRegistryError> {
   readonly _tag: "GetChainById"
   readonly id: UniversalChainId
 }
+/**
+ * @category models
+ * @since 2.0.0
+ */
 const GetChainById = Request.tagged<GetChainById>("GetChainById")
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class ChainRegistryError
   extends Data.TaggedError("@unionlabs/sdk/ChainRegistry/ChainRegistryError")<{
     message: string
@@ -29,6 +46,10 @@ export class ChainRegistryError
   }>
 {}
 
+/**
+ * @category services
+ * @since 2.0.0
+ */
 export class ChainRegistry extends Effect.Service<ChainRegistry>()("@unionlabs/sdk/ChainRegistry", {
   effect: Effect.gen(function*() {
     const client = yield* GraphQL
@@ -149,6 +170,10 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
   )
 }
 
+/**
+ * @category resolvers
+ * @since 2.0.0
+ */
 const GetChainByIdResolver =
   // we create a normal resolver like we did before
   RequestResolver.fromEffect((request: GetChainById) =>
@@ -209,6 +234,10 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
     RequestResolver.contextFromServices(GraphQL),
   )
 
+/**
+ * @category utils
+ * @since 2.0.0
+ */
 export const getChainById: (
   id: UniversalChainId,
 ) => Effect.Effect<Chain, ChainRegistryError, GraphQL> = Effect.fn(

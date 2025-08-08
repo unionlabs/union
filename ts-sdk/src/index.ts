@@ -96,103 +96,113 @@ export * as FungibleAssetOrder from "./FungibleAssetOrder.js"
 export * as Types from "./Types.js"
 
 /**
- * TODO
+ * This modules handles chain-agnostic submission of {@link ZkgmClientRequests}s.
  *
  * @since 2.0.0
  */
 export * as ZkgmClient from "./ZkgmClient.js"
 
 /**
- * TODO
+ * This module prepares cross-chain request submissions.
  *
  * @since 2.0.0
  */
 export * as ZkgmClientRequest from "./ZkgmClientRequest.js"
+
 /**
- * TODO
+ * This module sources {@link Channel} data.
  *
  * @since 2.0.0
  */
 export * as ChannelRegistry from "./ChannelRegistry.js"
 
 /**
- * TODO
+ * This module sources {@link Chain} data.
  *
  * @since 2.0.0
  */
 export * as ChainRegistry from "./ChainRegistry.js"
 
 /**
- * TODO
+ * This module sources {@link Token} data.
  *
  * @since 2.0.0
  */
 export * as TokenRegistry from "./TokenRegistry.js"
 
 /**
- * TODO
+ * This module estimates cross-chain transaciton fees.
  *
  * @since 2.0.0
  */
 export * as FeeEstimator from "./FeeEstimator.js"
 
 /**
- * TODO
+ * This module defines structured token data.
  *
  * @since 2.0.0
  */
 export * as Token from "./Token.js"
 
 /**
- * TODO
+ * This module provides a high-level API for UCS03 `TokenOrderV2` instruction construction.
  *
  * @since 2.0.0
  */
 export * as TokenOrder from "./TokenOrder.js"
 
 /**
- * TODO
+ * This module provides a high-level API for UCS03 `Batch` instruction construction.
  *
  * @since 2.0.0
  */
 export * as Batch from "./Batch.js"
 
 /**
- * TODO
+ * This module describes high-level requirements for UCS03 instruction, prepared for {@link ZkgmClientRequest}.
  *
  * @since 2.0.0
  */
 export * as ZkgmInstruction from "./ZkgmInstruction.js"
 
 /**
- * TODO
+ * This module describes possible request and response errors from {@link ZkgmClient} execution.
  *
  * @since 2.0.0
  */
 export * as ZkgmClientError from "./ZkgmClientError.js"
 
 /**
- * TODO
+ * This module describes a superset of events during finite-state machine execution following {@link ZkgmClient} execution.
  *
  * @since 2.0.0
  */
 export * as ZkgmIncomingMessage from "./ZkgmIncomingMessage.js"
 
 /**
- * TODO
+ * This module describes a chain-agnostic response resulting from {@link ZkgmClient} execution.
  *
  * @since 2.0.0
  */
 export * as ZkgmClientResponse from "./ZkgmClientResponse.js"
 
 /**
- * TODO
+ * This module interfaces with the indexer via the GraphQL protocol.
+ *
  * @since 2.0.0
  */
 export * as GraphQL from "./GraphQL.js"
 
 /**
- * TODO
+ * This module contains constant data.
+ *
  * @since 2.0.0
  */
 export * as Constants from "./Constants.js"
+
+/**
+ * This module provides a chain-agnostic service for determining gas price.
+ *
+ * @since 2.0.0
+ */
+export * as GasPrice from "./GasPrice.js"
