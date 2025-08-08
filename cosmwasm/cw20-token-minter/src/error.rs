@@ -39,4 +39,7 @@ pub enum Error {
 
     #[error("minter config is expected to be cw20")]
     InvalidMinterConfig,
+
+    #[error("cannot deploy a new token with v1 TokenOrder")]
+    TokenOrderV1DeploymentIsDeprecated,
 }

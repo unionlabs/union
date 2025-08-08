@@ -36,6 +36,7 @@ contract MockSolver is ISolver, ERC165 {
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
@@ -77,6 +78,7 @@ contract MockSolverWithU is ISolver, ERC165 {
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,

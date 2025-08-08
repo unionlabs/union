@@ -2,11 +2,11 @@ use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    wasm_execute, Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps,
-    Response, StdError, StdResult, Uint256,
+    to_json_vec, wasm_execute, Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo,
+    OwnedDeps, Response, StdError, StdResult, Uint256,
 };
 use cw20::{Cw20Coin, Cw20QueryMsg, TokenInfoResponse};
-use cw20_token_minter::contract::save_native_token;
+use cw20_token_minter::contract::{save_native_token, Cw20TokenMinterImplementation};
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor, SudoMsg};
 use cw_storage_plus::Map;
 use ibc_union_msg::module::IbcUnionMsg;
@@ -18,11 +18,11 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, Call, Forward, Instruction, TokenMetadata, TokenOrderAck, TokenOrderV1,
-        TokenOrderV2, ZkgmPacket, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC,
-        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD,
-        OP_TOKEN_ORDER, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW,
-        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
+        Ack, Batch, Call, Forward, Instruction, TokenMetadata, TokenOrderAck, TokenOrderV2,
+        ZkgmPacket, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
+        INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER,
+        TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
+        TOKEN_ORDER_KIND_UNESCROW,
     },
     contract::{
         dequeue_channel_from_path, execute, increase_channel_balance_v2, instantiate,
@@ -1049,15 +1049,13 @@ struct IncomingOrderBuilder {
     salt: H256,
     path: U256,
     base_token: Bytes,
-    base_token_symbol: String,
-    base_token_name: String,
-    base_token_decimals: u8,
-    base_token_path: U256,
     base_amount: u128,
     quote_token: Bytes,
     quote_amount: u128,
     sender: Bytes,
     receiver: Addr,
+    kind: u8,
+    metadata: TokenMetadata,
 }
 
 #[allow(dead_code)]
@@ -1073,14 +1071,38 @@ impl IncomingOrderBuilder {
         // order
         let path = U256::ZERO;
         let base_token = Bytes::from(hex_literal::hex!("00AABBCCDDEEFF"));
-        let base_token_symbol = "USDC".into();
-        let base_token_name = "Circle USD".into();
-        let base_token_decimals = 8;
-        let base_token_path = U256::ZERO;
         let base_amount = 0xCAFEBABEu128;
         let quote_amount = 0xCAFEBABEu128;
         let sender = vec![].into();
         let receiver = Addr::unchecked("union1g0jxmy25g5t6qdagq2dkclux7c46kwym8decfw");
+
+        // Default metadata for wrapped token creation
+        let admin = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
+        let code_id = 1u64; // Will be overridden in actual tests
+        let metadata = TokenMetadata {
+            implementation: to_json_vec(&Cw20TokenMinterImplementation {
+                admin: admin.into(),
+                code_id,
+            })
+            .unwrap()
+            .into(),
+            initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
+                cw20_base::msg::InstantiateMsg {
+                    name: "Circle USD".to_string(),
+                    symbol: "USDC".to_string(),
+                    decimals: 8,
+                    initial_balances: vec![],
+                    mint: Some(cw20::MinterResponse {
+                        minter: "minter".to_string(), // Will be overridden
+                        cap: None,
+                    }),
+                    marketing: None,
+                },
+            ))
+            .unwrap()
+            .into(),
+        };
+
         Self {
             caller,
             relayer,
@@ -1089,15 +1111,13 @@ impl IncomingOrderBuilder {
             salt,
             path,
             base_token,
-            base_token_symbol,
-            base_token_name,
-            base_token_decimals,
-            base_token_path,
             base_amount,
             quote_token: quote_token.as_bytes().to_vec().into(),
             quote_amount,
             sender,
             receiver,
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
+            metadata,
         }
     }
 
@@ -1121,8 +1141,13 @@ impl IncomingOrderBuilder {
         self
     }
 
-    fn with_base_token_path(mut self, base_token_path: impl Into<U256>) -> Self {
-        self.base_token_path = base_token_path.into();
+    fn with_kind(mut self, kind: u8) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    fn with_metadata(mut self, metadata: TokenMetadata) -> Self {
+        self.metadata = metadata;
         self
     }
 
@@ -1154,9 +1179,9 @@ impl IncomingOrderBuilder {
                 salt: self.salt.into(),
                 path: self.path,
                 instruction: Instruction {
-                    version: INSTR_VERSION_1,
+                    version: INSTR_VERSION_2,
                     opcode: OP_TOKEN_ORDER,
-                    operand: TokenOrderV1 {
+                    operand: TokenOrderV2 {
                         sender: self.sender.clone().into_vec().into(),
                         receiver: self
                             .receiver
@@ -1167,12 +1192,10 @@ impl IncomingOrderBuilder {
                             .into(),
                         base_token: self.base_token.clone().into_vec().into(),
                         base_amount: self.base_amount.try_into().unwrap(),
-                        base_token_symbol: self.base_token_symbol.clone(),
-                        base_token_name: self.base_token_name.clone(),
-                        base_token_decimals: self.base_token_decimals,
-                        base_token_path: self.base_token_path,
                         quote_token: self.quote_token.clone().into_vec().into(),
                         quote_amount: self.quote_amount.try_into().unwrap(),
+                        kind: self.kind,
+                        metadata: self.metadata.abi_encode_params().into(),
                     }
                     .abi_encode_params()
                     .into(),
@@ -1200,28 +1223,55 @@ fn test_recv_packet_native_new_wrapped() {
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    // Create metadata that matches what IncomingOrderBuilder uses by default
+    let metadata = TokenMetadata {
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.clone().into(),
+            code_id: st.cw20_base_code_id,
+        })
+        .unwrap()
+        .into(),
+        initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
+            cw20_base::msg::InstantiateMsg {
+                name: "Circle USD".to_string(),
+                symbol: "USDC".to_string(),
+                decimals: 8,
+                initial_balances: vec![],
+                mint: Some(cw20::MinterResponse {
+                    minter: st.minter.to_string(),
+                    cap: None,
+                }),
+                marketing: None,
+            },
+        ))
+        .unwrap()
+        .into(),
+    };
+
+    let metadata_image = keccak256(metadata.abi_encode_params());
+
     let quote_token = st
         .app
         .wrap()
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
-            &QueryMsg::PredictWrappedToken {
+            &QueryMsg::PredictWrappedTokenV2 {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
+                metadata_image,
             },
         )
         .unwrap()
-        .wrapped_token
-        .parse::<Bytes>()
-        .map(|bz| String::from_utf8(bz.into()).unwrap())
-        .unwrap();
+        .wrapped_token;
     let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (order, msg, packet) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
+        .with_metadata(metadata)
         .build();
     st.app
         .execute(
@@ -1274,41 +1324,68 @@ fn test_recv_packet_native_new_wrapped() {
         .query_wasm_smart(quote_token_addr, &Cw20QueryMsg::TokenInfo {})
         .unwrap();
 
-    assert_eq!(token_info_response.name, order.base_token_name);
-    assert_eq!(token_info_response.symbol, order.base_token_symbol);
-    assert_eq!(token_info_response.decimals, order.base_token_decimals);
+    assert_eq!(token_info_response.name, "Circle USD");
+    assert_eq!(token_info_response.symbol, "USDC");
+    assert_eq!(token_info_response.decimals, 8);
     assert_eq!(token_info_response.total_supply.u128(), order.base_amount);
 }
 
 #[test]
 fn test_recv_packet_native_new_wrapped_relative_supply() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
-    let mut st = init_test_state(admin);
+    let mut st = init_test_state(admin.clone());
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    // Create metadata for V2
+    let metadata = TokenMetadata {
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.into(),
+            code_id: st.cw20_base_code_id,
+        })
+        .unwrap()
+        .into(),
+        initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
+            cw20_base::msg::InstantiateMsg {
+                name: "Circle USD".to_string(),
+                symbol: "USDC".to_string(),
+                decimals: 8,
+                initial_balances: vec![],
+                mint: Some(cw20::MinterResponse {
+                    minter: st.minter.to_string(),
+                    cap: None,
+                }),
+                marketing: None,
+            },
+        ))
+        .unwrap()
+        .into(),
+    };
+
+    let metadata_image = keccak256(metadata.abi_encode_params());
+
     let quote_token = st
         .app
         .wrap()
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
-            &QueryMsg::PredictWrappedToken {
+            &QueryMsg::PredictWrappedTokenV2 {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
+                metadata_image,
             },
         )
         .unwrap()
-        .wrapped_token
-        .parse::<Bytes>()
-        .map(|bz| String::from_utf8(bz.into()).unwrap())
-        .unwrap();
+        .wrapped_token;
     let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (order, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
+        .with_metadata(metadata)
         .build();
     st.app
         .execute(
@@ -1342,34 +1419,58 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
 #[test]
 fn test_recv_packet_native_new_wrapped_split_fee() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
-    let mut st = init_test_state(admin);
+    let mut st = init_test_state(admin.clone());
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_amount = 1000u128;
     let quote_amount = 900u128;
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let metadata = TokenMetadata {
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.into(),
+            code_id: st.cw20_base_code_id,
+        })
+        .unwrap()
+        .into(),
+        initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
+            cw20_base::msg::InstantiateMsg {
+                name: "Circle USD".to_string(),
+                symbol: "USDC".to_string(),
+                decimals: 8,
+                initial_balances: vec![],
+                mint: Some(cw20::MinterResponse {
+                    minter: st.minter.to_string(),
+                    cap: None,
+                }),
+                marketing: None,
+            },
+        ))
+        .unwrap()
+        .into(),
+    };
+
     let quote_token = st
         .app
         .wrap()
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
-            &QueryMsg::PredictWrappedToken {
+            &QueryMsg::PredictWrappedTokenV2 {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
+                metadata_image: keccak256(metadata.abi_encode_params()),
             },
         )
         .unwrap()
-        .wrapped_token
-        .parse::<Bytes>()
-        .map(|bz| String::from_utf8(bz.into()).unwrap())
-        .unwrap();
+        .wrapped_token;
     let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
         .with_base_amount(base_amount)
         .with_quote_amount(quote_amount)
+        .with_metadata(metadata)
         .build();
     st.app
         .execute(
@@ -1407,7 +1508,7 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
 #[test]
 fn test_recv_packet_native_new_wrapped_origin_set() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
-    let mut st = init_test_state(admin);
+    let mut st = init_test_state(admin.clone());
     let path = update_channel_path(
         update_channel_path(U256::ZERO, ChannelId!(9)).unwrap(),
         ChannelId!(4),
@@ -1415,26 +1516,50 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
     .unwrap();
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let metadata = TokenMetadata {
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.into(),
+            code_id: st.cw20_base_code_id,
+        })
+        .unwrap()
+        .into(),
+        initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
+            cw20_base::msg::InstantiateMsg {
+                name: "Circle USD".to_string(),
+                symbol: "USDC".to_string(),
+                decimals: 8,
+                initial_balances: vec![],
+                mint: Some(cw20::MinterResponse {
+                    minter: st.minter.to_string(),
+                    cap: None,
+                }),
+                marketing: None,
+            },
+        ))
+        .unwrap()
+        .into(),
+    };
+
     let quote_token = st
         .app
         .wrap()
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
-            &QueryMsg::PredictWrappedToken {
+            &QueryMsg::PredictWrappedTokenV2 {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
+                metadata_image: keccak256(metadata.abi_encode_params()),
             },
         )
         .unwrap()
-        .wrapped_token
-        .parse::<Bytes>()
-        .map(|bz| String::from_utf8(bz.into()).unwrap())
-        .unwrap();
+        .wrapped_token;
     let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
+        .with_metadata(metadata)
         .build();
     st.app
         .execute(
@@ -1475,26 +1600,51 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
 #[test]
 fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
-    let mut st = init_test_state(admin);
+    let mut st = init_test_state(admin.clone());
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let metadata = TokenMetadata {
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.into(),
+            code_id: st.cw20_base_code_id,
+        })
+        .unwrap()
+        .into(),
+        initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
+            cw20_base::msg::InstantiateMsg {
+                name: "Circle USD".to_string(),
+                symbol: "USDC".to_string(),
+                decimals: 8,
+                initial_balances: vec![],
+                mint: Some(cw20::MinterResponse {
+                    minter: st.minter.to_string(),
+                    cap: None,
+                }),
+                marketing: None,
+            },
+        ))
+        .unwrap()
+        .into(),
+    };
+
+    let metadata_image = keccak256(metadata.abi_encode_params());
+
     let quote_token = st
         .app
         .wrap()
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
-            &QueryMsg::PredictWrappedToken {
+            &QueryMsg::PredictWrappedTokenV2 {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
+                metadata_image,
             },
         )
         .unwrap()
-        .wrapped_token
-        .parse::<Bytes>()
-        .map(|bz| String::from_utf8(bz.into()).unwrap())
-        .unwrap();
+        .wrapped_token;
     let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (_, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
@@ -1504,6 +1654,7 @@ fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
         // Base not covering the quote
         .with_base_amount(0x1337u32)
         .with_quote_amount(0x1338u32)
+        .with_metadata(metadata)
         .build();
     let err = st
         .app
@@ -1532,6 +1683,7 @@ fn test_recv_packet_native_to_native_only_maker() {
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
+        .with_kind(TOKEN_ORDER_KIND_ESCROW)
         .build();
     let err = st
         .app
@@ -1560,6 +1712,7 @@ fn test_recv_packet_native_quote_maker_fill_ok() {
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
+        .with_kind(TOKEN_ORDER_KIND_ESCROW)
         .build();
     let quote_coin = Coin::new(order.quote_amount, quote_token_addr.clone());
     assert_eq!(
@@ -1652,7 +1805,7 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
         .with_base_token(base_token.clone())
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
-        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .with_kind(TOKEN_ORDER_KIND_UNESCROW)
         .build();
 
     st.app
@@ -1773,7 +1926,7 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         .with_base_token(base_token.clone().into_bytes())
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
-        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .with_kind(TOKEN_ORDER_KIND_UNESCROW)
         .build();
 
     st.app
@@ -1875,7 +2028,7 @@ fn test_recv_packet_native_unwrap_channel_no_outstanding() {
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
-        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .with_kind(TOKEN_ORDER_KIND_UNESCROW)
         .build();
 
     st.app
@@ -1957,7 +2110,7 @@ fn test_recv_packet_native_unwrap_path_no_outstanding() {
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
-        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .with_kind(TOKEN_ORDER_KIND_UNESCROW)
         .build();
 
     st.app
@@ -2125,7 +2278,12 @@ fn test_recv_packet_native_v2_wrap_ok() {
     let admin = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
     let metadata = TokenMetadata {
-        implementation: (admin.to_string(), code_id).abi_encode_params().into(),
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.into(),
+            code_id,
+        })
+        .unwrap()
+        .into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
                 name: "Test Token".to_string(),
@@ -2666,7 +2824,12 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
     let admin_str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
     let preimage_metadata = TokenMetadata {
-        implementation: (admin_str.to_string(), code_id).abi_encode_params().into(),
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin_str.into(),
+            code_id,
+        })
+        .unwrap()
+        .into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
                 name: "Test Token".to_string(),
@@ -2850,7 +3013,12 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
     let admin = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
     let code_id = st.cw20_base_code_id;
     let metadata = TokenMetadata {
-        implementation: (admin.to_string(), code_id).abi_encode_params().into(),
+        implementation: to_json_vec(&Cw20TokenMinterImplementation {
+            admin: admin.into(),
+            code_id,
+        })
+        .unwrap()
+        .into(),
         initializer: serde_json::to_vec(&frissitheto::UpgradeMsg::<_, ()>::Init(
             cw20_base::msg::InstantiateMsg {
                 name: "Test Token".to_string(),

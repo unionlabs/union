@@ -40,4 +40,7 @@ pub enum Error {
 
     #[error("tokenfactory minter expects the implementation field of foa v2 to be a constant 'tokenfactory' string")]
     UnexpectedImplementation,
+
+    #[error("cannot deploy a new token with v1 TokenOrder")]
+    TokenOrderV1DeploymentIsDeprecated,
 }

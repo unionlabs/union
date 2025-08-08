@@ -8,8 +8,9 @@ use prost::Message;
 use protos::osmosis::tokenfactory::v1beta1::MsgSetDenomMetadata;
 use token_factory_api::{BurnTokensMsg, MintTokensMsg, TokenFactoryMsg, TokenFactoryQuery};
 use ucs03_zkgm_token_minter_api::{
-    new_secure_wrapped_token_event, ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg, Metadata,
-    MetadataResponse, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenMsg,
+    encode_metadata, new_wrapped_token_event, ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg,
+    MetadataResponse, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenKind,
+    WrappedTokenMsg,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -23,7 +24,7 @@ pub const CONSTANT_IMPLEMENTATION: &[u8] = b"tokenfactory";
 use crate::{
     bank_types::{new_proto_metadata, DenomMetadataResponse},
     error::Error,
-    msg::{ExecuteMsg, TokenFactoryAdminOperation},
+    msg::{ExecuteMsg, OsmosisTokenMinterInitializer, TokenFactoryAdminOperation},
     state::{OPERATOR, TOKEN_OWNERS, ZKGM_ADDR},
 };
 
@@ -51,22 +52,9 @@ pub fn execute(
 ) -> Result<Response<TokenFactoryMsg>, Error> {
     match msg {
         ExecuteMsg::ZkgmExecuteMsg(msg) => match msg {
-            ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom {
-                subdenom,
-                metadata,
-                token,
-                channel_id,
-                path,
-            }) => wrapped_create_denom(
-                deps,
-                info,
-                env,
-                channel_id,
-                U256::from_be_bytes::<32>(path.to_vec().try_into().expect("impossible")),
-                token,
-                subdenom,
-                metadata,
-            ),
+            ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom { .. }) => {
+                Err(Error::TokenOrderV1DeploymentIsDeprecated)
+            }
             ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenomV2 {
                 subdenom,
                 implementation,
@@ -247,7 +235,7 @@ fn wrapped_burn_tokens(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn wrapped_create_denom(
+fn wrapped_create_denom_v2(
     deps: DepsMut,
     info: MessageInfo,
     env: Env,
@@ -255,13 +243,31 @@ fn wrapped_create_denom(
     path: U256,
     base_token: Binary,
     denom: String,
-    metadata: Metadata,
+    implementation: Binary,
+    initializer: Binary,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
     assert_is_zkgm(deps.as_ref(), &info)?;
 
-    TOKEN_OWNERS.save(deps.storage, denom.clone(), &env.contract.address)?;
+    // Only the tokenfactory can handle denom operations such as burn/mint
+    // natively, we can't do it via a custom contract in Cosmwasm. Hence, we force a constant implementation.
+    if implementation.as_ref() != CONSTANT_IMPLEMENTATION {
+        return Err(Error::UnexpectedImplementation);
+    }
+
+    let osmosis_initializer = from_json::<OsmosisTokenMinterInitializer>(&initializer)?;
+    let admin = deps.api.addr_validate(&osmosis_initializer.admin)?;
+
+    TOKEN_OWNERS.save(deps.storage, denom.clone(), &admin)?;
 
     let subdenom = deconstruct_factory_denom(&env, &denom)?;
+
+    let kind = if admin == env.contract.address {
+        WrappedTokenKind::Protocol
+    } else {
+        WrappedTokenKind::ThirdParty
+    };
+
+    let encoded_metadata = encode_metadata(&implementation, &initializer);
 
     Ok(Response::new()
         .add_messages(vec![
@@ -276,78 +282,23 @@ fn wrapped_create_denom(
                 type_url: MsgSetDenomMetadata::type_url(),
                 value: MsgSetDenomMetadata {
                     sender: env.contract.address.to_string(),
-                    metadata: Some(new_proto_metadata(denom.clone(), metadata)?),
+                    metadata: Some(new_proto_metadata(
+                        denom.clone(),
+                        osmosis_initializer.metadata,
+                    )?),
                 }
                 .encode_to_vec()
                 .into(),
             },
         ])
-        .add_event(new_secure_wrapped_token_event(
-            channel_id,
+        .add_event(new_wrapped_token_event(
             path,
+            channel_id,
             base_token.to_vec(),
             subdenom,
+            encoded_metadata,
+            kind,
         )))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn wrapped_create_denom_v2(
-    deps: DepsMut,
-    info: MessageInfo,
-    env: Env,
-    channel_id: ChannelId,
-    path: U256,
-    base_token: Binary,
-    denom: String,
-    implementation: Binary,
-    initializer: Binary,
-) -> Result<Response<TokenFactoryMsg>, Error> {
-    assert_is_zkgm(deps.as_ref(), &info)?;
-
-    let (admin, raw_metadata) = <(String, String)>::abi_decode_params_validate(&initializer)?;
-
-    let admin = deps.api.addr_validate(&admin)?;
-    let metadata = from_json(raw_metadata).map_err(|_| Error::CouldNotDecodeMetadata)?;
-
-    // Only the tokenfactory can handle denom operations such as burn/mint
-    // natively, we can't do it via a custom contract in Cosmwasm. Hence, we force a constant implementation.
-    if implementation.as_ref() != CONSTANT_IMPLEMENTATION {
-        return Err(Error::UnexpectedImplementation);
-    }
-
-    TOKEN_OWNERS.save(deps.storage, denom.clone(), &admin)?;
-
-    let subdenom = deconstruct_factory_denom(&env, &denom)?;
-
-    let mut response = Response::new().add_messages(vec![
-        CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
-            subdenom: subdenom.to_owned(),
-            metadata: None,
-        }),
-        // We are using stargate for now instead of `Any` to be safe in case we would want to
-        // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
-        #[allow(deprecated)]
-        CosmosMsg::Stargate {
-            type_url: MsgSetDenomMetadata::type_url(),
-            value: MsgSetDenomMetadata {
-                sender: env.contract.address.to_string(),
-                metadata: Some(new_proto_metadata(denom.clone(), metadata)?),
-            }
-            .encode_to_vec()
-            .into(),
-        },
-    ]);
-
-    if admin == env.contract.address {
-        response = response.add_event(new_secure_wrapped_token_event(
-            channel_id,
-            path,
-            base_token.to_vec(),
-            subdenom,
-        ));
-    }
-
-    Ok(response)
 }
 
 #[cosmwasm_schema::cw_serde]
@@ -496,6 +447,7 @@ mod tests {
         testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
         Addr, Empty, OwnedDeps,
     };
+    use ucs03_zkgm_token_minter_api::Metadata;
 
     use super::*;
 
@@ -523,8 +475,8 @@ mod tests {
 
     #[test]
     fn wrapped_create_denom_ok() {
-        let zkgm = Addr::unchecked(ZKGM_ADDR_);
-        let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
+        let zkgm = MockApi::default().addr_make(ZKGM_ADDR_);
+        let mut deps = setup(OPERATOR_ADDR, zkgm.as_str());
 
         let denom = format!("factory/{}/helloworld", mock_env().contract.address);
 
@@ -545,9 +497,14 @@ mod tests {
                 }],
             ),
             ExecuteMsg::ZkgmExecuteMsg(ucs03_zkgm_token_minter_api::ExecuteMsg::Wrapped(
-                WrappedTokenMsg::CreateDenom {
+                WrappedTokenMsg::CreateDenomV2 {
                     subdenom: denom.clone(),
-                    metadata: metadata.clone(),
+                    implementation: CONSTANT_IMPLEMENTATION.into(),
+                    initializer: to_json_binary(&OsmosisTokenMinterInitializer {
+                        admin: mock_env().contract.address.into(),
+                        metadata: metadata.clone(),
+                    })
+                    .unwrap(),
                     path: U256::ZERO.to_be_bytes::<32>().into(),
                     channel_id: ChannelId!(1),
                     token: vec![].into(),
@@ -612,9 +569,14 @@ mod tests {
                     }],
                 ),
                 ExecuteMsg::ZkgmExecuteMsg(ucs03_zkgm_token_minter_api::ExecuteMsg::Wrapped(
-                    WrappedTokenMsg::CreateDenom {
+                    WrappedTokenMsg::CreateDenomV2 {
                         subdenom: denom.clone(),
-                        metadata: metadata.clone(),
+                        implementation: CONSTANT_IMPLEMENTATION.into(),
+                        initializer: to_json_binary(&OsmosisTokenMinterInitializer {
+                            admin: mock_env().contract.address.into(),
+                            metadata: metadata.clone(),
+                        })
+                        .unwrap(),
                         path: U256::ZERO.to_be_bytes::<32>().into(),
                         channel_id: ChannelId!(1),
                         token: vec![].into(),

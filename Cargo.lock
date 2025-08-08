@@ -16997,6 +16997,7 @@ dependencies = [
 name = "ucs03-zkgm-token-minter-api"
 version = "0.0.0"
 dependencies = [
+ "alloy",
  "alloy-primitives",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",

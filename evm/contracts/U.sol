@@ -40,9 +40,10 @@ contract U is
         address zkgm;
         uint8 decimals;
         bytes salt;
-        // (channelId, baseToken) => FungibleCounterparty
-        mapping(uint32 => mapping(bytes => FungibleCounterparty))
-            fungibleCounterparties;
+        // (path, channelId, baseToken) => FungibleCounterparty
+        mapping(
+            uint256 => mapping(uint32 => mapping(bytes => FungibleCounterparty))
+        ) fungibleCounterparties;
         mapping(bytes32 => bool) intentWhitelist;
     }
 
@@ -94,10 +95,11 @@ contract U is
     }
 
     function fungibleCounterparty(
+        uint256 path,
         uint32 channelId,
         bytes calldata baseToken
     ) public view returns (FungibleCounterparty memory) {
-        return _getUStorage().fungibleCounterparties[channelId][baseToken];
+        return _getUStorage().fungibleCounterparties[path][channelId][baseToken];
     }
 
     function intentWhitelist(
@@ -124,11 +126,13 @@ contract U is
     }
 
     function setFungibleCounterparty(
+        uint256 path,
         uint32 channelId,
         bytes calldata token,
         FungibleCounterparty calldata counterparty
     ) public restricted {
-        _getUStorage().fungibleCounterparties[channelId][token] = counterparty;
+        _getUStorage().fungibleCounterparties[path][channelId][token] =
+            counterparty;
     }
 
     function whitelistIntent(
@@ -147,6 +151,7 @@ contract U is
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
@@ -160,7 +165,8 @@ contract U is
         }
 
         FungibleCounterparty memory counterparty = _getUStorage()
-            .fungibleCounterparties[packet.destinationChannelId][order.baseToken];
+            .fungibleCounterparties[path][packet.destinationChannelId][order
+            .baseToken];
         if (counterparty.beneficiary.length == 0) {
             revert U_CounterpartyIsNotFungible();
         }

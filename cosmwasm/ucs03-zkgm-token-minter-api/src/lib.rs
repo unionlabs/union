@@ -1,3 +1,4 @@
+use alloy::sol_types::SolValue;
 use alloy_primitives::U256;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Event, Uint128};
@@ -5,32 +6,45 @@ use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
 use unionlabs::primitives::{encoding::HexPrefixed, Bytes, H256};
 
-pub const EVENT_SECURE_WRAPPED_TOKEN: &str = "new_secure_wrapped_token";
-pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_CHANNEL_ID: &str = "channel_id";
-pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_PATH: &str = "path";
-pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_BASE_TOKEN: &str = "base_token";
-pub const EVENT_SECURE_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN: &str = "quote_token";
+pub const EVENT_WRAPPED_TOKEN: &str = "create_wrapped_token";
+pub const EVENT_WRAPPED_TOKEN_ATTR_CHANNEL_ID: &str = "channel_id";
+pub const EVENT_WRAPPED_TOKEN_ATTR_PATH: &str = "path";
+pub const EVENT_WRAPPED_TOKEN_ATTR_BASE_TOKEN: &str = "base_token";
+pub const EVENT_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN: &str = "quote_token";
+pub const EVENT_WRAPPED_TOKEN_ATTR_METADATA: &str = "metadata";
+pub const EVENT_WRAPPED_TOKEN_ATTR_KIND: &str = "kind";
 
-pub fn new_secure_wrapped_token_event(
-    channel_id: ChannelId,
+#[repr(u8)]
+pub enum WrappedTokenKind {
+    Protocol = 1,
+    ThirdParty = 2,
+}
+
+pub fn new_wrapped_token_event(
     path: U256,
+    channel_id: ChannelId,
     base_token: Vec<u8>,
     quote_token_denom: &str,
+    metadata: Vec<u8>,
+    kind: WrappedTokenKind,
 ) -> Event {
-    Event::new(EVENT_SECURE_WRAPPED_TOKEN)
+    Event::new(EVENT_WRAPPED_TOKEN)
+        .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_PATH, path.to_string())
+        .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_CHANNEL_ID, channel_id.to_string())
         .add_attribute(
-            EVENT_SECURE_WRAPPED_TOKEN_ATTR_CHANNEL_ID,
-            channel_id.to_string(),
-        )
-        .add_attribute(EVENT_SECURE_WRAPPED_TOKEN_ATTR_PATH, path.to_string())
-        .add_attribute(
-            EVENT_SECURE_WRAPPED_TOKEN_ATTR_BASE_TOKEN,
+            EVENT_WRAPPED_TOKEN_ATTR_BASE_TOKEN,
             Bytes::<HexPrefixed>::from(base_token).to_string(),
         )
+        .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN, quote_token_denom)
         .add_attribute(
-            EVENT_SECURE_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN,
-            quote_token_denom,
+            EVENT_WRAPPED_TOKEN_ATTR_METADATA,
+            Bytes::<HexPrefixed>::from(metadata).to_string(),
         )
+        .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_KIND, (kind as u8).to_string())
+}
+
+pub fn encode_metadata(implementation: &[u8], initializer: &[u8]) -> Vec<u8> {
+    (implementation, initializer).abi_encode_params()
 }
 
 #[cw_serde]

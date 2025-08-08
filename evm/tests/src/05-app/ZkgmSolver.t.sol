@@ -262,7 +262,7 @@ contract ZkgmSolverTest is Test {
 
         // Call solve directly
         mockSolver.solve(
-            packet, order, address(0x789), address(0xabc), hex"def0", false
+            packet, order, 0, address(0x789), address(0xabc), hex"def0", false
         );
 
         // Verify call was tracked
@@ -318,7 +318,7 @@ contract ZkgmSolverTest is Test {
         // Should revert when configured to fail
         vm.expectRevert("MockSolver: Configured to fail");
         mockSolver.solve(
-            packet, order, address(0x789), address(0xabc), hex"def0", false
+            packet, order, 0, address(0x789), address(0xabc), hex"def0", false
         );
     }
 
@@ -352,7 +352,7 @@ contract ZkgmSolverTest is Test {
         // Should succeed since we funded the U token solver in setUp
         uint256 balanceBefore = uToken.balanceOf(address(this));
         mockSolverWithU.solve(
-            packet, order, address(0x789), address(0xabc), hex"def0", false
+            packet, order, 0, address(0x789), address(0xabc), hex"def0", false
         );
 
         // Verify U tokens were transferred
@@ -537,7 +537,13 @@ contract ZkgmSolverTest is Test {
 
         // Test that the solver can be called directly (integration test)
         mockSolver.solve(
-            packet, order, makeAddr("caller"), makeAddr("relayer"), hex"", false
+            packet,
+            order,
+            0,
+            makeAddr("caller"),
+            makeAddr("relayer"),
+            hex"",
+            false
         );
         assertEq(mockSolver.solveCallCount(), 1);
     }
@@ -597,7 +603,7 @@ contract ZkgmSolverTest is Test {
 
         // Should revert when solver fails
         vm.expectRevert("MockSolver: Configured to fail");
-        mockSolver.solve(packet, order, caller, relayer, relayerMsg, false);
+        mockSolver.solve(packet, order, 0, caller, relayer, relayerMsg, false);
     }
 
     function test_onRecvIntentPacket_solverFill_ok() public {
@@ -643,7 +649,9 @@ contract ZkgmSolverTest is Test {
         });
 
         // Test intent packet (intent=true)
-        mockSolver.solve(packet, order, marketMaker, relayer, relayerMsg, true);
+        mockSolver.solve(
+            packet, order, 0, marketMaker, relayer, relayerMsg, true
+        );
 
         // Verify intent flag was set correctly
         (,,,,, bool capturedIntent) = mockSolver.lastCall();
@@ -704,7 +712,9 @@ contract ZkgmSolverTest is Test {
 
         // Should revert when solver fails
         vm.expectRevert("MockSolver: Configured to fail");
-        mockSolver.solve(packet, order, marketMaker, relayer, relayerMsg, true);
+        mockSolver.solve(
+            packet, order, 0, marketMaker, relayer, relayerMsg, true
+        );
     }
 
     function test_solverFill_with_u_token_complete(
@@ -760,7 +770,9 @@ contract ZkgmSolverTest is Test {
 
         // Test U token solver
         uint256 balanceBefore = uToken.balanceOf(address(this));
-        mockSolverWithU.solve(packet, order, caller, relayer, relayerMsg, false);
+        mockSolverWithU.solve(
+            packet, order, 0, caller, relayer, relayerMsg, false
+        );
 
         uint256 balanceAfter = uToken.balanceOf(address(this));
         assertEq(balanceAfter - balanceBefore, quoteAmount);
