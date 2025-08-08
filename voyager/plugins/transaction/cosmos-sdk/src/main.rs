@@ -1164,6 +1164,9 @@ fn process_msgs(
                         })
                     }
                     ibc_union_spec::datagram::Datagram::BatchAcks(_msg_batch_acks) => todo!(),
+                    ibc_union_spec::datagram::Datagram::CommitClientStatus(
+                        _msg_commit_client_status,
+                    ) => todo!(),
                 },
             };
 
