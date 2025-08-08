@@ -363,7 +363,7 @@ module zkgm::zkgm_relay {
         let packet_hash = commitment::commit_packet(&ibc_packet);
 
         zkgm.session = option::some(ExecutionCtx {
-            instruction_set: partition_instructions(instruction::decode(&packet_data, &mut 0)),
+            instruction_set: partition_instructions(zkgm_packet.instruction()),
             cursor: 0,
             acks: vector::empty(),
             packet_hash,

@@ -276,12 +276,14 @@ module zkgm::zkgm_ethabi {
     #[allow(unused_mut_ref)]
     public macro fun decode_dyn_array<$T>(
         $buf: &vector<u8>,
-        $index: &mut u64,
+        $index: u64,
         $decode_fn: |vector<u8>| -> $T
-    ): vector<$T> {
-        let original_index = *$index;
+    ): (vector<$T>, u64) {
+        let original_index = $index;
 
-        let vec_len = (decode_uint($buf, $index) as u64);
+        let mut index = $index;
+
+        let vec_len = (decode_uint($buf, &mut index) as u64);
 
         let mut result = vector::empty();
         let mut i = 0;
@@ -289,7 +291,7 @@ module zkgm::zkgm_ethabi {
         let mut item_indices = vector::empty();
         
         while (i < vec_len) {
-            let item_index = (decode_uint($buf, $index) as u64);
+            let item_index = (decode_uint($buf, &mut index) as u64);
             item_indices.push_back(item_index);
             i = i + 1;
         };
@@ -303,13 +305,11 @@ module zkgm::zkgm_ethabi {
             } else {
                 item_indices[i + 1]
             };
-            // std::debug::print(&(end + offset));
-            // std::debug::print(&vec_len);
             result.push_back($decode_fn(vector_slice($buf, item_indices[i] + offset, end + offset)));
             i = i + 1;
         };
 
-        result
+        (result, index)
     }
 
     /// encode array of dynamic-sized data (string[], SomeDynStruct[])

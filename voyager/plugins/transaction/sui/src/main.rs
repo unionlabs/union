@@ -1,5 +1,9 @@
 use std::{
-    collections::VecDeque, fmt::Debug, panic::AssertUnwindSafe, str::FromStr, sync::Arc,
+    collections::{hash_map::Entry, HashMap, VecDeque},
+    fmt::Debug,
+    panic::AssertUnwindSafe,
+    str::FromStr,
+    sync::Arc,
     time::Duration,
 };
 
@@ -7,9 +11,10 @@ use alloy::sol_types::SolValue;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use fastcrypto::{hash::HashFunction, traits::Signer};
 use hex_literal::hex;
-use ibc_union_spec::{datagram::Datagram, ChannelId, IbcUnion};
+use ibc_union_spec::{datagram::Datagram, ChannelId, IbcUnion, Packet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    proc_macros::rpc,
     types::ErrorObject,
     Extensions,
 };
@@ -42,7 +47,8 @@ use sui_sdk::{
 };
 use tracing::{debug, info, instrument};
 use ucs03_zkgm::com::{
-    Batch, Instruction, TokenMetadata, TokenOrderV2, ZkgmPacket, TOKEN_ORDER_KIND_INITIALIZE,
+    Batch, TokenMetadata, TokenOrderV2, ZkgmPacket, OP_BATCH, OP_TOKEN_ORDER,
+    TOKEN_ORDER_KIND_INITIALIZE,
 };
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes, H256},
@@ -54,10 +60,10 @@ use voyager_sdk::{
     message::{data::Data, PluginMessage, VoyagerMessage},
     plugin::Plugin,
     primitives::ChainId,
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{json_rpc_error_to_queue_error, types::PluginInfo, PluginServer},
     serde_json::{self, json},
     vm::{call, noop, pass::PassResult, Op, Visit},
-    DefaultCmd,
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
@@ -231,7 +237,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => self
                 .keyring
@@ -241,7 +247,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     AssertUnwindSafe(async move {
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
-                        process_msgs(self, &mut ptb, pk, msgs, sender).await;
+                        process_msgs(self, e.voyager_client()?, &mut ptb, pk, msgs, sender).await;
 
                         let builder = ptb.finish();
                         let _ = send_transactions(self, pk, builder).await?;
@@ -272,6 +278,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
     module: &Module,
+    voyager_client: &VoyagerClient,
     ptb: &mut ProgrammableTransactionBuilder,
     pk: &Arc<SuiKeyPair>,
     msgs: Vec<Datagram>,
@@ -559,6 +566,13 @@ async fn process_msgs(
                     .start_version()
                     .expect("object is shared, hence it has a start version");
 
+                // let commands = voyager_client
+                //     .plugin_client("plugin-name")
+                //     .on_packet_recv(data.packets[0].clone())
+                //     .await
+                //     .map_err(json_rpc_error_to_queue_error)
+                //     .unwrap();
+
                 // If the module is ZKGM, then we register the tokens if needed. Otherwise,
                 // the registered tokens are returned.
                 let coin_ts = register_tokens_if_zkgm(
@@ -771,26 +785,67 @@ async fn register_tokens_if_zkgm(
         return Ok(vec![]);
     };
 
-    let Ok(batch) = Batch::abi_decode_params(&zkgm_packet.instruction.operand) else {
-        return Ok(vec![]);
-    };
-
     let mut coin_ts = vec![];
-    for instr in batch.instructions {
-        if let Some(type_tag) = register_token_if_zkgm(
-            module,
-            ptb,
-            pk,
-            packet,
-            &zkgm_packet,
-            instr,
-            module_info,
-            store_initial_seq,
-        )
-        .await?
-        {
-            coin_ts.push(type_tag);
+
+    match zkgm_packet.instruction.opcode {
+        OP_BATCH => {
+            let Ok(batch) = Batch::abi_decode_params(&zkgm_packet.instruction.operand) else {
+                panic!("impossible");
+            };
+
+            let mut base_tokens: HashMap<alloy::primitives::Bytes, TypeTag> = HashMap::new();
+
+            for instr in batch.instructions {
+                let Ok(fao) = TokenOrderV2::abi_decode_params(&instr.operand) else {
+                    continue;
+                };
+
+                let base_token = fao.base_token.clone();
+
+                match base_tokens.entry(base_token) {
+                    Entry::Occupied(e) => {
+                        coin_ts.push(e.get().clone());
+                    }
+                    Entry::Vacant(e) => {
+                        if let Some(type_tag) = register_token_if_zkgm(
+                            module,
+                            ptb,
+                            pk,
+                            packet,
+                            &zkgm_packet,
+                            fao,
+                            module_info,
+                            store_initial_seq,
+                        )
+                        .await?
+                        {
+                            coin_ts.push(type_tag.clone());
+                            e.insert(type_tag);
+                        }
+                    }
+                }
+            }
         }
+        OP_TOKEN_ORDER => {
+            let fao = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
+                .expect("impossible");
+            let mut coin_ts = vec![];
+            if let Some(type_tag) = register_token_if_zkgm(
+                module,
+                ptb,
+                pk,
+                packet,
+                &zkgm_packet,
+                fao,
+                module_info,
+                store_initial_seq,
+            )
+            .await?
+            {
+                coin_ts.push(type_tag);
+            }
+        }
+        _ => {}
     }
 
     Ok(coin_ts)
@@ -803,14 +858,10 @@ async fn register_token_if_zkgm(
     pk: &Arc<SuiKeyPair>,
     packet: &ibc_union_spec::Packet,
     zkgm_packet: &ZkgmPacket,
-    instruction: Instruction,
+    fao: TokenOrderV2,
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
 ) -> anyhow::Result<Option<TypeTag>> {
-    let Ok(fao) = TokenOrderV2::abi_decode_params(&instruction.operand) else {
-        return Ok(None);
-    };
-
     let (metadata_image, coin_metadata) = if fao.kind == TOKEN_ORDER_KIND_INITIALIZE {
         // TODO(aeryz): we could drop this packet as well since we know that its gonna fail
         let Ok(metadata) = TokenMetadata::abi_decode_params(&fao.metadata) else {
@@ -1395,3 +1446,9 @@ async fn register_capability(
 
 commitments: 0xaef6807dd959db193c6dd56b54aea5ebab70e93acf7053f231014c6f93f0ca77
 */
+
+#[rpc(server, client)]
+trait SuiIbcAppPlugin {
+    #[method(name = "onPacketRecv")]
+    async fn on_packet_recv(&self, packet: Packet) -> RpcResult<Vec<Command>>;
+}

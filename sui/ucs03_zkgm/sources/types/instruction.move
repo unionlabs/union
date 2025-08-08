@@ -95,7 +95,10 @@ module zkgm::instruction {
     }
 
     public fun decode(buf: &vector<u8>, index: &mut u64): Instruction {
+        std::debug::print(buf);
+        std::debug::print(index);
         let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
+        std::debug::print(&b"aesndeansdeansdeanesd");
         let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
         // skipping the pointer
         *index = *index + 0x20;

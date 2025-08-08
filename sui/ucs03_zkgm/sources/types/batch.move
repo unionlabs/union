@@ -90,15 +90,16 @@ module zkgm::batch {
 
     #[allow(unused_mut_ref)]
     public fun decode(buf: &vector<u8>): Batch {
+        let (instructions, _) = zkgm_ethabi::decode_dyn_array!(
+            buf,
+            0x20,
+            |b| {
+                let mut i = 0;
+                instruction::decode(&b, &mut i)
+            }
+        );
         Batch {
-            instructions: zkgm_ethabi::decode_dyn_array!(
-                buf,
-                &mut 0x20,
-                |b| {
-                    let mut i = 0;
-                    instruction::decode(&b, &mut i)
-                }
-            )
+            instructions
         }
     }
 
@@ -181,6 +182,5 @@ module zkgm::batch {
         assert!(ack_bytes4 == output4, 0);
         let ack_data_decoded = decode(&ack_bytes4);
         assert!(vector::length(&ack_data_decoded.instructions) == 0, 1);
-
     }
 }
