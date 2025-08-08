@@ -1,5 +1,7 @@
 /**
- * @since 1.0.0
+ * This module defines a concrete {@link ZkgmClient} for EVM source chain usage.
+ *
+ * @since 0.0.0
  */
 import type * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import type * as Layer from "effect/Layer"
@@ -7,8 +9,8 @@ import type * as Evm from "./Evm.js"
 import * as internal from "./internal/zkgmClient.js"
 
 /**
- * @since 1.0.0
  * @category layers
+ * @since 0.0.0
  */
 export const layerWithoutWallet: Layer.Layer<
   ZkgmClient.ZkgmClient,

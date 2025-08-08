@@ -4,6 +4,7 @@ import * as Path from "node:path"
 function packages() {
   return [
     "ts-sdk",
+    "ts-sdk-evm",
   ].filter((_) => Fs.existsSync(Path.join(_, "docs/modules")))
 }
 

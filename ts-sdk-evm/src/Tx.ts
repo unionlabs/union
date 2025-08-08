@@ -1,3 +1,8 @@
+/**
+ * TODO
+ *
+ * @since 0.0.0
+ */
 import { Chain } from "@unionlabs/sdk/schema/chain"
 import { Data, Effect, pipe } from "effect"
 import type {
@@ -8,18 +13,20 @@ import type {
   WriteContractParameters,
 } from "viem"
 import * as Evm from "./Evm.js"
-import type * as EvmWallet from "./EvmWallet.js"
 
+/** @since 0.0.0 */
 export type TransactionState = Data.TaggedEnum<{
   WriteContractInProgress: {}
-  WriteContractComplete: { exit: Effect.Effect.Success<ReturnType<typeof EvmWallet.writeContract>> }
+  WriteContractComplete: { exit: Effect.Effect.Success<ReturnType<typeof Evm.writeContract>> }
   TransactionReceiptInProgress: { readonly hash: Hash } // on chain hash
   TransactionReceiptComplete: {
     exit: Effect.Effect.Success<ReturnType<typeof Evm.waitForTransactionReceipt>>
   }
 }>
 
+/** @since 0.0.0 */
 export const TransactionState = Data.taggedEnum<TransactionState>()
+/** @since 0.0.0 */
 export const {
   WriteContractInProgress,
   WriteContractComplete,
@@ -28,6 +35,9 @@ export const {
   $is: is,
 } = TransactionState
 
+/**
+ * @since 0.0.0
+ */
 export const nextState = <
   TAbi extends Abi,
   TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable"> = ContractFunctionName<

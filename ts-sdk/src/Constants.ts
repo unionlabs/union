@@ -1,6 +1,15 @@
+/**
+ * This module interfaces with the indexer via the GraphQL protocol.
+ *
+ * @since 2.0.0
+ */
 import { UniversalChainId } from "./schema/chain.js"
 import { TokenRawDenom } from "./schema/token.js"
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 interface GasDenomMetadata {
   address: TokenRawDenom
   name: string
@@ -12,6 +21,10 @@ interface GasDenomMetadata {
   decimals: number
 }
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 const ETH_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "Ether",
@@ -20,6 +33,10 @@ const ETH_METADATA: GasDenomMetadata = {
   decimals: 18,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 const SEI_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "Sei",
@@ -28,6 +45,10 @@ const SEI_METADATA: GasDenomMetadata = {
   decimals: 18,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 const CORN_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "Bitcorn",
@@ -36,6 +57,10 @@ const CORN_METADATA: GasDenomMetadata = {
   decimals: 18,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const BABYLON_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x7562626e"),
   name: "Baby",
@@ -44,6 +69,10 @@ export const BABYLON_METADATA: GasDenomMetadata = {
   decimals: 6,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const OSMOSIS_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x756f736d6f"),
   name: "Osmo",
@@ -52,6 +81,10 @@ export const OSMOSIS_METADATA: GasDenomMetadata = {
   decimals: 6,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 const UNION_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x6d756e6f"),
   name: "Union",
@@ -60,6 +93,10 @@ const UNION_METADATA: GasDenomMetadata = {
   decimals: 6,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 const XION_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x7578696f6e"),
   name: "Xion",
@@ -68,6 +105,10 @@ const XION_METADATA: GasDenomMetadata = {
   decimals: 6,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 const BNB_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "BNB",
@@ -76,6 +117,10 @@ const BNB_METADATA: GasDenomMetadata = {
   decimals: 18,
 } as const
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Ethereum chains
   [UniversalChainId.make("ethereum.11155111")]: ETH_METADATA,

@@ -1,24 +1,26 @@
 /**
- * TODO: rename to `ZkgmIncomingMessage`
+ * This module describes a superset of events during finite-state machine execution following {@link ZkgmClient} execution.
+ *
+ * @since 2.0.0
  */
 import { Data, Effect, Inspectable, Stream } from "effect"
 import { constFalse, constTrue } from "effect/Function"
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type ids
  */
 export const TypeId: unique symbol = Symbol.for("@unionlabs/sdk/ZkgmIncomingMessage")
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type ids
  */
 export type TypeId = typeof TypeId
 
 /**
- * NOTE: don't assume exhaustion
- * - consider documenting per ecosystem states ?
+ * @category models
+ * @since 2.0.0
  */
 export type LifecycleEvent = Data.TaggedEnum<{
   // | { _tag: "SwitchChainStart" ; target: UniversalChainId }
@@ -48,8 +50,16 @@ export type LifecycleEvent = Data.TaggedEnum<{
   // Finalized: {}
 }>
 
+/**
+ * @category utils
+ * @since 2.0.0
+ */
 export const LifecycleEvent = Data.taggedEnum<LifecycleEvent>()
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export interface ZkgmIncomingMessage<E> extends Inspectable.Inspectable {
   [TypeId]: TypeId
   /** lifecycle and chain events in temporal order */
@@ -63,6 +73,10 @@ export interface ZkgmIncomingMessage<E> extends Inspectable.Inspectable {
   ) => Effect.Effect<{ readonly txHash: string }, E>
 }
 
+/**
+ * @category utils
+ * @since 2.0.0
+ */
 export const isBroadcast = LifecycleEvent.$match({
   CosmosWriteContractComplete: constFalse,
   CosmosWriteContractInProgress: constTrue,
@@ -73,6 +87,10 @@ export const isBroadcast = LifecycleEvent.$match({
   EvmWriteContractInProgress: constFalse,
 })
 
+/**
+ * @category utils
+ * @since 2.0.0
+ */
 export const isComplete = LifecycleEvent.$match({
   CosmosWriteContractComplete: constTrue,
   CosmosWriteContractInProgress: constFalse,
@@ -84,6 +102,7 @@ export const isComplete = LifecycleEvent.$match({
 })
 
 /**
+ * @category utils
  * @since 2.0.0
  */
 export const inspect = <E>(self: ZkgmIncomingMessage<E>, that: object): object => {

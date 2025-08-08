@@ -358,21 +358,26 @@ export default defineConfig({
               autogenerate: { directory: "/reference/@unionlabs/sdk" },
               badge: { text: "evolving", variant: "caution" },
             },
+            {
+              label: "EVM SDK",
+              autogenerate: { directory: "/reference/@unionlabs/sdk-evm" },
+              badge: { text: "evolving", variant: "caution" },
+            },
           ],
         },
       ],
       plugins: [
-        examplesToPages({
-          baseDir: "../ts-sdk/examples",
-          entryPoints: [
-            "../ts-sdk/examples/UCS03/*.ts",
-            "../ts-sdk/examples/Sui/*.ts",
-            "../ts-sdk/examples/EVM/*.ts",
-            "../ts-sdk/examples/Cosmos/*.ts",
-          ],
-          outDir: "./src/content/docs/integrations/typescript/examples",
-          clean: true,
-        }),
+        // examplesToPages({
+        //   baseDir: "../ts-sdk/examples",
+        //   entryPoints: [
+        //     "../ts-sdk/examples/UCS03/*.ts",
+        //     "../ts-sdk/examples/Sui/*.ts",
+        //     "../ts-sdk/examples/EVM/*.ts",
+        //     "../ts-sdk/examples/Cosmos/*.ts",
+        //   ],
+        //   outDir: "./src/content/docs/integrations/typescript/examples",
+        //   clean: true,
+        // }),
         starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {

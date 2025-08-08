@@ -1,7 +1,16 @@
+/**
+ * This module estimates cross-chain transaciton fees.
+ *
+ * @since 2.0.0
+ */
 import { Data, Effect, Hash, hole, Layer, pipe } from "effect"
 import * as PriceOracle from "./PriceOracle.js"
 import { Chain } from "./schema/chain.js"
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class FeeEstimatorError
   extends Data.TaggedError("@unionlabs/sdk/FeeEstimator/FeeEstimatorError")<{
     message: string
@@ -9,6 +18,10 @@ export class FeeEstimatorError
   }>
 {}
 
+/**
+ * @category services
+ * @since 2.0.0
+ */
 export class FeeEstimator extends Effect.Service<FeeEstimator>()("@unionlabs/sdk/FeeEstimator", {
   effect: Effect.gen(function*() {
     const oracle = yield* PriceOracle.PriceOracle

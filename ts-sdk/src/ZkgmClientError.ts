@@ -1,4 +1,6 @@
 /**
+ * This module describes possible request and response errors from {@link ZkgmClient} execution.
+ *
  * @since 2.0.0
  */
 import { hasProperty } from "effect/Predicate"
@@ -8,31 +10,31 @@ import type * as ClientRequest from "./ZkgmClientRequest.js"
 import type * as ClientResponse from "./ZkgmClientResponse.js"
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type id
  */
 export const TypeId: unique symbol = internal.TypeId
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type id
  */
 export type TypeId = typeof TypeId
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category guards
  */
 export const isClientError = (u: unknown): u is ClientError => hasProperty(u, TypeId)
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category error
  */
 export type ClientError = RequestError | ResponseError
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category error
  */
 export class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
@@ -49,7 +51,7 @@ export class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
 }
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category error
  */
 export class ResponseError extends Error.TypeIdError(TypeId, "ResponseError")<{

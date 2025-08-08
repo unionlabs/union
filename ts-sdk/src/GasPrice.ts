@@ -1,3 +1,8 @@
+/**
+ * This module provides a chain-agnostic service for determining gas price.
+ *
+ * @since 2.0.0
+ */
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import {
   Array as A,
@@ -55,17 +60,33 @@ export class GasPriceError
   }
 }
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type AtomicGasPrice = BigDecimal.BigDecimal & Brand.Brand<"AtomicGasPrice">
+/**
+ * @category branding
+ * @since 2.0.0
+ */
 export const AtomicGasPrice = Brand.nominal<AtomicGasPrice>()
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type BaseGasPrice = BigDecimal.BigDecimal & Brand.Brand<"BaseGasPrice">
+/**
+ * @category branding
+ * @since 2.0.0
+ */
 export const BaseGasPrice = Brand.nominal<BaseGasPrice>()
 
 /**
  * Normalized gas price.
- * @example
- * * 0.0007 ubbn / gas unit => price in BABY / gas unit
- * * 123 wei / gas unit => 0.000000000000000123 ETH / pre gas unit
+ *
+ * @category contexts
+ * @since 2.0.0
  */
 export class GasPrice extends Context.Tag("@unionlabs/sdk/GasPrice/GasPrice")<
   GasPrice,
@@ -73,7 +94,7 @@ export class GasPrice extends Context.Tag("@unionlabs/sdk/GasPrice/GasPrice")<
 >() {}
 
 /**
- * @since 0.0.1
+ * @since 2.0.0
  * @category models
  */
 export declare namespace GasPrice {
@@ -95,6 +116,10 @@ export declare namespace GasPrice {
   }
 }
 
+/**
+ * @category layer maps
+ * @since 2.0.0
+ */
 export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChain", {
   provides: GasPrice,
   lookup: pipe(
