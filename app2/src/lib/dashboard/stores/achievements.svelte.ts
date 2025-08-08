@@ -12,6 +12,7 @@ import { errorStore } from "../stores/errors.svelte"
 export type Achievement = QueryAchievement & {
   category?: { title: string } | null
   subcategory?: { title: string } | null
+  end_at?: string | null
   reward_achievements?: {
     rewards: {
       created_at: string
@@ -34,27 +35,30 @@ const POLL_INTERVAL = 5 * 60_000
 export class AchievementsStore {
   /** Achievements the current user has earned */
   achieved = $state<Option.Option<Array<UserAchievement>>>(Option.none())
-  /** All achievements that can be earned */
+  /** All achievements that can be earned (filtered to exclude expired ones) */
   available = $state<Option.Option<Array<Achievement>>>(Option.none())
 
   /** Polling fiber */
   private pollFiber: Fiber.Fiber<never, Error> | null = null
 
-  /** Achievements organized by chain */
+  /** Achievements organized by chain (also filtered to exclude expired achievements) */
   achievementByChain = $derived(
     Option.flatMap(this.available, (achievements) => {
+      // Filter out expired achievements first
+      const activeAchievements = this.filterActiveAchievements(achievements)
+
       const achievementsMap = new Map(
-        achievements.map((achievement) => [achievement.id, achievement]),
+        activeAchievements.map((achievement) => [achievement.id, achievement]),
       )
 
       // Helper function to find the first achievement in a chain
       const findChainStart = (achievement: Achievement): Achievement => {
-        const previous = achievements.find((a) => a.next === achievement.id)
+        const previous = activeAchievements.find((a) => a.next === achievement.id)
         return previous ? findChainStart(previous) : achievement
       }
 
       return Option.some(
-        achievements.reduce<Array<Array<Achievement>>>((chains, achievement) => {
+        activeAchievements.reduce<Array<Array<Achievement>>>((chains, achievement) => {
           // Skip if achievement is already in any chain
           if (chains.some((chain) => chain.some((a) => a.id === achievement.id))) {
             return chains
@@ -114,6 +118,24 @@ export class AchievementsStore {
   }
 
   /**
+   * Filters achievements to exclude those that have passed their end_at date
+   * @private
+   */
+  private filterActiveAchievements(achievements: Array<Achievement>): Array<Achievement> {
+    const now = new Date()
+    return achievements.filter((achievement) => {
+      // If no end_at date is set, the achievement is always active
+      if (!achievement.end_at) {
+        return true
+      }
+
+      // Parse the end_at date and check if it's in the future
+      const endDate = new Date(achievement.end_at)
+      return endDate > now
+    })
+  }
+
+  /**
    * Loads all available achievements
    */
   private loadAvailableAchievements() {
@@ -121,7 +143,11 @@ export class AchievementsStore {
       pipe(
         getAvailableAchievements(),
         Effect.tap((result) => {
-          this.available = result
+          // Apply filtering to the result before setting it
+          this.available = Option.map(
+            result,
+            (achievements) => this.filterActiveAchievements(achievements),
+          )
           return Effect.void
         }),
         Effect.catchAll((error) => {
