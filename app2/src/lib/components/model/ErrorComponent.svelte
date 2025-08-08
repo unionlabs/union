@@ -37,7 +37,7 @@ import type {
   NoRpcError,
   NotACosmosChainError,
 } from "@unionlabs/sdk/schema"
-import { CryptoError, extractErrorDetails } from "@unionlabs/sdk/utils"
+import { CryptoError, extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { Effect, flow, Match, pipe } from "effect"
 import type { NoSuchElementException, TimeoutException, UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"

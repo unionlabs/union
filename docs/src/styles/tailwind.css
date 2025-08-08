@@ -1,6 +1,67 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer base, starlight, rapide, theme, components, utilities;
+
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* https://starlight.astro.build/guides/css-and-tailwind/#styling-starlight-with-tailwind */
+@theme {
+  --breakpoint-xs : 320px;
+  --breakpoint-2xl: 1400px;
+
+  --font-sans   : "Inter var", system-ui, sans-serif;
+  --font-display: "Inter var", system-ui, sans-serif;
+  --font-mono   : "JetBrains Mono", ui-monospace, monospace;
+
+  --text-md   : 1rem;
+  --leading-md: 1.5rem;
+
+	--radius    : 0.5rem;
+	--radius-xl : calc(var(--radius) + 4px);
+	--radius-lg : var(--radius);
+	--radius-md : calc(var(--radius) - 2px);
+	--radius-sm : calc(var(--radius) - 4px);
+
+	--color-background : var(--background);
+	--color-foreground : var(--foreground);
+	--color-border     : var(--border);
+	--color-input      : var(--input);
+	--color-ring       : var(--ring);
+
+	--color-primary            : var(--primary);
+	--color-primary-foreground : var(--primary-foreground);
+	--color-secondary          : var(--secondary);
+	--color-secondary-foreground : var(--secondary-foreground);
+	--color-destructive            : var(--destructive);
+	--color-destructive-foreground : var(--destructive-foreground);
+	--color-muted            : var(--muted);
+	--color-muted-foreground : var(--muted-foreground);
+	--color-popover            : var(--popover);
+	--color-popover-foreground : var(--popover-foreground);
+	--color-card            : var(--card);
+	--color-card-foreground : var(--card-foreground);
+
+	--color-sidebar                    : var(--sidebar-background);
+	--color-sidebar-foreground         : var(--sidebar-foreground);
+	--color-sidebar-primary            : var(--sidebar-primary);
+	--color-sidebar-primary-foreground : var(--sidebar-primary-foreground);
+	--color-sidebar-accent             : var(--sidebar-accent);
+	--color-sidebar-accent-foreground  : var(--sidebar-accent-foreground);
+	--color-sidebar-border             : var(--sidebar-border);
+	--color-sidebar-ring               : var(--sidebar-ring);
+
+	--color-accent-50  : #fafeff;
+	--color-accent-100 : #f0fcff;
+	--color-accent-200 : #dcf8fe;
+	--color-accent-300 : #c8f4fe;
+	--color-accent-400 : #b4f0fd;
+	--color-accent-500 : #a0ecfd;
+	--color-accent-600 : #5fdfdc;
+	--color-accent-700 : #1ed2fa;
+	--color-accent-800 : #04acd2;
+	--color-accent-900 : #037791;
+	--color-accent-950 : #025c70;
+}
 
 @layer base {
   :root {
@@ -65,11 +126,146 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+:root {
+  --sl-sidebar-width: 24rem;
+  --sl-content-width: 48rem;
+  --sl-text-h1: 1.8125rem;
+  --sl-white: #f9f9f9;
+  --sl-color-white: #f9f9f9;
+  --bg-gray: #1f1f1f1f;
+  --sl-color-black: #0d0d0d;
+  --sl-color-accent: var(--colors-accent-500) !important;
+  --sl-color-accent-high: var(--colors-accent-950) !important;
+  --sl-color-bg-nav: unset;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent: var(--color-accent-500) !important;
+  --sl-accent-color: var(--color-accent-500) !important;
+  --dark-blue: var(--color-accent-950);
+  --sl-color-text-accent: var(--color-accent-700);
+  --sl-color-accent-high: var(--color-accent-950) !important;
+  --sl-color-white: var(--sl-color-gray);
+  --sl-color-bg: var(--sl-white);
+  --sl-color-black: var(--sl-white) !important;
+  --sl-color-bg-sidebar: var(--sl-white);
+  --sl-color-text: var(--sl-color-gray-1);
+  --logo-text-color: #000000;
+  --anchor-icon-filter: invert(0);
+  --nav-selected-color: var(--color-accent-950);
+}
+
+:root[data-theme="dark"] {
+  --sl-color-accent: var(--color-accent-500) !important;
+  --sl-accent-color: var(--color-accent-500) !important;
+  --sl-color-black: var(--color-neutral-900);
+  --dark-blue: var(--color-accent-500);
+  --sl-color-text-accent: var(--color-accent-500);
+  --sl-color-accent-high: var(--color-accent-500) !important;
+  --sl-color-white: var(--sl-white);
+  --sl-color-bg: var(--bg-gray);
+  --sl-rapide-ui-header-bg-color: var(--bg-gray) / 0.8;
+  --sl-color-bg-sidebar: var(--bg-gray) / 0.8;
+  --sl-color-text: var(--sl-white);
+  --logo-text-color: #f9f9f9f9;
+  --anchor-icon-filter: invert(1);
+  --nav-selected-color: #374151;
+  --ec-frm-edBg: #17191e !important;
+}
+
+.sidebar-pane  a[aria-current='page'] {
+  color: var(--sl-color-text-accent);
+}
+
+#sidebar-panel-0 > sl-sidebar-state-persist > ul > li:nth-child(1) > a {
+  font-weight: 600;
+  color: var(--sl-color-white);
+  font-size: var(--sl-text-base);
+}
+
+.sidebar-content {
+  height: 100%;
+  min-height: max-content;
+  padding: 0;
+  flex-direction: column;
+  gap: 1rem;
+  & section {
+    padding: 1rem var(--sl-sidebar-pad-x) 0;
   }
-  body {
-    /* @apply bg-background text-foreground; */
+}
+
+.tablist-wrapper {
+  & ul {
+    padding: 0;
+    padding-top: 3px;
+    margin-bottom: 5px;
   }
+}
+
+a[href="#sidebar-panel-0"],
+a[href="#sidebar-panel-1"] {
+  border: unset;
+}
+
+h1 a,
+h2 a,
+h3 a,
+h4 a {
+  color: var(--logo-text-color) !important;
+}
+
+.social-icons a {
+  color: var(--logo-text-color);
+}
+
+.site-title {
+  gap: 4px;
+  color: white;
+}
+
+code[dir="auto"] {
+  border-radius: 0.25rem;
+}
+
+h1 > a,
+h2 > a,
+h3 > a,
+h4 > a,
+h5 > a {
+  text-decoration: none;
+}
+
+li a[aria-current="page"] {
+  color: var(--nav-selected-color);
+}
+ul[data-astro-source-file$="@lorenzo_lewis/starlight-utils/components/NavLinks.astro"] {
+  margin-left: 10px;
+}
+
+a[aria-current="true"]
+  span[data-astro-source-file$="/starlight/components/TableOfContents/SidebarSublist.astro"] {
+  color: var(--nav-selected-color);
+}
+
+figure figcaption span {
+  letter-spacing: 0.02em !important;
+}
+
+/* controls line height of code snippets in docs */
+.expressive-code figure pre code {
+  line-height: 1.45rem;
+}
+
+.site-title span {
+  color: var(--logo-text-color);
+}
+
+h1 > a {
+  font-size: 2.5rem;
+}
+
+/* override because rapide is overridden by something */
+.right-sidebar starlight-toc li > a {
+  border-radius       : 0;
+  padding-inline-start: calc(1rem * var(--depth) + var(--pad-inline) + 0.35rem);
 }

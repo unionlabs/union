@@ -2,7 +2,7 @@ import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import type { AddressCanonicalBytes, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
-import { ensureHex } from "@unionlabs/sdk/utils"
+import { ensureHex } from "@unionlabs/sdk/utils/index"
 import { Data, Effect, identity, Option } from "effect"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n

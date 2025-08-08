@@ -1,44 +1,61 @@
 _: {
   perSystem =
     {
+      ensureAtRepositoryRoot,
       lib,
       mkCi,
+      pkgs,
       pkgsUnstable,
-      ensureAtRepositoryRoot,
       ...
     }:
     let
+      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
+        inherit pkgs lib;
+      };
       deps = with pkgsUnstable; [
         vips
         pkg-config
         nodePackages_latest.nodejs
+        pnpm_10
       ];
-      packageJSON = lib.importJSON ./package.json;
+      pnpm = pkgs.pnpm_10;
     in
     {
       packages = {
         docs = mkCi false (
-          pkgsUnstable.buildNpmPackage {
-            npmDepsHash = "sha256-bjjcpeDGwsxyISST+5qmtbH+bW7jV8kItuI6d7vTumA=";
-            src = ./.;
-            srcs = [
-              ./.
-              ./../versions/.
-              ./../deployments/.
+          buildPnpmPackage {
+            inherit pnpm;
+            extraSrcs = [
+              ../docs
+              ../ts-sdk
+              ../ts-sdk-evm
+              ../scripts
+              ../versions
+              ../deployments
             ];
-            sourceRoot = "docs";
-            pname = packageJSON.name;
-            inherit (packageJSON) version;
+            hash = "sha256-4PrBVDGU5fS5gLh4IiduolEHuuFK3ZfhoKobY4ZTewA=";
+            packageJsonPath = ./package.json;
+            pnpmWorkspaces = [
+              "docs"
+              "@unionlabs/sdk"
+              "@unionlabs/sdk-evm"
+            ];
             nativeBuildInputs = deps;
             buildInputs = deps;
+            buildPhase = ''
+              runHook preBuild
+              export PUPPETEER_SKIP_DOWNLOAD=1
+              export ASTRO_TELEMETRY_DISABLED=1
+              export NODE_OPTIONS="--no-warnings"
+              pnpm run docgen
+              pnpm --filter=docs build
+              runHook postBuild
+            '';
             installPhase = ''
               mkdir -p $out
-              cp -r ./dist/* $out
+              cp -r ./docs/dist/* $out
             '';
             doDist = false;
-            PUPPETEER_SKIP_DOWNLOAD = 1;
-            ASTRO_TELEMETRY_DISABLED = 1;
-            NODE_OPTIONS = "--no-warnings";
           }
         );
       };

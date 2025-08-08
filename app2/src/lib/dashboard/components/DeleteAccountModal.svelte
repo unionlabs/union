@@ -2,7 +2,7 @@
 import { AccountError } from "$lib/dashboard/errors"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromise } from "$lib/runtime"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { Effect, Option, pipe } from "effect"
 import { errorStore } from "../stores/errors.svelte"
 
