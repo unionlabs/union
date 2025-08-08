@@ -132,6 +132,8 @@
           virtualisation = {
             diskSize = 16 * 1024;
             memorySize = 32 * 1024;
+            # TODO(aeryz): remove this
+            cores = 32;
             arion = {
               backend = "docker";
               projects.galois.settings = galois-arion-project;
@@ -218,9 +220,6 @@
 
               galois.wait_for_console_text('${galoisNode.wait_for_console_text}')
 
-              devnetVoyager.succeed('${voyagerBin} init-fetch union-devnet-1 --config-file-path ${voyagerNode.voyagerConfig}/voyager-config.jsonc');
-              devnetVoyager.succeed('${voyagerBin} init-fetch 32382 --config-file-path ${voyagerNode.voyagerConfig}/voyager-config.jsonc');
-
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 200000") == "true" ]]')
             '';
 
@@ -228,7 +227,7 @@
               (pkgs.lib.throwIf (builtins.hasAttr "devnetUnion" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "voyager" nodes) "voyager node already exists; use a different name")
-                # (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
+                (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
                 (
                   {
                     devnetUnion = unionNode.node;

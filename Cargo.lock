@@ -17165,6 +17165,7 @@ dependencies = [
  "once_cell",
  "protos",
  "rand 0.9.1",
+ "regex",
  "serde",
  "serde-utils",
  "serial_test",

@@ -232,6 +232,7 @@
             }
           ]
         },
+        "max_tx_size": 500000,
         "gas_config": {
           "type": "feemarket",
           "config": {
@@ -299,7 +300,9 @@
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://devnetUnion:26657",
-        "prover_endpoints": ["https://galois.testnet-9.union.build:443"]
+        "prover_endpoints": [
+          "https://galois.testnet-9.union.build:443"
+        ]
       }
     },
     {

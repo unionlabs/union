@@ -16,6 +16,7 @@ concurrent-keyring             = { workspace = true }
 cosmos-client                  = { workspace = true }
 cosmos-sdk-event               = { workspace = true }
 cosmwasm-std                   = { workspace = true }
+regex = "1"
 cw20                           = "2.0.0"
 ethers                         = { version = "1.0.2", default-features = true, features = ["ethers-solc"] }
 hex-literal                    = { workspace = true }
