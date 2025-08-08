@@ -1,3 +1,12 @@
+/**
+ * @title Send Funds Holesky → Sepolia
+ * @description Example transfer from Holesky to Sepolia.
+ * @badge ✓:success
+ */
+/// <reference types="effect" />
+/// <reference types="viem" />
+// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
+// @paths: {"@unionlabs/sdk-evm": ["../ts-sdk-evm/src"], "@unionlabs/sdk-evm/*": ["../ts-sdk-evm/src/*"]}
 // @ts-ignore
 if (typeof BigInt.prototype.toJSON !== "function") {
   // @ts-ignore
@@ -6,13 +15,7 @@ if (typeof BigInt.prototype.toJSON !== "function") {
   }
 }
 // ---cut---
-import {
-  TokenOrder,
-  ZkgmClient,
-  ZkgmClientRequest,
-  ZkgmClientResponse,
-  ZkgmIncomingMessage,
-} from "@unionlabs/sdk"
+import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
 import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 // import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
@@ -92,6 +95,6 @@ const program = Effect.gen(function*() {
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
-Effect.runPromise(program)
+Effect.runPromise(program as unknown as any)
   .then(console.log)
   .catch(console.error)
