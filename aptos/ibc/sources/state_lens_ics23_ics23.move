@@ -120,6 +120,7 @@ module ibc::state_lens_ics23_ics23_lc {
 
     // Function to mock the creation of a client
     public(friend) fun create_client(
+        _: &signer,
         ibc_signer: &signer,
         client_id: u32,
         client_state_bytes: vector<u8>,
@@ -170,8 +171,8 @@ module ibc::state_lens_ics23_ics23_lc {
     }
 
     public(friend) fun update_client(
-        client_id: u32, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) acquires State {
+        client_id: u32, client_msg: vector<u8>, _relayer: address
+    ): (vector<u8>, vector<u8>, u64) acquires State {
         let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let header = decode_header(client_msg);
@@ -206,14 +207,14 @@ module ibc::state_lens_ics23_ics23_lc {
 
         (
             encode_client_state(&state.client_state),
-            vector[encode_consensus_state(&new_consensus_state)],
-            vector[l2_height]
+            encode_consensus_state(&new_consensus_state),
+            l2_height
         )
     }
 
     // Checks whether `misbehaviour` is valid and freezes the client
-    public(friend) fun report_misbehaviour(
-        _client_id: u32, _misbehaviour: vector<u8>
+    public(friend) fun misbehaviour(
+        _client_id: u32, _misbehaviour: vector<u8>, _relayer: address
     ) {}
 
     public(friend) fun verify_membership(
