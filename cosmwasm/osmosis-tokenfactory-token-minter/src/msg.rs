@@ -2,6 +2,13 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CosmosMsg};
 use enumorph::Enumorph;
 use token_factory_api::{BurnTokensMsg, ChangeAdminMsg, MintTokensMsg, TokenFactoryMsg};
+use ucs03_zkgm_token_minter_api::Metadata;
+
+#[cw_serde]
+pub struct OsmosisTokenMinterInitializer {
+    pub admin: String,
+    pub metadata: Metadata,
+}
 
 #[cosmwasm_schema::cw_serde]
 #[derive(Enumorph)]

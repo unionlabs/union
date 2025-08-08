@@ -10,8 +10,8 @@ use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
-    new_secure_wrapped_token_event, ExecuteMsg, LocalTokenMsg, MetadataResponse,
-    PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenMsg,
+    encode_metadata, new_wrapped_token_event, ExecuteMsg, LocalTokenMsg, MetadataResponse,
+    PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenKind, WrappedTokenMsg,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
@@ -76,6 +76,12 @@ pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
     Ok(Response::new())
 }
 
+#[cw_serde]
+pub struct Cw20TokenMinterImplementation {
+    pub admin: String,
+    pub code_id: u64,
+}
+
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
@@ -99,12 +105,16 @@ pub fn execute(
                 implementation,
                 initializer,
             } => {
-                let (admin, code_id) =
-                    <(String, u64)>::abi_decode_params_validate(implementation.as_ref()).unwrap();
+                let cw20_token_minter_implementation =
+                    from_json::<Cw20TokenMinterImplementation>(&implementation)?;
+                let admin = deps
+                    .api
+                    .addr_validate(&cw20_token_minter_implementation.admin)?;
 
                 let cw20_admin = CW20_ADMIN.load(deps.storage)?;
-                let is_cw20_base_code_id = code_id == config.cw20_base_code_id;
-                let is_cw20_admin = admin == cw20_admin.as_str();
+                let is_cw20_base_code_id =
+                    cw20_token_minter_implementation.code_id == config.cw20_base_code_id;
+                let is_cw20_admin = admin == cw20_admin;
                 let is_local_minter =
                     from_json::<UpgradeMsg<cw20_base::msg::InstantiateMsg, Empty>>(&initializer)
                         .map(|msg| match msg {
@@ -121,7 +131,8 @@ pub fn execute(
                 let is_secure_wrapped_token =
                     is_cw20_base_code_id && is_cw20_admin && is_local_minter;
 
-                let metadata_image = calculate_metadata_image(implementation, initializer.clone());
+                let encoded_metadata = encode_metadata(&implementation, &initializer);
+                let metadata_image = compute_metadata_image(&encoded_metadata);
 
                 let path = U256::from_be_bytes::<{ U256::BYTES }>(
                     path.as_slice().try_into().expect("correctly encoded; qed"),
@@ -143,99 +154,36 @@ pub fn execute(
 
                 let migrate_msg = WasmMsg::Migrate {
                     contract_addr: subdenom.clone(),
-                    new_code_id: code_id,
+                    new_code_id: cw20_token_minter_implementation.code_id,
                     msg: initializer,
                 };
 
                 let update_admin_msg = WasmMsg::UpdateAdmin {
                     contract_addr: subdenom.clone(),
-                    admin,
+                    admin: admin.into(),
                 };
 
-                let mut response = Response::new()
+                let kind = if is_secure_wrapped_token {
+                    WrappedTokenKind::Protocol
+                } else {
+                    WrappedTokenKind::ThirdParty
+                };
+
+                Response::new()
                     .add_message(instantiate_msg)
                     .add_message(migrate_msg)
-                    .add_message(update_admin_msg);
-
-                if is_secure_wrapped_token {
-                    response = response.add_event(new_secure_wrapped_token_event(
-                        channel_id,
+                    .add_message(update_admin_msg)
+                    .add_event(new_wrapped_token_event(
                         path,
+                        channel_id,
                         token.to_vec(),
                         &subdenom,
-                    ));
-                }
-
-                response
-            }
-            WrappedTokenMsg::CreateDenom {
-                metadata,
-                subdenom,
-                path,
-                channel_id,
-                token,
-            } => {
-                let token_name = if metadata.name.is_empty() {
-                    restrict_name(subdenom.clone())
-                } else {
-                    restrict_name(metadata.name)
-                };
-                let token_symbol = if metadata.symbol.is_empty() {
-                    restrict_symbol(subdenom.clone())
-                } else {
-                    restrict_symbol(metadata.symbol)
-                };
-                let cw20_admin = CW20_ADMIN.load(deps.storage)?;
-                let path = U256::from_be_bytes::<{ U256::BYTES }>(
-                    path.as_slice().try_into().expect("correctly encoded; qed"),
-                );
-                Response::new()
-                    .add_message(
-                        // Instantiating the dummy contract first to be able to get the deterministic address
-                        WasmMsg::Instantiate2 {
-                            admin: Some(env.contract.address.to_string()),
-                            code_id: config.dummy_code_id,
-                            label: subdenom.clone(),
-                            msg: to_json_binary(&cosmwasm_std::Empty {})?,
-                            funds: vec![],
-                            salt: Binary::new(calculate_salt(path, channel_id, token.to_vec())),
-                        },
-                    )
-                    .add_message(
-                        // Then migrating to the actual `cw20_base` contract. Note that this contract has a custom
-                        // migrate entrypoint where it expects `InstantiateMsg` and calls the its `instantiate` function
-                        // in the `migrate` function
-                        WasmMsg::Migrate {
-                            contract_addr: subdenom.clone(),
-                            new_code_id: config.cw20_base_code_id,
-                            msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
-                                cw20_base::msg::InstantiateMsg {
-                                    // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
-                                    name: token_name,
-                                    symbol: token_symbol,
-                                    decimals: metadata.decimals,
-                                    initial_balances: vec![],
-                                    mint: Some(cw20::MinterResponse {
-                                        minter: env.contract.address.to_string(),
-                                        cap: None,
-                                    }),
-                                    marketing: None,
-                                },
-                            ))?,
-                        },
-                    )
-                    .add_message(WasmMsg::UpdateAdmin {
-                        // We temporarily set ourselves as admin previously to be able to migrate the contract.
-                        // Updating the admin to the correct admin finally.
-                        contract_addr: subdenom.clone(),
-                        admin: cw20_admin.to_string(),
-                    })
-                    .add_event(new_secure_wrapped_token_event(
-                        channel_id,
-                        path,
-                        token.to_vec(),
-                        &subdenom,
+                        encoded_metadata,
+                        kind,
                     ))
+            }
+            WrappedTokenMsg::CreateDenom { .. } => {
+                return Err(Error::TokenOrderV1DeploymentIsDeprecated);
             }
             WrappedTokenMsg::MintTokens {
                 denom,
@@ -470,90 +418,6 @@ fn calculate_salt_v2(
     .to_vec()
 }
 
-fn calculate_metadata_image(implementation: Binary, initializer: Binary) -> H256 {
-    keccak256((implementation.to_vec(), initializer.to_vec()).abi_encode_params())
-}
-
-fn restrict_name(name: String) -> String {
-    if name.len() > 50 {
-        let name = &name[(name.len() - 50)..];
-        let split = name.split('/').collect::<Vec<&str>>();
-        split[split.len() - 1].to_string()
-    } else {
-        name
-    }
-}
-
-/// Restricts the token symbol by the following rules:
-/// 1. symbol.len() > 12:
-///    Since the symbol can be `factory/ADDR/real_denom`, we try to get the `real_denom` part.
-///    Then do sanity check to the characters. And postfix to match the length 3.
-/// 2. symbol.len() <= 12:
-///    We only do sanity checks and postfix to match the length 3.
-fn restrict_symbol(symbol: String) -> String {
-    if symbol.len() > 12 {
-        // truncate the symbol to get the last 12 chars
-        let symbol = &symbol[(symbol.len() - 12)..];
-        // split it by `/` incase this is a factory token and only get the last part
-        let split = symbol.split('/').collect::<Vec<&str>>();
-        // filter the unwanted chars
-        let symbol = split[split.len() - 1]
-            .chars()
-            .filter(|c| *c == '-' || c.is_ascii_alphabetic())
-            .collect::<String>();
-        // filtering might make the token length < 3, so postfix the denom with '-'
-        format!("{symbol:-<3}")
-    } else {
-        let symbol = symbol
-            .chars()
-            .filter(|c| *c == '-' || c.is_ascii_alphabetic())
-            .collect::<String>();
-        // filtering might make the token length < 3, so postfix the denom with '-'
-        format!("{symbol:-<3}")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_restrict_name() {
-        assert_eq!(&restrict_symbol("muno".into()), "muno");
-        assert_eq!(
-            &restrict_name(
-                "factory/asdelfnaslednunion12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown".into()
-            ),
-            "clown"
-        );
-        assert_eq!(
-            &restrict_name(
-                "alsednfelasndfelasndfleansdfelnasdlefnasledfnleasdnfleasndflenasdfelnasledfelasdnalsednfelasndfelasndfleansdfelnasdflen"
-                    .into()
-            ),
-            "asledfelasdnalsednfelasndfelasndfleansdfelnasdflen"
-        );
-    }
-
-    #[test]
-    fn test_restrict_symbol() {
-        assert_eq!(&restrict_symbol("muno".into()), "muno");
-        assert_eq!(
-            &restrict_symbol("factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown".into()),
-            "clown"
-        );
-        assert_eq!(
-            &restrict_symbol(
-                "alsednfelasndfelasndfleansdfelnasdlefnasledfnleasdnfleasndflenasdfelnasledfelasdn"
-                    .into()
-            ),
-            "asledfelasdn"
-        );
-        assert_eq!(
-            &restrict_symbol("factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/a12c".into()),
-            "ac-"
-        );
-        assert_eq!(restrict_symbol("u.".into()), "u--");
-        assert_eq!(restrict_symbol("uasd..__".into()), "uasd");
-    }
+fn compute_metadata_image(metadata: &[u8]) -> H256 {
+    keccak256(metadata)
 }

@@ -9,6 +9,7 @@ interface ISolver {
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,

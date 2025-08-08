@@ -160,6 +160,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         address caller,
         address relayer,
         bytes calldata relayerMsg,
+        uint256 path,
         address quoteToken,
         address payable receiver,
         TokenOrderV2 calldata order,
@@ -237,7 +238,15 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                         type(uint16).max,
                         abi.encodeCall(
                             ISolver.solve,
-                            (packet, order, caller, relayer, relayerMsg, intent)
+                            (
+                                packet,
+                                order,
+                                path,
+                                caller,
+                                relayer,
+                                relayerMsg,
+                                intent
+                            )
                         )
                     );
                     if (solverFilled) {
@@ -312,11 +321,12 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
             );
             tokenOrigin[wrappedToken] =
                 ZkgmLib.updateChannelPath(path, channelId);
-            metadataImageOf[wrappedToken] =
-                EfficientHashLib.hash(ZkgmLib.encodeTokenMetadata(metadata));
 
-            // If we deploy a ZkgmERC20 with the zkgm authority/minter, yield an
-            // event stating the token is a secure wrapped representation.
+            bytes memory encodedMetadata = ZkgmLib.encodeTokenMetadata(metadata);
+            metadataImageOf[wrappedToken] =
+                EfficientHashLib.hash(encodedMetadata);
+
+            uint8 kind = ZkgmLib.WRAPPED_TOKEN_KIND_THIRD_PARTY;
             if (implementation == address(ERC20_IMPL)) {
                 try this.decodeZkgmERC20InitializeCall(metadata.initializer)
                 returns (
@@ -330,12 +340,19 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                         tokenAuthority == authority()
                             && tokenMinter == address(this)
                     ) {
-                        emit ZkgmLib.NewSecureWrappedToken(
-                            channelId, path, unwrappedToken, wrappedToken
-                        );
+                        kind = ZkgmLib.WRAPPED_TOKEN_KIND_PROTOCOL;
                     }
                 } catch {}
             }
+
+            emit ZkgmLib.CreateWrappedToken(
+                path,
+                channelId,
+                unwrappedToken,
+                wrappedToken,
+                encodedMetadata,
+                kind
+            );
         }
     }
 
@@ -401,7 +418,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 wrappedToken,
                 wrappedTokenSalt,
                 metadata,
-                true
+                false
             );
             return _protocolFillMint(
                 ibcPacket.destinationChannelId,
@@ -457,6 +474,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 caller,
                 relayer,
                 relayerMsg,
+                path,
                 quoteToken,
                 receiver,
                 order,
@@ -549,6 +567,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                     caller,
                     relayer,
                     relayerMsg,
+                    path,
                     quoteToken,
                     receiver,
                     order,

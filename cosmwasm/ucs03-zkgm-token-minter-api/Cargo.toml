@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+alloy             = { workspace = true, features = ["sol-types"] }
 alloy-primitives  = { workspace = true }
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true, features = ["std"] }

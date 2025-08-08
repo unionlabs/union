@@ -158,6 +158,7 @@ pub enum SolverMsg {
     DoSolve {
         packet: Packet,
         order: CwTokenOrderV2,
+        path: Uint256,
         caller: Addr,
         relayer: Addr,
         relayer_msg: Bytes,

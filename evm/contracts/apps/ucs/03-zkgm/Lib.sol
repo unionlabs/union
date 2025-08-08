@@ -41,6 +41,9 @@ library ZkgmLib {
     uint8 public constant OP_WITHDRAW_STAKE = 0x06;
     uint8 public constant OP_WITHDRAW_REWARDS = 0x07;
 
+    uint8 public constant WRAPPED_TOKEN_KIND_PROTOCOL = 0x00;
+    uint8 public constant WRAPPED_TOKEN_KIND_THIRD_PARTY = 0x01;
+
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
     uint8 public constant INSTR_VERSION_2 = 0x02;
@@ -97,11 +100,13 @@ library ZkgmLib {
     error ErrMustBeWrap();
     error ErrStakingRewardNotWithdrawable();
 
-    event NewSecureWrappedToken(
-        uint32 indexed channelId,
+    event CreateWrappedToken(
         uint256 path,
+        uint32 indexed channelId,
         bytes indexed baseToken,
-        address indexed quoteToken
+        address indexed quoteToken,
+        bytes metadata,
+        uint8 kind
     );
 
     function encodeTokenOrderAck(
