@@ -28,15 +28,17 @@ _: {
             extraSrcs = [
               ../docs
               ../ts-sdk
+              ../ts-sdk-evm
               ../scripts
               ../versions
               ../deployments
             ];
-            hash = "sha256-wLKUGyZ75KMLzoHTncyQ17BYzJFtLEB3xKqMTyrfgOg=";
+            hash = "sha256-4PrBVDGU5fS5gLh4IiduolEHuuFK3ZfhoKobY4ZTewA=";
             packageJsonPath = ./package.json;
             pnpmWorkspaces = [
               "docs"
               "@unionlabs/sdk"
+              "@unionlabs/sdk-evm"
             ];
             nativeBuildInputs = deps;
             buildInputs = deps;

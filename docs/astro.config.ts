@@ -293,9 +293,9 @@ export default defineConfig({
                   link: "/integrations/typescript",
                 },
                 {
-                  label: "Examples",
+                  label: "Examples (EVM)",
                   autogenerate: {
-                    directory: "/integrations/typescript/examples",
+                    directory: "/integrations/typescript/examples/evm",
                   },
                 },
               ],
@@ -367,17 +367,18 @@ export default defineConfig({
         },
       ],
       plugins: [
-        // examplesToPages({
-        //   baseDir: "../ts-sdk/examples",
-        //   entryPoints: [
-        //     "../ts-sdk/examples/UCS03/*.ts",
-        //     "../ts-sdk/examples/Sui/*.ts",
-        //     "../ts-sdk/examples/EVM/*.ts",
-        //     "../ts-sdk/examples/Cosmos/*.ts",
-        //   ],
-        //   outDir: "./src/content/docs/integrations/typescript/examples",
-        //   clean: true,
-        // }),
+        examplesToPages({
+          baseDir: "../ts-sdk-evm/examples",
+          entryPoints: [
+            // "../ts-sdk/examples/UCS03/*.ts",
+            // "../ts-sdk/examples/Sui/*.ts",
+            // "../ts-sdk/examples/EVM/*.ts",
+            // "../ts-sdk/examples/Cosmos/*.ts",
+            "../ts-sdk-evm/examples/*.ts",
+          ],
+          outDir: "./src/content/docs/integrations/typescript/examples/evm",
+          clean: true,
+        }),
         starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {
