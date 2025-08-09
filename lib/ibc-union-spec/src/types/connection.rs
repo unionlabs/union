@@ -13,13 +13,21 @@ use crate::types::{ClientId, ConnectionId};
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
 pub struct Connection {
+    /// The state of the connection.
+    ///
+    /// See [`ConnectionState`] for more information on the possible states of a connection and the connection handshake.
     pub state: ConnectionState,
+    /// The client id of this connection on this chain.
     pub client_id: ClientId,
+    /// The client id of this connection on the counterparty chain.
     pub counterparty_client_id: ClientId,
-    // can be None if the connection is in the init state
+    /// The connection id of this connection on the counterparty chain.
+    ///
+    /// NOTE: This will be None if the connection is in the [`ConnectionState::Init`] state.
     pub counterparty_connection_id: Option<ConnectionId>,
 }
 
+// TODO: Rather than having counterparty_connection_id be a nullable field, it may make more sense to represent Connection like this (with accessor methods for the fields for ease of use):
 // pub enum Connection {
 //     Init {
 //         client_id: ClientId,
@@ -37,6 +45,16 @@ pub struct Connection {
 //     },
 // }
 
+/// The state of a [`Connection`].
+///
+/// During the connection handshake, this will progress from init -> tryopen -> open:
+///
+/// | A        | B           | state A | state B |
+/// | -------- | ----------- | ------- | ------- |
+/// | OpenInit |             | init    | -       |
+/// |          | OpenTry     | init    | try     |
+/// | OpenAck  |             | open    | try     |
+/// |          | OpenConfirm | open    | open    |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
