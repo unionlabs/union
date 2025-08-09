@@ -54,7 +54,7 @@ describe("TokenOrder", () => {
       })
 
       const encoded = yield* order.encode
-      const decoded = yield* Schema.decode(Ucs03.InstructionFromHex)(encoded)
+      const decoded = yield* Schema.decode(Ucs03.Ucs03FromHex)(encoded)
 
       console.log({ order, encoded, decoded })
 

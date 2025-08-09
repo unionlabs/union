@@ -1,5 +1,5 @@
 /**
- * This module interfaces with the indexer via the GraphQL protocol.
+ * This module interfaces with the indexer to source data.
  *
  * @since 2.0.0
  */
@@ -166,7 +166,7 @@ export class GraphQLRequest extends S.TaggedRequest<GraphQLRequest>()("GraphQLRe
  * @category services
  * @since 2.0.0
  */
-export class GraphQL extends Effect.Service<GraphQL>()("@unionlabs/sdk/GraphQL", {
+export class Indexer extends Effect.Service<Indexer>()("@unionlabs/sdk/Indexer", {
   scoped: Effect.gen(function*() {
     const { timeToLive } = yield* GraphQLCache
 
@@ -310,14 +310,14 @@ export class GraphQL extends Effect.Service<GraphQL>()("@unionlabs/sdk/GraphQL",
   ],
 }) {
   static Test = Layer.effect(
-    GraphQL,
+    Indexer,
     Effect.gen(function*() {
       // TODO: Make meaningfully invertible GQL mocking solution.
       // const fc = yield* Effect.promise(() => import(`effect/FastCheck`))
       // const Arbitrary = yield* Effect.promise(() => import("effect/Arbitrary"))
       // const Schema = yield* Effect.promise(() => import("effect/Schema"))
 
-      return new GraphQL({
+      return new Indexer({
         fetch: absurd as unknown as any,
         updateEndpoint: absurd as unknown as any,
         getEndpoint: absurd as unknown as any,

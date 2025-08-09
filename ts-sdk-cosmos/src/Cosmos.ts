@@ -6,15 +6,15 @@
 import { CosmWasmClient, ExecuteResult, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { FetchHttpClient } from "@effect/platform"
 import { HttpClient, HttpClientRequest } from "@effect/platform"
+import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import * as Ucs05 from "@unionlabs/sdk/Ucs05"
+import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe } from "effect"
-import * as O from "effect/Option"
-import { encodeAbiParameters, type Hex } from "viem"
-import * as Ucs03 from "./Ucs03.js"
-import * as Utils from "./Utils.js"
-
 import { NonEmptyReadonlyArray } from "effect/Array"
-import { AddressCosmosDisplay } from "./schema/address.js"
-import { extractErrorDetails } from "./utils/extract-error-details.js"
+import * as O from "effect/Option"
+import * as ParseResult from "effect/ParseResult"
+import * as S from "effect/Schema"
+import { encodeAbiParameters, type Hex } from "viem"
 
 /**
  * @category models
@@ -56,7 +56,7 @@ const clientLayer = <
     pipe(
       Effect.tryPromise({
         try: () => CosmWasmClient.connect(...options),
-        catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
+        catch: error => new ClientError({ cause: Utils.extractErrorDetails(error as Error) }),
       }),
       Effect.map((client) => ({ client })),
       Effect.timeout("10 seconds"),
@@ -76,7 +76,7 @@ const signingClientLayer = <
     pipe(
       Effect.tryPromise({
         try: () => SigningCosmWasmClient.connectWithSigner(...options),
-        catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
+        catch: error => new ClientError({ cause: Utils.extractErrorDetails(error as Error) }),
       }),
       Effect.map((client) => ({ client })),
       Effect.timeout("10 seconds"),
@@ -255,7 +255,8 @@ export const queryContract = <T = unknown>(
             const result = await client.queryContractSmart(contractAddress, queryMsg)
             return result as T
           },
-          catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
+          catch: error =>
+            new QueryContractError({ cause: Utils.extractErrorDetails(error as Error) }),
         }),
       )
     ),
@@ -296,7 +297,7 @@ export const executeContract = (
           ),
         catch: error =>
           new ExecuteContractError({
-            cause: extractErrorDetails(error as Error),
+            cause: Utils.extractErrorDetails(error as Error),
             message: (error as Error).message,
           }),
       }),
@@ -314,7 +315,7 @@ export function getChainHeight(
 ) {
   return Effect.tryPromise({
     try: () => client.getHeight(),
-    catch: (err) => new GetHeightError({ cause: extractErrorDetails(err as Error) }),
+    catch: (err) => new GetHeightError({ cause: Utils.extractErrorDetails(err as Error) }),
   }).pipe(
     Effect.timeout("10 seconds"),
     Effect.retry({ times: 5 }),
@@ -336,7 +337,7 @@ export const getBalanceNow = Effect.fn("getBalanceNow")((
     Effect.andThen(({ client }) =>
       Effect.tryPromise({
         try: () => client.getBalance(address, denom),
-        catch: (err) => new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
+        catch: (err) => new GetBalanceError({ cause: Utils.extractErrorDetails(err as Error) }),
       })
     ),
   )
@@ -594,15 +595,15 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
  * @since 2.0.0
  */
 export const readCw20Allowance = (
-  contract: AddressCosmosDisplay,
-  owner: AddressCosmosDisplay,
-  spender: AddressCosmosDisplay,
+  contract: Ucs05.CosmosDisplay,
+  owner: Ucs05.CosmosDisplay,
+  spender: Ucs05.CosmosDisplay,
 ) =>
   pipe(
-    queryContract<Cw20AllowanceResponse>(contract, {
+    queryContract<Cw20AllowanceResponse>(contract.address, {
       allowance: {
-        owner: owner,
-        spender: spender,
+        owner: owner.address,
+        spender: spender.address,
       },
     }),
     Effect.map(x => x.allowance),
@@ -721,18 +722,20 @@ export const predictQuoteToken = (baseToken: string) =>
  * @since 2.0.0
  */
 export const sendInstruction = (
-  instruction: Ucs03.Instruction,
+  instruction: Ucs03.Ucs03,
   address: string,
   funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
 ): Effect.Effect<
   ExecuteResult,
-  ExecuteContractError | Utils.CryptoError,
+  ExecuteContractError | Utils.CryptoError | ParseResult.ParseError,
   SigningClient | ChannelSource
 > =>
   Effect.gen(function*() {
     const sourceConfig = yield* ChannelSource
     const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* Utils.generateSalt("cosmos")
+
+    const operand = yield* S.encode(Ucs03.Ucs03FromHex)(instruction)
 
     return yield* executeContract(
       address,
@@ -746,7 +749,7 @@ export const sendInstruction = (
           instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
             instruction.version,
             instruction.opcode,
-            Ucs03.encode(instruction),
+            operand,
           ]),
         },
       },

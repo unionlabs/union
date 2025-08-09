@@ -187,11 +187,11 @@ export * as ZkgmIncomingMessage from "./ZkgmIncomingMessage.js"
 export * as ZkgmClientResponse from "./ZkgmClientResponse.js"
 
 /**
- * This module interfaces with the indexer via the GraphQL protocol.
+ * This module interfaces with the indexer to source data.
  *
  * @since 2.0.0
  */
-export * as GraphQL from "./GraphQL.js"
+export * as Indexer from "./Indexer.js"
 
 /**
  * This module contains constant data.

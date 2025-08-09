@@ -420,7 +420,7 @@ const encode = (self: TokenOrder.TokenOrder): Effect.Effect<Hex, ParseError, nev
         self.kind,
         self.metadata || "0x",
       ]),
-      Schema.encode(Ucs03.InstructionFromHex),
+      Schema.encode(Ucs03.Ucs03FromHex),
       Effect.map(Str.toLowerCase),
     )
   })

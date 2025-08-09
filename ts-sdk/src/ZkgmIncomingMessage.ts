@@ -3,8 +3,9 @@
  *
  * @since 2.0.0
  */
-import { Data, Effect, Inspectable, Stream } from "effect"
+import { Brand, Data, Effect, Inspectable, Stream } from "effect"
 import { constFalse, constTrue } from "effect/Function"
+import { Hex } from "./schema/hex.js"
 
 /**
  * @since 2.0.0
@@ -34,15 +35,8 @@ export type LifecycleEvent = Data.TaggedEnum<{
   // | { _tag: "Finalised"        ; height: bigint ; success: boolean }
   // | { _tag: "Failed"           ; reason: string }
   // evm
-  EvmWriteContractInProgress: {}
-  EvmWriteContractComplete: {}
-  EvmWaitForSafeWalletHash: {}
-  EvmTransactionReceiptInProgress: {}
-  EvmTransactionReceiptComplete: {}
-
+  EvmTransactionReceiptComplete: { hash: Hex & Brand.Brand<"Hash"> }
   // cosmos
-  CosmosWriteContractInProgress: {}
-  CosmosWriteContractComplete: {}
   // agnostic
   // Broadcast: {}
   // Receipt: {}

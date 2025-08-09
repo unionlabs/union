@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Predicate, Stream } from "effect"
+import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Stream } from "effect"
 import { dual } from "effect/Function"
 import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
@@ -7,7 +7,7 @@ import type * as ClientError from "../ZkgmClientError.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"
 import type * as ClientResponse from "../ZkgmClientResponse.js"
 import * as IncomingMessage from "../ZkgmIncomingMessage.js"
-import * as internalRequest from "./zkgmClientRequest.js"
+// import * as internalRequest from "./zkgmClientRequest.js"
 import * as internalResponse from "./zkgmClientResponse.js"
 
 /** @internal */
@@ -36,8 +36,8 @@ const ClientProto = {
   },
 }
 
-const isClient = (u: unknown): u is Client.ZkgmClient.With<unknown, unknown> =>
-  Predicate.hasProperty(u, TypeId)
+// const isClient = (u: unknown): u is Client.ZkgmClient.With<unknown, unknown> =>
+//   Predicate.hasProperty(u, TypeId)
 
 interface ZkgmClientImpl<E, R> extends Client.ZkgmClient.With<E, R> {
   readonly preprocess: Client.ZkgmClient.Preprocess<E, R>
@@ -122,8 +122,8 @@ class InterruptibleResponse implements ClientResponse.ZkgmClientResponse {
     return this.original.request
   }
 
-  get status() {
-    return this.original.status
+  get txHash() {
+    return this.original.txHash
   }
 
   get stream() {

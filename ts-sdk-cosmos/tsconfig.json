@@ -1,0 +1,27 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": [],
+  "references": [
+    {
+      "path": "tsconfig.examples.json"
+    },
+    {
+      "path": "tsconfig.src.json"
+    },
+    {
+      "path": "tsconfig.test.json"
+    }
+  ],
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      },
+      {
+        "name": "gql.tada/ts-plugin",
+        "schema": "./src/generated/schema.graphql",
+        "tadaOutputLocation": "./src/generated/graphql-env.d.ts"
+      }
+    ]
+  }
+}

@@ -1289,6 +1289,14 @@ export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
+export class RealInstruction
+  extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/Ucs03/RealInstruction", {
+    opcode: S.NonNegativeInt,
+    version: S.NonNegativeInt,
+    operand: Operand,
+  })
+{}
+
 /**
  * @category schemas
  * @since 2.0.0
@@ -1560,4 +1568,21 @@ export const InstructionFromHex: S.Union<[
     TokenOrderFromHex,
     ForwardFromHex,
     CallFromHex,
+  )
+
+export const asInstruction = (instruction: Instruction) =>
+  pipe(
+    S.encode(InstructionFromHex)(instruction),
+    Effect.flatMap((operand) =>
+      Effect.try(() =>
+        encodeAbiParameters(
+          InstructionAbi(),
+          [
+            instruction.version,
+            instruction.opcode,
+            operand,
+          ] as const,
+        )
+      )
+    ),
   )

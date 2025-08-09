@@ -57,7 +57,7 @@ export class RequestError extends Error.TypeIdError(TypeId, "RequestError")<{
 export class ResponseError extends Error.TypeIdError(TypeId, "ResponseError")<{
   readonly request: ClientRequest.ZkgmClientRequest
   readonly response: ClientResponse.ZkgmClientResponse
-  readonly reason: "StatusCode" | "Decode" | "EmptyBody"
+  readonly reason: "SwitchChain" | "OnChain"
   readonly cause?: unknown
   readonly description?: string
 }> {

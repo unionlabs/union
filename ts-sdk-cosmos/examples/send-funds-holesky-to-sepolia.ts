@@ -70,15 +70,9 @@ const program = Effect.gen(function*() {
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
-  // NOTE: 1. switch chain is assumed
-  // NOTE: 2. write in progress
-
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
 
-  // NOTE: 3. write complete (with tx hash)
-
   // const completion = yield* response.waitFor(ZkgmIncomingMessage.isComplete)
-  // NOTE: 4. tx complete
 
   yield* Effect.log("TX Hash:", response.txHash)
 }).pipe(

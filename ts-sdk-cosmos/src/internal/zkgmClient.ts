@@ -10,10 +10,10 @@ import { pipe } from "effect"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
 import * as Stream from "effect/Stream"
-import * as Evm from "../Evm.js"
+import * as Cosmos from "../Cosmos.js"
 
 const fromWallet = (
-  opts: { client: Evm.Evm.PublicClient; wallet: Evm.Evm.WalletClient },
+  opts: { client: Cosmos.Cosmos.PublicClient; wallet: Cosmos.Cosmos.SigningClient },
 ): Client.ZkgmClient =>
   Client.make((request, signal, fiber) =>
     Effect.gen(function*() {
@@ -21,49 +21,29 @@ const fromWallet = (
         wallet,
         client,
       } = opts
-      const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
-      const salt = yield* Utils.generateSalt("evm").pipe(
-        Effect.mapError((cause) =>
-          new ClientError.RequestError({
-            reason: "Transport",
-            request,
-            cause,
-            description: "crypto error",
-          })
-        ),
-      )
 
-      const operand = yield* pipe(
-        request.instruction.encode,
-        Effect.mapError((cause) =>
-          new ClientError.RequestError({
-            reason: "Transport",
-            request,
-            cause,
-            description: "instruction encode",
-          })
-        ),
-      )
+      const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
 
-      const sendInstruction = Evm.writeContract({
-        account: wallet.account,
-        abi: Ucs03.Abi,
-        chain: wallet.chain,
-        functionName: "send",
-        address: request.ucs03Address,
-        args: [
-          request.channelId,
-          0n,
-          timeoutTimestamp,
-          salt,
-          {
-            opcode: request.instruction.opcode,
-            version: request.instruction.version,
-            operand,
+      const salt = yield* Utils.generateSalt("cosmos")
+
+      return yield* Cosmos.executeContract(
+        address,
+        sourceConfig.ucs03address,
+        {
+          send: {
+            channel_id: sourceConfig.channelId,
+            timeout_height: "0",
+            timeout_timestamp,
+            salt,
+            instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
+              instruction.version,
+              instruction.opcode,
+              Ucs03.encode(instruction),
+            ]),
           },
-        ],
-      }).pipe(
-        Effect.tap((x) => Effect.log("txhash", x)),
+        },
+        funds,
+      ).pipe(
         Effect.mapError((cause) =>
           new ClientError.RequestError({
             reason: "Transport",
