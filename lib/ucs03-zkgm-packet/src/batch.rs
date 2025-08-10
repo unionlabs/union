@@ -1,8 +1,14 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::{INSTR_VERSION_0, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER};
+use ucs03_zkgm::com::{
+    INSTR_VERSION_0, OP_CALL, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS,
+    OP_WITHDRAW_STAKE,
+};
 
-use crate::{call::Call, forward::Forward, token_order::TokenOrder, Result};
+use crate::{
+    call::Call, stake::Stake, token_order::TokenOrder, unstake::Unstake,
+    withdraw_rewards::WithdrawRewards, withdraw_stake::WithdrawStake, Result,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 pub enum Batch {
@@ -41,7 +47,10 @@ impl BatchV0 {
 pub enum BatchableInstructionV0 {
     TokenOrder(TokenOrder),
     Call(Call),
-    Forward(Forward),
+    Stake(Stake),
+    Unstake(Unstake),
+    WithdrawStake(WithdrawStake),
+    WithdrawRewards(WithdrawRewards),
 }
 
 impl BatchableInstructionV0 {
@@ -57,7 +66,14 @@ impl BatchableInstructionV0 {
                 TokenOrder::decode(instruction.version, instruction.operand).map(Into::into)
             }
             OP_CALL => Call::decode(instruction.version, instruction.operand).map(Into::into),
-            OP_FORWARD => Forward::decode(instruction.version, instruction.operand).map(Into::into),
+            OP_STAKE => Stake::decode(instruction.version, instruction.operand).map(Into::into),
+            OP_UNSTAKE => Unstake::decode(instruction.version, instruction.operand).map(Into::into),
+            OP_WITHDRAW_STAKE => {
+                WithdrawStake::decode(instruction.version, instruction.operand).map(Into::into)
+            }
+            OP_WITHDRAW_REWARDS => {
+                WithdrawRewards::decode(instruction.version, instruction.operand).map(Into::into)
+            }
             invalid => Err(format!("invalid batch instruction opcode: {invalid}").into()),
         }
     }
