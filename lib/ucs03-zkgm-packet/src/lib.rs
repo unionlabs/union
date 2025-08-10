@@ -1,46 +1,101 @@
 use std::error::Error;
 
 use alloy_sol_types::SolType;
-use ucs03_zkgm::com::{INSTR_VERSION_0, OP_FUNGIBLE_ASSET_ORDER};
+use unionlabs_primitives::{H256, U256};
 
-pub enum Instruction {
-    FungibleAssetOrder(FungibleAssetOrderInstruction),
-    Batch(BatchInstruction),
-    Multiplex(MultiplexInstruction),
+pub use crate::{batch::Batch, call::Call, forward::Forward, root::Root, token_order::TokenOrder};
+
+pub mod batch;
+pub mod call;
+pub mod forward;
+pub mod root;
+pub mod token_order;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ZkgmPacket {
+    salt: H256,
+    path: U256,
+    instruction: Root,
 }
 
-impl Instruction {
-    pub fn decode(bz: &[u8]) -> Result<Self> {
-        let instruction = ucs03_zkgm::com::Instruction::abi_decode_params(bz, true)?;
+impl ZkgmPacket {
+    pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
+        let zkgm_packet = ucs03_zkgm::com::ZkgmPacket::abi_decode_params_validate(bz.as_ref())?;
 
-        Ok(match (instruction.version, instruction.opcode) {
-            (INSTR_VERSION_0, OP_FUNGIBLE_ASSET_ORDER) => Self::FungibleAssetOrder(
-                FungibleAssetOrderInstruction::decode(&instruction.operand)?,
-            ),
-            invalid => Err(format!("invalid version and opcode: {invalid:?}"))?,
+        Ok(Self {
+            salt: zkgm_packet.salt.into(),
+            path: zkgm_packet.path.into(),
+            instruction: Root::from_raw(zkgm_packet.instruction)?,
         })
     }
 }
 
-pub struct FungibleAssetOrderInstruction {
-    sender: Bytes,
-    receiver: Bytes,
-    base_token: Bytes,
-    base_amount: U256,
-    base_token_symbol: String,
-    base_token_name: String,
-    base_token_decimals: u8,
-    base_token_path: U256,
-    quote_token: Bytes,
-    quote_amount: U256,
-}
+pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
+// pub mod abi {
+//     alloy_sol_types::sol! {
+//         "../../evm/contracts/apps/ucs/03-zkgm/Types.sol"
+//     }
+// }
 
-impl FungibleAssetOrderInstruction {
-    pub fn decode(bz: &[u8]) -> Result<Self> {
-        let fao = ucs03_zkgm::com::FungibleAssetOrder::abi_decode_params(bz, true)?;
+// pub mod zkgm_lib_abi {
+//     alloy_sol_types::sol! {
+//         bytes public constant ACK_EMPTY = "";
 
-        Ok(Self {})
+//         uint256 public constant ACK_FAILURE = 0x00;
+//         uint256 public constant ACK_SUCCESS = 0x01;
+
+//         bytes public constant ACK_ERR_ONLYMAKER = "DEADC0DE";
+
+//         bytes32 public constant ACK_ERR_ONLYMAKER_HASH =
+//             keccak256(ACK_ERR_ONLYMAKER);
+
+//         uint256 public constant FILL_TYPE_PROTOCOL = 0xB0CAD0;
+//         uint256 public constant FILL_TYPE_MARKETMAKER = 0xD1CEC45E;
+
+//         uint8 public constant TOKEN_ORDER_KIND_INITIALIZE = 0x00;
+//         uint8 public constant TOKEN_ORDER_KIND_ESCROW = 0x01;
+//         uint8 public constant TOKEN_ORDER_KIND_UNESCROW = 0x02;
+
+//         // Public instructions
+//         uint8 public constant OP_FORWARD = 0x00;
+//         uint8 public constant OP_CALL = 0x01;
+//         uint8 public constant OP_BATCH = 0x02;
+//         uint8 public constant OP_TOKEN_ORDER = 0x03;
+
+//         uint8 public constant OP_STAKE = 0x04;
+//         uint8 public constant OP_UNSTAKE = 0x05;
+//         uint8 public constant OP_WITHDRAW_STAKE = 0x06;
+//         uint8 public constant OP_WITHDRAW_REWARDS = 0x07;
+
+//         uint8 public constant WRAPPED_TOKEN_KIND_PROTOCOL = 0x00;
+//         uint8 public constant WRAPPED_TOKEN_KIND_THIRD_PARTY = 0x01;
+
+//         uint8 public constant INSTR_VERSION_0 = 0x00;
+//         uint8 public constant INSTR_VERSION_1 = 0x01;
+//         uint8 public constant INSTR_VERSION_2 = 0x02;
+
+//         bytes32 public constant FORWARD_SALT_MAGIC =
+//             0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
+
+//         address public constant NATIVE_TOKEN_ERC_7528_ADDRESS =
+//             0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+//         string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
+//         bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
+//     }
+// }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode() {
+        let bz = hex_literal::hex!("bdb52b7c18a1b21c3acb15bed2a75fe8a5cee91561a5dcd35dba65e2df7b68650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004600000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000004c4b40000000000000000000000000000000000000000000000000000000000000026000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000004c4b40000000000000000000000000000000000000000000000000000000000000002a62626e31306b613033336136767838303368376864346d6665336c386b793074787763716d653372796500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b6f736d6f31306b613033336136767838303368376864346d6665336c386b7930747877637179756e7a646a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e62626e3173376a7a7a37637975716d793578707230377965706b61356e676b7465787366657275326372347865777738393766746a37377376333066357300000000000000000000000000000000000000000000000000000000000000000005654241425900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046562626e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000074666163746f72792f6f736d6f313272337963373675396c7865333379656d737461746e773836303263756c646a7a727472386c6d6e7079636d64337a3764346a73787836306b632f46774e68466157337a4c786f4c5567584364576a71427a6376474e506142374232585a716d32786772423933000000000000000000000000");
+
+        let packet = ZkgmPacket::decode(bz).unwrap();
+
+        dbg!(&packet);
     }
 }

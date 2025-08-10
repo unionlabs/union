@@ -17018,6 +17018,8 @@ name = "ucs03-zkgm-packet"
 version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
+ "enumorph",
+ "hex-literal",
  "serde",
  "ucs03-zkgm",
  "unionlabs-primitives",
