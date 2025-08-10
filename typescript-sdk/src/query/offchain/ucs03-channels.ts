@@ -92,7 +92,7 @@ export const getQuoteToken = async (
 
   let wrappingTokens = wrapping.value.v1_ibc_union_tokens
 
-  // if it is, quote token is the unwrapped verison of the wrapped token.
+  // if it is, quote token is the unwrapped version of the wrapped token.
   // @ts-expect-error
   if (wrappingTokens.length > 0) {
     // @ts-expect-error
