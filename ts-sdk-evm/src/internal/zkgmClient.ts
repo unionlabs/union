@@ -1,3 +1,4 @@
+import { ZkgmIncomingMessage } from "@unionlabs/sdk"
 import { Hex } from "@unionlabs/sdk/schema/hex"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
@@ -6,7 +7,7 @@ import * as ClientError from "@unionlabs/sdk/ZkgmClientError"
 import type * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
-import { pipe } from "effect"
+import { Brand, pipe, Predicate } from "effect"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
 import * as Stream from "effect/Stream"
@@ -63,7 +64,6 @@ const fromWallet = (
           },
         ],
       }).pipe(
-        Effect.tap((x) => Effect.log("txhash", x)),
         Effect.mapError((cause) =>
           new ClientError.RequestError({
             reason: "Transport",
@@ -82,51 +82,6 @@ const fromWallet = (
     })
   )
 
-// const makeXMLHttpRequest = Client.make((request, signal, fiber) =>
-//   Effect.suspend(() => {
-//     // TODO: get wallet tag (or make browser wallet client)
-//     const xhr = Context.getOrElse(
-//       fiber.getFiberRef(FiberRef.currentContext),
-//       xhrTag,
-//       () => makeXhr,
-//     )()
-//     // TODO: abort handling
-//     signal.addEventListener("abort", () => {
-//       xhr.abort()
-//       xhr.onreadystatechange = null
-//     }, { once: true })
-//     xhr.open(request.method, url.toString(), true)
-//     xhr.responseType = fiber.getFiberRef(currentXHRResponseType)
-//     Object.entries(request.headers).forEach(([k, v]) => {
-//       xhr.setRequestHeader(k, v)
-//     })
-//     return Effect.zipRight(
-//       sendBody(xhr, request),
-//       Effect.async<ClientResponseImpl, Error.RequestError>((resume) => {
-//         let sent = false
-//         const onChange = () => {
-//           if (!sent && xhr.readyState >= 2) {
-//             sent = true
-//             resume(Effect.succeed(new ClientResponseImpl(request, xhr)))
-//           }
-//         }
-//         xhr.onreadystatechange = onChange
-//         xhr.onerror = (_event) => {
-//           resume(Effect.fail(
-//             new Error.RequestError({
-//               request,
-//               reason: "Transport",
-//               cause: xhr.statusText,
-//             }),
-//           ))
-//         }
-//         onChange()
-//         return Effect.void
-//       }),
-//     )
-//   })
-// )
-
 /** @internal */
 export abstract class IncomingMessageImpl<E> extends Inspectable.Class
   implements IncomingMessage.ZkgmIncomingMessage<E>
@@ -142,15 +97,30 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
     this[IncomingMessage.TypeId] = IncomingMessage.TypeId
   }
 
-  get stream() {
-    return Stream.fail("not implemented") as unknown as Stream.Stream<any, any>
+  get stream(): Stream.Stream<ZkgmIncomingMessage.LifecycleEvent, any> {
+    return Stream.async<ZkgmIncomingMessage.LifecycleEvent, any>((emit) => {
+      emit.fromEffect(pipe(
+        Evm.waitForTransactionReceipt(this.txHash),
+        Effect.map((a) =>
+          ZkgmIncomingMessage.LifecycleEvent.EvmTransactionReceiptComplete({
+            transactionHash: a.transactionHash as `0x${string}` & Brand.Brand<"Hash">,
+            blockHash: a.blockHash as `0x${string}` & Brand.Brand<"Hash">,
+            gasUsed: a.gasUsed,
+          })
+        ),
+        Effect.provideService(Evm.PublicClient, this.client),
+      ))
+    })
   }
 
-  waitFor(
-    // TODO: use subset specific to evm
-    pred: (a: IncomingMessage.LifecycleEvent) => boolean,
+  waitFor<A extends ZkgmIncomingMessage.LifecycleEvent>(
+    refinement: Predicate.Refinement<NoInfer<ZkgmIncomingMessage.LifecycleEvent>, A>,
   ) {
-    return Effect.die("not implemented")
+    return pipe(
+      this.stream,
+      Stream.filter(refinement),
+      Stream.runHead,
+    )
   }
 }
 
@@ -166,7 +136,7 @@ class ClientResponseImpl extends IncomingMessageImpl<ClientError.ResponseError>
   ) {
     super(client, txHash, (error) =>
       new ClientError.ResponseError({
-        reason: "Decode",
+        reason: "OnChain",
         request,
         response: this,
         cause: error,

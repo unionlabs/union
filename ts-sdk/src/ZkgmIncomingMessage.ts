@@ -3,7 +3,7 @@
  *
  * @since 2.0.0
  */
-import { Brand, Data, Effect, Inspectable, Stream } from "effect"
+import { Brand, Data, Effect, Inspectable, Option, Predicate, Stream } from "effect"
 import { constFalse, constTrue } from "effect/Function"
 import { Hex } from "./schema/hex.js"
 
@@ -35,7 +35,11 @@ export type LifecycleEvent = Data.TaggedEnum<{
   // | { _tag: "Finalised"        ; height: bigint ; success: boolean }
   // | { _tag: "Failed"           ; reason: string }
   // evm
-  EvmTransactionReceiptComplete: { hash: Hex & Brand.Brand<"Hash"> }
+  EvmTransactionReceiptComplete: {
+    transactionHash: Hex & Brand.Brand<"Hash">
+    blockHash: Hex & Brand.Brand<"Hash">
+    gasUsed: bigint
+  }
   // cosmos
   // agnostic
   // Broadcast: {}
@@ -62,9 +66,9 @@ export interface ZkgmIncomingMessage<E> extends Inspectable.Inspectable {
    * - add default ucompletion handler (index)
    * - allow pred fn
    */
-  readonly waitFor: (
-    pred: (a: LifecycleEvent) => boolean,
-  ) => Effect.Effect<{ readonly txHash: string }, E>
+  readonly waitFor: <A extends LifecycleEvent>(
+    refinement: Predicate.Refinement<NoInfer<LifecycleEvent>, A>,
+  ) => Effect.Effect<Option.Option<A>, E>
 }
 
 /**

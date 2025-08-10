@@ -4,7 +4,7 @@
  * @since 0.0.0
  */
 import { GAS_DENOMS } from "@unionlabs/sdk/Constants"
-import { Chain, UniversalChainId } from "@unionlabs/sdk/schema/chain"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
@@ -26,7 +26,6 @@ import {
 } from "viem"
 import type { Hash, WaitForTransactionReceiptTimeoutErrorType } from "viem"
 import type { Hex } from "viem"
-import { switchChain } from "viem/actions"
 import * as internal from "./internal/evm.js"
 
 /**

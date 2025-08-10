@@ -15,11 +15,15 @@ if (typeof BigInt.prototype.toJSON !== "function") {
   }
 }
 // ---cut---
-import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
 import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
+import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
+import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
+import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
+import * as ZkgmIncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import { Effect, Logger } from "effect"
 import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
@@ -40,18 +44,14 @@ const program = Effect.gen(function*() {
     receiver: "0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302",
     // LINK on Holesky
     baseToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
-    baseAmount: 101n,
+    baseAmount: 10n,
     quoteToken: "0x80fdbf104ec58a527ec40f7b03f88c404ef4ba63",
-    quoteAmount: 101n,
+    quoteAmount: 10n,
     kind: TokenOrder.Kind.Escrow,
     metadata: undefined,
   })
 
-  // const batch = tokenOrder.pipe(
-  //   Effect.map(TokenOrder.withFee({ priority: "high" }))
-  // )
-
-  console.log({ tokenOrder })
+  yield* Effect.log("Token Order V2", tokenOrder)
 
   const request = ZkgmClientRequest.make({
     source,
@@ -70,15 +70,20 @@ const program = Effect.gen(function*() {
 
   // NOTE: 3. write complete (with tx hash)
 
-  // const completion = yield* response.waitFor(ZkgmIncomingMessage.isComplete)
+  yield* Effect.log("Submission Hash", response.txHash)
+
+  const completion = yield* response.waitFor(
+    ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+  )
+
   // NOTE: 4. tx complete
 
-  yield* Effect.log("TX Hash:", response.txHash)
+  yield* Effect.log("Completion", completion)
 }).pipe(
   Effect.provide(EvmZkgmClient.layerWithoutWallet),
   Effect.provide(Evm.WalletClient.Live({
     account: privateKeyToAccount(
-      "0x...",
+      (process.env.KEY as any) ?? "0x...",
     ),
     chain: holesky,
     transport: http("https://rpc.17000.holesky.chain.kitchen"),
@@ -87,9 +92,6 @@ const program = Effect.gen(function*() {
     chain: holesky,
     transport: http("https://rpc.17000.holesky.chain.kitchen"),
   })),
-  // Effect.provide(ChannelRegistry.Default),
-  // Effect.provide(FeeEstimator.Default),
-  // Effect.provide(TokenRegistry.Default),
   Effect.provide(ChainRegistry.Default),
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )

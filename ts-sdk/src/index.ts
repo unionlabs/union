@@ -43,20 +43,6 @@ export * as PriceOracle from "./PriceOracle.js"
 export * as Sui from "./Sui.js"
 
 /**
- * This module handles EVM related functionality.
- *
- * @since 2.0.0
- */
-export * as Evm from "./Evm.js"
-
-/**
- * This module handles Cosmos related functionality.
- *
- * @since 2.0.0
- */
-export * as Cosmos from "./Cosmos.js"
-
-/**
  * This module handles [Sui](https://sui.io/) related functionality.
  *
  * @since 2.0.0
@@ -80,13 +66,6 @@ export * as Utils from "./Utils.js"
  * @since 2.0.0
  */
 export * as Aptos from "./Aptos.js"
-
-/**
- * This module constructs fungible asset orders for given chains.
- *
- * @since 2.0.0
- */
-export * as FungibleAssetOrder from "./FungibleAssetOrder.js"
 
 /**
  * This module contains utility types.
@@ -205,4 +184,4 @@ export * as Constants from "./Constants.js"
  *
  * @since 2.0.0
  */
-export * as GasPrice from "./GasPrice.js"
+// export * as GasPrice from "./GasPrice.js"
