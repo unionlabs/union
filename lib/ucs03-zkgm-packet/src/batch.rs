@@ -26,10 +26,10 @@ pub struct BatchV0 {
 
 impl BatchV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let instruction = ucs03_zkgm::com::Batch::abi_decode_params_validate(operand.as_ref())?;
+        let ucs03_zkgm::com::Batch { instructions } =
+            ucs03_zkgm::com::Batch::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
-            instructions: instruction
-                .instructions
+            instructions: instructions
                 .into_iter()
                 .map(BatchableInstructionV0::from_raw)
                 .collect::<Result<_>>()?,
