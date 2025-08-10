@@ -65,15 +65,23 @@ impl Client {
 
                 ClientInner::Ws(client)
             }
-            Some(("http" | "https", _)) => ClientInner::Http(Box::new(
-                HttpClientBuilder::default()
-                    .max_response_size(100 * 1024 * 1024)
-                    .build(url)?,
-            )),
+            Some(("http" | "https", _)) => {
+                return Self::on_http(
+                    HttpClientBuilder::default()
+                        .max_response_size(100 * 1024 * 1024)
+                        .build(url)?,
+                );
+            }
             _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
         };
 
         Ok(Self { inner })
+    }
+
+    pub fn on_http(client: HttpClient) -> Result<Self, JsonRpcError> {
+        Ok(Self {
+            inner: ClientInner::Http(Box::new(client)),
+        })
     }
 
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
