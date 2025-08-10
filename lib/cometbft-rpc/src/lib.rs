@@ -25,9 +25,9 @@ use unionlabs::{
 };
 
 use crate::rpc_types::{
-    AbciQueryResponse, AllValidatorsResponse, BlockResponse, BlockResultsResponse,
-    BlockchainResponse, BroadcastTxSyncResponse, CommitResponse, GrpcAbciQueryResponse, Order,
-    StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
+    AbciInfoResponse, AbciQueryResponse, AllValidatorsResponse, BlockResponse,
+    BlockResultsResponse, BlockchainResponse, BroadcastTxSyncResponse, CommitResponse,
+    GrpcAbciQueryResponse, Order, StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -65,15 +65,23 @@ impl Client {
 
                 ClientInner::Ws(client)
             }
-            Some(("http" | "https", _)) => ClientInner::Http(Box::new(
-                HttpClientBuilder::default()
-                    .max_response_size(100 * 1024 * 1024)
-                    .build(url)?,
-            )),
+            Some(("http" | "https", _)) => {
+                return Self::on_http(
+                    HttpClientBuilder::default()
+                        .max_response_size(100 * 1024 * 1024)
+                        .build(url)?,
+                );
+            }
             _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
         };
 
         Ok(Self { inner })
+    }
+
+    pub fn on_http(client: HttpClient) -> Result<Self, JsonRpcError> {
+        Ok(Self {
+            inner: ClientInner::Http(Box::new(client)),
+        })
     }
 
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
@@ -142,6 +150,23 @@ impl Client {
                 .checked_add(1)
                 .expect("validator count will always be < u64 max");
         }
+    }
+
+    #[instrument(skip_all, fields())]
+    pub async fn abci_info(&self) -> Result<AbciInfoResponse, JsonRpcError> {
+        debug!("fetching abci info");
+
+        let res: AbciInfoResponse = self.inner.request("abci_info", rpc_params!()).await?;
+
+        debug!(
+            data = %res.response.data,
+            version = %res.response.version,
+            last_block_height = %res.response.last_block_height,
+            last_block_app_hash = %res.response.last_block_app_hash,
+            "fetched abci info"
+        );
+
+        Ok(res)
     }
 
     // would be cool to somehow have this be generic and do decoding automatically
@@ -242,7 +267,10 @@ impl Client {
         self.inner.request("status", rpc_params!()).await
     }
 
-    pub async fn block(&self, height: Option<NonZeroU64>) -> Result<BlockResponse, JsonRpcError> {
+    pub async fn block(
+        &self,
+        height: Option<BoundedI64<1>>,
+    ) -> Result<BlockResponse, JsonRpcError> {
         self.inner
             .request("block", (height.map(|x| x.to_string()),))
             .await

@@ -1,7 +1,10 @@
 use std::num::{NonZeroU32, NonZeroU64};
 
 use cometbft_types::{
-    abci::{event::Event, exec_tx_result::ExecTxResult, response_query::QueryResponse},
+    abci::{
+        event::Event, exec_tx_result::ExecTxResult, info_response::InfoResponse,
+        query_response::QueryResponse,
+    },
     code::Code,
     crypto::{proof_ops::ProofOps, public_key::PublicKey},
     p2p::default_node_info::DefaultNodeInfo,
@@ -120,6 +123,12 @@ pub struct ValidatorsPagination {
 #[serde(deny_unknown_fields)]
 pub struct AbciQueryResponse {
     pub response: QueryResponse,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AbciInfoResponse {
+    pub response: InfoResponse,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

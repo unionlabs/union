@@ -17,6 +17,7 @@ use unionlabs::primitives::{
 };
 
 pub mod codec;
+pub mod cometbft;
 pub mod deployments;
 pub mod mine;
 pub mod packet;
@@ -62,6 +63,8 @@ pub enum LogFormat {
 pub enum Cmd {
     #[command(visible_alias = "c", subcommand)]
     Codec(codec::Cmd),
+    #[command(visible_aliases(["comet", "cmt"]), subcommand)]
+    Cometbft(cometbft::Cmd),
     #[command(visible_aliases(["z", "ucs03"]), subcommand)]
     Zkgm(zkgm::Cmd),
     #[command(visible_alias = "d", subcommand)]
@@ -113,6 +116,7 @@ async fn main() -> Result<()> {
 
     match app.cmd {
         Cmd::Codec(cmd) => cmd.run(),
+        Cmd::Cometbft(cmd) => cmd.run().await,
         Cmd::Zkgm(cmd) => cmd.run().await,
         Cmd::Deployments(cmd) => cmd.run(),
         Cmd::Path(cmd) => cmd.run(),

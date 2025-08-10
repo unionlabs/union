@@ -6,7 +6,7 @@ use std::{
     num::{NonZeroU64, ParseIntError},
 };
 
-use cometbft_rpc::types::abci::response_query::QueryResponse;
+use cometbft_rpc::types::abci::query_response::QueryResponse;
 use ibc_classic_spec::{
     AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
     ConnectionPath, IbcClassic, NextClientSequencePath, NextConnectionSequencePath,

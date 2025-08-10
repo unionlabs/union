@@ -130,7 +130,12 @@ impl Provider {
     ) -> Result<RpcResult<BlockResponse>, JsonRpcError> {
         self.rpc_client
             .race(provider_id.map(Into::into), |c| {
-                c.block(Some(NonZeroU64::try_from(height).expect("non-zero height")))
+                c.block(Some(
+                    i64::try_from(height)
+                        .unwrap()
+                        .try_into()
+                        .expect("non-zero height"),
+                ))
             })
             .await
             .map(Into::into)
