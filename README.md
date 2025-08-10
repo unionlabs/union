@@ -1,3 +1,4 @@
+" I am participating via Authena "
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./.github/images/union-logo-white.svg">
