@@ -3,18 +3,13 @@
  *
  * @since 2.0.0
  */
-import { CosmWasmClient, ExecuteResult, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { FetchHttpClient } from "@effect/platform"
 import { HttpClient, HttpClientRequest } from "@effect/platform"
-import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Ucs05 from "@unionlabs/sdk/Ucs05"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe } from "effect"
-import { NonEmptyReadonlyArray } from "effect/Array"
 import * as O from "effect/Option"
-import * as ParseResult from "effect/ParseResult"
-import * as S from "effect/Schema"
-import { encodeAbiParameters, type Hex } from "viem"
 
 /**
  * @category models
@@ -35,6 +30,7 @@ export namespace Cosmos {
    */
   export interface SigningClient {
     client: SigningCosmWasmClient
+    address: string
   }
 
   /**
@@ -69,6 +65,7 @@ const signingClientLayer = <
   Id,
 >(tag: Context.Tag<Id, Cosmos.SigningClient>) =>
 (
+  address: string,
   ...options: Parameters<typeof SigningCosmWasmClient.connectWithSigner>
 ): Layer.Layer<Id, ClientError> =>
   Layer.effect(
@@ -78,7 +75,7 @@ const signingClientLayer = <
         try: () => SigningCosmWasmClient.connectWithSigner(...options),
         catch: error => new ClientError({ cause: Utils.extractErrorDetails(error as Error) }),
       }),
-      Effect.map((client) => ({ client })),
+      Effect.map((client) => ({ address, client })),
       Effect.timeout("10 seconds"),
       Effect.retry({ times: 5 }),
       Effect.mapError((e) => new ClientError({ cause: e as Error })),
@@ -249,16 +246,14 @@ export const queryContract = <T = unknown>(
   pipe(
     Client,
     Effect.andThen(({ client }) =>
-      pipe(
-        Effect.tryPromise({
-          try: async () => {
-            const result = await client.queryContractSmart(contractAddress, queryMsg)
-            return result as T
-          },
-          catch: error =>
-            new QueryContractError({ cause: Utils.extractErrorDetails(error as Error) }),
-        }),
-      )
+      Effect.tryPromise({
+        try: async () => {
+          const result = await client.queryContractSmart(contractAddress, queryMsg)
+          return result as T
+        },
+        catch: error =>
+          new QueryContractError({ cause: Utils.extractErrorDetails(error as Error) }),
+      })
     ),
     Effect.timeout("10 seconds"),
     Effect.retry({ times: 5 }),
@@ -284,24 +279,22 @@ export const executeContract = (
   funds?: ReadonlyArray<{ denom: string; amount: string }>,
 ) =>
   Effect.andThen(SigningClient, ({ client }) =>
-    pipe(
-      Effect.tryPromise({
-        try: () =>
-          client.execute(
-            senderAddress,
-            contractAddress,
-            msg,
-            "auto",
-            undefined,
-            funds,
-          ),
-        catch: error =>
-          new ExecuteContractError({
-            cause: Utils.extractErrorDetails(error as Error),
-            message: (error as Error).message,
-          }),
-      }),
-    ))
+    Effect.tryPromise({
+      try: () =>
+        client.execute(
+          senderAddress,
+          contractAddress,
+          msg,
+          "auto",
+          undefined,
+          funds,
+        ),
+      catch: error =>
+        new ExecuteContractError({
+          cause: Utils.extractErrorDetails(error as Error),
+          message: (error as Error).message,
+        }),
+    }))
 
 /**
  * Wrap CosmWasmClient.getHeight() in an Effect
@@ -696,63 +689,4 @@ export const channelBalanceAtHeight = (rest: string, path: bigint, token: string
       Effect.tapErrorCause((cause) => Effect.logError("cosmos.channelBalanceAtHeight", cause)),
     )
     return yield* O.fromNullable(resp.data)
-  })
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const predictQuoteToken = (baseToken: string) =>
-  pipe(
-    ChannelDestination,
-    Effect.andThen((config) =>
-      queryContract<{ wrapped_token: Hex }>(config.ucs03address, {
-        predict_wrapped_token: {
-          path: "0",
-          channel_id: config.channelId,
-          token: baseToken,
-        },
-      })
-    ),
-    Effect.map(x => x.wrapped_token),
-  )
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const sendInstruction = (
-  instruction: Ucs03.Ucs03,
-  address: string,
-  funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
-): Effect.Effect<
-  ExecuteResult,
-  ExecuteContractError | Utils.CryptoError | ParseResult.ParseError,
-  SigningClient | ChannelSource
-> =>
-  Effect.gen(function*() {
-    const sourceConfig = yield* ChannelSource
-    const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
-    const salt = yield* Utils.generateSalt("cosmos")
-
-    const operand = yield* S.encode(Ucs03.Ucs03FromHex)(instruction)
-
-    return yield* executeContract(
-      address,
-      sourceConfig.ucs03address,
-      {
-        send: {
-          channel_id: sourceConfig.channelId,
-          timeout_height: "0",
-          timeout_timestamp,
-          salt,
-          instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
-            instruction.version,
-            instruction.opcode,
-            operand,
-          ]),
-        },
-      },
-      funds,
-    )
   })

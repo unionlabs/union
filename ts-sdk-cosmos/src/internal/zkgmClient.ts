@@ -1,4 +1,4 @@
-import { Hex } from "@unionlabs/sdk/schema/hex"
+import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
 import * as Client from "@unionlabs/sdk/ZkgmClient"
@@ -9,37 +9,59 @@ import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import { pipe } from "effect"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
+import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import * as Cosmos from "../Cosmos.js"
 
-const fromWallet = (
-  opts: { client: Cosmos.Cosmos.PublicClient; wallet: Cosmos.Cosmos.SigningClient },
+const fromSigningClient = (
+  opts: { client: Cosmos.Cosmos.PublicClient; signingClient: Cosmos.Cosmos.SigningClient },
 ): Client.ZkgmClient =>
   Client.make((request, signal, fiber) =>
     Effect.gen(function*() {
       const {
-        wallet,
+        signingClient,
         client,
       } = opts
 
       const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
 
-      const salt = yield* Utils.generateSalt("cosmos")
+      const salt = yield* Utils.generateSalt("cosmos").pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "crypto error",
+          })
+        ),
+      )
 
-      return yield* Cosmos.executeContract(
-        address,
-        sourceConfig.ucs03address,
+      const instruction = yield* pipe(
+        request.instruction.encode,
+        Effect.flatMap(Schema.decode(Ucs03.Ucs03FromHex)),
+        Effect.flatMap(Schema.encode(Ucs03.Ucs03WithInstructionFromHex)),
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "instruction encode",
+          })
+        ),
+      )
+
+      const funds = [] as const
+
+      const sendInstruction = Cosmos.executeContract(
+        signingClient.address,
+        request.ucs03Address,
         {
           send: {
-            channel_id: sourceConfig.channelId,
+            channel_id: request.channelId,
             timeout_height: "0",
             timeout_timestamp,
             salt,
-            instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
-              instruction.version,
-              instruction.opcode,
-              Ucs03.encode(instruction),
-            ]),
+            instruction,
           },
         },
         funds,
@@ -52,12 +74,12 @@ const fromWallet = (
             description: "writeContract",
           })
         ),
-        Effect.provideService(Evm.WalletClient, wallet),
+        Effect.provideService(Cosmos.SigningClient, signingClient),
       )
 
       return yield* pipe(
         sendInstruction,
-        Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
+        Effect.map((result) => new ClientResponseImpl(request, client, result)),
       )
     })
   )
@@ -114,8 +136,8 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
   readonly [IncomingMessage.TypeId]: IncomingMessage.TypeId
 
   constructor(
-    readonly client: Evm.Evm.PublicClient,
-    readonly txHash: Hex,
+    readonly client: Cosmos.Cosmos.PublicClient,
+    readonly result: ExecuteResult,
     readonly onError: (error: unknown) => E,
   ) {
     super()
@@ -141,17 +163,25 @@ class ClientResponseImpl extends IncomingMessageImpl<ClientError.ResponseError>
 
   constructor(
     readonly request: ClientRequest.ZkgmClientRequest,
-    readonly client: Evm.Evm.PublicClient,
-    readonly txHash: Hex,
+    readonly client: Cosmos.Cosmos.PublicClient,
+    readonly result: ExecuteResult,
   ) {
-    super(client, txHash, (error) =>
-      new ClientError.ResponseError({
-        reason: "Decode",
-        request,
-        response: this,
-        cause: error,
-      }))
+    super(
+      client,
+      result,
+      (error) =>
+        new ClientError.ResponseError({
+          reason: "OnChain",
+          request,
+          response: this,
+          cause: error,
+        }),
+    )
     this[ClientResponse.TypeId] = ClientResponse.TypeId
+  }
+
+  get txHash() {
+    return this.result.transactionHash as `0x${string}`
   }
 
   toString(): string {
@@ -168,9 +198,9 @@ class ClientResponseImpl extends IncomingMessageImpl<ClientError.ResponseError>
 
 /** @internal */
 export const make = Effect.map(
-  Effect.all({ client: Evm.PublicClient, wallet: Evm.WalletClient }),
-  fromWallet,
+  Effect.all({ client: Cosmos.Client, signingClient: Cosmos.SigningClient }),
+  fromSigningClient,
 )
 
 /** @internal */
-export const layerWithoutWallet = Client.layerMergedContext(make)
+export const layerWithoutSigningClient = Client.layerMergedContext(make)

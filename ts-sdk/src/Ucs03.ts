@@ -1289,13 +1289,11 @@ export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
-export class RealInstruction
-  extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/Ucs03/RealInstruction", {
-    opcode: S.NonNegativeInt,
-    version: S.NonNegativeInt,
-    operand: Operand,
-  })
-{}
+export class Instruction extends S.TaggedClass<Instruction>()("@unionlabs/sdk/Ucs03/Instruction", {
+  opcode: S.NonNegativeInt,
+  version: S.NonNegativeInt,
+  operand: Hex,
+}) {}
 
 /**
  * @category schemas
@@ -1312,13 +1310,14 @@ export type TokenOrder = typeof TokenOrder.Type
  * @category models
  * @since 2.0.0
  */
-export type Schema = Forward | Call | Batch | TokenOrder
+export type Schema = Instruction | Forward | Call | Batch | TokenOrder
 
 /**
  * @category models
  * @since 2.0.0
  */
 type SchemaEncoded =
+  | typeof Instruction.Encoded
   | {
     readonly _tag: "@unionlabs/sdk/Ucs03/Forward"
     readonly opcode?: 0 | undefined
@@ -1338,18 +1337,18 @@ type SchemaEncoded =
  * @category schemas
  * @since 2.0.0
  */
-export const Schema = S.Union(Forward, Call, Batch, TokenOrder)
+export const Schema = S.Union(Instruction, Forward, Call, Batch, TokenOrder)
 
 /**
  * @category models
  * @since 2.0.0
  */
-export const Instruction = Data.taggedEnum<Instruction>()
+export const Ucs03 = Data.taggedEnum<Ucs03>()
 /**
  * @category models
  * @since 2.0.0
  */
-export type Instruction = typeof Schema.Type
+export type Ucs03 = typeof Schema.Type
 
 /**
  * @category transformations
@@ -1365,7 +1364,7 @@ export const ForwardFromHex = S.transformOrFail(
         Effect.mapError((e) => new ParseResult.Type(ast, fromA, String(e.error))),
         Effect.flatMap(([path, timeoutHeight, timeoutTimestamp, instruction]) =>
           pipe(
-            S.decodeUnknown(S.suspend(() => InstructionFromHex))(instruction),
+            S.decodeUnknown(S.suspend(() => Ucs03FromHex))(instruction),
             Effect.map((i) =>
               Forward.fromOperand([
                 path,
@@ -1380,7 +1379,7 @@ export const ForwardFromHex = S.transformOrFail(
       ),
     encode: (toI, _, ast, toA) =>
       pipe(
-        S.encodeUnknown(S.suspend(() => InstructionFromHex))(toA.operand[3]),
+        S.encodeUnknown(S.suspend(() => Ucs03FromHex))(toA.operand[3]),
         Effect.map((operand) =>
           [
             toA.operand[0],
@@ -1445,7 +1444,7 @@ export const BatchFromHex = S.transformOrFail(
         Effect.mapError((e) => new ParseResult.Type(ast, fromA, String(e.error))),
         Effect.flatMap(
           Effect.forEach(
-            (instruction) => S.decodeUnknown(S.suspend(() => InstructionFromHex))(instruction),
+            (instruction) => S.decodeUnknown(S.suspend(() => Ucs03FromHex))(instruction),
             { concurrency: "unbounded" },
           ),
         ),
@@ -1457,7 +1456,7 @@ export const BatchFromHex = S.transformOrFail(
         toA.operand,
         A.map((instruction) =>
           pipe(
-            S.encodeUnknown(InstructionFromHex)(instruction),
+            S.encodeUnknown(Ucs03FromHex)(instruction),
             Effect.map((operand) =>
               ({
                 version: instruction.version,
@@ -1486,8 +1485,8 @@ export const TokenOrderFromHex = S.transformOrFail(
   Hex,
   TokenOrder,
   {
-    decode: (fromA, _, ast) => {
-      const a = pipe(
+    decode: (fromA, _, ast) =>
+      pipe(
         Effect.raceAll(
           [
             Effect.try(
@@ -1506,10 +1505,7 @@ export const TokenOrderFromHex = S.transformOrFail(
           (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
         ),
         Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
-      )
-
-      return a
-    },
+      ),
     encode: (toI, _, ast, toA) =>
       pipe(
         // TODO(ehegnes): improve narrowing
@@ -1541,11 +1537,58 @@ export const TokenOrderFromHex = S.transformOrFail(
   },
 )
 
+export const InstructionFromHex = S.transformOrFail(
+  Hex,
+  Instruction,
+  {
+    decode: (fromA, _, ast) => {
+      return pipe(
+        Effect.try(() =>
+          decodeAbiParameters(
+            InstructionAbi(),
+            fromA,
+          )
+        ),
+        Effect.flatMap(([version, opcode, operand]) =>
+          S.decode(Instruction)({
+            _tag: "@unionlabs/sdk/Ucs03/Instruction",
+            opcode,
+            version,
+            operand,
+          })
+        ),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
+        ),
+      )
+    },
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        Effect.try(() =>
+          encodeAbiParameters(
+            InstructionAbi(),
+            [toA.version, toA.opcode, toA.operand] as const,
+          )
+        ),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error))),
+        ),
+      ),
+  },
+)
+
 /**
  * @category transformations
  * @since 2.0.0
  */
-export const InstructionFromHex: S.Union<[
+export const Ucs03FromHex: S.Union<[
+  S.transformOrFail<
+    typeof Hex,
+    typeof Instruction
+  >,
   S.transformOrFail<
     typeof Hex,
     typeof Batch
@@ -1562,27 +1605,43 @@ export const InstructionFromHex: S.Union<[
     typeof Hex,
     typeof Call
   >,
-]> = S
-  .Union(
-    BatchFromHex,
-    TokenOrderFromHex,
-    ForwardFromHex,
-    CallFromHex,
-  )
+]> = S.Union(
+  InstructionFromHex,
+  BatchFromHex,
+  TokenOrderFromHex,
+  ForwardFromHex,
+  CallFromHex,
+)
 
-export const asInstruction = (instruction: Instruction) =>
-  pipe(
-    S.encode(InstructionFromHex)(instruction),
-    Effect.flatMap((operand) =>
-      Effect.try(() =>
-        encodeAbiParameters(
-          InstructionAbi(),
-          [
-            instruction.version,
-            instruction.opcode,
+export const Ucs03FromInstruction = S.transformOrFail(
+  Instruction,
+  Schema,
+  {
+    decode: (fromA, _, ast, fromI) =>
+      pipe(
+        fromA.operand,
+        S.decode(Ucs03FromHex),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      ),
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        toA,
+        S.encode(Ucs03FromHex),
+        Effect.flatMap((operand) =>
+          S.decode(Instruction)({
+            _tag: "@unionlabs/sdk/Ucs03/Instruction",
+            version: toA.version,
+            opcode: toA.opcode,
             operand,
-          ] as const,
-        )
-      )
-    ),
-  )
+          })
+        ),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      ),
+  },
+)
+
+export const Ucs03WithInstructionFromHex = S.compose(
+  InstructionFromHex,
+  Ucs03FromInstruction,
+)
+export type Ucs03WithInstructionFromHex = typeof Ucs03WithInstructionFromHex.Type

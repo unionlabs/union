@@ -18,19 +18,12 @@ if (typeof BigInt.prototype.toJSON !== "function") {
 import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
 import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
-// import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
-// import { FeeEstimator } from "@unionlabs/sdk/FeeEstimator"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
-// import { TokenRegistry } from "@unionlabs/sdk/TokenRegistry"
 import { Effect, Logger } from "effect"
 import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
-
-// has a function .encode() -> ethabi (uses Ucs03 module)
-// has a function .extractRequiredTokens() -> Token[]
-//                                           example output: [{ token: Token.Erc20(`0x1234`), amount: 42342n }, { token: Token.EvmGas, amount: 200n }]
 
 const program = Effect.gen(function*() {
   const source = yield* ChainRegistry.byUniversalId(

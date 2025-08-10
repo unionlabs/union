@@ -12,8 +12,8 @@ import * as internal from "./internal/zkgmClient.js"
  * @category layers
  * @since 0.0.0
  */
-export const layerWithoutWallet: Layer.Layer<
+export const layerWithoutSigningClient: Layer.Layer<
   ZkgmClient.ZkgmClient,
   never,
   Cosmos.SigningClient | Cosmos.Client
-> = internal.layerWithoutWallet
+> = internal.layerWithoutSigningClient

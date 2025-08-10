@@ -18,7 +18,7 @@ import {
 } from "effect"
 import * as Predicate from "effect/Predicate"
 import { graphql } from "gql.tada"
-import { GraphQL } from "./GraphQL.js"
+import { Indexer } from "./Indexer.js"
 import { Chain, UniversalChainId } from "./schema/chain.js"
 
 /**
@@ -52,7 +52,7 @@ export class ChainRegistryError
  */
 export class ChainRegistry extends Effect.Service<ChainRegistry>()("@unionlabs/sdk/ChainRegistry", {
   effect: Effect.gen(function*() {
-    const client = yield* GraphQL
+    const client = yield* Indexer
 
     const byUniversalId = Effect.fn((id: UniversalChainId) =>
       pipe(
@@ -126,7 +126,7 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
       byUniversalId,
     } as const
   }),
-  dependencies: [GraphQL.Default],
+  dependencies: [Indexer.Default],
   accessors: true,
 }) {
   static Test = Layer.effect(
@@ -177,7 +177,7 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
 const GetChainByIdResolver =
   // we create a normal resolver like we did before
   RequestResolver.fromEffect((request: GetChainById) =>
-    Effect.andThen(GraphQL, (gql) =>
+    Effect.andThen(Indexer, (gql) =>
       pipe(
         gql.fetch({
           document: graphql(`
@@ -231,7 +231,7 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
         ),
       ))
   ).pipe(
-    RequestResolver.contextFromServices(GraphQL),
+    RequestResolver.contextFromServices(Indexer),
   )
 
 /**
@@ -240,6 +240,6 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
  */
 export const getChainById: (
   id: UniversalChainId,
-) => Effect.Effect<Chain, ChainRegistryError, GraphQL> = Effect.fn(
+) => Effect.Effect<Chain, ChainRegistryError, Indexer> = Effect.fn(
   (id) => Effect.request(GetChainById({ id }), GetChainByIdResolver),
 )
