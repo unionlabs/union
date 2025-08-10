@@ -13,6 +13,8 @@ workspace = true
 
 [dependencies]
 alloy-sol-types.workspace = true
+enumorph.workspace = true
+hex-literal.workspace = true
 serde      = { workspace = true, features = ["derive"] }
 ucs03-zkgm = { workspace = true }
 unionlabs-primitives.workspace = true
