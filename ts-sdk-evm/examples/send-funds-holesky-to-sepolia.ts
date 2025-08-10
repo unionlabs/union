@@ -86,11 +86,11 @@ const program = Effect.gen(function*() {
       (process.env.KEY as any) ?? "0x...",
     ),
     chain: holesky,
-    transport: http("https://rpc.17000.holesky.chain.kitchen"),
+    transport: http("https://rpc.17000.ethereum.chain.kitchen"),
   })),
   Effect.provide(Evm.PublicClient.Live({
     chain: holesky,
-    transport: http("https://rpc.17000.holesky.chain.kitchen"),
+    transport: http("https://rpc.17000.ethereum.chain.kitchen"),
   })),
   Effect.provide(ChainRegistry.Default),
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
