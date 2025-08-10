@@ -29,12 +29,17 @@ pub struct CallV0 {
 
 impl CallV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let instruction = ucs03_zkgm::com::Call::abi_decode_params_validate(operand.as_ref())?;
+        let ucs03_zkgm::com::Call {
+            sender,
+            eureka,
+            contract_address,
+            contract_calldata,
+        } = ucs03_zkgm::com::Call::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
-            sender: instruction.sender.into(),
-            eureka: instruction.eureka,
-            contract_address: instruction.contract_address.into(),
-            contract_calldata: instruction.contract_calldata.into(),
+            sender: sender.into(),
+            eureka,
+            contract_address: contract_address.into(),
+            contract_calldata: contract_calldata.into(),
         })
     }
 }

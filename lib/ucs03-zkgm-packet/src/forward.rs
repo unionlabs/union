@@ -14,7 +14,7 @@ impl Forward {
     pub(crate) fn decode(version: u8, operand: impl AsRef<[u8]>) -> Result<Self> {
         match version {
             INSTR_VERSION_0 => ForwardV0::decode(operand).map(Into::into),
-            invalid => Err(format!("invalid call version: {invalid}"))?,
+            invalid => Err(format!("invalid forward version: {invalid}"))?,
         }
     }
 }
@@ -30,12 +30,17 @@ pub struct ForwardV0 {
 
 impl ForwardV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let instruction = ucs03_zkgm::com::Forward::abi_decode_params_validate(operand.as_ref())?;
+        let ucs03_zkgm::com::Forward {
+            path,
+            timeout_height,
+            timeout_timestamp,
+            instruction,
+        } = ucs03_zkgm::com::Forward::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
-            path: instruction.path.into(),
-            timeout_height: instruction.timeout_height,
-            timeout_timestamp: instruction.timeout_timestamp,
-            instruction: Box::new(Root::from_raw(instruction.instruction)?),
+            path: path.into(),
+            timeout_height,
+            timeout_timestamp,
+            instruction: Box::new(Root::from_raw(instruction)?),
         })
     }
 }
