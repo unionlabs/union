@@ -29,7 +29,7 @@ pub struct QueryResponse {
 pub mod proto {
     use unionlabs::bounded::BoundedIntError;
 
-    use crate::abci::response_query::QueryResponse;
+    use crate::abci::query_response::QueryResponse;
 
     impl From<QueryResponse> for protos::cometbft::abci::v1::QueryResponse {
         fn from(value: QueryResponse) -> Self {

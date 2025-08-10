@@ -25,9 +25,9 @@ use unionlabs::{
 };
 
 use crate::rpc_types::{
-    AbciQueryResponse, AllValidatorsResponse, BlockResponse, BlockResultsResponse,
-    BlockchainResponse, BroadcastTxSyncResponse, CommitResponse, GrpcAbciQueryResponse, Order,
-    StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
+    AbciInfoResponse, AbciQueryResponse, AllValidatorsResponse, BlockResponse,
+    BlockResultsResponse, BlockchainResponse, BroadcastTxSyncResponse, CommitResponse,
+    GrpcAbciQueryResponse, Order, StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -144,6 +144,23 @@ impl Client {
         }
     }
 
+    #[instrument(skip_all, fields())]
+    pub async fn abci_info(&self) -> Result<AbciInfoResponse, JsonRpcError> {
+        debug!("fetching abci info");
+
+        let res: AbciInfoResponse = self.inner.request("abci_info", rpc_params!()).await?;
+
+        debug!(
+            data = %res.response.data,
+            version = %res.response.version,
+            last_block_height = %res.response.last_block_height,
+            last_block_app_hash = %res.response.last_block_app_hash,
+            "fetched abci info"
+        );
+
+        Ok(res)
+    }
+
     // would be cool to somehow have this be generic and do decoding automatically
     #[instrument(
         skip_all,
@@ -242,7 +259,10 @@ impl Client {
         self.inner.request("status", rpc_params!()).await
     }
 
-    pub async fn block(&self, height: Option<NonZeroU64>) -> Result<BlockResponse, JsonRpcError> {
+    pub async fn block(
+        &self,
+        height: Option<BoundedI64<1>>,
+    ) -> Result<BlockResponse, JsonRpcError> {
         self.inner
             .request("block", (height.map(|x| x.to_string()),))
             .await
