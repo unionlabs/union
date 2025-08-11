@@ -95,8 +95,8 @@ export const empty: TokenOrder.TokenOrder = makeProto(
 export const make = (
   source: Chain,
   destination: Chain,
-  sender: string,
-  receiver: string,
+  sender: Ucs05.AnyDisplay | string,
+  receiver: Ucs05.AnyDisplay | string,
   baseToken: Token.Any,
   baseAmount: bigint,
   quoteToken: Token.Any,
@@ -143,11 +143,13 @@ export const modify = dual<
     }
 
     if (options.sender) {
-      result = yield* setSender(result, options.sender)
+      // XXX: remove assertion
+      result = yield* setSender(result, options.sender as any)
     }
 
     if (options.receiver) {
-      result = yield* setReceiver(result, options.receiver)
+      // XXX: remove assertion
+      result = yield* setReceiver(result, options.receiver as any)
     }
 
     if (options.baseToken) {
@@ -407,9 +409,6 @@ const encode = (self: TokenOrder.TokenOrder): Effect.Effect<Hex, ParseError, nev
 
     return yield* pipe(
       Ucs03.TokenOrderV2.fromOperand([
-        // TODO: runtime switching fo encoding based on address type
-        // - evm is single-encoded hex
-        // - cosmos is hex encoded bech32
         sender,
         receiver,
         Utils.ensureHex(self.baseToken.address),

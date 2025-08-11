@@ -16,8 +16,7 @@ import {
   Struct,
 } from "effect"
 import { isAddress, toHex } from "viem"
-import { Chain } from "./schema/chain.js"
-import { Hex, HexChecksum, HexFromString } from "./schema/hex.js"
+import { Hex, HexFromString } from "./schema/hex.js"
 
 // const AddressFromChain = (chain: Chain) =>
 
@@ -50,7 +49,6 @@ export type HRP = typeof HRP.Type
  * @since 2.0.0
  */
 export const Bech32 = S.NonEmptyString.pipe(
-  S.brand("Bech32"),
   S.filter((a, _, ast) => {
     try {
       bech32.decode(a as any)
@@ -59,7 +57,7 @@ export const Bech32 = S.NonEmptyString.pipe(
       return new ParseResult.Type(ast, a, (e as Error).message)
     }
   }),
-) as unknown as S.filter<S.brand<S.TemplateLiteral<`${string}1${string}`>, "Bech32">>
+) as unknown as S.filter<S.TemplateLiteral<`${string}1${string}`>>
 /**
  * @category models
  * @since 2.0.0

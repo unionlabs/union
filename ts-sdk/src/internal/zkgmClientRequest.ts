@@ -1,5 +1,4 @@
 import { Inspectable, Match } from "effect"
-import { NonEmptyReadonlyArray } from "effect/Array"
 import * as A from "effect/Array"
 import { dual, pipe } from "effect/Function"
 import * as O from "effect/Option"
@@ -13,7 +12,7 @@ import { ZkgmInstruction } from "../ZkgmInstruction.js"
 
 /** @internal */
 export const TypeId: ClientRequest.TypeId = Symbol.for(
-  "@effect/platform/ZkgmClientRequest",
+  "@unionlabs/sdk/ZkgmClientRequest",
 ) as ClientRequest.TypeId
 
 const Proto = {
@@ -21,7 +20,7 @@ const Proto = {
   ...Inspectable.BaseProto,
   toJSON(this: ClientRequest.ZkgmClientRequest): unknown {
     return {
-      _id: "@unionlabs/sdk/ClientRequest",
+      _id: "@unionlabs/sdk/ZkgmClientRequest",
       source: this.source,
       destination: this.destination,
       channelId: this.channelId,

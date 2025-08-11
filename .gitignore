@@ -104,6 +104,9 @@ ts-sdk/docs
 ts-sdk-evm/build
 ts-sdk-evm/dist
 ts-sdk-evm/docs
+ts-sdk-cosmos/build
+ts-sdk-cosmos/dist
+ts-sdk-cosmos/docs
 docs/src/content/docs/reference/@unionlabs/sdk
 docs/src/content/docs/reference/@unionlabs/sdk-evm
 docs/src/content/docs/integrations/typescript/examples/*

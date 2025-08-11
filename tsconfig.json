@@ -4,6 +4,12 @@
   "references": [
     {
       "path": "ts-sdk"
+    },
+    {
+      "path": "ts-sdk-evm"
+    },
+    {
+      "path": "ts-sdk-cosmos"
     }
   ]
 }

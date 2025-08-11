@@ -13,7 +13,7 @@ const Proto = {
   [TypeId]: TypeId,
   _tag: "Batch",
   ...Inspectable.BaseProto,
-  toJSON(this: Batch.Batch<any>): unknown {
+  toJSON(this: Batch.Batch): unknown {
     return {
       _id: "@unionlabs/sdk/Batch",
       instructions: A.map(this.instructions, (x) => x.toJSON()),
@@ -26,12 +26,12 @@ const Proto = {
 
 export const make = <
   A extends ZkgmInstruction,
->(iterable: Iterable<A>): Batch.Batch<A> =>
+>(iterable: Iterable<A>): Batch.Batch =>
   Object.assign(Object.create(Proto), {
     _tag: "Batch",
     instructions: iterable,
   })
 
 /** @internal */
-export const fromIterable = <A extends ZkgmInstruction>(iterable: Iterable<A>): Batch.Batch<A> =>
+export const fromIterable = <A extends ZkgmInstruction>(iterable: Iterable<A>): Batch.Batch =>
   make(iterable)

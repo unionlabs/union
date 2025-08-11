@@ -3,30 +3,30 @@
  */
 import type * as Cause from "effect/Cause"
 import * as Data from "effect/Data"
-import * as Predicate from "effect/Predicate"
+// import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
 import type { Simplify } from "effect/Types"
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type id
  */
 export const TypeId: unique symbol = Symbol.for("@unionlabs/sdk/Error")
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category type id
  */
 export type TypeId = typeof TypeId
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category refinements
  */
-export const isError = (u: unknown): u is PlatformError => Predicate.hasProperty(u, TypeId)
+// export const isError = (u: unknown): u is PlatformError => Predicate.hasProperty(u, TypeId)
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category error
  */
 export const TypeIdError = <const TypeId extends symbol, const Tag extends string>(
@@ -49,7 +49,7 @@ export const TypeIdError = <const TypeId extends symbol, const Tag extends strin
 }
 
 /**
- * @since 1.0.0
+ * @since 2.0.0
  * @category Models
  */
 export const Module = Schema.Literal(

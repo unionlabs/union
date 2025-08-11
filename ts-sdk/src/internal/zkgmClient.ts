@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Stream } from "effect"
+import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Predicate, Stream } from "effect"
 import { dual } from "effect/Function"
 import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
@@ -7,7 +7,6 @@ import type * as ClientError from "../ZkgmClientError.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"
 import type * as ClientResponse from "../ZkgmClientResponse.js"
 import * as IncomingMessage from "../ZkgmIncomingMessage.js"
-// import * as internalRequest from "./zkgmClientRequest.js"
 import * as internalResponse from "./zkgmClientResponse.js"
 
 /** @internal */
@@ -138,10 +137,10 @@ class InterruptibleResponse implements ClientResponse.ZkgmClientResponse {
     })
   }
 
-  waitFor(
-    pred: (a: IncomingMessage.LifecycleEvent) => boolean,
+  waitFor<A extends IncomingMessage.LifecycleEvent>(
+    refinement: Predicate.Refinement<NoInfer<IncomingMessage.LifecycleEvent>, A>,
   ) {
-    return this.applyInterrupt(this.original.waitFor(pred))
+    return this.applyInterrupt(this.original.waitFor(refinement))
   }
 
   toJSON() {

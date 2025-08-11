@@ -17,7 +17,7 @@ export const publicClientLayer = <
         try: () => V.createPublicClient(...options),
         catch: err =>
           new Evm.CreatePublicClientError({
-            cause: extractErrorDetails(err as V.CreatePublicClientErrorType),
+            cause: Utils.extractErrorDetails(err as V.CreatePublicClientErrorType),
           }),
       }),
       Effect.map((client) => ({ client })),
@@ -41,7 +41,7 @@ export const walletClientLayer = <
         try: () => V.createWalletClient(options),
         catch: err =>
           new Evm.CreateWalletClientError({
-            cause: extractErrorDetails(err as V.CreateWalletClientErrorType),
+            cause: Utils.extractErrorDetails(err as V.CreateWalletClientErrorType),
           }),
       }),
       Effect.map((client) => ({ client, account: options.account, chain: options.chain })),

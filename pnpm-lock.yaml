@@ -640,9 +640,6 @@ importers:
       '@scure/base':
         specifier: 1.2.4
         version: 1.2.4
-      '@unionlabs/sdk':
-        specifier: workspace:^
-        version: link:../ts-sdk
       crc:
         specifier: ^4.3.2
         version: 4.3.2(buffer@6.0.3)
@@ -674,6 +671,9 @@ importers:
       '@types/node':
         specifier: ^22.13.1
         version: 22.13.14
+      '@unionlabs/sdk':
+        specifier: workspace:^
+        version: link:../ts-sdk
       babel-plugin-annotate-pure-calls:
         specifier: ^0.5.0
         version: 0.5.0(@babel/core@7.27.4)

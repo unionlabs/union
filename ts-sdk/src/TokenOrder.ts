@@ -186,13 +186,14 @@ export const make: <
   internal.make(
     value.source,
     value.destination,
-    value.sender,
-    value.receiver,
-    value.baseToken,
+    // XXX: remove assertions
+    value.sender as any,
+    value.receiver as any,
+    value.baseToken as any,
     value.baseAmount,
-    value.quoteToken,
-    value.quoteAmount,
-    value.kind,
+    value.quoteToken as any,
+    value.quoteAmount as any,
+    value.kind as any,
     value.metadata,
   )
 /**
@@ -226,4 +227,4 @@ export declare const withFee: (
   } | undefined,
 ) => <A extends TokenOrder.Complete>(
   self: A,
-) => Effect.Effect<Batch.Batch<TokenOrder>, unknown, FeeEstimator | ChannelRegistry>
+) => Effect.Effect<Batch.Batch, unknown, FeeEstimator | ChannelRegistry>

@@ -1,5 +1,5 @@
 import { ZkgmIncomingMessage } from "@unionlabs/sdk"
-import { Hex } from "@unionlabs/sdk/schema/hex"
+import type { Hex } from "@unionlabs/sdk/schema/hex"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
 import * as Client from "@unionlabs/sdk/ZkgmClient"

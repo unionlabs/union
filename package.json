@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "build": "tsc -b tsconfig.build.json && pnpm -r --parallel --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos run build",
     "changeset-publish": "pnpm codemod && pnpm build && TEST_DIST= pnpm vitest && changeset publish",
     "changeset-version": "changeset version && node scripts/version.mjs",
     "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm exec docgen && node scripts/docs.mjs",
