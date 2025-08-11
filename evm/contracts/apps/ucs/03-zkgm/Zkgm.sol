@@ -20,6 +20,19 @@ contract AbiExport {
         TokenOrderV2 calldata,
         TokenMetadata calldata
     ) public {}
+
+    function ensureCreateWrappedTokenExported(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata baseToken,
+        address quoteToken,
+        bytes calldata metadata,
+        uint8 kind
+    ) public {
+        emit ZkgmLib.CreateWrappedToken(
+            path, channelId, baseToken, quoteToken, metadata, kind
+        );
+    }
 }
 
 function passthrough(
