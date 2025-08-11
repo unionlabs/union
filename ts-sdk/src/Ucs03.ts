@@ -1595,10 +1595,6 @@ export const InstructionFromHex = S.transformOrFail(
 export const Ucs03FromHex: S.Union<[
   S.transformOrFail<
     typeof Hex,
-    typeof Instruction
-  >,
-  S.transformOrFail<
-    typeof Hex,
     typeof Batch
   >,
   S.transformOrFail<
@@ -1613,12 +1609,16 @@ export const Ucs03FromHex: S.Union<[
     typeof Hex,
     typeof Call
   >,
+  S.transformOrFail<
+    typeof Hex,
+    typeof Instruction
+  >,
 ]> = S.Union(
-  InstructionFromHex,
   BatchFromHex,
   TokenOrderFromHex,
   ForwardFromHex,
   CallFromHex,
+  InstructionFromHex,
 )
 
 /**
@@ -1665,3 +1665,63 @@ export const Ucs03WithInstructionFromHex = S.compose(
  * @since 2.0.0
  */
 export type Ucs03WithInstructionFromHex = typeof Ucs03WithInstructionFromHex.Type
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export class Packet extends S.TaggedClass<Packet>()("@unionlabs/sdk/Ucs03/Packet", {
+  salt: Hex,
+  version: Uint256FromSelf,
+  instruction: Instruction,
+}) {}
+
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
+export const PacketFromHex = S.transformOrFail(
+  Hex,
+  Packet,
+  {
+    decode: (fromA, _, ast, fromI) =>
+      pipe(
+        Effect.try(() => decodeAbiParameters(ZkgmPacketAbi(), fromA)),
+        Effect.flatMap(([salt, version, instruction]) =>
+          pipe(
+            S.decode(Instruction)({
+              _tag: "@unionlabs/sdk/Ucs03/Instruction",
+              ...instruction,
+            }),
+            Effect.flatMap((instruction) =>
+              S.decode(Packet)({
+                _tag: "@unionlabs/sdk/Ucs03/Packet",
+                salt,
+                version,
+                instruction,
+              })
+            ),
+          )
+        ),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
+        ),
+      ),
+    encode: (toI, _, ast, toA) =>
+      pipe(
+        Effect.try(() =>
+          encodeAbiParameters(ZkgmPacketAbi(), [
+            toI.salt,
+            toI.version,
+            toI.instruction,
+          ])
+        ),
+        Effect.catchTag(
+          "UnknownException",
+          (error) => ParseResult.fail(new ParseResult.Type(ast, toI, String(error.error))),
+        ),
+      ),
+  },
+)
