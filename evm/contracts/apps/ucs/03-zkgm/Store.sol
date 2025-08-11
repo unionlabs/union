@@ -63,6 +63,26 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
             => mapping(uint256 => mapping(address => mapping(bytes => uint256)))
     ) public channelBalanceV2;
 
+    function decodeZkgmERC20InitializeCall(
+        bytes calldata call
+    )
+        external
+        pure
+        returns (address, address, string memory, string memory, uint8)
+    {
+        bytes4 selector = bytes4(call.slice(0, 4));
+        bytes4 expectedSelector = ZkgmERC20.initialize.selector;
+        require(selector == expectedSelector);
+        return
+            abi.decode(call.slice(4), (address, address, string, string, uint8));
+    }
+
+    function decodeRelayerMessage(
+        bytes calldata relayerMsg
+    ) external pure returns (bool, bytes memory) {
+        return abi.decode(relayerMsg, (bool, bytes));
+    }
+
     function _getGovernanceToken(
         uint32 channelId
     ) internal view returns (ZkgmERC20, GovernanceToken memory) {
