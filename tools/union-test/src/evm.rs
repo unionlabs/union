@@ -335,29 +335,40 @@ impl<'a> Module<'a> {
     }
 
     pub async fn wait_for_packet_ack(
-        &self,
-        packet_hash: H256,
-        timeout: Duration,
-    ) -> anyhow::Result<helpers::PacketAck> {
-        Ok(self
-            .wait_for_event(
-                |e| match e {
-                    IbcEvents::PacketAck(ev)
-                        if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
-                    {
-                        Some(helpers::PacketAck {
-                            packet_hash: ev.packet_hash.into(),
-                        })
-                    }
-                    _ => None,
-                },
-                timeout,
-                1,
-            )
-            .await?
-            .pop()
-            .unwrap())
-    }
+    &self,
+    packet_hash: H256,
+    timeout: Duration,
+) -> anyhow::Result<helpers::PacketAck> {
+    Ok(self
+        .wait_for_event(
+            |e| match e {
+                IbcEvents::PacketAck(ev)
+                    if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
+                {
+                    let ack_bytes: &[u8] = ev.acknowledgement.as_ref();
+
+                    // Grab the first 32 bytes — this is the uint256 in ABI encoding
+                    let mut tag_be = [0u8; 32];
+                    tag_be.copy_from_slice(&ack_bytes[..32]);
+
+                    // If you want it as u128 (will fail if > u128::MAX)
+                    let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
+
+                    Some(helpers::PacketAck {
+                        packet_hash: ev.packet_hash.into(),
+                        tag: tag_u128,
+                    })
+                }
+                _ => None,
+            },
+            timeout,
+            1,
+        )
+        .await?
+        .pop()
+        .unwrap())
+}
+
 
     /// Retry an async operation up to `max_attempts` times with a small delay between attempts.
     async fn retry_with_backoff<F, Fut, T, E>(
