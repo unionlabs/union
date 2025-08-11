@@ -27,6 +27,7 @@
     "@rehype-pretty/transformers": "npm:@jsr/rehype-pretty__transformers@^0.13.4",
     "@unionlabs/client": "^0.0.39",
     "@unionlabs/sdk": "workspace:*",
+    "@unionlabs/sdk-cosmos": "workspace:*",
     "@unionlabs/sdk-evm": "workspace:*",
     "@webcontainer/api": "^1.5.1",
     "@xterm/addon-clipboard": "^0.1.0",

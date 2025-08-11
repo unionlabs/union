@@ -9,6 +9,9 @@
     },
     {
       "path": "../ts-sdk-evm"
+    },
+    {
+      "path": "../ts-sdk-cosmos"
     }
   ],
   "compilerOptions": {

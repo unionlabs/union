@@ -363,6 +363,11 @@ export default defineConfig({
               autogenerate: { directory: "/reference/@unionlabs/sdk-evm" },
               badge: { text: "evolving", variant: "caution" },
             },
+            {
+              label: "Cosmos SDK",
+              autogenerate: { directory: "/reference/@unionlabs/sdk-cosmos" },
+              badge: { text: "evolving", variant: "caution" },
+            },
           ],
         },
       ],

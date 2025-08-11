@@ -29,16 +29,18 @@ _: {
               ../docs
               ../ts-sdk
               ../ts-sdk-evm
+              ../ts-sdk-cosmos
               ../scripts
               ../versions
               ../deployments
             ];
-            hash = "sha256-4PrBVDGU5fS5gLh4IiduolEHuuFK3ZfhoKobY4ZTewA=";
+            hash = "sha256-n9tY8YD8cQZOzjASBA1kc30Zb7QM1cPe19c5BCnVWHA=";
             packageJsonPath = ./package.json;
             pnpmWorkspaces = [
               "docs"
               "@unionlabs/sdk"
               "@unionlabs/sdk-evm"
+              "@unionlabs/sdk-cosmos"
             ];
             nativeBuildInputs = deps;
             buildInputs = deps;
