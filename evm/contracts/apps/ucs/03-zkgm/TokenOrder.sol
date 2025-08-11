@@ -149,12 +149,6 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         );
     }
 
-    function decodeRelayerMessage(
-        bytes calldata relayerMsg
-    ) public pure returns (bool, bytes memory) {
-        return abi.decode(relayerMsg, (bool, bytes));
-    }
-
     function _marketMakerFillV2(
         IBCPacket calldata packet,
         address caller,
@@ -282,20 +276,6 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 marketMaker: marketMakerBeneficiary
             })
         );
-    }
-
-    function decodeZkgmERC20InitializeCall(
-        bytes memory call
-    )
-        public
-        pure
-        returns (address, address, string memory, string memory, uint8)
-    {
-        bytes4 selector = bytes4(call.slice(0, 4));
-        bytes4 expectedSelector = ZkgmERC20.initialize.selector;
-        require(selector == expectedSelector);
-        return
-            abi.decode(call.slice(4), (address, address, string, string, uint8));
     }
 
     function _deployWrappedTokenV2(
