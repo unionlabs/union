@@ -3,12 +3,14 @@ import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
 import * as Client from "@unionlabs/sdk/ZkgmClient"
 import * as ClientError from "@unionlabs/sdk/ZkgmClientError"
-import type * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
+import * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import { pipe, Predicate } from "effect"
+import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
+import * as O from "effect/Option"
 import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import * as Cosmos from "../Cosmos.js"
@@ -50,7 +52,14 @@ const fromSigningClient = (
         ),
       )
 
-      const funds = [] as const
+      const funds = pipe(
+        ClientRequest.requiredFunds(request),
+        O.map(A.map(([token, amount]) => ({
+          denom: token.address,
+          amount: `${amount}`,
+        }))),
+        O.getOrElse(A.empty),
+      )
 
       const sendInstruction = Cosmos.executeContract(
         signingClient.address,

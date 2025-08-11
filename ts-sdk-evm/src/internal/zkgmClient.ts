@@ -1,16 +1,21 @@
 import { ZkgmIncomingMessage } from "@unionlabs/sdk"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
+import * as Token from "@unionlabs/sdk/Token"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
 import * as Client from "@unionlabs/sdk/ZkgmClient"
 import * as ClientError from "@unionlabs/sdk/ZkgmClientError"
 import type * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
+import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
-import { Brand, pipe, Predicate } from "effect"
+import { Brand, flow, pipe, Predicate } from "effect"
+import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
+import * as Option from "effect/Option"
 import * as Stream from "effect/Stream"
+import * as Tuple from "effect/Tuple"
 import * as Evm from "../Evm.js"
 
 const fromWallet = (
@@ -46,6 +51,14 @@ const fromWallet = (
         ),
       )
 
+      const funds = ZkgmClientRequest.requiredFunds(request).pipe(
+        Option.map(A.filter(([x]) => Token.isNative(x))),
+        Option.flatMap(Option.liftPredicate(A.isNonEmptyReadonlyArray)),
+        Option.map(A.map(flow(Tuple.getSecond))),
+        Option.map(A.reduce(0n, (acc, n) => acc + n)),
+        Option.getOrUndefined,
+      )
+
       const sendInstruction = Evm.writeContract({
         account: wallet.account,
         abi: Ucs03.Abi,
@@ -63,6 +76,7 @@ const fromWallet = (
             operand,
           },
         ],
+        value: funds,
       }).pipe(
         Effect.mapError((cause) =>
           new ClientError.RequestError({
