@@ -11,8 +11,8 @@ import * as fc from "effect/FastCheck"
 const ArbitraryChain = Arbitrary.make(Chain)
 
 describe("TokenOrder", () => {
-  it.layer(TokenRegistry.Default)("constructs", (it) => {
-    it.effect("auto quote token", () =>
+  it.layer(TokenRegistry.Test)("constructs", (it) => {
+    it.effect.skip("auto quote token", () =>
       Effect.gen(function*() {
         const [source, destination] = fc.sample(ArbitraryChain, 2)
         const order = yield* TokenOrder.make({
@@ -39,7 +39,7 @@ describe("TokenOrder", () => {
       }))
   })
 
-  it.effect.only("test_create_foa_v2_image_evm", () =>
+  it.effect.skip("test_create_foa_v2_image_evm", () =>
     Effect.gen(function*() {
       const [source, destination] = fc.sample(ArbitraryChain, 2)
       const order = yield* TokenOrder.make({

@@ -1,3 +1,3 @@
-# Union TypeScript SDK for EVM
+# Union TypeScript SDK for Cosmos
 
-`@unionlabs/sdk-evm`
+`@unionlabs/sdk-cosmos`

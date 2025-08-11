@@ -18,7 +18,7 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = [ ../ts-sdk ../ts-sdk-cosmos ];
           pnpmWorkspaces = [ "@unionlabs/sdk" "@unionlabs/sdk-cosmos" ];
-          hash = "sha256-wGOqnAKq/pMJR3EUJUguY1LXIaKlOOL0XH6EtwCrjY4=";
+          hash = "sha256-F28cPRtIoTOSpRG+dino0vNHFzdjL5H4yVAgLR8L+bI=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild

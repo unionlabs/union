@@ -38,6 +38,7 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/math": "~0.33",
     "@cosmjs/proto-signing": "~0.33",
     "@cosmjs/stargate": "~0.33",
@@ -50,6 +51,7 @@
     "@babel/core": "^7.27.1",
     "@babel/plugin-transform-export-namespace-from": "^7.27.1",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/math": "^0.33.1",
     "@cosmjs/proto-signing": "~0.33.1",
     "@cosmjs/stargate": "~0.33.1",

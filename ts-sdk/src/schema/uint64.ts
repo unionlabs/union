@@ -1,6 +1,6 @@
 import * as S from "effect/Schema"
 
-const MAX_UINT64 = 2n ** 64n
+const MAX_UINT64 = (2n ** 64n) - 1n
 
 export class Uint64FromSelf extends S.BigIntFromSelf.pipe(
   S.betweenBigInt(0n, MAX_UINT64, {

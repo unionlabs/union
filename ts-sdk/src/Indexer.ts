@@ -106,7 +106,7 @@ export class GraphQLCache
             Match.when(
               {
                 name: { value: "cached" },
-                arguments: Match.defined,
+                arguments: A.isNonEmptyReadonlyArray<ArgumentNode>,
               },
               ({ arguments: args }) =>
                 pipe(
@@ -117,8 +117,8 @@ export class GraphQLCache
             ),
             Match.option,
           )),
-          A.getSomes,
-          O.liftPredicate(A.isNonEmptyArray),
+          A.getSomes<O.Option<number>[]>,
+          O.liftPredicate(A.isNonEmptyArray<number>),
           O.map(A.min(Order.number)),
           O.getOrElse(() => 0),
           (seconds) => `${seconds} seconds` as const,
