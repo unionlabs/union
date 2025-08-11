@@ -10,7 +10,7 @@
     "check-recursive": "pnpm --recursive --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos exec tsc -b tsconfig.json",
     "circular": "node scripts/circular.mjs",
     "clean": "node scripts/clean.mjs",
-    "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm exec docgen && node scripts/docs.mjs",
+    "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm --filter @unionlabs/sdk-cosmos exec docgen && node scripts/docs.mjs",
     "test": "vitest",
     "test-types": "tstyche"
   },

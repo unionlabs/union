@@ -5,6 +5,7 @@ function packages() {
   return [
     "ts-sdk",
     "ts-sdk-evm",
+    "ts-sdk-cosmos",
   ].filter((_) => Fs.existsSync(Path.join(_, "docs/modules")))
 }
 
