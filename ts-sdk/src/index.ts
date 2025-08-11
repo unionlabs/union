@@ -110,7 +110,7 @@ export * as ChainRegistry from "./ChainRegistry.js"
 export * as TokenRegistry from "./TokenRegistry.js"
 
 /**
- * This module estimates cross-chain transaciton fees.
+ * This module estimates cross-chain transaction fees.
  *
  * @since 2.0.0
  */

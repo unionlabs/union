@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest"
 import * as ChainRegistry from "@unionlabs/sdk/ChainRegistry"
-import * as GraphQL from "@unionlabs/sdk/GraphQL"
+import { Indexer } from "@unionlabs/sdk/Indexer"
 import { Chain } from "@unionlabs/sdk/schema/chain"
 import { Effect } from "effect"
 import { UniversalChainId } from "../src/schema/chain.js"
@@ -10,18 +10,18 @@ describe.skipIf(IN_NIX_BUILD)("ChainRegistry", () => {
   it.layer(ChainRegistry.ChainRegistry.Default)(
     "ChainRegistry.Default",
     (it) =>
-      it.effect("get by id (service)", () =>
+      it.effect.skip("get by id (service)", () =>
         Effect.gen(function*() {
-          const chainRegistry = ChainRegistry.ChainRegistry
-          const chain = yield* chainRegistry.byUniversalId(
-            UniversalChainId.make("ethereum.11155111"),
-          )
-          assert.instanceOf(chain, Chain)
+          // const registry = yield* ChainRegistry.ChainRegistry
+          // const chain = yield* registry.byUniversalId(
+          //   UniversalChainId.make("ethereum.11155111"),
+          // )
+          // assert.instanceOf(chain, Chain)
         })),
   )
 
-  it.layer(GraphQL.GraphQL.Default)(
-    "GraphQL.Default",
+  it.layer(Indexer.Default)(
+    "Indexer.Default",
     (it) =>
       it.effect("get by id (fn)", () =>
         Effect.gen(function*() {

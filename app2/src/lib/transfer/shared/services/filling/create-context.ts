@@ -42,7 +42,7 @@ export type Allowance = {
 
 export type TransferContext = {
   intents: Array<Intent>
-  // TODO: remove becaues derived from `ZkgmClientRequest` once it is a `Batch` including the fee
+  // TODO: remove because derived from `ZkgmClientRequest` once it is a `Batch` including the fee
   funds: Option.Option<
     Array<{
       baseToken: TokenRawDenom | string

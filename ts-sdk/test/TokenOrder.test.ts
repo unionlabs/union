@@ -18,8 +18,10 @@ describe("TokenOrder", () => {
         const order = yield* TokenOrder.make({
           source,
           destination,
-          sender: Ucs05.EvmDisplay.make("0x06627714f3F17a701f7074a12C02847a5D2Ca487"),
-          receiver: Ucs05.CosmosDisplay.make("bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh"),
+          sender: Ucs05.EvmDisplay.make({ address: "0x06627714f3F17a701f7074a12C02847a5D2Ca487" }),
+          receiver: Ucs05.CosmosDisplay.make({
+            address: "bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh",
+          }),
           // USDC on Sepolia
           baseToken: Token.Erc20.make({ address: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238" }),
           kind: TokenOrder.Kind.Escrow,

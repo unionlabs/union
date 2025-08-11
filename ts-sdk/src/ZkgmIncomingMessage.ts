@@ -24,28 +24,13 @@ export type TypeId = typeof TypeId
  * @since 2.0.0
  */
 export type LifecycleEvent = Data.TaggedEnum<{
-  // | { _tag: "SwitchChainStart" ; target: UniversalChainId }
-  // | { _tag: "SwitchChainDone"  ; success: boolean }
-  // | { _tag: "WriteTxStart"     ; payload: { to: string; data: string } }
-  // | { _tag: "WriteTxDone"      ; txHash: string }
-  // | { _tag: "Broadcasted"      ; txHash: string }
-  // | { _tag: "Log"              ; chainFamily: "ethereum"; log: EvmLog }
-  // | { _tag: "Receipt"          ; chainFamily: "cosmos"  ; receipt: CosmosTx }
-  // | { _tag: "Confirmed"        ; block: bigint }
-  // | { _tag: "Finalised"        ; height: bigint ; success: boolean }
-  // | { _tag: "Failed"           ; reason: string }
-  // evm
+  // EVM
   EvmTransactionReceiptComplete: {
     transactionHash: Hex & Brand.Brand<"Hash">
     blockHash: Hex & Brand.Brand<"Hash">
     gasUsed: bigint
   }
-  // cosmos
-  // agnostic
-  // Broadcast: {}
-  // Receipt: {}
-  // Indexed: {}
-  // Finalized: {}
+  // Cosmos
 }>
 
 /**

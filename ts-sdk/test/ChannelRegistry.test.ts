@@ -1,4 +1,4 @@
-import { assert, describe, it } from "@effect/vitest"
+import { describe, it } from "@effect/vitest"
 import { ChannelRegistry } from "@unionlabs/sdk/ChannelRegistry"
 import { Effect, Schema } from "effect"
 import { Chain } from "../src/schema/chain.js"

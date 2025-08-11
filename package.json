@@ -3,11 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "clean": "node scripts/clean.mjs",
     "build": "tsc -b tsconfig.build.json && pnpm -r --parallel --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos run build",
     "changeset-publish": "pnpm codemod && pnpm build && TEST_DIST= pnpm vitest && changeset publish",
     "changeset-version": "changeset version && node scripts/version.mjs",
+    "check": "tsc -b tsconfig.json",
+    "check-recursive": "pnpm --recursive --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos exec tsc -b tsconfig.json",
+    "circular": "node scripts/circular.mjs",
+    "clean": "node scripts/clean.mjs",
     "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm exec docgen && node scripts/docs.mjs",
+    "test": "vitest",
     "test-types": "tstyche"
   },
   "devDependencies": {
@@ -18,6 +22,8 @@
     "@effect/language-service": "0.23.5",
     "@effect/typeclass": "^0.35.5",
     "@effect/vitest": "0.23.3",
+    "glob": "^11.0.3",
+    "madge": "^8.0.0",
     "tstyche": "^4.3.0",
     "tsx": "^4.19.4",
     "typescript": "~5.8.2",

@@ -1,6 +1,5 @@
 import { assert, describe, it } from "@effect/vitest"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
-import * as Ucs05 from "@unionlabs/sdk/Ucs05"
 import { Effect, Schema as S } from "effect"
 import { toHex } from "viem"
 
