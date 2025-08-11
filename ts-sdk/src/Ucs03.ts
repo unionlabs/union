@@ -1289,6 +1289,10 @@ export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
 }
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export class Instruction extends S.TaggedClass<Instruction>()("@unionlabs/sdk/Ucs03/Instruction", {
   opcode: S.NonNegativeInt,
   version: S.NonNegativeInt,
@@ -1537,6 +1541,10 @@ export const TokenOrderFromHex = S.transformOrFail(
   },
 )
 
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
 export const InstructionFromHex = S.transformOrFail(
   Hex,
   Instruction,
@@ -1613,6 +1621,10 @@ export const Ucs03FromHex: S.Union<[
   CallFromHex,
 )
 
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
 export const Ucs03FromInstruction = S.transformOrFail(
   Instruction,
   Schema,
@@ -1640,8 +1652,16 @@ export const Ucs03FromInstruction = S.transformOrFail(
   },
 )
 
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
 export const Ucs03WithInstructionFromHex = S.compose(
   InstructionFromHex,
   Ucs03FromInstruction,
 )
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
 export type Ucs03WithInstructionFromHex = typeof Ucs03WithInstructionFromHex.Type
