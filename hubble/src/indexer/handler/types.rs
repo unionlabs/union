@@ -55,12 +55,14 @@ pub struct Transfer {
     pub receiver_display: AddressDisplay,
     pub base_token: Denom,
     pub base_amount: Amount,
-    pub base_token_name: TokenName,
-    pub base_token_path: TokenPath,
-    pub base_token_symbol: TokenSymbol,
+    pub base_token_name: Option<TokenName>,
+    pub base_token_path: Option<TokenPath>,
+    pub base_token_symbol: Option<TokenSymbol>,
     pub base_token_decimals: Option<TokenDecimals>, // only None in transfer v0
     pub quote_token: Denom,
     pub quote_amount: Amount,
+    pub kind: Option<TokenOrderKind>,
+    pub metadata: Option<Metadata>,
     pub fee: Fee,
     pub wrap_direction: Option<WrapDirection>,
     pub packet_shape: PacketShape,
@@ -469,6 +471,127 @@ impl TryFrom<&String> for Amount {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "u8", from = "u8")]
+pub enum CreateWrappedTokenKind {
+    Protocol,
+    ThirdParty,
+    Unsupported(u8),
+}
+
+impl CreateWrappedTokenKind {
+    pub const PROTOCOL: u8 = 0;
+    pub const THIRD_PARTY: u8 = 1;
+}
+
+impl From<u8> for CreateWrappedTokenKind {
+    fn from(value: u8) -> Self {
+        match value {
+            CreateWrappedTokenKind::PROTOCOL => CreateWrappedTokenKind::Protocol,
+            CreateWrappedTokenKind::THIRD_PARTY => CreateWrappedTokenKind::ThirdParty,
+            kind => CreateWrappedTokenKind::Unsupported(kind),
+        }
+    }
+}
+
+impl From<CreateWrappedTokenKind> for u8 {
+    fn from(kind: CreateWrappedTokenKind) -> u8 {
+        match kind {
+            CreateWrappedTokenKind::Protocol => CreateWrappedTokenKind::PROTOCOL,
+            CreateWrappedTokenKind::ThirdParty => CreateWrappedTokenKind::THIRD_PARTY,
+            CreateWrappedTokenKind::Unsupported(value) => value,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "u8", from = "u8")]
+pub enum TokenOrderKind {
+    Initialize,
+    Escrow,
+    Unescrow,
+    Unsupported(u8),
+}
+
+impl TokenOrderKind {
+    pub const INITIALIZE: u8 = 0;
+    pub const ESCROW: u8 = 1;
+    pub const UNESCROW: u8 = 2;
+}
+
+impl From<u8> for TokenOrderKind {
+    fn from(value: u8) -> Self {
+        match value {
+            TokenOrderKind::INITIALIZE => TokenOrderKind::Initialize,
+            TokenOrderKind::ESCROW => TokenOrderKind::Escrow,
+            TokenOrderKind::UNESCROW => TokenOrderKind::Unescrow,
+            kind => TokenOrderKind::Unsupported(kind),
+        }
+    }
+}
+
+impl From<TokenOrderKind> for u8 {
+    fn from(kind: TokenOrderKind) -> u8 {
+        match kind {
+            TokenOrderKind::Initialize => TokenOrderKind::INITIALIZE,
+            TokenOrderKind::Escrow => TokenOrderKind::ESCROW,
+            TokenOrderKind::Unescrow => TokenOrderKind::UNESCROW,
+            TokenOrderKind::Unsupported(value) => value,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Metadata(#[serde(with = "bytes_as_hex")] pub Bytes);
+
+impl From<Bytes> for Metadata {
+    fn from(value: Bytes) -> Self {
+        Self(value)
+    }
+}
+
+impl TryFrom<&String> for Metadata {
+    type Error = IndexerError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        Ok(string_0x_to_bytes(value, "metadata")?.into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Implementation(#[serde(with = "bytes_as_hex")] pub Bytes);
+
+impl From<Bytes> for Implementation {
+    fn from(value: Bytes) -> Self {
+        Self(value)
+    }
+}
+
+impl TryFrom<&String> for Implementation {
+    type Error = IndexerError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        Ok(string_0x_to_bytes(value, "implementation")?.into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Initializer(#[serde(with = "bytes_as_hex")] pub Bytes);
+
+impl From<Bytes> for Initializer {
+    fn from(value: Bytes) -> Self {
+        Self(value)
+    }
+}
+
+impl TryFrom<&String> for Initializer {
+    type Error = IndexerError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        Ok(string_0x_to_bytes(value, "initializer")?.into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TokenName(pub String);
 
 impl From<&String> for TokenName {
@@ -515,9 +638,9 @@ impl From<u32> for TokenDecimals {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Fee {
     #[serde(rename = "instruction")]
-    Instruction(Denom, Amount, TokenName),
+    Instruction(Denom, Amount, Option<TokenName>),
     #[serde(rename = "quote_delta")]
-    QuoteDelta(Denom, Amount, TokenName),
+    QuoteDelta(Denom, Amount, Option<TokenName>),
     #[serde(rename = "quote_delta_negative")]
     QuoteDeltaNegative,
     #[serde(rename = "none")]
@@ -534,6 +657,18 @@ pub enum WrapDirection {
     Unwrapping,
 }
 
+impl TryFrom<TokenOrderKind> for WrapDirection {
+    type Error = IndexerError;
+
+    fn try_from(value: TokenOrderKind) -> Result<Self, Self::Error> {
+        match value {
+            TokenOrderKind::Initialize | TokenOrderKind::Escrow => Ok(WrapDirection::Wrapping),
+            TokenOrderKind::Unescrow => Ok(WrapDirection::Unwrapping),
+            TokenOrderKind::Unsupported(kind) => Err(IndexerError::UnsupportedTokenOrderKind(kind)),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PacketShape {
     #[serde(rename = "batch_v0_transfer_v0_fee")]
@@ -546,6 +681,12 @@ pub enum PacketShape {
     BatchV0TransferV1Fee,
     #[serde(rename = "transfer_v1")]
     TransferV1,
+    #[serde(rename = "batch_v0_transfer_v2")]
+    BatchV0TransferV2,
+    #[serde(rename = "batch_v0_transfer_v2_fee")]
+    BatchV0TransferV2Fee,
+    #[serde(rename = "transfer_v2")]
+    TransferV2,
 }
 
 pub mod bytes_as_hex {

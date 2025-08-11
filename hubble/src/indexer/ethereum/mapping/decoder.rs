@@ -16,9 +16,11 @@ use crate::{
             types::{
                 Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, Capacity, ChannelId,
                 ChannelVersion, ClientId, ClientType, ConnectionId, Denom, Maker, MakerMsg,
-                PacketData, PacketHash, PortId, RefillRate, TimeoutTimestamp, TransactionHash,
+                PacketData, PacketHash, Path, PortId, RefillRate, TimeoutTimestamp,
+                TransactionHash,
             },
         },
+        handler::types::{CreateWrappedTokenKind, Metadata},
     },
     postgres::ChainId,
 };
@@ -229,6 +231,26 @@ impl SolEvent {
         self.get_packet("packet")
     }
 
+    pub fn path(&self) -> Result<Path, IndexerError> {
+        self.get_path("path")
+    }
+
+    pub fn base_token(&self) -> Result<Denom, IndexerError> {
+        self.get_denom("baseToken")
+    }
+
+    pub fn quote_token(&self) -> Result<Denom, IndexerError> {
+        self.get_denom("quoteToken")
+    }
+
+    pub fn metadata(&self) -> Result<Metadata, IndexerError> {
+        self.get_metadata("metadata")
+    }
+
+    pub fn create_wrapped_token_kind(&self) -> Result<CreateWrappedTokenKind, IndexerError> {
+        self.get_create_wrapped_token_kind("kind")
+    }
+
     fn get_height(&self, key: &str) -> Result<BlockHeight, IndexerError> {
         Ok(self.get_u64(key, "height")?.into())
     }
@@ -277,6 +299,17 @@ impl SolEvent {
         Ok(self.get_bytes(key, "denom")?.into())
     }
 
+    fn get_metadata(&self, key: &str) -> Result<Metadata, IndexerError> {
+        Ok(self.get_bytes(key, "metadata")?.into())
+    }
+
+    fn get_create_wrapped_token_kind(
+        &self,
+        key: &str,
+    ) -> Result<CreateWrappedTokenKind, IndexerError> {
+        Ok(self.get_u8(key, "create-wrapped-token-kind")?.into())
+    }
+
     fn get_capacity(&self, key: &str) -> Result<Capacity, IndexerError> {
         Ok(self.get_u256(key, "capacity")?.into())
     }
@@ -297,8 +330,19 @@ impl SolEvent {
         Ok(self.get_bytes(key, "maker-msg")?.into())
     }
 
+    pub fn get_path(&self, key: &str) -> Result<Path, IndexerError> {
+        Ok(self.get_bytes(key, "path")?.into())
+    }
+
     pub fn get_packet(&self, key: &str) -> Result<SolEvent, IndexerError> {
         self.get_event(key, "packet")
+    }
+
+    fn get_u8(&self, key: &str, expecting: &str) -> Result<u8, IndexerError> {
+        match self.get_value(key, expecting)? {
+            DynSolValue::Uint(v, 8) => Ok(v.to::<u8>()),
+            value => Err(self.report_unexpected_type(key, value, expecting)),
+        }
     }
 
     fn get_u32(&self, key: &str, expecting: &str) -> Result<u32, IndexerError> {

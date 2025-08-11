@@ -306,6 +306,7 @@ fn should_trigger_enrich_reset(kind: RecordKind) -> bool {
         // not related to packets
         TokenBucketUpdate => false,
         WalletMutationEntry => false,
+        CreateWrappedToken => false,
         // ignore enriched records
         PacketSendDecoded => false,
         PacketSendTransfers => false,

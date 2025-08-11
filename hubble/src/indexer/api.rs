@@ -155,6 +155,8 @@ pub enum IndexerError {
     WrapperPredictionError(String, String),
     #[error("could not acquire lock for chain {0} block {1} (already held by another process)")]
     LockAcquisitionFailed(UniversalChainId, types::BlockHeight),
+    #[error("unsupported token order kind: {0}")]
+    UnsupportedTokenOrderKind(u8),
 }
 
 #[derive(Error, Debug)]

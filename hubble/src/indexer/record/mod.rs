@@ -9,17 +9,17 @@ use crate::indexer::{
         Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
         ChannelId, ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom,
         EventIndex, Maker, MakerMsg, MessageHash, MessageSequence, MutationAmount,
-        MutationDirection, NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash,
+        MutationDirection, NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash, Path,
         PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash,
         TransactionIndex, UniversalChainId, WalletAddress,
     },
     handler::{
         types::{
-            AddressCanonical, AddressDisplay, AddressZkgm, Amount, Fee, InstructionHash,
-            InstructionIndex, InstructionOpcode, InstructionPath, InstructionRootPath,
-            InstructionRootSalt, InstructionType, InstructionVersion, OperandContractAddress,
-            OperandSender, PacketShape, RpcType, TokenDecimals, TokenName, TokenPath, TokenSymbol,
-            TransferIndex, WrapDirection,
+            AddressCanonical, AddressDisplay, AddressZkgm, Amount, CreateWrappedTokenKind, Fee,
+            InstructionHash, InstructionIndex, InstructionOpcode, InstructionPath,
+            InstructionRootPath, InstructionRootSalt, InstructionType, InstructionVersion,
+            Metadata, OperandContractAddress, OperandSender, PacketShape, RpcType, TokenDecimals,
+            TokenName, TokenOrderKind, TokenPath, TokenSymbol, TransferIndex, WrapDirection,
         },
         EventContext,
     },
@@ -37,6 +37,7 @@ pub(crate) mod connection_open_init_record;
 pub(crate) mod connection_open_try_record;
 pub(crate) mod create_client_record;
 pub(crate) mod create_lens_client_record;
+pub(crate) mod create_wrapped_token_record;
 pub(crate) mod event_handler;
 pub(crate) mod packet_ack_record;
 pub(crate) mod packet_recv_record;
@@ -451,6 +452,11 @@ impl PgValue<Vec<u8>> for MakerMsg {
         Ok(self.0.to_vec())
     }
 }
+impl PgValue<Vec<u8>> for Path {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
 
 impl PgValue<i32> for EventIndex {
     fn pg_value(&self) -> Result<i32, IndexerError> {
@@ -540,6 +546,18 @@ impl PgValue<BigDecimal> for TimeoutTimestamp {
 impl PgValue<Vec<u8>> for Denom {
     fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
+    }
+}
+
+impl PgValue<Vec<u8>> for Metadata {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+
+impl PgValue<i32> for CreateWrappedTokenKind {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
+        Ok(u8::from(self.clone()).into())
     }
 }
 
@@ -688,6 +706,9 @@ impl PgValue<String> for PacketShape {
             PacketShape::BatchV0TransferV1 => "batch_v0_transfer_v1",
             PacketShape::BatchV0TransferV1Fee => "batch_v0_transfer_v1_fee",
             PacketShape::TransferV1 => "transfer_v1",
+            PacketShape::BatchV0TransferV2 => "batch_v0_transfer_v2",
+            PacketShape::BatchV0TransferV2Fee => "batch_v0_transfer_v2_fee",
+            PacketShape::TransferV2 => "transfer_v2",
         }
         .to_string())
     }
@@ -738,6 +759,11 @@ impl PgValue<i32> for InstructionVersion {
 impl PgValue<i32> for InstructionOpcode {
     fn pg_value(&self) -> Result<i32, IndexerError> {
         Ok(i32::from(self.0))
+    }
+}
+impl PgValue<i32> for TokenOrderKind {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
+        Ok(u8::from(self.clone()).into())
     }
 }
 // currently stored as text, could be bytea

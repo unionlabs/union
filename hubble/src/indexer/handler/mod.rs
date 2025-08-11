@@ -10,6 +10,7 @@ pub(crate) mod connection_open_init_event_handler;
 pub(crate) mod connection_open_try_event_handler;
 pub(crate) mod create_client_handler;
 pub(crate) mod create_lens_client_handler;
+pub(crate) mod create_wrapped_token_handler;
 pub(crate) mod packet_ack_event_handler;
 pub(crate) mod packet_recv_event_handler;
 pub(crate) mod packet_send_event_handler;

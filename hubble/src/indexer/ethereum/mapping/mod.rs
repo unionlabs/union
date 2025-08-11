@@ -24,6 +24,7 @@ mod connection_open_init_mapping;
 mod connection_open_try_mapping;
 mod create_client_mapping;
 mod create_lens_client_mapping;
+mod create_wrapped_token;
 mod decoder;
 pub(crate) mod legacy;
 mod packet_ack_mapping;
@@ -135,6 +136,7 @@ impl EthFetcherClient {
             "PacketAck" => self.to_packet_ack(&log_decoder)?,
             "PacketTimeout" => self.to_packet_timeout(&log_decoder)?,
             "TokenBucketUpdate" => self.to_token_bucket_update(&log_decoder)?,
+            "CreateWrappedToken" => self.to_create_wrapped_token(&log_decoder)?,
             name => {
                 warn!("unsupported event: {name} ({log:?})");
                 vec![]

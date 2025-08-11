@@ -41,9 +41,9 @@ pub struct PacketSendTransfersRecord {
     pub wrap_direction: Option<String>,
     pub base_token: Vec<u8>,
     pub base_amount: BigDecimal,
-    pub base_token_name: String,
-    pub base_token_path: Vec<u8>,
-    pub base_token_symbol: String,
+    pub base_token_name: Option<String>,
+    pub base_token_path: Option<Vec<u8>>,
+    pub base_token_symbol: Option<String>,
     pub base_token_decimals: Option<i32>,
     pub quote_token: Vec<u8>,
     pub quote_amount: BigDecimal,
@@ -54,6 +54,8 @@ pub struct PacketSendTransfersRecord {
     pub sort_order: String,
     pub network: String,
     pub counterparty_network: String,
+    pub kind: Option<i32>,
+    pub metadata: Option<Vec<u8>>,
 }
 impl HasKind for PacketSendTransfersRecord {
     fn kind() -> RecordKind {
@@ -115,6 +117,8 @@ impl TryFrom<(&PacketSendRecord, &Transfer, &ChannelMetaData, &String)>
             sort_order: sort_order.clone(),
             network: channel.network.pg_value()?,
             counterparty_network: channel.counterparty_network.pg_value()?,
+            kind: transfer.kind.pg_value()?,
+            metadata: transfer.metadata.pg_value()?,
         })
     }
 }
@@ -125,9 +129,6 @@ impl PacketSendTransfersRecord {
         tx: &mut Transaction<'_, Postgres>,
     ) -> Result<Changes, IndexerError> {
         trace!("insert({})", self.height);
-
-        // let x = &self.quote_token[..];
-        // let x: Option<&[u8]> = self.fee_token.map(|f| &f[..]);
 
         sqlx::query!(
             r#"
@@ -178,8 +179,11 @@ impl PacketSendTransfersRecord {
                 packet_shape,
                 sort_order,
                 network,
-                counterparty_network
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40)
+                counterparty_network,
+
+                kind,
+                metadata
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42)
             "#,
             self.internal_chain_id,
             self.universal_chain_id,
@@ -209,7 +213,7 @@ impl PacketSendTransfersRecord {
             &self.base_token[..],
             self.base_amount,
             self.base_token_name,
-            &self.base_token_path[..],
+            self.base_token_path.as_deref(),
             self.base_token_symbol,
             self.base_token_decimals,
             &self.quote_token[..],
@@ -221,6 +225,8 @@ impl PacketSendTransfersRecord {
             self.sort_order,
             self.network,
             self.counterparty_network,
+            self.kind,
+            self.metadata,
         )
         .execute(&mut **tx)
         .await?;
