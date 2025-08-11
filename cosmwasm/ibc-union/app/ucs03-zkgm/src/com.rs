@@ -1,6 +1,6 @@
 use alloy_primitives::U256;
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint256;
-use serde::{Deserialize, Serialize};
 use unionlabs::primitives::Bytes;
 
 pub const INSTR_VERSION_0: u8 = 0x00;
@@ -165,8 +165,7 @@ alloy_sol_types::sol! {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cw_serde]
 pub struct CwTokenOrderV2 {
     pub sender: Bytes,
     pub receiver: Bytes,

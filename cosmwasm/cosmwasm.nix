@@ -908,6 +908,8 @@ _: {
 
       cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
 
+      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" { };
+
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
       cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
@@ -967,6 +969,7 @@ _: {
             ibc-union
             multicall
             cw-account
+            cw-escrow-vault
             ;
           cosmwasm-scripts =
             {

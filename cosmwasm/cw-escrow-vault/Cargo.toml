@@ -1,0 +1,32 @@
+[package]
+name    = "cw-escrow-vault"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bincode         = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3"] }
+cw20            = "2.0.0"
+depolama        = { workspace = true }
+embed-commit    = { workspace = true }
+frissitheto     = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+serde           = { workspace = true, features = ["derive"] }
+thiserror       = { workspace = true }
+ucs03-zkgm      = { workspace = true, features = ["library"] }
+unionlabs       = { workspace = true, features = ["schemars", "bincode"] }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+
+[lints]
+workspace = true
