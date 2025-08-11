@@ -78,3 +78,24 @@ where
             .map_err(|e| StdError::generic_err(format!("unable to decode: {e:?}")))
     }
 }
+
+/// Default unit key encoding to avoid any dependency to an encoding. We encode
+/// a single byte because `CosmWasm` has limitations and make it impossible to
+/// differentiate non existing key if the value is empty.
+pub struct ValueUnitEncoding;
+
+impl Encoding for ValueUnitEncoding {}
+impl Encode<ValueUnitEncoding> for &() {
+    fn encode(self) -> Vec<u8> {
+        vec![0]
+    }
+}
+impl Decode<ValueUnitEncoding> for () {
+    type Error = ();
+    fn decode(x: &[u8]) -> Result<Self, Self::Error> {
+        match x {
+            &[0] => Ok(()),
+            _ => Err(()),
+        }
+    }
+}

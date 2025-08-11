@@ -1,7 +1,10 @@
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use cosmwasm_std::{Addr, StdError, StdResult};
-use depolama::{value::ValueCodecViaEncoding, KeyCodec, Prefix, Store, ValueCodec};
+use depolama::{
+    value::{ValueCodecViaEncoding, ValueUnitEncoding},
+    KeyCodec, Prefix, Store, ValueCodec,
+};
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
 use unionlabs::{
     encoding::Bincode,
@@ -386,15 +389,8 @@ impl KeyCodec<Addr> for WhitelistedRelayers {
             .map_err(|e| StdError::generic_err(format!("invalid key: {e}")))
     }
 }
-
-impl ValueCodec<()> for WhitelistedRelayers {
-    fn encode_value(_: &()) -> Bytes {
-        Bytes::new(&[0])
-    }
-
-    fn decode_value(_: &Bytes) -> StdResult<()> {
-        Ok(())
-    }
+impl ValueCodecViaEncoding for WhitelistedRelayers {
+    type Encoding = ValueUnitEncoding;
 }
 
 fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
