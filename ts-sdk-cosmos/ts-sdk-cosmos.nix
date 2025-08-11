@@ -13,25 +13,25 @@ _: {
     in
     {
       packages = {
-        ts-sdk-evm = buildPnpmPackage {
+        ts-sdk-cosmos = buildPnpmPackage {
           inherit pnpm;
           packageJsonPath = ./package.json;
-          extraSrcs = [ ../ts-sdk ../ts-sdk-evm ];
-          pnpmWorkspaces = [ "@unionlabs/sdk" "@unionlabs/sdk-evm" ];
-          #hash = "sha256-Qy3/L29jvGfev2eSeu7SkzYp8lUu5jaM7VzjcksoC4g=";
+          extraSrcs = [ ../ts-sdk ../ts-sdk-cosmos ];
+          pnpmWorkspaces = [ "@unionlabs/sdk" "@unionlabs/sdk-cosmos" ];
+          hash = "sha256-wGOqnAKq/pMJR3EUJUguY1LXIaKlOOL0XH6EtwCrjY4=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
-            pnpm --filter=@unionlabs/sdk-evm build
+            pnpm --filter=@unionlabs/sdk-cosmos build
             runHook postBuild
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./sdk-evm/* $out
+            cp -r ./ts-sdk-cosmos/* $out
           '';
           checkPhase = ''
-            pnpm run --filter=@unionlabs/sdk-evm check
-            pnpm run --filter=@unionlabs/sdk-evm test
+            pnpm run --filter=@unionlabs/sdk-cosmos check
+            pnpm run --filter=@unionlabs/sdk-cosmos test
           '';
         };
       };

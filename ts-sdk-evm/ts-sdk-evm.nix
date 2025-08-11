@@ -18,7 +18,7 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = [ ../ts-sdk ../ts-sdk-evm ];
           pnpmWorkspaces = [ "@unionlabs/sdk" "@unionlabs/sdk-evm" ];
-          #hash = "sha256-Qy3/L29jvGfev2eSeu7SkzYp8lUu5jaM7VzjcksoC4g=";
+          hash = "sha256-wGOqnAKq/pMJR3EUJUguY1LXIaKlOOL0XH6EtwCrjY4=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -27,7 +27,7 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./sdk-evm/* $out
+            cp -r ./ts-sdk-evm/* $out
           '';
           checkPhase = ''
             pnpm run --filter=@unionlabs/sdk-evm check
