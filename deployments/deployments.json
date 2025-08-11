@@ -461,7 +461,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 8088109,
-        "commit": "83acdb1bb890b88bf73624f1add5c4ed9136a7bb"
+        "commit": "bba8bd144cbf186eab669604f849357c95489b18"
       }
     }
   },
@@ -501,7 +501,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 3646606,
-        "commit": "83acdb1bb890b88bf73624f1add5c4ed9136a7bb"
+        "commit": "bba8bd144cbf186eab669604f849357c95489b18"
       }
     }
   },
