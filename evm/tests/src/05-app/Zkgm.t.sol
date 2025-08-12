@@ -5937,7 +5937,7 @@ contract ZkgmTests is Test {
             metadata: hex"",
             baseAmount: 10,
             quoteToken: abi.encodePacked(
-                "union12gwne3zy6tvy2xm77ywncpkm03xpg5v7n3vv2u9ttwgew2ump2gslxrnhm"
+                "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r"
             ),
             quoteAmount: 10
         });

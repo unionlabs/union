@@ -2946,7 +2946,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
         MM_SOLVER_FILL_REPLY_ID => {
             let extract_market_maker = |x: &SubMsgResponse| {
                 x.events.iter().find_map(|e| {
-                    if e.ty == SOLVER_EVENT {
+                    if e.ty == format!("wasm-{}", SOLVER_EVENT) {
                         e.attributes
                             .iter()
                             .find(|a| a.key == SOLVER_EVENT_MARKET_MAKER_ATTR)
