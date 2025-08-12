@@ -41,24 +41,21 @@ export class AchievementsStore {
   /** Polling fiber */
   private pollFiber: Fiber.Fiber<never, Error> | null = null
 
-  /** Achievements organized by chain (also filtered to exclude expired achievements) */
+  /** Achievements organized by chain (includes expired achievements for visual indication) */
   achievementByChain = $derived(
     Option.flatMap(this.available, (achievements) => {
-      // Filter out expired achievements first
-      const activeAchievements = this.filterActiveAchievements(achievements)
-
       const achievementsMap = new Map(
-        activeAchievements.map((achievement) => [achievement.id, achievement]),
+        achievements.map((achievement) => [achievement.id, achievement]),
       )
 
       // Helper function to find the first achievement in a chain
       const findChainStart = (achievement: Achievement): Achievement => {
-        const previous = activeAchievements.find((a) => a.next === achievement.id)
+        const previous = achievements.find((a) => a.next === achievement.id)
         return previous ? findChainStart(previous) : achievement
       }
 
       return Option.some(
-        activeAchievements.reduce<Array<Array<Achievement>>>((chains, achievement) => {
+        achievements.reduce<Array<Array<Achievement>>>((chains, achievement) => {
           // Skip if achievement is already in any chain
           if (chains.some((chain) => chain.some((a) => a.id === achievement.id))) {
             return chains
@@ -118,36 +115,32 @@ export class AchievementsStore {
   }
 
   /**
-   * Filters achievements to exclude those that have passed their end_at date
-   * @private
+   * Checks if an achievement has expired based on its end_at date
+   * @param achievement - The achievement to check
+   * @returns true if the achievement has expired, false otherwise
    */
-  private filterActiveAchievements(achievements: Array<Achievement>): Array<Achievement> {
-    const now = new Date()
-    return achievements.filter((achievement) => {
-      // If no end_at date is set, the achievement is always active
-      if (!achievement.end_at) {
-        return true
-      }
+  public isAchievementExpired(achievement: Achievement): boolean {
+    // If no end_at date is set, the achievement never expires
+    if (!achievement.end_at) {
+      return false
+    }
 
-      // Parse the end_at date and check if it's in the future
-      const endDate = new Date(achievement.end_at)
-      return endDate > now
-    })
+    // Parse the end_at date and check if it's in the past
+    const endDate = new Date(achievement.end_at)
+    const now = new Date()
+    return endDate <= now
   }
 
   /**
-   * Loads all available achievements
+   * Loads all available achievements (including expired ones for visual indication)
    */
   private loadAvailableAchievements() {
     runPromise(
       pipe(
         getAvailableAchievements(),
         Effect.tap((result) => {
-          // Apply filtering to the result before setting it
-          this.available = Option.map(
-            result,
-            (achievements) => this.filterActiveAchievements(achievements),
-          )
+          // Store all achievements without filtering expired ones
+          this.available = result
           return Effect.void
         }),
         Effect.catchAll((error) => {
