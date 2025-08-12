@@ -1,4 +1,5 @@
 use core::str;
+use std::str::FromStr;
 
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
@@ -9,7 +10,7 @@ use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Binary,
     CodeInfoResponse, Coin, Coins, CosmosMsg, DecCoin, Decimal256, Deps, DepsMut, DistributionMsg,
     Empty, Env, Event, MessageInfo, QueryRequest, Reply, Response, StakingMsg, StdError, StdResult,
-    Storage, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    Storage, SubMsg, SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -20,7 +21,7 @@ use ibc_union_spec::{path::BatchPacketsPath, ChannelId, MustBeZero, Packet, Time
 use ucs03_zkgm_token_minter_api::{LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{Bytes, H256},
+    primitives::{encoding::HexPrefixed, Bytes, H256},
 };
 
 use crate::{
@@ -59,6 +60,9 @@ pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
+
+pub const SOLVER_EVENT: &str = "solver";
+pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
 
 /// Instantiate `ucs03-zkgm`.
 ///
@@ -2940,16 +2944,27 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
             }
         }
         MM_SOLVER_FILL_REPLY_ID => {
+            let extract_market_maker = |x: &SubMsgResponse| {
+                x.events.iter().find_map(|e| {
+                    if e.ty == SOLVER_EVENT {
+                        e.attributes
+                            .iter()
+                            .find(|a| a.key == SOLVER_EVENT_MARKET_MAKER_ATTR)
+                            .and_then(|a| Bytes::<HexPrefixed>::from_str(&a.value).ok())
+                    } else {
+                        None
+                    }
+                })
+            };
             match reply.result {
-                SubMsgResult::Ok(reply_data) => {
-                    #[allow(deprecated)]
-                    let market_maker = reply_data.data.unwrap_or_default();
+                SubMsgResult::Ok(reply_data) if extract_market_maker(&reply_data).is_some() => {
+                    let market_maker = extract_market_maker(&reply_data).expect("impossible");
                     Ok(Response::new().add_message(wasm_execute(
                         env.contract.address,
                         &ExecuteMsg::InternalWriteAck {
                             ack: TokenOrderAck {
                                 fill_type: FILL_TYPE_MARKETMAKER,
-                                market_maker: Vec::from(market_maker).into(),
+                                market_maker: market_maker.into(),
                             }
                             .abi_encode_params()
                             .into(),
@@ -2967,6 +2982,14 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                         },
                         vec![],
                     )?)),
+                // Solver didn't provide a maker address.
+                _ => Ok(Response::new().add_message(wasm_execute(
+                    env.contract.address,
+                    &ExecuteMsg::InternalWriteAck {
+                        ack: ACK_ERR_ONLY_MAKER.into(),
+                    },
+                    vec![],
+                )?)),
             }
         }
         UNSTAKE_REPLY_ID => match reply.result {
