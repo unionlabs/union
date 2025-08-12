@@ -6,17 +6,29 @@ use std::{
 };
 
 use ::serde::de::DeserializeOwned;
+use futures_util::{
+    future::{AndThen, InspectOk, Ready},
+    TryFutureExt,
+};
 use jsonrpsee::{
     core::{
-        client::{BatchResponse, ClientT},
+        client::{
+            BatchResponse, ClientT, MiddlewareMethodResponse, MiddlewareNotifResponse, RawResponse,
+        },
+        middleware::{layer::RpcLogger, RpcServiceT},
         params::BatchRequestBuilder,
         traits::ToRpcParams,
+        ClientError,
     },
-    http_client::{HttpClient, HttpClientBuilder},
+    http_client::{transport::HttpBackend, HttpClient, HttpClientBuilder, HttpRequest},
     rpc_params,
     ws_client::{PingConfig, WsClientBuilder},
 };
-use tracing::{debug, debug_span, instrument, trace, Instrument};
+use tower::{Layer, Service};
+use tracing::{
+    debug, debug_span, info, info_span, instrument, instrument::Instrumented, trace, Instrument,
+    Span,
+};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     option_unwrap,
@@ -40,8 +52,8 @@ pub use cometbft_types as types;
 pub type JsonRpcError = jsonrpsee::core::client::Error;
 
 #[derive(Debug, Clone)]
-pub struct Client {
-    inner: ClientInner,
+pub struct Client<HttpService = RpcLogger<jsonrpsee::http_client::RpcService<HttpBackend>>> {
+    inner: ClientInner<HttpService>,
 }
 
 impl Client {
@@ -66,22 +78,28 @@ impl Client {
                 ClientInner::Ws(client)
             }
             Some(("http" | "https", _)) => {
-                return Self::on_http(
+                return Ok(Self::on_http(
                     HttpClientBuilder::default()
                         .max_response_size(100 * 1024 * 1024)
                         .build(url)?,
-                );
+                ));
             }
             _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
         };
 
         Ok(Self { inner })
     }
+}
 
-    pub fn on_http(client: HttpClient) -> Result<Self, JsonRpcError> {
-        Ok(Self {
+#[expect(private_bounds, reason = "more concise way to write the bounds")]
+impl<S> Client<S>
+where
+    ClientInner<S>: ClientT,
+{
+    pub fn on_http(client: HttpClient<S>) -> Self {
+        Self {
             inner: ClientInner::Http(Box::new(client)),
-        })
+        }
     }
 
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
@@ -365,12 +383,20 @@ impl Client {
 }
 
 #[derive(Debug, Clone)]
-enum ClientInner {
-    Http(Box<HttpClient>),
+enum ClientInner<S> {
+    Http(Box<HttpClient<S>>),
     Ws(reconnecting_jsonrpc_ws_client::Client),
 }
 
-impl ClientT for ClientInner {
+impl<S> ClientT for ClientInner<S>
+where
+    S: RpcServiceT<
+            MethodResponse = Result<MiddlewareMethodResponse, ClientError>,
+            BatchResponse = Result<Vec<RawResponse<'static>>, ClientError>,
+            NotificationResponse = Result<MiddlewareNotifResponse, ClientError>,
+        > + Send
+        + Sync,
+{
     async fn notification<Params>(&self, method: &str, params: Params) -> Result<(), JsonRpcError>
     where
         Params: ToRpcParams + Send,
@@ -407,131 +433,228 @@ impl ClientT for ClientInner {
 }
 
 // These tests are useful in testing and debugging, but should not be run in CI
-// #[cfg(test)]
-// mod live_tests {
-//     use hex_literal::hex;
+#[cfg(test)]
+mod live_tests {
+    use hex_literal::hex;
+    use jsonrpsee::{core::middleware::layer::RpcLoggerLayer, http_client::transport::HttpBackend};
+    use tower::{
+        layer::util::{Identity, Stack},
+        limit::RateLimitLayer,
+        timeout::TimeoutLayer,
+    };
 
-//     use super::*;
+    use super::*;
 
-//     const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
-//     const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
-//     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
-//     const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
-//     const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
+    const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
+    const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
+    const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
+    const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
+    const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
 
-//     const TEST_URL: &str = UNION_TESTNET;
+    const TEST_URL: &str = UNION_TESTNET;
 
-//     #[tokio::test]
-//     async fn commit() {
-//         let client = Client::new(TEST_URL).await.unwrap();
+    #[tokio::test]
+    async fn commit() {
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client.commit(Some(1.try_into().unwrap())).await;
+        let result = client.commit(Some(1.try_into().unwrap())).await;
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn abci_query() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn abci_query() {
+        let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new("https://rpc.pacific-1.sei.io").await.unwrap();
+        let client = Client::new("https://rpc.pacific-1.sei.io").await.unwrap();
 
-//         let result = client
-//             .abci_query(
-//                 "store/evm/key",
-//                 &[
-//                     [0x03].as_slice(),
-//                     &hex!("4a4d9abD36F923cBA0Af62A39C01dEC2944fb638"),
-//                     &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
-//                 ]
-//                 .into_iter()
-//                 .flatten()
-//                 .copied()
-//                 .collect::<Vec<_>>(),
-//                 Some(142070066.try_into().unwrap()),
-//                 true,
-//             )
-//             .await;
+        let result = client
+            .abci_query(
+                "store/evm/key",
+                &[
+                    [0x03].as_slice(),
+                    &hex!("4a4d9abD36F923cBA0Af62A39C01dEC2944fb638"),
+                    &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+                ]
+                .into_iter()
+                .flatten()
+                .copied()
+                .collect::<Vec<_>>(),
+                Some(142070066.try_into().unwrap()),
+                true,
+            )
+            .await;
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn validators() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn validators() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         // let result = client
-//         //     .validators(
-//         //         Some(100.try_into().unwrap()),
-//         //         Some(ValidatorsPagination {
-//         //             page: 1.try_into().unwrap(),
-//         //             per_page: None,
-//         //         }),
-//         //     )
-//         //     .await;
+        // let result = client
+        //     .validators(
+        //         Some(100.try_into().unwrap()),
+        //         Some(ValidatorsPagination {
+        //             page: 1.try_into().unwrap(),
+        //             per_page: None,
+        //         }),
+        //     )
+        //     .await;
 
-//         let result = client.all_validators(None).await.unwrap();
+        let result = client.all_validators(None).await.unwrap();
 
-//         dbg!(result.validators.len(),);
+        dbg!(result.validators.len(),);
 
-//         println!(
-//             "{}",
-//             serde_json::to_string_pretty(&result.validators).unwrap()
-//         );
-//     }
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&result.validators).unwrap()
+        );
+    }
 
-//     #[tokio::test]
-//     async fn status() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn status() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client.status().await.unwrap();
+        let result = client.status().await.unwrap();
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn block() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn block() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         // let mut i = 1376377;
+        // let mut i = 1376377;
 
-//         // loop {
-//         //     dbg!(i);
+        // loop {
+        //     dbg!(i);
 
-//         let result = client
-//             .block(Some(1.try_into().unwrap()))
-//             // .block(None)
-//             .await
-//             .unwrap();
+        let result = client
+            .block(Some(1.try_into().unwrap()))
+            // .block(None)
+            .await
+            .unwrap();
 
-//         dbg!(result.block);
+        dbg!(result.block);
 
-//         //     i += 1;
+        //     i += 1;
 
-//         //     tokio::time::sleep(Duration::from_millis(100)).await;
-//         // }
-//     }
+        //     tokio::time::sleep(Duration::from_millis(100)).await;
+        // }
+    }
 
-//     #[tokio::test]
-//     async fn tx() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn tx() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client
-//             .tx(
-//                 hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
-//                 true,
-//             )
-//             .await
-//             .unwrap();
+        let result = client
+            .tx(
+                hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+                true,
+            )
+            .await
+            .unwrap();
 
-//         dbg!(result);
-//     }
-// }
+        dbg!(result);
+    }
+
+    #[tokio::test]
+    async fn on_http() {
+        let _ = tracing_subscriber::fmt().try_init();
+
+        let sb = tower::ServiceBuilder::default().layer(CkUpstreamLoggerLayer::new());
+        // .layer(TimeoutLayer::new(Duration::from_secs(2)));
+
+        let builder: HttpClientBuilder<
+            _,
+            _, // Stack<TimeoutLayer, Identity>,
+               // Stack<RpcLoggerLayer, Identity>,
+        > = HttpClient::<HttpBackend>::builder()
+            .max_response_size(100 * 1024 * 1024)
+            .set_http_middleware(sb);
+
+        let http_client = builder
+            .build("https://rpc.bbn-1.babylon.chain.kitchen")
+            .unwrap();
+        let client = Client::on_http(http_client);
+
+        client.status().await.unwrap();
+    }
+}
+
+pub struct CkUpstreamLoggerLayer {}
+
+impl CkUpstreamLoggerLayer {
+    /// Create new rate limit layer.
+    pub const fn new() -> Self {
+        CkUpstreamLoggerLayer {}
+    }
+}
+
+impl<S> Layer<S> for CkUpstreamLoggerLayer {
+    type Service = CkUpstreamLogger<S>;
+
+    fn layer(&self, service: S) -> <Self as Layer<S>>::Service {
+        CkUpstreamLogger(service, None)
+    }
+}
+
+#[derive(Clone)]
+pub struct CkUpstreamLogger<S>(S, Option<Span>);
+
+impl<S> Service<HttpRequest> for CkUpstreamLogger<S>
+where
+    S: Service<HttpRequest, Response = http::response::Response<hyper::body::Incoming>>,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = AndThen<
+        S::Future,
+        Instrumented<Ready<Result<S::Response, S::Error>>>,
+        fn(S::Response) -> Instrumented<Ready<Result<S::Response, S::Error>>>,
+    >;
+
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), <Self as Service<HttpRequest>>::Error>> {
+        self.1 = Some(info_span!("ck-upstream", ck_upstream = "TEST"));
+        self.0.poll_ready(cx)
+    }
+
+    #[instrument(skip_all, fields(test = "hi"))]
+    fn call(&mut self, req: HttpRequest) -> <Self as Service<HttpRequest>>::Future {
+        self.0.call(req).and_then(|response: S::Response| {
+            let ck_upstream = response.headers().get("ck-upstream").cloned();
+
+            tracing::Span::current().record(
+                "ck_upstream",
+                ck_upstream
+                    .as_ref()
+                    .map_or("unknown", |ck| ck.to_str().unwrap_or("invalid")),
+            );
+
+            tracing::Span::current().record("methodlksd", "osdfkljsdlj");
+
+            info!(?ck_upstream, "hi");
+
+            futures_util::future::ok(response).instrument(
+                ck_upstream
+                    .and_then(|c| c.to_str().ok().map(ToOwned::to_owned))
+                    .map_or(
+                        Span::none(),
+                        |ck_upstream| info_span!("ck_upstream", %ck_upstream),
+                    ),
+            )
+        })
+    }
+}

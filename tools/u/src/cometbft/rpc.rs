@@ -1,5 +1,18 @@
+use std::{future::Future, time::Duration};
+
 use anyhow::{bail, Result};
 use clap::{Args, Subcommand};
+use cometbft_rpc::CkUpstreamLoggerLayer;
+use http_body_util::{BodyExt, Full};
+use jsonrpsee::{
+    core::middleware::{Batch, Notification, RpcServiceT},
+    http_client::{HttpClientBuilder, HttpRequest},
+    types::Id,
+    ws_client::RpcServiceBuilder,
+};
+use tower::Layer;
+use tower_http::trace::TraceLayer;
+use tracing::{info, instrument, Instrument, Span};
 use unionlabs::{bounded::BoundedI64, primitives::Bytes};
 
 use crate::print_json;
@@ -89,8 +102,62 @@ pub enum Method {
 }
 
 impl Cmd {
+    #[instrument(skip_all, fields())]
     pub async fn run(self) -> Result<()> {
-        let client = cometbft_rpc::Client::new(self.rpc_url).await?;
+        let client = cometbft_rpc::Client::on_http(
+            HttpClientBuilder::new()
+                .set_rpc_middleware(RpcServiceBuilder::new().layer(IdLoggerLayer::new()))
+                .set_http_middleware(
+                    tower::ServiceBuilder::new().layer(
+                        TraceLayer::new_for_http()
+                            .make_span_with(|request: &HttpRequest| {
+                                // #[derive(serde::Deserialize)]
+                                // struct OnlyIdResponse<'a> {
+                                //     #[serde(borrow)]
+                                //     id: Id<'a>,
+                                // }
+
+                                // span.record(
+                                //     "id",
+                                //     serde_json::from_str::<OnlyIdResponse>(
+                                //         request.body().into_data_stream(),
+                                //     )
+                                //     .unwrap()
+                                //     .id
+                                //     .to_string(),
+                                // );
+
+                                tracing::info_span!(
+                                    "request_info",
+                                    ck_upstream = tracing::field::Empty,
+                                    id = tracing::field::Empty,
+                                )
+                            })
+                            // .on_request(|request: &HttpRequest, span: &Span| {
+                            //     // dbg!(request.extensions().len());
+                            //     // request.body()
+                            // })
+                            .on_response(
+                                |response: &http::response::Response<hyper::body::Incoming>,
+                                 latency: Duration,
+                                 span: &Span| {
+                                    let ck_upstream =
+                                        response.headers().get("ck-upstream").cloned();
+
+                                    span.record(
+                                        "ck_upstream",
+                                        ck_upstream.as_ref().map_or("unknown", |ck| {
+                                            ck.to_str().unwrap_or("invalid")
+                                        }),
+                                    );
+
+                                    info!(?ck_upstream, "ck_upstream");
+                                },
+                            ),
+                    ),
+                )
+                .build(self.rpc_url)?,
+        );
 
         match self.method {
             Method::AbciInfo => print_json(&client.abci_info().await?),
@@ -106,5 +173,63 @@ impl Cmd {
         }
 
         Ok(())
+    }
+}
+
+/// RPC logger layer.
+#[derive(Copy, Clone, Debug)]
+pub struct IdLoggerLayer;
+
+impl IdLoggerLayer {
+    /// Create a new logging layer.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl<S> tower::Layer<S> for IdLoggerLayer {
+    type Service = IdLogger<S>;
+
+    fn layer(&self, service: S) -> Self::Service {
+        IdLogger { service }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IdLogger<S> {
+    service: S,
+}
+
+impl<S> RpcServiceT for IdLogger<S>
+where
+    S: RpcServiceT + Send + Sync + Clone + 'static,
+    // S::MethodResponse: ToJson,
+    // S::BatchResponse: ToJson,
+{
+    type MethodResponse = S::MethodResponse;
+    type NotificationResponse = S::NotificationResponse;
+    type BatchResponse = S::BatchResponse;
+
+    fn call<'a>(
+        &self,
+        request: jsonrpsee::types::Request<'a>,
+    ) -> impl Future<Output = Self::MethodResponse> + Send + 'a {
+        dbg!(tracing::Span::current()).record("id", request.id.to_string());
+        // info!(id = %request.id, len = request.extensions.len(), "id");
+        self.service.call(request)
+        //             .instrument(
+        // // name = "method_call_with_id", skip_all, fields(id = %request.id), level = "info"
+        //         )
+    }
+
+    fn batch<'a>(&self, batch: Batch<'a>) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
+        self.service.batch(batch)
+    }
+
+    fn notification<'a>(
+        &self,
+        n: Notification<'a>,
+    ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
+        self.service.notification(n)
     }
 }

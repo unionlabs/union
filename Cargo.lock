@@ -3687,9 +3687,12 @@ version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
  "cometbft-types",
+ "futures-util",
  "hex",
  "hex-literal",
- "jsonrpsee 0.25.1",
+ "http 1.3.1",
+ "hyper 1.6.0",
+ "jsonrpsee 0.26.0",
  "macros",
  "reconnecting-jsonrpc-ws-client",
  "serde",
@@ -3698,7 +3701,9 @@ dependencies = [
  "serde_path_to_error",
  "thiserror 2.0.12",
  "tokio",
+ "tower 0.5.2",
  "tracing",
+ "tracing-subscriber",
  "unionlabs",
 ]
 
@@ -7707,7 +7712,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "lazy_static",
  "lz4_flex",
  "prometheus",
@@ -8625,11 +8630,27 @@ dependencies = [
  "jsonrpsee-client-transport 0.25.1",
  "jsonrpsee-core 0.25.1",
  "jsonrpsee-http-client 0.25.1",
- "jsonrpsee-proc-macros 0.25.1",
  "jsonrpsee-server 0.25.1",
  "jsonrpsee-types 0.25.1",
- "jsonrpsee-wasm-client",
+ "jsonrpsee-wasm-client 0.25.1",
  "jsonrpsee-ws-client 0.25.1",
+ "tokio",
+]
+
+[[package]]
+name = "jsonrpsee"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f3f48dc3e6b8bd21e15436c1ddd0bc22a6a54e8ec46fedd6adf3425f396ec6a"
+dependencies = [
+ "jsonrpsee-client-transport 0.26.0",
+ "jsonrpsee-core 0.26.0",
+ "jsonrpsee-http-client 0.26.0",
+ "jsonrpsee-proc-macros 0.26.0",
+ "jsonrpsee-server 0.26.0",
+ "jsonrpsee-types 0.26.0",
+ "jsonrpsee-wasm-client 0.26.0",
+ "jsonrpsee-ws-client 0.26.0",
  "tokio",
  "tracing",
 ]
@@ -8669,6 +8690,31 @@ dependencies = [
  "gloo-net",
  "http 1.3.1",
  "jsonrpsee-core 0.25.1",
+ "pin-project 1.1.10",
+ "rustls 0.23.26",
+ "rustls-pki-types",
+ "rustls-platform-verifier",
+ "soketto",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-rustls 0.26.2",
+ "tokio-util",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "jsonrpsee-client-transport"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf36eb27f8e13fa93dcb50ccb44c417e25b818cfa1a481b5470cd07b19c60b98"
+dependencies = [
+ "base64 0.22.1",
+ "futures-channel",
+ "futures-util",
+ "gloo-net",
+ "http 1.3.1",
+ "jsonrpsee-core 0.26.0",
  "pin-project 1.1.10",
  "rustls 0.23.26",
  "rustls-pki-types",
@@ -8737,6 +8783,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpsee-core"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "316c96719901f05d1137f19ba598b5fe9c9bc39f4335f67f6be8613921946480"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures-timer",
+ "futures-util",
+ "http 1.3.1",
+ "http-body 1.0.1",
+ "http-body-util",
+ "jsonrpsee-types 0.26.0",
+ "parking_lot 0.12.3",
+ "pin-project 1.1.10",
+ "rand 0.9.1",
+ "rustc-hash 2.1.1",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-stream",
+ "tower 0.5.2",
+ "tracing",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
 name = "jsonrpsee-http-client"
 version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8785,6 +8859,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpsee-http-client"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "790bedefcec85321e007ff3af84b4e417540d5c87b3c9779b9e247d1bcc3dab8"
+dependencies = [
+ "base64 0.22.1",
+ "http-body 1.0.1",
+ "hyper 1.6.0",
+ "hyper-rustls 0.27.5",
+ "hyper-util",
+ "jsonrpsee-core 0.26.0",
+ "jsonrpsee-types 0.26.0",
+ "rustls 0.23.26",
+ "rustls-platform-verifier",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tower 0.5.2",
+ "url",
+]
+
+[[package]]
 name = "jsonrpsee-proc-macros"
 version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8799,9 +8896,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpsee-proc-macros"
-version = "0.25.1"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fa4f5daed39f982a1bb9d15449a28347490ad42b212f8eaa2a2a344a0dce9e9"
+checksum = "2da3f8ab5ce1bb124b6d082e62dffe997578ceaf0aeb9f3174a214589dc00f07"
 dependencies = [
  "heck 0.5.0",
  "proc-macro-crate 3.3.0",
@@ -8865,6 +8962,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpsee-server"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c51b7c290bb68ce3af2d029648148403863b982f138484a73f02a9dd52dbd7f"
+dependencies = [
+ "futures-util",
+ "http 1.3.1",
+ "http-body 1.0.1",
+ "http-body-util",
+ "hyper 1.6.0",
+ "hyper-util",
+ "jsonrpsee-core 0.26.0",
+ "jsonrpsee-types 0.26.0",
+ "pin-project 1.1.10",
+ "route-recognizer",
+ "serde",
+ "serde_json",
+ "soketto",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tower 0.5.2",
+ "tracing",
+]
+
+[[package]]
 name = "jsonrpsee-types"
 version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8889,6 +9013,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpsee-types"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc88ff4688e43cc3fa9883a8a95c6fa27aa2e76c96e610b737b6554d650d7fd5"
+dependencies = [
+ "http 1.3.1",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "jsonrpsee-wasm-client"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8897,6 +9033,18 @@ dependencies = [
  "jsonrpsee-client-transport 0.25.1",
  "jsonrpsee-core 0.25.1",
  "jsonrpsee-types 0.25.1",
+ "tower 0.5.2",
+]
+
+[[package]]
+name = "jsonrpsee-wasm-client"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7902885de4779f711a95d82c8da2d7e5f9f3a7c7cfa44d51c067fd1c29d72a3c"
+dependencies = [
+ "jsonrpsee-client-transport 0.26.0",
+ "jsonrpsee-core 0.26.0",
+ "jsonrpsee-types 0.26.0",
  "tower 0.5.2",
 ]
 
@@ -8923,6 +9071,20 @@ dependencies = [
  "jsonrpsee-client-transport 0.25.1",
  "jsonrpsee-core 0.25.1",
  "jsonrpsee-types 0.25.1",
+ "tower 0.5.2",
+ "url",
+]
+
+[[package]]
+name = "jsonrpsee-ws-client"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b6fceceeb05301cc4c065ab3bd2fa990d41ff4eb44e4ca1b30fa99c057c3e79"
+dependencies = [
+ "http 1.3.1",
+ "jsonrpsee-client-transport 0.26.0",
+ "jsonrpsee-core 0.26.0",
+ "jsonrpsee-types 0.26.0",
  "tower 0.5.2",
  "url",
 ]
@@ -12545,7 +12707,7 @@ name = "reconnecting-jsonrpc-ws-client"
 version = "0.0.0"
 dependencies = [
  "arc-swap",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "thiserror 2.0.12",
  "tokio",
  "tokio-util",
@@ -13465,7 +13627,7 @@ dependencies = [
 name = "scroll-rpc"
 version = "0.0.0"
 dependencies = [
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde-utils",
@@ -13821,9 +13983,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
 dependencies = [
  "indexmap 2.9.0",
  "itoa",
@@ -16523,16 +16685,18 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.4"
+version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fdb0c213ca27a9f57ab69ddb290fd80d970922355b83ae380b395d3986b8a2e"
+checksum = "adc82fd73de2a9722ac5da747f12383d2bfdb93591ee6c58486e0097890f05f2"
 dependencies = [
  "bitflags 2.9.0",
  "bytes",
  "http 1.3.1",
+ "http-body 1.0.1",
  "pin-project-lite",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -16905,6 +17069,7 @@ dependencies = [
  "bech32 0.11.0",
  "berachain-light-client-types",
  "bob-light-client-types",
+ "bytes",
  "clap 4.5.39",
  "cometbft-rpc",
  "cometbls-light-client-types",
@@ -16916,9 +17081,12 @@ dependencies = [
  "ethereum-light-client-types",
  "ethermint-light-client-types",
  "hex",
+ "http 1.3.1",
+ "http-body-util",
+ "hyper 1.6.0",
  "ibc-classic-spec",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "keccak-asm",
  "linea-light-client-types",
  "movement-light-client-types",
@@ -16936,6 +17104,8 @@ dependencies = [
  "subtle-encoding",
  "tendermint-light-client-types",
  "tokio",
+ "tower 0.5.2",
+ "tower-http 0.6.6",
  "tracing",
  "tracing-subscriber",
  "trusted-mpt-light-client-types",
@@ -17173,7 +17343,7 @@ dependencies = [
  "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "once_cell",
  "protos",
  "rand 0.9.1",
@@ -17485,7 +17655,7 @@ dependencies = [
  "futures",
  "ibc-classic-spec",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
@@ -17502,7 +17672,7 @@ dependencies = [
  "tikv-jemallocator",
  "tokio",
  "tower 0.4.13",
- "tower-http 0.6.4",
+ "tower-http 0.6.6",
  "tracing",
  "tracing-futures",
  "tracing-subscriber",
@@ -17527,7 +17697,7 @@ dependencies = [
  "futures",
  "indexmap 2.9.0",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "moka",
  "opentelemetry",
@@ -17560,7 +17730,7 @@ dependencies = [
  "arbitrum-light-client-types",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17577,7 +17747,7 @@ dependencies = [
  "base-light-client-types",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17597,7 +17767,7 @@ dependencies = [
  "bob-verifier",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17613,7 +17783,7 @@ dependencies = [
  "cometbft-rpc",
  "cometbls-light-client-types",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "protos",
  "serde",
  "serde_json",
@@ -17634,7 +17804,7 @@ dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17651,7 +17821,7 @@ dependencies = [
  "embed-commit",
  "ethermint-light-client-types",
  "ics23",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -17671,7 +17841,7 @@ dependencies = [
  "alloy",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "parlia-light-client-types",
  "parlia-types",
  "parlia-verifier",
@@ -17693,7 +17863,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "state-lens-ics23-ics23-light-client-types",
@@ -17714,7 +17884,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "state-lens-ics23-mpt-light-client",
@@ -17735,7 +17905,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "movement-light-client-types",
  "serde",
  "serde_json",
@@ -17753,7 +17923,7 @@ dependencies = [
  "bcs",
  "cosmwasm-std 2.2.2",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -17773,7 +17943,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ics23",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "protos",
  "serde",
  "serde_json",
@@ -17792,7 +17962,7 @@ dependencies = [
  "alloy",
  "ed25519-dalek",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17809,7 +17979,7 @@ dependencies = [
  "arbitrum-light-client-types",
  "embed-commit",
  "ethereum-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17825,7 +17995,7 @@ dependencies = [
  "base-light-client-types",
  "embed-commit",
  "ethereum-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17841,7 +18011,7 @@ dependencies = [
  "bob-light-client-types",
  "embed-commit",
  "ethereum-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17862,7 +18032,7 @@ dependencies = [
  "embed-commit",
  "hex",
  "hex-literal",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "num-bigint 0.4.6",
  "protos",
@@ -17880,7 +18050,7 @@ version = "0.0.0"
 dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -17895,7 +18065,7 @@ version = "0.0.0"
 dependencies = [
  "embed-commit",
  "ethermint-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -17912,7 +18082,7 @@ version = "0.0.0"
 dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "parlia-light-client-types",
  "serde",
  "serde_json",
@@ -17929,7 +18099,7 @@ dependencies = [
  "alloy-sol-types",
  "embed-commit",
  "futures",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "protos",
  "serde",
@@ -17954,7 +18124,7 @@ dependencies = [
  "enumorph",
  "ethereum-light-client-types",
  "futures",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "prost 0.12.6",
  "serde",
@@ -17979,7 +18149,7 @@ dependencies = [
  "enumorph",
  "ethereum-light-client-types",
  "futures",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "prost 0.12.6",
  "serde",
@@ -18000,7 +18170,7 @@ name = "voyager-client-module-sui"
 version = "0.0.0"
 dependencies = [
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "sui-light-client-types",
@@ -18016,7 +18186,7 @@ name = "voyager-client-module-tendermint"
 version = "0.0.0"
 dependencies = [
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18033,7 +18203,7 @@ version = "0.0.0"
 dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -18055,7 +18225,7 @@ dependencies = [
  "enumorph",
  "ethereum-light-client-types",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "tokio",
@@ -18078,7 +18248,7 @@ dependencies = [
  "ethereum-light-client-types",
  "futures",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18103,7 +18273,7 @@ dependencies = [
  "ethereum-light-client-types",
  "futures",
  "ics23",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "num-bigint 0.4.6",
  "prost 0.12.6",
@@ -18133,7 +18303,7 @@ dependencies = [
  "ethereum-light-client-types",
  "futures",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18153,7 +18323,7 @@ dependencies = [
  "embed-commit",
  "enumorph",
  "galois-rpc",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "num-bigint 0.4.6",
  "serde",
@@ -18179,7 +18349,7 @@ dependencies = [
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
  "futures",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "tokio",
@@ -18197,7 +18367,7 @@ dependencies = [
  "embed-commit",
  "enumorph",
  "ethermint-light-client-types",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18219,7 +18389,7 @@ dependencies = [
  "ethereum-light-client-types",
  "futures",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "parlia-light-client-types",
  "parlia-types",
@@ -18241,7 +18411,7 @@ dependencies = [
  "enumorph",
  "ibc-union-spec",
  "ics23",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "protos",
  "serde",
@@ -18262,7 +18432,7 @@ dependencies = [
  "embed-commit",
  "enumorph",
  "hex-literal",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "reqwest 0.11.27",
  "serde",
@@ -18285,7 +18455,7 @@ dependencies = [
  "cometbft-types",
  "embed-commit",
  "enumorph",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18311,7 +18481,7 @@ dependencies = [
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
  "futures",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "tokio",
@@ -18334,7 +18504,7 @@ dependencies = [
  "jaq-core",
  "jaq-json",
  "jaq-std",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "moka",
  "opentelemetry",
  "opentelemetry-otlp",
@@ -18347,7 +18517,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tower 0.5.2",
- "tower-http 0.6.4",
+ "tower-http 0.6.6",
  "tracing",
  "unionlabs",
  "voyager-message",
@@ -18373,7 +18543,7 @@ dependencies = [
  "ibc-classic-spec",
  "ibc-solidity",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "prost 0.12.6",
  "protos",
@@ -18398,7 +18568,7 @@ dependencies = [
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "subset-of",
@@ -18419,7 +18589,7 @@ dependencies = [
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18440,7 +18610,7 @@ dependencies = [
  "arbitrum-types",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "tokio",
  "tracing",
@@ -18456,7 +18626,7 @@ dependencies = [
  "base-client",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "tokio",
  "tracing",
@@ -18477,7 +18647,7 @@ dependencies = [
  "enumorph",
  "futures",
  "ics23",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "num-bigint 0.4.6",
  "prost 0.12.6",
@@ -18501,7 +18671,7 @@ dependencies = [
  "bob-client",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "tokio",
  "tracing",
@@ -18515,7 +18685,7 @@ version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "thiserror 2.0.12",
  "tokio",
@@ -18532,7 +18702,7 @@ dependencies = [
  "beacon-api",
  "beacon-api-types",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "moka",
  "serde",
  "tokio",
@@ -18548,7 +18718,7 @@ dependencies = [
  "alloy",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "parlia-light-client-types",
  "parlia-types",
  "parlia-verifier",
@@ -18564,7 +18734,7 @@ name = "voyager-finality-module-sui"
 version = "0.0.0"
 dependencies = [
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "sui-sdk",
  "thiserror 2.0.12",
@@ -18580,7 +18750,7 @@ version = "0.0.0"
 dependencies = [
  "cometbft-rpc",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "thiserror 2.0.12",
  "tokio",
@@ -18595,7 +18765,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "tokio",
  "tracing",
@@ -18628,7 +18798,7 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.39",
  "embed-commit",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "tokio",
@@ -18647,7 +18817,7 @@ dependencies = [
  "futures",
  "indexmap 2.9.0",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "moka",
  "opentelemetry",
@@ -18684,7 +18854,7 @@ dependencies = [
  "futures",
  "ibc-union-spec",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18702,7 +18872,7 @@ dependencies = [
  "embed-commit",
  "ibc-classic-spec",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "regex",
  "serde",
  "serde_with",
@@ -18719,7 +18889,7 @@ dependencies = [
  "embed-commit",
  "enumorph",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18736,7 +18906,7 @@ dependencies = [
  "anyhow",
  "futures",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "opentelemetry",
  "opentelemetry_sdk",
  "reconnecting-jsonrpc-ws-client",
@@ -18769,7 +18939,7 @@ dependencies = [
  "ibc-solidity",
  "ibc-union-spec",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde_json",
@@ -18792,7 +18962,7 @@ dependencies = [
  "enumorph",
  "futures",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "ripemd",
  "serde",
@@ -18826,7 +18996,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-classic-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -18846,7 +19016,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -18866,7 +19036,7 @@ dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tokio",
@@ -18883,7 +19053,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -18903,7 +19073,7 @@ dependencies = [
  "clap 4.5.39",
  "embed-commit",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "move-core-types",
  "reqwest 0.11.27",
  "serde",
@@ -18928,7 +19098,7 @@ dependencies = [
  "futures",
  "indexmap 2.9.0",
  "itertools 0.13.0",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "moka",
  "opentelemetry",
@@ -18958,7 +19128,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "clap 4.5.39",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "serde",
  "serde_json",
  "tracing",
@@ -18980,7 +19150,7 @@ dependencies = [
  "cometbft-rpc",
  "embed-commit",
  "ibc-classic-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "protos",
  "serde",
  "serde-utils",
@@ -19003,7 +19173,7 @@ dependencies = [
  "futures",
  "ibc-union-msg",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "protos",
  "serde",
  "serde-utils",
@@ -19024,7 +19194,7 @@ dependencies = [
  "futures",
  "ibc-solidity",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "moka",
  "serde",
  "serde_json",
@@ -19045,7 +19215,7 @@ dependencies = [
  "hex-literal",
  "ibc-solidity",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "reqwest 0.11.27",
  "serde",
@@ -19071,7 +19241,7 @@ dependencies = [
  "ibc-union",
  "ibc-union-msg",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "prost 0.12.6",
  "protos",
@@ -19099,7 +19269,7 @@ dependencies = [
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "serde",
  "serde-utils",
@@ -19123,7 +19293,7 @@ dependencies = [
  "fastcrypto",
  "hex-literal",
  "ibc-union-spec",
- "jsonrpsee 0.25.1",
+ "jsonrpsee 0.26.0",
  "macros",
  "move-core-types",
  "serde",
