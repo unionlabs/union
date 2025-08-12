@@ -6,7 +6,8 @@ use cw_storage_plus::Item;
 pub struct Config {
     pub admin: Addr,
     pub dummy_code_id: u64,
-    pub cw20_base_code_id: u64,
+    #[serde(alias = "cw20_base_code_id")]
+    pub cw20_impl_code_id: u64,
 }
 
 pub const CONFIG: Item<Config> = Item::new("conf");

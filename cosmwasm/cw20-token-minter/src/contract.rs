@@ -30,7 +30,7 @@ pub fn instantiate(
     msg: TokenMinterInitMsg,
 ) -> Result<Response, Error> {
     let TokenMinterInitMsg::Cw20 {
-        cw20_base_code_id,
+        cw20_impl_code_id,
         dummy_code_id,
         zkgm_admin,
     } = msg
@@ -41,7 +41,7 @@ pub fn instantiate(
         deps.storage,
         &Config {
             admin: info.sender,
-            cw20_base_code_id,
+            cw20_impl_code_id,
             dummy_code_id,
         },
     )?;
@@ -68,7 +68,7 @@ pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
 
     if let Some(new_cw20_code_id) = msg.new_cw20_code_id {
         CONFIG.update::<_, cosmwasm_std::StdError>(deps.storage, |mut c| {
-            c.cw20_base_code_id = new_cw20_code_id;
+            c.cw20_impl_code_id = new_cw20_code_id;
             Ok(c)
         })?;
     }

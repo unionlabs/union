@@ -159,7 +159,7 @@ _: {
             gas_multiplier = 1.4;
           };
           apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base);
+            ucs03 = ucs03-configs.cw20 cw20-base;
           };
           bech32_prefix = "union";
           lightclients = [
@@ -316,7 +316,7 @@ _: {
             max_gas = 10000000;
           };
           apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base);
+            ucs03 = ucs03-configs.cw20 cw20-base;
           };
           bech32_prefix = "bbn";
           lightclients = [
@@ -819,6 +819,17 @@ _: {
                     cosmwasm-deployer \
                     store-code \
                     --rpc-url ${rpc_url} \
+                    --bytecode ${apps.ucs03.token_minter_config.cw20.cw20_impl} \
+                    --output cw20-impl-code-id.txt \
+                    ${mk-gas-args gas_config}
+
+                  echo "cw20 impl code id: $(cat cw20-impl-code-id.txt)"
+
+                  PRIVATE_KEY=${private_key} \
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    store-code \
+                    --rpc-url ${rpc_url} \
                     --bytecode ${apps.ucs03.cw_account_path} \
                     --output cw-account-code-id.txt \
                     ${mk-gas-args gas_config}
@@ -852,7 +863,7 @@ _: {
                     migrate \
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}, \"rate_limit_disabled\":${
+                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo "{\"new_cw20_code_id\":$(cat cw20-impl-code-id.txt)}" | base64)\"}, \"rate_limit_disabled\":${
                       if apps.ucs03.rate_limit_disabled then "true" else "false"
                     }, \"cw_account_code_id\": $(cat cw-account-code-id.txt), \"dummy_code_id\": $(cat proxy-code-id.txt)}" \
                     --force \
