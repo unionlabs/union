@@ -36,7 +36,7 @@ mod tests {
         CreateWrappedTokenEvent {
             header,
             channel_id: ChannelId(42),
-            path: Path(Bytes::from("path")),
+            path: Path(42_u128.try_into().unwrap()),
             base_token: Denom(Bytes::from("base-token")),
             quote_token: Denom(Bytes::from("quote-token")),
             metadata: Metadata(Bytes::from("metadata")),
@@ -60,7 +60,7 @@ mod tests {
   "channel_id": 42,
   "event_index": "42",
   "height": "10042",
-  "path": "0x70617468",
+  "path": "0x2a",
   "quote_token": "0x71756f74652d746f6b656e",
   "timestamp": "2020-09-13T12:27:22Z",
   "transaction_event_index": "242",
@@ -68,7 +68,7 @@ mod tests {
   "transaction_index": "142",
   "universal_chain_id": "test-chain-42",
   "metadata": "0x6d65746164617461",
-  "kind": 1
+  "kind": 0
 }"#;
 
         test_json_format(&event, expected_json);

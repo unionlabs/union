@@ -26,7 +26,7 @@ pub struct KeyedEvent {
 pub enum ParsingError {
     /// The name of the decoded event is not found in the ABI. This might
     /// indicate an ABI mismatch.
-    #[error("event not found for given abi")]
+    #[error("event not found for given abi: {selector}")]
     UnknownEvent { selector: FixedBytes<32> },
     /// The name of the event IS found in the ABI, yet decoding still failed.
     /// This might indicate an out-of-date ABI.

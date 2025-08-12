@@ -363,7 +363,7 @@ impl TmEvent {
     }
 
     fn get_path(&self, key: &str) -> Result<Path, IndexerError> {
-        Ok(self.get_bytes(key, "path")?.into())
+        Ok(self.get_u256(key, "path")?.into())
     }
 
     fn get_u8(&self, key: &str, expecting: &str) -> Result<u8, IndexerError> {

@@ -987,12 +987,12 @@ mod tests {
                     "data": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
                   },
                   "_type": "TokenOrder",
-                  "base_amount": "0x64",
-                  "base_token": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "baseToken": "0x6d756e6f",
                   "kind": 1,
                   "metadata": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280",
-                  "quote_amount": "0x64",
-                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732"
                 },

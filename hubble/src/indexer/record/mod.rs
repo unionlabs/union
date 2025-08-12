@@ -38,6 +38,7 @@ pub(crate) mod connection_open_try_record;
 pub(crate) mod create_client_record;
 pub(crate) mod create_lens_client_record;
 pub(crate) mod create_wrapped_token_record;
+pub(crate) mod create_wrapped_token_relation_record;
 pub(crate) mod event_handler;
 pub(crate) mod packet_ack_record;
 pub(crate) mod packet_recv_record;
@@ -452,9 +453,9 @@ impl PgValue<Vec<u8>> for MakerMsg {
         Ok(self.0.to_vec())
     }
 }
-impl PgValue<Vec<u8>> for Path {
-    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
-        Ok(self.0.to_vec())
+impl PgValue<BigDecimal> for Path {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
     }
 }
 

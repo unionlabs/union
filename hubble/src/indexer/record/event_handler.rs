@@ -17,6 +17,7 @@ use crate::indexer::{
         create_client_record::CreateClientRecord,
         create_lens_client_record::CreateLensClientRecord,
         create_wrapped_token_record::CreateWrappedTokenRecord,
+        create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_ack_record::PacketAckRecord,
         packet_recv_record::PacketRecvRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
@@ -128,6 +129,12 @@ pub async fn delete_event_data_at_height(
         changes +=
             CreateWrappedTokenRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
                 .await?;
+        changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
+            tx,
+            internal_chain_id,
+            height,
+        )
+        .await?;
     } else {
         debug!("delete_event_data_at_height: {internal_chain_id}@{height} => nothing to delete");
     };

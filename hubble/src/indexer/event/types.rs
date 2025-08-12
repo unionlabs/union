@@ -582,10 +582,10 @@ pub enum MutationDirection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Path(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+pub struct Path(pub U256);
 
-impl From<bytes::Bytes> for Path {
-    fn from(value: bytes::Bytes) -> Self {
+impl From<U256> for Path {
+    fn from(value: U256) -> Self {
         Self(value)
     }
 }

@@ -2,6 +2,7 @@ use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
+    enrich::enrich_create_wrapped_token_record,
     event::create_wrapped_token::CreateWrappedTokenEvent,
     handler::EventContext,
     record::{
@@ -16,6 +17,11 @@ impl<'a> EventContext<'a, ChainContext, CreateWrappedTokenEvent> {
     ) -> Result<Changes, IndexerError> {
         trace!("handle({self:?})");
 
-        CreateWrappedTokenRecord::try_from(self)?.insert(tx).await
+        let record = CreateWrappedTokenRecord::try_from(self)?;
+        let mut changes = Changes::default();
+        changes += record.insert(tx).await?;
+        changes += enrich_create_wrapped_token_record(tx, record).await?;
+
+        Ok(changes)
     }
 }

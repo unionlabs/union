@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM v2_sync.create_wrapped_token_relation_sync\n            WHERE internal_wrapped_chain_id = $1 AND height = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b3832885f650ef93bfba2a75ddd2ceb4f0ebfa886653a203f08ba902fe1832a0"
+}

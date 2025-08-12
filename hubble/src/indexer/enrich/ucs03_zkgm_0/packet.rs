@@ -129,10 +129,10 @@ impl Serialize for TokenOrderV2 {
         // Serialize all standard fields
         state.serialize_field("sender", &self.sender)?;
         state.serialize_field("receiver", &self.receiver)?;
-        state.serialize_field("base_token", &self.baseToken)?;
-        state.serialize_field("base_amount", &self.baseAmount)?;
-        state.serialize_field("quote_token", &self.quoteToken)?;
-        state.serialize_field("quote_amount", &self.quoteAmount)?;
+        state.serialize_field("baseToken", &self.baseToken)?;
+        state.serialize_field("baseAmount", &self.baseAmount)?;
+        state.serialize_field("quoteToken", &self.quoteToken)?;
+        state.serialize_field("quoteAmount", &self.quoteAmount)?;
         state.serialize_field("kind", &self.kind)?;
         state.serialize_field("metadata", &self.metadata)?;
 
@@ -334,10 +334,10 @@ mod tests {
                     "data": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
                   },
                   "_type": "TokenOrder",
-                  "base_amount": "0x64",
-                  "base_token": "0x6d756e6f",
-                  "quote_amount": "0x64",
-                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "baseAmount": "0x64",
+                  "baseToken": "0x6d756e6f",
+                  "quoteAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                   "kind": 1,
@@ -366,10 +366,10 @@ mod tests {
                   "_type": "TokenOrder",
                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
-                  "base_token": "0x6d756e6f",
-                  "base_amount": "0x64",
-                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
-                  "quote_amount": "0x64",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
                   "kind": 0,
                   "metadata": "0x0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000149c968b805a625303ad43fce99ae72306256fe5f900000000000000000000000000000000000000000000000000000000000000000000000000000000000001829f0385300000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                   "_metadata": {
@@ -438,10 +438,10 @@ mod tests {
                   "_type": "TokenOrder",
                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
-                  "base_token": "0x6d756e6f",
-                  "base_amount": "0x64",
-                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
-                  "quote_amount": "0x64",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
                   "kind": 2,
                   "metadata": "0xcafebabecafebabecafebabecafebabecafebabe",
                   "_metadata": {
@@ -508,10 +508,10 @@ mod tests {
                   "_type": "TokenOrder",
                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
-                  "base_token": "0x6d756e6f",
-                  "base_amount": "0x64",
-                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
-                  "quote_amount": "0x64",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
                   "kind": 99,
                   "metadata": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
                   "_metadata": {
@@ -578,10 +578,10 @@ mod tests {
                   "_type": "TokenOrder",
                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
-                  "base_token": "0x6d756e6f",
-                  "base_amount": "0x64",
-                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
-                  "quote_amount": "0x64",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
                   "kind": 0,
                   "metadata": "0xdeadbeef",
                   "_metadata": {
@@ -637,7 +637,7 @@ mod tests {
                     {
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                         "contractCalldata": "0xcafebabe",
                         "eureka": true,
@@ -691,7 +691,7 @@ mod tests {
                     {
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "eureka": true,
                         "sender": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
                         "contractAddress": "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",

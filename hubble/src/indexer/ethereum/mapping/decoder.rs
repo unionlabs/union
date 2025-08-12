@@ -331,7 +331,7 @@ impl SolEvent {
     }
 
     pub fn get_path(&self, key: &str) -> Result<Path, IndexerError> {
-        Ok(self.get_bytes(key, "path")?.into())
+        Ok(self.get_u256(key, "path")?.into())
     }
 
     pub fn get_packet(&self, key: &str) -> Result<SolEvent, IndexerError> {

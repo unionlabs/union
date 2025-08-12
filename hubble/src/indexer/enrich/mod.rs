@@ -25,6 +25,8 @@ use crate::indexer::{
     postgres::chain_context::fetch_chain_context_for_universal_chain_id,
     record::{
         change_counter::Changes, channel_meta_data::get_channel_meta_data,
+        create_wrapped_token_record::CreateWrappedTokenRecord,
+        create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
@@ -58,11 +60,40 @@ pub async fn delete_enriched_data_for_block(
         *height,
     )
     .await?;
+    changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
 
     Ok(changes)
 }
 
-pub async fn enrich(
+pub async fn enrich_create_wrapped_token_record(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: CreateWrappedTokenRecord,
+) -> Result<Changes, IndexerError> {
+    let mut changes = Changes::default();
+
+    let internal_chain_id: InternalChainId = record.internal_chain_id.into();
+    let channel_id: ChannelId = record.channel_id.try_into()?;
+
+    let Some(channel) = get_channel_meta_data(tx, &internal_chain_id, &channel_id).await? else {
+        return Ok(Changes::default());
+    };
+
+    let internal_unwrapping_chain_id = channel.internal_counterparty_chain_id;
+
+    let create_wrapped_token_relation_record: CreateWrappedTokenRelationRecord =
+        (&record, &internal_unwrapping_chain_id).try_into()?;
+
+    changes += create_wrapped_token_relation_record.insert(tx).await?;
+
+    Ok(changes)
+}
+
+pub async fn enrich_packet_send_record(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: PacketSendRecord,
 ) -> Result<Changes, IndexerError> {

@@ -4,7 +4,10 @@ use tracing::{debug, info, trace, warn};
 
 use crate::indexer::{
     api::{FetcherClient, IndexerError},
-    enrich::{delete_enriched_data_for_block, enrich},
+    enrich::{
+        delete_enriched_data_for_block, enrich_create_wrapped_token_record,
+        enrich_packet_send_record,
+    },
     event::types::BlockHeight,
     postgres::{
         block_enrich::{
@@ -12,7 +15,10 @@ use crate::indexer::{
         },
         lock::try_lock_block,
     },
-    record::{change_counter::Changes, packet_send_record::PacketSendRecord},
+    record::{
+        change_counter::Changes, create_wrapped_token_record::CreateWrappedTokenRecord,
+        packet_send_record::PacketSendRecord,
+    },
     Indexer,
 };
 
@@ -138,7 +144,19 @@ impl<T: FetcherClient> Indexer<T> {
                 hex::encode(&packet_send_record.packet_hash)
             );
 
-            inserted += enrich(tx, packet_send_record).await?;
+            inserted += enrich_packet_send_record(tx, packet_send_record).await?;
+        }
+
+        for create_wrapped_token_record in
+            CreateWrappedTokenRecord::find_by_chain_and_height(tx, &self.universal_chain_id, height)
+                .await?
+        {
+            debug!(
+                "enrich_height : {height} quote-token: {}",
+                hex::encode(&create_wrapped_token_record.quote_token)
+            );
+
+            inserted += enrich_create_wrapped_token_record(tx, create_wrapped_token_record).await?;
         }
 
         debug!("enrich_height : {height} inserted: {inserted}");
