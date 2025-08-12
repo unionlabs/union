@@ -20,7 +20,7 @@ let currentStep = $state(0)
 const checkingSteps = [
   "Waiting to start..",
 
-  "Digging trhough socials..",
+  "Digging through socials..",
   "Reading achievements..",
   "Checking missions..",
   "Looking at rewards..",
