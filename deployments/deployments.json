@@ -719,8 +719,8 @@
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 354875,
-      "commit": "e6d7b21598b95b2244bf82b242d97606585e6c25",
-      "code_id": 92
+      "commit": "6609d7359e46d6bf3de739056b27666c7de322b0",
+      "code_id": 134
     },
     "lightclient": {
       "arbitrum": {
@@ -788,8 +788,8 @@
       "ucs03": {
         "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
         "height": 354920,
-        "commit": "3ba126b285cc21173d3b352591eb72b1627d4166",
-        "code_id": 119,
+        "commit": "6609d7359e46d6bf3de739056b27666c7de322b0",
+        "code_id": 137,
         "minter": {
           "type": "cw20",
           "address": "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0",
