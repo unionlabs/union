@@ -657,18 +657,6 @@ pub enum WrapDirection {
     Unwrapping,
 }
 
-impl TryFrom<TokenOrderKind> for WrapDirection {
-    type Error = IndexerError;
-
-    fn try_from(value: TokenOrderKind) -> Result<Self, Self::Error> {
-        match value {
-            TokenOrderKind::Initialize | TokenOrderKind::Escrow => Ok(WrapDirection::Wrapping),
-            TokenOrderKind::Unescrow => Ok(WrapDirection::Unwrapping),
-            TokenOrderKind::Unsupported(kind) => Err(IndexerError::UnsupportedTokenOrderKind(kind)),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PacketShape {
     #[serde(rename = "batch_v0_transfer_v0_fee")]

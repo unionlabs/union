@@ -279,15 +279,12 @@ async fn get_transfers(
                 &IntermediateChannelIds::default(), // no support for intermediate channel ids.
                 &record.source_channel_id.try_into()?,
                 &record.destination_channel_id.try_into()?,
-                // &record.height.try_into()?,
                 &base_token,
                 &quote_token,
-                // &kind,
-                // &metadata,
             )
             .await?
         }
-        _ => None, // done calculate wrapping on packet-send in version >= 2 messages. wrappings are exposed as new 'create wrapped token' events.
+        _ => None, // no calculate wrapping on packet-send in version >= 2 messages. wrappings are exposed as new 'create wrapped token' events.
     };
 
     let fee = calculate_fee(

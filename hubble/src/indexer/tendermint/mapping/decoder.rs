@@ -321,7 +321,7 @@ impl TmEvent {
         &self,
         key: &str,
     ) -> Result<CreateWrappedTokenKind, IndexerError> {
-        Ok(self.get_u8(key, "kind")?.into())
+        Ok(self.get_u8(key, "create-wrapped-token-kind")?.into())
     }
 
     fn get_capacity(&self, key: &str) -> Result<Capacity, IndexerError> {
