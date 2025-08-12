@@ -215,8 +215,8 @@ contract ZkgmSolverTest is Test {
         assertTrue(ZkgmLib.isSolver(address(mockSolver)));
         assertTrue(ZkgmLib.isSolver(address(mockSolverWithU)));
 
-        // Regular contract should not be detected as solver
-        assertFalse(ZkgmLib.isSolver(address(uToken)));
+        // U token should be detected as solver
+        assertTrue(ZkgmLib.isSolver(address(uToken)));
 
         // EOA should not be detected as solver
         assertFalse(ZkgmLib.isSolver(makeAddr("eoa")));
@@ -828,7 +828,7 @@ contract ZkgmSolverTest is Test {
         assertTrue(ZkgmLib.isSolver(address(mockSolver)));
         assertTrue(ZkgmLib.isSolver(address(mockSolverWithU)));
 
-        assertFalse(ZkgmLib.isSolver(address(uToken)));
+        assertTrue(ZkgmLib.isSolver(address(uToken)));
         assertFalse(ZkgmLib.isSolver(address(this)));
 
         bytes4 solverInterfaceId = type(ISolver).interfaceId;

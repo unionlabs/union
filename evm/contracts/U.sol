@@ -5,6 +5,7 @@ import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import
     "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "solady/utils/LibBytes.sol";
 
@@ -18,7 +19,8 @@ contract U is
     AccessManagedUpgradeable,
     ERC20Upgradeable,
     Versioned,
-    ISolver
+    ISolver,
+    ERC165
 {
     using LibBytes for *;
 
@@ -188,6 +190,13 @@ contract U is
         // The market maker address will be the preconfigured beneficiary.
         // Likely another U contract/vault.
         return counterparty.beneficiary;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override returns (bool) {
+        return interfaceId == type(ISolver).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     modifier onlyZkgm() {

@@ -5853,8 +5853,8 @@ contract ZkgmTests is Test {
         assertEq(stakeNFT.ownerOf(tokenId2), address(zkgm));
     }
 
-    function test_create_foa() public {
-        TokenOrderV1 memory foa = TokenOrderV1({
+    function test_create_tokenOrder() public {
+        TokenOrderV1 memory tokenOrder = TokenOrderV1({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
@@ -5871,51 +5871,82 @@ contract ZkgmTests is Test {
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_1,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeTokenOrderV1(foa)
+            operand: ZkgmLib.encodeTokenOrderV1(tokenOrder)
         });
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
-    function test_create_foa_v2_preimage_evm() public {
+    function test_create_tokenOrder_v2_u() public {
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
+            receiver: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            baseToken: abi.encodePacked(0xba5eD44733953d79717F6269357C77718C8Ba5ed),
+            kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+            metadata: hex"",
+            baseAmount: 0,
+            quoteToken: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
+            quoteAmount: 0
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
+        });
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+        console.log("Operand");
+        console.logBytes(ZkgmLib.encodeTokenOrderV2(tokenOrder));
+    }
+
+    function test_create_tokenOrder_v2_preimage_evm() public {
         TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
-                0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
+                0xAf739F34ddF951cBC24fdbBa4f76213688E13627
             ),
             initializer: abi.encodeCall(
                 ZkgmERC20.initialize,
                 (
-                    address(0x6C1D11bE06908656D16EBFf5667F1C45372B7c89),
-                    address(0x05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5),
-                    "Uno",
-                    "U",
-                    6
+                    address(0x40cDFf51aE7487e0b4A4D6e5f86eB15Fb7c1d9f4),
+                    address(0x5FbE74A283f7954f10AA04C2eDf55578811aeb03),
+                    "Ether",
+                    "ETH.u",
+                    18
                 )
             )
         });
-        TokenOrderV2 memory foa = TokenOrderV2({
-            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
             ),
-            baseToken: hex"6d756e6f",
+            baseToken: abi.encodePacked(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE),
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 100,
-            quoteToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
+            quoteToken: hex"0859441bB4AC2b7e835939e0c32940c77F0C8ed6",
             quoteAmount: 100
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeTokenOrderV2(foa)
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
         });
+        bytes32 image = EfficientHashLib.hash(
+            abi.encode(metadata.implementation, metadata.initializer)
+        );
+        console.log("Image");
+        console.logBytes32(image);
         console.log("Initializer");
         console.logBytes(metadata.initializer);
         console.log("Instruction");
         console.logBytes(ZkgmLib.encodeInstruction(inst));
+        console.log("Operand");
+        console.logBytes(ZkgmLib.encodeTokenOrderV2(tokenOrder));
     }
 
-    function test_create_foa_v2_image_evm() public {
+    function test_create_tokenOrder_v2_image_evm() public {
         TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
                 0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
@@ -5934,7 +5965,7 @@ contract ZkgmTests is Test {
         bytes32 image = EfficientHashLib.hash(
             abi.encode(metadata.implementation, metadata.initializer)
         );
-        TokenOrderV2 memory foa = TokenOrderV2({
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
@@ -5949,7 +5980,7 @@ contract ZkgmTests is Test {
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeTokenOrderV2(foa)
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
         });
         console.log("Image");
         console.logBytes32(image);
@@ -5957,7 +5988,7 @@ contract ZkgmTests is Test {
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
-    function test_create_foa_v2_preimage_evm_u() public {
+    function test_create_tokenOrder_v2_preimage_evm_u() public {
         TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
                 0x9C968B805a625303Ad43Fce99Ae72306256FE5F9
@@ -5974,7 +6005,7 @@ contract ZkgmTests is Test {
                 )
             )
         });
-        TokenOrderV2 memory foa = TokenOrderV2({
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
@@ -5989,14 +6020,14 @@ contract ZkgmTests is Test {
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeTokenOrderV2(foa)
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
         });
         console.log("Image");
         console.log("Instruction");
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
-    function test_create_foa_v2_preimage_cosmwasm() public {
+    function test_create_tokenOrder_v2_preimage_cosmwasm() public {
         // Admin of the CW20-compatible token
         string memory admin = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
         // CW20 code id
@@ -6008,7 +6039,7 @@ contract ZkgmTests is Test {
             implementation: abi.encode(admin, codeId),
             initializer: bytes(initMsg)
         });
-        TokenOrderV2 memory foa = TokenOrderV2({
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
@@ -6025,7 +6056,7 @@ contract ZkgmTests is Test {
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeTokenOrderV2(foa)
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
         });
         console.log("Initializer");
         console.logBytes(metadata.initializer);
@@ -6035,7 +6066,7 @@ contract ZkgmTests is Test {
         console.logBytes(inst.operand);
     }
 
-    function test_create_foa_v2_image_cosmwasm() public {
+    function test_create_tokenOrder_v2_image_cosmwasm() public {
         // Admin of the CW20-compatible token
         string memory admin = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
         // CW20 code id
@@ -6052,7 +6083,7 @@ contract ZkgmTests is Test {
         );
         console.log("Image:");
         console.logBytes32(image);
-        TokenOrderV2 memory foa = TokenOrderV2({
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
@@ -6069,7 +6100,7 @@ contract ZkgmTests is Test {
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
             opcode: ZkgmLib.OP_TOKEN_ORDER,
-            operand: ZkgmLib.encodeTokenOrderV2(foa)
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
         });
         console.log("Instruction");
         console.log(inst.version);
