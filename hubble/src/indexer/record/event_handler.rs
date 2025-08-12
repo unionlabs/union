@@ -16,6 +16,8 @@ use crate::indexer::{
         connection_open_try_record::ConnectionOpenTryRecord,
         create_client_record::CreateClientRecord,
         create_lens_client_record::CreateLensClientRecord,
+        create_wrapped_token_record::CreateWrappedTokenRecord,
+        create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_ack_record::PacketAckRecord,
         packet_recv_record::PacketRecvRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
@@ -119,6 +121,15 @@ pub async fn delete_event_data_at_height(
             PacketSendTransfersRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
                 .await?;
         changes += PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
+            tx,
+            internal_chain_id,
+            height,
+        )
+        .await?;
+        changes +=
+            CreateWrappedTokenRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
             tx,
             internal_chain_id,
             height,
@@ -334,6 +345,9 @@ async fn handle_block_event(
             chain_context.with_event(inner).handle(tx).await?
         },
         SupportedBlockEvent::WalletMutationEntry { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::CreateWrappedToken { inner } => {
             chain_context.with_event(inner).handle(tx).await?
         },
     })

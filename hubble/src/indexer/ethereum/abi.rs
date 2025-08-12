@@ -43,8 +43,15 @@ impl Abi {
     }
 
     pub fn parse(&self, log: &alloy::rpc::types::Log) -> Result<SolEvent, IndexerError> {
-        let abi: JsonAbi =
-            serde_json::from_str(&self.definition).expect("deserializing json abi failed");
+        let abi: JsonAbi = serde_json::from_str(&self.definition).map_err(|err| {
+            IndexerError::AbiCannotParse(
+                Box::new(AbiParsingError::DeserializingJsonAbiFailed(err)),
+                self.internal_chain_id,
+                self.address,
+                self.description.clone(),
+                self.commit.clone(),
+            )
+        })?;
 
         let selector = log.topics().first().unwrap();
         let definition = abi

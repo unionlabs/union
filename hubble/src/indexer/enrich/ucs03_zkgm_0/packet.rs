@@ -4,13 +4,17 @@ use serde::{
     ser::{Error as SerdeError, SerializeStruct},
     Serialize, Serializer,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 
 // source: github:unionlabs/union/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol
 const OP_FORWARD: u8 = 0x00;
-const OP_MULTIPLEX: u8 = 0x01;
+const OP_CALL: u8 = 0x01;
 const OP_BATCH: u8 = 0x02;
-const OP_FUNGIBLE_ASSET_TRANSFER: u8 = 0x03;
+const OP_TOKEN_ORDER: u8 = 0x03;
+
+const TOKEN_ORDER_KIND_INITIALIZE: u8 = 0x00;
+const TOKEN_ORDER_KIND_ESCROW: u8 = 0x01;
+const TOKEN_ORDER_KIND_UNESCROW: u8 = 0x02;
 
 sol! {
     #[derive(Serialize)]
@@ -36,7 +40,7 @@ sol! {
     }
 
     #[derive(Serialize, Debug)]
-    struct MultiplexV0 {
+    struct CallV0 {
         bytes sender;
         bool eureka;
         bytes contractAddress;
@@ -49,7 +53,7 @@ sol! {
     }
 
     #[derive(Serialize, Debug)]
-    struct FungibleAssetOrderV0 {
+    struct TokenOrderV0 {
         bytes sender;
         bytes receiver;
         bytes baseToken;
@@ -62,7 +66,7 @@ sol! {
     }
 
     #[derive(Serialize, Debug)]
-    struct FungibleAssetOrderV1 {
+    struct TokenOrderV1 {
         bytes sender;
         bytes receiver;
         bytes baseToken;
@@ -73,6 +77,24 @@ sol! {
         uint256 baseTokenPath;
         bytes quoteToken;
         uint256 quoteAmount;
+    }
+
+    #[derive(Debug)]
+    struct TokenOrderV2 {
+        bytes sender;
+        bytes receiver;
+        bytes baseToken;
+        uint256 baseAmount;
+        bytes quoteToken;
+        uint256 quoteAmount;
+        uint8 kind;
+        bytes metadata;
+    }
+
+    #[derive(Serialize, Debug)]
+    struct TokenMetadata {
+        bytes implementation;
+        bytes initializer;
     }
 }
 
@@ -96,25 +118,82 @@ impl Serialize for Instruction {
     }
 }
 
+impl Serialize for TokenOrderV2 {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Create a struct with the standard fields plus _metadata
+        let mut state = serializer.serialize_struct("FungibleAssetOrderV2", 9)?;
+
+        // Serialize all standard fields
+        state.serialize_field("sender", &self.sender)?;
+        state.serialize_field("receiver", &self.receiver)?;
+        state.serialize_field("baseToken", &self.baseToken)?;
+        state.serialize_field("baseAmount", &self.baseAmount)?;
+        state.serialize_field("quoteToken", &self.quoteToken)?;
+        state.serialize_field("quoteAmount", &self.quoteAmount)?;
+        state.serialize_field("kind", &self.kind)?;
+        state.serialize_field("metadata", &self.metadata)?;
+
+        // Add _metadata field based on metadata_type
+        let metadata_value = match self.kind {
+            TOKEN_ORDER_KIND_INITIALIZE => {
+                // Decode metadata into TokenOrderMetadata
+                match <TokenMetadata>::abi_decode_sequence(&self.metadata) {
+                    Ok(decoded) => json!({
+                        "_type": "Initialize",
+                        "implementation": decoded.implementation,
+                        "initializer": decoded.initializer
+                    }),
+                    Err(_) => json!({
+                        "_type": "Initialize",
+                        "error": "failed to decode token metadata"
+                    }),
+                }
+            }
+            TOKEN_ORDER_KIND_ESCROW => json!({
+                "_type": "Escrow",
+                "data": self.metadata
+            }),
+            TOKEN_ORDER_KIND_UNESCROW => json!({
+                "_type": "Unescrow",
+                "data": self.metadata
+            }),
+            _ => json!({
+                "_type": "Unsupported",
+                "data": self.metadata
+            }),
+        };
+
+        state.serialize_field("_metadata", &metadata_value)?;
+        state.end()
+    }
+}
+
 impl Instruction {
     pub fn decode_operand(&self) -> Result<Operand> {
         Ok(match (self.version, self.opcode) {
             (0, OP_FORWARD) => Operand::Forward(Forward::V0(
                 <ForwardV0>::abi_decode_sequence(&self.operand).context("decoding Forward")?,
             )),
-            (0, OP_MULTIPLEX) => Operand::Multiplex(Multiplex::V0(
-                <MultiplexV0>::abi_decode_sequence(&self.operand).context("decoding Multiplex")?,
+            (0, OP_CALL) => Operand::Call(Call::V0(
+                <CallV0>::abi_decode_sequence(&self.operand).context("decoding Call")?,
             )),
             (0, OP_BATCH) => Operand::Batch(Batch::V0(
                 <BatchV0>::abi_decode_sequence(&self.operand).context("decoding Batch")?,
             )),
-            (0, OP_FUNGIBLE_ASSET_TRANSFER) => Operand::FungibleAssetOrder(FungibleAssetOrder::V0(
-                <FungibleAssetOrderV0>::abi_decode_sequence(&self.operand)
-                    .context("decoding FungibleAssetOrder")?,
+            (0, OP_TOKEN_ORDER) => Operand::TokenOrder(TokenOrder::V0(
+                <TokenOrderV0>::abi_decode_sequence(&self.operand)
+                    .context("decoding TokenOrderV0")?,
             )),
-            (1, OP_FUNGIBLE_ASSET_TRANSFER) => Operand::FungibleAssetOrder(FungibleAssetOrder::V1(
-                <FungibleAssetOrderV1>::abi_decode_sequence(&self.operand)
-                    .context("decoding FungibleAssetOrder")?,
+            (1, OP_TOKEN_ORDER) => Operand::TokenOrder(TokenOrder::V1(
+                <TokenOrderV1>::abi_decode_sequence(&self.operand)
+                    .context("decoding TokenOrderV1")?,
+            )),
+            (2, OP_TOKEN_ORDER) => Operand::TokenOrder(TokenOrder::V2(
+                <TokenOrderV2>::abi_decode_sequence(&self.operand)
+                    .context("decoding TokenOrderV2")?,
             )),
             _ => Operand::Unsupported {
                 data: self.operand.clone(),
@@ -131,8 +210,8 @@ pub enum Forward {
 
 #[derive(Serialize, Debug)]
 #[serde(untagged)]
-pub enum Multiplex {
-    V0(MultiplexV0),
+pub enum Call {
+    V0(CallV0),
 }
 
 #[derive(Serialize, Debug)]
@@ -143,18 +222,19 @@ pub enum Batch {
 
 #[derive(Serialize, Debug)]
 #[serde(untagged)]
-pub enum FungibleAssetOrder {
-    V0(FungibleAssetOrderV0),
-    V1(FungibleAssetOrderV1),
+pub enum TokenOrder {
+    V0(TokenOrderV0),
+    V1(TokenOrderV1),
+    V2(TokenOrderV2),
 }
 
 #[derive(Serialize, Debug)]
 #[serde(tag = "_type")]
 pub enum Operand {
     Forward(Forward),
-    Multiplex(Multiplex),
+    Call(Call),
     Batch(Batch),
-    FungibleAssetOrder(FungibleAssetOrder),
+    TokenOrder(TokenOrder),
     Unsupported {
         data: alloy_sol_types::private::Bytes,
     },
@@ -175,7 +255,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v0_packet() {
+    fn test_parse_ucs03_zkgm_0_with_token_order_v0_packet() {
         let json = decode(&hex::decode("0b00dd4772d3b8ebf5add472a720f986c0846c9b9c1c0ed98f1a011df8486bfc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014e6831e169d77a861a0e71326afa6d80bcc8bc6aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000014e6831e169d77a861a0e71326afa6d80bcc8bc6aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000014779877a7b0d9e8603169ddbd7836e478b462478900000000000000000000000000000000000000000000000000000000000000000000000000000000000000044c494e4b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f436861696e4c696e6b20546f6b656e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014d1b482d1b947a96e96c9b76d15de34f7f70a20a1000000000000000000000000").unwrap()).unwrap();
 
         dbg!(serde_json::to_string(&json).unwrap());
@@ -186,7 +266,7 @@ mod tests {
               "instruction": {
                 "opcode": 3,
                 "operand": {
-                  "_type": "FungibleAssetOrder",
+                  "_type": "TokenOrder",
                   "baseAmount": "0x0",
                   "baseToken": "0x779877a7b0d9e8603169ddbd7836e478b4624789",
                   "baseTokenName": "ChainLink Token",
@@ -206,7 +286,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v1_packet() {
+    fn test_parse_ucs03_zkgm_0_with_token_order_v1_packet() {
         let json = decode(&hex::decode("dddde7c9642e7ecbb7bbe659eff187e8ee6691fd7c840b09a89ec6b126caaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014acbd24742b87c34ded607fb87b22401b2ede167e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31677968347464377639366d7563723465616b7364326d7367306a76306d636e396135796a38357678356c376874793374753970737178736a79320000000000000000000000000000000000000000000000000000000000000004414e414d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000963616e696d616e616d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014a56815e60b4e13b937c91ddee677fae1d3955466000000000000000000000000").unwrap()).unwrap();
 
         dbg!(serde_json::to_string(&json).unwrap());
@@ -217,7 +297,7 @@ mod tests {
               "instruction": {
                 "opcode": 3,
                 "operand": {
-                  "_type": "FungibleAssetOrder",
+                  "_type": "TokenOrder",
                   "baseAmount": "0xa",
                   "baseToken": "0x756e696f6e31677968347464377639366d7563723465616b7364326d7367306a76306d636e396135796a38357678356c376874793374753970737178736a7932",
                   "baseTokenDecimals": 8,
@@ -233,6 +313,286 @@ mod tests {
               },
               "path": "0x0",
               "salt": "0xdddde7c9642e7ecbb7bbe659eff187e8ee6691fd7c840b09a89ec6b126caaaaa"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_kind_escrow() {
+        let json = decode(&hex::decode("b4536add4924363adf36c5525508616d702ea6c1e60b6544cd1b542f761a02ab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000020457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280").unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_metadata": {
+                    "_type": "Escrow",
+                    "data": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
+                  },
+                  "_type": "TokenOrder",
+                  "baseAmount": "0x64",
+                  "baseToken": "0x6d756e6f",
+                  "quoteAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "kind": 1,
+                  "metadata": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb4536add4924363adf36c5525508616d702ea6c1e60b6544cd1b542f761a02ab"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_kind_initialize() {
+        let json = decode(&hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004800000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba00000000000000000000000000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000149c968b805a625303ad43fce99ae72306256fe5f900000000000000000000000000000000000000000000000000000000000000000000000000000000000001829f0385300000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "TokenOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "kind": 0,
+                  "metadata": "0x0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000149c968b805a625303ad43fce99ae72306256fe5f900000000000000000000000000000000000000000000000000000000000000000000000000000000000001829f0385300000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                  "_metadata": {
+                    "_type": "Initialize",
+                    "implementation": "0x9c968b805a625303ad43fce99ae72306256fe5f9",
+                    "initializer": "0x9f0385300000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a000000000000000000000000"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_kind_unescrow() {
+        // Create a V2 packet with metadata_type = 2 (ImageUnwrap) using real hex encoding
+        // replace with hex once packet is on chain
+        use alloy_sol_types::SolType;
+
+        let v2_order = TokenOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            baseToken: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            baseAmount: alloy_sol_types::private::U256::from(100u64),
+            quoteToken: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quoteAmount: alloy_sol_types::private::U256::from(100u64),
+            kind: 2, // unescrow
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("cafebabecafebabecafebabecafebabecafebabe").unwrap()),
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_TOKEN_ORDER,
+            operand: <TokenOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "TokenOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "kind": 2,
+                  "metadata": "0xcafebabecafebabecafebabecafebabecafebabe",
+                  "_metadata": {
+                    "_type": "Unescrow",
+                    "data": "0xcafebabecafebabecafebabecafebabecafebabe"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_unsupported_kind() {
+        // Create a V2 packet with metadata_type = 99 (unsupported) using real hex encoding
+        use alloy_sol_types::SolType;
+
+        let v2_order = TokenOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            baseToken: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            baseAmount: alloy_sol_types::private::U256::from(100u64),
+            quoteToken: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quoteAmount: alloy_sol_types::private::U256::from(100u64),
+            kind: 99, // unsupported
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef").unwrap()),
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_TOKEN_ORDER,
+            operand: <TokenOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "TokenOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "kind": 99,
+                  "metadata": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+                  "_metadata": {
+                    "_type": "Unsupported",
+                    "data": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_unparsable_metadata() {
+        // Create a V2 packet with metadata_type = 1 but invalid metadata that cannot be parsed
+        use alloy_sol_types::SolType;
+
+        let v2_order = TokenOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            baseToken: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            baseAmount: alloy_sol_types::private::U256::from(100u64),
+            quoteToken: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quoteAmount: alloy_sol_types::private::U256::from(100u64),
+            kind: 0, // Initialize
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("deadbeef").unwrap()), // Invalid/too short for TokenOrderMetadata
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_TOKEN_ORDER,
+            operand: <TokenOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "TokenOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "kind": 0,
+                  "metadata": "0xdeadbeef",
+                  "_metadata": {
+                    "_type": "Initialize",
+                    "error": "failed to decode token metadata"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
             })
         );
     }
@@ -261,7 +621,7 @@ mod tests {
                     {
                       "opcode": 3,
                       "operand": {
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "baseAmount": "0x1",
                         "baseToken": "0xdc7af843e4eb079cd77ace6774bd71d6b8122f07",
                         "baseTokenName": "",
@@ -277,7 +637,7 @@ mod tests {
                     {
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "contractAddress": "0x271126f4f9b36ce16d9e2ef75691485ddce11db6",
                         "contractCalldata": "0xcafebabe",
                         "eureka": true,
@@ -314,7 +674,7 @@ mod tests {
                     {
                       "opcode": 3,
                       "operand": {
-                        "_type": "FungibleAssetOrder",
+                        "_type": "TokenOrder",
                         "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                         "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
                         "baseToken": "0x6d756e6f",
@@ -331,7 +691,7 @@ mod tests {
                     {
                       "opcode": 1,
                       "operand": {
-                        "_type": "Multiplex",
+                        "_type": "Call",
                         "eureka": true,
                         "sender": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
                         "contractAddress": "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
@@ -352,7 +712,7 @@ mod tests {
                               {
                                 "opcode": 3,
                                 "operand": {
-                                  "_type": "FungibleAssetOrder",
+                                  "_type": "TokenOrder",
                                   "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
                                   "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
                                   "baseToken": "0x6d756e6f",

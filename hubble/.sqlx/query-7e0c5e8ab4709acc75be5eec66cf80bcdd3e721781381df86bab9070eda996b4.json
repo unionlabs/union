@@ -1,0 +1,101 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                internal_chain_id,\n                block_hash,\n                height,\n                event_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_event_index,\n                channel_id,\n                path,\n                base_token,\n                quote_token,\n                metadata,\n                kind\n            FROM v2_sync.create_wrapped_token_sync\n            WHERE internal_chain_id = (SELECT id FROM config.chains WHERE family || '.' || chain_id = $1) AND height = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "internal_chain_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "block_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 2,
+        "name": "height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "event_index",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "timestamp",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "transaction_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 6,
+        "name": "transaction_index",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "transaction_event_index",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "channel_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "path",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 10,
+        "name": "base_token",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 11,
+        "name": "quote_token",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 12,
+        "name": "metadata",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 13,
+        "name": "kind",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "7e0c5e8ab4709acc75be5eec66cf80bcdd3e721781381df86bab9070eda996b4"
+}

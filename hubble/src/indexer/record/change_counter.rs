@@ -329,6 +329,8 @@ pub enum RecordKind {
     PacketSendDecoded,
     PacketSendTransfers,
     PacketSendInstructionsSearch,
+    CreateWrappedToken,
+    CreateWrappedTokenRelation,
 }
 
 /// Trait for types that can be associated with a specific `RecordKind`.

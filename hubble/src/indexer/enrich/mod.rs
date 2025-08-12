@@ -3,9 +3,13 @@ use serde_json::{Map, Value};
 use time::{macros::format_description, UtcOffset};
 use tracing::{debug, error, warn};
 
-mod ucs03_zkgm_0;
+pub(crate) mod ucs03_zkgm_0;
 mod wrapping;
 
+use super::{
+    event::types::Denom,
+    handler::types::{TokenName, WrapDirection},
+};
 use crate::indexer::{
     api::IndexerError,
     enrich::{
@@ -16,11 +20,13 @@ use crate::indexer::{
     handler::types::{
         string_0x_to_bytes, AddressCanonical, AddressZkgm, Amount, ChannelMetaData, Fee,
         Instruction, InstructionHash, InstructionOpcode, InstructionPath, InstructionRootPath,
-        InstructionRootSalt, InstructionVersion, PacketShape, Transfer,
+        InstructionRootSalt, InstructionVersion, Metadata, PacketShape, TokenOrderKind, Transfer,
     },
     postgres::chain_context::fetch_chain_context_for_universal_chain_id,
     record::{
         change_counter::Changes, channel_meta_data::get_channel_meta_data,
+        create_wrapped_token_record::CreateWrappedTokenRecord,
+        create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
@@ -54,11 +60,40 @@ pub async fn delete_enriched_data_for_block(
         *height,
     )
     .await?;
+    changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
 
     Ok(changes)
 }
 
-pub async fn enrich(
+pub async fn enrich_create_wrapped_token_record(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: CreateWrappedTokenRecord,
+) -> Result<Changes, IndexerError> {
+    let mut changes = Changes::default();
+
+    let internal_chain_id: InternalChainId = record.internal_chain_id.into();
+    let channel_id: ChannelId = record.channel_id.try_into()?;
+
+    let Some(channel) = get_channel_meta_data(tx, &internal_chain_id, &channel_id).await? else {
+        return Ok(Changes::default());
+    };
+
+    let internal_unwrapping_chain_id = channel.internal_counterparty_chain_id;
+
+    let create_wrapped_token_relation_record: CreateWrappedTokenRelationRecord =
+        (&record, &internal_unwrapping_chain_id).try_into()?;
+
+    changes += create_wrapped_token_relation_record.insert(tx).await?;
+
+    Ok(changes)
+}
+
+pub async fn enrich_packet_send_record(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: PacketSendRecord,
 ) -> Result<Changes, IndexerError> {
@@ -186,15 +221,17 @@ async fn get_transfers(
     };
 
     let (transfer_data, fee_data) = match packet_shape {
-        PacketShape::BatchV0TransferV0Fee | PacketShape::BatchV0TransferV1Fee => (
+        PacketShape::BatchV0TransferV0Fee
+        | PacketShape::BatchV0TransferV1Fee
+        | PacketShape::BatchV0TransferV2Fee => (
             InstructionDecoder::from_values_with_index(flatten, 1)?,
             Some(InstructionDecoder::from_values_with_index(flatten, 2)?),
         ),
-        PacketShape::BatchV0TransferV1 => (
+        PacketShape::BatchV0TransferV1 | PacketShape::BatchV0TransferV2 => (
             InstructionDecoder::from_values_with_index(flatten, 1)?,
             None,
         ),
-        PacketShape::TransferV0 | PacketShape::TransferV1 => (
+        PacketShape::TransferV0 | PacketShape::TransferV1 | PacketShape::TransferV2 => (
             InstructionDecoder::from_values_with_index(flatten, 0)?,
             None,
         ),
@@ -211,26 +248,44 @@ async fn get_transfers(
     )?;
     let base_token = transfer_data.get_string("baseToken")?.try_into()?;
     let base_amount: Amount = transfer_data.get_string("baseAmount")?.try_into()?;
-    let base_token_name = transfer_data.get_string("baseTokenName")?.into();
-    let base_token_path = transfer_data.get_string("baseTokenPath")?.try_into()?;
-    let base_token_symbol = transfer_data.get_string("baseTokenSymbol")?.into();
+    let base_token_name = transfer_data
+        .get_string_opt("baseTokenName")?
+        .map(|d| d.into());
+    let base_token_path = transfer_data
+        .get_string_opt("baseTokenPath")?
+        .map(|d| d.try_into())
+        .transpose()?;
+    let base_token_symbol = transfer_data
+        .get_string_opt("baseTokenSymbol")?
+        .map(|d| d.into());
     let base_token_decimals = transfer_data
         .get_u32_opt("baseTokenDecimals")?
         .map(|d| d.into());
     let quote_token = transfer_data.get_string("quoteToken")?.try_into()?;
     let quote_amount: Amount = transfer_data.get_string("quoteAmount")?.try_into()?;
 
-    let wrap_direction = wrap_direction_chains(
-        tx,
-        &channel.internal_chain_id,
-        &channel.internal_counterparty_chain_id,
-        &IntermediateChannelIds::default(), // no support for intermediate channel ids.
-        &record.source_channel_id.try_into()?,
-        &record.destination_channel_id.try_into()?,
-        &base_token,
-        &quote_token,
-    )
-    .await?;
+    let kind: Option<TokenOrderKind> = transfer_data.get_u8_opt("kind")?.map(|d| d.into());
+    let metadata: Option<Metadata> = transfer_data
+        .get_string_opt("metadata")?
+        .map(|d| d.try_into())
+        .transpose()?;
+
+    let wrap_direction = match transfer_data.version.0 {
+        0..=1 => {
+            wrap_direction_chains(
+                tx,
+                &channel.internal_chain_id,
+                &channel.internal_counterparty_chain_id,
+                &IntermediateChannelIds::default(), // no support for intermediate channel ids.
+                &record.source_channel_id.try_into()?,
+                &record.destination_channel_id.try_into()?,
+                &base_token,
+                &quote_token,
+            )
+            .await?
+        }
+        _ => None, // no calculate wrapping on packet-send in version >= 2 messages. wrappings are exposed as new 'create wrapped token' events.
+    };
 
     let fee = calculate_fee(
         fee_data,
@@ -263,6 +318,8 @@ async fn get_transfers(
         base_token_decimals,
         quote_token,
         quote_amount,
+        kind,
+        metadata,
         fee,
         wrap_direction,
         packet_shape,
@@ -307,17 +364,17 @@ fn get_instructions(flatten: &[Value]) -> Result<Vec<Instruction>, IndexerError>
 
 fn calculate_fee(
     fee_data: Option<InstructionDecoder<'_>>,
-    base_token: &super::event::types::Denom,
+    base_token: &Denom,
     base_amount: &Amount,
-    base_token_name: &super::handler::types::TokenName,
+    base_token_name: &Option<TokenName>,
     quote_amount: &Amount,
-    wrap_direction: &Option<super::handler::types::WrapDirection>,
+    wrap_direction: &Option<WrapDirection>,
 ) -> Result<Fee, IndexerError> {
     let fee = match fee_data {
         Some(fee_data) => Fee::Instruction(
             fee_data.get_string("baseToken")?.try_into()?,
             fee_data.get_string("baseAmount")?.try_into()?,
-            fee_data.get_string("baseTokenName")?.into(),
+            fee_data.get_string_opt("baseTokenName")?.map(|s| s.into()),
         ),
         None => match *wrap_direction {
             Some(_) => match &base_amount.cmp(quote_amount) {
@@ -424,6 +481,10 @@ impl<'a> InstructionDecoder<'a> {
         Self::get_u32_opt_from(self.operand, key)
     }
 
+    fn get_u8_opt(&'a self, key: &str) -> Result<Option<u8>, IndexerError> {
+        Self::get_u8_opt_from(self.operand, key)
+    }
+
     fn get_string_from(
         from: &'a Map<String, Value>,
         key: &str,
@@ -494,6 +555,39 @@ impl<'a> InstructionDecoder<'a> {
         })
     }
 
+    fn get_u8_opt_from(
+        from: &'a Map<String, Value>,
+        key: &str,
+    ) -> Result<Option<u8>, IndexerError> {
+        Ok(match from.get(key) {
+            Some(node) => {
+                let Value::Number(value) = node else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                let Some(integer) = value.as_i128() else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction is integer"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                let Ok(result) = u8::try_from(integer) else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction is u8 ({value})"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                Some(result)
+            }
+            None => None,
+        })
+    }
+
     fn get_u8_from(from: &'a Map<String, Value>, key: &str) -> Result<u8, IndexerError> {
         Ok(match from.get(key) {
             Some(node) => {
@@ -540,20 +634,32 @@ fn packet_shape(
             Some(PacketShape::BatchV0TransferV0Fee)
         }
         ":3/0" => {
-            // one transfer
+            // one transfer (v0)
             Some(PacketShape::TransferV0)
         }
         ":2/0,0:3/1" => {
-            // batch with one transfer
+            // batch with one transfer (v0)
             Some(PacketShape::BatchV0TransferV1)
         }
         ":2/0,0:3/1,1:3/1" if has_fee(flatten)? => {
-            // batch with two transfers with fee
+            // batch with two transfers (v1) with fee
             Some(PacketShape::BatchV0TransferV1Fee)
         }
         ":3/1" => {
-            // one transfer
+            // one transfer (v1)
             Some(PacketShape::TransferV1)
+        }
+        ":2/0,0:3/2" => {
+            // batch with one transfer (v2)
+            Some(PacketShape::BatchV0TransferV2)
+        }
+        ":2/0,0:3/2,1:3/2" if has_fee(flatten)? => {
+            // batch with two transfers (v2) with fee
+            Some(PacketShape::BatchV0TransferV2Fee)
+        }
+        ":3/2" => {
+            // one transfer (v2)
+            Some(PacketShape::TransferV2)
         }
         unsupported => {
             debug!("unsupported packet shape: {unsupported}");

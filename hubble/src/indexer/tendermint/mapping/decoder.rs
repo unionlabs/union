@@ -16,10 +16,11 @@ use crate::{
             types::{
                 Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, Capacity, ChannelId,
                 ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom, Maker,
-                MakerMsg, MutationAmount, PacketData, PacketHash, PortId, RefillRate,
+                MakerMsg, MutationAmount, PacketData, PacketHash, Path, PortId, RefillRate,
                 TimeoutTimestamp, TransactionHash, WalletAddress,
             },
         },
+        handler::types::{CreateWrappedTokenKind, Metadata},
         tendermint::block_handle::BlockHeader,
     },
     postgres::ChainId,
@@ -229,6 +230,26 @@ impl TmEvent {
         self.get_contract_address("_contract_address")
     }
 
+    pub fn path(&self) -> Result<Path, IndexerError> {
+        self.get_path("path")
+    }
+
+    pub fn base_token(&self) -> Result<Denom, IndexerError> {
+        self.get_denom("base_token")
+    }
+
+    pub fn quote_token(&self) -> Result<Denom, IndexerError> {
+        self.get_denom("quote_token")
+    }
+
+    pub fn metadata(&self) -> Result<Metadata, IndexerError> {
+        self.get_metadata("metadata")
+    }
+
+    pub fn create_wrapped_token_kind(&self) -> Result<CreateWrappedTokenKind, IndexerError> {
+        self.get_create_wrapped_token_kind("kind")
+    }
+
     #[allow(clippy::wrong_self_convention)] // 'from' is the from address, not from conversion
     pub fn from_opt(&self) -> Result<Option<WalletAddress>, IndexerError> {
         self.get_wallet_address_opt("from")
@@ -292,6 +313,17 @@ impl TmEvent {
         Ok(self.get_bytes_utf8(key, "denom")?.into())
     }
 
+    fn get_metadata(&self, key: &str) -> Result<Metadata, IndexerError> {
+        Ok(self.get_bytes(key, "metadata")?.into())
+    }
+
+    fn get_create_wrapped_token_kind(
+        &self,
+        key: &str,
+    ) -> Result<CreateWrappedTokenKind, IndexerError> {
+        Ok(self.get_u8(key, "create-wrapped-token-kind")?.into())
+    }
+
     fn get_capacity(&self, key: &str) -> Result<Capacity, IndexerError> {
         Ok(self.get_u256(key, "capacity")?.into())
     }
@@ -328,6 +360,18 @@ impl TmEvent {
         Ok(self
             .get_bech32_decoded_opt(key, "wallet-address")?
             .map(|x| x.into()))
+    }
+
+    fn get_path(&self, key: &str) -> Result<Path, IndexerError> {
+        Ok(self.get_u256(key, "path")?.into())
+    }
+
+    fn get_u8(&self, key: &str, expecting: &str) -> Result<u8, IndexerError> {
+        self.get_value(key, expecting).and_then(|value| {
+            value
+                .parse()
+                .map_err(|_| self.report_unexpected_type(key, &value, expecting))
+        })
     }
 
     fn get_u32(&self, key: &str, expecting: &str) -> Result<u32, IndexerError> {

@@ -132,6 +132,7 @@ impl From<Vec<SupportedBlockEvent>> for BlockEvents {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum BlockEvent {
     Supported(SupportedBlockEvent),
     Unsupported(UnsupportedBlockEvent),
@@ -578,6 +579,15 @@ pub enum MutationDirection {
     In,
     #[serde(rename = "out")]
     Out,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Path(pub U256);
+
+impl From<U256> for Path {
+    fn from(value: U256) -> Self {
+        Self(value)
+    }
 }
 
 mod flexible_u64 {

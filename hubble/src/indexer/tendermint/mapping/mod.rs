@@ -21,6 +21,7 @@ mod connection_open_init_mapping;
 mod connection_open_try_mapping;
 mod create_client_mapping;
 mod create_lens_client_mapping;
+mod create_wrapped_token_mapping;
 mod decoder;
 pub(crate) mod legacy;
 mod packet_ack_mapping;
@@ -158,6 +159,7 @@ impl TmFetcherClient {
             "wasm-packet_ack" => self.to_packet_ack(event_decoder)?,
             "wasm-packet_timeout" => self.to_packet_timeout(event_decoder)?,
             "wasm-token_bucket_update" => self.to_token_bucket_update(event_decoder)?,
+            "wasm-create_wrapped_token" => self.to_create_wrapped_token(event_decoder)?,
             name => {
                 warn!("unsupported ibc event: {name} ({event_decoder})");
                 vec![]
