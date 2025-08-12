@@ -316,6 +316,7 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
 }
 
+const ESCROW_VAULT: &str = "escrow-vault";
 const CORE: &str = "ibc-is-based";
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
@@ -331,6 +332,7 @@ struct ContractPaths {
     // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
+    escrow_vault: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -370,6 +372,8 @@ struct ContractAddresses {
     core: Bech32<H256>,
     lightclient: BTreeMap<String, Bech32<H256>>,
     app: AppAddresses,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    escrow_vault: Option<Bech32<H256>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -508,6 +512,7 @@ async fn do_main() -> Result<()> {
                     ucs00: None,
                     ucs03: None,
                 },
+                escrow_vault: None,
             };
 
             for (client_type, path) in contracts.lightclient {
@@ -587,6 +592,20 @@ async fn do_main() -> Result<()> {
                     &salt,
                 )
                 .unwrap();
+
+                let escrow_vault_address = ctx
+                    .deploy_and_initiate(
+                        std::fs::read(contracts.escrow_vault)?,
+                        bytecode_base_code_id,
+                        cw_escrow_vault::msg::InstantiateMsg {
+                            zkgm: Addr::unchecked(ucs03_address.to_string()),
+                            admin: Addr::unchecked(ctx.wallet().address().to_string()),
+                        },
+                        ESCROW_VAULT.to_owned(),
+                    )
+                    .await?;
+
+                contract_addresses.escrow_vault = Some(escrow_vault_address);
 
                 info!("ucs03 address is {ucs03_address}");
 
@@ -1236,16 +1255,19 @@ fn calculate_contract_addresses(
 
     if apps.ucs03 {
         app.ucs03 = Some(instantiate2_address(
-            deployer,
+            deployer.clone(),
             sha2(BYTECODE_BASE_BYTECODE),
             &format!("{APP}/{UCS03}"),
         )?);
     }
 
+    let escrow_vault = instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), ESCROW_VAULT)?;
+
     Ok(ContractAddresses {
         core,
         lightclient,
         app,
+        escrow_vault: Some(escrow_vault),
     })
 }
 

@@ -4072,6 +4072,7 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-client",
  "cosmwasm-std 2.2.2",
+ "cw-escrow-vault",
  "embed-commit",
  "frissitheto",
  "futures",

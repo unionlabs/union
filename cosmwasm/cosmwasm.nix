@@ -681,6 +681,7 @@ _: {
               ) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients)
             );
             app = apps;
+            escrow_vault = cw-escrow-vault.release;
           }
         );
 

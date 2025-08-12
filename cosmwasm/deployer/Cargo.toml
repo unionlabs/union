@@ -18,6 +18,7 @@ clap                        = { workspace = true, features = ["derive", "error-c
 cometbft-rpc                = { workspace = true }
 cosmos-client               = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["std"] }
+cw-escrow-vault             = { workspace = true }
 embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 futures                     = { workspace = true }
