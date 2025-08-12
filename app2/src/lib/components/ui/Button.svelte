@@ -3,48 +3,30 @@ import { cn } from "$lib/utils"
 import type { Snippet } from "svelte"
 import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements"
 
-type BaseProps = {
+type ButtonProps = HTMLButtonAttributes & HTMLAnchorAttributes & {
   variant?: "primary" | "secondary" | "danger" | "outline" | "text" | "icon" | "inline"
   selected?: boolean | undefined
   class?: string
   children: Snippet
+  href?: string
 }
 
-type ButtonProps = BaseProps & HTMLButtonAttributes & {
-  href?: never
-}
-
-type AnchorProps = BaseProps & HTMLAnchorAttributes & {
-  href: string
-  type?: never
-  disabled?: never
-}
-
-type Props = ButtonProps | AnchorProps
-
-const props = $props()
-
-const {
+let {
+  class: className,
   variant = "primary",
-  disabled = false,
   selected = false,
-  class: className = "",
+  href = undefined,
+  type = "button",
+  disabled = false,
   children,
-  type,
-  href,
-  ...rest
-} = props
-
-const isLink = href !== undefined
+  ...restProps
+}: ButtonProps = $props()
 
 const classes = cn(
   // Base styles
   "inline-flex cursor-pointer items-center gap-2 justify-center rounded-md text-sm font-medium transition-colors",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-  // Disabled styles (only for buttons)
-  !isLink && "disabled:pointer-events-none disabled:opacity-50",
-  // Disabled styles for links (using aria-disabled)
-  isLink && disabled && "pointer-events-none opacity-50",
+  "disabled:pointer-events-none disabled:opacity-50",
   // Variants
   variant === "primary" && [
     "bg-sky-600 border-sky-600 border text-white hover:bg-sky-700",
@@ -84,21 +66,21 @@ const classes = cn(
 )
 </script>
 
-{#if isLink}
+{#if href}
   <a
-    {href}
     class={classes}
+    {href}
     aria-disabled={disabled}
-    {...rest}
+    {...restProps}
   >
     {@render children()}
   </a>
 {:else}
   <button
-    type={type || "button"}
     class={classes}
+    {type}
     {disabled}
-    {...rest}
+    {...restProps}
   >
     {@render children()}
   </button>
