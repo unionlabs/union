@@ -68,7 +68,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 
 		// Resets the validator state with the new power reduction
-		// Branch to preserve union testnet migration state
+		// Branch to preserve union testnet migration state, fixes duplicate validator infos
 		// Adapted from https://github.com/DoraFactory/doravota/blob/final-fix/app/app.go#L1095-L1136
 		if sdkCtx.ChainID() != UNION_TESTNET {
 
@@ -76,6 +76,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			for _, validator := range validators {
 
 				// Direct access to the staking store
+				// Staking interfaces were not sufficent for removing duplicates in the set
 				store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
 
 				deleted := false
@@ -92,6 +93,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 					}
 
 					// Delete all entries of a validator including duplicates
+					// Duplicates seem to exists due to PoA interacting with the new power reduction
 					if bytes.Equal(valAddr, bz) {
 						if deleted {
 							sdkCtx.Logger().Info("deleting duplicate validator")
@@ -205,6 +207,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			// validator.Tokens = math.ZeroInt()
 			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
 			// branch to preserve union testnet migration state
+			// Updates params as agreed with the foundation
 			if sdkCtx.ChainID() != UNION_TESTNET {
 				validator.Commission.Rate = sdkmath.LegacyMustNewDecFromStr("0.05")
 				validator.Commission.MaxRate = sdkmath.LegacyMustNewDecFromStr("0.05")
@@ -341,6 +344,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			} else {
 				shares := delegation.Shares.RoundInt()
 				// branch to preserve testnet 10 migration state
+				// Updates stake amounts made by the foundation
 				if sdkCtx.ChainID() != UNION_TESTNET {
 					shares = getUFromU64(100_000).Amount
 				}
@@ -374,6 +378,7 @@ func burnToken(ctx context.Context, keepers upgrades.AppKeepers, denom string) e
 	var err error
 
 	// Ensure no changed behavior in how testnet 10 pagination was determined
+	// Testnet migration only captured 100 balance holders due to default paginiation
 	if sdkCtx.ChainID() == UNION_TESTNET {
 		tokenOwners, err = keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
 			Denom:      denom,
