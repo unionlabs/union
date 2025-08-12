@@ -76,7 +76,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			for _, validator := range validators {
 
 				// Direct access to the staking store
-				// Staking interfaces were not sufficent for removing duplicates in the set
+				// Staking interfaces were not sufficient for removing duplicates in the set
 				store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
 
 				deleted := false
