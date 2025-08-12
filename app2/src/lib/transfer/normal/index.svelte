@@ -361,20 +361,22 @@ const currentStep = $derived(
 </Card>
 
 {#if showDetails}
-  {#if Option.isSome(transferErrors)}
-    <strong>Error</strong>
-    <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
-  {/if}
+  <div class="bg-zinc-900 p-2">
+    {#if Option.isSome(transferErrors)}
+      <strong>Error</strong>
+      <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
+    {/if}
 
-  {#key statusMessage}
-    <strong>{statusMessage}</strong>
-    <pre>{JSON.stringify(statusMessage, null, 2)}</pre>
-  {/key}
+    {#key statusMessage}
+      <strong>{statusMessage}</strong>
+      <pre>{JSON.stringify(statusMessage, null, 2)}</pre>
+    {/key}
 
-  {#if Option.isSome(transferSteps)}
-    <div class="mt-4">
-      <strong>Steps:</strong>
-      <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
-    </div>
-  {/if}
+    {#if Option.isSome(transferSteps)}
+      <div class="mt-4">
+        <strong>Steps:</strong>
+        <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
+      </div>
+    {/if}
+  </div>
 {/if}

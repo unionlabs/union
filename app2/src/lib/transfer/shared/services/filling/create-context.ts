@@ -1,6 +1,7 @@
 import type { FeeIntent } from "$lib/stores/fee.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
+import { Token, TokenOrder } from "@unionlabs/sdk"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
 import type {
   AddressCanonicalBytes,
@@ -26,8 +27,8 @@ export type Intent = {
   sourceChain: Chain
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
-  // TODO: add kind (e.g. escrow/unescrow); derived in `TransferData`
-  // TODO: add quoteToken
+  kind: TokenOrder.Kind
+  quoteToken: Token.Any
   destinationChain: Chain
   channel: Channel
   ucs03address: string

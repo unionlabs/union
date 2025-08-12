@@ -44,6 +44,8 @@
     "@testing-library/svelte": "^5.2.4",
     "@unionlabs/client": "workspace:*",
     "@unionlabs/sdk": "workspace:*",
+    "@unionlabs/sdk-cosmos": "workspace:*",
+    "@unionlabs/sdk-evm": "workspace:*",
     "@wagmi/connectors": "^5.7.12",
     "@wagmi/core": "^2.16.7",
     "@web3modal/wagmi": "5.1.11",
