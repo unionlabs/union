@@ -5876,7 +5876,7 @@ contract ZkgmTests is Test {
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
-    function test_create_tokenOrder_v2_u() public {
+    function test_create_tokenOrder_v2_evm_to_evm_u() public {
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
@@ -5888,6 +5888,58 @@ contract ZkgmTests is Test {
             baseAmount: 0,
             quoteToken: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
             quoteAmount: 0
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
+        });
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+        console.log("Operand");
+        console.logBytes(ZkgmLib.encodeTokenOrderV2(tokenOrder));
+    }
+
+    function test_create_tokenOrder_v2_cosmos_to_evm_u() public {
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
+            sender: abi.encodePacked("union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"),
+            receiver: abi.encodePacked(
+                address(0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2)
+            ),
+            baseToken: abi.encodePacked("au"),
+            kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+            metadata: hex"",
+            baseAmount: 10,
+            quoteToken: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
+            quoteAmount: 10
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
+        });
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+        console.log("Operand");
+        console.logBytes(ZkgmLib.encodeTokenOrderV2(tokenOrder));
+    }
+
+    function test_create_tokenOrder_v2_evm_to_cosmos_u() public {
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
+            sender: abi.encodePacked(
+                address(0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2)
+            ),
+            receiver: abi.encodePacked(
+                "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"
+            ),
+            baseToken: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
+            kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+            metadata: hex"",
+            baseAmount: 10,
+            quoteToken: abi.encodePacked(
+                "union12gwne3zy6tvy2xm77ywncpkm03xpg5v7n3vv2u9ttwgew2ump2gslxrnhm"
+            ),
+            quoteAmount: 10
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_2,
