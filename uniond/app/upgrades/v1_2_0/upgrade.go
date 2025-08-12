@@ -68,12 +68,14 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 
 		// Resets the validator state with the new power reduction
+		// Branch to preserve union testnet migration state
 		// Adapted from https://github.com/DoraFactory/doravota/blob/final-fix/app/app.go#L1095-L1136
 		if sdkCtx.ChainID() != UNION_TESTNET {
 
 			sdkCtx.Logger().Info("resetting validator state")
 			for _, validator := range validators {
 
+				// Direct access to the staking store
 				store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
 
 				deleted := false
@@ -89,6 +91,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 						panic(err)
 					}
 
+					// Delete all entries of a validator including duplicates
 					if bytes.Equal(valAddr, bz) {
 						if deleted {
 							sdkCtx.Logger().Info("deleting duplicate validator")
@@ -102,6 +105,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 					}
 				}
 
+				// Set validator again after deleting, recreating the validator with the correct power reduction
 				keepers.StakingKeeper.SetValidatorByPowerIndex(ctx, validator)
 				sdkCtx.Logger().Info("reset validator")
 				_, err := keepers.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
@@ -200,6 +204,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			// set tokens to zero as the delegate call at the end of the migration will set this
 			// validator.Tokens = math.ZeroInt()
 			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
+			// branch to preserve union testnet migration state
 			if sdkCtx.ChainID() != UNION_TESTNET {
 				validator.Commission.Rate = sdkmath.LegacyMustNewDecFromStr("0.05")
 				validator.Commission.MaxRate = sdkmath.LegacyMustNewDecFromStr("0.05")
@@ -335,6 +340,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 				)
 			} else {
 				shares := delegation.Shares.RoundInt()
+				// branch to preserve testnet 10 migration state
 				if sdkCtx.ChainID() != UNION_TESTNET {
 					shares = getUFromU64(100_000).Amount
 				}
