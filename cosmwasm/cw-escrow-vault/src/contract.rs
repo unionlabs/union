@@ -33,6 +33,7 @@ pub fn migrate(
         deps,
         |deps, msg| {
             deps.storage.write_item::<Admin>(&msg.admin);
+            deps.storage.write_item::<Zkgm>(&msg.zkgm);
             Ok((Response::new(), None))
         },
         |_, _, _| Ok((Response::default(), None)),
