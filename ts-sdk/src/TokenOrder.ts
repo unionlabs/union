@@ -32,6 +32,10 @@ export const TypeId: unique symbol = internal.TypeId
  */
 export type TypeId = typeof TypeId
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export enum Kind {
   Initialize,
   Escrow,
