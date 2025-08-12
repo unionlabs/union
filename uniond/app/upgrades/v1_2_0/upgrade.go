@@ -69,7 +69,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 
 		// Resets the validator state with the new power reduction
 		// Branch to preserve union testnet migration state, fixes duplicate validator infos
-		// Adapted from https://github.com/DoraFactory/doravota/blob/final-fix/app/app.go#L1095-L1136
+		// Adapted from https://github.com/DoraFactory/doravota/blob/b735125f0dfa2a0f50afac0685aa73698cf2227f/app/app.go#L1079-L1114
 		if sdkCtx.ChainID() != UNION_TESTNET {
 
 			sdkCtx.Logger().Info("resetting validator state")
