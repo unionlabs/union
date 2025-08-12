@@ -117,7 +117,7 @@ pub fn execute(
                     .checksum;
                 let protocol_code_hash = deps
                     .querier
-                    .query_wasm_code_info(config.cw20_base_code_id)?
+                    .query_wasm_code_info(config.cw20_impl_code_id)?
                     .checksum;
                 let is_cw20_base_code = code_hash == protocol_code_hash;
                 let cw20_admin = CW20_ADMIN.load(deps.storage)?;

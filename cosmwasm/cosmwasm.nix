@@ -289,7 +289,7 @@ _: {
             max_gas = 10000000;
           };
           apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
+            ucs03 = (ucs03-configs.cw20 cw20-wrapped-tokenfactory) // {
               rate_limit_disabled = true;
             };
           };
@@ -507,7 +507,7 @@ _: {
           token_minter_path = "${cw20-token-minter.release}";
           token_minter_config = {
             cw20 = {
-              cw20_base = "${cw20-impl.release}";
+              cw20_impl = "${cw20-impl.release}";
             };
           };
           rate_limit_disabled = false;
