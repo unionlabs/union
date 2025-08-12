@@ -2,6 +2,7 @@ package upgrades
 
 import (
 	store "cosmossdk.io/store/types"
+	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -29,6 +30,8 @@ type AppKeepers struct {
 	StakingKeeper      *stakingkeeper.Keeper
 }
 
+type GetKeyFunc func(string) *storetypes.KVStoreKey
+
 // source: https://github.com/osmosis-labs/osmosis/blob/c783ef52af8617d3ec613d9ce9035386ba8d4a49/app/upgrades/types.go#L24
 
 // Upgrade defines a struct containing necessary fields that a SoftwareUpgradeProposal
@@ -40,7 +43,7 @@ type Upgrade struct {
 	UpgradeName string
 
 	// CreateUpgradeHandler defines the function that creates an upgrade handler
-	CreateUpgradeHandler func(*module.Manager, module.Configurator, *AppKeepers) upgradetypes.UpgradeHandler
+	CreateUpgradeHandler func(*module.Manager, module.Configurator, *AppKeepers, GetKeyFunc) upgradetypes.UpgradeHandler
 
 	// Store upgrades, should be used for any new modules introduced, new modules deleted, or store names renamed.
 	StoreUpgrades store.StoreUpgrades

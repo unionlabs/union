@@ -48,6 +48,7 @@ func (app *App) setupUpgradeHandlers() {
 					MintKeeper:         app.MintKeeper,
 					StakingKeeper:      app.StakingKeeper,
 				},
+				app.GetKey,
 			),
 		)
 	}

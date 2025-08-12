@@ -1,15 +1,19 @@
 package v1_2_0
 
 import (
+	"bytes"
 	"context"
+	"math"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 
+	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -39,8 +43,12 @@ var unionFoundationSigMap = map[string]string{
 	UNION_TESTNET: FOUNDATION_TESTNET_SIG,
 	UNION_DEVNET:  DEVNET_SIG,
 }
+var feemarketDistFees = map[string]bool{
+	UNION_TESTNET: true,
+	UNION_DEVNET:  false,
+}
 
-func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
+func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers, getKey upgrades.GetKeyFunc) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		migrations, err := mm.RunMigrations(ctx, configurator, vm)
 		if err != nil {
@@ -52,6 +60,64 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(unionFoundationSigMap[sdkCtx.ChainID()])
 		if err != nil {
 			return nil, err
+		}
+
+		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// Resets the validator state with the new power reduction
+		// Branch to preserve union testnet migration state, fixes duplicate validator infos
+		// Adapted from https://github.com/DoraFactory/doravota/blob/b735125f0dfa2a0f50afac0685aa73698cf2227f/app/app.go#L1079-L1114
+		if sdkCtx.ChainID() != UNION_TESTNET {
+
+			sdkCtx.Logger().Info("resetting validator state")
+			for _, validator := range validators {
+
+				// Direct access to the staking store
+				// Staking interfaces were not sufficient for removing duplicates in the set
+				store := sdkCtx.KVStore(getKey(stakingtypes.StoreKey))
+
+				deleted := false
+
+				iterator := storetypes.KVStorePrefixIterator(store, stakingtypes.ValidatorsByPowerIndexKey)
+				defer iterator.Close()
+
+				for ; iterator.Valid(); iterator.Next() {
+					valAddr := stakingtypes.ParseValidatorPowerRankKey(iterator.Key())
+
+					bz, err := keepers.StakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+					if err != nil {
+						panic(err)
+					}
+
+					// Delete all entries of a validator including duplicates
+					// Duplicates seem to exists due to PoA interacting with the new power reduction
+					if bytes.Equal(valAddr, bz) {
+						if deleted {
+							sdkCtx.Logger().Info("deleting duplicate validator")
+						} else {
+							deleted = true
+							sdkCtx.Logger().Info("deleting validator first record")
+						}
+
+						store.Delete(iterator.Key())
+						sdkCtx.Logger().Info("deleted the key")
+					}
+				}
+
+				// Set validator again after deleting, recreating the validator with the correct power reduction
+				keepers.StakingKeeper.SetValidatorByPowerIndex(ctx, validator)
+				sdkCtx.Logger().Info("reset validator")
+				_, err := keepers.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+				sdkCtx.Logger().Info("update valset")
+				if err != nil {
+					panic(err)
+				}
+
+				sdkCtx.Logger().Info("done with validator")
+			}
 		}
 
 		// Undelegate existing delegations
@@ -129,17 +195,23 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 		}
 
-		validators, err := keepers.StakingKeeper.GetAllValidators(ctx)
+		validators, err = keepers.StakingKeeper.GetAllValidators(ctx)
 		if err != nil {
 			return nil, err
 		}
 
 		for idx, validator := range validators {
 			// the only delegation to validators is now via the foundation multisig
-			validator.MinSelfDelegation = math.NewInt(0)
+			validator.MinSelfDelegation = sdkmath.NewInt(0)
 			// set tokens to zero as the delegate call at the end of the migration will set this
 			// validator.Tokens = math.ZeroInt()
 			validator, _ = validator.RemoveDelShares(validator.DelegatorShares)
+			// branch to preserve union testnet migration state
+			// Updates params as agreed with the foundation
+			if sdkCtx.ChainID() != UNION_TESTNET {
+				validator.Commission.Rate = sdkmath.LegacyMustNewDecFromStr("0.05")
+				validator.Commission.MaxRate = sdkmath.LegacyMustNewDecFromStr("0.05")
+			}
 			err = keepers.StakingKeeper.SetValidator(ctx, validator)
 			if err != nil {
 				return nil, err
@@ -176,7 +248,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 		stakingParams.BondDenom = U_BASE_DENOM
 		// NOTE: *technically* this should be 0, but all commission will go to the community fund anyways since we set the community tax in x/distribution to 100%
-		stakingParams.MinCommissionRate = math.LegacyMustNewDecFromStr("0.05")
+		stakingParams.MinCommissionRate = sdkmath.LegacyMustNewDecFromStr("0.05")
 		err = keepers.StakingKeeper.SetParams(ctx, stakingParams)
 		if err != nil {
 			return nil, err
@@ -221,7 +293,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 		// set community tax to 100% to take all rewards
-		distrParams.CommunityTax = math.LegacyMustNewDecFromStr("1")
+		distrParams.CommunityTax = sdkmath.LegacyMustNewDecFromStr("1")
 		keepers.DistributionKeeper.Params.Set(ctx, distrParams)
 
 		// Update x/feemarket
@@ -231,7 +303,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 		feeMarketParams.FeeDenom = U_BASE_DENOM
 		// distribute fees rather than burning, the 100% community tax should intercept these before they're sent to the stakers (?)
-		feeMarketParams.DistributeFees = true
+		feeMarketParams.DistributeFees = feemarketDistFees[sdkCtx.ChainID()]
 		err = keepers.FeeMarketKeeper.SetParams(sdkCtx, feeMarketParams)
 		if err != nil {
 			return nil, err
@@ -270,10 +342,16 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 					"addr", valAddr,
 				)
 			} else {
+				shares := delegation.Shares.RoundInt()
+				// branch to preserve testnet 10 migration state
+				// Updates stake amounts made by the foundation
+				if sdkCtx.ChainID() != UNION_TESTNET {
+					shares = getUFromU64(100_000).Amount
+				}
 				_, err = keepers.StakingKeeper.Delegate(
 					ctx,
 					unionFoundationMultiSig,
-					delegation.Shares.RoundInt(),
+					shares,
 					stakingtypes.Unbonded,
 					validator,
 					true,
@@ -294,14 +372,35 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 }
 
 func burnToken(ctx context.Context, keepers upgrades.AppKeepers, denom string) error {
-	tokenOwners, err := keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
-		Denom:      denom,
-		Pagination: nil,
-	})
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	var tokenOwners *banktypes.QueryDenomOwnersResponse
+	var err error
+
+	// Ensure no changed behavior in how testnet 10 pagination was determined
+	// Testnet migration only captured 100 balance holders due to default paginiation
+	if sdkCtx.ChainID() == UNION_TESTNET {
+		tokenOwners, err = keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
+			Denom:      denom,
+			Pagination: nil,
+		})
+	} else {
+		tokenOwners, err = keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
+			Denom: denom,
+			Pagination: &query.PageRequest{
+				Key:        []byte{},
+				Offset:     0,
+				Limit:      math.MaxUint64,
+				CountTotal: false,
+				Reverse:    false,
+			},
+		})
+	}
 	if err != nil {
 		return err
 	}
-	tokenSum := math.ZeroInt()
+
+	tokenSum := sdkmath.ZeroInt()
 	for _, tokenOwner := range tokenOwners.DenomOwners {
 		accAddr, err := sdk.AccAddressFromBech32(tokenOwner.Address)
 		if err != nil {
@@ -314,7 +413,7 @@ func burnToken(ctx context.Context, keepers upgrades.AppKeepers, denom string) e
 		}
 		tokenSum = tokenSum.Add(tokenOwner.Balance.Amount)
 	}
-	if tokenSum.GT(math.ZeroInt()) {
+	if tokenSum.GT(sdkmath.ZeroInt()) {
 		err = keepers.BankKeeper.BurnCoins(ctx, govtypes.ModuleName, sdk.NewCoins(sdk.Coin{
 			Denom:  denom,
 			Amount: tokenSum,
@@ -330,6 +429,6 @@ func getUFromU64(amount int64) sdk.Coin {
 	res := new(big.Int).Mul(big.NewInt(ONE_U), big.NewInt(amount))
 	return sdk.Coin{
 		Denom:  U_BASE_DENOM,
-		Amount: math.NewIntFromBigInt(res),
+		Amount: sdkmath.NewIntFromBigInt(res),
 	}
 }
