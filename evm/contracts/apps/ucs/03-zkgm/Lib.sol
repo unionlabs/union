@@ -103,7 +103,7 @@ library ZkgmLib {
     event CreateWrappedToken(
         uint256 path,
         uint32 indexed channelId,
-        bytes indexed baseToken,
+        bytes baseToken,
         address indexed quoteToken,
         bytes metadata,
         uint8 kind

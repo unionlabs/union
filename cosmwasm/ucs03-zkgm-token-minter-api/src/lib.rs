@@ -16,8 +16,8 @@ pub const EVENT_WRAPPED_TOKEN_ATTR_KIND: &str = "kind";
 
 #[repr(u8)]
 pub enum WrappedTokenKind {
-    Protocol = 1,
-    ThirdParty = 2,
+    Protocol = 0,
+    ThirdParty = 1,
 }
 
 pub fn new_wrapped_token_event(
