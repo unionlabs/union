@@ -528,7 +528,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_unparseable_metadata() {
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_unparsable_metadata() {
         // Create a V2 packet with metadata_type = 1 but invalid metadata that cannot be parsed
         use alloy_sol_types::SolType;
 
