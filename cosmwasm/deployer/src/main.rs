@@ -34,7 +34,7 @@ use unionlabs::{
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
     google::protobuf::any::Any,
-    primitives::{Bech32, Bytes, H256},
+    primitives::{encoding::HexPrefixed, Bech32, Bytes, H256},
     signer::CosmosSigner,
 };
 
@@ -316,7 +316,7 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
 }
 
-const ESCROW_VAULT: &str = "escrow-vault";
+const ESCROW_VAULT: &str = "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965";
 const CORE: &str = "ibc-is-based";
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
@@ -1444,17 +1444,7 @@ impl Deployer {
 
     async fn instantiate2_address(&self, checksum: H256, salt: &str) -> Result<Bech32<H256>> {
         let bech32 = self.wallet().address();
-
-        let addr = cosmwasm_std::instantiate2_address(
-            checksum.get(),
-            &(bech32.data().get().as_slice().into()),
-            salt.as_bytes(),
-        )?;
-
-        Ok(Bech32::new(
-            bech32.hrp().to_owned(),
-            addr.as_slice().try_into().unwrap(),
-        ))
+        instantiate2_address(bech32, checksum, salt)
     }
 
     #[instrument(skip_all, fields(%salt))]
@@ -1471,6 +1461,11 @@ impl Deployer {
 
         info!("{salt} address is {address}");
 
+        let raw_salt = match Bytes::<HexPrefixed>::from_str(&salt) {
+            Ok(salt) => salt.to_vec(),
+            Err(_) => salt.as_bytes().to_vec(),
+        };
+
         match self.contract_deploy_state(address.clone()).await? {
             // only need to instantiate if the contract has not yet been instantiated with the base code
             ContractDeployState::None => {
@@ -1482,7 +1477,7 @@ impl Deployer {
                             code_id: bytecode_base_code_id,
                             label: salt.clone(),
                             msg: json!({}).to_string().into_bytes().into(),
-                            salt: salt.into_bytes().into(),
+                            salt: raw_salt.into(),
                             funds: vec![],
                             fix_msg: false,
                         },
@@ -1640,11 +1635,13 @@ fn instantiate2_address(
     checksum: H256,
     salt: &str,
 ) -> Result<Bech32<H256>> {
-    let addr = cosmwasm_std::instantiate2_address(
-        checksum.get(),
-        &address.data().as_ref().into(),
-        salt.as_bytes(),
-    )?;
+    let salt = match Bytes::<HexPrefixed>::from_str(salt) {
+        Ok(salt) => salt.to_vec(),
+        Err(_) => salt.as_bytes().to_vec(),
+    };
+
+    let addr =
+        cosmwasm_std::instantiate2_address(checksum.get(), &address.data().as_ref().into(), &salt)?;
 
     Ok(Bech32::new(
         address.hrp().to_owned(),
