@@ -15,6 +15,7 @@ const OP_TOKEN_ORDER: u8 = 0x03;
 const TOKEN_ORDER_KIND_INITIALIZE: u8 = 0x00;
 const TOKEN_ORDER_KIND_ESCROW: u8 = 0x01;
 const TOKEN_ORDER_KIND_UNESCROW: u8 = 0x02;
+const TOKEN_ORDER_KIND_SOLVE: u8 = 0x03;
 
 sol! {
     #[derive(Serialize)]
@@ -96,6 +97,12 @@ sol! {
         bytes implementation;
         bytes initializer;
     }
+
+    #[derive(Serialize, Debug)]
+    struct SolveMetadata {
+        bytes solverAddress;
+        bytes metadata;
+    }
 }
 
 impl Serialize for Instruction {
@@ -139,7 +146,7 @@ impl Serialize for TokenOrderV2 {
         // Add _metadata field based on metadata_type
         let metadata_value = match self.kind {
             TOKEN_ORDER_KIND_INITIALIZE => {
-                // Decode metadata into TokenOrderMetadata
+                // Decode metadata into TokenMetadata
                 match <TokenMetadata>::abi_decode_sequence(&self.metadata) {
                     Ok(decoded) => json!({
                         "_type": "Initialize",
@@ -160,6 +167,20 @@ impl Serialize for TokenOrderV2 {
                 "_type": "Unescrow",
                 "data": self.metadata
             }),
+            TOKEN_ORDER_KIND_SOLVE => {
+                // Decode metadata into SolveMetadata
+                match <SolveMetadata>::abi_decode_sequence(&self.metadata) {
+                    Ok(decoded) => json!({
+                        "_type": "Solve",
+                        "solverAddress": decoded.solverAddress,
+                        "metadata": decoded.metadata
+                    }),
+                    Err(_) => json!({
+                        "_type": "Solve",
+                        "error": "failed to decode solve metadata"
+                    }),
+                }
+            }
             _ => json!({
                 "_type": "Unsupported",
                 "data": self.metadata
@@ -458,6 +479,76 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_kind_solve() {
+        // Create a V2 packet with metadata_type = 3 (Solve) using real hex encoding
+        // replace with hex once packet is on chain
+        let v2_order = TokenOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            baseToken: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            baseAmount: alloy_sol_types::private::U256::from(100u64),
+            quoteToken: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quoteAmount: alloy_sol_types::private::U256::from(100u64),
+            kind: 3, // solve
+            metadata: SolveMetadata::abi_encode_params(&SolveMetadata { solverAddress: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()), metadata: alloy_sol_types::private::Bytes::from(hex::decode("deadbeef").unwrap())}).into(),
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_TOKEN_ORDER,
+            operand: <TokenOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "TokenOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "kind": 3,
+                  "metadata": "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000004deadbeef00000000000000000000000000000000000000000000000000000000",
+                  "_metadata": {
+                    "_type": "Solve",
+                    "solverAddress": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                    "metadata": "0xdeadbeef"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
     fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_unsupported_kind() {
         // Create a V2 packet with metadata_type = 99 (unsupported) using real hex encoding
         use alloy_sol_types::SolType;
@@ -528,8 +619,8 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_unparsable_metadata() {
-        // Create a V2 packet with metadata_type = 1 but invalid metadata that cannot be parsed
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_initialize_unparsable_metadata() {
+        // Create a V2 packet with metadata_type = 0 (initialize) but invalid metadata that cannot be parsed
         use alloy_sol_types::SolType;
 
         let v2_order = TokenOrderV2 {
@@ -587,6 +678,76 @@ mod tests {
                   "_metadata": {
                     "_type": "Initialize",
                     "error": "failed to decode token metadata"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_token_order_v2_packet_solve_unparsable_metadata() {
+        // Create a V2 packet with metadata_type = 3 (solve) but invalid metadata that cannot be parsed
+        use alloy_sol_types::SolType;
+
+        let v2_order = TokenOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            baseToken: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            baseAmount: alloy_sol_types::private::U256::from(100u64),
+            quoteToken: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quoteAmount: alloy_sol_types::private::U256::from(100u64),
+            kind: 3, // Solve
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("deadbeef").unwrap()), // Invalid/too short for TokenOrderMetadata
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_TOKEN_ORDER,
+            operand: <TokenOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "TokenOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "baseToken": "0x6d756e6f",
+                  "baseAmount": "0x64",
+                  "quoteToken": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quoteAmount": "0x64",
+                  "kind": 3,
+                  "metadata": "0xdeadbeef",
+                  "_metadata": {
+                    "_type": "Solve",
+                    "error": "failed to decode solve metadata"
                   }
                 },
                 "version": 2

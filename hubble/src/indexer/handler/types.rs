@@ -509,6 +509,7 @@ pub enum TokenOrderKind {
     Initialize,
     Escrow,
     Unescrow,
+    Solve,
     Unsupported(u8),
 }
 
@@ -516,6 +517,7 @@ impl TokenOrderKind {
     pub const INITIALIZE: u8 = 0;
     pub const ESCROW: u8 = 1;
     pub const UNESCROW: u8 = 2;
+    pub const SOLVE: u8 = 3;
 }
 
 impl From<u8> for TokenOrderKind {
@@ -524,6 +526,7 @@ impl From<u8> for TokenOrderKind {
             TokenOrderKind::INITIALIZE => TokenOrderKind::Initialize,
             TokenOrderKind::ESCROW => TokenOrderKind::Escrow,
             TokenOrderKind::UNESCROW => TokenOrderKind::Unescrow,
+            TokenOrderKind::SOLVE => TokenOrderKind::Solve,
             kind => TokenOrderKind::Unsupported(kind),
         }
     }
@@ -535,6 +538,7 @@ impl From<TokenOrderKind> for u8 {
             TokenOrderKind::Initialize => TokenOrderKind::INITIALIZE,
             TokenOrderKind::Escrow => TokenOrderKind::ESCROW,
             TokenOrderKind::Unescrow => TokenOrderKind::UNESCROW,
+            TokenOrderKind::Solve => TokenOrderKind::SOLVE,
             TokenOrderKind::Unsupported(value) => value,
         }
     }
