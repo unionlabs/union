@@ -356,10 +356,10 @@ pub struct Ucs03Config {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum TokenMinterConfig {
     Cw20 {
-        /// The path to the cw20-base contract code.
+        /// The path to the cw20 implementation contract code.
         ///
-        /// This MUST be the unionlabs fork of cw20-base, which forces instantiation through the migrate entrypoint, such that it can have a deterministic address.
-        cw20_base: PathBuf,
+        /// This contract MUST be compatible with [`frissitheto`], allowing instantiation through the migrate entrypoint, such that it can have a deterministic address.
+        cw20_impl: PathBuf,
     },
     OsmosisTokenfactory {},
 }
@@ -630,9 +630,9 @@ async fn do_main() -> Result<()> {
                                 gas_config.simulate,
                             )
                             .await
-                            .context("update instantiate perms of cw20-base")?;
+                            .context("update instantiate perms of cw20 impl")?;
 
-                        info!(%tx_hash, "cw20-base instantiate permissions updated");
+                        info!(%tx_hash, "cw20 impl instantiate permissions updated");
 
                         // the bytecode base code id must be instantiable by ucs03
                         ctx.update_bytecode_base_instantiate_permissions(
@@ -650,7 +650,9 @@ async fn do_main() -> Result<()> {
                     .unwrap();
 
                     let minter_init_params = match ucs03_config.token_minter_config {
-                        TokenMinterConfig::Cw20 { cw20_base } => {
+                        TokenMinterConfig::Cw20 {
+                            cw20_impl: cw20_base,
+                        } => {
                             let (tx_hash, response) = ctx
                                 .tx(
                                     MsgStoreCode {
@@ -662,11 +664,11 @@ async fn do_main() -> Result<()> {
                                     gas_config.simulate,
                                 )
                                 .await
-                                .context("store cw20-base code")?;
+                                .context("store cw20 impl code")?;
 
                             let code_id = response.code_id;
 
-                            info!(%tx_hash, code_id, "cw20-base stored");
+                            info!(%tx_hash, code_id, "cw20 impl stored");
 
                             // on permissioned cosmwasm, we must specify that this code can be instantiated by the token minter
                             if permissioned {
@@ -688,9 +690,9 @@ async fn do_main() -> Result<()> {
                                         gas_config.simulate,
                                     )
                                     .await
-                                    .context("update instantiate perms of cw20-base")?;
+                                    .context("update instantiate perms of cw20 impl")?;
 
-                                info!(%tx_hash, "cw20-base instantiate permissions updated");
+                                info!(%tx_hash, "cw20 impl instantiate permissions updated");
 
                                 // the bytecode-base code must also be instantiable by the token minter
                                 ctx.update_bytecode_base_instantiate_permissions(
@@ -701,7 +703,7 @@ async fn do_main() -> Result<()> {
                             }
 
                             TokenMinterInitParams::Cw20 {
-                                cw20_base_code_id: code_id.get(),
+                                cw20_impl_code_id: code_id.get(),
                                 dummy_code_id: bytecode_base_code_id.get(),
                             }
                         }

@@ -969,7 +969,7 @@ fn init_test_state(admin: Addr) -> TestState {
                 cw_account_code_id: 0,
             },
             minter_init_params: TokenMinterInitParams::Cw20 {
-                cw20_base_code_id,
+                cw20_impl_code_id: cw20_base_code_id,
                 dummy_code_id: proxy_code_id,
             },
         }),

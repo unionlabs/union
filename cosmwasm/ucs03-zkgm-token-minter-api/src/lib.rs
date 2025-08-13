@@ -55,7 +55,8 @@ pub enum TokenMinterInitMsg {
     ///
     /// [CW20]: https://github.com/unionlabs/union/blob/2a09e8e6b570292fe117c5009bbf22ca140099ba/cosmwasm/cw20-base/README.md
     Cw20 {
-        cw20_base_code_id: u64,
+        #[serde(alias = "cw20_base_code_id")]
+        cw20_impl_code_id: u64,
         dummy_code_id: u64,
         zkgm_admin: Addr,
     },

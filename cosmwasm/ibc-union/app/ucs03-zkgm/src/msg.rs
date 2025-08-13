@@ -45,7 +45,8 @@ pub enum TokenMinterInitParams {
         ///
         /// [`cw20-base`]: https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md#base
         // TODO: Should be NonZeroU64
-        cw20_base_code_id: u64,
+        #[serde(alias = "cw20_base_code_id")]
+        cw20_impl_code_id: u64,
         /// The code id of the dummy contract in order to get a contract address that does not depend on the code hash of `cw20_base`
         // TODO: Should be NonZeroU64
         dummy_code_id: u64,
@@ -59,10 +60,10 @@ impl TokenMinterInitParams {
     pub fn into_msg(self, zkgm_admin: Addr) -> TokenMinterInitMsg {
         match self {
             TokenMinterInitParams::Cw20 {
-                cw20_base_code_id,
+                cw20_impl_code_id,
                 dummy_code_id,
             } => TokenMinterInitMsg::Cw20 {
-                cw20_base_code_id,
+                cw20_impl_code_id,
                 dummy_code_id,
                 zkgm_admin,
             },
