@@ -120,10 +120,11 @@ pub enum ExecuteMsg {
     InternalBatch {
         messages: Vec<CosmosMsg>,
     },
-    /// Migrate V1 to V2 balances.
+    /// Migrate V1 to V2.
     /// Can only be called by admin.
     MigrateV1ToV2 {
-        migrations: Vec<V1ToV2Migration>,
+        balance_migrations: Vec<V1ToV2Migration>,
+        wrapped_migrations: Vec<V1ToV2WrappedMigration>,
     },
 }
 
@@ -182,10 +183,19 @@ pub struct MigrateMsg {}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct V1ToV2Migration {
-    pub channel_id: ChannelId,
     pub path: Uint256,
+    pub channel_id: ChannelId,
     pub base_token: String,
     pub quote_token: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct V1ToV2WrappedMigration {
+    pub path: Uint256,
+    pub channel_id: ChannelId,
+    pub base_token: Bytes,
+    pub quote_token: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

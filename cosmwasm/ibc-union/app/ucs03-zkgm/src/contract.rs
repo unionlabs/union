@@ -18,7 +18,10 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{path::BatchPacketsPath, ChannelId, MustBeZero, Packet, Timestamp};
-use ucs03_zkgm_token_minter_api::{LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg};
+use ucs03_zkgm_token_minter_api::{
+    new_wrapped_token_event, LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind,
+    WrappedTokenMsg,
+};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{encoding::HexPrefixed, Bytes, H256},
@@ -37,7 +40,7 @@ use crate::{
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg,
-        V1ToV2Migration, ZkgmMsg,
+        V1ToV2Migration, V1ToV2WrappedMigration, ZkgmMsg,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, DEPRECATED_CHANNEL_BALANCE_V1,
@@ -311,12 +314,15 @@ pub fn execute(
                     .add_attribute("refill_rate", token_bucket.refill_rate),
             ))
         }
-        ExecuteMsg::MigrateV1ToV2 { migrations } => {
+        ExecuteMsg::MigrateV1ToV2 {
+            balance_migrations,
+            wrapped_migrations,
+        } => {
             let config = CONFIG.load(deps.storage)?;
             if info.sender != config.admin {
                 return Err(ContractError::OnlyAdmin);
             }
-            migrate_v1_to_v2(deps, migrations)
+            migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations)
         }
     }
 }
@@ -3742,10 +3748,10 @@ pub fn derive_forward_salt(salt: H256) -> H256 {
 
 fn migrate_v1_to_v2(
     deps: DepsMut,
-    migrations: Vec<V1ToV2Migration>,
+    balance_migrations: Vec<V1ToV2Migration>,
+    wrapped_migrations: Vec<V1ToV2WrappedMigration>,
 ) -> Result<Response, ContractError> {
-    let migration_count = migrations.len();
-    for migration in migrations {
+    for migration in balance_migrations {
         let key = (
             migration.channel_id.raw(),
             migration.path.to_be_bytes().to_vec(),
@@ -3785,10 +3791,22 @@ fn migrate_v1_to_v2(
         }
     }
 
-    Ok(Response::new().add_event(
-        Event::new("v1_to_v2_migration")
-            .add_attribute("migration_count", migration_count.to_string()),
-    ))
+    let mut events = Vec::new();
+    for migration in wrapped_migrations {
+        let event = new_wrapped_token_event(
+            U256::from_be_bytes(migration.path.to_be_bytes()),
+            migration.channel_id,
+            migration.base_token.into_vec(),
+            &migration.quote_token,
+            Vec::new(),
+            WrappedTokenKind::Protocol,
+        );
+        events.push(event);
+    }
+
+    Ok(Response::new()
+        .add_event(Event::new("v1_to_v2_migration"))
+        .add_events(events))
 }
 
 pub fn encode_multiplex_calldata(path: U256, sender: Bytes, contract_calldata: Bytes) -> Vec<u8> {
