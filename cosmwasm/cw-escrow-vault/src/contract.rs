@@ -1,7 +1,9 @@
 use cosmwasm_schema::cw_serde;
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    entry_point, to_json_binary, wasm_execute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, Event, MessageInfo, Response, StdResult, Uint128,
+    to_json_binary, wasm_execute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event,
+    MessageInfo, Response, StdResult, Uint128,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -16,7 +18,7 @@ use crate::{
     state::{Admin, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
 };
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
     panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
 }
@@ -24,7 +26,7 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 #[cw_serde]
 pub struct MigrateMsg {}
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _: Env,
@@ -57,7 +59,7 @@ fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
     Ok(())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
@@ -199,7 +201,7 @@ pub fn execute(
     }
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::IsSolver => to_json_binary(&()),
