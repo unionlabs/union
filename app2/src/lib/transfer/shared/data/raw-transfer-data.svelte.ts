@@ -10,6 +10,7 @@ export type FormFields = {
   receiver: string // Receiver of the transaction/action
   sender: string
   amount: string // Amount value (stored as string for form handling)
+  quoteToken: string // Selected quote token denom on destination chain
 }
 
 /**
@@ -30,6 +31,7 @@ export class RawTransferDataSvelte {
   receiver: string = $state("")
   sender: string = $state("")
   amount: string = $state("")
+  quoteToken: string = $state("")
 
   constructor() {
     // Initialize values from URL parameters if they exist
@@ -87,8 +89,9 @@ export class RawTransferDataSvelte {
       receiver = "",
       sender = "",
       amount = "",
+      quoteToken = "",
     } = state
-    return { source, destination, asset, receiver, sender, amount }
+    return { source, destination, asset, receiver, sender, amount, quoteToken }
   }
 
   /**
@@ -105,6 +108,7 @@ export class RawTransferDataSvelte {
       receiver: this.receiver,
       sender: this.sender,
       amount: this.amount,
+      quoteToken: this.quoteToken,
       ...value,
     })
 
@@ -115,6 +119,7 @@ export class RawTransferDataSvelte {
     this.receiver = newParams.receiver
     this.sender = newParams.sender
     this.amount = newParams.amount
+    this.quoteToken = newParams.quoteToken
   }
 
   /**
@@ -150,7 +155,9 @@ export class RawTransferDataSvelte {
       destination: this.destination,
       asset: this.asset,
       receiver: this.receiver,
+      sender: this.sender,
       amount: this.amount,
+      quoteToken: this.quoteToken,
       ...value,
     })
 
@@ -159,7 +166,9 @@ export class RawTransferDataSvelte {
     this.destination = newParams.destination
     this.asset = newParams.asset
     this.receiver = newParams.receiver
+    this.sender = newParams.sender
     this.amount = newParams.amount
+    this.quoteToken = newParams.quoteToken
 
     // Debounced URL update
     this.debouncedUpdateUrl(newParams)
@@ -189,6 +198,7 @@ export class RawTransferDataSvelte {
       receiver: this.receiver,
       sender: this.sender,
       amount: this.amount,
+      quoteToken: this.quoteToken,
     }
 
     // Set the new field value
@@ -196,9 +206,9 @@ export class RawTransferDataSvelte {
 
     // Handle dependent field resets
     const resetMapping: Partial<Record<keyof FormFields, Array<keyof FormFields>>> = {
-      source: ["asset", "amount", "destination"],
-      asset: ["amount", "destination"],
-      destination: ["receiver"],
+      source: ["asset", "amount", "destination", "quoteToken"],
+      asset: ["amount", "destination", "quoteToken"],
+      destination: ["receiver", "quoteToken"],
     } as const
 
     const fieldsToReset = resetMapping[field]
@@ -218,6 +228,7 @@ export class RawTransferDataSvelte {
     this.receiver = newParams.receiver
     this.sender = newParams.sender
     this.amount = newParams.amount
+    this.quoteToken = newParams.quoteToken
 
     // Debounced URL update
     this.debouncedUpdateUrl(newParams)
@@ -231,6 +242,7 @@ export class RawTransferDataSvelte {
       receiver: "",
       sender: "",
       amount: "",
+      quoteToken: "",
     })
   }
 
@@ -251,6 +263,7 @@ export class RawTransferDataSvelte {
       asset: newAsset,
       receiver: "",
       sender: "",
+      quoteToken: "",
     })
 
     // Update URL after all changes are made
@@ -261,6 +274,8 @@ export class RawTransferDataSvelte {
       receiver: this.receiver,
       sender: this.sender,
       amount: this.amount,
+      quoteToken: this.quoteToken,
     })
   }
 }
+
