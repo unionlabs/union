@@ -11,6 +11,9 @@ repository   = { workspace = true }
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+library = []
+
 [dependencies]
 bincode         = { workspace = true }
 cosmwasm-schema = { workspace = true }
