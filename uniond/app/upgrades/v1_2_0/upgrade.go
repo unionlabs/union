@@ -44,7 +44,7 @@ const UNION = "union-1"
 var unionFoundationSigMap = map[string]string{
 	UNION_TESTNET: FOUNDATION_TESTNET_SIG,
 	UNION_DEVNET:  DEVNET_SIG,
-	UNION:         DEVNET_SIG,
+	UNION:         FOUNDATION_SIG,
 }
 var feemarketDistFees = map[string]bool{
 	UNION_TESTNET: true,
