@@ -5907,8 +5907,13 @@ contract ZkgmTests is Test {
                 address(0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2)
             ),
             baseToken: abi.encodePacked("au"),
-            kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
-            metadata: hex"",
+            kind: ZkgmLib.TOKEN_ORDER_KIND_SOLVE,
+            metadata: ZkgmLib.encodeSolverMetadata(
+                SolverMetadata({
+                    solverAddress: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
+                    metadata: hex""
+                })
+            ),
             baseAmount: 10,
             quoteToken: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
             quoteAmount: 10
@@ -5933,12 +5938,17 @@ contract ZkgmTests is Test {
                 "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"
             ),
             baseToken: hex"ba5eD44733953d79717F6269357C77718C8Ba5ed",
-            kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
-            metadata: hex"",
-            baseAmount: 10,
-            quoteToken: abi.encodePacked(
-                "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r"
+            kind: ZkgmLib.TOKEN_ORDER_KIND_SOLVE,
+            metadata: ZkgmLib.encodeSolverMetadata(
+                SolverMetadata({
+                    solverAddress: abi.encodePacked(
+                        "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r"
+                    ),
+                    metadata: hex""
+                })
             ),
+            baseAmount: 10,
+            quoteToken: abi.encodePacked("au"),
             quoteAmount: 10
         });
         Instruction memory inst = Instruction({
@@ -6004,7 +6014,7 @@ contract ZkgmTests is Test {
                 "{\"admin\": \"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2\", \"code_id\": 148}"
             ),
             initializer: abi.encodePacked(
-                "{\"init\":{\"name\":\"Ether\",\"symbol\":\"ETH\",\"decimals\":18,\"initial_balances\":[],\"mint\":{\"minter\":\"union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0\",\"cap\":null},\"marketing\":null}}"
+                "{\"init\":{\"name\":\"Ether\",\"symbol\":\"ETH.u\",\"decimals\":18,\"initial_balances\":[],\"mint\":{\"minter\":\"union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0\",\"cap\":null},\"marketing\":null}}"
             )
         });
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
@@ -6017,7 +6027,7 @@ contract ZkgmTests is Test {
             metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 100,
             quoteToken: abi.encodePacked(
-                "union1hs95pw9t7rwzfv99gm6u82ptdqh4zgf9l6a3gaht782z6x7m0fxq79fd5k"
+                "union1s2wexsk6zdtmcfa548vqzke7tf7nf9qujltlhmr98pvkc05sjl5q42a07y"
             ),
             quoteAmount: 100
         });

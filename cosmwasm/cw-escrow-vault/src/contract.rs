@@ -130,6 +130,16 @@ pub fn execute(
                     channel_id: packet.destination_channel_id,
                 })?;
 
+            let quote_token = String::from_utf8(Vec::from(order.quote_token))
+                .map_err(|_| Error::InvalidQuoteToken)?;
+
+            if quote_token != fungible_lane.escrowed_denom {
+                return Err(Error::InvalidFill {
+                    quote_token,
+                    escrowed_denom: fungible_lane.escrowed_denom,
+                });
+            }
+
             let mut messages = Vec::<CosmosMsg>::with_capacity(2);
             let mut push_transfer = |to, amount: Uint128| -> StdResult<()> {
                 if !amount.is_zero() {

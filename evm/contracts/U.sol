@@ -5,7 +5,6 @@ import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import
     "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 import "solady/utils/LibBytes.sol";
 
@@ -19,8 +18,7 @@ contract U is
     AccessManagedUpgradeable,
     ERC20Upgradeable,
     Versioned,
-    ISolver,
-    ERC165
+    ISolver
 {
     using LibBytes for *;
 
@@ -29,6 +27,7 @@ contract U is
     error U_CounterpartyIsNotFungible();
     error U_BaseAmountMustCoverQuoteAmount();
     error U_InvalidCounterpartyBeneficiary();
+    error U_Fool();
 
     bytes32 internal constant U_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.storage.zkgm.u")) - 1)
@@ -173,6 +172,10 @@ contract U is
             revert U_CounterpartyIsNotFungible();
         }
 
+        if (!order.quoteToken.eq(abi.encodePacked(address(this)))) {
+            revert U_Fool();
+        }
+
         if (order.quoteAmount > order.baseAmount) {
             revert U_BaseAmountMustCoverQuoteAmount();
         }
@@ -190,13 +193,6 @@ contract U is
         // The market maker address will be the preconfigured beneficiary.
         // Likely another U contract/vault.
         return counterparty.beneficiary;
-    }
-
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override returns (bool) {
-        return interfaceId == type(ISolver).interfaceId
-            || super.supportsInterface(interfaceId);
     }
 
     modifier onlyZkgm() {

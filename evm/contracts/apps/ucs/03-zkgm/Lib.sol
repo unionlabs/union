@@ -29,6 +29,7 @@ library ZkgmLib {
     uint8 public constant TOKEN_ORDER_KIND_INITIALIZE = 0x00;
     uint8 public constant TOKEN_ORDER_KIND_ESCROW = 0x01;
     uint8 public constant TOKEN_ORDER_KIND_UNESCROW = 0x02;
+    uint8 public constant TOKEN_ORDER_KIND_SOLVE = 0x03;
 
     // Public instructions
     uint8 public constant OP_FORWARD = 0x00;
@@ -119,6 +120,16 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (TokenMetadata calldata) {
         TokenMetadata calldata meta;
+        assembly {
+            meta := stream.offset
+        }
+        return meta;
+    }
+
+    function decodeSolverMetadata(
+        bytes calldata stream
+    ) internal pure returns (SolverMetadata calldata) {
+        SolverMetadata calldata meta;
         assembly {
             meta := stream.offset
         }
@@ -412,6 +423,12 @@ library ZkgmLib {
         return abi.encode(meta.implementation, meta.initializer);
     }
 
+    function encodeSolverMetadata(
+        SolverMetadata memory meta
+    ) internal pure returns (bytes memory) {
+        return abi.encode(meta.solverAddress, meta.metadata);
+    }
+
     function decodeTokenOrderV1(
         bytes calldata stream
     ) internal pure returns (TokenOrderV1 calldata) {
@@ -626,11 +643,5 @@ library ZkgmLib {
         uint8 version
     ) internal pure returns (bool) {
         return instruction.opcode == opcode && instruction.version == version;
-    }
-
-    function isSolver(
-        address token
-    ) internal view returns (bool) {
-        return ERC165Checker.supportsInterface(token, type(ISolver).interfaceId);
     }
 }

@@ -1649,6 +1649,7 @@ fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (_, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
+        .with_kind(TOKEN_ORDER_KIND_ESCROW)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
         // Base not covering the quote
