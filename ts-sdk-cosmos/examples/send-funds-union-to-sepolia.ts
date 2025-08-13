@@ -14,6 +14,7 @@ if (typeof BigInt.prototype.toJSON !== "function") {
     return this.toString()
   }
 }
+import { Decimal } from "@cosmjs/math"
 // ---cut---
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
@@ -24,13 +25,9 @@ import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { Effect, Logger } from "effect"
 
-// has a function .encode() -> ethabi (uses Ucs03 module)
-// has a function .extractRequiredTokens() -> Token[]
-//                                           example output: [{ token: Token.Erc20(`0x1234`), amount: 42342n }, { token: Token.EvmGas, amount: 200n }]
-
 const program = Effect.gen(function*() {
   const source = yield* ChainRegistry.byUniversalId(
-    UniversalChainId.make("ethereum.17000"),
+    UniversalChainId.make("union.union-testnet-10"),
   )
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.11155111"),
@@ -41,20 +38,20 @@ const program = Effect.gen(function*() {
     destination,
     sender: "union122ny3mep2l7nhtafpwav2y9e5jrslhek76hsjl",
     receiver: "0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302",
-    // LINK on Holesky
-    baseToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
-    baseAmount: 100n,
-    quoteToken: "0x80fdbf104ec58a527ec40f7b03f88c404ef4ba63",
-    quoteAmount: 100n,
-    kind: TokenOrder.Kind.Escrow,
-    metadata: undefined,
+    baseToken: "au",
+    baseAmount: 10n,
+    quoteToken: "0xba5eD44733953d79717F6269357C77718C8Ba5ed",
+    quoteAmount: 10n,
+    kind: TokenOrder.Kind.Solve,
+    metadata:
+      "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
   })
 
   const request = ZkgmClientRequest.make({
     source,
     destination,
-    channelId: ChannelId.make(2),
-    ucs03Address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+    channelId: ChannelId.make(1),
+    ucs03Address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
     instruction: tokenOrder,
   })
 
@@ -70,8 +67,11 @@ const program = Effect.gen(function*() {
   Effect.provide(Cosmos.SigningClient.Live(
     "union122ny3mep2l7nhtafpwav2y9e5jrslhek76hsjl",
     "https://rpc.union-testnet-10.union.chain.kitchen",
-    await DirectSecp256k1HdWallet.fromMnemonic("memo memo memo", { prefix: "union" }),
-    { gasPrice: GasPrice.fromString("0.007ubbn") },
+    await DirectSecp256k1HdWallet.fromMnemonic(
+      "memo memo memo",
+      { prefix: "union" },
+    ),
+    { gasPrice: new GasPrice(Decimal.one(18), "au") },
   )),
   Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
   Effect.provide(ChainRegistry.Default),

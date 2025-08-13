@@ -67,7 +67,7 @@ export const make = (options: {
   source: Chain
   destination: Chain
   channelId: ChannelId
-  ucs03Address: Hex
+  ucs03Address: string
   instruction: ZkgmInstruction
 }) => modify(empty, options)
 

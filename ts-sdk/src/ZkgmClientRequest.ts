@@ -10,7 +10,6 @@ import type { Pipeable } from "effect/Pipeable"
 import * as internal from "./internal/zkgmClientRequest.js"
 import { Chain } from "./schema/chain.js"
 import { ChannelId } from "./schema/channel.js"
-import { Hex } from "./schema/hex.js"
 import type * as Token from "./Token.js"
 import type * as ZkgmInstruction from "./ZkgmInstruction.js"
 
@@ -35,7 +34,7 @@ export interface ZkgmClientRequest extends Inspectable, Pipeable {
   readonly source: Chain
   readonly destination: Chain
   readonly channelId: ChannelId
-  readonly ucs03Address: Hex
+  readonly ucs03Address: string
   readonly instruction: ZkgmInstruction.ZkgmInstruction
 }
 
@@ -47,7 +46,7 @@ export interface Options {
   readonly source?: Chain | undefined
   readonly destination?: Chain | undefined
   readonly channelId: ChannelId
-  readonly ucs03Address: Hex
+  readonly ucs03Address: string // XXX: narrow
   readonly instruction?: ZkgmInstruction.ZkgmInstruction | undefined
 }
 
@@ -59,7 +58,7 @@ export const make: (options: {
   source: Chain
   destination: Chain
   channelId: ChannelId
-  ucs03Address: Hex
+  ucs03Address: string // XXX: narrow
   instruction: ZkgmInstruction.ZkgmInstruction
 }) => ZkgmClientRequest = internal.make
 

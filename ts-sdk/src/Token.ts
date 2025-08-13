@@ -4,7 +4,9 @@
  * @since 2.0.0
  */
 import { Effect, flow, Hash, Match, ParseResult, pipe, Schema as S, Struct } from "effect"
-import { constFalse, constTrue } from "effect/Function"
+import { absurd, constFalse, constTrue } from "effect/Function"
+import * as Chain from "./schema/chain.js"
+import * as Hex from "./schema/hex.js"
 
 /**
  * @category schemas
@@ -141,6 +143,36 @@ export const TokenFromString = S.transformOrFail(
     encode: flow(Struct.get("address"), Effect.succeed),
   },
 )
+
+export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
+  S.transformOrFail(
+    Hex.Hex,
+    Any,
+    {
+      decode: (fromA, options, ast, fromI) => {
+        return Match.value(rpcType).pipe(
+          Match.when("evm", () => S.decode(TokenFromString)(fromA)),
+          Match.when("cosmos", () =>
+            pipe(
+              fromA,
+              S.decode(S.compose(
+                Hex.HexFromString,
+                TokenFromString,
+              )),
+            )),
+          Match.when("aptos", (fromA) =>
+            Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported."))),
+          Match.exhaustive,
+          Effect.catchTag("ParseError", (error) =>
+            ParseResult.fail(error.issue)),
+        )
+      },
+      encode: (toI, toA) => {
+        // TODO: do encode
+        return Effect.succeed(absurd<Hex.Hex>(void 0 as unknown as never))
+      },
+    },
+  )
 
 /**
  * @category predicates

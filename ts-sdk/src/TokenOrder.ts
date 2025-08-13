@@ -40,6 +40,7 @@ export enum Kind {
   Initialize,
   Escrow,
   Unescrow,
+  Solve,
 }
 
 /**

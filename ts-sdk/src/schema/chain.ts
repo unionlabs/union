@@ -17,6 +17,7 @@ export type UniversalChainId = typeof UniversalChainId.Type
 export const ChainDisplayName = S.String.pipe(S.brand("ChainDisplayName"))
 
 export const RpcType = S.Literal("evm", "cosmos", "aptos")
+export type RpcType = typeof RpcType.Type
 
 export class ChainFeatures extends S.Class<ChainFeatures>("ChainFeatures")({
   channel_list: S.Boolean,

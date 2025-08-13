@@ -23,6 +23,20 @@ import { Uint64FromSelf } from "./schema/uint64.js"
 export const Abi = [
   {
     type: "function",
+    name: "ensureCreateWrappedTokenExported",
+    inputs: [
+      { name: "path", type: "uint256", internalType: "uint256" },
+      { name: "channelId", type: "uint32", internalType: "uint32" },
+      { name: "baseToken", type: "bytes", internalType: "bytes" },
+      { name: "quoteToken", type: "address", internalType: "address" },
+      { name: "metadata", type: "bytes", internalType: "bytes" },
+      { name: "kind", type: "uint8", internalType: "uint8" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     name: "ensureExported",
     inputs: [{
       name: "",
@@ -161,6 +175,19 @@ export const Abi = [
     stateMutability: "nonpayable",
   },
   {
+    type: "event",
+    name: "CreateWrappedToken",
+    inputs: [
+      { name: "path", type: "uint256", indexed: false, internalType: "uint256" },
+      { name: "channelId", type: "uint32", indexed: true, internalType: "uint32" },
+      { name: "baseToken", type: "bytes", indexed: false, internalType: "bytes" },
+      { name: "quoteToken", type: "address", indexed: true, internalType: "address" },
+      { name: "metadata", type: "bytes", indexed: false, internalType: "bytes" },
+      { name: "kind", type: "uint8", indexed: false, internalType: "uint8" },
+    ],
+    anonymous: false,
+  },
+  {
     type: "constructor",
     inputs: [
       { name: "_ibcHandler", type: "address", internalType: "contract IIBCModulePacket" },
@@ -253,6 +280,30 @@ export const Abi = [
       internalType: "bytes32",
     }],
     stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "decodeRelayerMessage",
+    inputs: [{ name: "relayerMsg", type: "bytes", internalType: "bytes" }],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }, {
+      name: "",
+      type: "bytes",
+      internalType: "bytes",
+    }],
+    stateMutability: "pure",
+  },
+  {
+    type: "function",
+    name: "decodeZkgmERC20InitializeCall",
+    inputs: [{ name: "call", type: "bytes", internalType: "bytes" }],
+    outputs: [
+      { name: "", type: "address", internalType: "address" },
+      { name: "", type: "address", internalType: "address" },
+      { name: "", type: "string", internalType: "string" },
+      { name: "", type: "string", internalType: "string" },
+      { name: "", type: "uint8", internalType: "uint8" },
+    ],
+    stateMutability: "pure",
   },
   {
     type: "function",
@@ -1046,6 +1097,11 @@ export const TokenMetadataKind = S.Union(
   S.Literal(2).pipe(
     S.annotations({
       title: "Unescrow",
+    }),
+  ),
+  S.Literal(3).pipe(
+    S.annotations({
+      title: "Solve",
     }),
   ),
 )
