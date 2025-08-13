@@ -98,7 +98,7 @@ CLAUDE.md
 .claude/
 
 # app
-!app2/src/lib/transfer/shared/data/**
+!app2/src/lib/transfer/shared/data/
 
 # ts-sdk
 ts-sdk/build
