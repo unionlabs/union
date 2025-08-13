@@ -1,5 +1,6 @@
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
-import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
+import { runSync } from "$lib/runtime"
+import { getChannelInfo } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
@@ -84,6 +85,7 @@ export class TransferData {
   )
 
   quoteToken = $derived(
+    this.raw.quoteToken ? Option.some(this.raw.quoteToken) :
     Option.all([
       this.baseToken,
       this.sourceChain,
@@ -129,34 +131,66 @@ export class TransferData {
   channel = $derived<Option.Option<Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.orElse(() =>
-            Option.fromNullable(
-              getChannelInfoSafe(
-                sourceChain.universal_chain_id,
-                destinationChain.universal_chain_id,
-                channelsData,
-              ),
-            )
-          ),
+        runSync(
+          getChannelInfo(
+            sourceChain.universal_chain_id,
+            destinationChain.universal_chain_id,
+            channelsData,
+          ).pipe(Effect.option)
         )
       ),
+    ),
+  )
+
+  representations = $derived(
+    Option.all([this.baseToken, this.sourceChain, this.destinationChain, this.channel]).pipe(
+      Option.map(([baseToken, sourceChain, destinationChain, channel]) => {
+        return baseToken.wrapping.filter(wrapping => 
+          wrapping.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+          wrapping.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id &&
+          wrapping.destination_channel_id === channel.source_channel_id
+        )
+      }),
+    ),
+  )
+
+  kind = $derived<Option.Option<"escrow" | "unescrow">>(
+    Option.all([this.baseToken, this.sourceChain, this.destinationChain]).pipe(
+      Option.flatMap(([baseToken, sourceChain, destinationChain]) => {
+        const sourceId = sourceChain.universal_chain_id
+        const destId = destinationChain.universal_chain_id
+
+        return pipe(
+          baseToken.wrapping,
+          A.findFirst(wrapping => 
+            wrapping.wrapped_chain.universal_chain_id === sourceId &&
+            wrapping.unwrapped_chain.universal_chain_id === destId
+          ),
+          Option.map((): "unescrow" => "unescrow"),
+          Option.orElse(() =>
+            pipe(
+              baseToken.wrapping,
+              A.findFirst(wrapping =>
+                wrapping.unwrapped_chain.universal_chain_id === sourceId &&
+                wrapping.wrapped_chain.universal_chain_id === destId
+              ),
+              Option.map((): "escrow" => "escrow")
+            )
+          )
+        )
+      }),
     ),
   )
 
   destChannel = $derived<Option.Option<Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.orElse(() =>
-            Option.fromNullable(
-              getChannelInfoSafe(
-                destinationChain.universal_chain_id,
-                sourceChain.universal_chain_id,
-                channelsData,
-              ),
-            )
-          ),
+        runSync(
+          getChannelInfo(
+            destinationChain.universal_chain_id,
+            sourceChain.universal_chain_id,
+            channelsData,
+          ).pipe(Effect.option)
         )
       ),
     ),
