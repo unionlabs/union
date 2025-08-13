@@ -94,7 +94,7 @@ let isSubmitting = $state(false)
 const needsRetry = $derived(Option.isSome(error))
 
 const isButtonEnabled = $derived.by(() => {
-  const isFilling = WriteEvm.is("Filling")(ets) || WriteCosmos.is("Filling")(cts)
+  const isFilling = WriteEvm.is("Filling")(ets) && WriteCosmos.is("Filling")(cts)
   const hasError = Option.isSome(error)
   return !isSubmitting && isFilling || hasError
 })
