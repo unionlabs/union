@@ -455,34 +455,6 @@ impl<'a> Module<'a> {
         }
     }
 
-    pub async fn u_register_fungible_counterpart(
-        &self,
-        contract: H160,
-        provider: DynProvider<AnyNetwork>,
-        path: alloy::primitives::U256,
-        channel_id: u32,
-        token: Bytes,
-        counterparty: u::U::FungibleCounterparty,
-    ) -> anyhow::Result<()> {
-        let u = u::U::new(contract.into(), provider.clone());
-        self.retry_with_backoff(
-            || {
-                let call = u.setFungibleCounterparty(
-                    path,
-                    channel_id,
-                    token.clone(),
-                    counterparty.clone(),
-                );
-                async move { call.call().await }
-            },
-            3,
-            Duration::from_secs(2),
-        )
-        .await?;
-
-        Ok(())
-    }
-
     pub async fn zkgmerc20_balance_of(
         &self,
         contract: H160,
@@ -829,6 +801,28 @@ impl<'a> Module<'a> {
         Ok(addr.into())
     }
 
+    pub async fn u_register_fungible_counterpart(
+        &self,
+        contract: H160,
+        provider: DynProvider<AnyNetwork>,
+        path: alloy::primitives::U256,
+        channel_id: u32,
+        token: Bytes,
+        counterparty: u::U::FungibleCounterparty,
+    ) -> anyhow::Result<()> {
+        let u = u::U::new(contract.into(), provider.clone());
+
+        let pending = u
+            .setFungibleCounterparty(path, channel_id, token.clone(), counterparty.clone())
+            .send()
+            .await?;
+
+        let tx_hash = <H256>::from(*pending.tx_hash());
+
+        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+
+        Ok(())
+    }
     pub async fn setup_governance_token(
         &self,
         zkgm_addr: H160,

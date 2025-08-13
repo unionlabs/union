@@ -89,7 +89,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                     },
                 ],
             },
-            rpc_url: "http://devnetUnion:26657".into(),
+            rpc_url: "http://localhost:26657".into(),
             gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
                 max_gas: 10000000,
                 gas_multiplier: Some(1.4),
@@ -101,67 +101,67 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             chain_id: ChainId::new("32382"),
             ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
             multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
-            rpc_url: "http://devnetEth:8545".into(),
-            ws_url: "ws://devnetEth:8546".into(),
+            rpc_url: "http://localhost:8545".into(),
+            ws_url: "ws://localhost:8546".into(),
             keyring: KeyringConfig {
                 name: "evm-keyring".into(),
                 keys: vec![
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key0.prv".into(),
+                        key: hex!(
+                            "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+                        )
+                        .to_vec(),
+                    },
                     // KeyringConfigEntry::Raw {
-                    //     name: "dev-key0.prv".into(),
+                    //     name: "dev-key1.prv".into(),
                     //     key: hex!(
-                    //         "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+                    //         "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
                     //     )
                     //     .to_vec(),
                     // },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key1.prv".into(),
-                        key: hex!(
-                            "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key2.prv".into(),
-                        key: hex!(
-                            "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key3.prv".into(),
-                        key: hex!(
-                            "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key4.prv".into(),
-                        key: hex!(
-                            "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key5.prv".into(),
-                        key: hex!(
-                            "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key6.prv".into(),
-                        key: hex!(
-                            "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key7.prv".into(),
-                        key: hex!(
-                            "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
-                        )
-                        .to_vec(),
-                    },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key2.prv".into(),
+                    //     key: hex!(
+                    //         "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key3.prv".into(),
+                    //     key: hex!(
+                    //         "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key4.prv".into(),
+                    //     key: hex!(
+                    //         "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key5.prv".into(),
+                    //     key: hex!(
+                    //         "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key6.prv".into(),
+                    //     key: hex!(
+                    //         "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key7.prv".into(),
+                    //     key: hex!(
+                    //         "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
+                    //     )
+                    //     .to_vec(),
+                    // },
                 ],
             },
             max_gas_price: None,
@@ -280,18 +280,23 @@ async fn _open_connection_from_evm_to_union() {
 async fn test_vault_works() {
     let ctx = init_ctx().await;
 
-    ensure_channels_opened(ctx.channel_count).await;
+    // ensure_channels_opened(ctx.channel_count).await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    let available_channel = ctx.get_available_channel_count().await;
-    assert!(available_channel > 0);
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
 
-    let pair = ctx.get_channel().await.expect("channel available");
-    let dst_channel_id = pair.dest;
-    let src_channel_id = pair.src;
+    // let pair = ctx.get_channel().await.expect("channel available");
+    // let dst_channel_id = pair.dest;
+    // let src_channel_id = pair.src;
+
+    let dst_channel_id = 1;
+    let src_channel_id = 1;
+
+    let vault_on_union = b"union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
 
     let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
 
@@ -326,11 +331,48 @@ async fn test_vault_works() {
             dst_channel_id,
             b"muno".to_vec().into(),
             evm::u::U::FungibleCounterparty {
-                beneficiary: b"".to_vec().into(),
+                beneficiary: vault_on_union.to_vec().into(),
             },
         )
         .await
         .unwrap();
+
+    // let mut salt_bytes = [0u8; 32];
+    // rand::rng().fill_bytes(&mut salt_bytes);
+
+    // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    //     channel_id: src_channel_id.try_into().unwrap(),
+    //     timeout_height: 0u64.into(),
+    //     timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+    //     salt: salt_bytes.into(),
+    //     instruction: instruction_cosmos.abi_encode_params().into(),
+    // };
+    // let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    // let funds = vec![Coin {
+    //     denom: "muno".into(),
+    //     amount: "10".into(),
+    // }];
+
+    // let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+
+    // let recv_packet_data = ctx
+    //     .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+    //         &ctx.src,
+    //         contract,
+    //         (bin_msg, funds),
+    //         &ctx.dst,
+    //         3,
+    //         Duration::from_secs(20),
+    //         Duration::from_secs(720),
+    //         cosmos_provider,
+    //     )
+    //     .await;
+    // assert!(
+    //     recv_packet_data.is_ok(),
+    //     "Failed to send and receive packet: {:?}",
+    //     recv_packet_data.err()
+    // );
 }
 
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {

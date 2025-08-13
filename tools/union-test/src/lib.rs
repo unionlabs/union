@@ -369,8 +369,8 @@ where
         channel_count: usize,
         voyager_config_file_path: &str,
     ) -> anyhow::Result<Self> {
-        voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
-        voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
+        // voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
+        // voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
         let channel_pool = ChannelPool::new();
         println!(
             "Creating test context for {} and {}. Init_fetch called for both chains.",
