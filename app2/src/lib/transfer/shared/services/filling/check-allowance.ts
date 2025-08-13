@@ -19,8 +19,9 @@ export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
 export const checkAllowances = Effect.fn((
   context: TransferContext,
 ): Effect.Effect<Option.Option<A.NonEmptyReadonlyArray<ApprovalStep>>> =>
-  // ) =>
   Effect.option(Effect.gen(function*() {
+    console.log("check allowances", { context })
+
     if (A.isEmptyArray(context.intents)) {
       return yield* Option.none()
     }
@@ -58,7 +59,9 @@ export const checkAllowances = Effect.fn((
       Effect.map(HashMap.fromIterable),
     )
 
-    return yield* pipe(
+    console.log({ allowances })
+
+    const result = yield* pipe(
       HashMap.fromIterable(requiredTokens),
       HashMap.reduce(
         A.empty<ApprovalStep>(),
@@ -81,6 +84,10 @@ export const checkAllowances = Effect.fn((
       ),
       Option.liftPredicate(A.isNonEmptyArray),
     )
+
+    console.log({ result })
+
+    return result
   }))
 )
 

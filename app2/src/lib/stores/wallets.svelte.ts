@@ -1,11 +1,5 @@
 import { Ucs05 } from "@unionlabs/sdk"
-import type {
-  AddressAptosCanonical,
-  AddressCanonicalBytes,
-  AddressCosmosCanonical,
-  AddressEvmCanonical,
-  Chain,
-} from "@unionlabs/sdk/schema"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { Array as A, Match, Option, pipe } from "effect"
 import * as S from "effect/Schema"
 

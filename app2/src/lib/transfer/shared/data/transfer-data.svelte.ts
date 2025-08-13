@@ -294,29 +294,30 @@ export class TransferData {
   }
 }
 
-const getEnvironment = (): "production" | "staging" | "development" => {
-  return pipe(
-    Match.value(globalThis?.window?.location?.hostname ?? "localhost").pipe(
-      Match.when(
-        (hostname) => hostname === "btc.union.build" || hostname === "app.union.build",
-        () => "production" as const,
-      ),
-      Match.when(
-        (hostname) =>
-          hostname === "staging.btc.union.build"
-          || hostname === "staging.app.union.build",
-        () => "staging" as const,
-      ),
-      Match.orElse(() => "development" as const),
+const getEnvironment = (): "production" | "staging" | "development" =>
+  Match.value(globalThis?.window?.location?.hostname ?? "localhost").pipe(
+    Match.when(
+      (hostname) => hostname === "btc.union.build" || hostname === "app.union.build",
+      () => "production" as const,
     ),
+    Match.when(
+      (hostname) =>
+        hostname === "staging.btc.union.build"
+        || hostname === "staging.app.union.build",
+      () => "staging" as const,
+    ),
+    Match.orElse(() => "development" as const),
   )
-}
 
 function filterByEdition(
   chain: Chain,
   editionName: Edition,
   environment: string,
 ): boolean {
+  if (chain.chain_id === "union-testnet-10") {
+    return true
+  } // XXX: remove me
+
   return pipe(
     Option.fromNullable(chain.editions),
     Option.match({

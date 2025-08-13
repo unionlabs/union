@@ -641,6 +641,38 @@ export const Band = Layer.effect(
   }),
 )
 
+const TopSecret = Layer.sync(
+  PriceOracle,
+  () =>
+    PriceOracle.of({
+      of: (id) =>
+        Match.value(id).pipe(
+          Match.when(
+            UniversalChainId.make("union.union-testnet-10"),
+            () =>
+              Effect.succeed(PriceResult.make({
+                price: BigDecimal.make(69n, -18),
+                source: {
+                  metadata: O.none(),
+                  url: new URL("https://youtu.be/dQw4w9WgXcQ"),
+                },
+              })),
+          ),
+          Match.orElse(() =>
+            Effect.fail(
+              new PriceError({
+                message: "uwu",
+                source: "TopSecret",
+              }),
+            )
+          ),
+        ),
+      ratio: (from: UniversalChainId, to: UniversalChainId) =>
+        Effect.fail(new PriceError({ message: "not implemented", source: "" })),
+      stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "" })),
+    }),
+)
+
 /**
  * @since 2.0.0
  */
@@ -657,6 +689,11 @@ export const LivePlan = ExecutionPlan.make(
   },
   {
     provide: Band,
+    attempts: 2,
+    schedule: Schedule.exponential("100 millis", 1.5),
+  },
+  {
+    provide: TopSecret,
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
