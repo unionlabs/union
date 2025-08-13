@@ -134,6 +134,7 @@ $effect(() => {
     let context: TransferContext | null = null
 
     while (true) {
+      console.log({ some: Option.isSome(FeeStore.intent), feeIntent: FeeStore.intent })
       const result: StateResult | void = yield* createContextState(
         currentState,
         transferData,
@@ -366,6 +367,14 @@ const currentStep = $derived(
       <strong>Error</strong>
       <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
     {/if}
+
+    {#key transferData}
+      <strong>Transfer Data</strong>
+      <pre>
+{JSON.stringify({
+        quoteTokens: transferData.quoteTokens
+      }, null, 2)}</pre>
+    {/key}
 
     {#key statusMessage}
       <strong>{statusMessage}</strong>

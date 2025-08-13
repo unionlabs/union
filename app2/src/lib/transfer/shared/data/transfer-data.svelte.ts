@@ -136,7 +136,7 @@ export class TransferData {
             sourceChain.universal_chain_id,
             destinationChain.universal_chain_id,
             channelsData,
-          ).pipe(Effect.option)
+          ).pipe(Effect.option),
         )
       ),
     ),
@@ -145,10 +145,10 @@ export class TransferData {
   representations = $derived(
     Option.all([this.baseToken, this.sourceChain, this.destinationChain, this.channel]).pipe(
       Option.map(([baseToken, sourceChain, destinationChain, channel]) => {
-        return baseToken.wrapping.filter(wrapping => 
-          wrapping.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
-          wrapping.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id &&
-          wrapping.destination_channel_id === channel.source_channel_id
+        return baseToken.wrapping.filter(wrapping =>
+          wrapping.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id
+          && wrapping.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+          && wrapping.destination_channel_id === channel.source_channel_id
         )
       }),
     ),
@@ -162,26 +162,25 @@ export class TransferData {
 
         return pipe(
           baseToken.wrapping,
-          A.findFirst(wrapping => 
-            wrapping.wrapped_chain.universal_chain_id === sourceId &&
-            wrapping.unwrapped_chain.universal_chain_id === destId
+          A.findFirst(wrapping =>
+            wrapping.wrapped_chain.universal_chain_id === sourceId
+            && wrapping.unwrapped_chain.universal_chain_id === destId
           ),
           Option.map((): "unescrow" => "unescrow"),
           Option.orElse(() =>
             pipe(
               baseToken.wrapping,
               A.findFirst(wrapping =>
-                wrapping.unwrapped_chain.universal_chain_id === sourceId &&
-                wrapping.wrapped_chain.universal_chain_id === destId
+                wrapping.unwrapped_chain.universal_chain_id === sourceId
+                && wrapping.wrapped_chain.universal_chain_id === destId
               ),
-              Option.map((): "escrow" => "escrow")
+              Option.map((): "escrow" => "escrow"),
             )
-          )
+          ),
         )
       }),
     ),
   )
-
 
   destChannel = $derived<Option.Option<Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
@@ -191,12 +190,11 @@ export class TransferData {
             destinationChain.universal_chain_id,
             sourceChain.universal_chain_id,
             channelsData,
-          ).pipe(Effect.option)
+          ).pipe(Effect.option),
         )
       ),
     ),
   )
-  
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(

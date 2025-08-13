@@ -2,9 +2,12 @@ import type { FeeIntent } from "$lib/stores/fee.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
-import type { Token, Ucs05 } from "@unionlabs/sdk"
+import { Token, type Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
-import { Data, Either as E, Option } from "effect"
+import { Data, flow, Option, pipe, Struct } from "effect"
+import * as A from "effect/Array"
+import * as E from "effect/Either"
+import * as S from "effect/Schema"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -12,7 +15,8 @@ export interface TransferArgs {
   channel: Channel
   baseToken: Token.Any
   baseAmount: string
-  quoteAmount: Token.Any
+  quoteToken: Token.Any
+  quoteAmount: string
   decimals: number
   receiver: Ucs05.AnyDisplay
   sender: Ucs05.AnyDisplay
@@ -93,8 +97,9 @@ export const getFillingState = (
         return FillingState.ReceiverMissing()
       }
 
+      console.log({ fee })
       if (Option.isNone(fee)) {
-        return FillingState.NoFee({})
+        return FillingState.NoFee({ message: "rugged" })
       }
 
       if (E.isLeft(fee.value)) {
@@ -104,14 +109,29 @@ export const getFillingState = (
       const unwrappedFee = fee.value.right
 
       // TODO: if fee is Some<Either.Left<Error>> => error state
+      const decodedBaseToken = pipe(
+        transferData.baseToken,
+        Option.flatMap(({ denom }) =>
+          S.decodeOption(Token.AnyFromEncoded(sourceChain.rpc_type))(denom)
+        ),
+      )
 
       const unwrapped = Option.all({
         destinationChain: transferData.destinationChain,
         channel: transferData.channel,
         receiver: transferData.derivedReceiver,
         parsedAmount: transferData.parsedAmount,
-        baseToken: transferData.baseToken,
         ucs03address: transferData.ucs03address,
+        // TODO: move into class attribute
+        decimals: Option.flatMap(
+          transferData.baseToken,
+          flow(
+            Struct.get("representations"),
+            A.head,
+            Option.map(Struct.get("decimals")),
+          ),
+        ),
+        baseToken: decodedBaseToken,
       })
 
       return Option.match(unwrapped, {
@@ -121,17 +141,17 @@ export const getFillingState = (
         },
 
         onSome: (
-          { destinationChain, channel, receiver, parsedAmount, baseToken, ucs03address },
+          { destinationChain, channel, receiver, parsedAmount, baseToken, decimals, ucs03address },
         ) =>
           FillingState.Ready({
             sourceChain,
             destinationChain,
             channel,
             receiver,
-            baseToken: baseToken.denom,
+            baseToken,
             baseAmount: parsedAmount,
             quoteAmount: parsedAmount,
-            decimals: baseToken.representations[0].decimals,
+            decimals,
             ucs03address,
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,

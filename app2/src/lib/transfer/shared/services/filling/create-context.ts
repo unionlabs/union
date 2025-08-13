@@ -95,12 +95,14 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
     Match.when("cosmos", () => {
       const intent: Intent = {
         ...baseIntent,
+        baseToken: args.baseToken,
         // baseToken: normalizeToken(args.baseToken.address, "cosmos"),
       }
 
       const feeIntent: Intent = {
         ...baseIntent,
         // baseToken: normalizeToken(args.fee.baseToken, "cosmos"),
+        baseToken: args.fee.baseToken,
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,
@@ -115,7 +117,7 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
 const createBaseIntent = (
   args: TransferArgs,
   baseAmount: TokenRawAmount,
-): Omit<Intent, "baseToken"> => ({
+): Omit<Intent, "baseToken" | "quoteToken" | "kind"> => ({
   sender: args.sender,
   receiver: args.receiver,
   baseAmount,
