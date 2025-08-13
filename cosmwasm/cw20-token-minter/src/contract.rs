@@ -111,9 +111,16 @@ pub fn execute(
                     .api
                     .addr_validate(&cw20_token_minter_implementation.admin)?;
 
+                let code_hash = deps
+                    .querier
+                    .query_wasm_code_info(cw20_token_minter_implementation.code_id)?
+                    .checksum;
+                let protocol_code_hash = deps
+                    .querier
+                    .query_wasm_code_info(config.cw20_base_code_id)?
+                    .checksum;
+                let is_cw20_base_code = code_hash == protocol_code_hash;
                 let cw20_admin = CW20_ADMIN.load(deps.storage)?;
-                let is_cw20_base_code_id =
-                    cw20_token_minter_implementation.code_id == config.cw20_base_code_id;
                 let is_cw20_admin = admin == cw20_admin;
                 let is_local_minter =
                     from_json::<UpgradeMsg<cw20_base::msg::InstantiateMsg, Empty>>(&initializer)
@@ -128,8 +135,7 @@ pub fn execute(
                         })
                         .unwrap_or(false);
 
-                let is_secure_wrapped_token =
-                    is_cw20_base_code_id && is_cw20_admin && is_local_minter;
+                let is_secure_wrapped_token = is_cw20_base_code && is_cw20_admin && is_local_minter;
 
                 let encoded_metadata = encode_metadata(&implementation, &initializer);
                 let metadata_image = compute_metadata_image(&encoded_metadata);
