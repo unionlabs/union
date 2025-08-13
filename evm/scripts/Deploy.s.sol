@@ -814,6 +814,7 @@ contract DeployDeployerAndIBC is UnionScript, VersionedScript {
         deployer = deployDeployer();
         Contracts memory contracts =
             deployIBC(vm.addr(privateKey), getUCS03Params());
+        U u = deployU(contracts.manager, contracts.ucs03, "Union", "U", 18);
         contracts.handler.registerClient(
             LightClients.COMETBLS, contracts.cometblsClient
         );
@@ -850,6 +851,7 @@ contract DeployDeployerAndIBC is UnionScript, VersionedScript {
         console.log("ZkgmERC20: ", address(contracts.ucs03Erc20Impl));
         console.log("UCS03: ", address(contracts.ucs03));
         console.log("UCS06: ", address(contracts.ucs06));
+        console.log("U: ", address(u));
         console.log("Multicall: ", address(contracts.multicall));
     }
 }
