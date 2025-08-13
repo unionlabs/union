@@ -35,7 +35,10 @@ pub fn new_wrapped_token_event(
             EVENT_WRAPPED_TOKEN_ATTR_BASE_TOKEN,
             Bytes::<HexPrefixed>::from(base_token).to_string(),
         )
-        .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN, quote_token_denom)
+        .add_attribute(
+            EVENT_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN,
+            Bytes::<HexPrefixed>::from(quote_token_denom.as_bytes()).to_string(),
+        )
         .add_attribute(
             EVENT_WRAPPED_TOKEN_ATTR_METADATA,
             Bytes::<HexPrefixed>::from(metadata).to_string(),
