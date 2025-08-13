@@ -179,6 +179,7 @@ export const setInstruction = dual<
     instruction,
   ))
 
+/** @internal */
 export const requiredFunds = (
   self: ClientRequest.ZkgmClientRequest,
 ): O.Option<A.NonEmptyReadonlyArray<readonly [Token.Any, bigint]>> => {
@@ -203,6 +204,7 @@ export const requiredFunds = (
   return pipe(
     reduceToFunds(self.instruction),
     A.getSomes,
+    A.dedupeWith(([a], [b]) => a.address === b.address),
     O.liftPredicate(A.isNonEmptyReadonlyArray<readonly [Token.Any, bigint]>),
   )
 }

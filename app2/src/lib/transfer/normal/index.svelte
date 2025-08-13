@@ -24,7 +24,7 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Array as Arr, Effect, Either, Fiber, FiberId, Option, Schema } from "effect"
+import { Array as Arr, Effect, Either, Equal, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { onMount, untrack } from "svelte"
 import { fly } from "svelte/transition"
@@ -178,7 +178,7 @@ $effect(() => {
         if (Option.isNone(walletaddr)) {
           return Option.some(false)
         }
-        return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
+        return Option.map(walletaddr, Equal.equals(receiver))
       }),
       Option.match({
         onNone: () => Effect.void,
@@ -221,8 +221,8 @@ $effect(() => {
         }
       }
 
-      if (Option.isSome(context.instruction)) {
-        const instruction = context.instruction.value
+      if (Option.isSome(context.request)) {
+        const instruction = context.request.value
 
         // Create steps for the batch instruction, not individual intents
         steps.push(

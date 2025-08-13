@@ -46,7 +46,7 @@ export const createMultisigMessage = (context: TransferContext) =>
     )
 
     const instructionMsgs = pipe(
-      context.instruction,
+      context.request,
       Option.map((instruction) => {
         return context.intents.map((intent) => {
           const isNative = !isValidBech32ContractAddress(intent.baseToken)

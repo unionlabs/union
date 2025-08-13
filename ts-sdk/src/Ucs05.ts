@@ -16,6 +16,7 @@ import {
   Struct,
 } from "effect"
 import { isAddress, toHex } from "viem"
+import { AddressCanonicalBytes } from "./schema/address.js"
 import { Hex, HexFromString } from "./schema/hex.js"
 
 // const AddressFromChain = (chain: Chain) =>
@@ -235,6 +236,8 @@ export const AnyDisplayFromString = S.transformOrFail(
   },
 )
 
+export type AnyDisplayFromString = typeof AnyDisplayFromString.Type
+
 /**
  * @category models
  * @since 2.0.0
@@ -247,7 +250,7 @@ export const Zkgm = Hex.pipe(S.brand("Zkgm"))
 export type Zkgm = typeof Zkgm.Type
 
 /**
- * @category models
+ * @category transformations
  * @since 2.0.0
  */
 export const ZkgmFromAnyDisplay = S.transform(
@@ -263,6 +266,18 @@ export const ZkgmFromAnyDisplay = S.transform(
       ),
     encode: (_) => absurd<AnyDisplay>(void 0 as never),
   },
+)
+
+/**
+ * @category transformations
+ * @since 2.0.0
+ */
+export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
+  Match.tagsExhaustive({
+    // XXX: THIS IS WRONG
+    CosmosDisplay: ({ address }) => AddressCanonicalBytes.make(toHex(address)),
+    EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
+  }),
 )
 /**
  * Union of possible valid address schemas.

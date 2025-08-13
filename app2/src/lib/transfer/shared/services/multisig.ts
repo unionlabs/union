@@ -57,7 +57,7 @@ export const generateMultisigTx = (context: TransferContext) =>
     )
 
     const instructionMsgs = pipe(
-      context.instruction,
+      context.request,
       Option.map(instruction => {
         console.log("[instruction] opcode:", instruction.opcode)
         return context.intents.map(intent => {

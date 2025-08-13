@@ -1,4 +1,5 @@
-import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
+import * as AppRuntime from "$lib/runtime"
+import { getParsedAmountSafe } from "$lib/services/shared"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { channels } from "$lib/stores/channels.svelte.ts"
@@ -10,9 +11,11 @@ import type { Edition } from "$lib/themes"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
 import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
+import { Ucs05 } from "@unionlabs/sdk"
 import type { Chain, Channel, Token } from "@unionlabs/sdk/schema"
 import type { Fees } from "@unionlabs/sdk/schema/fee"
 import { Array as A, Effect, Match, Option, pipe } from "effect"
+import * as S from "effect/Schema"
 import { type Address, fromHex, type Hex } from "viem"
 
 export class TransferData {
@@ -178,9 +181,14 @@ export class TransferData {
     ),
   )
 
-  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
+  derivedReceiver: Option.Option<Ucs05.AnyDisplay> = $derived(
+    AppRuntime.runSync(pipe(
+      S.decode(Ucs05.AnyDisplayFromString)(this.raw.receiver),
+      Effect.option,
+    )),
+  )
 
-  derivedSender = $derived.by(() => {
+  derivedSender: Option.Option<Ucs05.AnyDisplay> = $derived.by(() => {
     if (Option.isNone(this.sourceChain)) {
       return Option.none()
     }

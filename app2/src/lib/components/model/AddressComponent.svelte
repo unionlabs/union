@@ -3,13 +3,14 @@ import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { runSync } from "$lib/runtime"
 import { truncate } from "$lib/utils/format"
+import { Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, AddressCosmosCanonical, Chain } from "@unionlabs/sdk/schema"
 import type { HTMLAttributes } from "svelte/elements"
 import A from "../ui/A.svelte"
 import Label from "../ui/Label.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
-  address: AddressCanonicalBytes
+  address: Ucs05.AnyDisplay
   chain: Chain
   class?: string
   truncate?: boolean
@@ -29,9 +30,9 @@ const {
 
 // XXX: no type coercion
 const fullDisplayAddress = $derived(
-  runSync(chain.getDisplayAddress(address as AddressCosmosCanonical)),
+  address.address,
 )
-// const fullDisplayAddress = address
+
 const displayAddress = $derived(
   shouldTruncate
     ? truncate(fullDisplayAddress, truncateChars, truncatePosition)

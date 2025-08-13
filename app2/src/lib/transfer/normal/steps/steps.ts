@@ -1,4 +1,5 @@
 import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
 import type {
   AddressCanonicalBytes,
   Chain,
@@ -15,7 +16,7 @@ import type { ExtractTag } from "effect/Types"
 export type Steps = Data.TaggedEnum<{
   Filling: {}
   CheckReceiver: {
-    readonly receiver: AddressCanonicalBytes
+    readonly receiver: Ucs05.AnyDisplay
     readonly destinationChain: Chain
   }
   ApprovalRequired: {
@@ -25,7 +26,7 @@ export type Steps = Data.TaggedEnum<{
     readonly intent: Intent
   }
   SubmitInstruction: {
-    readonly instruction: Instruction
+    readonly instruction: ZkgmClientRequest.ZkgmClientRequest
     readonly intent: Intent
     readonly funds: Option.Option<
       Array<{

@@ -1,7 +1,7 @@
 import type { FeeIntent } from "$lib/stores/fee.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
-import { Token, TokenOrder } from "@unionlabs/sdk"
+import { Token, TokenOrder, Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
 import type {
   AddressCanonicalBytes,
@@ -18,9 +18,9 @@ import { fromHex, isHex } from "viem"
 import type { TransferArgs } from "./check-filling.ts"
 
 export type Intent = {
-  sender: AddressCanonicalBytes
-  receiver: AddressCanonicalBytes
-  baseToken: TokenRawDenom | `0x${string}` | string
+  sender: Ucs05.AnyDisplay
+  receiver: Ucs05.AnyDisplay
+  baseToken: Token.Any
   baseAmount: TokenRawAmount
   quoteAmount: TokenRawAmount
   decimals: number
@@ -35,7 +35,7 @@ export type Intent = {
 }
 
 export type Allowance = {
-  // TODO: replace with branded type
+  // TODO: replace with tagged Token type
   token: `0x${string}`
   requiredAmount: bigint
   currentAllowance: bigint
@@ -53,8 +53,7 @@ export type TransferContext = {
   // TODO: calculated in-app based on `TransferData`
   allowances: Option.Option<Array<Allowance>>
   // TODO: becomes `ZkgmClientRequest`
-  instruction: Option.Option<Instruction>
-  // XXX: where is message fulfilled?
+  request: Option.Option<ZkgmClientRequest.ZkgmClientRequest>
   message: Option.Option<string>
 }
 

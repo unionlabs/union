@@ -27,7 +27,10 @@ import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
 import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
 import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
 import { isValidBech32ContractAddress } from "$lib/utils"
-import { Ucs03 } from "@unionlabs/sdk"
+import { Ucs03, ZkgmClientResponse, ZkgmIncomingMessage } from "@unionlabs/sdk"
+import { ZkgmClient } from "@unionlabs/sdk"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { Evm } from "@unionlabs/sdk-evm"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -140,52 +143,30 @@ export const submit = Effect.gen(function*() {
     })
 
   const doEvm = Effect.gen(function*() {
-    const viemChain = yield* step.intent.sourceChain.toViemChain()
-    const publicClient = yield* createViemPublicClient({
-      chain: viemChain,
+    const chain = yield* step.intent.sourceChain.toViemChain()
+    const connectorClient = yield* getWagmiConnectorClient
+
+    const publicClient = Evm.PublicClient.Live({
+      chain,
       transport: http(),
     })
-    const connectorClient = yield* getWagmiConnectorClient
-    const walletClient = yield* createViemWalletClient({
+    const walletClient = Evm.WalletClient.Live({
       account: connectorClient.account,
-      chain: viemChain,
+      chain,
       transport: custom(connectorClient),
     })
-    const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
-    const salt = yield* generateSalt("evm")
 
-    const setEts = (nextEts: typeof ets) =>
-      Effect.sync(() => {
-        console.log(`ETS transitioning: ${ets._tag} -> ${nextEts._tag}`)
-        ets = nextEts
-      })
+    // TODO: executing state
 
-    const nextState = Effect.tap(
-      Effect.suspend(() =>
-        WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
-          chain: viemChain,
-          account: connectorClient.account,
-          address: step.intent.channel.source_port_id,
-          abi: Ucs03.Abi,
-          functionName: "send",
-          args: [
-            step.intent.channel.source_channel_id,
-            0n,
-            timeoutTimestamp,
-            salt,
-            {
-              opcode: step.instruction.opcode,
-              version: step.instruction.version,
-              operand: encodeAbi(step.instruction),
-            },
-          ],
-          ...(Option.isSome(step.funds) && step.funds.value.length > 0
-            ? { value: step.funds.value[0].amount }
-            : {}),
-        })
-      ),
-      setEts,
+    const response = yield* ZkgmClient.execute(step.instruction)
+
+    // TODO: submitted state
+
+    const complete = yield* response.waitFor(
+      ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
     )
+
+    /// TODO: complete step
 
     yield* pipe(
       nextState,
@@ -193,6 +174,8 @@ export const submit = Effect.gen(function*() {
       // TODO: remove cast
       Effect.andThen(({ exit }) => startPolling(exit.transactionHash as TransactionHash)),
     )
+
+    // TODO: add transferpackethash indexer to lifecycle events
   })
 
   const doCosmos = Effect.gen(function*() {

@@ -4,6 +4,7 @@ import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import Transfer from "$lib/transfer/index.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { Ucs05 } from "@unionlabs/sdk"
 import { Option } from "effect"
 
 $effect(() => {
@@ -39,7 +40,8 @@ $effect(() => {
     const tokens = tokensOption.value
     const denoms = tokens.map(token => token.denom)
 
-    balancesStore.fetchBalances(sourceChain, address, denoms)
+    // TODO: replace with SDK
+    balancesStore.fetchBalances(sourceChain, Ucs05.anyDisplayToCanonical(address), denoms)
     lastFetchKey = fetchKey
   }
 })

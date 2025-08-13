@@ -17,6 +17,7 @@ export const Erc20 = S.Struct({
     S.annotations({
       examples: ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
     }),
+    S.filter((_): _ is `0x${string}` => true),
   ),
 })
 /**

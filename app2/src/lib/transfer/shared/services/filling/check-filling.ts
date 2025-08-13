@@ -2,6 +2,7 @@ import type { FeeIntent } from "$lib/stores/fee.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
+import type { Token, Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
 import { Data, Either as E, Option } from "effect"
 
@@ -9,12 +10,12 @@ export interface TransferArgs {
   sourceChain: Chain
   destinationChain: Chain
   channel: Channel
-  baseToken: string
+  baseToken: Token.Any
   baseAmount: string
-  quoteAmount: string
+  quoteAmount: Token.Any
   decimals: number
-  receiver: AddressCanonicalBytes
-  sender: AddressCanonicalBytes
+  receiver: Ucs05.AnyDisplay
+  sender: Ucs05.AnyDisplay
   ucs03address: string
   sourceRpcType?: string
   destinationRpcType?: string

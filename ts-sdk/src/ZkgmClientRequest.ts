@@ -82,6 +82,9 @@ export const setDestination: {
 } = internal.setDestination
 
 /**
+ * Extracts from a {@link ZkgmClientRequest} any {@link Token.Any}s required for execution along each amount.
+ * **NOTE:** Amounts are reduced by summation such that the resulting array is {@link Token.Any}s deduplicated.
+ *
  * @category utils
  * @since 2.0.0
  */
