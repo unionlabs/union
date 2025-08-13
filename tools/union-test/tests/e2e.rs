@@ -296,7 +296,7 @@ async fn test_vault_works() {
     let dst_channel_id = 1;
     let src_channel_id = 1;
 
-    let vault_on_union = b"union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
+    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
 
     let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
 
@@ -326,53 +326,103 @@ async fn test_vault_works() {
     ctx.dst
         .u_register_fungible_counterpart(
             H160::from(u_on_eth),
-            evm_provider,
+            evm_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
             b"muno".to_vec().into(),
             evm::u::U::FungibleCounterparty {
-                beneficiary: vault_on_union.to_vec().into(),
+                beneficiary: vault_on_union.as_bytes().to_vec().into(),
             },
         )
         .await
         .unwrap();
 
-    // let mut salt_bytes = [0u8; 32];
-    // rand::rng().fill_bytes(&mut salt_bytes);
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
 
-    // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-    //     channel_id: src_channel_id.try_into().unwrap(),
-    //     timeout_height: 0u64.into(),
-    //     timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-    //     salt: salt_bytes.into(),
-    //     instruction: instruction_cosmos.abi_encode_params().into(),
-    // };
-    // let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: src_channel_id.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
-    // let funds = vec![Coin {
-    //     denom: "muno".into(),
-    //     amount: "10".into(),
-    // }];
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
 
-    // let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
-    // let recv_packet_data = ctx
-    //     .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
-    //         &ctx.src,
-    //         contract,
-    //         (bin_msg, funds),
-    //         &ctx.dst,
-    //         3,
-    //         Duration::from_secs(20),
-    //         Duration::from_secs(720),
-    //         cosmos_provider,
-    //     )
-    //     .await;
-    // assert!(
-    //     recv_packet_data.is_ok(),
-    //     "Failed to send and receive packet: {:?}",
-    //     recv_packet_data.err()
-    // );
+    let initial_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    let initial_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
+
+    println!("initial U balance on eth: {initial_u_balance}");
+    println!("initial U balance on union vault: {initial_vault_balance}");
+
+    let recv_packet_data = ctx
+        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+
+    let _ = ctx
+        .src
+        .wait_for_packet_ack(
+            recv_packet_data.unwrap().packet_hash,
+            Duration::from_secs(120),
+        )
+        .await
+        .unwrap();
+
+    let new_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    let new_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
+
+    println!("new U balance on eth: {new_u_balance}");
+    println!("new U balance on union vault: {new_vault_balance}");
+
+    assert_eq!(new_u_balance - initial_u_balance, 10u64.into());
+    assert_eq!(new_vault_balance - initial_vault_balance, 10);
 }
 
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
