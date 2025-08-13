@@ -17,9 +17,9 @@ use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
     com::{
-        Instruction, Stake, TokenOrderV1, TokenOrderV2, Unstake, WithdrawStake, INSTR_VERSION_0,
-        INSTR_VERSION_1, INSTR_VERSION_2, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_STAKE,
-        TOKEN_ORDER_KIND_INITIALIZE,
+        Instruction, SolverMetadata, Stake, TokenOrderV1, TokenOrderV2, Unstake, WithdrawStake,
+        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE,
+        OP_WITHDRAW_STAKE, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
     },
 };
 use union_test::{
@@ -34,7 +34,7 @@ use union_test::{
 use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
-    primitives::{Bech32, FixedBytes, U256},
+    primitives::{Bech32, FixedBytes, H160, H256, U256},
 };
 use voyager_sdk::primitives::ChainId;
 
@@ -274,6 +274,63 @@ async fn _open_connection_from_evm_to_union() {
         .unwrap();
     assert!(conn.connection_id > 0);
     assert!(conn.counterparty_connection_id > 0);
+}
+
+#[tokio::test]
+async fn test_vault_works() {
+    let ctx = init_ctx().await;
+
+    ensure_channels_opened(ctx.channel_count).await;
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+
+    let pair = ctx.get_channel().await.expect("channel available");
+    let dst_channel_id = pair.dest;
+    let src_channel_id = pair.src;
+
+    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+
+    let metadata = SolverMetadata {
+        solverAddress: u_on_eth.to_vec().into(),
+        metadata: Default::default(),
+    }
+    .abi_encode_params();
+
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "10".parse().unwrap(),
+            kind: TOKEN_ORDER_KIND_SOLVE,
+            metadata: metadata.into(),
+            quote_token: u_on_eth.to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    ctx.dst
+        .u_register_fungible_counterpart(
+            H160::from(u_on_eth),
+            evm_provider,
+            alloy::primitives::U256::ZERO,
+            dst_channel_id,
+            b"muno".to_vec().into(),
+            evm::u::U::FungibleCounterparty {
+                beneficiary: b"".to_vec().into(),
+            },
+        )
+        .await
+        .unwrap();
 }
 
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
