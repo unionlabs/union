@@ -14,6 +14,7 @@ import type {
 } from "@unionlabs/sdk/schema"
 import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { Match, Option } from "effect"
+import * as A from "effect/Array"
 import { fromHex, isHex } from "viem"
 import type { TransferArgs } from "./check-filling.ts"
 
@@ -35,23 +36,15 @@ export type Intent = {
 }
 
 export type Allowance = {
-  // TODO: replace with tagged Token type
-  token: `0x${string}`
+  token: Token.Any
   requiredAmount: bigint
   currentAllowance: bigint
 }
 
 export type TransferContext = {
   intents: Array<Intent>
-  // TODO: remove because derived from `ZkgmClientRequest` once it is a `Batch` including the fee
-  funds: Option.Option<
-    Array<{
-      baseToken: TokenRawDenom | string
-      amount: TokenRawAmount
-    }>
-  >
   // TODO: calculated in-app based on `TransferData`
-  allowances: Option.Option<Array<Allowance>>
+  allowances: Option.Option<A.NonEmptyReadonlyArray<Allowance>>
   // TODO: becomes `ZkgmClientRequest`
   request: Option.Option<ZkgmClientRequest.ZkgmClientRequest>
   message: Option.Option<string>
@@ -61,7 +54,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
   console.debug("[createContext] args:", args)
 
   return parseBaseAmount(args.baseAmount).pipe(
-    Option.flatMap(baseAmount => {
+    Option.flatMap((baseAmount) => {
       const intents = createIntents(args, baseAmount)
 
       return intents.length > 0
@@ -69,7 +62,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
           intents,
           funds: calculateNativeValue(intents, args),
           allowances: Option.none(),
-          instruction: Option.none(),
+          request: Option.none(),
           message: Option.none(),
         })
         : Option.none()
@@ -78,6 +71,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
 }
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
+  console.log({ args })
   const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
   const baseIntent = createBaseIntent(args, baseAmount)
 
@@ -101,12 +95,12 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
     Match.when("cosmos", () => {
       const intent: Intent = {
         ...baseIntent,
-        baseToken: normalizeToken(args.baseToken, "cosmos"),
+        // baseToken: normalizeToken(args.baseToken.address, "cosmos"),
       }
 
       const feeIntent: Intent = {
         ...baseIntent,
-        baseToken: normalizeToken(args.fee.baseToken, "cosmos"),
+        // baseToken: normalizeToken(args.fee.baseToken, "cosmos"),
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,

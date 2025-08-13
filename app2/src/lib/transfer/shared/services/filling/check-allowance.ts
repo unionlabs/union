@@ -1,26 +1,12 @@
-import {
-  AllowanceCheckError,
-  type ContextFlowError,
-  CosmosQueryError,
-} from "$lib/transfer/shared/errors"
+import { AllowanceCheckError, type ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { isValidBech32ContractAddress } from "@unionlabs/client"
-import { Token, type Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
-import { Utils } from "@unionlabs/sdk"
+import { Token, type Ucs05, Utils, ZkgmClientRequest } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm } from "@unionlabs/sdk-evm"
-import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
-import { CosmWasmClientSource, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
-import {
-  createViemPublicClient,
-  CreateViemPublicClientError,
-  ReadContractError,
-  readErc20Allowance,
-  ViemPublicClient,
-} from "@unionlabs/sdk/evm"
-import type { AddressCanonicalBytes, AddressCosmosCanonical, Chain } from "@unionlabs/sdk/schema"
-import { Data, Effect, identity, Match, Option, pipe, Tuple } from "effect"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { Data, Effect, HashMap, Match, Option, pipe, Tuple } from "effect"
 import * as A from "effect/Array"
+import * as R from "effect/Record"
 import * as S from "effect/Schema"
 import { type Address, fromHex, http, isHex } from "viem"
 
@@ -30,23 +16,13 @@ export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   currentAllowance: bigint
 }> {}
 
-function gatherNeededAmounts(
-  contexts: Array<{ baseToken: string; baseAmount: bigint }>,
-) {
-  const map = new Map<string, bigint>()
-  for (const { baseToken, baseAmount } of contexts) {
-    const current = map.get(baseToken) ?? 0n
-    map.set(baseToken, current + baseAmount)
-  }
-  return map
-}
-
 export const checkAllowances = Effect.fn((
   context: TransferContext,
-): Effect.Effect<Option.Option<Array<ApprovalStep>>, ContextFlowError> =>
+): Effect.Effect<Option.Option<A.NonEmptyReadonlyArray<ApprovalStep>>> =>
+  // ) =>
   Effect.option(Effect.gen(function*() {
     if (A.isEmptyArray(context.intents)) {
-      return Option.none()
+      return yield* Option.none()
     }
 
     const request = yield* context.request
@@ -78,33 +54,33 @@ export const checkAllowances = Effect.fn((
             chain,
           ),
       }),
+      Effect.map(A.map(({ token, allowance }) => [token, allowance] as const)),
+      Effect.map(HashMap.fromIterable),
     )
 
-    // const steps: Array<ApprovalStep> = []
-
-    const steps = pipe(
-      A.groupWith(
-        requiredTokens,
-        allowances,
-        (reqired, allowed) => {
-          return required
+    return yield* pipe(
+      HashMap.fromIterable(requiredTokens),
+      HashMap.reduce(
+        A.empty<ApprovalStep>(),
+        (acc, v, k) => {
+          const allowance = HashMap.get(allowances, k)
+          if (Option.isSome(allowance)) {
+            if (allowance.value < v) {
+              return [
+                ...acc,
+                new ApprovalStep({
+                  currentAllowance: allowance.value,
+                  requiredAmount: v,
+                  token: k,
+                }),
+              ]
+            }
+          }
+          return acc
         },
       ),
+      Option.liftPredicate(A.isNonEmptyArray),
     )
-    // for (const { token, allowance } of allowances) {
-    //   const requiredAmount = neededMap.get(token) ?? 0n
-    //   if (allowance < requiredAmount) {
-    //     steps.push(
-    //       new ApprovalStep({
-    //         token: ensureHex(token),
-    //         requiredAmount,
-    //         currentAllowance: allowance,
-    //       }),
-    //     )
-    //   }
-    // }
-
-    // return steps.length > 0 ? Option.some(steps) : Option.none()
   }))
 )
 

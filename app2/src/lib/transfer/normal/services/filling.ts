@@ -110,11 +110,11 @@ export const createContextState = (
     },
 
     Validation: ({ args }) => {
-      // TODO: validate fee intent
-      const validation = validateTransfer(args)
-      if (validation._tag !== "Success") {
-        return Effect.succeed(fail("Validation failed"))
-      }
+      // TODO: re-enable validation
+      // const validation = validateTransfer(args)
+      // if (validation._tag !== "Success") {
+      //   return Effect.succeed(fail("Validation failed"))
+      // }
       return Effect.succeed(ok(CreateContext({ args }), "Creating context..."))
     },
 
@@ -127,7 +127,7 @@ export const createContextState = (
 
       const context = contextOpt.value
       return Effect.succeed(
-        ok(CheckBalance({ context }), "Checking receiver..."),
+        ok(CheckBalance({ context }), "Checking balance..."),
       )
     },
 
@@ -152,12 +152,10 @@ export const createContextState = (
 
     CheckAllowance: ({ context }) => {
       return checkAllowances(context).pipe(
-        Effect.map((allowancesOpt) => {
-          const allowances = Option.getOrElse(allowancesOpt, () => [])
-
+        Effect.map((allowances) => {
           const updatedContext = {
             ...context,
-            allowances: allowances.length > 0 ? Option.some(allowances) : Option.none(),
+            allowances,
           }
 
           return ok(

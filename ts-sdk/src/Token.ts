@@ -3,15 +3,14 @@
  *
  * @since 2.0.0
  */
-import { Effect, flow, Match, ParseResult, pipe, Schema as S, Struct } from "effect"
+import { Effect, flow, Hash, Match, ParseResult, pipe, Schema as S, Struct } from "effect"
 import { constFalse, constTrue } from "effect/Function"
 
 /**
  * @category schemas
  * @since 2.0.0
  */
-export const Erc20 = S.Struct({
-  _tag: S.tag("Erc20"),
+export class Erc20 extends S.TaggedClass<Erc20>()("Erc20", {
   address: S.String.pipe(
     S.pattern(/^0x[0-9a-fA-F]{40}$/),
     S.annotations({
@@ -19,98 +18,87 @@ export const Erc20 = S.Struct({
     }),
     S.filter((_): _ is `0x${string}` => true),
   ),
-})
-/**
- * @category models
- * @since 2.0.0
- */
-export type Erc20 = typeof Erc20.Type
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
 
 /**
  * @category schemas
  * @since 2.0.0
  */
-export const EvmGas = S.Struct({
-  _tag: S.tag("EvmGas"),
+export class EvmGas extends S.TaggedClass<EvmGas>()("EvmGas", {
   address: S.String.pipe(
     S.pattern(/^0x[eE]{40}$/),
     S.annotations({
       examples: ["0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"],
     }),
   ),
-})
-/**
- * @category models
- * @since 2.0.0
- */
-export type EvmGas = typeof EvmGas.Type
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
 
 /**
  * @category schemas
  * @since 2.0.0
  */
-export const CosmosIbcClassic = S.Struct({
-  _tag: S.tag("CosmosIbcClassic"),
+export class CosmosIbcClassic extends S.TaggedClass<CosmosIbcClassic>()("CosmosIbcClassic", {
   address: S.String.pipe(
     S.pattern(/^ibc\/[0-9A-Fa-f]{64}$/),
     S.annotations({
       examples: [""],
     }),
   ),
-})
-/**
- * @category models
- * @since 2.0.0
- */
-export type CosmosIbcClassic = typeof CosmosIbcClassic.Type
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
 
 /**
  * @category schemas
  * @since 2.0.0
  */
-export const CosmosTokenFactory = S.Struct({
-  _tag: S.tag("CosmosTokenFactory"),
+export class CosmosTokenFactory extends S.TaggedClass<CosmosTokenFactory>()("CosmosTokenFactory", {
   address: S.String.pipe(
     S.pattern(/^factory\/.+$/),
   ),
-})
-/**
- * @category models
- * @since 2.0.0
- */
-export type CosmosTokenFactory = typeof CosmosTokenFactory.Type
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
 
 /**
  * @category schemas
  * @since 2.0.0
  */
-export const Cw20 = S.Struct({
-  _tag: S.tag("Cw20"),
+export class Cw20 extends S.TaggedClass<Cw20>()("Cw20", {
   address: S.String.pipe(
     S.pattern(/^[a-z0-9]{1,15}1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{38,64}$/),
   ),
-})
-/**
- * @category models
- * @since 2.0.0
- */
-export type Cw20 = typeof Cw20.Type
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
 
 /**
  * @category schemas
  * @since 2.0.0
  */
-export const CosmosBank = S.Struct({
-  _tag: S.tag("CosmosBank"),
+export class CosmosBank extends S.TaggedClass<CosmosBank>()("CosmosBank", {
   address: S.String.pipe(
     S.pattern(/^[a-z][a-z0-9]{1,127}$/),
   ),
-})
-/**
- * @category models
- * @since 2.0.0
- */
-export type CosmosBank = typeof CosmosBank.Type
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
 
 /**
  * @category schemas

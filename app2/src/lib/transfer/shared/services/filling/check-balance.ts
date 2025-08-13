@@ -1,9 +1,8 @@
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { Token, Ucs05 } from "@unionlabs/sdk"
+import { Token, Ucs05, Utils } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
-import { ensureHex } from "@unionlabs/sdk/utils/index"
 import { Data, Effect, identity, Option } from "effect"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
@@ -64,8 +63,10 @@ export const checkBalanceForIntent = (
         group.source_universal_chain_id,
         Ucs05.anyDisplayToCanonical(group.sender),
         // XXX: remove type coercion
-        ensureHex(group.baseToken.address) as TokenRawDenom,
+        Utils.ensureHex(group.baseToken.address) as TokenRawDenom,
       )
+
+      console.log("a", { balance })
 
       if (Option.isNone(balance)) {
         const chainForToken = context.intents.find(intent =>
@@ -77,7 +78,7 @@ export const checkBalanceForIntent = (
           balancesStore.fetchBalances(
             chainForToken,
             Ucs05.anyDisplayToCanonical(group.sender),
-            ensureHex(group.baseToken.address) as TokenRawDenom,
+            Utils.ensureHex(group.baseToken.address) as TokenRawDenom,
             "1 second",
           )
 
@@ -86,12 +87,13 @@ export const checkBalanceForIntent = (
           balance = balancesStore.getBalance(
             group.source_universal_chain_id,
             Ucs05.anyDisplayToCanonical(group.sender),
-            ensureHex(group.baseToken.address) as TokenRawDenom,
+            Utils.ensureHex(group.baseToken.address) as TokenRawDenom,
           )
         }
       }
 
       if (Option.isNone(balance)) {
+        console.log(" IS NONE ")
         return yield* Effect.fail(
           new BalanceLookupError({
             cause: "No balance found",
@@ -107,6 +109,7 @@ export const checkBalanceForIntent = (
 
       return hasEnough
     })).pipe(
+      Effect.tapError((error) => Effect.logError(error)),
       Effect.map(results =>
         results.every(identity)
           ? BalanceCheckResult.HasEnough()
