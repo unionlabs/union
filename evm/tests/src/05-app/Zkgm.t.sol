@@ -5998,6 +5998,47 @@ contract ZkgmTests is Test {
         console.logBytes(ZkgmLib.encodeTokenOrderV2(tokenOrder));
     }
 
+    function test_create_tokenOrder_v2_preimage_cosmos() public {
+        TokenMetadata memory metadata = TokenMetadata({
+            implementation: abi.encodePacked(
+                "{\"admin\": \"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2\", \"code_id\": 148}"
+            ),
+            initializer: abi.encodePacked(
+                "{\"init\":{\"name\":\"Ether\",\"symbol\":\"ETH\",\"decimals\":18,\"initial_balances\":[],\"mint\":{\"minter\":\"union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0\",\"cap\":null},\"marketing\":null}}"
+            )
+        });
+        TokenOrderV2 memory tokenOrder = TokenOrderV2({
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
+            receiver: abi.encodePacked(
+                "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"
+            ),
+            baseToken: abi.encodePacked(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE),
+            kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
+            metadata: ZkgmLib.encodeTokenMetadata(metadata),
+            baseAmount: 100,
+            quoteToken: abi.encodePacked(
+                "union1hs95pw9t7rwzfv99gm6u82ptdqh4zgf9l6a3gaht782z6x7m0fxq79fd5k"
+            ),
+            quoteAmount: 100
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_TOKEN_ORDER,
+            operand: ZkgmLib.encodeTokenOrderV2(tokenOrder)
+        });
+        bytes32 image = EfficientHashLib.hash(
+            abi.encode(metadata.implementation, metadata.initializer)
+        );
+        console.log("Image");
+        console.logBytes32(image);
+        console.log("Initializer");
+        console.logBytes(metadata.initializer);
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+        console.log("Operand");
+        console.logBytes(ZkgmLib.encodeTokenOrderV2(tokenOrder));
+    }
+
     function test_create_tokenOrder_v2_image_evm() public {
         TokenMetadata memory metadata = TokenMetadata({
             implementation: abi.encodePacked(
