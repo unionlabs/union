@@ -195,7 +195,7 @@ impl TmEvent {
     }
 
     pub fn denom(&self) -> Result<Denom, IndexerError> {
-        self.get_denom("denom")
+        self.get_denom_string("denom")
     }
 
     pub fn capacity(&self) -> Result<Capacity, IndexerError> {
@@ -235,11 +235,11 @@ impl TmEvent {
     }
 
     pub fn base_token(&self) -> Result<Denom, IndexerError> {
-        self.get_denom("base_token")
+        self.get_denom_0x_with_string_fallback("base_token")
     }
 
     pub fn quote_token(&self) -> Result<Denom, IndexerError> {
-        self.get_denom("quote_token")
+        self.get_denom_0x_with_string_fallback("quote_token")
     }
 
     pub fn metadata(&self) -> Result<Metadata, IndexerError> {
@@ -309,8 +309,22 @@ impl TmEvent {
         Ok(self.get_bytes(key, "packet_data")?.into())
     }
 
-    fn get_denom(&self, key: &str) -> Result<Denom, IndexerError> {
-        Ok(self.get_bytes_utf8(key, "denom")?.into())
+    // bech32 encoded address
+    fn get_denom_string(&self, key: &str) -> Result<Denom, IndexerError> {
+        Ok(self.get_bytes_utf8(key, "denom_string")?.into())
+    }
+
+    // fallback to support test events created when developing token order v2
+    fn get_denom_0x_with_string_fallback(&self, key: &str) -> Result<Denom, IndexerError> {
+        match self.get_value(key, "denom_0x_or_string")?.starts_with("0x") {
+            true => self.get_denom_0x(key),
+            false => self.get_denom_string(key),
+        }
+    }
+
+    // hex representation of address (bech32 for cosmos addresses)
+    fn get_denom_0x(&self, key: &str) -> Result<Denom, IndexerError> {
+        Ok(self.get_bytes(key, "denom_0x")?.into())
     }
 
     fn get_metadata(&self, key: &str) -> Result<Metadata, IndexerError> {
