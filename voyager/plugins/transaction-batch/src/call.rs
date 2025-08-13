@@ -638,7 +638,8 @@ impl MakeMsg<IbcUnion> {
                             batch_hash: event.batch_hash,
                         },
                     )
-                    .await?;
+                    .await?
+                    .packets;
 
                 packets.sort_by_cached_key(|packet| packet.hash());
 

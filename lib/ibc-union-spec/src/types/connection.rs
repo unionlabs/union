@@ -1,4 +1,4 @@
-use core::borrow::Borrow;
+use core::{borrow::Borrow, fmt};
 
 use unionlabs::{errors::UnknownEnumVariant, tuple::AsTuple};
 
@@ -50,6 +50,16 @@ pub enum ConnectionState {
     Init = 1,
     TryOpen = 2,
     Open = 3,
+}
+
+impl fmt::Display for ConnectionState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Init => "init",
+            Self::TryOpen => "try_open",
+            Self::Open => "open",
+        })
+    }
 }
 
 impl TryFrom<u8> for ConnectionState {

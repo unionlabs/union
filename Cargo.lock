@@ -18720,6 +18720,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-plugin-packet-index"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "enumorph",
+ "ibc-classic-spec",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-plugin-packet-timeout"
 version = "0.0.0"
 dependencies = [

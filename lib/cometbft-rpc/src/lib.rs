@@ -84,6 +84,7 @@ impl Client {
         })
     }
 
+    // TODO: This should be bounded correctly
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
         self.inner
             .request("commit", (height.map(|x| x.to_string()),))

@@ -4,10 +4,13 @@ use std::num::{NonZeroU32, NonZeroU8, ParseIntError};
 
 use cometbft_rpc::rpc_types::Order;
 use cosmos_sdk_event::CosmosSdkEvent;
-use futures::{stream::FuturesUnordered, TryStreamExt};
+use futures::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
 use ibc_union_spec::{
     path::StorePath,
-    query::{ClientStatus, PacketByHash, PacketsByBatchHash, Query},
+    query::{
+        ClientStatus, PacketAckByHash, PacketAckByHashResponse, PacketByHash, PacketByHashResponse,
+        PacketsByBatchHash, PacketsByBatchHashResponse, Query,
+    },
     Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet, Status,
     Timestamp,
 };
@@ -23,7 +26,7 @@ use tracing::{debug, error, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     option_unwrap,
-    primitives::{Bech32, Bytes, H256},
+    primitives::{encoding::HexUnprefixed, Bech32, Bytes, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -105,7 +108,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<Packet> {
+    ) -> RpcResult<PacketByHashResponse> {
         let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
 
         let mut res = self
@@ -151,12 +154,73 @@ impl Module {
             panic!()
         };
 
-        Ok(Packet {
-            source_channel_id: packet_source_channel_id,
-            destination_channel_id: packet_destination_channel_id,
-            data: packet_data,
-            timeout_height: MustBeZero,
-            timeout_timestamp: packet_timeout_timestamp,
+        Ok(PacketByHashResponse {
+            packet: Packet {
+                source_channel_id: packet_source_channel_id,
+                destination_channel_id: packet_destination_channel_id,
+                data: packet_data,
+                timeout_height: MustBeZero,
+                timeout_timestamp: packet_timeout_timestamp,
+            },
+            tx_hash: res.hash.into_encoding(),
+            provable_height: res.height.unwrap().get() + 1,
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
+    pub async fn query_packet_ack_by_hash(
+        &self,
+        channel_id: ChannelId,
+        packet_hash: H256,
+    ) -> RpcResult<PacketAckByHashResponse> {
+        let query = format!(
+            "wasm-write_ack.packet_hash='{packet_hash}' AND wasm-write_ack.channel_id={channel_id}"
+        );
+
+        let mut res = self
+            .cometbft_client
+            .tx_search(
+                query,
+                false,
+                option_unwrap!(NonZeroU32::new(1)),
+                option_unwrap!(NonZeroU8::new(1)),
+                Order::Asc,
+            )
+            .await
+            .map_err(rpc_error("error querying packet by packet hash", None))?;
+
+        if res.total_count != 1 {
+            return Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "error querying for acknowledgement for \
+                     packet {packet_hash}, expected 1 event \
+                     but found {}",
+                    res.total_count,
+                ),
+                None::<()>,
+            ));
+        }
+
+        let res = res.txs.pop().unwrap();
+
+        let Some(IbcEvent::WasmWriteAck {
+            channel_id: _,
+            packet_hash: _,
+            acknowledgement,
+        }) = res.tx_result.events.into_iter().find_map(|event| {
+            CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
+                (e.contract_address.unwrap() == self.ibc_host_contract_address).then_some(e.event)
+            })
+        })
+        else {
+            panic!()
+        };
+
+        Ok(PacketAckByHashResponse {
+            ack: acknowledgement.into_encoding(),
+            tx_hash: res.hash.into_encoding(),
+            provable_height: res.height.unwrap().get() + 1,
         })
     }
 
@@ -408,46 +472,69 @@ impl StateModuleServer<IbcUnion> for Module {
                     .await
                     .map_err(rpc_error("error querying packet by packet hash", None))?;
 
-                if res.total_count < 2 {
+                if res.total_count != 1 {
                     return Err(ErrorObject::owned(
                         -1,
                         format!(
                             "error querying for batch {batch_hash}, \
-                            expected at least 2 events but found {}",
+                            expected only 1 transaction but found {}",
                             res.total_count,
                         ),
                         None::<()>,
                     ));
                 }
 
-                let packets = res
-                    .txs
+                let tx = res.txs[1].clone();
+
+                if tx.tx_result.events.len() < 2 {
+                    return Err(ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying for batch {batch_hash}, \
+                            expected at least 2 events but found {}",
+                            tx.tx_result.events.len()
+                        ),
+                        None::<()>,
+                    ));
+                }
+
+                let packets = tx
+                    .tx_result
+                    .events
                     .into_iter()
-                    .flat_map(|res| {
-                        res.tx_result
-                            .events
-                            .into_iter()
-                            .filter_map(|event| {
-                                CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
-                                    (e.contract_address.unwrap() == self.ibc_host_contract_address)
-                                        .then_some(e.event)
-                                })
-                            })
-                            .map(|event| match event {
-                                IbcEvent::WasmBatchSend {
-                                    channel_id,
-                                    packet_hash,
-                                    batch_hash: _,
-                                } => self.query_packet_by_hash(channel_id, packet_hash),
-                                _ => panic!(),
-                            })
+                    .filter_map(|event| {
+                        CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
+                            (e.contract_address.unwrap() == self.ibc_host_contract_address)
+                                .then_some(e.event)
+                        })
+                    })
+                    .map(|event| match event {
+                        IbcEvent::WasmBatchSend {
+                            channel_id,
+                            packet_hash,
+                            batch_hash: _,
+                        } => self
+                            .query_packet_by_hash(channel_id, packet_hash)
+                            .map_ok(|res| res.packet),
+                        _ => panic!(),
                     })
                     .collect::<FuturesUnordered<_>>()
                     .try_collect::<Vec<_>>()
                     .await?;
 
-                Ok(into_value(packets))
+                Ok(into_value(PacketsByBatchHashResponse {
+                    packets,
+                    tx_hash: tx.hash.into_encoding(),
+                    provable_height: tx.height.unwrap().get() + 1,
+                }))
             }
+            Query::PacketAckByHash(PacketAckByHash {
+                channel_id,
+                packet_hash,
+            }) => self
+                .query_packet_ack_by_hash(channel_id, packet_hash)
+                .await
+                .map(into_value),
             Query::ClientStatus(ClientStatus { client_id, height }) => {
                 let status = self
                     .query_smart::<_, Status>(
@@ -547,6 +634,13 @@ pub enum IbcEvent {
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,
+    },
+    #[serde(rename = "wasm-write_ack")]
+    WasmWriteAck {
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+        acknowledgement: Bytes<HexUnprefixed>,
     },
     #[serde(rename = "wasm-batch_send")]
     WasmBatchSend {

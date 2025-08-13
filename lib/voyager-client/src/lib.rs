@@ -209,7 +209,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    pub async fn query<Q: IbcQuery>(&self, chain_id: ChainId, query: Q) -> RpcResult<Q::Value> {
+    pub async fn query<Q: IbcQuery>(&self, chain_id: ChainId, query: Q) -> RpcResult<Q::Response> {
         self.0
             .query(
                 chain_id.clone(),

@@ -326,7 +326,7 @@ pub trait IbcQuery:
     type Spec: IbcSpec;
 
     /// The type returned by this query.
-    type Value: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
+    type Response: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 }
 
 /// An identifier for an [`IbcSpec`].

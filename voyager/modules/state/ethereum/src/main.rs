@@ -10,16 +10,16 @@ use alloy::{
     serde::WithOtherFields,
     sol_types::{SolCall, SolValue},
 };
-use futures::{stream::FuturesUnordered, TryStreamExt};
+use futures::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
 use ibc_solidity::{
     ILightClient,
     Ibc::{self, IbcInstance},
 };
 use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
-    query::Query,
+    query::{PacketAckByHashResponse, PacketByHashResponse, PacketsByBatchHashResponse, Query},
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
-    IbcUnion, Packet, Status,
+    IbcUnion, Status,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -435,7 +435,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<Packet> {
+    ) -> RpcResult<PacketByHashResponse> {
         let ibc_handler = self.ibc_handler();
 
         let windows = match self.max_query_window {
@@ -487,9 +487,9 @@ impl Module {
                 continue;
             } else if packet_logs.len() == 1 {
                 // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
-                let (packet_log, _) = packet_logs.pop().expect("len is 1; qed;");
+                let (packet_log, log) = packet_logs.pop().expect("len is 1; qed;");
 
-                return packet_log.packet.try_into().map_err(|e| {
+                let packet = packet_log.packet.try_into().map_err(|e| {
                     ErrorObject::owned(
                         -1,
                         format!(
@@ -499,6 +499,15 @@ impl Module {
                         ),
                         None::<()>,
                     )
+                })?;
+
+                return Ok(PacketByHashResponse {
+                    packet,
+                    tx_hash: log
+                        .transaction_hash
+                        .expect("log must have tx hash; qed;")
+                        .into(),
+                    provable_height: log.block_number.expect("log must have block number; qed;"),
                 });
             } else {
                 return Err(ErrorObject::owned(
@@ -515,7 +524,7 @@ impl Module {
 
         Err(ErrorObject::owned(
             MISSING_STATE_ERROR_CODE,
-            format!("packet {packet_hash} not found"),
+            format!("packet {packet_hash}, {channel_id} not found"),
             None::<()>,
         ))
     }
@@ -525,7 +534,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         batch_hash: H256,
-    ) -> RpcResult<Vec<Packet>> {
+    ) -> RpcResult<PacketsByBatchHashResponse> {
         let ibc_handler = self.ibc_handler();
 
         let windows = match self.max_query_window {
@@ -575,7 +584,9 @@ impl Module {
                 debug!(%from, %to, "batch not found in range");
                 continue;
             } else {
-                return batch_logs
+                let log = batch_logs[0].1.clone();
+
+                let packets = batch_logs
                     .into_iter()
                     .map(|(event, _)| {
                         self.packet_by_packet_hash(
@@ -585,16 +596,112 @@ impl Module {
                                 .expect("invalid channel id on event?"),
                             event.packet_hash.into(),
                         )
+                        .map_ok(|res| res.packet)
                     })
                     .collect::<FuturesUnordered<_>>()
                     .try_collect::<Vec<_>>()
-                    .await;
+                    .await?;
+                return Ok(PacketsByBatchHashResponse {
+                    packets,
+                    tx_hash: log
+                        .transaction_hash
+                        .expect("log must have tx hash; qed;")
+                        .into(),
+                    provable_height: log.block_number.expect("log must have block number; qed;"),
+                });
             }
         }
 
         Err(ErrorObject::owned(
             MISSING_STATE_ERROR_CODE,
-            format!("packet {batch_hash} not found"),
+            format!("packet batch {batch_hash}, {channel_id} not found"),
+            None::<()>,
+        ))
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
+    async fn packet_ack_by_packet_hash(
+        &self,
+        channel_id: ChannelId,
+        packet_hash: H256,
+    ) -> RpcResult<PacketAckByHashResponse> {
+        let ibc_handler = self.ibc_handler();
+
+        let windows = match self.max_query_window {
+            Some(window) => {
+                let latest_height = self.provider.get_block_number().await.map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying latest height while constructing query windows for decoding write ack event for packet {packet_hash}: {}",
+                            ErrorReporter(e)
+                        ),
+                        None::<()>,
+                    )
+                })?;
+                mk_windows(latest_height, window)
+            }
+            None => vec![(BlockNumberOrTag::Earliest, BlockNumberOrTag::Latest)],
+        };
+
+        for (from, to) in windows {
+            debug!(%from, %to, "querying range for packet");
+
+            let query = ibc_handler
+                .WriteAck_filter()
+                .topic1(alloy::primitives::U256::from(channel_id.raw()))
+                .topic2(alloy::primitives::U256::from_be_bytes(*(packet_hash.get())));
+
+            trace!(?query, "raw query");
+
+            let mut packet_logs =
+                query
+                    .from_block(from)
+                    .to_block(to)
+                    .query()
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            format!(
+                                "error querying for packet {packet_hash}: {}",
+                                ErrorReporter(e)
+                            ),
+                            None::<()>,
+                        )
+                    })?;
+
+            if packet_logs.is_empty() {
+                debug!(%from, %to, "packet not found in range");
+                continue;
+            } else if packet_logs.len() == 1 {
+                // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
+                let (packet_log, log) = packet_logs.pop().expect("len is 1; qed;");
+
+                return Ok(PacketAckByHashResponse {
+                    ack: packet_log.acknowledgement.into(),
+                    tx_hash: log
+                        .transaction_hash
+                        .expect("log must have tx hash; qed;")
+                        .into(),
+                    provable_height: log.block_number.expect("log must have block number; qed;"),
+                });
+            } else {
+                return Err(ErrorObject::owned(
+                    -1,
+                    format!(
+                        "error querying for packet {packet_hash}, \
+                        expected 1 event but found {}",
+                        packet_logs.len()
+                    ),
+                    None::<()>,
+                ));
+            }
+        }
+
+        Err(ErrorObject::owned(
+            MISSING_STATE_ERROR_CODE,
+            format!("packet ack for packet {packet_hash}, {channel_id} not found"),
             None::<()>,
         ))
     }
@@ -652,6 +759,13 @@ impl StateModuleServer<IbcUnion> for Module {
                 .packets_by_batch_hash(
                     packets_by_batch_hash.channel_id,
                     packets_by_batch_hash.batch_hash,
+                )
+                .await
+                .map(into_value),
+            Query::PacketAckByHash(packet_ack_by_hash) => self
+                .packet_ack_by_packet_hash(
+                    packet_ack_by_hash.channel_id,
+                    packet_ack_by_hash.packet_hash,
                 )
                 .await
                 .map(into_value),
