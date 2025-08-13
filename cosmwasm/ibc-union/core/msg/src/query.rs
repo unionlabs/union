@@ -34,4 +34,6 @@ pub enum QueryMsg {
     GetClientImpl { client_id: ClientId },
     #[cfg_attr(feature = "cw-orch-interface", returns(String))]
     GetRegisteredClientType { client_type: String },
+    #[cfg_attr(feature = "cw-orch-interface", returns(Status))]
+    GetCommittedClientStatus { client_id: ClientId },
 }

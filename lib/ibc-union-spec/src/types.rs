@@ -1,6 +1,6 @@
 use core::{fmt, num::NonZeroU32};
 
-use unionlabs::primitives::U256;
+use unionlabs::{errors::UnknownEnumVariant, primitives::U256};
 
 pub(crate) mod channel;
 pub(crate) mod connection;
@@ -93,13 +93,32 @@ id!(ClientId);
 id!(ConnectionId);
 id!(ChannelId);
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum Status {
     Active = 1,
     Expired = 2,
     Frozen = 3,
+}
+
+impl From<Status> for U256 {
+    fn from(value: Status) -> Self {
+        U256::from((value as u8) as u64)
+    }
+}
+
+impl TryFrom<U256> for Status {
+    type Error = UnknownEnumVariant<U256>;
+
+    fn try_from(value: U256) -> Result<Self, Self::Error> {
+        match u64::try_from(value).map_err(|()| UnknownEnumVariant(value))? {
+            1 => Ok(Status::Active),
+            2 => Ok(Status::Expired),
+            3 => Ok(Status::Frozen),
+            unknown => Err(UnknownEnumVariant(unknown.into())),
+        }
+    }
 }
 
 impl fmt::Display for Status {
