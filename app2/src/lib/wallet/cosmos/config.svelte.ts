@@ -7,8 +7,10 @@ import {
 } from "$lib/services/cosmos/chain-info/transform"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { bech32AddressToHex } from "@unionlabs/client"
+import { Ucs05 } from "@unionlabs/sdk"
 import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
-import { Effect, Option, Schema as S } from "effect"
+import { Effect, Option, pipe } from "effect"
+import * as S from "effect/Schema"
 
 export const cosmosWalletsInformation = [
   {
@@ -66,13 +68,10 @@ class CosmosStore {
   // Centralized method to update cosmos address
   updateCosmosAddress = (bech32Address: string | undefined) => {
     if (bech32Address) {
-      const cosmosAddressFromBech32 = (address: string) => {
-        const hexAddress = bech32AddressToHex({ address })
-        return AddressCosmosCanonical.make(hexAddress)
-      }
-      wallets.cosmosAddress = Option.some(
-        cosmosAddressFromBech32(bech32Address),
-      )
+      wallets.cosmosAddress = S.decodeOption(Ucs05.CosmosDisplay)({
+        _tag: "CosmosDisplay",
+        address: bech32Address as `${string}1${string}`,
+      })
     } else {
       wallets.cosmosAddress = Option.none()
     }

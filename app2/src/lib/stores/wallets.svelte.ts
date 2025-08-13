@@ -7,6 +7,7 @@ import type {
   Chain,
 } from "@unionlabs/sdk/schema"
 import { Array as A, Match, Option, pipe } from "effect"
+import * as S from "effect/Schema"
 
 class WalletsStore {
   evmAddress: Option.Option<Ucs05.EvmDisplay> = $state(Option.none())
@@ -23,8 +24,10 @@ class WalletsStore {
     )
   }
 
-  addInputAddress(address: Ucs05.AnyDisplay) {
-    this.inputAddress = Option.some(address)
+  addInputAddress(address: Ucs05.AnyDisplay | string) {
+    this.inputAddress = S.decodeOption(
+      S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString),
+    )(address)
   }
 
   clearInputAddress() {

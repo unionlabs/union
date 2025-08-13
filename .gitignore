@@ -97,6 +97,9 @@ sentinel2/sentinel.db
 CLAUDE.md
 .claude/
 
+# app
+!app2/src/lib/transfer/shared/data/
+
 # ts-sdk
 ts-sdk/build
 ts-sdk/dist

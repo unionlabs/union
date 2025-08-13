@@ -181,12 +181,14 @@ export class TransferData {
     ),
   )
 
-  derivedReceiver: Option.Option<Ucs05.AnyDisplay> = $derived(
-    AppRuntime.runSync(pipe(
-      S.decode(Ucs05.AnyDisplayFromString)(this.raw.receiver),
+  derivedReceiver: Option.Option<Ucs05.AnyDisplay> = $derived.by(() => {
+    console.log({ receiver: this.raw.receiver })
+
+    return AppRuntime.runSync(pipe(
+      S.decode(S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString))(this.raw.receiver),
       Effect.option,
-    )),
-  )
+    ))
+  })
 
   derivedSender: Option.Option<Ucs05.AnyDisplay> = $derived.by(() => {
     if (Option.isNone(this.sourceChain)) {

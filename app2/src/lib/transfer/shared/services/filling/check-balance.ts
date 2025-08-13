@@ -1,6 +1,7 @@
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import { Token, Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import { ensureHex } from "@unionlabs/sdk/utils/index"
 import { Data, Effect, identity, Option } from "effect"
@@ -21,7 +22,7 @@ export const checkBalanceForIntent = (
   const grouped = context.intents
     .map(intent => {
       const needsFee = intent.sourceChain.universal_chain_id === BABYLON_CHAIN_ID
-        && intent.baseToken === UBBN_DENOM
+        && intent.baseToken === Token.CosmosBank.make({ address: UBBN_DENOM })
 
       return {
         sender: intent.sender,
@@ -45,8 +46,8 @@ export const checkBalanceForIntent = (
       {} as Record<
         string,
         {
-          sender: AddressCanonicalBytes
-          baseToken: string
+          sender: Ucs05.AnyDisplay
+          baseToken: Token.Any
           required: bigint
           source_universal_chain_id: UniversalChainId
         }
@@ -55,13 +56,15 @@ export const checkBalanceForIntent = (
 
   const groupedValues = Object.values(grouped)
 
+  console.log({ groupedValues })
+
   return Effect.forEach(groupedValues, group =>
     Effect.gen(function*() {
       let balance = balancesStore.getBalance(
         group.source_universal_chain_id,
-        group.sender,
+        Ucs05.anyDisplayToCanonical(group.sender),
         // XXX: remove type coercion
-        ensureHex(group.baseToken) as TokenRawDenom,
+        ensureHex(group.baseToken.address) as TokenRawDenom,
       )
 
       if (Option.isNone(balance)) {
@@ -73,8 +76,8 @@ export const checkBalanceForIntent = (
         if (chainForToken) {
           balancesStore.fetchBalances(
             chainForToken,
-            group.sender,
-            ensureHex(group.baseToken) as TokenRawDenom,
+            Ucs05.anyDisplayToCanonical(group.sender),
+            ensureHex(group.baseToken.address) as TokenRawDenom,
             "1 second",
           )
 
@@ -82,8 +85,8 @@ export const checkBalanceForIntent = (
 
           balance = balancesStore.getBalance(
             group.source_universal_chain_id,
-            group.sender,
-            ensureHex(group.baseToken) as TokenRawDenom,
+            Ucs05.anyDisplayToCanonical(group.sender),
+            ensureHex(group.baseToken.address) as TokenRawDenom,
           )
         }
       }
