@@ -34,7 +34,7 @@ use unionlabs::{
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
     google::protobuf::any::Any,
-    primitives::{Bech32, Bytes, H256},
+    primitives::{encoding::HexPrefixed, Bech32, Bytes, H256},
     signer::CosmosSigner,
 };
 
@@ -316,6 +316,7 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
 }
 
+const ESCROW_VAULT: &str = "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965";
 const CORE: &str = "ibc-is-based";
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
@@ -331,6 +332,7 @@ struct ContractPaths {
     // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
+    escrow_vault: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -370,6 +372,8 @@ struct ContractAddresses {
     core: Bech32<H256>,
     lightclient: BTreeMap<String, Bech32<H256>>,
     app: AppAddresses,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    escrow_vault: Option<Bech32<H256>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -508,6 +512,7 @@ async fn do_main() -> Result<()> {
                     ucs00: None,
                     ucs03: None,
                 },
+                escrow_vault: None,
             };
 
             for (client_type, path) in contracts.lightclient {
@@ -587,6 +592,20 @@ async fn do_main() -> Result<()> {
                     &salt,
                 )
                 .unwrap();
+
+                let escrow_vault_address = ctx
+                    .deploy_and_initiate(
+                        std::fs::read(contracts.escrow_vault)?,
+                        bytecode_base_code_id,
+                        cw_escrow_vault::msg::InstantiateMsg {
+                            zkgm: Addr::unchecked(ucs03_address.to_string()),
+                            admin: Addr::unchecked(ctx.wallet().address().to_string()),
+                        },
+                        ESCROW_VAULT.to_owned(),
+                    )
+                    .await?;
+
+                contract_addresses.escrow_vault = Some(escrow_vault_address);
 
                 info!("ucs03 address is {ucs03_address}");
 
@@ -1236,16 +1255,19 @@ fn calculate_contract_addresses(
 
     if apps.ucs03 {
         app.ucs03 = Some(instantiate2_address(
-            deployer,
+            deployer.clone(),
             sha2(BYTECODE_BASE_BYTECODE),
             &format!("{APP}/{UCS03}"),
         )?);
     }
 
+    let escrow_vault = instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), ESCROW_VAULT)?;
+
     Ok(ContractAddresses {
         core,
         lightclient,
         app,
+        escrow_vault: Some(escrow_vault),
     })
 }
 
@@ -1422,17 +1444,7 @@ impl Deployer {
 
     async fn instantiate2_address(&self, checksum: H256, salt: &str) -> Result<Bech32<H256>> {
         let bech32 = self.wallet().address();
-
-        let addr = cosmwasm_std::instantiate2_address(
-            checksum.get(),
-            &(bech32.data().get().as_slice().into()),
-            salt.as_bytes(),
-        )?;
-
-        Ok(Bech32::new(
-            bech32.hrp().to_owned(),
-            addr.as_slice().try_into().unwrap(),
-        ))
+        instantiate2_address(bech32, checksum, salt)
     }
 
     #[instrument(skip_all, fields(%salt))]
@@ -1449,6 +1461,11 @@ impl Deployer {
 
         info!("{salt} address is {address}");
 
+        let raw_salt = match Bytes::<HexPrefixed>::from_str(&salt) {
+            Ok(salt) => salt.to_vec(),
+            Err(_) => salt.as_bytes().to_vec(),
+        };
+
         match self.contract_deploy_state(address.clone()).await? {
             // only need to instantiate if the contract has not yet been instantiated with the base code
             ContractDeployState::None => {
@@ -1460,7 +1477,7 @@ impl Deployer {
                             code_id: bytecode_base_code_id,
                             label: salt.clone(),
                             msg: json!({}).to_string().into_bytes().into(),
-                            salt: salt.into_bytes().into(),
+                            salt: raw_salt.into(),
                             funds: vec![],
                             fix_msg: false,
                         },
@@ -1618,11 +1635,13 @@ fn instantiate2_address(
     checksum: H256,
     salt: &str,
 ) -> Result<Bech32<H256>> {
-    let addr = cosmwasm_std::instantiate2_address(
-        checksum.get(),
-        &address.data().as_ref().into(),
-        salt.as_bytes(),
-    )?;
+    let salt = match Bytes::<HexPrefixed>::from_str(salt) {
+        Ok(salt) => salt.to_vec(),
+        Err(_) => salt.as_bytes().to_vec(),
+    };
+
+    let addr =
+        cosmwasm_std::instantiate2_address(checksum.get(), &address.data().as_ref().into(), &salt)?;
 
     Ok(Bech32::new(
         address.hrp().to_owned(),

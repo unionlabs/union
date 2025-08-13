@@ -1,13 +1,14 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, to_json_binary, wasm_execute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response, StdResult, Uint128,
+    Env, Event, MessageInfo, Response, StdResult, Uint128,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
-use unionlabs::primitives::U256;
+use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
+use unionlabs::primitives::{encoding::HexPrefixed, Bytes, U256};
 
 use crate::{
     error::Error,
@@ -33,6 +34,7 @@ pub fn migrate(
         deps,
         |deps, msg| {
             deps.storage.write_item::<Admin>(&msg.admin);
+            deps.storage.write_item::<Zkgm>(&msg.zkgm);
             Ok((Response::new(), None))
         },
         |_, _, _| Ok((Response::default(), None)),
@@ -129,7 +131,7 @@ pub fn execute(
                 })?;
 
             let mut messages = Vec::<CosmosMsg>::with_capacity(2);
-            let mut push_transfer = move |to, amount: Uint128| -> StdResult<()> {
+            let mut push_transfer = |to, amount: Uint128| -> StdResult<()> {
                 if !amount.is_zero() {
                     if fungible_lane.is_cw20 {
                         messages.push(
@@ -176,7 +178,13 @@ pub fn execute(
                 order.quote_amount.try_into().expect("impossible"),
             )?;
 
-            Ok(Response::new().set_data(fungible_lane.counterparty_beneficiary.to_vec()))
+            Ok(Response::new().add_messages(messages).add_event(
+                Event::new(SOLVER_EVENT).add_attribute(
+                    SOLVER_EVENT_MARKET_MAKER_ATTR,
+                    Bytes::<HexPrefixed>::from(fungible_lane.counterparty_beneficiary.to_vec())
+                        .to_string(),
+                ),
+            ))
         }
     }
 }
