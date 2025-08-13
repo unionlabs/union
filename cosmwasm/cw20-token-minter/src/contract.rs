@@ -125,12 +125,14 @@ pub fn execute(
                 let is_local_minter =
                     from_json::<UpgradeMsg<cw20_base::msg::InstantiateMsg, Empty>>(&initializer)
                         .map(|msg| match msg {
-                            UpgradeMsg::Init(init) => init
-                                .mint
-                                .map(|minter| {
-                                    minter.minter == env.contract.address.clone().into_string()
-                                })
-                                .unwrap_or(false),
+                            UpgradeMsg::Init(init) => {
+                                init.mint
+                                    .map(|minter| {
+                                        minter.minter == env.contract.address.clone().into_string()
+                                    })
+                                    .unwrap_or(false)
+                                    && init.initial_balances.is_empty()
+                            }
                             UpgradeMsg::Migrate(_) => false,
                         })
                         .unwrap_or(false);
