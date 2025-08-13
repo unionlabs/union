@@ -59,6 +59,11 @@ struct TokenMetadata {
     bytes initializer;
 }
 
+struct SolverMetadata {
+    bytes solverAddress;
+    bytes metadata;
+}
+
 struct Stake {
     uint256 tokenId;
     bytes governanceToken;

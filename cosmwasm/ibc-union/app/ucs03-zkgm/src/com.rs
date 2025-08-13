@@ -28,6 +28,7 @@ pub const FILL_TYPE_MARKETMAKER: U256 = U256::from_be_slice(&[0xD1, 0xCE, 0xC4, 
 pub const TOKEN_ORDER_KIND_INITIALIZE: u8 = 0x00;
 pub const TOKEN_ORDER_KIND_ESCROW: u8 = 0x01;
 pub const TOKEN_ORDER_KIND_UNESCROW: u8 = 0x02;
+pub const TOKEN_ORDER_KIND_SOLVE: u8 = 0x03;
 
 pub const FORWARD_SALT_MAGIC: U256 = U256::from_be_slice(&[
     0xC0, 0xDE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -98,6 +99,12 @@ alloy_sol_types::sol! {
     struct TokenMetadata {
         bytes implementation;
         bytes initializer;
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct SolverMetadata {
+        bytes solverAddress;
+        bytes metadata;
     }
 
     #[derive(Debug, PartialEq)]

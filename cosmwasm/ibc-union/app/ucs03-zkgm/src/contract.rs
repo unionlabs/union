@@ -26,16 +26,17 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, BatchAck, Call, Forward, Instruction, Stake, TokenMetadata, TokenOrderAck,
-        TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards, WithdrawRewardsAck,
-        WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
-        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
-        OP_BATCH, OP_CALL, OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS,
-        OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW,
-        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
+        Ack, Batch, BatchAck, Call, Forward, Instruction, SolverMetadata, Stake, TokenMetadata,
+        TokenOrderAck, TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards,
+        WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER,
+        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
+        INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER,
+        OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
+        TOKEN_ORDER_KIND_UNESCROW,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg, SolverQuery,
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg,
         V1ToV2Migration, ZkgmMsg,
     },
     state::{
@@ -1776,11 +1777,12 @@ fn solver_market_maker_fill_v2(
     order: TokenOrderV2,
     intent: bool,
 ) -> Result<Response, ContractError> {
-    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
-        .map_err(|_| ContractError::InvalidQuoteToken)?;
+    let metadata = SolverMetadata::abi_decode_params_validate(&order.metadata)?;
+    let solver = String::from_utf8(Vec::from(metadata.solverAddress))
+        .map_err(|_| ContractError::InvalidSolverAddress)?;
     Ok(Response::new().add_submessage(SubMsg::reply_always(
         wasm_execute(
-            quote_token_str.clone(),
+            solver,
             &SolverMsg::DoSolve {
                 packet,
                 order: order.into(),
@@ -1810,35 +1812,14 @@ fn market_maker_fill_v2(
     order: TokenOrderV2,
     intent: bool,
 ) -> Result<Response, ContractError> {
-    let quote_token_str = String::from_utf8(order.quote_token.clone().into())
-        .map_err(|_| ContractError::InvalidQuoteToken)?;
-    let is_solver = deps
-        .querier
-        .query_wasm_smart::<()>(quote_token_str.clone(), &SolverQuery::IsSolver)
-        .is_ok();
-    let allow_market_maker = deps
-        .querier
-        .query_wasm_smart::<bool>(quote_token_str.clone(), &SolverQuery::AllowMarketMakers)
-        .unwrap_or(false);
-    let (relayer_fill_for_solver, arbitrary_relayer_payload) =
-        match <(bool, alloy_primitives::Bytes)>::abi_decode_params(&relayer_msg) {
-            Ok((x, y)) => (x, y),
-            Err(_) => (false, relayer_msg.into_vec().into()),
-        };
-    let arbitrary_relayer_payload = arbitrary_relayer_payload.0.to_vec().into();
-    if is_solver && (!allow_market_maker || !relayer_fill_for_solver) {
-        solver_market_maker_fill_v2(
-            caller,
-            relayer,
-            arbitrary_relayer_payload,
-            path,
-            packet,
-            order,
-            intent,
-        )
-    } else {
-        MARKET_MAKER.save(deps.storage, &arbitrary_relayer_payload)?;
-        relayer_market_maker_fill_v2(deps, env, funds, caller, minter, order)
+    match order.kind {
+        TOKEN_ORDER_KIND_SOLVE => {
+            solver_market_maker_fill_v2(caller, relayer, relayer_msg, path, packet, order, intent)
+        }
+        _ => {
+            MARKET_MAKER.save(deps.storage, &relayer_msg)?;
+            relayer_market_maker_fill_v2(deps, env, funds, caller, minter, order)
+        }
     }
 }
 
@@ -2082,7 +2063,7 @@ fn execute_fungible_asset_order_v2(
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
 
     // For intent packets, only market maker can fill
-    if intent {
+    if intent || order.kind == TOKEN_ORDER_KIND_SOLVE {
         let minter = TOKEN_MINTER.load(deps.storage)?;
         return market_maker_fill_v2(
             deps,

@@ -149,6 +149,46 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         );
     }
 
+    function _solverFill(
+        IBCPacket calldata packet,
+        address caller,
+        address relayer,
+        bytes calldata relayerMsg,
+        uint256 path,
+        TokenOrderV2 calldata order,
+        bool intent
+    ) internal returns (bytes memory) {
+        uint256 quoteAmount = order.quoteAmount;
+
+        SolverMetadata calldata metadata =
+            ZkgmLib.decodeSolverMetadata(order.metadata);
+
+        address solver = address(bytes20(metadata.solverAddress));
+
+        (bool solverFilled,, bytes memory solverReturnData) = solver.tryCall(
+            0,
+            gasleft(),
+            type(uint16).max,
+            abi.encodeCall(
+                ISolver.solve,
+                (packet, order, path, caller, relayer, relayerMsg, intent)
+            )
+        );
+        if (solverFilled) {
+            return ZkgmLib.encodeTokenOrderAck(
+                TokenOrderAck({
+                    fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                    // The solver has to provide it's maker addresss that the
+                    // counterparty chain will repay on acknowledgement with the
+                    // base token.
+                    marketMaker: abi.decode(solverReturnData, (bytes))
+                })
+            );
+        } else {
+            return ZkgmLib.ACK_ERR_ONLYMAKER;
+        }
+    }
+
     function _marketMakerFillV2(
         IBCPacket calldata packet,
         address caller,
@@ -160,98 +200,39 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         TokenOrderV2 calldata order,
         bool intent
     ) internal returns (bytes memory) {
-        uint256 quoteAmount = order.quoteAmount;
-
-        bool relayerFillForSolver = false;
-        bytes memory arbitraryRelayerMsg = hex"";
-
-        try this.decodeRelayerMessage(relayerMsg) returns (
-            bool x, bytes memory y
-        ) {
-            relayerFillForSolver = x;
-            arbitraryRelayerMsg = y;
-        } catch {
-            arbitraryRelayerMsg = relayerMsg;
-        }
-
-        // In this specific case the message is expected to be the market maker
-        // address on the counterparty chain. The protocol will use this address
-        // as beneficiary to unescrow the escrowed tokens (order.baseToken *
-        // order.baseAmount).
-        bytes memory marketMakerBeneficiary = arbitraryRelayerMsg;
-
-        // We want the top level handler in onRecvPacket to know we need to
-        // revert for another MM to get a chance to fill. If we revert now
-        // the entire packet would be considered to be "failed" and refunded
-        // at origin, which we want to avoid.
-        // Hence, in case of transfer failure, we yield the ack to notify the onRecvPacket.
-
-        // Special case for gas station where the user is asking for native
-        // gas token. The MM has to provide WETH funds that will be
-        // unwrapped, avoiding us from having to manage msg.value accross
-        // the stack.
-        if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
-            if (quoteAmount > 0) {
-                // Transfert to protocol.
-                if (
-                    !WETH.trySafeTransferFrom(caller, address(this), quoteAmount)
-                ) {
-                    return ZkgmLib.ACK_ERR_ONLYMAKER;
-                }
-                // Unwrap and send.
-                WETH.withdraw(quoteAmount);
-                // We allow this call to fail because in such case the MM was
-                // able to provide the funds. A failure ACK will be written and
-                // refund will happen.
-                receiver.sendValue(quoteAmount);
-            }
+        if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_SOLVE) {
+            return _solverFill(
+                packet, caller, relayer, relayerMsg, path, order, intent
+            );
         } else {
-            bool solver = ZkgmLib.isSolver(quoteToken);
-            if (solver) {
-                bool allowMarketMaker = ISolver(quoteToken).allowMarketMakers();
-                // If the relayer asked to fill and the solver allows it, takes precedence.
-                if (allowMarketMaker && relayerFillForSolver) {
-                    if (quoteAmount > 0) {
-                        if (
-                            !IERC20(quoteToken).trySafeTransferFrom(
-                                caller, receiver, quoteAmount
-                            )
-                        ) {
-                            return ZkgmLib.ACK_ERR_ONLYMAKER;
-                        }
-                    }
-                } else {
-                    // Even if the quote amount is zero, this may be some sort of
-                    // mechanism to interact with a contract, hence, we allows the
-                    // call to happen because the solver may constraint the
-                    // execution.
-                    (bool solverFilled,, bytes memory solverReturnData) =
-                    quoteToken.tryCall(
-                        0,
-                        gasleft(),
-                        type(uint16).max,
-                        abi.encodeCall(
-                            ISolver.solve,
-                            (
-                                packet,
-                                order,
-                                path,
-                                caller,
-                                relayer,
-                                relayerMsg,
-                                intent
-                            )
+            uint256 quoteAmount = order.quoteAmount;
+
+            // We want the top level handler in onRecvPacket to know we need to
+            // revert for another MM to get a chance to fill. If we revert now
+            // the entire packet would be considered to be "failed" and refunded
+            // at origin, which we want to avoid.
+            // Hence, in case of transfer failure, we yield the ack to notify the onRecvPacket.
+
+            // Special case for gas station where the user is asking for native
+            // gas token. The MM has to provide WETH funds that will be
+            // unwrapped, avoiding us from having to manage msg.value accross
+            // the stack.
+            if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+                if (quoteAmount > 0) {
+                    // Transfert to protocol.
+                    if (
+                        !WETH.trySafeTransferFrom(
+                            caller, address(this), quoteAmount
                         )
-                    );
-                    if (solverFilled) {
-                        // The solver succeeded and returned the maker address to pay on
-                        // source. We overwrite whatever was provided by the relayer at
-                        // this point as the solver is sovereign.
-                        marketMakerBeneficiary =
-                            abi.decode(solverReturnData, (bytes));
-                    } else {
+                    ) {
                         return ZkgmLib.ACK_ERR_ONLYMAKER;
                     }
+                    // Unwrap and send.
+                    WETH.withdraw(quoteAmount);
+                    // We allow this call to fail because in such case the MM was
+                    // able to provide the funds. A failure ACK will be written and
+                    // refund will happen.
+                    receiver.sendValue(quoteAmount);
                 }
             } else {
                 if (quoteAmount > 0) {
@@ -264,18 +245,18 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                     }
                 }
             }
-        }
 
-        return ZkgmLib.encodeTokenOrderAck(
-            TokenOrderAck({
-                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
-                // The relayer has to provide it's maker address using the
-                // relayerMsg. This address is specific to the counterparty
-                // chain and is where the protocol will pay back the base amount
-                // on acknowledgement.
-                marketMaker: marketMakerBeneficiary
-            })
-        );
+            return ZkgmLib.encodeTokenOrderAck(
+                TokenOrderAck({
+                    fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                    // The relayer has to provide it's maker address using the
+                    // relayerMsg. This address is specific to the counterparty
+                    // chain and is where the protocol will pay back the base amount
+                    // on acknowledgement.
+                    marketMaker: relayerMsg
+                })
+            );
+        }
     }
 
     function _deployWrappedTokenV2(
@@ -448,7 +429,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         // know the market maker will be repaid on the source chain, if and only
         // if the currently executing packet hash had been registered as sent on
         // the source. In other words, the market maker is unable to lie.
-        if (intent) {
+        if (intent || order.kind == ZkgmLib.TOKEN_ORDER_KIND_SOLVE) {
             return _marketMakerFillV2(
                 ibcPacket,
                 caller,

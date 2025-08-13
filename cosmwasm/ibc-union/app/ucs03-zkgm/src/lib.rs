@@ -47,6 +47,8 @@ pub enum ContractError {
     AmountOverflow,
     #[error("the quote token must be a valid utf8 denom")]
     InvalidQuoteToken,
+    #[error("the solver must be a bech32 encoded contract address")]
+    InvalidSolverAddress,
     #[error("the base token must be a valid utf8 denom")]
     InvalidBaseToken,
     #[error("invalid channel balance, counterparty has been taken over?")]
