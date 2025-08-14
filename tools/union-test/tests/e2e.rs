@@ -2255,18 +2255,18 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         sourceChannelId: pair.src.try_into().unwrap(),
         destinationChannelId: pair.dest.try_into().unwrap(),
         data: encoded_packet.clone().into(),
-        timeoutHeight: 0u64.into(),
+        timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
     }];
 
     let proof = ctx
         .calculate_proof::<evm::Module>(
             &ctx.dst,
-            pair.src.try_into().unwrap(),
-            pair.dest.try_into().unwrap(),
-            encoded_packet.into(),
+            pair.src,
+            pair.dest,
+            encoded_packet,
             height,
-            "union-devnet-1".into(),
+            "union-devnet-1",
         )
         .await;
 
@@ -2280,9 +2280,10 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
     let recv_packet_msg = MsgPacketRecv {
         packets: packets,
         relayerMsgs: vec![vec![].into()],
-        relayer: zkgm_deployer_address.into(),
+        relayer: zkgm_deployer_address,
+
         proof: proof.into(),
-        proofHeight: height.into(),
+        proofHeight: height,
     };
 
     let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
@@ -3320,18 +3321,18 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         sourceChannelId: pair.src.try_into().unwrap(),
         destinationChannelId: pair.dest.try_into().unwrap(),
         data: encoded_packet.clone().into(),
-        timeoutHeight: 0u64.into(),
+        timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
     }];
 
     let proof = ctx
         .calculate_proof::<evm::Module>(
             &ctx.dst,
-            pair.src.try_into().unwrap(),
-            pair.dest.try_into().unwrap(),
-            encoded_packet.into(),
+            pair.src,
+            pair.dest,
+            encoded_packet,
             height,
-            "union-devnet-1".into(),
+            "union-devnet-1",
         )
         .await;
 
@@ -3345,9 +3346,10 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     let recv_packet_msg = MsgPacketRecv {
         packets: packets,
         relayerMsgs: vec![vec![].into()],
-        relayer: zkgm_deployer_address.into(),
+        relayer: zkgm_deployer_address,
+
         proof: proof.into(),
-        proofHeight: height.into(),
+        proofHeight: height,
     };
 
     let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
@@ -3500,18 +3502,18 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         sourceChannelId: pair.src.try_into().unwrap(),
         destinationChannelId: pair.dest.try_into().unwrap(),
         data: encoded_packet.clone().into(),
-        timeoutHeight: 0u64.into(),
+        timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
     }];
 
     let proof = ctx
         .calculate_proof::<evm::Module>(
             &ctx.dst,
-            pair.src.try_into().unwrap(),
-            pair.dest.try_into().unwrap(),
-            encoded_packet.into(),
+            pair.src,
+            pair.dest,
+            encoded_packet,
             height,
-            "union-devnet-1".into(),
+            "union-devnet-1",
         )
         .await;
 
@@ -3525,9 +3527,10 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let recv_packet_msg = MsgPacketRecv {
         packets: packets,
         relayerMsgs: vec![vec![].into()],
-        relayer: zkgm_deployer_address.into(),
+        relayer: zkgm_deployer_address,
+
         proof: proof.into(),
-        proofHeight: height.into(),
+        proofHeight: height,
     };
 
     let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
@@ -3680,18 +3683,18 @@ async fn test_send_vault_unhappy_u_fool() {
         sourceChannelId: pair.src.try_into().unwrap(),
         destinationChannelId: pair.dest.try_into().unwrap(),
         data: encoded_packet.clone().into(),
-        timeoutHeight: 0u64.into(),
+        timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
     }];
 
     let proof = ctx
         .calculate_proof::<evm::Module>(
             &ctx.dst,
-            pair.src.try_into().unwrap(),
-            pair.dest.try_into().unwrap(),
-            encoded_packet.into(),
+            pair.src,
+            pair.dest,
+            encoded_packet,
             height,
-            "union-devnet-1".into(),
+            "union-devnet-1",
         )
         .await;
 
@@ -3705,9 +3708,10 @@ async fn test_send_vault_unhappy_u_fool() {
     let recv_packet_msg = MsgPacketRecv {
         packets: packets,
         relayerMsgs: vec![vec![].into()],
-        relayer: zkgm_deployer_address.into(),
+        relayer: zkgm_deployer_address,
+
         proof: proof.into(),
-        proofHeight: height.into(),
+        proofHeight: height,
     };
 
     let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
