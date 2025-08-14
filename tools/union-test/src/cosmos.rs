@@ -14,7 +14,10 @@ use cosmos_client::{
 use cosmos_sdk_event::CosmosSdkEvent;
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use protos::{
-    cosmos::base::v1beta1::Coin,
+    cosmos::{
+        bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse},
+        base::v1beta1::Coin,
+    },
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
 use serde::{Deserialize, Serialize};
@@ -22,6 +25,7 @@ use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
     google::protobuf::any::mk_any,
+    ibc::core::client::height::Height,
     primitives::{encoding::HexUnprefixed, Bech32, Bytes, H160, H256},
 };
 use voyager_sdk::{
@@ -38,6 +42,7 @@ pub struct Config {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
+    pub privileged_acc_keyring: KeyringConfig,
     pub rpc_url: String,
     pub gas_config: GasFillerConfig,
     #[serde(default)]
@@ -64,6 +69,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
+    pub privileged_acc_keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
     pub rpc: Rpc,
     pub gas_config: any::GasFiller,
     pub bech32_prefix: String,
@@ -119,6 +125,18 @@ impl Module {
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
+                    let signer =
+                        LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
+
+                    KeyringEntry {
+                        address: signer.address(),
+                        signer,
+                    }
+                }),
+            ),
+            privileged_acc_keyring: ConcurrentKeyring::new(
+                config.privileged_acc_keyring.name,
+                config.privileged_acc_keyring.keys.into_iter().map(|entry| {
                     let signer =
                         LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
 
@@ -345,6 +363,65 @@ impl Module {
             .unwrap())
     }
 
+    pub async fn wait_for_update_client(
+        &self,
+        expected_revision_height: u64,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::UpdateClient {
+                        consensus_heights, ..
+                    } = evt
+                    {
+                        if let Some(first) = consensus_heights.first() {
+                            if first.height() >= expected_revision_height {
+                                return Some(helpers::UpdateClient {
+                                    height: first.height(),
+                                });
+                            }
+                        }
+                    }
+                    None
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
+    pub async fn wait_for_packet_timeout(
+        &self,
+        packet_hash_param: H256,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        println!("Waiting for packet timeout event with hash: {packet_hash_param:?}");
+        Ok(self
+            .wait_for_event(
+                move |evt| {
+                    if let ModuleEvent::WasmPacketTimeout { packet_hash, .. } = evt {
+                        println!("Packet timeout event came with hash: {packet_hash:?}");
+                        if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            return Some(helpers::PacketTimeout {
+                                packet_hash: *packet_hash,
+                            });
+                        }
+                        None
+                    } else {
+                        None
+                    }
+                },
+                max_wait,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
+
     pub async fn wait_for_packet_ack(
         &self,
         packet_hash_param: H256,
@@ -354,10 +431,22 @@ impl Module {
         Ok(self
             .wait_for_event(
                 move |evt| {
-                    if let ModuleEvent::WasmPacketAck { packet_hash, .. } = evt {
+                    if let ModuleEvent::WasmPacketAck {
+                        packet_hash,
+                        acknowledgement,
+                        ..
+                    } = evt
+                    {
                         if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            let ack_bytes: &[u8] = acknowledgement.as_ref();
+
+                            // Grab the first 32 bytes — this is the uint256 in ABI encoding
+                            let mut tag_be = [0u8; 32];
+                            tag_be.copy_from_slice(&ack_bytes[..32]);
+                            let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
                             return Some(helpers::PacketAck {
                                 packet_hash: *packet_hash,
+                                tag: tag_u128,
                             });
                         }
                         None
@@ -480,6 +569,52 @@ impl Module {
         }
     }
 
+    pub async fn get_minter(&self, contract: Bech32<H256>) -> anyhow::Result<String> {
+        let req = QuerySmartContractStateRequest {
+            address: contract.to_string(),
+            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?,
+        };
+
+        let raw = self
+            .rpc
+            .client()
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &req,
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .data;
+
+        // 3) Deserialize the JSON `{ "minter": "union1..." }` into our struct
+        let resp = serde_json::from_slice(&raw).context("deserializing GetMinterResponse")?;
+
+        Ok(resp)
+    }
+
+    pub async fn get_balance(
+        &self,
+        address: impl Into<String>,
+        denom: &str,
+    ) -> anyhow::Result<protos::cosmos::base::v1beta1::Coin> {
+        let req = QueryBalanceRequest {
+            address: address.into(),
+            denom: denom.to_string(),
+        };
+        let resp: QueryBalanceResponse = self
+            .rpc
+            .client()
+            .grpc_abci_query("/cosmos.bank.v1beta1.Query/Balance", &req, None, false)
+            .await?
+            .into_result()?
+            .unwrap();
+        resp.balance
+            .ok_or_else(|| anyhow::anyhow!("no balance for denom {}", denom))
+    }
+
     pub async fn send_transaction_with_retry(
         &self,
         contract: Bech32<H256>,
@@ -561,10 +696,12 @@ impl Module {
         contract: Bech32<H256>,
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
-    ) -> anyhow::Result<H256> {
+    ) -> anyhow::Result<(H256, u64)> {
         let result = self.send_transaction(contract, msg, signer).await;
-
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
+        let height = tx_result
+            .height
+            .ok_or_else(|| anyhow!("transaction height not found"))?;
 
         let send_event = tx_result
             .tx_result
@@ -580,7 +717,7 @@ impl Module {
             .ok_or_else(|| anyhow!("wasm-packet_send event not found"))?;
 
         Ok(match send_event {
-            ModuleEvent::WasmPacketSend { packet_hash, .. } => packet_hash,
+            ModuleEvent::WasmPacketSend { packet_hash, .. } => (packet_hash, height.get()),
             _ => bail!("unexpected event variant"),
         })
     }
@@ -606,6 +743,12 @@ pub enum ModuleEvent {
         packet_timeout_height: u64,
         #[serde(with = "serde_utils::string")]
         packet_timeout_timestamp: Timestamp,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+    },
+    #[serde(rename = "wasm-packet_timeout")]
+    WasmPacketTimeout {
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,
@@ -658,4 +801,46 @@ pub enum ModuleEvent {
         packet_hash: H256,
         acknowledgement: Bytes<HexUnprefixed>,
     },
+
+    #[serde(rename = "update_client")]
+    UpdateClient {
+        client_id: unionlabs::id::ClientId,
+        client_type: String,
+        #[serde(with = "height_list_comma_separated")]
+        consensus_heights: Vec<Height>,
+    },
+}
+
+// TODO: Check if human readable
+pub mod height_list_comma_separated {
+    use std::string::String;
+
+    use serde::{
+        de::{self, Deserialize},
+        Deserializer, Serialize, Serializer,
+    };
+    use unionlabs::ibc::core::client::height::Height;
+
+    #[allow(clippy::ptr_arg)] // required by serde
+    pub fn serialize<S>(data: &Vec<Height>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        data.iter()
+            .map(|height| format!("{height:#}"))
+            .collect::<Vec<_>>()
+            .join(",")
+            .serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Height>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .split(',')
+            .map(Height::from_str_allow_zero_revision)
+            .collect::<Result<_, _>>()
+            .map_err(de::Error::custom)
+    }
 }

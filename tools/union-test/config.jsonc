@@ -232,6 +232,7 @@
             }
           ]
         },
+        "max_tx_size": 500000,
         "gas_config": {
           "type": "feemarket",
           "config": {

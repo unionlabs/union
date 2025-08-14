@@ -3,19 +3,28 @@ use std::{sync::Arc, time::Duration};
 use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
 use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
-use ibc_union_spec::ChannelId;
-use protos::cosmos::base::v1beta1::Coin;
-use unionlabs::primitives::{Bech32, Bytes, FixedBytes, H160, H256};
-use voyager_sdk::{
-    anyhow::{self},
-    primitives::ChainId,
+use ibc_union_spec::{
+    path::{BatchPacketsPath, StorePath},
+    ChannelId, MustBeZero, Packet,
 };
-
+use jsonrpsee::http_client::HttpClient;
+use protos::cosmos::base::v1beta1::Coin;
+use unionlabs::{
+    ibc::core::client::height::Height,
+    primitives::{Bech32, Bytes, FixedBytes, H160, H256},
+};
+use voyager_sdk::{
+    anyhow::{self, anyhow, Context},
+    primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
+    rpc::VoyagerRpcClient,
+    serde_json,
+};
 pub mod channel_provider;
 pub mod cosmos;
 pub mod evm;
 pub mod helpers;
 pub mod voyager;
+use regex::Regex;
 
 use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
@@ -79,13 +88,25 @@ pub trait ChainEndpoint: Send + Sync {
         contract: Self::Contract,
         msg: Self::Msg,
         signer: &Self::ProviderType,
-    ) -> anyhow::Result<H256>;
+    ) -> anyhow::Result<(H256, u64)>;
 
     async fn wait_for_packet_recv(
         &self,
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
+
+    async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient>;
+
+    async fn wait_for_packet_timeout(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout>;
 
     async fn wait_for_packet_ack(
         &self,
@@ -104,6 +125,15 @@ pub trait ChainEndpoint: Send + Sync {
         validator: String,
         timeout: Duration,
     ) -> anyhow::Result<helpers::WithdrawRewards>;
+
+    async fn calculate_proof(
+        &self,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str,
+    ) -> anyhow::Result<Bytes>;
 }
 
 pub trait IbcEventHash {
@@ -120,6 +150,51 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
+    }
+
+    async fn calculate_proof(
+        &self,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str,
+    ) -> anyhow::Result<Bytes> {
+        let voyager_client = HttpClient::builder()
+            .build("http://localhost:7178")
+            .expect("REASON");
+
+        let packets = &[Packet {
+            source_channel_id: source_channel_id.try_into().unwrap(),
+            destination_channel_id: destination_channel_id.try_into().unwrap(),
+            data: encoded_packet.into(),
+            timeout_height: MustBeZero,
+            timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        }];
+        let path = serde_json::to_value(StorePath::BatchPackets(BatchPacketsPath::from_packets(
+            packets,
+        )))
+        .unwrap();
+
+        let response = voyager_client
+            .query_ibc_proof(
+                ChainId::new(chain_id.to_string()),
+                IbcSpecId::new(IbcSpecId::UNION),
+                QueryHeight::Specific(Height::new(height)),
+                path,
+            )
+            .await
+            .unwrap();
+
+        Ok(voyager_client
+            .encode_proof(
+                ClientType::new(ClientType::COMETBLS),
+                IbcInterface::new(IbcInterface::IBC_SOLIDITY),
+                IbcSpecId::new(IbcSpecId::UNION),
+                response.clone().into_result().unwrap().proof,
+            )
+            .await
+            .unwrap())
     }
 
     async fn wait_for_delegate(
@@ -207,7 +282,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         contract: Self::Contract,
         msg: Self::Msg,
         signer: &Self::ProviderType,
-    ) -> anyhow::Result<H256> {
+    ) -> anyhow::Result<(H256, u64)> {
         self.send_ibc_transaction(contract, msg, signer)
             .await
             .map_err(Into::into)
@@ -219,6 +294,22 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_packet_recv(packet_hash, timeout).await
+    }
+
+    async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        self.wait_for_update_client(height, timeout).await
+    }
+
+    async fn wait_for_packet_timeout(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        self.wait_for_packet_timeout(packet_hash, timeout).await
     }
 
     async fn wait_for_packet_ack(
@@ -241,6 +332,17 @@ impl ChainEndpoint for cosmos::Module {
     type PredictWrappedTokenResponse = String;
     type PredictWrappedTokenFromMetadataImageV2Response = String;
     type ProviderType = LocalSigner;
+
+    async fn calculate_proof(
+        &self,
+        _source_channel_id: u32,
+        _destination_channel_id: u32,
+        _encoded_packet: Vec<u8>,
+        _height: u64,
+        _chain_id: &str,
+    ) -> anyhow::Result<Bytes> {
+        unimplemented!("calculate_proof is not implemented for Cosmos chains")
+    }
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -308,7 +410,7 @@ impl ChainEndpoint for cosmos::Module {
         contract: Bech32<H256>,
         msg: Self::Msg,
         signer: &Self::ProviderType,
-    ) -> anyhow::Result<H256> {
+    ) -> anyhow::Result<(H256, u64)> {
         self.send_ibc_transaction(contract, msg, signer).await
     }
 
@@ -318,6 +420,22 @@ impl ChainEndpoint for cosmos::Module {
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_packet_recv(packet_hash, timeout).await
+    }
+
+    async fn wait_for_update_client(
+        &self,
+        height: u64,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::UpdateClient> {
+        self.wait_for_update_client(height, timeout).await
+    }
+
+    async fn wait_for_packet_timeout(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        self.wait_for_packet_timeout(packet_hash, timeout).await
     }
 
     async fn wait_for_packet_ack(
@@ -570,7 +688,7 @@ where
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
@@ -606,7 +724,7 @@ where
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketAck> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
@@ -650,7 +768,7 @@ where
         validator: String,
         signer: Src::ProviderType,
     ) -> anyhow::Result<helpers::Delegate> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {
@@ -696,7 +814,7 @@ where
         validator: String,
         signer: Src::ProviderType,
     ) -> anyhow::Result<helpers::WithdrawRewards> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {
@@ -738,10 +856,10 @@ where
         msg: Src::Msg,
         destination_chain: &Dst,
         timeout: Duration,
-        signer: Src::ProviderType,
+        signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        let packet_hash = match source_chain
-            .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
+        let (packet_hash, _height) = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
             Ok(hash) => {
@@ -775,6 +893,187 @@ where
         packet_recved
     }
 
+    pub async fn send_and_recv_ack<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        let (packet_hash, _height) = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        match destination_chain
+            .wait_for_packet_recv(packet_hash, timeout)
+            .await
+        {
+            Ok(evt) => evt,
+            Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
+        };
+
+        let packet_acked = match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
+            Ok(evt) => evt,
+            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
+        };
+
+        Ok(packet_acked)
+    }
+
+    pub async fn send_and_recv_refund_with_timeout<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<helpers::PacketTimeout> {
+        let (packet_hash, _height) = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        let packet_timeout = match source_chain
+            .wait_for_packet_timeout(packet_hash, timeout)
+            .await
+        {
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_packet_timeout failed: {:?}", e),
+        };
+
+        packet_timeout
+    }
+
+    pub async fn send_and_get_height<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<u64> {
+        let (packet_hash, height) = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {} and with height: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash,
+            height
+        );
+
+        let update_client_result: anyhow::Result<helpers::UpdateClient> = match destination_chain
+            .wait_for_update_client(height, timeout)
+            .await
+        {
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_update_client failed: {:?}", e),
+        };
+        println!("Update client event received: {:?}", update_client_result);
+
+        Ok(update_client_result.unwrap().height)
+    }
+
+    pub async fn send_and_expect_revert<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        expected_revert_code: u32,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<()> {
+        match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok((_, _)) => anyhow::bail!(
+                "Expected revert 0x{:08x}, but transaction succeeded",
+                expected_revert_code
+            ),
+
+            Err(e) => {
+                let err_str = format!("{:#}", e);
+
+                let re = Regex::new(r"(0x[0-9A-Fa-f]+)").unwrap();
+                let caps = re.captures(&err_str).ok_or_else(|| {
+                    anyhow!(
+                        "Transaction reverted but no rawValue hex found: {}",
+                        err_str
+                    )
+                })?;
+
+                let hex_full = caps
+                    .get(1)
+                    .map(|m| m.as_str())
+                    .ok_or_else(|| anyhow!("regex matched but capture group missing"))?;
+
+                let hexdigits = hex_full.trim_start_matches("0x");
+                if hexdigits.len() < 8 {
+                    anyhow::bail!("rawValue too short for a selector: {}", hex_full);
+                }
+                let selector_hex = &hexdigits[..8]; // first 4 bytes
+
+                let actual = u32::from_str_radix(selector_hex, 16).with_context(|| {
+                    format!("parsing revert selector `{selector_hex}` from `{hex_full}`")
+                })?;
+
+                if actual == expected_revert_code {
+                    Ok(())
+                } else {
+                    anyhow::bail!(
+                        "Expected selector 0x{:08x}, got 0x{:08x} (raw: {})",
+                        expected_revert_code,
+                        actual,
+                        hex_full
+                    )
+                }
+            }
+        }
+    }
+
     pub async fn send_and_recv_withdraw<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
@@ -784,7 +1083,7 @@ where
         timeout: Duration,
         signer: Src::ProviderType,
     ) -> anyhow::Result<()> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {
@@ -895,5 +1194,25 @@ where
                 }
             }
         }
+    }
+
+    pub async fn calculate_proof<Src: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        source_channel_id: u32,
+        destination_channel_id: u32,
+        encoded_packet: Vec<u8>,
+        height: u64,
+        chain_id: &str,
+    ) -> anyhow::Result<Bytes> {
+        source_chain
+            .calculate_proof(
+                source_channel_id,
+                destination_channel_id,
+                encoded_packet,
+                height,
+                chain_id,
+            )
+            .await
     }
 }
