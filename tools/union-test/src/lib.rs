@@ -597,6 +597,48 @@ where
         }
     }
 
+    pub async fn send_and_recv_and_ack<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        let packet_hash = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            }
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        match destination_chain
+            .wait_for_packet_recv(packet_hash, timeout)
+            .await
+        {
+            Ok(evt) => evt,
+            Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
+        };
+
+        match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn send_and_recv_stake<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
@@ -791,6 +833,48 @@ where
             attempt += 1;
             match self
                 .send_and_recv(
+                    source_chain,
+                    contract.clone(),
+                    msg.clone(),
+                    destination_chain,
+                    timeout,
+                    signer,
+                )
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    if attempt < max_retries {
+                        println!("Attempt {} failed: {}. Retrying...", attempt, e);
+                        tokio::time::sleep(retry_delay).await;
+                    } else {
+                        return Err(e);
+                    }
+                }
+            }
+        }
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_and_recv_and_ack_with_retry<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        max_retries: usize,
+        retry_delay: Duration,
+        timeout: Duration,
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        let mut attempt = 0;
+        println!(
+            "Starting send_and_recv_with_retry with max_retries: {}, retry_delay: {:?}",
+            max_retries, retry_delay
+        );
+        loop {
+            attempt += 1;
+            match self
+                .send_and_recv_and_ack(
                     source_chain,
                     contract.clone(),
                     msg.clone(),
