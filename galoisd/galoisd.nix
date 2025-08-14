@@ -11,11 +11,11 @@
     }:
     let
       galoisKeys = pkgs.runCommand "galois-keys" { } ''
-          mkdir $out
-          cp ${../vk.bin} $out/vk.bin
-          cp ${../pk.bin} $out/pk.bin
-          cp ${../r1cs.bin} $out/r1cs.bin
-        '';
+        mkdir $out
+        cp ${../vk.bin} $out/vk.bin
+        cp ${../pk.bin} $out/pk.bin
+        cp ${../r1cs.bin} $out/r1cs.bin
+      '';
     in
     {
       # TODO(aeryz): This builds the keys for now bc of my shitty internet. Otherwise, it takes me forever to try
