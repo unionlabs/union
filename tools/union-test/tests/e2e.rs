@@ -366,7 +366,7 @@ async fn test_send_vault_success() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -491,7 +491,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_chain_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -737,7 +737,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_chain_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -838,7 +838,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     );
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_chain_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp,
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -1137,7 +1137,7 @@ async fn test_stake_from_evm_to_union() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -1359,7 +1359,7 @@ async fn test_stake_from_evm_to_union_and_refund() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -1595,7 +1595,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -1873,7 +1873,7 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -2211,7 +2211,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -2398,7 +2398,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset(
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -2595,7 +2595,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -2793,7 +2793,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -2969,7 +2969,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -3278,7 +3278,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -3459,7 +3459,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
@@ -3640,7 +3640,7 @@ async fn test_send_vault_unhappy_u_fool() {
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
-        timeout_height: 0u64,
+        timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
         instruction: instruction_cosmos.abi_encode_params().into(),
