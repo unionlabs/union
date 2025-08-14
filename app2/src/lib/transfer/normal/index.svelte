@@ -178,7 +178,7 @@ $effect(() => {
         if (Option.isNone(walletaddr)) {
           return Option.some(false)
         }
-        return Option.map(walletaddr, Equal.equals(receiver))
+        return Option.some(walletaddr.value.address === receiver.address)
       }),
       Option.match({
         onNone: () => Effect.void,
