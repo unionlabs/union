@@ -1523,13 +1523,14 @@ contract UpgradeUCS03FromV1ToV2 is UCS03FromV1ToV2 {
             bridgedToken.quoteToken =
                 vm.parseJsonBytes(json, string.concat(prefix, "quote_token"));
             if (bridgedToken.wrappedChainId.eq(universalChainId)) {
-                console.logBytes(bridgedToken.baseToken);
-                console.logBytes(bridgedToken.quoteToken);
                 if (bridgedToken.direction.eq("in")) {
                     require(
                         bridgedToken.quoteToken.length == 20,
                         "in: invalid quote token length"
                     );
+                    console.log("Wrapped migration:");
+                    console.logBytes(bridgedToken.baseToken);
+                    console.logBytes(bridgedToken.quoteToken);
                     wrappedMigrations.push(
                         V1ToV2WrappedTokenMigration({
                             path: 0,
@@ -1543,6 +1544,9 @@ contract UpgradeUCS03FromV1ToV2 is UCS03FromV1ToV2 {
                         bridgedToken.baseToken.length == 20,
                         "out: invalid base token length"
                     );
+                    console.log("Balance migration:");
+                    console.logBytes(bridgedToken.baseToken);
+                    console.logBytes(bridgedToken.quoteToken);
                     balanceMigrations.push(
                         V1ToV2Migration({
                             path: 0,
