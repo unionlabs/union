@@ -250,7 +250,7 @@ const handleSubmit = () => {
 // XXX: why not reactive
 const sourceChain = step.intent.sourceChain
 // XXX: why not reactive
-const massagedDenom = Schema.decodeSync(TokenRawDenom)(ensureHex(step.token))
+const massagedDenom = Schema.decodeSync(TokenRawDenom)(ensureHex(step.token.address))
 
 function getMaxApprovalAmount() {
   return Match.value(step.intent.sourceChain.rpc_type).pipe(

@@ -1,5 +1,5 @@
 import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
-import type { Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
+import type { Token, Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
 import type {
   AddressCanonicalBytes,
   Chain,
@@ -20,7 +20,7 @@ export type Steps = Data.TaggedEnum<{
     readonly destinationChain: Chain
   }
   ApprovalRequired: {
-    readonly token: TokenRawDenom
+    readonly token: Token.Any
     readonly requiredAmount: TokenRawAmount
     readonly currentAllowance: TokenRawAmount
     readonly intent: Intent

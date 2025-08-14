@@ -203,7 +203,6 @@ $effect(() => {
           const intent = context.intents[i]
 
           // TODO: refactor with Struct.evolve and Effect.all
-          const token = yield* Schema.decode(TokenRawDenom)(allowance.token)
           const requiredAmount = yield* Schema.decode(TokenRawAmountFromSelf)(
             allowance.requiredAmount,
           )
@@ -213,7 +212,7 @@ $effect(() => {
 
           steps.push(
             Steps.ApprovalRequired({
-              token,
+              token: allowance.token,
               requiredAmount,
               currentAllowance,
               intent,
