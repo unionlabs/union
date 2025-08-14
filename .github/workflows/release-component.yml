@@ -86,7 +86,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -110,7 +110,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -133,7 +133,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -164,7 +164,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -258,7 +258,7 @@ jobs:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
           TAG: ${{ needs.eval-tag.outputs.version }}
         run: docker manifest push "localhost:5000/unionlabs/$COMPONENT:$TAG"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
           fetch-depth: 0
