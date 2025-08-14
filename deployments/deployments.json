@@ -639,8 +639,8 @@
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 461578,
-      "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b",
-      "code_id": 23
+      "commit": "be6bf0aa480ed8ff8d3ee776b96695858eb2ab17",
+      "code_id": 51
     },
     "lightclient": {
       "arbitrum": {
