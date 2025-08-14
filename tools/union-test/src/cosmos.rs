@@ -140,6 +140,31 @@ impl Module {
         })
     }
 
+    pub async fn native_balance(&self, address: Bech32<H256>, token: &str) -> anyhow::Result<u128> {
+        let balance: u128 = self
+            .rpc
+            .client()
+            .grpc_abci_query::<_, protos::cosmos::bank::v1beta1::QueryBalanceResponse>(
+                "/cosmos.bank.v1beta1.Query/Balance",
+                &protos::cosmos::bank::v1beta1::QueryBalanceRequest {
+                    address: address.to_string(),
+                    denom: token.to_string(),
+                },
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .balance
+            .unwrap()
+            .amount
+            .parse()
+            .unwrap();
+
+        Ok(balance)
+    }
+
     async fn wait_for_event<T, F>(
         &self,
         mut filter_fn: F,

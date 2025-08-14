@@ -17,9 +17,9 @@ use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
     com::{
-        Instruction, Stake, TokenOrderV1, TokenOrderV2, Unstake, WithdrawStake, INSTR_VERSION_0,
-        INSTR_VERSION_1, INSTR_VERSION_2, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_STAKE,
-        TOKEN_ORDER_KIND_INITIALIZE,
+        Instruction, SolverMetadata, Stake, TokenOrderV1, TokenOrderV2, Unstake, WithdrawStake,
+        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE,
+        OP_WITHDRAW_STAKE, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
     },
 };
 use union_test::{
@@ -34,7 +34,7 @@ use union_test::{
 use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
-    primitives::{Bech32, FixedBytes, U256},
+    primitives::{Bech32, FixedBytes, H160, U256},
 };
 use voyager_sdk::primitives::ChainId;
 
@@ -89,7 +89,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                     },
                 ],
             },
-            rpc_url: "http://devnetUnion:26657".into(),
+            rpc_url: "http://localhost:26657".into(),
             gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
                 max_gas: 10000000,
                 gas_multiplier: Some(1.4),
@@ -101,67 +101,67 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             chain_id: ChainId::new("32382"),
             ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
             multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
-            rpc_url: "http://devnetEth:8545".into(),
-            ws_url: "ws://devnetEth:8546".into(),
+            rpc_url: "http://localhost:8545".into(),
+            ws_url: "ws://localhost:8546".into(),
             keyring: KeyringConfig {
                 name: "evm-keyring".into(),
                 keys: vec![
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key0.prv".into(),
+                        key: hex!(
+                            "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+                        )
+                        .to_vec(),
+                    },
                     // KeyringConfigEntry::Raw {
-                    //     name: "dev-key0.prv".into(),
+                    //     name: "dev-key1.prv".into(),
                     //     key: hex!(
-                    //         "4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+                    //         "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
                     //     )
                     //     .to_vec(),
                     // },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key1.prv".into(),
-                        key: hex!(
-                            "d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key2.prv".into(),
-                        key: hex!(
-                            "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key3.prv".into(),
-                        key: hex!(
-                            "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key4.prv".into(),
-                        key: hex!(
-                            "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key5.prv".into(),
-                        key: hex!(
-                            "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key6.prv".into(),
-                        key: hex!(
-                            "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
-                        )
-                        .to_vec(),
-                    },
-                    KeyringConfigEntry::Raw {
-                        name: "dev-key7.prv".into(),
-                        key: hex!(
-                            "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
-                        )
-                        .to_vec(),
-                    },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key2.prv".into(),
+                    //     key: hex!(
+                    //         "eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key3.prv".into(),
+                    //     key: hex!(
+                    //         "d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key4.prv".into(),
+                    //     key: hex!(
+                    //         "084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key5.prv".into(),
+                    //     key: hex!(
+                    //         "f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key6.prv".into(),
+                    //     key: hex!(
+                    //         "523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
+                    //     )
+                    //     .to_vec(),
+                    // },
+                    // KeyringConfigEntry::Raw {
+                    //     name: "dev-key7.prv".into(),
+                    //     key: hex!(
+                    //         "b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
+                    //     )
+                    //     .to_vec(),
+                    // },
                 ],
             },
             max_gas_price: None,
@@ -170,7 +170,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 7; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 8; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(src, dst, needed_channel_count, "/tmp/config.jsonc")
@@ -274,6 +274,140 @@ async fn _open_connection_from_evm_to_union() {
         .unwrap();
     assert!(conn.connection_id > 0);
     assert!(conn.counterparty_connection_id > 0);
+}
+
+async fn test_send_vault_success() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
+    let dst_channel_id = pair.dest;
+    let src_channel_id = pair.src;
+
+    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
+
+    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+
+    let metadata = SolverMetadata {
+        solverAddress: u_on_eth.to_vec().into(),
+        metadata: Default::default(),
+    }
+    .abi_encode_params();
+
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "10".parse().unwrap(),
+            kind: TOKEN_ORDER_KIND_SOLVE,
+            metadata: metadata.into(),
+            quote_token: u_on_eth.to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    ctx.dst
+        .u_register_fungible_counterpart(
+            H160::from(u_on_eth),
+            evm_provider.clone(),
+            alloy::primitives::U256::ZERO,
+            dst_channel_id,
+            b"muno".to_vec().into(),
+            evm::u::U::FungibleCounterparty {
+                beneficiary: vault_on_union.as_bytes().to_vec().into(),
+            },
+        )
+        .await
+        .unwrap();
+
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
+
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: src_channel_id.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
+
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+
+    let initial_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    let initial_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
+
+    println!("initial U balance on eth: {initial_u_balance}");
+    println!("initial U balance on union vault: {initial_vault_balance}");
+
+    let ack_packet_data = ctx
+        .send_and_recv_and_ack_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
+    assert!(
+        ack_packet_data.is_ok(),
+        "Failed to send and ack packet: {:?}",
+        ack_packet_data.err()
+    );
+
+    let new_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    let new_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
+
+    println!("new U balance on eth: {new_u_balance}");
+    println!("new U balance on union vault: {new_vault_balance}");
+
+    assert_eq!(new_u_balance - initial_u_balance, 10u64.into());
+    assert_eq!(new_vault_balance - initial_vault_balance, 10);
 }
 
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
@@ -1823,4 +1957,9 @@ async fn from_evm_to_union_stake0() {
 #[tokio::test]
 async fn from_evm_to_union_stake_and_refund() {
     self::test_stake_from_evm_to_union_and_refund().await;
+}
+
+#[tokio::test]
+async fn test_vault_works() {
+    self::test_send_vault_success().await;
 }

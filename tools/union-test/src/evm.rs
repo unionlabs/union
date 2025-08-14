@@ -3,6 +3,7 @@ use std::{marker::PhantomData, panic::AssertUnwindSafe, str::FromStr, time::Dura
 use alloy::{
     contract::{Error, RawCallBuilder, Result},
     network::{AnyNetwork, EthereumWallet},
+    primitives::Bytes,
     providers::{
         fillers::RecommendedFillers, DynProvider, PendingTransactionError, Provider,
         ProviderBuilder,
@@ -800,6 +801,28 @@ impl<'a> Module<'a> {
         Ok(addr.into())
     }
 
+    pub async fn u_register_fungible_counterpart(
+        &self,
+        contract: H160,
+        provider: DynProvider<AnyNetwork>,
+        path: alloy::primitives::U256,
+        channel_id: u32,
+        token: Bytes,
+        counterparty: u::U::FungibleCounterparty,
+    ) -> anyhow::Result<()> {
+        let u = u::U::new(contract.into(), provider.clone());
+
+        let pending = u
+            .setFungibleCounterparty(path, channel_id, token.clone(), counterparty.clone())
+            .send()
+            .await?;
+
+        let tx_hash = <H256>::from(*pending.tx_hash());
+
+        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+
+        Ok(())
+    }
     pub async fn setup_governance_token(
         &self,
         zkgm_addr: H160,
@@ -899,6 +922,24 @@ pub mod zkgm {
                 bytes calldata token,
                 FungibleAssetMetadata calldata metadata
             ) public returns (address, bytes32);
+        }
+    }
+}
+
+pub mod u {
+    alloy::sol! {
+        #![sol(rpc)]
+        contract U {
+            struct FungibleCounterparty {
+                bytes beneficiary;
+            }
+
+            function setFungibleCounterparty(
+                uint256 path,
+                uint32 channelId,
+                bytes calldata token,
+                FungibleCounterparty calldata counterparty
+            ) external;
         }
     }
 }
