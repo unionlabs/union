@@ -123,6 +123,7 @@ _: {
                 "scripts"
                 "contracts"
                 "tests"
+                "bridged_tokens_v1.json"
               ];
               exclude = [
                 "evm.nix"
@@ -148,6 +149,7 @@ _: {
         optimizer_runs = 10_000
         cbor_metadata = false
         sparse_mode = false
+        memory_limit = 33554432
 
         [profile.script]
         src = "scripts"
@@ -901,6 +903,7 @@ _: {
           dry ? false,
           protocol,
 
+          ucs04-chain-id,
           chain-id,
           private-key,
           rpc-url,
@@ -959,6 +962,7 @@ _: {
                 with-verify-flag = false;
               }}
 
+              UNIVERSAL_CHAIN_ID=${ucs04-chain-id} \
               WETH_ADDRESS=${weth} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               NATIVE_TOKEN_NAME=${native-token-name} \
@@ -1200,6 +1204,8 @@ _: {
                       {
                         ucs00 = "UCS00";
                         ucs03 = "UCS03";
+                        ucs03-v1-to-v2 = "UCS03FromV1ToV2";
+
                         cometbls-client = "CometblsClient";
                         state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
                         state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
