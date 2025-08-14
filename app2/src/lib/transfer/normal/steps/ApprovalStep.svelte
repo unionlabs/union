@@ -25,6 +25,7 @@ import type { WaitForTransactionReceiptError } from "$lib/services/transfer-ucs0
 import type { Steps } from "$lib/transfer/normal/steps"
 import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
 import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
+import { Utils } from "@unionlabs/sdk"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   createViemPublicClient,
@@ -159,7 +160,7 @@ const submit = Effect.gen(function*() {
         WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
           chain: viemChain,
           account: walletClient.account,
-          address: step.token,
+          address: Utils.ensureHex(step.token.address),
           abi: erc20Abi,
           functionName: "approve",
           args: [ensureHex(step.intent.ucs03address), approvalAmount],
@@ -189,7 +190,7 @@ const submit = Effect.gen(function*() {
 
     const nextState = Effect.tap(
       Effect.suspend(() =>
-        WriteCosmos.nextState(cts, chain, sender, fromHex(step.token, "string"), {
+        WriteCosmos.nextState(cts, chain, sender, step.token.address, {
           increase_allowance: {
             spender: step.intent.sourceChain.minter_address_display,
             amount: approvalAmount,
