@@ -70,6 +70,7 @@ module zkgm::zkgm_relay {
     use sui::object_bag::{Self, ObjectBag};
     use sui::table::{Self, Table};
 
+    use ibc::ethabi;
     use ibc::commitment;
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
@@ -350,7 +351,7 @@ module zkgm::zkgm_relay {
             abort E_ONLY_ONE_SESSION_IS_ALLOWED
         };
 
-        // let zkgm_packet = zkgm_packet::decode(&packet_data);
+        let zkgm_packet = zkgm_packet::decode(&packet_data);
 
         let ibc_packet =
             packet::new(
@@ -360,15 +361,15 @@ module zkgm::zkgm_relay {
                 packet_timeout_height,
                 packet_timeout_timestamp
             );
-        // let packet_hash = commitment::commit_packet(&ibc_packet);
+        let packet_hash = commitment::commit_packet(&ibc_packet);
 
         zkgm.session = option::some(ExecutionCtx {
-            instruction_set: vector::empty(),
+            instruction_set: partition_instructions(zkgm_packet.instruction()),
             cursor: 0,
             acks: vector::empty(),
-            packet_hash: vector::empty(),
-            path: 0,
-            salt: vector::empty(),
+            packet_hash,
+            path: zkgm_packet.path(),
+            salt: zkgm_packet.salt(),
             ibc_packet
         });
 
@@ -468,11 +469,6 @@ module zkgm::zkgm_relay {
         zkgm: &mut RelayStore,
         ibc: &mut ibc::IBCStore,
         clock: &Clock,
-        packet_source_channel: u32,
-        packet_destination_channel: u32,
-        packet_data: vector<u8>,
-        packet_timeout_height: u64,
-        packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height: u64,
         relayer: address,
@@ -483,18 +479,6 @@ module zkgm::zkgm_relay {
 
         let exec_ctx = zkgm.session.extract();
 
-        let ibc_packet =
-            packet::new(
-                packet_source_channel,
-                packet_destination_channel,
-                packet_data,
-                packet_timeout_height,
-                packet_timeout_timestamp
-            );
-
-        let packet_hash = commitment::commit_packet(&ibc_packet);
-
-        assert!(exec_ctx.packet_hash == packet_hash, E_INVALID_PACKET_HASH);
         assert!(exec_ctx.cursor == exec_ctx.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
 
         let ack = if (exec_ctx.instruction_set[0].length() == 1 && exec_ctx.instruction_set.length() == 1) {
@@ -507,7 +491,7 @@ module zkgm::zkgm_relay {
 
         ibc.recv_packet(
             clock,
-            vector[ibc_packet],
+            vector[exec_ctx.ibc_packet],
             relayer,
             vector[relayer_msg],
             proof,

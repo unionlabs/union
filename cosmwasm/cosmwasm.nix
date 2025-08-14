@@ -111,6 +111,8 @@ _: {
             # "sui"
             # "trusted-mpt"
             "parlia"
+            "sui"
+            # "trusted-mpt"
           ];
         }
         {

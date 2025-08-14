@@ -111,28 +111,21 @@ module ibc::ethabi {
     public fun encode_uint<T: copy + store + drop>(
         buf: &mut vector<u8>, data: T
     ) {
-        // Create a 32-byte vector filled with zeros (u256 is 32 bytes)
-        let mut padded_bytes = vector[
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
-        ];
-
         let data_bytes = bcs::to_bytes(&data);
 
         let data_len = vector::length(&data_bytes);
 
-        // Copy the data bytes into the last part of the 32-byte padded vector
         let mut i = 0;
-        while (i < data_len) {
-            *vector::borrow_mut(&mut padded_bytes, i) = *vector::borrow(&data_bytes, i);
+        while (i < 32 - data_len) {
+            buf.push_back(0);
             i = i + 1;
         };
 
-        // Reverse the vector to make it big-endian
-        vector::reverse(&mut padded_bytes);
-
-        // Append the padded bytes to the output buffer
-        vector::append(buf, padded_bytes);
+        let mut i = 0;
+        while (i < data_len) {
+            buf.push_back(data_bytes[data_len - 1 - i]);
+            i = i + 1;
+        };
     }
 
     public fun decode_uint(buf: &vector<u8>, index: &mut u64): u256 {

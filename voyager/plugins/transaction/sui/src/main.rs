@@ -638,76 +638,71 @@ async fn process_msgs(
                 // // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
                 // // endpoint must be called as many times as the partitions. Since the number of coins will be the
                 // // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
-                // for coin_t in coin_ts {
-                //     ptb.move_call(
-                //         module_info.latest_address.into(),
-                //         module_name.clone(),
-                //         ident_str!("recv_packet_2").into(),
-                //         vec![coin_t],
-                //         vec![
-                //             CallArg::Object(ObjectArg::SharedObject {
-                //                 id: module.ibc_store.into(),
-                //                 initial_shared_version: module.ibc_store_initial_seq,
-                //                 mutable: true,
-                //             }),
-                //             CallArg::Object(ObjectArg::SharedObject {
-                //                 id: module_info.stores[0].into(),
-                //                 initial_shared_version: store_initial_seq,
-                //                 mutable: true,
-                //             }),
-                //             CallArg::Object(ObjectArg::SharedObject {
-                //                 id: ObjectID::from_str("0x6").unwrap(),
-                //                 initial_shared_version: 1.into(),
-                //                 mutable: false,
-                //             }),
-                //             CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-                //             CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
-                //         ],
-                //     )
-                //     .unwrap();
-                // }
+                for coin_t in coin_ts {
+                    ptb.move_call(
+                        module_info.latest_address.into(),
+                        module_name.clone(),
+                        ident_str!("recv_packet_2").into(),
+                        vec![coin_t],
+                        vec![
+                            CallArg::Object(ObjectArg::SharedObject {
+                                id: module.ibc_store.into(),
+                                initial_shared_version: module.ibc_store_initial_seq,
+                                mutable: true,
+                            }),
+                            CallArg::Object(ObjectArg::SharedObject {
+                                id: module_info.stores[0].into(),
+                                initial_shared_version: store_initial_seq,
+                                mutable: true,
+                            }),
+                            CallArg::Object(ObjectArg::SharedObject {
+                                id: ObjectID::from_str("0x6").unwrap(),
+                                initial_shared_version: 1.into(),
+                                mutable: false,
+                            }),
+                            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                            CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
+                        ],
+                    )
+                    .unwrap();
+                }
 
                 // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
                 // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
                 // // it, this PTB will fail and no partial state will be persisted.
-                // let arguments = vec![
-                //     CallArg::Object(ObjectArg::SharedObject {
-                //         id: module_info.stores[0].into(),
-                //         initial_shared_version: store_initial_seq,
-                //         mutable: true,
-                //     }),
-                //     CallArg::Object(ObjectArg::SharedObject {
-                //         id: module.ibc_store.into(),
-                //         initial_shared_version: module.ibc_store_initial_seq,
-                //         mutable: true,
-                //     }),
-                //     CallArg::Object(ObjectArg::SharedObject {
-                //         id: ObjectID::from_str("0x6").unwrap(),
-                //         initial_shared_version: 1.into(),
-                //         mutable: false,
-                //     }),
-                //     CallArg::Pure(bcs::to_bytes(&source_channels[0]).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&dest_channels[0]).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&packet_data[0]).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&timeout_heights[0]).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&timeout_timestamps[0]).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-                //     CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
-                // ]
-                // .into_iter()
-                // .map(|a| ptb.input(a).unwrap())
-                // .chain(vec![session])
-                // .collect();
+                let arguments = vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: module_info.stores[0].into(),
+                        initial_shared_version: store_initial_seq,
+                        mutable: true,
+                    }),
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
+                        mutable: true,
+                    }),
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ObjectID::from_str("0x6").unwrap(),
+                        initial_shared_version: 1.into(),
+                        mutable: false,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
+                ]
+                .into_iter()
+                .map(|a| ptb.input(a).unwrap())
+                .chain(vec![session])
+                .collect();
 
-                // ptb.command(Command::move_call(
-                //     module_info.latest_address.into(),
-                //     module_name.clone(),
-                //     ident_str!("end_recv").into(),
-                //     vec![],
-                //     arguments,
-                // ));
+                ptb.command(Command::move_call(
+                    module_info.latest_address.into(),
+                    module_name.clone(),
+                    ident_str!("end_recv").into(),
+                    vec![],
+                    arguments,
+                ));
 
                 // ptb.move_call(
                 //     module_info.latest_address.into(),
@@ -1134,7 +1129,7 @@ pub async fn send_transactions(
         .next()
         .expect("sender has a gas token");
 
-    let gas_budget = 200_000_000; //TODO: change it later
+    let gas_budget = 180_000_000; //TODO: change it later
     let gas_price = module
         .sui_client
         .read_api()

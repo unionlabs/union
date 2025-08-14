@@ -273,8 +273,22 @@ module ibc::commitment {
         next_sequence_ack_commitment_path(channel_id)
     }
 
+    // not calling `commit_packets` here because this function is optimized for a single packet
     public fun commit_packet(packet: &Packet): vector<u8> {
-        commit_packets(&vector[*packet])        
+        let mut buf = vector::empty();
+
+        ibc::ethabi::encode_uint(&mut buf, 0x20);
+        ibc::ethabi::encode_uint(&mut buf, 1);
+        ibc::ethabi::encode_uint(&mut buf, 32);
+        let encoded = packet.encode();
+        let encoded_len = encoded.length();
+        let mut i = 0;
+        while (i < encoded_len) {
+            buf.push_back(encoded[i]);
+            i = i + 1;
+        };
+
+        keccak256(&buf)
     }
 
     public fun commit_packets(packets: &vector<Packet>): vector<u8> {
@@ -283,13 +297,22 @@ module ibc::commitment {
         let mut rest_buf = vector::empty();
 
         let mut i = 0;
-        let len = vector::length($vec);
-        encode_uint($buf, len);
+
+        ibc::ethabi::encode_uint(&mut buf, 0x20);
+        let len = vector::length(packets);
+        ibc::ethabi::encode_uint(&mut buf, len);
 
         while (i < len) {
-            encode_uint($buf, len * 32 + vector::length(&rest_buf));
-            buf.append(rest_buf);
-            $encode_fn(&mut rest_buf, vector::borrow($vec, i));
+            ibc::ethabi::encode_uint(&mut buf, len * 32 + vector::length(&rest_buf));
+
+            let encoded = ibc::packet::encode(packets.borrow(i));
+            let encoded_len = encoded.length();
+
+            let mut j = 0;
+            while (j < encoded_len) {
+                rest_buf.push_back(encoded[j]);
+                j = j + 1;
+            };
             i = i + 1;
         };
 
@@ -303,7 +326,8 @@ module ibc::commitment {
         //     }
         // );
 
-        keccak256(&buf)
+        // keccak256(&buf)
+        buf
     }
 
     public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
@@ -327,7 +351,7 @@ module ibc::commitment {
     public fun commit_ack(ack: vector<u8>): vector<u8> {
         commit_acks(vector[ack])
     }
-    
+    // 
     // #[test]
     // fun test_commit_packets() {
     //     let buf =
