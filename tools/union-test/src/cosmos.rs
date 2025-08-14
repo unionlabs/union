@@ -25,8 +25,8 @@ use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
     google::protobuf::any::mk_any,
+    ibc::core::client::height::Height,
     primitives::{encoding::HexUnprefixed, Bech32, Bytes, H160, H256},
-    ibc::core::client::height::Height
 };
 use voyager_sdk::{
     anyhow::{self, anyhow, bail, Context},
@@ -34,7 +34,6 @@ use voyager_sdk::{
     serde_json,
     vm::BoxDynError,
 };
-
 
 use crate::helpers;
 
@@ -394,9 +393,6 @@ impl Module {
             .unwrap())
     }
 
-
-
-
     pub async fn wait_for_packet_timeout(
         &self,
         packet_hash_param: H256,
@@ -435,22 +431,24 @@ impl Module {
         Ok(self
             .wait_for_event(
                 move |evt| {
-                    if let ModuleEvent::WasmPacketAck { packet_hash, acknowledgement, .. } = evt {
+                    if let ModuleEvent::WasmPacketAck {
+                        packet_hash,
+                        acknowledgement,
+                        ..
+                    } = evt
+                    {
+                        if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                            let ack_bytes: &[u8] = acknowledgement.as_ref();
 
-                    if packet_hash.as_ref() == packet_hash_param.as_ref() {
-
-                        let ack_bytes: &[u8] = acknowledgement.as_ref();
-
-
-                        // Grab the first 32 bytes — this is the uint256 in ABI encoding
-                        let mut tag_be = [0u8; 32];
-                        tag_be.copy_from_slice(&ack_bytes[..32]);
-                        let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
-                        return Some(helpers::PacketAck {
-                            packet_hash: *packet_hash,
-                            tag: tag_u128
-                        }); 
-                    }
+                            // Grab the first 32 bytes — this is the uint256 in ABI encoding
+                            let mut tag_be = [0u8; 32];
+                            tag_be.copy_from_slice(&ack_bytes[..32]);
+                            let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
+                            return Some(helpers::PacketAck {
+                                packet_hash: *packet_hash,
+                                tag: tag_u128,
+                            });
+                        }
                         None
                     } else {
                         None
@@ -701,7 +699,9 @@ impl Module {
     ) -> anyhow::Result<(H256, u64)> {
         let result = self.send_transaction(contract, msg, signer).await;
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
-        let height = tx_result.height.ok_or_else(|| anyhow!("transaction height not found"))?;
+        let height = tx_result
+            .height
+            .ok_or_else(|| anyhow!("transaction height not found"))?;
 
         let send_event = tx_result
             .tx_result
@@ -810,7 +810,6 @@ pub enum ModuleEvent {
         consensus_heights: Vec<Height>,
     },
 }
-
 
 // TODO: Check if human readable
 pub mod height_list_comma_separated {

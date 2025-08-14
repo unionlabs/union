@@ -292,12 +292,8 @@ impl<'a> Module<'a> {
         Ok(self
             .wait_for_event(
                 |e| match e {
-                    IbcEvents::UpdateClient(ev)
-                        if ev.height >= height =>
-                    {
-                        Some(helpers::UpdateClient {
-                            height: ev.height,
-                        })
+                    IbcEvents::UpdateClient(ev) if ev.height >= height => {
+                        Some(helpers::UpdateClient { height: ev.height })
                     }
                     _ => None,
                 },
@@ -335,40 +331,39 @@ impl<'a> Module<'a> {
     }
 
     pub async fn wait_for_packet_ack(
-    &self,
-    packet_hash: H256,
-    timeout: Duration,
-) -> anyhow::Result<helpers::PacketAck> {
-    Ok(self
-        .wait_for_event(
-            |e| match e {
-                IbcEvents::PacketAck(ev)
-                    if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
-                {
-                    let ack_bytes: &[u8] = ev.acknowledgement.as_ref();
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketAck> {
+        Ok(self
+            .wait_for_event(
+                |e| match e {
+                    IbcEvents::PacketAck(ev)
+                        if ev.packet_hash.as_slice() == packet_hash.as_ref() =>
+                    {
+                        let ack_bytes: &[u8] = ev.acknowledgement.as_ref();
 
-                    // Grab the first 32 bytes — this is the uint256 in ABI encoding
-                    let mut tag_be = [0u8; 32];
-                    tag_be.copy_from_slice(&ack_bytes[..32]);
+                        // Grab the first 32 bytes — this is the uint256 in ABI encoding
+                        let mut tag_be = [0u8; 32];
+                        tag_be.copy_from_slice(&ack_bytes[..32]);
 
-                    // If you want it as u128 (will fail if > u128::MAX)
-                    let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
+                        // If you want it as u128 (will fail if > u128::MAX)
+                        let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
 
-                    Some(helpers::PacketAck {
-                        packet_hash: ev.packet_hash.into(),
-                        tag: tag_u128,
-                    })
-                }
-                _ => None,
-            },
-            timeout,
-            1,
-        )
-        .await?
-        .pop()
-        .unwrap())
-}
-
+                        Some(helpers::PacketAck {
+                            packet_hash: ev.packet_hash.into(),
+                            tag: tag_u128,
+                        })
+                    }
+                    _ => None,
+                },
+                timeout,
+                1,
+            )
+            .await?
+            .pop()
+            .unwrap())
+    }
 
     /// Retry an async operation up to `max_attempts` times with a small delay between attempts.
     async fn retry_with_backoff<F, Fut, T, E>(
@@ -477,7 +472,9 @@ impl<'a> Module<'a> {
         Ok(ret._0.0.into())
     }
 
-    pub async fn get_provider_privileged(&self) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
+    pub async fn get_provider_privileged(
+        &self,
+    ) -> (alloy::primitives::Address, DynProvider<AnyNetwork>) {
         let wallet = loop {
             if let Some(w) = self
                 .privileged_acc_keyring
@@ -761,13 +758,14 @@ impl<'a> Module<'a> {
                     .ok_or_else(|| ErrorObjectOwned::owned(-1, "receipt not found", None::<()>))?;
 
                 let logs = &receipt_with.inner.inner.inner.receipt.logs;
-                let block_number = receipt_with.inner.inner.inner.receipt.logs[0].block_number.unwrap();
+                let block_number = receipt_with.inner.inner.inner.receipt.logs[0]
+                    .block_number
+                    .unwrap();
 
                 for raw in logs {
                     if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
                         if let IbcEvents::PacketSend(ev) = alloy_log.data {
                             return Ok((ev.packet_hash.into(), block_number));
-
                         }
                     }
                 }
@@ -913,8 +911,6 @@ impl<'a> Module<'a> {
             }
         }
     }
-
-
 
     pub async fn predict_stake_manager_address(
         &self,

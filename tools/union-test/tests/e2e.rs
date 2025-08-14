@@ -9,15 +9,13 @@ use std::{
 
 use alloy::{
     hex::decode as hex_decode,
-    sol_types::{SolCall, SolValue}
+    sol_types::{SolCall, SolValue},
 };
 use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
 use cw20::Cw20ExecuteMsg;
 use hex_literal::hex;
-use ibc_union_spec::{
-    ChannelId,
-};
+use ibc_union_spec::ChannelId;
 use protos::cosmos::base::v1beta1::Coin;
 use rand::RngCore;
 use tokio::sync::OnceCell;
@@ -35,8 +33,7 @@ use union_test::{
     evm::{
         self,
         zkgm::{
-            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm,
-            ZkgmPacket, IBC,
+            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket, IBC,
         },
         zkgmerc20::ZkgmERC20,
     },
@@ -47,9 +44,7 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{Bech32, FixedBytes, H160, U256},
 };
-use voyager_sdk::{
-    primitives::{ChainId, Timestamp},
-};
+use voyager_sdk::primitives::{ChainId, Timestamp};
 
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
@@ -351,7 +346,7 @@ async fn test_send_vault_success() {
         .into(),
     };
 
-let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+    let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
     ctx.dst
         .u_register_fungible_counterpart(
             H160::from(u_on_eth),
@@ -2205,7 +2200,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            kind: TOKEN_ORDER_KIND_INITIALIZE, 
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.into(),
             quote_token: evm_address.to_vec().into(), //quote_token_addr.as_ref().to_vec().into(),
             quote_amount: "10".parse().unwrap(),
@@ -3270,8 +3265,8 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
             dst_channel_id,
             b"muno".to_vec().into(),
             evm::u::U::FungibleCounterparty {
-                beneficiary: empty_beneficiary // Sending it empty to make this 
-                // test revert due to U_CounterpartyIsNotFungible and get ErrOnlyMaker
+                beneficiary: empty_beneficiary, // Sending it empty to make this
+                                                // test revert due to U_CounterpartyIsNotFungible and get ErrOnlyMaker
             },
         )
         .await
@@ -3293,7 +3288,6 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         denom: "muno".into(),
         amount: "10".into(),
     }];
-
 
     let height = ctx
         .send_and_get_height::<cosmos::Module, evm::Module>(
@@ -3376,7 +3370,6 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-
 }
 
 async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
@@ -3420,8 +3413,8 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
             quote_token: u_on_eth.to_vec().into(),
-            quote_amount: "11".parse().unwrap(), // Sending it bigger than base_amount to make this 
-                // test revert due to U_BaseAmountMustCoverQuoteAmount and get ErrOnlyMaker
+            quote_amount: "11".parse().unwrap(), // Sending it bigger than base_amount to make this
+                                                 // test revert due to U_BaseAmountMustCoverQuoteAmount and get ErrOnlyMaker
         }
         .abi_encode_params()
         .into(),
@@ -3438,8 +3431,8 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
             quote_token: u_on_eth.to_vec().into(),
-            quote_amount: "11".parse().unwrap(), // Sending it bigger than base_amount to make this 
-                // test revert due to U_BaseAmountMustCoverQuoteAmount and get ErrOnlyMaker
+            quote_amount: "11".parse().unwrap(), // Sending it bigger than base_amount to make this
+                                                 // test revert due to U_BaseAmountMustCoverQuoteAmount and get ErrOnlyMaker
         }
         .abi_encode_params()
         .into(),
@@ -3475,7 +3468,6 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         denom: "muno".into(),
         amount: "10".into(),
     }];
-
 
     let height = ctx
         .send_and_get_height::<cosmos::Module, evm::Module>(
@@ -3558,7 +3550,6 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-
 }
 
 async fn test_send_vault_unhappy_u_fool() {
@@ -3601,8 +3592,8 @@ async fn test_send_vault_unhappy_u_fool() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
-            quote_token: evm_address.to_vec().into(), // Sending it wrong to make this 
-                // test revert due to U_Fool and get ErrOnlyMaker
+            quote_token: evm_address.to_vec().into(), // Sending it wrong to make this
+            // test revert due to U_Fool and get ErrOnlyMaker
             quote_amount: "10".parse().unwrap(),
         }
         .abi_encode_params()
@@ -3619,8 +3610,8 @@ async fn test_send_vault_unhappy_u_fool() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
-            quote_token: evm_address.to_vec().into(), // Sending it wrong to make this 
-                // test revert due to U_Fool and get ErrOnlyMaker
+            quote_token: evm_address.to_vec().into(), // Sending it wrong to make this
+            // test revert due to U_Fool and get ErrOnlyMaker
             quote_amount: "10".parse().unwrap(),
         }
         .abi_encode_params()
@@ -3657,7 +3648,6 @@ async fn test_send_vault_unhappy_u_fool() {
         denom: "muno".into(),
         amount: "10".into(),
     }];
-
 
     let height = ctx
         .send_and_get_height::<cosmos::Module, evm::Module>(
@@ -3740,7 +3730,6 @@ async fn test_send_vault_unhappy_u_fool() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-
 }
 
 #[tokio::test]
@@ -3830,7 +3819,6 @@ async fn test_send_vault_unhappy_path1() {
     self::test_send_vault_unhappy_u_counterparty_is_not_fungible().await;
 }
 
-
 #[tokio::test]
 async fn test_send_vault_unhappy_path2() {
     self::test_send_vault_unhappy_u_fool().await;
@@ -3840,4 +3828,3 @@ async fn test_send_vault_unhappy_path2() {
 async fn test_send_vault_unhappy_path3() {
     self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
 }
-

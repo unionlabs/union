@@ -30,7 +30,7 @@ pub struct PacketTimeout {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PacketAck {
     pub packet_hash: FixedBytes<32>,
-    pub tag: u128
+    pub tag: u128,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -53,7 +53,6 @@ pub struct WithdrawRewards {
 pub struct UpdateClient {
     pub height: u64,
 }
-
 
 // fn decode_acknowledgement(ack_bytes: &[u8]) -> anyhow::Result<(U256, Bytes)> {
 //     let (tag, inner_ack) = Ack::abi_decode(ack_bytes, true)?;

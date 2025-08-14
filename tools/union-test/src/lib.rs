@@ -1,8 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use alloy::{
-    contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider,
-};
+use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
 use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
 use ibc_union_spec::{
@@ -26,11 +24,12 @@ pub mod cosmos;
 pub mod evm;
 pub mod helpers;
 pub mod voyager;
+use regex::Regex;
+
 use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
-    evm::zkgm::{FungibleAssetMetadata},
+    evm::zkgm::FungibleAssetMetadata,
 };
-use regex::Regex;
 
 #[async_trait]
 pub trait ChainEndpoint: Send + Sync {
