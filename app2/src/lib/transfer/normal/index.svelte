@@ -229,7 +229,6 @@ $effect(() => {
           Steps.SubmitInstruction({
             instruction,
             intent: context.intents[0],
-            funds: Option.isSome(context.funds) ? Option.some(context.funds.value) : Option.none(),
           }),
           Steps.WaitForIndex({ intent: context.intents[0] }),
         )

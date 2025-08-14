@@ -72,6 +72,7 @@ export const createContext = Effect.fn((
       receiver: args.receiver,
       sender: args.sender,
       kind: args.kind,
+      // kind: TokenOrder.Kind.Escrow,
       source: args.sourceChain,
       metadata: undefined,
     })
@@ -108,7 +109,7 @@ export const createContext = Effect.fn((
       destination: args.destinationChain,
       receiver: args.receiver,
       sender: args.sender,
-      kind: args.kind,
+      kind: TokenOrder.Kind.Escrow,
       source: args.sourceChain,
       metadata: undefined,
     })

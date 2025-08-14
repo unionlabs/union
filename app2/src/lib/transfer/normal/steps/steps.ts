@@ -28,12 +28,6 @@ export type Steps = Data.TaggedEnum<{
   SubmitInstruction: {
     readonly instruction: ZkgmClientRequest.ZkgmClientRequest
     readonly intent: Intent
-    readonly funds: Option.Option<
-      Array<{
-        baseToken: string
-        amount: bigint
-      }>
-    >
   }
   WaitForIndex: {
     readonly intent: Intent

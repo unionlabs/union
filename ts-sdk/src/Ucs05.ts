@@ -275,7 +275,13 @@ export const ZkgmFromAnyDisplay = S.transform(
 export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
   Match.tagsExhaustive({
     // XXX: THIS IS WRONG
-    CosmosDisplay: ({ address }) => AddressCanonicalBytes.make(toHex(address)),
+    CosmosDisplay: ({ address }) => {
+      // AddressCanonicalBytes.make(toHex(address)),
+      const { bytes } = bech32.decodeToBytes(address)
+      const result = AddressCanonicalBytes.make(toHex(bytes))
+      return result
+      console.log("bytes", { result })
+    },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
   }),
 )
