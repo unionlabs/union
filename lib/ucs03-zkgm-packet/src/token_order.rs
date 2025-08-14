@@ -169,12 +169,19 @@ pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),
     Escrow(Bytes),
     Unescrow(Bytes),
+    Solve(SolveMetadata),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenMetadata {
     pub implementation: Bytes,
     pub initializer: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SolveMetadata {
+    pub a: Bytes,
+    pub b: Bytes,
 }
 
 impl TokenOrderV2Metadata {
@@ -195,6 +202,19 @@ impl TokenOrderV2Metadata {
             ),
             TOKEN_ORDER_KIND_ESCROW => Ok(Self::Escrow(metadata.as_ref().into())),
             TOKEN_ORDER_KIND_UNESCROW => Ok(Self::Unescrow(metadata.as_ref().into())),
+            3 => Ok(
+                ucs03_zkgm::com::TokenMetadata::abi_decode_params_validate(metadata.as_ref()).map(
+                    |ucs03_zkgm::com::TokenMetadata {
+                         implementation,
+                         initializer,
+                     }| {
+                        Self::Solve(SolveMetadata {
+                            a: implementation.into(),
+                            b: initializer.into(),
+                        })
+                    },
+                )?,
+            ),
             invalid => Err(format!("invalid token order v2 metadata kind: {invalid}"))?,
         }
     }
