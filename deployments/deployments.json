@@ -141,7 +141,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 27935624,
-        "commit": "3a9775dabf4b91d81fcd206e13d6481219c5e28f"
+        "commit": "8382331308f36462475116139f8fa29d633a4ad0"
       }
     }
   },
@@ -221,7 +221,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 10951500,
-        "commit": "3ba126b285cc21173d3b352591eb72b1627d4166"
+        "commit": "8382331308f36462475116139f8fa29d633a4ad0"
       }
     }
   },
@@ -301,7 +301,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 55472262,
-        "commit": "b99caf39a4d83cb157af091365350371ef4d6ed1"
+        "commit": "8382331308f36462475116139f8fa29d633a4ad0"
       }
     }
   },
@@ -381,7 +381,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 181417,
-        "commit": "3ba126b285cc21173d3b352591eb72b1627d4166"
+        "commit": "8382331308f36462475116139f8fa29d633a4ad0"
       }
     }
   },
@@ -398,7 +398,7 @@
     "core": {
       "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
       "height": 22236429,
-      "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      "commit": "76577fbb239c66ded13828a2b1bb6e40a7c60650"
     },
     "lightclient": {
       "cometbls": {
@@ -421,7 +421,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 22236430,
-        "commit": "2f7cc0a3822983bb7b75d4e81814227029db50bd"
+        "commit": "76577fbb239c66ded13828a2b1bb6e40a7c60650"
       }
     }
   },
@@ -461,7 +461,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 8088109,
-        "commit": "1e67026e83bc299d8766625a921f86d422ee427d"
+        "commit": "8382331308f36462475116139f8fa29d633a4ad0"
       }
     }
   },
@@ -501,7 +501,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 3646606,
-        "commit": "1e67026e83bc299d8766625a921f86d422ee427d"
+        "commit": "c02034ee2bc71aff75b64eb6b64b00c0ab66b359"
       }
     }
   },
@@ -629,7 +629,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 169277356,
-        "commit": "7fab05c113ddcde93527ac9610eb3005f89c158c"
+        "commit": "8382331308f36462475116139f8fa29d633a4ad0"
       }
     }
   },
@@ -639,8 +639,8 @@
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 461578,
-      "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b",
-      "code_id": 23
+      "commit": "be6bf0aa480ed8ff8d3ee776b96695858eb2ab17",
+      "code_id": 51
     },
     "lightclient": {
       "arbitrum": {
@@ -702,8 +702,8 @@
       "ucs03": {
         "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
         "height": 461829,
-        "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
-        "code_id": 41,
+        "commit": "76577fbb239c66ded13828a2b1bb6e40a7c60650",
+        "code_id": 49,
         "minter": {
           "type": "cw20",
           "address": "union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy",

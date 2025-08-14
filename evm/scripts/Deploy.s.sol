@@ -1386,6 +1386,188 @@ contract UpgradeUCS03 is VersionedScript {
     }
 }
 
+abstract contract UCS03FromV1ToV2 is VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function migrations()
+        internal
+        virtual
+        returns (V1ToV2Migration[] memory, V1ToV2WrappedTokenMigration[] memory);
+
+    function run() public {
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
+        ZkgmERC20 zkgmERC20 =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
+        console.log(
+            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
+        );
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    zkgmERC20,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmStakeImpl(handler),
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
+            )
+        );
+
+        (
+            V1ToV2Migration[] memory balanceMigrations,
+            V1ToV2WrappedTokenMigration[] memory wrappedMigrations
+        ) = migrations();
+        ucs03.upgradeToAndCall(
+            newImplementation,
+            abi.encodeCall(
+                UCS03Zkgm.migrateV1ToV2, (balanceMigrations, wrappedMigrations)
+            )
+        );
+        vm.stopBroadcast();
+    }
+}
+
+struct BridgedToken {
+    string wrappedChainId;
+    string direction;
+    uint32 sourceChannelId;
+    uint32 destinationChannelId;
+    bytes baseToken;
+    bytes quoteToken;
+}
+
+contract UpgradeUCS03FromV1ToV2 is UCS03FromV1ToV2 {
+    using LibString for *;
+    using stdJson for *;
+
+    V1ToV2Migration[] balanceMigrations;
+    V1ToV2WrappedTokenMigration[] wrappedMigrations;
+
+    function migrations()
+        internal
+        override
+        returns (V1ToV2Migration[] memory, V1ToV2WrappedTokenMigration[] memory)
+    {
+        string memory universalChainId = vm.envString("UNIVERSAL_CHAIN_ID");
+        string memory json = vm.readFile("bridged_tokens_v1.json");
+
+        uint256 length = 0;
+        bool found = true;
+        while (found) {
+            try vm.parseJsonString(
+                json,
+                string(
+                    abi.encodePacked("[", vm.toString(length), "].direction")
+                )
+            ) returns (string memory) {
+                length++;
+            } catch {
+                found = false;
+            }
+        }
+
+        BridgedToken[] memory bridgedTokens = new BridgedToken[](length);
+        for (uint256 i = 0; i < length; i++) {
+            BridgedToken memory bridgedToken = bridgedTokens[i];
+            string memory prefix = string.concat(".[", vm.toString(i), "].");
+            bridgedToken.wrappedChainId = vm.parseJsonString(
+                json, string.concat(prefix, "wrapped_universal_chain_id")
+            );
+            bridgedToken.direction =
+                vm.parseJsonString(json, string.concat(prefix, "direction"));
+            bridgedToken.sourceChannelId = uint32(
+                vm.parseJsonUint(
+                    json, string.concat(prefix, "source_channel_id")
+                )
+            );
+            bridgedToken.destinationChannelId = uint32(
+                vm.parseJsonUint(
+                    json, string.concat(prefix, "destination_channel_id")
+                )
+            );
+            bridgedToken.baseToken =
+                vm.parseJsonBytes(json, string.concat(prefix, "base_token"));
+            bridgedToken.quoteToken =
+                vm.parseJsonBytes(json, string.concat(prefix, "quote_token"));
+            if (bridgedToken.wrappedChainId.eq(universalChainId)) {
+                if (bridgedToken.direction.eq("in")) {
+                    require(
+                        bridgedToken.quoteToken.length == 20,
+                        "in: invalid quote token length"
+                    );
+                    console.log("Wrapped migration:");
+                    console.logBytes(bridgedToken.baseToken);
+                    console.logBytes(bridgedToken.quoteToken);
+                    wrappedMigrations.push(
+                        V1ToV2WrappedTokenMigration({
+                            path: 0,
+                            channelId: bridgedToken.destinationChannelId,
+                            baseToken: bridgedToken.baseToken,
+                            quoteToken: address(bytes20(bridgedToken.quoteToken))
+                        })
+                    );
+                } else if (bridgedToken.direction.eq("out")) {
+                    require(
+                        bridgedToken.baseToken.length == 20,
+                        "out: invalid base token length"
+                    );
+                    console.log("Balance migration:");
+                    console.logBytes(bridgedToken.baseToken);
+                    console.logBytes(bridgedToken.quoteToken);
+                    balanceMigrations.push(
+                        V1ToV2Migration({
+                            path: 0,
+                            channelId: bridgedToken.sourceChannelId,
+                            baseToken: address(bytes20(bridgedToken.baseToken)),
+                            quoteToken: bridgedToken.quoteToken
+                        })
+                    );
+                } else {
+                    revert(bridgedToken.direction);
+                }
+            }
+        }
+
+        console.log(balanceMigrations.length);
+        console.log(wrappedMigrations.length);
+
+        return (balanceMigrations, wrappedMigrations);
+    }
+}
+
 contract UpgradeUCS00 is VersionedScript {
     using LibString for *;
 
