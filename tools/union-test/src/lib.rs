@@ -17,7 +17,7 @@ use unionlabs::{
     prost::bytes,
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow},
+    anyhow::{self, anyhow, Context, Result},
     primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     rpc::VoyagerRpcClient,
     serde_json,
@@ -727,7 +727,7 @@ where
         timeout: Duration,
         signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketAck> {
-        let packet_hash = match source_chain
+        let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {

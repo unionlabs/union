@@ -28,8 +28,9 @@ use ucs03_zkgm::{
     self,
     com::{
         Instruction, SolverMetadata, Stake, TokenOrderV1, TokenOrderV2, Unstake, WithdrawStake,
-        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE,
-        OP_WITHDRAW_STAKE, TOKEN_ORDER_KIND_INITIALIZE,
+        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_FORWARD, OP_STAKE,
+        OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_STAKE, TOKEN_ORDER_KIND_ESCROW,
+        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
     },
 };
 use union_test::{
@@ -49,7 +50,7 @@ use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
     ibc::core::client::height::{self, Height},
-    primitives::{Bech32, FixedBytes, U256},
+    primitives::{Bech32, FixedBytes, H160, U256},
 };
 use voyager_sdk::{
     primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight, Timestamp},
@@ -812,8 +813,8 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     let sending_amount = "9999999999999999999999";
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV1 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
             base_token: "muno".as_bytes().into(),
@@ -1526,7 +1527,7 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     //     src: 2.try_into().unwrap(),
     //     dest: 2.try_into().unwrap(),
     // };
-    let img_metadata = ucs03_zkgm::com::FungibleAssetMetadata {
+    let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
             .into(),
@@ -3269,7 +3270,12 @@ async fn test_from_evm_to_union_batch_ErrInvalidForwardInstruction() {
 //     self::test_from_evm_to_union_batch_ErrInvalidBatchInstruction().await;
 // }
 
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path6() {
+//     self::test_from_evm_to_union_batch_ErrInvalidForwardInstruction().await;
+// }
+
 #[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path6() {
-    self::test_from_evm_to_union_batch_ErrInvalidForwardInstruction().await;
+async fn test_vault_works() {
+    self::test_send_vault_success().await;
 }
