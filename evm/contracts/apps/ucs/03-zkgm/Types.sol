@@ -159,8 +159,15 @@ struct GovernanceToken {
 }
 
 struct V1ToV2Migration {
-    uint32 channelId;
     uint256 path;
+    uint32 channelId;
     address baseToken;
     bytes quoteToken;
+}
+
+struct V1ToV2WrappedTokenMigration {
+    uint256 path;
+    uint32 channelId;
+    bytes baseToken;
+    address quoteToken;
 }

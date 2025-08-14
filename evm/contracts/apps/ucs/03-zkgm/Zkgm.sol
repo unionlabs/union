@@ -1038,10 +1038,11 @@ contract UCS03Zkgm is
     }
 
     function migrateV1ToV2(
-        V1ToV2Migration[] calldata migrations
+        V1ToV2Migration[] calldata balanceMigrations,
+        V1ToV2WrappedTokenMigration[] calldata wrappedMigrations
     ) public restricted {
-        for (uint256 i = 0; i < migrations.length; i++) {
-            V1ToV2Migration calldata migration = migrations[i];
+        for (uint256 i = 0; i < balanceMigrations.length; i++) {
+            V1ToV2Migration calldata migration = balanceMigrations[i];
             uint256 balance = _deprecated_channelBalanceV1[migration.channelId][migration
                 .path][migration.baseToken];
             if (balance == 0) {
@@ -1055,6 +1056,18 @@ contract UCS03Zkgm is
                 migration.baseToken,
                 migration.quoteToken,
                 balance
+            );
+        }
+        for (uint256 i = 0; i < wrappedMigrations.length; i++) {
+            V1ToV2WrappedTokenMigration calldata migration =
+                wrappedMigrations[i];
+            emit ZkgmLib.CreateWrappedToken(
+                migration.path,
+                migration.channelId,
+                migration.baseToken,
+                migration.quoteToken,
+                hex"",
+                ZkgmLib.WRAPPED_TOKEN_KIND_PROTOCOL
             );
         }
     }
