@@ -200,7 +200,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 18; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(
@@ -3751,92 +3751,92 @@ async fn test_send_vault_unhappy_U_Fool() {
 
 }
 
-// #[tokio::test]
-// async fn send_stake_and_unstake_from_evm_to_union0() {
-//     self::test_stake_and_unstake_from_evm_to_union().await;
-// }
+#[tokio::test]
+async fn send_stake_and_unstake_from_evm_to_union0() {
+    self::test_stake_and_unstake_from_evm_to_union().await;
+}
 
-// #[tokio::test]
-// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
-// }
+#[tokio::test]
+async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union0() {
-//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union0() {
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_refund() {
-//     self::test_send_packet_from_evm_to_union_get_refund().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_refund() {
+    self::test_send_packet_from_evm_to_union_get_refund().await;
+}
 
-// #[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
-// async fn from_union_to_evm_refund() {
-//     // TODO: Fix it later. Refund is not happening correctly.
-//     self::test_send_packet_from_union_to_evm_get_refund().await;
-// }
+#[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
+async fn from_union_to_evm_refund() {
+    // TODO: Fix it later. Refund is not happening correctly.
+    self::test_send_packet_from_union_to_evm_get_refund().await;
+}
 
-// #[tokio::test]
-// async fn from_union_to_evm0() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+async fn from_union_to_evm0() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_stake0() {
-//     self::test_stake_from_evm_to_union().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_stake0() {
+    self::test_stake_from_evm_to_union().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_stake_and_refund() {
-//     self::test_stake_from_evm_to_union_and_refund().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_stake_and_refund() {
+    self::test_stake_from_evm_to_union_and_refund().await;
+}
 
-// #[tokio::test]
-// async fn test_vault_works() {
-//     self::test_send_vault_success().await;
-// }
+#[tokio::test]
+async fn test_vault_works() {
+    self::test_send_vault_success().await;
+}
 
 // UNHAPPY PATHS
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path() {
-//     self::test_from_evm_to_union_tokenv2_unhappy_ONLY_MAKER_ERR().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path() {
+    self::test_from_evm_to_union_tokenv2_unhappy_ONLY_MAKER_ERR().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path2() {
-//     self::test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path2() {
+    self::test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path3() {
-//     self::test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path3() {
+    self::test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path4() {
-//     self::test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path4() {
+    self::test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path4() {
-//     self::test_from_evm_to_union_tokenv2_unhappy_ErrCannotDeploy().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path4() {
+    self::test_from_evm_to_union_tokenv2_unhappy_ErrCannotDeploy().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path5() {
-//     self::test_from_evm_to_union_batch_ErrInvalidBatchInstruction().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path5() {
+    self::test_from_evm_to_union_batch_ErrInvalidBatchInstruction().await;
+}
 
-// #[tokio::test]
-// async fn from_evm_to_union_tokenv2_unhappy_path6() {
-//     self::test_from_evm_to_union_batch_ErrInvalidForwardInstruction().await;
-// }
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path6() {
+    self::test_from_evm_to_union_batch_ErrInvalidForwardInstruction().await;
+}
 
-// #[tokio::test]
-// async fn test_send_vault_unhappy_path1() {
-//     self::test_send_vault_unhappy_U_CounterpartyIsNotFungible().await;
-// }
+#[tokio::test]
+async fn test_send_vault_unhappy_path1() {
+    self::test_send_vault_unhappy_U_CounterpartyIsNotFungible().await;
+}
 
 
 #[tokio::test]
@@ -3844,8 +3844,8 @@ async fn test_send_vault_unhappy_path2() {
     self::test_send_vault_unhappy_U_Fool().await;
 }
 
-// #[tokio::test]
-// async fn test_send_vault_unhappy_path3() {
-//     self::test_send_vault_unhappy_U_BaseAmountMustCoverQuoteAmount().await;
-// }
+#[tokio::test]
+async fn test_send_vault_unhappy_path3() {
+    self::test_send_vault_unhappy_U_BaseAmountMustCoverQuoteAmount().await;
+}
 
