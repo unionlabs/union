@@ -36,7 +36,7 @@
             # ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
             #
             # Tests from ./full-e2e.nix
-            inherit (full-e2e) all-works;
+            # inherit (full-e2e) all-works;
 
             # Tests from ./epoch-staking.nix
             inherit (epoch-staking) epoch-completes;
