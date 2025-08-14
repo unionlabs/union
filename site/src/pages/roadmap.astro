@@ -1,0 +1,538 @@
+---
+import ContainedSection from "#/components/ContainedSection.astro"
+import TextP from "#/components/typography/TextP.astro"
+import AnimationLayout from "#/layouts/AnimationLayout.astro"
+import { contentfulClient } from "#/lib/contentful/client.ts"
+import type {
+  RoadmapMilestoneFields,
+  RoadmapMilestoneSkeleton,
+  RoadmapSectionFields,
+  RoadmapSectionSkeleton,
+  RoadmapSubsectionFields,
+  RoadmapSubsectionSkeleton,
+} from "#/lib/contentful/types.ts"
+
+export const prerender = false
+
+// Fetch all roadmap data from Contentful
+let sectionsData: any[] = []
+let subsectionsData: any[] = []
+let milestonesData: any[] = []
+let error: string | null = null
+
+try {
+  // Fetch all sections
+  const sectionsResponse = await contentfulClient.getEntries<RoadmapSectionSkeleton>({
+    content_type: "roadmapSection",
+    order: ["fields.position"],
+  })
+  sectionsData = sectionsResponse.items.map(item => ({
+    ...item.fields,
+    id: item.sys.id,
+  }))
+
+  // Fetch all subsections with linked sections
+  const subsectionsResponse = await contentfulClient.getEntries<RoadmapSubsectionSkeleton>({
+    content_type: "roadmapSubsection",
+    order: ["fields.position"],
+    include: 2,
+  })
+
+  subsectionsData = subsectionsResponse.items.map(item => {
+    // The linkedSection field contains the reference
+    const linkedSectionId = (item.fields.linkedSection as any)?.sys?.id
+    return {
+      ...item.fields,
+      id: item.sys.id,
+      linkedSectionId: linkedSectionId,
+    }
+  })
+
+  // Fetch all milestones with asset data
+  const milestonesResponse = await contentfulClient.getEntries<RoadmapMilestoneSkeleton>({
+    content_type: "roadmapMilestone",
+    order: ["fields.position"],
+    include: 3,
+  })
+
+  milestonesData = milestonesResponse.items.map(item => ({
+    ...item.fields,
+    id: item.sys.id,
+    linkedSubsectionId: item.fields.linkedSubsection?.sys?.id,
+    // Include the full asset objects
+    completeIcon: item.fields.completeIcon,
+    incompleteIcon: item.fields.incompleteIcon,
+  }))
+} catch (err) {
+  console.error("Error fetching roadmap data from Contentful:", err)
+  error = "Failed to load roadmap content. Please try again later."
+}
+
+// Group data hierarchically
+const roadmapData = sectionsData.map(section => {
+  const sectionSubsections = subsectionsData
+    .filter(sub => sub.linkedSectionId === section.id)
+    .map(subsection => {
+      const subsectionMilestones = milestonesData
+        .filter(milestone => milestone.linkedSubsectionId === subsection.id)
+        .sort((a, b) => (a.position || 0) - (b.position || 0))
+
+      return {
+        ...subsection,
+        milestones: subsectionMilestones,
+      }
+    })
+    .sort((a, b) => (a.position || 0) - (b.position || 0))
+
+  return {
+    ...section,
+    subsections: sectionSubsections,
+  }
+}).sort((a, b) => (a.position || 0) - (b.position || 0))
+
+// Calculate overall progress
+const calculateProgress = (section: any) => {
+  if (section.percentComplete !== undefined && section.percentComplete !== null) {
+    return section.percentComplete
+  }
+
+  if (section.subsections && section.subsections.length > 0) {
+    const totalProgress = section.subsections.reduce((acc: number, sub: any) => {
+      if (sub.percentComplete !== undefined && sub.percentComplete !== null) {
+        return acc + sub.percentComplete
+      }
+      if (sub.milestones && sub.milestones.length > 0) {
+        const completedMilestones = sub.milestones.filter((m: any) => m.markComplete).length
+        return acc + (completedMilestones / sub.milestones.length) * 100
+      }
+      return acc
+    }, 0)
+    return Math.round(totalProgress / section.subsections.length)
+  }
+
+  return 0
+}
+
+// Calculate subsection progress
+const calculateSubsectionProgress = (subsection: any) => {
+  if (subsection.percentComplete !== undefined && subsection.percentComplete !== null) {
+    return subsection.percentComplete
+  }
+
+  if (subsection.milestones && subsection.milestones.length > 0) {
+    const completedMilestones = subsection.milestones.filter((m: any) => m.markComplete).length
+    return Math.round((completedMilestones / subsection.milestones.length) * 100)
+  }
+
+  return 0
+}
+
+// Determine status based on progress
+const getStatus = (progress: number) => {
+  if (progress === 100) {
+    return "completed"
+  }
+  if (progress > 0) {
+    return "in-progress"
+  }
+  return "upcoming"
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "completed":
+      return "text-green-500"
+    case "in-progress":
+      return "text-yellow-500"
+    case "upcoming":
+      return "text-gray-400"
+    default:
+      return "text-gray-400"
+  }
+}
+---
+
+<AnimationLayout
+  title="Roadmap"
+  text="Our journey towards universal interoperability"
+>
+  <ContainedSection>
+    {
+      error ? (
+        <div class="error-message py-20 text-center">
+          <h2 class="text-2xl font-bold mb-4">Error</h2>
+          <p>{error}</p>
+        </div>
+      ) : (
+        <div class="roadmap-container py-10">
+          <div class="roadmap-layout flex gap-8 relative">
+            {/* Sidebar Navigation */}
+            <aside class="roadmap-sidebar w-80 flex-shrink-0 hidden lg:block">
+              <div class="bg-black rounded-lg p-4 border border-gray-800">
+                <nav class="space-y-2">
+                  {
+                    roadmapData.map((section) => {
+                  const sectionProgress = calculateProgress(section)
+                  const sectionStatus = getStatus(sectionProgress)
+
+                  return (
+                      <div class="section-nav">
+                        <button
+                          data-section-id={section.id}
+                          class="section-nav-item w-full text-left px-3 py-2 rounded-lg transition-all hover:bg-gray-800"
+                        >
+                          <span class="font-semibold text-sm">{section.section}</span>
+                        </button>
+
+                        {
+                          section.subsections && section.subsections.length > 0
+                    && (
+                            <div class="subsection-nav ml-4 mt-1 space-y-1">
+                              {
+                                section.subsections.map((subsection: any) => {
+                      const subsectionProgress = calculateSubsectionProgress(
+                        subsection,
+                      )
+                      const subsectionStatus = getStatus(subsectionProgress)
+
+                      return (
+                                  <button
+                                    data-subsection-id={subsection.id}
+                                    class="subsection-nav-item w-full text-left px-3 py-1.5 rounded-md transition-all text-sm hover:bg-gray-800"
+                                  >
+                                    <span class="text-gray-400">{subsection.subsection}</span>
+                                  </button>
+                                )
+                    })
+                              }
+                            </div>
+                          )
+                        }
+                      </div>
+                    )
+                })
+                  }
+                </nav>
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <div
+              class="roadmap-content flex-1 min-w-0 overflow-y-auto"
+              style="height: calc(100vh - 100px);"
+            >
+              <div
+                class="roadmap-timeline"
+                style="padding-bottom: 70vh;"
+              >
+                {
+                  roadmapData.map((section, sectionIndex) => {
+                const sectionProgress = calculateProgress(section)
+                const sectionStatus = getStatus(sectionProgress)
+
+                return (
+                    <div
+                      class="roadmap-section mb-12"
+                      data-section={section.id}
+                    >
+                      {/* Section Header */}
+                      <div class="section-header mb-8">
+                        <div class="mb-3">
+                          <h2 class="text-3xl font-bold mb-2">{section.section}</h2>
+                          {
+                            section.description && (
+                              <p class="text-gray-400">{section.description}</p>
+                            )
+                          }
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div class="flex items-center gap-3 mt-4">
+                          <div class="flex-1 bg-gray-700 rounded-full h-2">
+                            <div
+                              class="h-2 rounded-full transition-all duration-500"
+                              style={`width: ${sectionProgress}%; background-color: #A0ECFD;`}
+                            >
+                            </div>
+                          </div>
+                          <span class="text-sm text-gray-400">{sectionProgress}%</span>
+                        </div>
+                      </div>
+
+                      {/* Subsections */}
+                      <div class="subsections-container space-y-6">
+                        {
+                          section.subsections && section.subsections.length > 0
+                    ? (
+                      section.subsections.map((subsection: any) => {
+                        const subsectionProgress = calculateSubsectionProgress(
+                          subsection,
+                        )
+                        const subsectionStatus = getStatus(subsectionProgress)
+
+                        return (
+                            <div
+                              class="subsection-wrapper"
+                              data-subsection={subsection.id}
+                            >
+                              <div class="subsection bg-black rounded-lg p-6 border border-gray-800">
+                                <div class="subsection-header mb-4">
+                                  <div class="flex items-center gap-3 mb-2">
+                                    <div
+                                      class={`w-3 h-3 rounded-full ${
+                                        subsectionStatus === "completed"
+                                          ? "bg-green-500"
+                                          : subsectionStatus === "in-progress"
+                                          ? "bg-yellow-500"
+                                          : "bg-gray-400"
+                                      }`}
+                                    >
+                                    </div>
+                                    <h3 class="text-xl font-semibold">{subsection.subsection}</h3>
+                                  </div>
+
+                                  {
+                                    subsection.description && (
+                                      <p class="text-gray-400 text-sm mb-3">
+                                        {subsection.description}
+                                      </p>
+                                    )
+                                  }
+
+                                  {/* Subsection Progress Bar */}
+                                  <div class="flex items-center gap-3">
+                                    <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                                      <div
+                                        class="h-1.5 rounded-full transition-all duration-500"
+                                        style={`width: ${subsectionProgress}%; background-color: #A0ECFD;`}
+                                      >
+                                      </div>
+                                    </div>
+                                    <span class="text-xs text-gray-500">{subsectionProgress}%</span>
+                                  </div>
+                                </div>
+
+                                {/* Milestones (always visible) */}
+                                <div
+                                  class="milestones-container mt-4 pt-4 border-t border-gray-800"
+                                  data-milestones={subsection.id}
+                                >
+                                  {
+                                    subsection.milestones
+                            && subsection.milestones.length > 0
+                          ? (
+                                      <ul class="space-y-2">
+                                        {
+                                          subsection.milestones.map((
+                            milestone: any,
+                          ) => (
+                                            <li class="flex items-start gap-3">
+                                              {
+                                                /* Display the appropriate icon based on completion status */
+                                              }
+                                              {
+                                                milestone.markComplete
+                              ? (
+                                milestone.completeIcon?.fields?.file
+                                    ?.url
+                                  ? (
+                                                  <img
+                                                    src={milestone.completeIcon.fields.file.url
+                                                      .startsWith("//")
+                                                    ? `https:${milestone.completeIcon.fields.file.url}`
+                                                    : milestone.completeIcon.fields.file.url}
+                                                    alt="Complete"
+                                                    class="w-6 h-6 mt-0.5 flex-shrink-0"
+                                                  />
+                                                )
+                                  : (
+                                                  <div class="w-6 h-6 mt-0.5 flex-shrink-0 bg-green-500 rounded-full" />
+                                                )
+                              )
+                              : (
+                                milestone.incompleteIcon?.fields?.file
+                                    ?.url
+                                  ? (
+                                                  <img
+                                                    src={milestone.incompleteIcon.fields.file.url
+                                                      .startsWith("//")
+                                                    ? `https:${milestone.incompleteIcon.fields.file.url}`
+                                                    : milestone.incompleteIcon.fields.file
+                                                      .url}
+                                                    alt="Incomplete"
+                                                    class="w-6 h-6 mt-0.5 flex-shrink-0 opacity-50"
+                                                  />
+                                                )
+                                  : (
+                                                  <div class="w-6 h-6 mt-0.5 flex-shrink-0 border-2 border-gray-400 rounded-full" />
+                                                )
+                              )
+                                              }
+                                              <div class="flex-1">
+                                                <span
+                                                  class={`${
+                                                    milestone.markComplete
+                                                      ? "text-gray-300"
+                                                      : "text-gray-500"
+                                                  }`}
+                                                >
+                                                  {milestone.milestone}
+                                                </span>
+                                                {
+                                                  milestone.description && (
+                                                    <p class="text-sm text-gray-600 mt-1">
+                                                      {milestone.description}
+                                                    </p>
+                                                  )
+                                                }
+                                              </div>
+                                            </li>
+                                          ))
+                                        }
+                                      </ul>
+                                    )
+                          : (
+                                      <p class="text-gray-500 italic">No milestones defined yet.</p>
+                                    )
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                          )
+                      })
+                    )
+                    : (
+                            <div class="text-gray-500 italic">
+                              No detailed subsections available yet. Check back soon!
+                            </div>
+                          )
+                        }
+                      </div>
+                    </div>
+                  )
+              })
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </ContainedSection>
+</AnimationLayout>
+
+<script>
+// Handle sidebar navigation with scrolling
+document.addEventListener("DOMContentLoaded", () => {
+  const contentContainer = document.querySelector(".roadmap-content")
+
+  // Handle section navigation clicks
+  const sectionNavItems = document.querySelectorAll(".section-nav-item")
+  sectionNavItems.forEach(item => {
+    item.addEventListener("click", () => {
+      const sectionId = item.getAttribute("data-section-id")
+      const sectionElement = document.querySelector(`[data-section="${sectionId}"]`)
+
+      if (sectionElement && contentContainer) {
+        const offsetTop = sectionElement.offsetTop - contentContainer.offsetTop
+        contentContainer.scrollTo({
+          top: offsetTop,
+          behavior: "smooth",
+        })
+
+        // Immediately highlight the clicked item
+        document.querySelectorAll(".section-nav-item").forEach(navItem => {
+          navItem.classList.remove("bg-gray-800")
+        })
+        item.classList.add("bg-gray-800")
+      }
+    })
+  })
+
+  // Handle subsection navigation clicks
+  const subsectionNavItems = document.querySelectorAll(".subsection-nav-item")
+  subsectionNavItems.forEach(item => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const subsectionId = item.getAttribute("data-subsection-id")
+      const subsectionElement = document.querySelector(`[data-subsection="${subsectionId}"]`)
+
+      if (subsectionElement && contentContainer) {
+        const offsetTop = subsectionElement.offsetTop - contentContainer.offsetTop
+        contentContainer.scrollTo({
+          top: offsetTop,
+          behavior: "smooth",
+        })
+      }
+    })
+  })
+
+  // Removed automatic scroll-based highlighting to prevent jumping
+  // Now only manual clicks will highlight items
+})
+</script>
+
+<style>
+.roadmap-container {
+  min-height: 100vh;
+}
+
+.roadmap-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.roadmap-content::-webkit-scrollbar {
+  display: none;
+}
+
+.roadmap-sidebar {
+  position: sticky;
+  top: 45px;
+  align-self: flex-start;
+  width: 20rem;
+  min-width: 20rem;
+  max-height: calc(100vh - 65px);
+}
+
+.roadmap-sidebar nav {
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.roadmap-sidebar nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.roadmap-sidebar nav::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.roadmap-sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.roadmap-sidebar nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.toggle-icon.rotate-180 {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 1024px) {
+  .roadmap-layout {
+    flex-direction: column;
+  }
+  
+  .roadmap-sidebar {
+    display: none;
+  }
+}
+</style>
