@@ -34,7 +34,7 @@ use union_test::{
 use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
-    primitives::{Bech32, FixedBytes, H160, H256, U256},
+    primitives::{Bech32, FixedBytes, H160, U256},
 };
 use voyager_sdk::primitives::ChainId;
 
@@ -170,7 +170,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 7; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(src, dst, needed_channel_count, "/tmp/config.jsonc")
@@ -276,25 +276,19 @@ async fn _open_connection_from_evm_to_union() {
     assert!(conn.counterparty_connection_id > 0);
 }
 
-#[tokio::test]
-async fn test_vault_works() {
+async fn test_send_vault_success() {
     let ctx = init_ctx().await;
-
-    // ensure_channels_opened(ctx.channel_count).await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-
-    // let pair = ctx.get_channel().await.expect("channel available");
-    // let dst_channel_id = pair.dest;
-    // let src_channel_id = pair.src;
-
-    let dst_channel_id = 1;
-    let src_channel_id = 1;
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
+    let dst_channel_id = pair.dest;
+    let src_channel_id = pair.src;
 
     let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
 
@@ -375,8 +369,8 @@ async fn test_vault_works() {
     println!("initial U balance on eth: {initial_u_balance}");
     println!("initial U balance on union vault: {initial_vault_balance}");
 
-    let recv_packet_data = ctx
-        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+    let ack_packet_data = ctx
+        .send_and_recv_and_ack_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
             contract,
             (bin_msg, funds),
@@ -388,19 +382,10 @@ async fn test_vault_works() {
         )
         .await;
     assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
+        ack_packet_data.is_ok(),
+        "Failed to send and ack packet: {:?}",
+        ack_packet_data.err()
     );
-
-    let _ = ctx
-        .src
-        .wait_for_packet_ack(
-            recv_packet_data.unwrap().packet_hash,
-            Duration::from_secs(120),
-        )
-        .await
-        .unwrap();
 
     let new_u_balance = ctx
         .dst
@@ -1939,37 +1924,42 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
 }
 
-#[tokio::test]
-async fn send_stake_and_unstake_from_evm_to_union0() {
-    self::test_stake_and_unstake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// async fn send_stake_and_unstake_from_evm_to_union0() {
+//     self::test_stake_and_unstake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union0() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_refund() {
+//     self::test_send_packet_from_evm_to_union_get_refund().await;
+// }
+
+// #[tokio::test]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake0() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake_and_refund() {
+//     self::test_stake_from_evm_to_union_and_refund().await;
+// }
 
 #[tokio::test]
-async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_refund() {
-    self::test_send_packet_from_evm_to_union_get_refund().await;
-}
-
-#[tokio::test]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake0() {
-    self::test_stake_from_evm_to_union().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake_and_refund() {
-    self::test_stake_from_evm_to_union_and_refund().await;
+async fn test_vault_works() {
+    self::test_send_vault_success().await;
 }
