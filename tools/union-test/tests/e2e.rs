@@ -2249,11 +2249,11 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         instruction: instruction_evm.clone(),
     };
 
-    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params().into();
+    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src.try_into().unwrap(),
-        destinationChannelId: pair.dest.try_into().unwrap(),
+        sourceChannelId: pair.src,
+        destinationChannelId: pair.dest,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
@@ -3315,11 +3315,11 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         instruction: instruction_evm.clone(),
     };
 
-    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params().into();
+    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src.try_into().unwrap(),
-        destinationChannelId: pair.dest.try_into().unwrap(),
+        sourceChannelId: pair.src,
+        destinationChannelId: pair.dest,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
@@ -3496,11 +3496,11 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         instruction: instruction_evm.clone(),
     };
 
-    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params().into();
+    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src.try_into().unwrap(),
-        destinationChannelId: pair.dest.try_into().unwrap(),
+        sourceChannelId: pair.src,
+        destinationChannelId: pair.dest,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
@@ -3677,11 +3677,11 @@ async fn test_send_vault_unhappy_u_fool() {
         instruction: instruction_evm.clone(),
     };
 
-    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params().into();
+    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src.try_into().unwrap(),
-        destinationChannelId: pair.dest.try_into().unwrap(),
+        sourceChannelId: pair.src,
+        destinationChannelId: pair.dest,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
