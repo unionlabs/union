@@ -35,7 +35,13 @@ export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigErr
   cause?: unknown
 }> {}
 
+export class GenericFlowError extends Data.TaggedError("GenericFlowError")<{
+  message: string
+  cause?: unknown
+}> {}
+
 export type ContextFlowError =
+  | GenericFlowError
   | MissingTransferFieldsError
   | InsufficientFundsError
   | OrderCreationError

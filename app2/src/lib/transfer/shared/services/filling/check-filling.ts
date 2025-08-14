@@ -2,7 +2,7 @@ import type { FeeIntent } from "$lib/stores/fee.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
-import { Token, type Ucs05 } from "@unionlabs/sdk"
+import { Token, TokenOrder, type Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
 import { Data, flow, Option, pipe, Struct } from "effect"
 import * as A from "effect/Array"
@@ -18,12 +18,13 @@ export interface TransferArgs {
   quoteToken: Token.Any
   quoteAmount: string
   decimals: number
+  kind: TokenOrder.Kind
   receiver: Ucs05.AnyDisplay
   sender: Ucs05.AnyDisplay
   ucs03address: string
   sourceRpcType?: string
   destinationRpcType?: string
-  sourceChannelId?: ChannelId
+  sourceChannelId: ChannelId
   fee: FeeIntent
 }
 
@@ -39,6 +40,9 @@ export type FillingState = Data.TaggedEnum<{
   ReceiverMissing: {}
   NoRoute: {}
   NoContract: {}
+  Generic: {
+    message: string
+  }
   NoFee: {
     message?: string | undefined
   }
@@ -97,13 +101,16 @@ export const getFillingState = (
         return FillingState.ReceiverMissing()
       }
 
-      console.log({ fee })
       if (Option.isNone(fee)) {
-        return FillingState.NoFee({ message: "rugged" })
+        return FillingState.NoFee({ message: "Calculating fee..." })
       }
 
       if (E.isLeft(fee.value)) {
         return FillingState.NoFee({ message: fee.value.left })
+      }
+
+      if (Option.isNone(transferData.quoteToken)) {
+        return FillingState.Generic({ message: "no quote token" })
       }
 
       const unwrappedFee = fee.value.right
@@ -122,6 +129,7 @@ export const getFillingState = (
         receiver: transferData.derivedReceiver,
         parsedAmount: transferData.parsedAmount,
         ucs03address: transferData.ucs03address,
+        quoteToken: transferData.quoteToken,
         // TODO: move into class attribute
         decimals: Option.flatMap(
           transferData.baseToken,
@@ -141,7 +149,16 @@ export const getFillingState = (
         },
 
         onSome: (
-          { destinationChain, channel, receiver, parsedAmount, baseToken, decimals, ucs03address },
+          {
+            destinationChain,
+            channel,
+            receiver,
+            parsedAmount,
+            baseToken,
+            decimals,
+            ucs03address,
+            quoteToken,
+          },
         ) =>
           FillingState.Ready({
             sourceChain,
@@ -152,6 +169,7 @@ export const getFillingState = (
             baseAmount: parsedAmount,
             quoteAmount: parsedAmount,
             decimals,
+            quoteToken,
             ucs03address,
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,

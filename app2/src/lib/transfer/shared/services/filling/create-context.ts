@@ -1,10 +1,11 @@
 import type { FeeIntent } from "$lib/stores/fee.svelte.ts"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
-import { Token, TokenOrder, Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
+import { Batch, Token, TokenOrder, Ucs05, Utils, ZkgmClientRequest } from "@unionlabs/sdk"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
+import { graphqlQuoteTokenUnwrapQuery } from "@unionlabs/sdk/graphql/unwrapped-quote-token.js"
 import type {
-  AddressCanonicalBytes,
   Chain,
   Channel,
   ChannelId,
@@ -12,9 +13,11 @@ import type {
   TokenRawDenom,
   UniversalChainId,
 } from "@unionlabs/sdk/schema"
-import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { Match, Option } from "effect"
+import { Effect, Match, Option, ParseResult, pipe } from "effect"
 import * as A from "effect/Array"
+import type { NoSuchElementException, UnknownException } from "effect/Cause"
+import * as R from "effect/Record"
+import * as S from "effect/Schema"
 import { fromHex, isHex } from "viem"
 import type { TransferArgs } from "./check-filling.ts"
 
@@ -50,25 +53,102 @@ export type TransferContext = {
   message: Option.Option<string>
 }
 
-export const createContext = (args: TransferArgs): Option.Option<TransferContext> => {
-  console.debug("[createContext] args:", args)
+export const createContext = Effect.fn((
+  args: TransferArgs,
+): Effect.Effect<
+  TransferContext,
+  NoSuchElementException | ParseResult.ParseError | UnknownException,
+  never
+> =>
+  Effect.gen(function*() {
+    console.debug("[createContext] args:", args)
 
-  return parseBaseAmount(args.baseAmount).pipe(
-    Option.flatMap((baseAmount) => {
-      const intents = createIntents(args, baseAmount)
+    const sendOrder = yield* TokenOrder.make({
+      baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
+      baseToken: args.baseToken,
+      quoteToken: args.quoteToken,
+      quoteAmount: Option.getOrThrow(parseBaseAmount(args.quoteAmount)),
+      destination: args.destinationChain,
+      receiver: args.receiver,
+      sender: args.sender,
+      kind: args.kind,
+      source: args.sourceChain,
+      metadata: undefined,
+    })
 
-      return intents.length > 0
-        ? Option.some({
-          intents,
-          funds: calculateNativeValue(intents, args),
-          allowances: Option.none(),
-          request: Option.none(),
-          message: Option.none(),
-        })
-        : Option.none()
-    }),
-  )
-}
+    console.log(sendOrder.toJSON())
+
+    const maybeFeeQuoteToken = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: Utils.ensureHex(args.fee.baseToken.address),
+      sourceChainId: args.sourceChain.universal_chain_id,
+      sourceChannelId: args.sourceChannelId,
+    })
+
+    console.log({ maybeFeeQuoteToken })
+
+    const feeQuoteToken = yield* maybeFeeQuoteToken.pipe(
+      Option.orElse(() =>
+        pipe(
+          tokensStore.getData(args.sourceChain.universal_chain_id),
+          Option.flatMap(A.findFirst((token) =>
+            A.filter(token.wrapping, (x) => x.unwrapped_denom === args.fee.baseToken.address)
+              .length
+              === 1
+          )),
+          Option.map(x => x.denom),
+        )
+      ),
+    )
+
+    const feeOrder = yield* TokenOrder.make({
+      baseAmount: args.fee.baseAmount,
+      baseToken: args.fee.baseToken,
+      quoteToken: feeQuoteToken,
+      quoteAmount: Option.getOrThrow(parseBaseAmount(args.quoteAmount)),
+      destination: args.destinationChain,
+      receiver: args.receiver,
+      sender: args.sender,
+      kind: args.kind,
+      source: args.sourceChain,
+      metadata: undefined,
+    })
+
+    const batch = Batch.make([sendOrder, feeOrder])
+
+    console.log({ batch })
+
+    const request = ZkgmClientRequest.make({
+      channelId: args.sourceChannelId,
+      destination: args.destinationChain,
+      source: args.sourceChain,
+      instruction: batch,
+      ucs03Address: args.ucs03address,
+    }).pipe(
+      Option.some,
+    )
+
+    const ctx = yield* parseBaseAmount(args.baseAmount).pipe(
+      Option.flatMap((baseAmount) => {
+        const intents = createIntents(args, baseAmount)
+
+        return intents.length > 0
+          ? Option.some({
+            intents,
+            funds: calculateNativeValue(intents, args),
+            allowances: Option.none(),
+            request: Option.none(),
+            message: Option.none(),
+          })
+          : Option.none()
+      }),
+    )
+
+    return {
+      ...ctx,
+      request,
+    } as const
+  })
+)
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
   console.log({ args })

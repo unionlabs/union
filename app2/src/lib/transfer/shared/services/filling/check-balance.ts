@@ -66,7 +66,7 @@ export const checkBalanceForIntent = (
         Utils.ensureHex(group.baseToken.address) as TokenRawDenom,
       )
 
-      console.log("a", { balance })
+      console.log("checkBalanceForIntent", { balance })
 
       if (Option.isNone(balance)) {
         const chainForToken = context.intents.find(intent =>
@@ -105,6 +105,7 @@ export const checkBalanceForIntent = (
       }
 
       const actualBalance = balance.value
+      console.log({ denom: group.baseToken, actualBalance })
       const hasEnough = group.required <= BigInt(actualBalance)
 
       return hasEnough

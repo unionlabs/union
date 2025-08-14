@@ -59,7 +59,7 @@ export const checkAllowances = Effect.fn((
       Effect.map(HashMap.fromIterable),
     )
 
-    console.log({ allowances })
+    console.log(allowances.toJSON())
 
     const result = yield* pipe(
       HashMap.fromIterable(requiredTokens),

@@ -1,7 +1,12 @@
+import * as AppRuntime from "$lib/runtime"
 import type { FeeIntent } from "$lib/stores/fee.svelte"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { validateTransfer } from "$lib/transfer/shared/data/validation.ts"
-import { type ContextFlowError, OrderCreationError } from "$lib/transfer/shared/errors"
+import {
+  type ContextFlowError,
+  GenericFlowError,
+  OrderCreationError,
+} from "$lib/transfer/shared/errors"
 import { checkAllowances } from "$lib/transfer/shared/services/filling/check-allowance.ts"
 import {
   type BalanceCheckResult,
@@ -86,7 +91,7 @@ export const createContextState = (
   cts: CreateContextState,
   transfer: TransferData,
   fee: Option.Option<E.Either<FeeIntent, string>>,
-) => {
+): Effect.Effect<void | StateResult, never, never> => {
   return CreateContextState.$match(cts, {
     Empty: () => Effect.void,
     Filling: () => {
@@ -106,6 +111,7 @@ export const createContextState = (
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         NoFee: ({ message }) => Effect.succeed(ok(Empty(), message ?? "Loading fee...")),
         Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),
+        Generic: ({ message }) => Effect.succeed(ok(Empty(), message)),
       })
     },
 
@@ -119,15 +125,14 @@ export const createContextState = (
     },
 
     CreateContext: ({ args }) => {
-      const contextOpt = createContext(args)
-
-      if (Option.isNone(contextOpt)) {
-        return Effect.succeed(fail("Failed to create context"))
-      }
-
-      const context = contextOpt.value
-      return Effect.succeed(
-        ok(CheckBalance({ context }), "Checking balance..."),
+      return pipe(
+        createContext(args),
+        Effect.mapBoth({
+          onFailure: (cause) =>
+            fail(cause.message, new GenericFlowError({ message: cause.message, cause })),
+          onSuccess: (context) => ok(CheckBalance({ context }), "something"),
+        }),
+        Effect.merge,
       )
     },
 
@@ -159,8 +164,8 @@ export const createContextState = (
           }
 
           return ok(
-            CreateOrders({ context: updatedContext }),
-            "Creating orders...",
+            CheckReceiver({ context: updatedContext }),
+            "Checking receiver...",
           )
         }),
         Effect.catchAll((error) => Effect.succeed(fail("Allowance check failed", error))),
