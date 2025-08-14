@@ -94,9 +94,9 @@ export interface TokenOrder
     Iterable<ZkgmInstruction.ZkgmInstruction>,
     ZkgmInstruction.Encodeable<ParseError, never>
 {
-  _tag: "TokenOrder"
-  opcode: 3
-  version: 2
+  readonly _tag: "TokenOrder"
+  readonly opcode: 3
+  readonly version: 2
 }
 
 /**

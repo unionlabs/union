@@ -27,6 +27,9 @@ const fromWallet = (
         wallet,
         client,
       } = opts
+
+      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { wallet, client })
+
       const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
       const salt = yield* Utils.generateSalt("evm").pipe(
         Effect.mapError((cause) =>
@@ -38,6 +41,8 @@ const fromWallet = (
           })
         ),
       )
+
+      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { salt, timeoutTimestamp })
 
       const operand = yield* pipe(
         request.instruction.encode,
@@ -51,6 +56,8 @@ const fromWallet = (
         ),
       )
 
+      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { operand })
+
       const funds = ZkgmClientRequest.requiredFunds(request).pipe(
         Option.map(A.filter(([x]) => Token.isNative(x))),
         Option.flatMap(Option.liftPredicate(A.isNonEmptyReadonlyArray)),
@@ -59,23 +66,29 @@ const fromWallet = (
         Option.getOrUndefined,
       )
 
+      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { funds })
+
+      const args = [
+        request.channelId,
+        0n,
+        timeoutTimestamp,
+        salt,
+        {
+          opcode: request.instruction.opcode,
+          version: request.instruction.version,
+          operand,
+        },
+      ] as const
+
+      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { args })
+
       const sendInstruction = Evm.writeContract({
         account: wallet.account,
         abi: Ucs03.Abi,
         chain: wallet.chain,
         functionName: "send",
         address: request.ucs03Address,
-        args: [
-          request.channelId,
-          0n,
-          timeoutTimestamp,
-          salt,
-          {
-            opcode: request.instruction.opcode,
-            version: request.instruction.version,
-            operand,
-          },
-        ],
+        args,
         value: funds,
       }).pipe(
         Effect.mapError((cause) =>

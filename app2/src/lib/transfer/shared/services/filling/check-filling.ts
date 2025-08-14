@@ -55,7 +55,6 @@ export const getFillingState = (
   transferData: TransferData,
   fee: Option.Option<E.Either<FeeIntent, string>>,
 ): FillingState => {
-  console.log({ kind: transferData.kind })
   if (!wallets.hasAnyWallet() && signingMode.mode === "single") {
     return FillingState.NoWallet()
   }

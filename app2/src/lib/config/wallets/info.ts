@@ -25,7 +25,7 @@ export const unionTestnet = InternalChainInfo.make({
   },
   currencies: [
     {
-      coinDenom: "UNO",
+      coinDenom: "U",
       coinMinimalDenom: "au",
       coinDecimals: 18,
       coinImageUrl:
@@ -34,7 +34,7 @@ export const unionTestnet = InternalChainInfo.make({
   ],
   feeCurrencies: [
     {
-      coinDenom: "UNO",
+      coinDenom: "U",
       coinMinimalDenom: "au",
       coinDecimals: 18,
       gasPriceStep: {
@@ -47,9 +47,9 @@ export const unionTestnet = InternalChainInfo.make({
     },
   ],
   stakeCurrency: {
-    coinDenom: "UNO",
-    coinMinimalDenom: "muno",
-    coinDecimals: 6,
+    coinDenom: "U",
+    coinMinimalDenom: "au",
+    coinDecimals: 18,
     coinImageUrl:
       "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
   },

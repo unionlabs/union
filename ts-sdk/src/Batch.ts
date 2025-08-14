@@ -3,13 +3,16 @@
  *
  * @since 2.0.0
  */
-import { Inspectable } from "effect"
+import { Effect, Inspectable, pipe, String as Str } from "effect"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import * as A from "effect/Array"
 import { ParseError } from "effect/ParseResult"
 import { Pipeable, pipeArguments } from "effect/Pipeable"
+import * as Schema from "effect/Schema"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/batch.js"
+import { Hex } from "./schema/hex.js"
+import * as Ucs03 from "./Ucs03.js"
 
 /**
  * @category type ids
@@ -35,9 +38,39 @@ export interface Batch
     ZkgmInstruction.Encodeable<ParseError, never>
 {
   readonly [TypeId]: TypeId
-  _tag: "Batch"
+  readonly _tag: "Batch"
   readonly instructions: NonEmptyReadonlyArray<ZkgmInstruction.ZkgmInstruction>
+  readonly opcode: 2
+  readonly version: 0
 }
+
+/** @internal */
+const encode = (self: Batch): Effect.Effect<Hex, ParseError, never> =>
+  Effect.gen(function*() {
+    const encodedUcs03 = yield* Effect.all(
+      A.map(self.instructions, x => x.encode),
+    )
+
+    const decodedUcs03 = yield* Effect.all(
+      A.map(encodedUcs03, x => Schema.decode(Ucs03.Ucs03FromHex)(x)),
+    )
+
+    console.log({ decodedUcs03 })
+
+    return yield* pipe(
+      Ucs03.Batch.make({
+        opcode: self.opcode,
+        version: self.version,
+        operand: decodedUcs03,
+      }),
+      (x) => {
+        console.log("batch.fromoperand", x)
+        return x
+      },
+      Schema.encode(Ucs03.Ucs03FromHex),
+      Effect.map(Str.toLowerCase),
+    )
+  })
 
 const Proto = {
   [TypeId]: TypeId,
@@ -46,10 +79,13 @@ const Proto = {
   [Symbol.iterator](this: Batch) {
     return this.instructions[Symbol.iterator]()
   },
+  encode(this: Batch) {
+    return encode(this)
+  },
   toJSON(this: Batch): unknown {
     return {
       _id: "@unionlabs/sdk/Batch",
-      instructions: A.map(this.instructions, (x) => x.toJSON()),
+      instructions: A.map(this.instructions, (x) => x.toString()),
     }
   },
   pipe() {
@@ -63,8 +99,14 @@ const Proto = {
  */
 export const make = <
   A extends ZkgmInstruction.ZkgmInstruction,
->(iterable: Iterable<A>): Batch =>
-  Object.assign(Object.create(Proto), {
-    _tag: "Batch",
-    instructions: iterable,
-  })
+>(iterable: Iterable<A>): Batch => {
+  const self = Object.create(Proto)
+
+  self.instructions = iterable
+  self.version = 0
+  self.opcode = 2
+  self._tag = "Batch"
+  self.encode = encode(self)
+
+  return self
+}

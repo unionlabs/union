@@ -414,14 +414,24 @@ export const Abi = [
     type: "function",
     name: "migrateV1ToV2",
     inputs: [{
-      name: "migrations",
+      name: "balanceMigrations",
       type: "tuple[]",
       internalType: "struct V1ToV2Migration[]",
       components: [
-        { name: "channelId", type: "uint32", internalType: "uint32" },
         { name: "path", type: "uint256", internalType: "uint256" },
+        { name: "channelId", type: "uint32", internalType: "uint32" },
         { name: "baseToken", type: "address", internalType: "address" },
         { name: "quoteToken", type: "bytes", internalType: "bytes" },
+      ],
+    }, {
+      name: "wrappedMigrations",
+      type: "tuple[]",
+      internalType: "struct V1ToV2WrappedTokenMigration[]",
+      components: [
+        { name: "path", type: "uint256", internalType: "uint256" },
+        { name: "channelId", type: "uint32", internalType: "uint32" },
+        { name: "baseToken", type: "bytes", internalType: "bytes" },
+        { name: "quoteToken", type: "address", internalType: "address" },
       ],
     }],
     outputs: [],
@@ -775,6 +785,19 @@ export const Abi = [
     type: "event",
     name: "AuthorityUpdated",
     inputs: [{ name: "authority", type: "address", indexed: false, internalType: "address" }],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "CreateWrappedToken",
+    inputs: [
+      { name: "path", type: "uint256", indexed: false, internalType: "uint256" },
+      { name: "channelId", type: "uint32", indexed: true, internalType: "uint32" },
+      { name: "baseToken", type: "bytes", indexed: false, internalType: "bytes" },
+      { name: "quoteToken", type: "address", indexed: true, internalType: "address" },
+      { name: "metadata", type: "bytes", indexed: false, internalType: "bytes" },
+      { name: "kind", type: "uint8", indexed: false, internalType: "uint8" },
+    ],
     anonymous: false,
   },
   {
@@ -1350,8 +1373,8 @@ export class TokenOrderV2 extends S.TaggedClass<TokenOrderV2>()("@unionlabs/sdk/
  * @since 2.0.0
  */
 export class Instruction extends S.TaggedClass<Instruction>()("@unionlabs/sdk/Ucs03/Instruction", {
-  opcode: S.NonNegativeInt,
-  version: S.NonNegativeInt,
+  opcode: S.Uint8,
+  version: S.Uint8,
   operand: Hex,
 }) {}
 
@@ -1504,7 +1527,7 @@ export const BatchFromHex = S.transformOrFail(
         Effect.mapError((e) => new ParseResult.Type(ast, fromA, String(e.error))),
         Effect.flatMap(
           Effect.forEach(
-            (instruction) => S.decodeUnknown(S.suspend(() => Ucs03FromHex))(instruction),
+            ([instruction]) => S.decode(S.suspend(() => Ucs03FromHex))(instruction.operand),
             { concurrency: "unbounded" },
           ),
         ),
@@ -1605,19 +1628,14 @@ export const InstructionFromHex = S.transformOrFail(
   Hex,
   Instruction,
   {
-    decode: (fromA, _, ast) => {
-      return pipe(
-        Effect.try(() =>
-          decodeAbiParameters(
-            InstructionAbi(),
-            fromA,
-          )
-        ),
+    decode: (fromA, _, ast) =>
+      pipe(
+        Effect.try(() => decodeAbiParameters(InstructionAbi(), fromA)),
         Effect.flatMap(([version, opcode, operand]) =>
           S.decode(Instruction)({
             _tag: "@unionlabs/sdk/Ucs03/Instruction",
-            opcode,
             version,
+            opcode,
             operand,
           })
         ),
@@ -1626,8 +1644,7 @@ export const InstructionFromHex = S.transformOrFail(
           "UnknownException",
           (error) => ParseResult.fail(new ParseResult.Type(ast, fromA, String(error.error))),
         ),
-      )
-    },
+      ),
     encode: (toI, _, ast, toA) =>
       pipe(
         Effect.try(() =>

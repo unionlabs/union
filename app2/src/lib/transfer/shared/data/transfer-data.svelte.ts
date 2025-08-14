@@ -13,7 +13,7 @@ import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-da
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
 import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
 import * as US from "@unionlabs/sdk/schema"
-import { Array as A, Effect, Match, Option, pipe } from "effect"
+import { Array as A, Brand, Effect, Match, Option, pipe } from "effect"
 import { constant } from "effect/Function"
 import * as S from "effect/Schema"
 import { type Address, fromHex, type Hex } from "viem"
@@ -56,11 +56,23 @@ export class TransferData {
     ),
   )
 
-  quoteTokens = $derived(
-    this.destinationChain.pipe(
+  quoteTokens: Option.Option<readonly US.Token[]> = $derived.by(() => {
+    if (
+      Option.map(this.baseToken, x => Brand.unbranded(x.denom) === "0x6175") === Option.some(true)
+    ) {
+      return Option.some([US.Token.make({
+        denom: US.TokenRawDenom.make("0xba5eD44733953d79717F6269357C77718C8Ba5ed"),
+        rank: Option.none(),
+        bucket: Option.none(),
+        representations: [],
+        wrapping: [],
+        whitelisted: true,
+      })])
+    }
+    return this.destinationChain.pipe(
       Option.flatMap((dc) => tokensStore.getData(dc.universal_chain_id)),
-    ),
-  )
+    )
+  })
 
   sortedBalances = $derived(
     this.sourceChain.pipe(

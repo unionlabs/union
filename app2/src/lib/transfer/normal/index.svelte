@@ -134,7 +134,6 @@ $effect(() => {
     let context: TransferContext | null = null
 
     while (true) {
-      console.log({ some: Option.isSome(FeeStore.intent), feeIntent: FeeStore.intent })
       const result: StateResult | void = yield* createContextState(
         currentState,
         transferData,

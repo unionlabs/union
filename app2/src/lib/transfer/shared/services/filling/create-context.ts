@@ -46,9 +46,7 @@ export type Allowance = {
 
 export type TransferContext = {
   intents: Array<Intent>
-  // TODO: calculated in-app based on `TransferData`
   allowances: Option.Option<A.NonEmptyReadonlyArray<Allowance>>
-  // TODO: becomes `ZkgmClientRequest`
   request: Option.Option<ZkgmClientRequest.ZkgmClientRequest>
   message: Option.Option<string>
 }
@@ -63,6 +61,17 @@ export const createContext = Effect.fn((
   Effect.gen(function*() {
     console.debug("[createContext] args:", args)
 
+    if (args.baseToken.address === "au") {
+      args.quoteToken = Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" })
+    }
+
+    const kind = args.sourceChain.addr_prefix === "union"
+      ? TokenOrder.Kind.Solve
+      : args.kind
+    const metadata = args.sourceChain.addr_prefix === "union"
+      ? "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      : undefined
+
     const sendOrder = yield* TokenOrder.make({
       baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
       baseToken: args.baseToken,
@@ -71,9 +80,9 @@ export const createContext = Effect.fn((
       destination: args.destinationChain,
       receiver: args.receiver,
       sender: args.sender,
-      kind: args.kind,
+      kind,
       source: args.sourceChain,
-      metadata: undefined,
+      metadata,
     })
 
     const maybeFeeQuoteToken = yield* graphqlQuoteTokenUnwrapQuery({
@@ -82,38 +91,48 @@ export const createContext = Effect.fn((
       sourceChannelId: args.sourceChannelId,
     })
 
-    console.log({ maybeFeeQuoteToken })
-
+    // on destination chain tokens, find wrappings[] such that one exists where unwrapped_denom matches basetoken and unwrapped_chain and wrapped_chain universal ids match
     const feeQuoteToken = yield* maybeFeeQuoteToken.pipe(
       Option.orElse(() =>
         pipe(
-          tokensStore.getData(args.sourceChain.universal_chain_id),
-          Option.flatMap(A.findFirst((token) =>
-            A.filter(token.wrapping, (x) => x.unwrapped_denom === args.fee.baseToken.address)
-              .length
-              === 1
-          )),
+          tokensStore.getData(args.destinationChain.universal_chain_id),
+          Option.flatMap(
+            A.findFirst((token) =>
+              A.filter(token.wrapping, (x) =>
+                x.unwrapped_denom === args.fee.baseToken.address
+                && x.unwrapped_chain.universal_chain_id === args.sourceChain.universal_chain_id
+                && x.wrapped_chain.universal_chain_id === args.destinationChain.universal_chain_id)
+                .length
+                === 1
+            ),
+          ),
           Option.map(x => x.denom),
         )
       ),
+      Option.orElse(() => {
+        if (args.baseToken.address === "au") {
+          return Option.some(args.quoteToken)
+        }
+        return Option.none()
+      }),
     )
 
     const feeOrder = yield* TokenOrder.make({
       baseAmount: args.fee.baseAmount,
       baseToken: args.fee.baseToken,
       quoteToken: feeQuoteToken,
-      quoteAmount: Option.getOrThrow(parseBaseAmount(args.quoteAmount)),
+      quoteAmount: args.fee.quoteAmount,
       destination: args.destinationChain,
       receiver: args.receiver,
       sender: args.sender,
-      kind: TokenOrder.Kind.Escrow,
+      kind,
       source: args.sourceChain,
-      metadata: undefined,
+      metadata,
     })
 
     const batch = Batch.make([sendOrder, feeOrder])
 
-    console.log({ batch })
+    console.log("[createContext]", { batch })
 
     const request = ZkgmClientRequest.make({
       channelId: args.sourceChannelId,
@@ -149,7 +168,6 @@ export const createContext = Effect.fn((
 )
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
-  console.log({ args })
   const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
   const baseIntent = createBaseIntent(args, baseAmount)
 
@@ -158,6 +176,8 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
       const intent: Intent = {
         ...baseIntent,
         baseToken: args.baseToken,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
       }
 
       const feeIntent: Intent = {
@@ -166,6 +186,8 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
       }
 
       return shouldIncludeFees ? [intent, feeIntent] : [intent]
@@ -174,6 +196,8 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
       const intent: Intent = {
         ...baseIntent,
         baseToken: args.baseToken,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
         // baseToken: normalizeToken(args.baseToken.address, "cosmos"),
       }
 
@@ -184,6 +208,8 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
       }
 
       return shouldIncludeFees ? [intent, feeIntent] : [intent]

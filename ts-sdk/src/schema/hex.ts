@@ -33,6 +33,13 @@ export const HexFromString = S.transform(S.String, Hex, {
 })
 export type HexFromString = typeof HexFromString.Type
 
+export const StringFromHex = S.transform(Hex, S.String, {
+  strict: true,
+  decode: hex => fromHex(hex, "string"),
+  encode: s => toHex(s),
+})
+export type StringFromHex = typeof HexFromString.Type
+
 /**
  * TODO: handle signed hex?
  */

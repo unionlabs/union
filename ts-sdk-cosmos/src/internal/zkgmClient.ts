@@ -61,6 +61,8 @@ const fromSigningClient = (
         O.getOrElse(A.empty),
       )
 
+      console.log("@unionlabs/sdk-cosmos/internal/zkgmClient", { funds })
+
       const sendInstruction = Cosmos.executeContract(
         signingClient.address,
         request.ucs03Address,

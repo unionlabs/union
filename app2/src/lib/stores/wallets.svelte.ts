@@ -42,7 +42,15 @@ class WalletsStore {
   getAddressForChain(chain: Chain): Option.Option<Ucs05.AnyDisplay> {
     return Match.value(chain.rpc_type).pipe(
       Match.when("evm", () => this.evmAddress),
-      Match.when("cosmos", () => this.cosmosAddress),
+      Match.when("cosmos", () =>
+        pipe(
+          this.cosmosAddress,
+          Option.map(Ucs05.anyDisplayToCanonical),
+          Option.flatMap(
+            S.decodeOption(Ucs05.Bech32FromCanonicalBytesWithPrefix(chain.addr_prefix)),
+          ),
+          Option.map((address) => Ucs05.CosmosDisplay.make({ address })),
+        )),
       Match.when("aptos", () => this.aptosAddress),
       Match.exhaustive,
     )

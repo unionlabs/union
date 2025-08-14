@@ -1,4 +1,4 @@
-import { Effect, Inspectable, Schema } from "effect"
+import { Effect, Inspectable, Predicate, Schema } from "effect"
 import { dual, pipe } from "effect/Function"
 import { ParseError } from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
@@ -156,7 +156,7 @@ export const modify = dual<
       result = yield* setBaseToken(result, options.baseToken)
     }
 
-    if (options.baseAmount) {
+    if (Predicate.isBigInt(options.baseAmount)) {
       result = yield* setBaseAmount(result, options.baseAmount)
     }
 
@@ -164,12 +164,11 @@ export const modify = dual<
       result = yield* setQuoteToken(result, options.quoteToken)
     }
 
-    if (options.quoteAmount) {
+    if (Predicate.isBigInt(options.quoteAmount)) {
       result = yield* setQuoteAmount(result, options.quoteAmount)
     }
 
     if (options.kind !== undefined) {
-      console.log("OPTIONS KIND", options.kind)
       result = {
         ...result,
         kind: options.kind,

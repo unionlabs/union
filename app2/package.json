@@ -20,6 +20,7 @@
     "@chain-registry/types": "^0.50.144",
     "@cosmjs/amino": "^0.33.1",
     "@cosmjs/cosmwasm-stargate": "0.33.1",
+    "@cosmjs/math": "^0.33.1",
     "@cosmjs/proto-signing": "^0.33.1",
     "@cosmjs/stargate": "0.33.1",
     "@cosmjs/tendermint-rpc": "^0.33.1",

@@ -161,6 +161,14 @@ export class SigningClient extends Context.Tag("@unionlabs/sdk/Cosmos/SigningCli
   Cosmos.SigningClient
 >() {
   static Live = signingClientLayer(this)
+  static FromSigningClient = (address: string, client: SigningCosmWasmClient) =>
+    Layer.effect(
+      this,
+      Effect.succeed({
+        client,
+        address,
+      }),
+    )
 }
 
 /**

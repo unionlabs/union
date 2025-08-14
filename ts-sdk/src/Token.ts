@@ -156,7 +156,7 @@ export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
             pipe(
               fromA,
               S.decode(S.compose(
-                Hex.HexFromString,
+                Hex.StringFromHex,
                 TokenFromString,
               )),
             )),
