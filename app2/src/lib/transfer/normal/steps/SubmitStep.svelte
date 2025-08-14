@@ -135,16 +135,16 @@ export const submit = Effect.gen(function*() {
 
     console.log("wtf", { request })
 
-    const reqEffect = ZkgmClient.execute(request).pipe(
-      Effect.provide(EvmZkgmClient.layerWithoutWallet),
-      Effect.provide(publicClient),
-      Effect.provide(walletClient),
-    )
+    // const reqEffect = ZkgmClient.execute(request).pipe(
+    //   Effect.provide(EvmZkgmClient.layerWithoutWallet),
+    //   Effect.provide(publicClient),
+    //   Effect.provide(walletClient),
+    // )
 
-    console.log({
-      wtfitsaneffect: Effect.isEffect(reqEffect),
-      thistoo: Effect.isEffect(ZkgmClient.execute(request)),
-    })
+    // console.log({
+    //   wtfitsaneffect: Effect.isEffect(reqEffect),
+    //   thistoo: Effect.isEffect(ZkgmClient.execute(request)),
+    // })
 
     return yield* pipe(
       Effect.sync(() => {
@@ -156,27 +156,23 @@ export const submit = Effect.gen(function*() {
           ctaCopy = "Executing..."
         })
       ),
-      Effect.tap(() =>
-        Effect.sync(() => {
-          console.log("rugged after execute")
-        })
-      ),
+      // Effect.tap(() =>
+      //   Effect.sync(() => {
+      //     console.log("rugged after execute")
+      //   })
+      // ),
       Effect.andThen(() => ZkgmClient.execute(request)),
-      Effect.tap(() =>
-        Effect.sync(() => {
-          console.log("rugged")
-        })
-      ),
       Effect.andThen((response) =>
         pipe(
           Effect.sync(() => {
-            ctaCopy = "Confirming Transaction"
+            ctaCopy = "Confirming Transaction..."
           }),
           Effect.andThen(() =>
             response.waitFor(
               ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
             )
           ),
+          Effect.flatMap(x => Option.map(x, y => y.transactionHash)),
         )
       ),
       Effect.provide(EvmZkgmClient.layerWithoutWallet),
