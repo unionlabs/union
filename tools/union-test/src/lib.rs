@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use alloy::{
-    contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider, transports::http::Client,
+    contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider,
 };
 use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
@@ -14,10 +14,9 @@ use protos::cosmos::base::v1beta1::Coin;
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bech32, Bytes, FixedBytes, H160, H256},
-    prost::bytes,
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow, Context, Result},
+    anyhow::{self, anyhow, Context},
     primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     rpc::VoyagerRpcClient,
     serde_json,
@@ -29,10 +28,9 @@ pub mod helpers;
 pub mod voyager;
 use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
-    evm::zkgm::{FungibleAssetMetadata, Instruction as InstructionEvm, ZkgmPacket},
+    evm::zkgm::{FungibleAssetMetadata},
 };
 use regex::Regex;
-use ucs03_zkgm::com::Instruction as InstructionCosmos;
 
 #[async_trait]
 pub trait ChainEndpoint: Send + Sync {
@@ -338,11 +336,11 @@ impl ChainEndpoint for cosmos::Module {
 
     async fn calculate_proof(
         &self,
-        source_channel_id: u32,
-        destination_channel_id: u32,
-        encoded_packet: Vec<u8>,
-        height: u64,
-        chain_id: &str,
+        _source_channel_id: u32,
+        _destination_channel_id: u32,
+        _encoded_packet: Vec<u8>,
+        _height: u64,
+        _chain_id: &str,
     ) -> anyhow::Result<Bytes> {
         unimplemented!("calculate_proof is not implemented for Cosmos chains")
     }
@@ -987,7 +985,7 @@ where
         destination_chain: &Dst,
         timeout: Duration,
         signer: &Src::ProviderType,
-    ) -> anyhow::Result<(u64)> {
+    ) -> anyhow::Result<u64> {
         let (packet_hash, height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await

@@ -1,9 +1,5 @@
 use unionlabs::primitives::FixedBytes;
-use alloy::{sol_types::SolType, primitives::{U256, Bytes}};
-use ethers::abi::{self};
-type Ack = (U256, Bytes);
-use voyager_sdk::{
-    anyhow};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConnectionConfirm {
     pub connection_id: u32,
