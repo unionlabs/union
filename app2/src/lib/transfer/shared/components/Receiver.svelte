@@ -59,15 +59,7 @@
   const deriveAddress = (a: Ucs05.AnyDisplay | string): Ucs05.AnyDisplay | null => {
     const result = AppRuntime.runSync(pipe(
       S.decode(S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString))(a),
-      Effect.option,
-      Effect.catchAll(() => {
-        console.warn('Failed to parse stored address:', a)
-        // Return a fallback address object for display purposes
-        if (typeof a === 'string') {
-          return Effect.succeed(Option.some({ _tag: "EvmDisplay" as const, address: a as `0x${string}` }))
-        }
-        return Effect.succeed(Option.none())
-      })
+      Effect.option
     ))
     return Option.getOrNull(result)
   }
