@@ -56,12 +56,8 @@
     close()
   }
   
-  const deriveAddress = (a: Ucs05.AnyDisplay | string): Ucs05.AnyDisplay | null => {
-    const result = AppRuntime.runSync(pipe(
-      S.decode(S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString))(a),
-      Effect.option
-    ))
-    return Option.getOrNull(result)
+  const deriveAddress = (a: string): Ucs05.AnyDisplay => {
+    return AppRuntime.runSync(S.decode(Ucs05.AnyDisplayFromString)(a))
   }
   
   function goBack() {
