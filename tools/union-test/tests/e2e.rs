@@ -3273,3 +3273,8 @@ async fn test_from_evm_to_union_batch_ErrInvalidForwardInstruction() {
 async fn from_evm_to_union_tokenv2_unhappy_path6() {
     self::test_from_evm_to_union_batch_ErrInvalidForwardInstruction().await;
 }
+
+#[tokio::test]
+async fn test_vault_works() {
+    self::test_send_vault_success().await;
+}
