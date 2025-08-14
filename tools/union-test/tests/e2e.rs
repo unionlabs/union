@@ -9,18 +9,15 @@ use std::{
 
 use alloy::{
     hex::decode as hex_decode,
-    sol_types::{SolCall, SolValue},
-    transports::http::Http,
+    sol_types::{SolCall, SolValue}
 };
 use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
 use cw20::Cw20ExecuteMsg;
 use hex_literal::hex;
 use ibc_union_spec::{
-    path::{BatchPacketsPath, StorePath},
-    ChannelId, MustBeZero, Packet,
+    ChannelId,
 };
-use jsonrpsee::http_client::HttpClient;
 use protos::cosmos::base::v1beta1::Coin;
 use rand::RngCore;
 use tokio::sync::OnceCell;
@@ -34,12 +31,11 @@ use ucs03_zkgm::{
     },
 };
 use union_test::{
-    channel_provider::ChannelPair,
     cosmos::{self},
     evm::{
         self,
         zkgm::{
-            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, V1ToV2Migration,
+            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm,
             ZkgmPacket, IBC,
         },
         zkgmerc20::ZkgmERC20,
@@ -49,13 +45,10 @@ use union_test::{
 use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
-    ibc::core::client::height::{self, Height},
     primitives::{Bech32, FixedBytes, H160, U256},
 };
 use voyager_sdk::{
-    primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight, Timestamp},
-    rpc::VoyagerRpcClient,
-    serde_json::{self, json},
+    primitives::{ChainId, Timestamp},
 };
 
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
@@ -2148,10 +2141,10 @@ async fn test_stake_unstake_and_withdraw_from_evm_to_union() {
     println!("Received packet data for withdraw: {:?}", recv_withdraw);
 }
 
-async fn test_from_evm_to_union_tokenv2_unhappy_ONLY_MAKER_ERR() {
+async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
     let ctx = init_ctx().await;
 
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
     println!("EVM Address: {:?}", evm_address);
@@ -2319,7 +2312,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ONLY_MAKER_ERR() {
     );
 }
 
-async fn test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet() {
+async fn test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -2353,7 +2346,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet(
     }
     .abi_encode_params();
 
-    let (zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+    let (_zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
 
     let img = keccak256(&img_metadata);
     // Not adding governance token by purpose to test the error
@@ -2517,7 +2510,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet(
     );
 }
 
-async fn test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance() {
+async fn test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -2551,7 +2544,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance() {
     }
     .abi_encode_params();
 
-    let (zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+    let (_zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
 
     let img = keccak256(&img_metadata);
 
@@ -2715,7 +2708,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance() {
     );
 }
 
-async fn test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow() {
+async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -2749,7 +2742,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow() {
     }
     .abi_encode_params();
 
-    let (zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+    let (_zkgm_deployer_address, _zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
 
     let img = keccak256(&img_metadata);
     let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
@@ -2859,7 +2852,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow() {
         evm_address
     );
 
-    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
     let mut buf: [u8; 32] = [0u8; 32];
     rand::rng().fill_bytes(&mut buf);
 
@@ -2914,7 +2906,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow() {
     );
 }
 
-async fn test_from_evm_to_union_tokenv2_unhappy_ErrCannotDeploy() {
+async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
@@ -3017,10 +3009,10 @@ async fn test_from_evm_to_union_tokenv2_unhappy_ErrCannotDeploy() {
     );
 }
 
-async fn test_from_evm_to_union_batch_ErrInvalidBatchInstruction() {
+async fn test_from_evm_to_union_batch_err_invalid_batch_instruction() {
     let ctx = init_ctx().await;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
+    let (cosmos_address, _cosmos_signer) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
     println!("EVM Address: {:?}", evm_address);
@@ -3037,7 +3029,7 @@ async fn test_from_evm_to_union_batch_ErrInvalidBatchInstruction() {
     };
 
     let dst_chain_id = pair.dest;
-    let src_chain_id = pair.src;
+    let _src_chain_id = pair.src;
 
     // let deployed_erc20 = ensure_erc20(EVM_ZKGM_BYTES.into()).await;
 
@@ -3111,10 +3103,10 @@ async fn test_from_evm_to_union_batch_ErrInvalidBatchInstruction() {
     );
 }
 
-async fn test_from_evm_to_union_batch_ErrInvalidForwardInstruction() {
+async fn test_from_evm_to_union_batch_err_invalid_forward_instruction() {
     let ctx = init_ctx().await;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
+    let (cosmos_address, _cosmos_signer) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
     println!("EVM Address: {:?}", evm_address);
@@ -3131,7 +3123,7 @@ async fn test_from_evm_to_union_batch_ErrInvalidForwardInstruction() {
     };
 
     let dst_chain_id = pair.dest;
-    let src_chain_id: u32 = pair.src;
+    let _src_chain_id: u32 = pair.src;
 
     let deployed_erc20 = ctx
         .dst
@@ -3205,10 +3197,10 @@ async fn test_from_evm_to_union_batch_ErrInvalidForwardInstruction() {
     );
 }
 
-async fn test_send_vault_unhappy_U_CounterpartyIsNotFungible() {
+async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     let ctx = init_ctx().await;
 
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
@@ -3225,7 +3217,7 @@ async fn test_send_vault_unhappy_U_CounterpartyIsNotFungible() {
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
 
-    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
+    let _vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
 
     let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
 
@@ -3387,10 +3379,10 @@ async fn test_send_vault_unhappy_U_CounterpartyIsNotFungible() {
 
 }
 
-async fn test_send_vault_unhappy_U_BaseAmountMustCoverQuoteAmount() {
+async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let ctx = init_ctx().await;
 
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
@@ -3569,10 +3561,10 @@ async fn test_send_vault_unhappy_U_BaseAmountMustCoverQuoteAmount() {
 
 }
 
-async fn test_send_vault_unhappy_U_Fool() {
+async fn test_send_vault_unhappy_u_fool() {
     let ctx = init_ctx().await;
 
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
@@ -3800,52 +3792,52 @@ async fn test_vault_works() {
 // UNHAPPY PATHS
 #[tokio::test]
 async fn from_evm_to_union_tokenv2_unhappy_path() {
-    self::test_from_evm_to_union_tokenv2_unhappy_ONLY_MAKER_ERR().await;
+    self::test_from_evm_to_union_tokenv2_unhappy_only_maker_err().await;
 }
 
 #[tokio::test]
 async fn from_evm_to_union_tokenv2_unhappy_path2() {
-    self::test_from_evm_to_union_tokenv2_unhappy_ErrChannelGovernanceTokenNotSet().await;
+    self::test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset().await;
 }
 
 #[tokio::test]
 async fn from_evm_to_union_tokenv2_unhappy_path3() {
-    self::test_from_evm_to_union_tokenv2_unhappy_ERC20InsufficientBalance().await;
+    self::test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance().await;
 }
 
 #[tokio::test]
 async fn from_evm_to_union_tokenv2_unhappy_path4() {
-    self::test_from_evm_to_union_tokenv2_unhappy_ErrInvalidUnescrow().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path4() {
-    self::test_from_evm_to_union_tokenv2_unhappy_ErrCannotDeploy().await;
+    self::test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow().await;
 }
 
 #[tokio::test]
 async fn from_evm_to_union_tokenv2_unhappy_path5() {
-    self::test_from_evm_to_union_batch_ErrInvalidBatchInstruction().await;
+    self::test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy().await;
 }
 
 #[tokio::test]
 async fn from_evm_to_union_tokenv2_unhappy_path6() {
-    self::test_from_evm_to_union_batch_ErrInvalidForwardInstruction().await;
+    self::test_from_evm_to_union_batch_err_invalid_batch_instruction().await;
+}
+
+#[tokio::test]
+async fn from_evm_to_union_tokenv2_unhappy_path7() {
+    self::test_from_evm_to_union_batch_err_invalid_forward_instruction().await;
 }
 
 #[tokio::test]
 async fn test_send_vault_unhappy_path1() {
-    self::test_send_vault_unhappy_U_CounterpartyIsNotFungible().await;
+    self::test_send_vault_unhappy_u_counterparty_is_not_fungible().await;
 }
 
 
 #[tokio::test]
 async fn test_send_vault_unhappy_path2() {
-    self::test_send_vault_unhappy_U_Fool().await;
+    self::test_send_vault_unhappy_u_fool().await;
 }
 
 #[tokio::test]
 async fn test_send_vault_unhappy_path3() {
-    self::test_send_vault_unhappy_U_BaseAmountMustCoverQuoteAmount().await;
+    self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
 }
 
