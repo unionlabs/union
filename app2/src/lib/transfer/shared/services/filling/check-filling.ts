@@ -55,6 +55,7 @@ export const getFillingState = (
   transferData: TransferData,
   fee: Option.Option<E.Either<FeeIntent, string>>,
 ): FillingState => {
+  console.log({ kind: transferData.kind })
   if (!wallets.hasAnyWallet() && signingMode.mode === "single") {
     return FillingState.NoWallet()
   }
@@ -130,6 +131,7 @@ export const getFillingState = (
         parsedAmount: transferData.parsedAmount,
         ucs03address: transferData.ucs03address,
         quoteToken: transferData.quoteToken,
+        kind: transferData.kind,
         // TODO: move into class attribute
         decimals: Option.flatMap(
           transferData.baseToken,
@@ -155,6 +157,7 @@ export const getFillingState = (
             receiver,
             parsedAmount,
             baseToken,
+            kind,
             decimals,
             ucs03address,
             quoteToken,
@@ -168,6 +171,7 @@ export const getFillingState = (
             baseToken,
             baseAmount: parsedAmount,
             quoteAmount: parsedAmount,
+            kind,
             decimals,
             quoteToken,
             ucs03address,

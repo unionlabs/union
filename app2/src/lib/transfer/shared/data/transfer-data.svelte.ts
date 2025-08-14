@@ -11,9 +11,10 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { Edition } from "$lib/themes"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
-import { Ucs05 } from "@unionlabs/sdk"
-import type { Chain, Channel, Token } from "@unionlabs/sdk/schema"
+import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
+import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Effect, Match, Option, pipe } from "effect"
+import { constant } from "effect/Function"
 import * as S from "effect/Schema"
 import { type Address, fromHex, type Hex } from "viem"
 
@@ -79,7 +80,7 @@ export class TransferData {
     this.baseTokens.pipe(
       Option.flatMap((tokens) =>
         Option.fromNullable(
-          tokens.find((t: Token) => t.denom === this.raw.asset),
+          tokens.find((t: US.Token) => t.denom === this.raw.asset),
         )
       ),
     ),
@@ -122,13 +123,16 @@ export class TransferData {
                   )?.denom,
                 ),
             }),
+            Option.flatMap((raw) =>
+              S.decodeOption(Token.AnyFromEncoded(destinationChain.rpc_type))(raw)
+            ),
           )
         },
       ),
     ),
   )
 
-  channel = $derived<Option.Option<Channel>>(
+  channel = $derived<Option.Option<US.Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
         runSync(
@@ -154,11 +158,13 @@ export class TransferData {
     ),
   )
 
-  kind = $derived<Option.Option<"escrow" | "unescrow">>(
+  kind = $derived<Option.Option<TokenOrder.Kind>>(
     Option.all([this.baseToken, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([baseToken, sourceChain, destinationChain]) => {
         const sourceId = sourceChain.universal_chain_id
         const destId = destinationChain.universal_chain_id
+
+        console.log({ sourceId, destId, baseToken })
 
         return pipe(
           baseToken.wrapping,
@@ -166,23 +172,14 @@ export class TransferData {
             wrapping.wrapped_chain.universal_chain_id === sourceId
             && wrapping.unwrapped_chain.universal_chain_id === destId
           ),
-          Option.map((): "unescrow" => "unescrow"),
-          Option.orElse(() =>
-            pipe(
-              baseToken.wrapping,
-              A.findFirst(wrapping =>
-                wrapping.unwrapped_chain.universal_chain_id === sourceId
-                && wrapping.wrapped_chain.universal_chain_id === destId
-              ),
-              Option.map((): "escrow" => "escrow"),
-            )
-          ),
+          Option.map(constant(TokenOrder.Kind.Unescrow)),
+          Option.orElseSome(() => TokenOrder.Kind.Escrow),
         )
       }),
     ),
   )
 
-  destChannel = $derived<Option.Option<Channel>>(
+  destChannel = $derived<Option.Option<US.Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
         runSync(
@@ -310,7 +307,7 @@ const getEnvironment = (): "production" | "staging" | "development" =>
   )
 
 function filterByEdition(
-  chain: Chain,
+  chain: US.Chain,
   editionName: Edition,
   environment: string,
 ): boolean {

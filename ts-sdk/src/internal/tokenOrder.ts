@@ -169,6 +169,7 @@ export const modify = dual<
     }
 
     if (options.kind !== undefined) {
+      console.log("OPTIONS KIND", options.kind)
       result = {
         ...result,
         kind: options.kind,

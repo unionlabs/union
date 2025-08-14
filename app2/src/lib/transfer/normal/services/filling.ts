@@ -128,10 +128,16 @@ export const createContextState = (
       return pipe(
         createContext(args),
         Effect.mapBoth({
-          onFailure: (cause) =>
-            fail(cause.message, new GenericFlowError({ message: cause.message, cause })),
-          onSuccess: (context) => ok(CheckBalance({ context }), "something"),
+          onFailure: (cause) => {
+            console.log("CREATE CONTEXT FAIL", cause)
+            return fail(cause.message, new GenericFlowError({ message: cause.message, cause }))
+          },
+          onSuccess: (context) => {
+            console.log("CREATE CONTEXT GOOD", context)
+            return ok(CheckBalance({ context }), "something")
+          },
         }),
+        Effect.catchAllDefect((defect) => Effect.logError("BIG DEFECT BOY", defect)),
         Effect.merge,
       )
     },

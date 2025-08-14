@@ -72,12 +72,9 @@ export const createContext = Effect.fn((
       receiver: args.receiver,
       sender: args.sender,
       kind: args.kind,
-      // kind: TokenOrder.Kind.Escrow,
       source: args.sourceChain,
       metadata: undefined,
     })
-
-    console.log(sendOrder.toJSON())
 
     const maybeFeeQuoteToken = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: Utils.ensureHex(args.fee.baseToken.address),
