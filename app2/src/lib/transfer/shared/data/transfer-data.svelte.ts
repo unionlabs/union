@@ -57,18 +57,6 @@ export class TransferData {
   )
 
   quoteTokens: Option.Option<readonly US.Token[]> = $derived.by(() => {
-    if (
-      Option.map(this.baseToken, x => Brand.unbranded(x.denom) === "0x6175") === Option.some(true)
-    ) {
-      return Option.some([US.Token.make({
-        denom: US.TokenRawDenom.make("0xba5eD44733953d79717F6269357C77718C8Ba5ed"),
-        rank: Option.none(),
-        bucket: Option.none(),
-        representations: [],
-        wrapping: [],
-        whitelisted: true,
-      })])
-    }
     return this.destinationChain.pipe(
       Option.flatMap((dc) => tokensStore.getData(dc.universal_chain_id)),
     )
@@ -98,8 +86,26 @@ export class TransferData {
     ),
   )
 
-  quoteToken = $derived(
-    Option.all([
+  quoteToken = $derived.by(() => {
+    console.log({ baseToken: Option.map(this.baseToken, x => x.denom) })
+    const baseTokenDenom = Option.getOrUndefined(
+      Option.map(this.baseToken, x => Brand.unbranded(x.denom)),
+    )
+    if (
+      baseTokenDenom === "0x6175" || baseTokenDenom === "0xba5ed44733953d79717f6269357c77718c8ba5ed"
+    ) {
+      console.log("OVERRIDING QUOTE TOKENS")
+      return Option.some(US.Token.make({
+        denom: US.TokenRawDenom.make("0xba5eD44733953d79717F6269357C77718C8Ba5ed"),
+        rank: Option.none(),
+        bucket: Option.none(),
+        representations: [],
+        wrapping: [],
+        whitelisted: true,
+      }))
+    }
+
+    return Option.all([
       this.baseToken,
       this.sourceChain,
       this.destinationChain,
@@ -141,8 +147,8 @@ export class TransferData {
           )
         },
       ),
-    ),
-  )
+    )
+  })
 
   channel = $derived<Option.Option<US.Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
