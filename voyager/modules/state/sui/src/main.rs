@@ -94,6 +94,7 @@ impl StateModuleServer<IbcUnion> for Module {
         match query {
             Query::PacketByHash(_packet_by_hash) => todo!(),
             Query::PacketsByBatchHash(_packets_by_batch_hash) => todo!(),
+            Query::PacketAckByHash(_packet_ack_by_hash) => todo!(),
             Query::ClientStatus(_client_status) => todo!(),
         }
     }

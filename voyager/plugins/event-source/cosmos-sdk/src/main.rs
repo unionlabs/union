@@ -1766,7 +1766,8 @@ impl Module {
                             packet_hash,
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let source_channel = voyager_client
                     .query_ibc_state(
@@ -1899,7 +1900,8 @@ impl Module {
                             packet_hash,
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let event = ibc_union_spec::event::PacketRecv {
                     packet_data: packet.data,
@@ -1999,7 +2001,8 @@ impl Module {
                             packet_hash,
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let event = ibc_union_spec::event::WriteAck {
                     packet_data: packet.data,

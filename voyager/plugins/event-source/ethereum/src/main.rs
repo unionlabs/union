@@ -1137,7 +1137,8 @@ impl Module {
                             packet_hash: raw_event.packet_hash.0.into(),
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let event = PacketTimeout {
                     packet: PacketMetadata {
@@ -1177,7 +1178,8 @@ impl Module {
                             packet_hash: raw_event.packet_hash.0.into(),
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let event = PacketAck {
                     packet: PacketMetadata {
@@ -1284,7 +1286,8 @@ impl Module {
                             packet_hash: raw_event.packet_hash.0.into(),
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let event = WriteAck {
                     packet_data: packet.data.to_vec().into(),
@@ -1325,7 +1328,8 @@ impl Module {
                             packet_hash: raw_event.packet_hash.0.into(),
                         },
                     )
-                    .await?;
+                    .await?
+                    .packet;
 
                 let event = PacketRecv {
                     packet_data: packet.data.to_vec().into(),

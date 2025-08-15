@@ -220,6 +220,7 @@ members = [
   "voyager/plugins/transaction/sui",
 
   "voyager/plugins/packet-filter",
+  "voyager/plugins/packet-index",
   "voyager/plugins/packet-batch",
   "voyager/plugins/transaction-batch",
   "voyager/plugins/packet-timeout",

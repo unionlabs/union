@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use anyhow::{bail, Result};
 use clap::{Args, Subcommand};
 use unionlabs::{bounded::BoundedI64, primitives::Bytes};
@@ -49,7 +51,7 @@ pub enum Method {
     /// /check_tx?tx=_
     CheckTx,
     /// /commit?height=_
-    Commit,
+    Commit { height: Option<NonZeroU64> },
     /// /consensus_params?height=_
     ConsensusParams,
     /// /consensus_state?
@@ -102,6 +104,7 @@ impl Cmd {
             } => print_json(&client.abci_query(path, data, height, prove).await?),
             Method::Block { height } => print_json(&client.block(height).await?),
             Method::Status => print_json(&client.status().await?),
+            Method::Commit { height } => print_json(&client.commit(height).await?),
             _ => bail!("not yet implemented"),
         }
 
