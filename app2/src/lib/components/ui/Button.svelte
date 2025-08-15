@@ -24,7 +24,7 @@ let {
 
 const classes = cn(
   // Base styles
-  "inline-flex cursor-pointer items-center gap-2 justify-center rounded-md text-sm font-medium transition-colors",
+  "inline-flex cursor-pointer items-center gap-2 justify-center rounded-md font-medium transition-colors",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
   "disabled:pointer-events-none disabled:opacity-50",
   // Variants
@@ -59,8 +59,13 @@ const classes = cn(
   variant === "inline" && [
     "underline text-accent hover:text-orange-300 transition-colors inline-flex items-center gap-1",
   ],
-  // Height and padding
-  ["icon", "inline"].includes(variant) ? null : "h-9 px-4 py-2",
+  // Size variants (only applied to non-icon/inline variants)
+  !["icon", "inline"].includes(variant) && [
+    size === "xs" && "h-6 px-2 py-1 text-xs",
+    size === "sm" && "h-8 px-3 py-1.5 text-sm",
+    size === "md" && "h-9 px-4 py-2 text-sm",
+    size === "lg" && "h-10 px-6 py-2.5 text-base",
+  ],
   // Additional classes passed as props
   className,
 )
