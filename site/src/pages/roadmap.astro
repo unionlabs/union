@@ -53,6 +53,7 @@ try {
     content_type: "roadmapMilestone",
     order: ["fields.position"],
     include: 3,
+    limit: 1000,
   })
 
   milestonesData = milestonesResponse.items.map(item => ({
