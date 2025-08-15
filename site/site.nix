@@ -50,7 +50,7 @@ _: {
 
               export PUPPETEER_SKIP_DOWNLOAD=1 
               npm install
-              npm run dev
+              npm run dev -- --host
             '';
           };
         };
