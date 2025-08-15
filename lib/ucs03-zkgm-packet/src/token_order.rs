@@ -4,7 +4,7 @@ use alloy_sol_types::SolType;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{
     INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, TOKEN_ORDER_KIND_ESCROW,
-    TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_UNESCROW,
+    TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
 };
 use unionlabs_primitives::{Bytes, U256};
 
@@ -180,8 +180,8 @@ pub struct TokenMetadata {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SolveMetadata {
-    pub a: Bytes,
-    pub b: Bytes,
+    pub solver_address: Bytes,
+    pub metadata: Bytes,
 }
 
 impl TokenOrderV2Metadata {
@@ -202,18 +202,19 @@ impl TokenOrderV2Metadata {
             ),
             TOKEN_ORDER_KIND_ESCROW => Ok(Self::Escrow(metadata.as_ref().into())),
             TOKEN_ORDER_KIND_UNESCROW => Ok(Self::Unescrow(metadata.as_ref().into())),
-            3 => Ok(
-                ucs03_zkgm::com::TokenMetadata::abi_decode_params_validate(metadata.as_ref()).map(
-                    |ucs03_zkgm::com::TokenMetadata {
-                         implementation,
-                         initializer,
-                     }| {
-                        Self::Solve(SolveMetadata {
-                            a: implementation.into(),
-                            b: initializer.into(),
-                        })
-                    },
-                )?,
+            TOKEN_ORDER_KIND_SOLVE => Ok(
+                ucs03_zkgm::com::SolverMetadata::abi_decode_params_validate(metadata.as_ref())
+                    .map(
+                        |ucs03_zkgm::com::SolverMetadata {
+                             solverAddress,
+                             metadata,
+                         }| {
+                            Self::Solve(SolveMetadata {
+                                solver_address: solverAddress.into(),
+                                metadata: metadata.into(),
+                            })
+                        },
+                    )?,
             ),
             invalid => Err(format!("invalid token order v2 metadata kind: {invalid}"))?,
         }
