@@ -160,12 +160,12 @@ const getStatusColor = (status: string) => {
   <ContainedSection>
     {
       error ? (
-        <div class="error-message py-20 text-center">
+        <div class="error-message text-center">
           <h2 class="text-2xl font-bold mb-4">Error</h2>
           <p>{error}</p>
         </div>
       ) : (
-        <div class="roadmap-container py-10">
+        <div class="roadmap-container mt-4">
           <div class="roadmap-layout flex gap-8 relative">
             {/* Sidebar Navigation */}
             <aside class="roadmap-sidebar w-80 flex-shrink-0 hidden lg:block">
@@ -245,7 +245,7 @@ const getStatusColor = (status: string) => {
                         </div>
 
                         {/* Progress Bar */}
-                        <div class="flex items-center gap-3 mt-4">
+                        <div class="flex items-center gap-4 mt-4">
                           <div class="flex-1 bg-zinc-700 h-2">
                             <div
                               class="h-2 transition-all duration-500"
@@ -275,7 +275,7 @@ const getStatusColor = (status: string) => {
                             >
                               <div class="subsection bg-black p-6 border-2 border-zinc-800">
                                 <div class="subsection-header mb-4">
-                                  <div class="flex items-center gap-3 mb-2">
+                                  <div class="flex items-center gap-4 mb-2">
                                     <div
                                       class={`w-3 h-3  ${
                                         subsectionStatus === "completed"
@@ -300,7 +300,7 @@ const getStatusColor = (status: string) => {
                                   }
 
                                   {/* Subsection Progress Bar */}
-                                  <div class="flex items-center gap-3">
+                                  <div class="flex items-center gap-4">
                                     <div class="flex-1 bg-zinc-700 h-1.5">
                                       <div
                                         class="h-1.5 transition-all duration-500"
@@ -326,7 +326,7 @@ const getStatusColor = (status: string) => {
                                           subsection.milestones.map((
                             milestone: any,
                           ) => (
-                                            <li class="flex items-start gap-3">
+                                            <li class="flex items-start gap-4">
                                               {
                                                 /* Display the appropriate icon based on completion status */
                                               }
@@ -440,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Scroll the main page
         window.scrollTo({
           top: targetPosition,
-          behavior: "smooth"
+          behavior: "smooth",
         })
 
         // Immediately highlight the clicked item
@@ -469,12 +469,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Scroll the main page
         window.scrollTo({
           top: targetPosition,
-          behavior: "smooth"
+          behavior: "smooth",
         })
 
         // Highlight parent section
-        const parentSection = item.closest('.section-nav')
-        const parentSectionButton = parentSection?.querySelector('.section-nav-item')
+        const parentSection = item.closest(".section-nav")
+        const parentSectionButton = parentSection?.querySelector(".section-nav-item")
         if (parentSectionButton) {
           document.querySelectorAll(".section-nav-item").forEach(navItem => {
             navItem.classList.remove("bg-zinc-800")
@@ -497,10 +497,6 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 <style>
-.roadmap-container {
-  min-height: 100vh;
-}
-
 .roadmap-content {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -512,7 +508,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 .roadmap-sidebar {
   position: sticky;
-  top: 45px;
   align-self: flex-start;
   width: 20rem;
   min-width: 20rem;
