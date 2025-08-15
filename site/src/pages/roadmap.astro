@@ -424,8 +424,6 @@ const getStatusColor = (status: string) => {
 <script>
 // Handle sidebar navigation with scrolling
 document.addEventListener("DOMContentLoaded", () => {
-  const contentContainer = document.querySelector(".roadmap-content")
-
   // Handle section navigation clicks
   const sectionNavItems = document.querySelectorAll(".section-nav-item")
   sectionNavItems.forEach(item => {
@@ -433,11 +431,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const sectionId = item.getAttribute("data-section-id")
       const sectionElement = document.querySelector(`[data-section="${sectionId}"]`)
 
-      if (sectionElement && contentContainer) {
-        const offsetTop = sectionElement.offsetTop - contentContainer.offsetTop
-        contentContainer.scrollTo({
-          top: offsetTop,
-          behavior: "smooth",
+      if (sectionElement) {
+        // Get the absolute position of the element
+        const rect = sectionElement.getBoundingClientRect()
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+        const targetPosition = rect.top + scrollTop - 100 // 100px offset for header
+
+        // Scroll the main page
+        window.scrollTo({
+          top: targetPosition,
+          behavior: "smooth"
         })
 
         // Immediately highlight the clicked item
@@ -457,12 +460,33 @@ document.addEventListener("DOMContentLoaded", () => {
       const subsectionId = item.getAttribute("data-subsection-id")
       const subsectionElement = document.querySelector(`[data-subsection="${subsectionId}"]`)
 
-      if (subsectionElement && contentContainer) {
-        const offsetTop = subsectionElement.offsetTop - contentContainer.offsetTop
-        contentContainer.scrollTo({
-          top: offsetTop,
-          behavior: "smooth",
+      if (subsectionElement) {
+        // Get the absolute position of the element
+        const rect = subsectionElement.getBoundingClientRect()
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+        const targetPosition = rect.top + scrollTop - 100 // 100px offset for header
+
+        // Scroll the main page
+        window.scrollTo({
+          top: targetPosition,
+          behavior: "smooth"
         })
+
+        // Highlight parent section
+        const parentSection = item.closest('.section-nav')
+        const parentSectionButton = parentSection?.querySelector('.section-nav-item')
+        if (parentSectionButton) {
+          document.querySelectorAll(".section-nav-item").forEach(navItem => {
+            navItem.classList.remove("bg-zinc-800")
+          })
+          parentSectionButton.classList.add("bg-zinc-800")
+        }
+
+        // Highlight clicked subsection
+        document.querySelectorAll(".subsection-nav-item").forEach(navItem => {
+          navItem.classList.remove("bg-zinc-800")
+        })
+        item.classList.add("bg-zinc-800")
       }
     })
   })
