@@ -146,9 +146,9 @@ const getStatusColor = (status: string) => {
     case "in-progress":
       return "text-yellow-500"
     case "upcoming":
-      return "text-gray-400"
+      return "text-zinc-400"
     default:
-      return "text-gray-400"
+      return "text-zinc-400"
   }
 }
 ---
@@ -169,7 +169,7 @@ const getStatusColor = (status: string) => {
           <div class="roadmap-layout flex gap-8 relative">
             {/* Sidebar Navigation */}
             <aside class="roadmap-sidebar w-80 flex-shrink-0 hidden lg:block">
-              <div class="bg-black rounded-lg p-4 border border-gray-800">
+              <div class="bg-black p-4 border border-zinc-800">
                 <nav class="space-y-2">
                   {
                     roadmapData.map((section) => {
@@ -180,7 +180,7 @@ const getStatusColor = (status: string) => {
                       <div class="section-nav">
                         <button
                           data-section-id={section.id}
-                          class="section-nav-item w-full text-left px-3 py-2 rounded-lg transition-all hover:bg-gray-800"
+                          class="section-nav-item w-full text-left px-3 py-2 transition-all hover:bg-zinc-800"
                         >
                           <span class="font-semibold text-sm">{section.section}</span>
                         </button>
@@ -199,9 +199,9 @@ const getStatusColor = (status: string) => {
                       return (
                                   <button
                                     data-subsection-id={subsection.id}
-                                    class="subsection-nav-item w-full text-left px-3 py-1.5 rounded-md transition-all text-sm hover:bg-gray-800"
+                                    class="subsection-nav-item w-full text-left px-3 py-1.5 transition-all text-sm hover:bg-zinc-800"
                                   >
-                                    <span class="text-gray-400">{subsection.subsection}</span>
+                                    <span class="text-zinc-400">{subsection.subsection}</span>
                                   </button>
                                 )
                     })
@@ -218,10 +218,7 @@ const getStatusColor = (status: string) => {
             </aside>
 
             {/* Main Content */}
-            <div
-              class="roadmap-content flex-1 min-w-0 overflow-y-auto"
-              style="height: calc(100vh - 100px);"
-            >
+            <div>
               <div
                 class="roadmap-timeline"
                 style="padding-bottom: 70vh;"
@@ -239,24 +236,24 @@ const getStatusColor = (status: string) => {
                       {/* Section Header */}
                       <div class="section-header mb-8">
                         <div class="mb-3">
-                          <h2 class="text-3xl font-bold mb-2">{section.section}</h2>
+                          <h2 class="font-supermolot text-3xl font-bold mb-2">{section.section}</h2>
                           {
                             section.description && (
-                              <p class="text-gray-400">{section.description}</p>
+                              <p class="text-zinc-400">{section.description}</p>
                             )
                           }
                         </div>
 
                         {/* Progress Bar */}
                         <div class="flex items-center gap-3 mt-4">
-                          <div class="flex-1 bg-gray-700 rounded-full h-2">
+                          <div class="flex-1 bg-zinc-700 h-2">
                             <div
-                              class="h-2 rounded-full transition-all duration-500"
+                              class="h-2 transition-all duration-500"
                               style={`width: ${sectionProgress}%; background-color: #A0ECFD;`}
                             >
                             </div>
                           </div>
-                          <span class="text-sm text-gray-400">{sectionProgress}%</span>
+                          <span class="text-sm text-zinc-400">{sectionProgress}%</span>
                         </div>
                       </div>
 
@@ -276,25 +273,27 @@ const getStatusColor = (status: string) => {
                               class="subsection-wrapper"
                               data-subsection={subsection.id}
                             >
-                              <div class="subsection bg-black rounded-lg p-6 border border-gray-800">
+                              <div class="subsection bg-black p-6 border border-zinc-800">
                                 <div class="subsection-header mb-4">
                                   <div class="flex items-center gap-3 mb-2">
                                     <div
-                                      class={`w-3 h-3 rounded-full ${
+                                      class={`w-3 h-3  ${
                                         subsectionStatus === "completed"
-                                          ? "bg-green-500"
+                                          ? "bg-accent-500"
                                           : subsectionStatus === "in-progress"
                                           ? "bg-yellow-500"
-                                          : "bg-gray-400"
+                                          : "bg-zinc-400"
                                       }`}
                                     >
                                     </div>
-                                    <h3 class="text-xl font-semibold">{subsection.subsection}</h3>
+                                    <h3 class="text-xl font-supermolot font-semibold">
+                                      {subsection.subsection}
+                                    </h3>
                                   </div>
 
                                   {
                                     subsection.description && (
-                                      <p class="text-gray-400 text-sm mb-3">
+                                      <p class="text-zinc-400 text-sm mb-3">
                                         {subsection.description}
                                       </p>
                                     )
@@ -302,20 +301,20 @@ const getStatusColor = (status: string) => {
 
                                   {/* Subsection Progress Bar */}
                                   <div class="flex items-center gap-3">
-                                    <div class="flex-1 bg-gray-700 rounded-full h-1.5">
+                                    <div class="flex-1 bg-zinc-700 h-1.5">
                                       <div
-                                        class="h-1.5 rounded-full transition-all duration-500"
+                                        class="h-1.5 transition-all duration-500"
                                         style={`width: ${subsectionProgress}%; background-color: #A0ECFD;`}
                                       >
                                       </div>
                                     </div>
-                                    <span class="text-xs text-gray-500">{subsectionProgress}%</span>
+                                    <span class="text-xs text-zinc-500">{subsectionProgress}%</span>
                                   </div>
                                 </div>
 
                                 {/* Milestones (always visible) */}
                                 <div
-                                  class="milestones-container mt-4 pt-4 border-t border-gray-800"
+                                  class="milestones-container mt-4 pt-4 border-t border-zinc-800"
                                   data-milestones={subsection.id}
                                 >
                                   {
@@ -347,7 +346,7 @@ const getStatusColor = (status: string) => {
                                                   />
                                                 )
                                   : (
-                                                  <div class="w-6 h-6 mt-0.5 flex-shrink-0 bg-green-500 rounded-full" />
+                                                  <div class="w-6 h-6 mt-0.5 flex-shrink-0 bg-green-500" />
                                                 )
                               )
                               : (
@@ -365,7 +364,7 @@ const getStatusColor = (status: string) => {
                                                   />
                                                 )
                                   : (
-                                                  <div class="w-6 h-6 mt-0.5 flex-shrink-0 border-2 border-gray-400 rounded-full" />
+                                                  <div class="w-6 h-6 mt-0.5 flex-shrink-0 border-2 border-zinc-400" />
                                                 )
                               )
                                               }
@@ -373,15 +372,15 @@ const getStatusColor = (status: string) => {
                                                 <span
                                                   class={`${
                                                     milestone.markComplete
-                                                      ? "text-gray-300"
-                                                      : "text-gray-500"
+                                                      ? "text-zinc-300"
+                                                      : "text-zinc-500"
                                                   }`}
                                                 >
                                                   {milestone.milestone}
                                                 </span>
                                                 {
                                                   milestone.description && (
-                                                    <p class="text-sm text-gray-600 mt-1">
+                                                    <p class="text-sm text-zinc-600 mt-1">
                                                       {milestone.description}
                                                     </p>
                                                   )
@@ -393,7 +392,7 @@ const getStatusColor = (status: string) => {
                                       </ul>
                                     )
                           : (
-                                      <p class="text-gray-500 italic">No milestones defined yet.</p>
+                                      <p class="text-zinc-500 italic">No milestones defined yet.</p>
                                     )
                                   }
                                 </div>
@@ -403,7 +402,7 @@ const getStatusColor = (status: string) => {
                       })
                     )
                     : (
-                            <div class="text-gray-500 italic">
+                            <div class="text-zinc-500 italic">
                               No detailed subsections available yet. Check back soon!
                             </div>
                           )
@@ -443,9 +442,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Immediately highlight the clicked item
         document.querySelectorAll(".section-nav-item").forEach(navItem => {
-          navItem.classList.remove("bg-gray-800")
+          navItem.classList.remove("bg-zinc-800")
         })
-        item.classList.add("bg-gray-800")
+        item.classList.add("bg-zinc-800")
       }
     })
   })
@@ -496,10 +495,6 @@ document.addEventListener("DOMContentLoaded", () => {
   max-height: calc(100vh - 65px);
 }
 
-.roadmap-sidebar nav {
-  overflow-y: auto;
-  max-height: calc(100vh - 200px);
-}
 
 .roadmap-sidebar nav::-webkit-scrollbar {
   width: 6px;
