@@ -70,7 +70,7 @@ pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
 
 /// Instantiate `ucs03-zkgm`.
 ///
-/// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][crate::msg::TokenMinterInitMsg]. The admin of the minter contract is set to `ucs03-zkgm`. All migrations for the minter will be threaded through the `ucs03-zkgm` migrate entrypoint.
+/// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][ucs03_zkgm_token_minter_api::TokenMinterInitMsg]. The admin of the minter contract is set to `ucs03-zkgm`. All migrations for the minter will be threaded through the `ucs03-zkgm` migrate entrypoint.
 pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
     CONFIG.save(deps.storage, &msg.config)?;
 
