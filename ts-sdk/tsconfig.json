@@ -2,7 +2,6 @@
   "extends": "../tsconfig.base.json",
   "include": [],
   "references": [
-    // TODO: re-enable me when examples pass static analysis
     // {
     //   "path": "tsconfig.examples.json"
     // },
@@ -15,9 +14,6 @@
   ],
   "compilerOptions": {
     "plugins": [
-      {
-        "name": "@effect/language-service"
-      },
       {
         "name": "gql.tada/ts-plugin",
         "schema": "./src/generated/schema.graphql",

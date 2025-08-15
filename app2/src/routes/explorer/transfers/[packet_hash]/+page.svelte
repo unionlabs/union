@@ -241,7 +241,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 {#if Option.isSome(sourceChain)}
                   <ChainComponent chain={sourceChain.value} />
                   <AddressComponent
-                    address={transfer.sender_canonical}
+                    address={transfer.sender_display}
                     chain={sourceChain.value}
                     class="text-zinc-400"
                   />
@@ -271,7 +271,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
               {#if Option.isSome(destChain)}
                 <ChainComponent chain={destChain.value} />
                 <AddressComponent
-                  address={transfer.receiver_canonical}
+                  address={transfer.receiver_display}
                   chain={destChain.value}
                   class="text-zinc-400"
                 />

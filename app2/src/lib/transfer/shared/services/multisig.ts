@@ -3,7 +3,7 @@ import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { AddressCosmosCanonical, Tx } from "@unionlabs/sdk/schema"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import { Data, Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
@@ -57,7 +57,7 @@ export const generateMultisigTx = (context: TransferContext) =>
     )
 
     const instructionMsgs = pipe(
-      context.instruction,
+      context.request,
       Option.map(instruction => {
         console.log("[instruction] opcode:", instruction.opcode)
         return context.intents.map(intent => {

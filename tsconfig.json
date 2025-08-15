@@ -1,5 +1,15 @@
 {
   "extends": "./tsconfig.base.json",
   "include": [],
-  "references": [{ "path": "ts-sdk" }]
+  "references": [
+    {
+      "path": "ts-sdk"
+    },
+    {
+      "path": "ts-sdk-evm"
+    },
+    {
+      "path": "ts-sdk-cosmos"
+    }
+  ]
 }

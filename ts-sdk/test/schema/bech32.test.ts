@@ -1,9 +1,6 @@
-import {
-  AddressCosmosZkgm,
-  Bech32,
-  Bech32FromAddressCanonicalBytesWithPrefix,
-  HexFromString,
-} from "@unionlabs/sdk/schema"
+import { AddressCosmosZkgm } from "@unionlabs/sdk/schema/address"
+import { HexFromString } from "@unionlabs/sdk/schema/hex"
+import * as Ucs05 from "@unionlabs/sdk/Ucs05"
 import { Either, Schema as S } from "effect"
 import { isHex } from "viem"
 import { assert, describe, it } from "vitest"
@@ -22,7 +19,7 @@ describe("Bech32", () => {
     "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
     "?1ezyfcl",
   ])("decodes valid address %s", s => {
-    assert.isTrue(Either.isRight(S.decodeUnknownEither(Bech32)(s)))
+    assert.isTrue(Either.isRight(S.decodeUnknownEither(Ucs05.Bech32)(s)))
   })
 
   it.each([
@@ -39,13 +36,13 @@ describe("Bech32", () => {
     "li1dgmt3",
     Buffer.from("6465316c67377774ff", "hex").toString("binary"),
   ])("fails invalid address %s", s => {
-    assert.isTrue(Either.isLeft(S.decodeUnknownEither(Bech32)(s)))
+    assert.isTrue(Either.isLeft(S.decodeUnknownEither(Ucs05.Bech32)(s)))
   })
 
   describe("Bech32FromAddressCanonicalBytesWithPrefix", () => {
     it("happy", () => {
       const addr = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
-      const transform = Bech32FromAddressCanonicalBytesWithPrefix("bbn").pipe(
+      const transform = Ucs05.Bech32FromCanonicalBytesWithPrefix("bbn").pipe(
         S.compose(HexFromString),
         S.compose(AddressCosmosZkgm),
       )
@@ -56,7 +53,7 @@ describe("Bech32", () => {
     })
     it.fails("guarantees given HRP matches", () => {
       const addr = "bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh"
-      const transform = Bech32FromAddressCanonicalBytesWithPrefix("osmosis")
+      const transform = Ucs05.Bech32FromCanonicalBytesWithPrefix("osmosis")
 
       const result = S.encodeUnknownSync(transform)(addr)
       console.log(result)

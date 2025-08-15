@@ -3,12 +3,13 @@ import { Array as Arr, Data, Effect, Option, Schema, Schema as S } from "effect"
 import { dual, flow, pipe } from "effect/Function"
 import type { Chain as ViemChain } from "viem"
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
+import * as Ucs05 from "../Ucs05.js"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
 // TODO: narrow filter for arbitraries
-export const UniversalChainId = S.String.pipe(S.pattern(/^[^:]+\.[^:]+$/)).pipe(
+export const UniversalChainId = S.String.pipe(S.pattern(/^[a-z]+\.[a-z\-0-9]+$/)).pipe(
   S.brand("UniversalChainId"),
 )
 export type UniversalChainId = typeof UniversalChainId.Type
@@ -16,6 +17,7 @@ export type UniversalChainId = typeof UniversalChainId.Type
 export const ChainDisplayName = S.String.pipe(S.brand("ChainDisplayName"))
 
 export const RpcType = S.Literal("evm", "cosmos", "aptos")
+export type RpcType = typeof RpcType.Type
 
 export class ChainFeatures extends S.Class<ChainFeatures>("ChainFeatures")({
   channel_list: S.Boolean,
@@ -68,29 +70,13 @@ export class CosmosAddressEncodeError extends Data.TaggedError("CosmosAddressEnc
   prefix: string
 }> {}
 
-const HRP = S.String.pipe(
-  S.length(
-    {
-      min: 1,
-      max: 83,
-    },
-    {
-      description: "HRP must be between 1 to 83 US-ASCII characters, inclusive",
-    },
-  ),
-  S.pattern(/^[\x21-\x7E]+$/, {
-    description: "HRP characters must be within the range [33-126], inclusive",
-  }),
-)
-export type HRP = typeof HRP.Type
-
 export class Chain extends S.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
   minter_address_display: S.NullishOr(S.String), // string | null
   display_name: ChainDisplayName,
   rpc_type: RpcType,
-  addr_prefix: HRP,
+  addr_prefix: Ucs05.HRP,
   testnet: S.Boolean,
   features: S.Array(ChainFeatures),
   rpcs: S.Array(Rpc),

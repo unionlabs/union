@@ -1,5 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "include": [],
-  "references": [{ "path": "ts-sdk/tsconfig.build.json" }]
+  "references": [
+    { "path": "ts-sdk/tsconfig.build.json" },
+    { "path": "ts-sdk-evm/tsconfig.build.json" },
+    { "path": "ts-sdk-cosmos/tsconfig.build.json" }
+  ]
 }

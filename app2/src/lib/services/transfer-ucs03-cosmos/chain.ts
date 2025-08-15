@@ -28,10 +28,16 @@ export const switchChain = (chain: Chain) =>
       })
     }
     // END TODO
+    //
+    console.log("cosmosSwitchChain", { connectedWallet, connectionStatus })
 
     const wallet = yield* getCosmosWalletClient
 
+    console.log("cosmosSwitchChain", { wallet })
+
     const chainInfo = yield* getCosmosChainInfo(chain)
+
+    console.log("cosmosSwitchChain", { chainInfo })
 
     if (!chainInfo) {
       return yield* new NoCosmosChainInfoError({ chain })

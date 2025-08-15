@@ -16,11 +16,13 @@ export const transferByPacketHashQuery = (packetHash: string) =>
           p_packet_hash: $packet_hash
         }) {
           sender_canonical
+          sender_display
           source_chain {
             universal_chain_id
           }
           transfer_send_transaction_hash
           receiver_canonical
+          receiver_display
           destination_chain {
             universal_chain_id
           }

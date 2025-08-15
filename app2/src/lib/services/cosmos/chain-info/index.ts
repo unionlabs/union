@@ -30,19 +30,18 @@ export const getHighGasPriceStep = (
       !Array.isArray(chainInfo.feeCurrencies)
       || chainInfo.feeCurrencies.length === 0
     ) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new GasPriceError({
           cause: "No fee currencies defined in chain info",
           chainId: chainInfo.chainId,
         }),
       )
-      return null as never
     }
 
     const feeCurrency = chainInfo.feeCurrencies[0] as FeeCurrency
 
     if (!feeCurrency.gasPriceStep) {
-      yield* Effect.fail(
+      return yield* Effect.fail(
         new GasPriceError({
           // TODO: change to `message`
           // TODO: reserve `cause` for originally thrown error
@@ -50,7 +49,6 @@ export const getHighGasPriceStep = (
           chainId: chainInfo.chainId,
         }),
       )
-      return null as never
     }
 
     return {

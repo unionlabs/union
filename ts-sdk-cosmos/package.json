@@ -1,0 +1,70 @@
+{
+  "name": "@unionlabs/sdk-cosmos",
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "@unionlabs",
+  "homepage": "https://docs.union.build/typescript",
+  "description": "Union TypeScript SDK for Cosmos",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "ts-sdk-cosmos"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "directory": "dist",
+    "linkDirectory": false
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./examples/*": "./examples/*.ts",
+    "./internal/*": null
+  },
+  "scripts": {
+    "build": "pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v3",
+    "build-annotate": "babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps",
+    "build-cjs": "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",
+    "build-esm": "tsc -b tsconfig.build.json",
+    "check": "tspc -b tsconfig.json",
+    "check:circular": "dpdm -T src",
+    "check:examples": "tspc -p tsconfig.examples.json",
+    "codegen": "build-utils prepare-v3",
+    "prepare": "ts-patch install -s",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
+    "@cosmjs/math": "~0.33",
+    "@cosmjs/proto-signing": "~0.33",
+    "@cosmjs/stargate": "~0.33",
+    "@effect/platform": "^0.84",
+    "@unionlabs/sdk": "workspace:^",
+    "effect": "^3.16"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.27.2",
+    "@babel/core": "^7.27.1",
+    "@babel/plugin-transform-export-namespace-from": "^7.27.1",
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
+    "@cosmjs/math": "^0.33.1",
+    "@cosmjs/proto-signing": "~0.33.1",
+    "@cosmjs/stargate": "~0.33.1",
+    "@effect/build-utils": "^0.8.3",
+    "@effect/platform": "0.84.6",
+    "@types/node": "^22.13.1",
+    "@unionlabs/sdk": "workspace:^",
+    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "dpdm": "^3.14.0",
+    "effect": "3.16.3",
+    "madge": "^8.0.0",
+    "ts-patch": "^3.3.0",
+    "vitest": "^3.0.5"
+  },
+  "dependencies": {}
+}

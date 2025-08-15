@@ -54,17 +54,6 @@ export const deriveReceiverEffect = (input: string) =>
     })
   })
 
-export const getDerivedReceiverSafe = (input: string): Option.Option<AddressCanonicalBytes> => {
-  // XXX: this should be an effect and not narrow into option
-  const program = pipe(
-    input,
-    deriveReceiverEffect,
-    Effect.flatMap(Schema.decode(AddressCanonicalBytes)),
-    Effect.option,
-  )
-  return runSync(program)
-}
-
 export function isHexMovement(
   value: unknown,
   { strict = true }: { strict?: boolean } = {},

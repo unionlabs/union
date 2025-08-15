@@ -23,7 +23,7 @@ let {
     buttonVariants({
       variant: "ghost",
       class:
-        "gap-1 pr-2.5 bg-transparent border-[1px] border-accent-500 hover:cursor-pointer disabled:text-white/70 disabled:opacity-60",
+        "gap-1 pr-2.5 bg-transparent border-[1px] border-accent-500 hover:cursor-pointer disabled:text-white/70 disabled:opacity-60 text-foreground",
     }),
     className,
   )}

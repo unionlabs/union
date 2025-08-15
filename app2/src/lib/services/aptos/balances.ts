@@ -5,7 +5,7 @@ import { Data, Effect, Option } from "effect"
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
 import type { Aptos, AptosApiError } from "@aptos-labs/ts-sdk"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 
 export type FetchAptosBalanceError = FetchAptosTokenBalanceError
 

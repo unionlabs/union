@@ -4,7 +4,7 @@ import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { AddressCosmosCanonical, Tx } from "@unionlabs/sdk/schema"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import { Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
@@ -46,7 +46,7 @@ export const createMultisigMessage = (context: TransferContext) =>
     )
 
     const instructionMsgs = pipe(
-      context.instruction,
+      context.request,
       Option.map((instruction) => {
         return context.intents.map((intent) => {
           const isNative = !isValidBech32ContractAddress(intent.baseToken)

@@ -4,7 +4,8 @@ import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Label from "$lib/components/ui/Label.svelte"
-import { runPromiseExit } from "$lib/runtime"
+import * as AppRuntime from "$lib/runtime"
+import { getCosmWasmClient } from "$lib/services/cosmos/clients"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients.ts"
 import type {
   CosmosSwitchChainError,
@@ -16,6 +17,12 @@ import type {
   NoCosmosChainInfoError,
   OfflineSignerError,
 } from "$lib/services/transfer-ucs03-cosmos"
+import { switchChain as cosmosSwitchChain } from "$lib/services/transfer-ucs03-cosmos"
+import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer"
+import {
+  EvmSwitchChainError,
+  switchChain as evmSwitchChain,
+} from "$lib/services/transfer-ucs03-evm"
 import type {
   ConnectorClientError,
   SwitchChainError,
@@ -24,9 +31,11 @@ import type {
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
-import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
-import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
 import { isValidBech32ContractAddress } from "$lib/utils"
+import { Ucs03, ZkgmClientResponse, ZkgmIncomingMessage } from "@unionlabs/sdk"
+import { ZkgmClient } from "@unionlabs/sdk"
+import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
+import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -36,7 +45,6 @@ import {
   CreateViemWalletClientError,
   WriteContractError,
 } from "@unionlabs/sdk/evm"
-import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import type {
   CosmosAddressEncodeError,
@@ -44,9 +52,9 @@ import type {
   TransactionHash,
 } from "@unionlabs/sdk/schema"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { CryptoError, extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils"
+import { CryptoError, extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils/index"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
-import { http } from "@wagmi/core"
+import { getPublicClient, http } from "@wagmi/core"
 import { Array as Arr, Cause, Effect, Exit, Match, Option, Predicate, Unify } from "effect"
 import { not } from "effect/Boolean"
 import type { NoSuchElementException } from "effect/Cause"
@@ -64,8 +72,6 @@ type Props = {
 const { stepIndex, step, onSubmit, cancel, actionButtonText }: Props = $props()
 
 let showError = $state(false)
-let ets = $state<WriteEvm.TransactionState>(WriteEvm.TransactionState.Filling())
-let cts = $state<WriteCosmos.TransactionState>(WriteCosmos.TransactionState.Filling())
 let error = $state<
   Option.Option<
     | ConnectorClientError
@@ -93,179 +99,112 @@ let isSubmitting = $state(false)
 
 const needsRetry = $derived(Option.isSome(error))
 
-const isButtonEnabled = $derived.by(() => {
-  const isFilling = WriteEvm.is("Filling")(ets) || WriteCosmos.is("Filling")(cts)
-  const hasError = Option.isSome(error)
-  return !isSubmitting && isFilling || hasError
-})
-
-const submitButtonText = $derived.by(() => {
-  if (Option.isSome(error)) {
-    return "Try Again"
-  }
-
-  if (!WriteEvm.is("Filling")(ets)) {
-    return WriteEvm.toCtaText(actionButtonText)(ets)
-  }
-
-  if (!WriteCosmos.is("Filling")(cts)) {
-    return WriteCosmos.toCtaText(actionButtonText)(cts)
-  }
-
-  return actionButtonText
-})
+const isButtonEnabled = $derived(!isSubmitting || Option.some(error))
+let ctaCopy = $state<string>("Submit")
 
 const resetState = () => {
-  ets = WriteEvm.TransactionState.Filling()
-  cts = WriteCosmos.TransactionState.Filling()
+  ctaCopy = "Submit"
   error = Option.none()
   isSubmitting = false
 }
 
-export const submit = Effect.gen(function*() {
-  if (needsRetry) {
-    resetState()
-    return // Exit and let the button click call this function again
-  }
+const request = $derived(step.instruction)
 
-  // Set submitting state
+export const submit = Effect.gen(function*() {
+  // if (needsRetry) {
+  //   resetState()
+  //   return // Exit and let the button click call this function again
+  // }
+
   isSubmitting = true
+
   error = Option.none()
 
-  const startPolling = (transactionHash: TransactionHash) =>
-    Effect.sync(() => {
-      console.log("GOT TRANSACTION HASH:", transactionHash)
-      transferHashStore.startPolling(transactionHash)
-      onSubmit()
-    })
-
   const doEvm = Effect.gen(function*() {
-    const viemChain = yield* step.intent.sourceChain.toViemChain()
-    const publicClient = yield* createViemPublicClient({
-      chain: viemChain,
-      transport: http(),
-    })
+    const chain = yield* step.intent.sourceChain.toViemChain()
     const connectorClient = yield* getWagmiConnectorClient
-    const walletClient = yield* createViemWalletClient({
-      account: connectorClient.account,
-      chain: viemChain,
+
+    const publicClient = Evm.PublicClient.Live({
+      chain,
       transport: custom(connectorClient),
     })
-    const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
-    const salt = yield* generateSalt("evm")
+    const walletClient = Evm.WalletClient.Live({
+      account: connectorClient.account,
+      chain,
+      transport: custom(connectorClient),
+    })
 
-    const setEts = (nextEts: typeof ets) =>
+    return yield* pipe(
       Effect.sync(() => {
-        console.log(`ETS transitioning: ${ets._tag} -> ${nextEts._tag}`)
-        ets = nextEts
-      })
-
-    const nextState = Effect.tap(
-      Effect.suspend(() =>
-        WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
-          chain: viemChain,
-          account: connectorClient.account,
-          address: step.intent.channel.source_port_id,
-          abi: ucs03abi,
-          functionName: "send",
-          args: [
-            step.intent.channel.source_channel_id,
-            0n,
-            timeoutTimestamp,
-            salt,
-            {
-              opcode: step.instruction.opcode,
-              version: step.instruction.version,
-              operand: encodeAbi(step.instruction),
-            },
-          ],
-          ...(Option.isSome(step.funds) && step.funds.value.length > 0
-            ? { value: step.funds.value[0].amount }
-            : {}),
+        ctaCopy = "Switching Chain..."
+      }),
+      Effect.andThen(() => evmSwitchChain(chain)),
+      Effect.andThen(() =>
+        Effect.sync(() => {
+          ctaCopy = "Executing..."
         })
       ),
-      setEts,
-    )
-
-    yield* pipe(
-      nextState,
-      Effect.repeat({ until: WriteEvm.is("TransactionReceiptComplete") }),
-      // TODO: remove cast
-      Effect.andThen(({ exit }) => startPolling(exit.transactionHash as TransactionHash)),
+      Effect.andThen(() => ZkgmClient.execute(request)),
+      Effect.andThen((response) =>
+        pipe(
+          Effect.sync(() => {
+            ctaCopy = "Confirming Transaction..."
+          }),
+          Effect.andThen(() =>
+            response.waitFor(
+              ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+            )
+          ),
+          Effect.flatMap(x => Option.map(x, y => y.transactionHash)),
+        )
+      ),
+      Effect.provide(EvmZkgmClient.layerWithoutWallet),
+      Effect.provide(publicClient),
+      Effect.provide(walletClient),
     )
   })
 
   const doCosmos = Effect.gen(function*() {
-    const walletCosmosAddress = yield* wallets.cosmosAddress
-    const sender = yield* step.intent.sourceChain.getDisplayAddress(walletCosmosAddress)
-    const isNative = !isValidBech32ContractAddress(step.intent.baseToken)
-    const baseToken = step.intent.baseToken === "xion" ? "uxion" : step.intent.baseToken
-    const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
-    const salt = yield* generateSalt("cosmos")
+    const chain = step.intent.sourceChain
+    const { address } = yield* wallets.getAddressForChain(chain)
 
-    const setCts = (nextCts: typeof cts) =>
-      Effect.sync(() => {
-        console.log(`CTS transitioning: ${cts._tag} -> ${nextCts._tag}`)
-        cts = nextCts
-      })
+    ctaCopy = "Switching Chain..."
+    const switchResult = yield* cosmosSwitchChain(chain)
 
-    const nextState = Effect.tap(
-      Effect.suspend(() =>
-        WriteCosmos.nextState(
-          cts,
-          step.intent.sourceChain,
-          sender,
-          fromHex(step.intent.channel.source_port_id, "string"),
-          {
-            send: {
-              channel_id: step.intent.channel.source_channel_id,
-              timeout_height: "0",
-              timeout_timestamp,
-              salt,
-              instruction: encodeAbiParameters(instructionAbi, [
-                step.instruction.version,
-                step.instruction.opcode,
-                encodeAbi(step.instruction),
-              ]),
-            },
-          },
-          Option.isSome(step.funds) && step.funds.value.length > 0
-            ? step.funds.value.map(fund => ({
-              denom: fund.baseToken,
-              amount: fund.amount.toString(),
-            }))
-            : undefined,
-        )
-      ),
-      setCts,
+    ctaCopy = "Initializing Signer..."
+    const signingClient = yield* getCosmWasmClient(chain)
+    const rpcUrl = yield* chain.getRpcUrl("rpc")
+
+    const walletClient = Cosmos.SigningClient.FromSigningClient(
+      address,
+      signingClient,
     )
 
-    yield* pipe(
-      nextState,
-      Effect.repeat({ until: WriteCosmos.is("WriteContractComplete") }),
-      Effect.andThen(({ exit }) =>
-        // TODO: remove cast
-        startPolling(`0x${exit.transactionHash}` as TransactionHash)
-      ),
+    const publicClient = Cosmos.Client.Live(rpcUrl)
+
+    ctaCopy = "Executing..."
+
+    const response = yield* ZkgmClient.execute(step.instruction).pipe(
+      Effect.provide(CosmosZkgmClient.layerWithoutSigningClient),
+      Effect.provide(walletClient),
+      Effect.provide(publicClient),
     )
+
+    return response.txHash
   })
 
   const sourceChainRpcType = step.intent.sourceChain.rpc_type
-  yield* Match.value(sourceChainRpcType).pipe(
+  return yield* Match.value(sourceChainRpcType).pipe(
     Match.when("evm", () => doEvm),
     Match.when("cosmos", () => doCosmos),
     Match.orElse(() =>
       Effect.gen(function*() {
         yield* Effect.logFatal("Unknown chain type")
         // TODO: make fail
-        return Effect.succeed("unknown chain type")
+        return "unknown chain type"
       })
     ),
   )
-
-  yield* Effect.sync(() => {
-    isSubmitting = false
-  })
 }).pipe(
   Effect.annotateLogs({
     step: "submit",
@@ -280,9 +219,10 @@ const handleSubmit = () => {
     return
   }
 
-  runPromiseExit(submit).then(exit =>
+  Effect.runPromiseExit(submit).then(exit =>
     Exit.match(exit, {
       onFailure: cause => {
+        console.log("DONE EXECUTING", cause)
         const err = Cause.originalError(cause)
         error = pipe(
           err,
@@ -292,7 +232,9 @@ const handleSubmit = () => {
         )
         isSubmitting = false
       },
-      onSuccess: constVoid,
+      onSuccess: (hash) => {
+        console.log("TX HASH", hash)
+      },
     })
   )
 }
@@ -331,7 +273,7 @@ const handleSubmit = () => {
         onclick={handleSubmit}
         disabled={!isButtonEnabled}
       >
-        {submitButtonText}
+        {ctaCopy}
       </Button>
     </div>
     {#if Option.isSome(error)}

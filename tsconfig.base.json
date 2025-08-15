@@ -30,7 +30,6 @@
     "noImplicitThis": true,
     "noUncheckedIndexedAccess": false,
     "strictNullChecks": true,
-    "baseUrl": ".",
     "target": "ES2022",
     "module": "NodeNext",
     "incremental": true,
@@ -38,13 +37,54 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "transform": "@effect/language-service/transform"
+        "transform": "@effect/language-service/transform",
+        "diagnostics": true,
+        "diagnosticSeverity": {
+          "floatingEffect": "error"
+        },
+        "quickinfo": true,
+        "completions": true,
+        "goto": true,
+        "allowedDuplicatedPackages": [],
+        "namespaceImportPackages": [
+          "@unionlabs/sdk",
+          "@unionlabs/sdk-evm",
+          "@unionlabs/sdk-cosmos",
+          "effect",
+          "@effect/ai",
+          "@effect/ai-anthropic",
+          "@effect/ai-openai",
+          "@effect/cli",
+          "@effect/cluster",
+          "@effect/experimental",
+          "@effect/opentelemetry",
+          "@effect/platform",
+          "@effect/platform-browser",
+          "@effect/platform-bun",
+          "@effect/platform-node",
+          "@effect/platform-node-shared",
+          "@effect/printer",
+          "@effect/printer-ansi",
+          "@effect/rpc",
+          "@effect/sql",
+          "@effect/sql-clickhouse",
+          "@effect/sql-d1",
+          "@effect/sql-drizzle",
+          "@effect/sql-kysely",
+          "@effect/sql-libsql",
+          "@effect/sql-mssql",
+          "@effect/sql-mysql2",
+          "@effect/sql-pg",
+          "@effect/sql-sqlite-bun",
+          "@effect/sql-sqlite-do",
+          "@effect/sql-sqlite-node",
+          "@effect/sql-sqlite-react-native",
+          "@effect/sql-sqlite-wasm",
+          "@effect/typeclass",
+          "@effect/vitest",
+          "@effect/workflow"
+        ]
       }
-    ],
-    "paths": {
-      "@unionlabs/sdk": ["./ts-sdk/src/index.js"],
-      "@unionlabs/sdk/*": ["./ts-sdk/src/*.js", "./ts-sdk/src/*/index.js"],
-      "@unionlabs/client": ["./typescript-sdk/src/mod.js"]
-    }
+    ]
   }
 }

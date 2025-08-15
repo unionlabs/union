@@ -96,3 +96,22 @@ sentinel2/sentinel.db
 # AI
 CLAUDE.md
 .claude/
+
+# app
+!app2/src/lib/transfer/shared/data/
+
+# ts-sdk
+ts-sdk/build
+ts-sdk/dist
+ts-sdk/docs
+ts-sdk-evm/build
+ts-sdk-evm/dist
+ts-sdk-evm/docs
+ts-sdk-cosmos/build
+ts-sdk-cosmos/dist
+ts-sdk-cosmos/docs
+docs/src/content/docs/reference/@unionlabs/sdk
+docs/src/content/docs/reference/@unionlabs/sdk-evm
+docs/src/content/docs/reference/@unionlabs/sdk-cosmos
+docs/src/content/docs/integrations/typescript/examples/*
+!docs/src/content/docs/integrations/typescript/examples/index.mdx
