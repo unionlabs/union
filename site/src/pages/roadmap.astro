@@ -169,7 +169,7 @@ const getStatusColor = (status: string) => {
           <div class="roadmap-layout flex gap-8 relative">
             {/* Sidebar Navigation */}
             <aside class="roadmap-sidebar w-80 flex-shrink-0 hidden lg:block">
-              <div class="bg-black p-4 border border-zinc-800">
+              <div class="bg-black p-4 border-2 border-zinc-800">
                 <nav class="space-y-2">
                   {
                     roadmapData.map((section) => {
@@ -273,7 +273,7 @@ const getStatusColor = (status: string) => {
                               class="subsection-wrapper"
                               data-subsection={subsection.id}
                             >
-                              <div class="subsection bg-black p-6 border border-zinc-800">
+                              <div class="subsection bg-black p-6 border-2 border-zinc-800">
                                 <div class="subsection-header mb-4">
                                   <div class="flex items-center gap-3 mb-2">
                                     <div
@@ -314,7 +314,7 @@ const getStatusColor = (status: string) => {
 
                                 {/* Milestones (always visible) */}
                                 <div
-                                  class="milestones-container mt-4 pt-4 border-t border-zinc-800"
+                                  class="milestones-container mt-4 pt-4 border-t-2 border-zinc-800"
                                   data-milestones={subsection.id}
                                 >
                                   {
