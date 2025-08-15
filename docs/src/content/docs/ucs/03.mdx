@@ -119,7 +119,7 @@ Fields:
 - `salt`: A unique `bytes32` identifier used for deterministic packet hashing
   - For regular packets: `keccak256(abi.encodePacked(sender, user_provided_salt))`
   - For forwarded packets: Uses a tinting mechanism to track packet chain
-    - Magic value: `0xC0DE00000000000000000000000000000000000000000000000000BABE`
+    - Magic value: `0xC0DE00000000000000000000000000000000000000000000000000000000BABE`
     - Tinting applied as: `salt | magic_value` (bitwise OR)
     - previous_salt is the salt of the packet being forwarded
     - Next hop salt derived as: `keccak256(previous_salt) | magic_value`
@@ -420,14 +420,14 @@ struct TokenOrderV2 {
     uint256 baseAmount;       // Amount being sent
     bytes quoteToken;         // Token requested in return
     uint256 quoteAmount;      // Minimum amount requested
-    uint8 kind;               // Type of metadata (initialize, escrow, unescrow)
-    bytes metadata;           // Token metadata based on type
+    uint8 kind;               // Type of metadata (initialize, escrow, unescrow, solve)
+    bytes metadata;           // Token metadata or solver metadata based on type
 }
 ```
 
 #### TokenOrderV2: Advanced Token Mapping and Customization
 
-The V2 version introduces a significantly more flexible metadata system with three types:
+The V2 version introduces a significantly more flexible metadata system with four types:
 - `TOKEN_ORDER_KIND_INITIALIZE` (0x00): Provides full metadata implementation and initializer for custom token deployment
 ```solidity
 struct TokenMetadata {
@@ -437,6 +437,13 @@ struct TokenMetadata {
 ```
 - `TOKEN_ORDER_KIND_ESCROW` (0x01): Uses a metadata image hash for existing token identification
 - `TOKEN_ORDER_KIND_UNESCROW` (0x02): Specifically for unwrapping operations
+- `TOKEN_ORDER_KIND_SOLVE` (0x03): Routes the order to a solver contract for custom fulfillment logic
+```solidity
+struct SolverMetadata {
+    bytes solverAddress;     // Address of the solver contract
+    bytes metadata;          // Additional metadata for the solver
+}
+```
 
 The key innovation in V2 is the ability to support 1:N token mappings, allowing the same source token to be represented by different implementations on the destination chain. This enables several powerful use cases:
 
@@ -495,11 +502,14 @@ The order can be filled in three ways:
    - Market maker must handle quote token transfer on behalf of the protocol
 
 3. Solver Fill - Smart contracts that implement the solver interface can programmatically fill orders:
-   - Solver contracts are detected via interface support (ERC165 in Solidity, query in CosmWasm)
-   - Solvers receive full context: packet, order, caller, relayer, relayerMsg, and intent flag
+   - Solver addresses are encoded in the order metadata when `kind == TOKEN_ORDER_KIND_SOLVE` (0x03)
+   - The `quoteToken` field specifies what token the solver should provide to the receiver
+   - Solvers receive full context: packet, order, path, caller, relayer, relayerMsg, and intent flag
    - Solvers can implement complex logic like multi-hop swaps, arbitrage, or liquidity aggregation
-   - On solver failure, the protocol return `ACK_ERR_ONLYMAKER` to allow other market makers to fill
+   - On solver failure, the protocol returns `ACK_ERR_ONLYMAKER` to allow other market makers to fill
    - Solvers use the same `FILL_TYPE_MARKETMAKER` acknowledgment type as regular market makers
+   - The solver must return the market maker address as `bytes` to receive the base tokens (typically a preconfigured beneficiary address controlled by the solver, not the relayerMsg)
+   - The address is returned as `bytes` to support different chain address formats (e.g., 20-byte Ethereum addresses, Cosmos bech32 addresses, etc.)
 
 The acknowledgement includes:
 - Fill type (Protocol = `0xB0CAD0` or MarketMaker = `0xD1CEC45E`)
@@ -521,32 +531,33 @@ interface ISolver {
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external;
+    ) external returns (bytes memory);
 
+    // Reserved for future use - not currently called by the protocol
     function allowMarketMakers() external returns (bool);
 }
 ```
 
 Solver contracts must:
 1. Implement the `ISolver` interface
-2. Support ERC165 interface detection for `type(ISolver).interfaceId`
-3. Handle the `solve()` function call with all order context
+2. Handle the `solve()` function call with all order context
+3. Return the market maker address (as `bytes`) that will receive the base tokens on the source chain
+   - Must return `bytes` to support different address formats across chains
+   - For example, Ethereum addresses are 20 bytes, but other chains may use different formats
 
 **CosmWasm Implementation:**
 
 ```rust
-pub enum SolverQuery {
-    IsSolver,
-}
-
 pub enum SolverMsg {
     DoSolve {
         packet: Packet,
         order: CwTokenOrderV2,
+        path: Uint256,
         caller: Addr,
         relayer: Addr,
         relayer_msg: Bytes,
@@ -556,23 +567,27 @@ pub enum SolverMsg {
 ```
 
 CosmWasm solvers must:
-1. Handle the `SolverQuery::IsSolver{}` query (return success to indicate solver capability)
-2. Implement the `SolverMsg::DoSolve` execute handler
-3. Perform the necessary token transfers or logic
+1. Implement the `SolverMsg::DoSolve` execute handler
+2. Perform the necessary token transfers or logic
+3. Emit a `solver` event with `market_maker` attribute containing the recipient address
 
-**Solver Detection:**
+**Solver Invocation:**
 
-The protocol automatically detects solver contracts:
-- **Solidity**: Uses `ZkgmLib.isSolver(address)` which checks ERC165 interface support
-- **CosmWasm**: Queries the contract with `SolverQuery::IsSolver{}` and checks if the query succeeds
+When an order has `kind == TOKEN_ORDER_KIND_SOLVE` (0x03):
+- **Solidity**: The protocol decodes `SolverMetadata` from the order's metadata field to extract the solver address
+- **CosmWasm**: The protocol extracts the solver address from the metadata and invokes `SolverMsg::DoSolve`
+- The solver contract is called with the full order context
+- The solver must return the market maker address that will receive the base tokens
+- In CosmWasm, the market maker address is communicated via a `solver` event with a `market_maker` attribute
 
 **Execution Flow:**
 
-When a quote token is detected as a solver:
-1. The solver's `solve()` function is called with full context
-2. The solver can perform arbitrary logic (swaps, aggregation, etc.)
-3. On success, normal market maker acknowledgment is returned
-4. On failure, `ACK_ERR_ONLYMAKER` is returned, allowing other market makers to attempt filling
+When an order has `kind == TOKEN_ORDER_KIND_SOLVE`:
+1. The protocol extracts the solver address from the `SolverMetadata` in the order's metadata field
+2. The solver's `solve()` function is called with full context including the path parameter
+3. The solver performs its custom logic and returns the market maker address to receive base tokens
+4. On success, a market maker acknowledgment is returned with the solver-provided address
+5. On failure or if no market maker address is provided, `ACK_ERR_ONLYMAKER` is returned, allowing other market makers to attempt filling
 
 **Use Cases:**
 
@@ -582,42 +597,84 @@ When a quote token is detected as a solver:
 - **Custom Logic**: Implement protocol-specific market making strategies
 - **Cross-chain Coordination**: Coordinate actions across multiple chains
 
+**Important Implementation Detail:**
+
+Solvers typically configure different beneficiary addresses per path/channel/token combination. This allows them to:
+- Route base tokens to different vaults or addresses on different chains
+- Manage liquidity separately for different trading pairs
+- Coordinate with counterparty contracts on the source chain
+
 **Example Solver Implementation:**
 
 ```solidity
-contract MultiDEXSolver is ISolver, ERC165 {
-    mapping(uint32 => mapping(bytes => bytes)) quoteTokenFor;
-    mapping(uint32 => bytes) expectedBeneficiary;
+contract MultiDEXSolver is ISolver {
+    // Beneficiary addresses configured per path/channel/token
+    // Using bytes to support addresses from different chains (not just 20-byte addresses)
+    mapping(uint256 => mapping(uint32 => mapping(bytes => bytes))) public beneficiaries;
+
+    struct DEXParams {
+        uint256 maxSlippage;
+        address[] routePath;
+        uint256 deadline;
+    }
 
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external override {
+    ) external override returns (bytes memory) {
         require(!intent, "only finalized txs are currently supported");
-        require(relayerMsg == expectedBeneficiary[packet.destinationChannelId], "unexpected beneficiaty");
-        address quoteToken = quoteTokenFor[packet.destinationChannelId][order.baseToken];
-        require(quoteToken != address(0), "unsupported token")
 
+        // Decode the SolverMetadata from the order
+        SolverMetadata memory solverMeta = abi.decode(order.metadata, (SolverMetadata));
+
+        // Decode custom parameters from the solver metadata's metadata field
+        DEXParams memory params = abi.decode(solverMeta.metadata, (DEXParams));
+
+        // Validate deadline
+        require(block.timestamp <= params.deadline, "Order expired");
+
+        // The quoteToken from the order specifies what token to provide
+        address quoteToken = address(bytes20(order.quoteToken));
         address receiver = address(bytes20(order.receiver));
 
-        findBestRouteAndTrade(
+        // Validate that we support this quote token
+        require(isSupported(quoteToken), "Unsupported quote token");
+
+        // Perform the trade to obtain the quote tokens
+        uint256 outputAmount = findBestRouteAndTrade(
             order.baseToken,
             order.baseAmount,
             quoteToken,
             order.quoteAmount,
-            receiver
+            params
         );
+
+        // Ensure minimum output is met
+        require(outputAmount >= order.quoteAmount, "Insufficient output");
+
+        // Transfer the quote tokens to the receiver
+        IERC20(quoteToken).transfer(receiver, order.quoteAmount);
+
+        // Keep any excess as profit
+        uint256 profit = outputAmount - order.quoteAmount;
+        if (profit > 0) {
+            IERC20(quoteToken).transfer(relayer, profit);
+        }
+
+        // Return the market maker address that should receive the base tokens
+        // This is typically configured per path/channel/token combination
+        bytes memory beneficiary = beneficiaries[path][packet.destinationChannelId][order.baseToken];
+        require(beneficiary.length > 0, "No beneficiary configured");
+        return beneficiary;
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public view override returns (bool)
-    {
-        return interfaceId == type(ISolver).interfaceId
-            || super.supportsInterface(interfaceId);
+    function allowMarketMakers() external pure returns (bool) {
+        return false; // This solver handles everything itself
     }
 }
 ```
@@ -625,6 +682,20 @@ contract MultiDEXSolver is ISolver, ERC165 {
 #### Token Order Kinds: Protocol Rules and Solver Communication
 
 The `kind` field in TokenOrderV2 serves two critical purposes: **protocol-level validation** and **solver communication**. Understanding when and how to use each kind is essential for proper protocol operation.
+
+##### Solver Fill via TOKEN_ORDER_KIND_SOLVE
+
+When `kind == TOKEN_ORDER_KIND_SOLVE` (0x03), the order is routed to a solver contract instead of being processed by the protocol or regular market makers. This enables sophisticated custom fulfillment logic:
+
+1. **Metadata Structure**: The order's `metadata` field must contain an encoded `SolverMetadata` struct:
+   - `solverAddress`: The address of the solver contract to invoke
+   - `metadata`: Additional arbitrary data for the solver to use
+
+2. **Routing**: The protocol extracts the solver address from the metadata and calls the solver's `solve()` function
+
+3. **Return Value**: The solver must return the market maker address that should receive the base tokens on the source chain
+
+4. **Fallback**: If the solver fails or doesn't return a valid address, `ACK_ERR_ONLYMAKER` is returned, allowing other market makers to attempt filling
 
 ##### Protocol Validation Rules
 
@@ -650,30 +721,46 @@ The protocol enforces strict validation rules based on the token order kind:
 
 ##### Solver Communication Channel
 
-Beyond protocol validation, the `kind` and `metadata` fields create a powerful communication channel between users and solvers:
+When using `TOKEN_ORDER_KIND_SOLVE`, the `SolverMetadata` structure enables powerful communication between users and solvers:
 
 **Arbitrary Metadata Threading**:
 ```solidity
 // Example: User wants specific slippage tolerance for a solver
-TokenOrderV2 memory order = TokenOrderV2({
-    sender: abi.encodePacked(msg.sender),
-    receiver: abi.encodePacked(recipient),
-    baseToken: abi.encodePacked(token),
-    baseAmount: amount,
-    quoteToken: abi.encodePacked(solverContract),
-    quoteAmount: minOutput,
-    kind: TOKEN_ORDER_KIND_ESCROW,
+struct SlippageParams {
+    uint256 maxSlippage;
+    uint256 deadline;
+    string preferredDEX;
+}
+
+// Encode custom parameters for the solver
+SolverMetadata memory solverMeta = SolverMetadata({
+    solverAddress: abi.encodePacked(address(customSolver)),
     metadata: abi.encode(SlippageParams({
         maxSlippage: 300, // 3%
         deadline: block.timestamp + 3600,
         preferredDEX: "uniswap"
     }))
 });
+
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: abi.encodePacked(token),
+    baseAmount: amount,
+    quoteToken: abi.encodePacked(desiredOutputToken), // Token the solver should provide
+    quoteAmount: minOutput,
+    kind: TOKEN_ORDER_KIND_SOLVE,
+    metadata: abi.encode(solverMeta)
+});
 ```
 
 **Solver Interpretation**:
 ```solidity
 contract CustomSolver is ISolver {
+    // Beneficiary addresses configured per path/channel
+    // Using bytes to support addresses from different chains
+    mapping(uint256 => mapping(uint32 => bytes)) public beneficiaries;
+
     struct SlippageParams {
         uint256 maxSlippage;
         uint256 deadline;
@@ -683,13 +770,17 @@ contract CustomSolver is ISolver {
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
+        uint256 path,
         address caller,
         address relayer,
         bytes calldata relayerMsg,
         bool intent
-    ) external override {
-        // Decode user preferences from metadata
-        SlippageParams memory params = abi.decode(order.metadata, (SlippageParams));
+    ) external override returns (bytes memory) {
+        // First decode the SolverMetadata from the order
+        SolverMetadata memory solverMeta = abi.decode(order.metadata, (SolverMetadata));
+
+        // Then decode user preferences from the solver metadata's metadata field
+        SlippageParams memory params = abi.decode(solverMeta.metadata, (SlippageParams));
 
         // Use the metadata to customize execution
         if (keccak256(bytes(params.preferredDEX)) == keccak256("uniswap")) {
@@ -697,13 +788,45 @@ contract CustomSolver is ISolver {
         } else {
             executeBestRouteTrade(order, params);
         }
+
+        // Return the market maker address to receive base tokens
+        // Lookup the beneficiary for this specific path/channel
+        bytes memory beneficiary = beneficiaries[path][packet.destinationChannelId];
+        require(beneficiary.length > 0, "No beneficiary for this route");
+        return beneficiary;
     }
 }
 ```
 
 ##### Advanced Solver Use Cases
 
-**1. Multi-Step Execution Instructions**:
+**1. Creating a Solver Order**:
+```solidity
+// First, encode the solver metadata
+SolverMetadata memory solverMeta = SolverMetadata({
+    solverAddress: abi.encodePacked(address(mySolverContract)),
+    metadata: abi.encode(CustomSolverParams({
+        maxSlippage: 300,  // 3%
+        deadline: block.timestamp + 3600,
+        preferredDEX: "uniswap",
+        minLiquidity: 100000e6
+    }))
+});
+
+// Create the order with TOKEN_ORDER_KIND_SOLVE
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: abi.encodePacked(USDC),
+    baseAmount: 10000e6,
+    quoteToken: abi.encodePacked(address(uToken)), // U token that solver will mint
+    quoteAmount: 9900e6,  // Minimum U tokens expected
+    kind: TOKEN_ORDER_KIND_SOLVE,  // 0x03
+    metadata: abi.encode(solverMeta)
+});
+```
+
+**2. Complex Solver Logic with Multi-Step Execution**:
 ```solidity
 struct MultiStepParams {
     uint8 steps;
@@ -712,10 +835,9 @@ struct MultiStepParams {
     bytes[] customData;
 }
 
-// User encodes complex trading strategy in metadata
-TokenOrderV2 memory order = TokenOrderV2({
-    // ... other fields
-    kind: TOKEN_ORDER_KIND_ESCROW,
+// Create a solver order with multi-step instructions
+SolverMetadata memory solverMeta = SolverMetadata({
+    solverAddress: abi.encodePacked(address(multiStepSolver)),
     metadata: abi.encode(MultiStepParams({
         steps: 3,
         intermediateTokens: [USDC, WETH, TARGET_TOKEN],
@@ -723,9 +845,20 @@ TokenOrderV2 memory order = TokenOrderV2({
         customData: [swapParams1, swapParams2, swapParams3]
     }))
 });
+
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: abi.encodePacked(USDC),
+    baseAmount: 1000e6,
+    quoteToken: abi.encodePacked(TARGET_TOKEN), // Final token solver should provide
+    quoteAmount: 100e18, // Minimum TARGET_TOKEN output expected
+    kind: TOKEN_ORDER_KIND_SOLVE,
+    metadata: abi.encode(solverMeta)
+});
 ```
 
-**2. Conditional Execution Logic**:
+**3. Conditional Execution Logic**:
 ```solidity
 struct ConditionalParams {
     uint256 triggerPrice;
@@ -735,9 +868,8 @@ struct ConditionalParams {
 }
 
 // Solver can implement limit order logic
-TokenOrderV2 memory order = TokenOrderV2({
-    // ... other fields
-    kind: TOKEN_ORDER_KIND_ESCROW,
+SolverMetadata memory solverMeta = SolverMetadata({
+    solverAddress: abi.encodePacked(address(limitOrderSolver)),
     metadata: abi.encode(ConditionalParams({
         triggerPrice: 2000e18, // Execute only if ETH > $2000
         triggerAbove: true,
@@ -745,20 +877,47 @@ TokenOrderV2 memory order = TokenOrderV2({
         fallbackAction: abi.encode("refund")
     }))
 });
+
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: abi.encodePacked(WETH),
+    baseAmount: 1e18,
+    quoteToken: abi.encodePacked(USDC), // USDC that solver should provide
+    quoteAmount: 2000e6, // Minimum USDC expected
+    kind: TOKEN_ORDER_KIND_SOLVE,
+    metadata: abi.encode(solverMeta)
+});
 ```
+##### Metadata Usage Guidelines
+
+**For Regular Token Orders (non-solver)**:
+- `TOKEN_ORDER_KIND_INITIALIZE`: `metadata` contains `TokenMetadata` with implementation and initializer
+- `TOKEN_ORDER_KIND_ESCROW`: `metadata` can be empty or contain protocol-specific data (not for custom execution)
+- `TOKEN_ORDER_KIND_UNESCROW`: `metadata` can be empty or contain protocol-specific data (not for custom execution)
+
+**For Solver Orders**:
+- `TOKEN_ORDER_KIND_SOLVE`: `metadata` must contain `SolverMetadata` with:
+  - `solverAddress`: The solver contract to invoke
+  - `metadata`: Arbitrary data for the solver to interpret
+
 ##### Best Practices
 
 **For Protocol Compliance**:
 1. Always use `TOKEN_ORDER_KIND_UNESCROW` when unwrapping tokens
 2. Use `TOKEN_ORDER_KIND_INITIALIZE` only for first deployment with custom metadata
-3. Use `TOKEN_ORDER_KIND_ESCROW` for regular transfers and solver communication
+3. Use `TOKEN_ORDER_KIND_ESCROW` for regular transfers (without solver logic)
+4. Use `TOKEN_ORDER_KIND_SOLVE` when routing to a solver contract
 
 **For Solver Integration**:
-1. Define clear metadata schemas for your solver contract
-2. Validate metadata format in your solver's `solve()` function
-3. Provide fallback behavior for invalid or missing metadata
-4. Document your metadata schema for user integration
-5. Consider versioning your metadata format for upgradability
+1. When creating orders for solvers, set `kind = TOKEN_ORDER_KIND_SOLVE` (0x03)
+2. Encode the solver address and any additional metadata in `SolverMetadata` struct
+3. Place the encoded `SolverMetadata` in the order's metadata field
+4. Ensure your solver returns a valid market maker address to receive base tokens
+5. Validate all inputs in your solver's `solve()` function
+6. Provide clear error messages when solver execution fails
+7. Implement `allowMarketMakers()` for future compatibility (currently not used by protocol)
+8. In CosmWasm, emit a `solver` event with `market_maker` attribute containing the recipient address
 
 **Security Considerations**:
 1. Solvers should validate all metadata fields before execution
@@ -790,9 +949,9 @@ sequenceDiagram
     else Solver Fill
         B ->> Sol: solve(packet, order, context)
         Sol ->> Sol: Execute Custom Logic
-        Sol ->> B: Complete Execution
-        B ->> A: MM Fill Ack (Solver)
-        A ->> Sol: Transfer Base Token
+        Sol ->> B: Return Market Maker Address
+        B ->> A: MM Fill Ack with Solver's MM Address
+        A ->> MM: Transfer Base Token to Solver's Market Maker
     end
 `}/>
 
