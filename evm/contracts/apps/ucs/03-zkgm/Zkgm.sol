@@ -18,7 +18,8 @@ contract AbiExport {
         BatchAck calldata,
         TokenOrderAck calldata,
         TokenOrderV2 calldata,
-        TokenMetadata calldata
+        TokenMetadata calldata,
+        SolverMetadata calldata
     ) public {}
 
     function ensureCreateWrappedTokenExported(
