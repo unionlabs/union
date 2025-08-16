@@ -96,7 +96,7 @@ _: {
           private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas_config = {
             type = "feemarket";
-            max_gas = 10000000;
+            max_gas = 100000000;
             gas_multiplier = 1.4;
           };
           ucs03_type = "cw20";
@@ -109,7 +109,8 @@ _: {
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
             # "sui"
-            "trusted-mpt"
+            # "trusted-mpt"
+            "parlia"
           ];
         }
         {
@@ -866,6 +867,30 @@ _: {
           }
         );
 
+      migrate-contract =
+        {
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-migrate-contract";
+          runtimeInputs = [ cosmwasm-deployer ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              migrate \
+              --rpc-url ${rpc_url} \
+              --address "''${1:?address must be set (first argument to this script))}" \
+              --new-bytecode "''${2:?new bytecode path must be set (second argument to this script))}" \
+              ${mk-gas-args gas_config} \
+              "''${@:3}"
+          '';
+        };
+
       ibc-union-contract-addresses = pkgs.writeShellApplication {
         name = "ibc-union-contract-addresses";
         runtimeInputs = [ cosmwasm-deployer ];
@@ -878,7 +903,7 @@ _: {
             ${
               pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
             } \
-            --deployer "''${1:?deployer must be set (first argument to this script))}" ''${2+--output $2} 
+            --deployer "''${1:?deployer must be set (first argument to this script)}" ''${2+--output $2} 
         '';
       };
 
@@ -1010,6 +1035,7 @@ _: {
                       finalize-deployment = finalize-deployment chain;
                       get-git-rev = get-git-rev chain;
                       whitelist-relayers = whitelist-relayers chain;
+                      migrate-contract = migrate-contract chain;
                     }
                     // (chain-migration-scripts chain)
                   );

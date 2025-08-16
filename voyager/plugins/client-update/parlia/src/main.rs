@@ -17,6 +17,7 @@ use parlia_light_client_types::Header;
 use parlia_types::ParliaHeader;
 use parlia_verifier::EPOCH_LENGTH;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H160, ErrorReporter};
 use voyager_sdk::{
@@ -235,7 +236,10 @@ impl Module {
                 ErrorObject::owned(
                     -1,
                     format!("error fetching ibc contract proof: {}", ErrorReporter(e)),
-                    None::<()>,
+                    Some(json!({
+                        "height": height,
+                        "ibc_handler_address": self.ibc_handler_address,
+                    })),
                 )
             })?;
         Ok(AccountProof {
