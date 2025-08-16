@@ -18,6 +18,7 @@ use voyager_sdk::{
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
     rpc::{types::FinalityModuleInfo, FinalityModuleServer},
+    serde_json::json,
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -76,9 +77,10 @@ impl FinalityModuleServer for Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching finalized execution block of l1 height"),
-                    None::<()>,
+                    ErrorReporter(e).with_message("error fetching block for height"),
+                    Some(json!({
+                        "finalized": finalized,
+                    })),
                 )
             })?
             .unwrap()
@@ -106,9 +108,10 @@ impl FinalityModuleServer for Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching finalized execution block of l1 height"),
-                    None::<()>,
+                    ErrorReporter(e).with_message("error fetching block for timestamp"),
+                    Some(json!({
+                        "finalized": finalized,
+                    })),
                 )
             })?
             .unwrap()
