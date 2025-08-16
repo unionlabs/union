@@ -13,7 +13,12 @@ let totalXP = $derived(
       Option.flatMap(
         achievements.available,
         (availableAchievements) =>
-          Option.some(availableAchievements.reduce((sum: number, a: any) => sum + (a.xp || 0), 0)),
+          Option.some(
+            availableAchievements.filter(a => !achievements.isAchievementExpired(a)).reduce(
+              (sum: number, a: any) => sum + (a.xp || 0),
+              0,
+            ),
+          ),
       ),
   ),
 )
@@ -59,14 +64,17 @@ let completedCount = $derived(
   ),
 )
 
-// Calculate total achievements count
+// Calculate total achievements count (excluding expired ones)
 let totalCount = $derived(
   Option.flatMap(
     dashboard.achievements,
     (achievements) =>
       Option.flatMap(
         achievements.available,
-        (availableAchievements) => Option.some(availableAchievements.length),
+        (availableAchievements) =>
+          Option.some(
+            availableAchievements.filter(a => !achievements.isAchievementExpired(a)).length,
+          ),
       ),
   ),
 )

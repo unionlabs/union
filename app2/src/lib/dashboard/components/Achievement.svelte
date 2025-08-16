@@ -13,10 +13,17 @@ type Props = {
   isCurrent?: boolean
   isNext?: boolean
   isCompleted?: boolean
+  isExpired?: boolean
 }
 
-const { achievement, userAchievements, isCurrent = false, isNext = false, isCompleted = false } =
-  $props()
+const {
+  achievement,
+  userAchievements,
+  isCurrent = false,
+  isNext = false,
+  isCompleted = false,
+  isExpired = false,
+} = $props()
 
 let showXp = $state(false)
 
@@ -40,19 +47,36 @@ function getStatusColor() {
   if (completed) {
     return "text-accent"
   }
+  if (isExpired && !completed) {
+    return "text-red-400"
+  }
   if (isNext) {
     return "text-zinc-400"
   }
   return "text-accent"
 }
+
+function getContainerClasses() {
+  let baseClasses =
+    "flex flex-col gap-3 p-3 rounded-lg transition-all duration-300 cursor-pointer relative w-full text-left"
+
+  if (isExpired && !completed) {
+    baseClasses += " opacity-60 grayscale"
+  }
+
+  if (isCurrent) {
+    baseClasses += " bg-zinc-800/50"
+  } else {
+    baseClasses += " hover:bg-zinc-800/30"
+  }
+
+  return baseClasses
+}
 </script>
 
 <button
   type="button"
-  class="
-    flex flex-col gap-3 p-3 rounded-lg transition-all duration-300 cursor-pointer relative w-full text-left
-    {isCurrent ? 'bg-zinc-800/50' : 'hover:bg-zinc-800/30'}
-  "
+  class={getContainerClasses()}
 >
   {#if !isCompleted && !isNext}
     <div class="absolute -top-3 left-1/2 w-0.5 h-3 bg-zinc-700"></div>
@@ -68,11 +92,18 @@ function getStatusColor() {
       {:else if isNext}
         <MissionBoxIcon class="size-4 lg:size-5 text-zinc-400" />
       {:else}
-        <MissionBoxIcon class="size-4 lg:size-5 text-accent" />
+        <MissionBoxIcon class="size-4 lg:size-5 {getStatusColor()}" />
       {/if}
       <h3 class="text-sm lg:text-base font-medium lg:font-bold group">
         {achievement.title}
       </h3>
+      {#if isExpired && !completed}
+        <span
+          class="px-1.5 py-0.5 text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30 rounded-sm ml-2"
+        >
+          EXPIRED
+        </span>
+      {/if}
     </div>
     <div class="relative">
       <div class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300 flex items-center justify-center">

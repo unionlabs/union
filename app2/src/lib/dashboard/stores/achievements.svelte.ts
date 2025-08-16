@@ -12,6 +12,7 @@ import { errorStore } from "../stores/errors.svelte"
 export type Achievement = QueryAchievement & {
   category?: { title: string } | null
   subcategory?: { title: string } | null
+  end_at?: string | null
   reward_achievements?: {
     rewards: {
       created_at: string
@@ -34,13 +35,13 @@ const POLL_INTERVAL = 5 * 60_000
 export class AchievementsStore {
   /** Achievements the current user has earned */
   achieved = $state<Option.Option<Array<UserAchievement>>>(Option.none())
-  /** All achievements that can be earned */
+  /** All achievements that can be earned (filtered to exclude expired ones) */
   available = $state<Option.Option<Array<Achievement>>>(Option.none())
 
   /** Polling fiber */
   private pollFiber: Fiber.Fiber<never, Error> | null = null
 
-  /** Achievements organized by chain */
+  /** Achievements organized by chain (includes expired achievements for visual indication) */
   achievementByChain = $derived(
     Option.flatMap(this.available, (achievements) => {
       const achievementsMap = new Map(
@@ -114,13 +115,31 @@ export class AchievementsStore {
   }
 
   /**
-   * Loads all available achievements
+   * Checks if an achievement has expired based on its end_at date
+   * @param achievement - The achievement to check
+   * @returns true if the achievement has expired, false otherwise
+   */
+  public isAchievementExpired(achievement: Achievement): boolean {
+    // If no end_at date is set, the achievement never expires
+    if (!achievement.end_at) {
+      return false
+    }
+
+    // Parse the end_at date and check if it's in the past
+    const endDate = new Date(achievement.end_at)
+    const now = new Date()
+    return endDate <= now
+  }
+
+  /**
+   * Loads all available achievements (including expired ones for visual indication)
    */
   private loadAvailableAchievements() {
     runPromise(
       pipe(
         getAvailableAchievements(),
         Effect.tap((result) => {
+          // Store all achievements without filtering expired ones
           this.available = result
           return Effect.void
         }),
