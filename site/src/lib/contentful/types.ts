@@ -68,4 +68,43 @@ export interface LandingPageSkeleton extends EntrySkeletonType<LandingPageFields
 
 export interface LearningPageFields extends EntrySkeletonType<LearningPageFields, "learn"> {}
 
+// Roadmap Types
+export interface RoadmapSectionFields {
+  section: EntryFields.Symbol
+  position?: EntryFields.Integer
+  description: EntryFields.Symbol
+  percentComplete?: EntryFields.Integer
+  slug: EntryFields.Symbol
+}
+
+export interface RoadmapSubsectionFields {
+  subsection: EntryFields.Symbol
+  linkedSection: EntryFields.EntryLink<RoadmapSectionSkeleton>
+  position?: EntryFields.Integer
+  description: EntryFields.Symbol
+  percentComplete?: EntryFields.Integer
+  slug: EntryFields.Symbol
+}
+
+export interface RoadmapMilestoneFields {
+  milestone: EntryFields.Symbol
+  linkedSubsection: EntryFields.EntryLink<RoadmapSubsectionSkeleton>
+  position?: EntryFields.Integer
+  description?: EntryFields.Symbol
+  markComplete: EntryFields.Boolean
+  incompleteIcon: EntryFields.AssetLink
+  completeIcon: EntryFields.AssetLink
+  slug: EntryFields.Symbol
+}
+
+export interface RoadmapSectionSkeleton
+  extends EntrySkeletonType<RoadmapSectionFields, "roadmapSection">
+{}
+export interface RoadmapSubsectionSkeleton
+  extends EntrySkeletonType<RoadmapSubsectionFields, "roadmapSubsection">
+{}
+export interface RoadmapMilestoneSkeleton
+  extends EntrySkeletonType<RoadmapMilestoneFields, "roadmapMilestone">
+{}
+
 export type FetchError = string | null
