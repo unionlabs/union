@@ -26,8 +26,17 @@ export const pathConfigMap = {
       border: hexToRGB("#3D3D3D"),
     },
   },
-  "/blog": {
+  "/roadmap": {
     index: 4,
+    colors: {
+      primary: hexToWebGL("#4B006E"),
+      mid: hexToWebGL("#2A003F"),
+      dark: hexToWebGL("#1A0026"),
+      border: hexToRGB("#4B006E"),
+    },
+  },
+  "/blog": {
+    index: 5,
     colors: {
       primary: hexToWebGL("#66919A"),
       mid: hexToWebGL("#4E737B"),
@@ -36,7 +45,7 @@ export const pathConfigMap = {
     },
   },
   "/team": {
-    index: 5,
+    index: 6,
     colors: {
       primary: hexToWebGL("#FAF7F7"),
       mid: hexToWebGL("#B7B7B7"),
