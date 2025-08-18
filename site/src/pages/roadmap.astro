@@ -617,7 +617,7 @@ const getStatusColor = (status: string) => {
 </AnimationLayout>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+function initializeNavigation() {
   function toggleSection(sectionId: string) {
     const subsectionsContainers = document.querySelectorAll(`[data-subsections="${sectionId}"]`)
     const toggleIcons = document.querySelectorAll(
@@ -703,7 +703,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })
   })
-})
+}
+
+document.addEventListener("DOMContentLoaded", initializeNavigation)
+document.addEventListener("astro:page-load", initializeNavigation)
 </script>
 
 <style>
@@ -753,4 +756,3 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 }
 </style>
-
