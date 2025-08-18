@@ -687,6 +687,19 @@ function initializeNavigation() {
   newSectionNavItems.forEach(item => {
     item.addEventListener("click", () => {
       const sectionId = item.getAttribute("data-section-id")
+      const sectionElement = document.querySelector(`[data-section="${sectionId}"]`)
+
+      if (sectionElement) {
+        const rect = sectionElement.getBoundingClientRect()
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+        const targetPosition = rect.top + scrollTop - 100
+
+        window.scrollTo({
+          top: targetPosition,
+          behavior: "smooth",
+        })
+      }
+
       toggleSection(sectionId || "")
     })
   })
