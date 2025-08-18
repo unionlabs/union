@@ -22,7 +22,7 @@
             ...
           }:
           let
-            full-e2e = import ./full-e2e.nix { inherit e2e pkgs; };
+            # full-e2e = import ./full-e2e.nix { inherit e2e pkgs; };
             epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs dbg; };
             upgrades = import ./upgrades.nix {
               inherit e2e pkgs;
