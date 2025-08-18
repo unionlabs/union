@@ -654,8 +654,28 @@ function initializeNavigation() {
     }
   }
 
+  // Clean up existing event listeners by cloning elements
   const toggleButtons = document.querySelectorAll(".section-toggle")
   toggleButtons.forEach(button => {
+    const newButton = button.cloneNode(true) as HTMLElement
+    button.parentNode?.replaceChild(newButton, button)
+  })
+
+  const sectionNavItems = document.querySelectorAll(".section-nav-item")
+  sectionNavItems.forEach(item => {
+    const newItem = item.cloneNode(true) as HTMLElement
+    item.parentNode?.replaceChild(newItem, item)
+  })
+
+  const subsectionNavItems = document.querySelectorAll(".subsection-nav-item")
+  subsectionNavItems.forEach(item => {
+    const newItem = item.cloneNode(true) as HTMLElement
+    item.parentNode?.replaceChild(newItem, item)
+  })
+
+  // Get fresh references and add event listeners
+  const newToggleButtons = document.querySelectorAll(".section-toggle")
+  newToggleButtons.forEach(button => {
     button.addEventListener("click", (e) => {
       e.stopPropagation()
       const sectionId = button.getAttribute("data-toggle-section")
@@ -663,15 +683,29 @@ function initializeNavigation() {
     })
   })
 
-  const sectionNavItems = document.querySelectorAll(".section-nav-item")
-  sectionNavItems.forEach(item => {
+  const newSectionNavItems = document.querySelectorAll(".section-nav-item")
+  newSectionNavItems.forEach(item => {
     item.addEventListener("click", () => {
       const sectionId = item.getAttribute("data-section-id")
+      const sectionElement = document.querySelector(`[data-section="${sectionId}"]`)
+
+      if (sectionElement) {
+        const rect = sectionElement.getBoundingClientRect()
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+        const targetPosition = rect.top + scrollTop - 100
+
+        window.scrollTo({
+          top: targetPosition,
+          behavior: "smooth",
+        })
+      }
+
       toggleSection(sectionId || "")
     })
   })
-  const subsectionNavItems = document.querySelectorAll(".subsection-nav-item")
-  subsectionNavItems.forEach(item => {
+
+  const newSubsectionNavItems = document.querySelectorAll(".subsection-nav-item")
+  newSubsectionNavItems.forEach(item => {
     item.addEventListener("click", (e) => {
       e.stopPropagation()
       const subsectionId = item.getAttribute("data-subsection-id")
@@ -705,8 +739,9 @@ function initializeNavigation() {
   })
 }
 
-document.addEventListener("DOMContentLoaded", initializeNavigation)
 document.addEventListener("astro:page-load", initializeNavigation)
+document.addEventListener("astro:after-swap", initializeNavigation)
+initializeNavigation()
 </script>
 
 <style>
