@@ -157,7 +157,7 @@ const getStatusColor = (status: string) => {
   title="Roadmap"
   text="Our journey towards universal interoperability"
 >
-  <ContainedSection>
+  <ContainedSection className="overflow-visible">
     {
       error ? (
         <div class="error-message text-center">
@@ -166,29 +166,202 @@ const getStatusColor = (status: string) => {
         </div>
       ) : (
         <div class="roadmap-container mt-4">
-          <div class="roadmap-layout flex gap-8 relative">
-            {/* Sidebar Navigation */}
-            <aside class="roadmap-sidebar w-80 flex-shrink-0 hidden lg:block">
-              <div class="bg-black p-4 border-2 border-zinc-800">
+          {/* Mobile Navigation - Top */}
+          <div class="lg:hidden mb-6">
+            <div class="bg-black p-4 border border-zinc-700 shadow-lg">
+              <div class="flex items-center gap-2 mb-4 pb-2 border-b border-zinc-800">
+                <div class="w-1 h-1 bg-accent-500"></div>
+                <h3 class="font-mono uppercase text-sm font-semibold text-accent-500">
+                  Navigation
+                </h3>
+              </div>
+              <nav class="space-y-2">
+                {
+                  roadmapData.map((section, sectionIndex) => {
+                const sectionProgress = calculateProgress(section)
+                const sectionStatus = getStatus(sectionProgress)
+
+                return (
+                    <div class="section-nav">
+                      <div class="flex items-center hover:bg-zinc-800 transition-all group">
+                        <button
+                          data-section-id={section.id}
+                          class="section-nav-item flex-1 text-left px-3 py-2 transition-all"
+                        >
+                          <div class="flex items-center gap-2">
+                            <span class="font-semibold text-sm font-mono uppercase">{
+                              section.section
+                            }</span>
+                            <div class="flex items-center gap-1">
+                              <div
+                                class={`w-2 h-2 ${
+                                  sectionStatus === "completed"
+                                    ? "bg-accent-500"
+                                    : sectionStatus === "in-progress"
+                                    ? "bg-white"
+                                    : "bg-zinc-600"
+                                }`}
+                              >
+                              </div>
+                              <span class="text-xs text-zinc-400">{sectionProgress}%</span>
+                            </div>
+                          </div>
+                        </button>
+                        {
+                          section.subsections && section.subsections.length > 0
+                    && (
+                            <button
+                              data-toggle-section={section.id}
+                              class="section-toggle p-2 transition-all"
+                              title="Toggle subsections"
+                            >
+                              <svg
+                                class="w-4 h-4 toggle-icon transition-transform duration-200 ease-linear"
+                                class:list={[sectionIndex === 0 ? "rotate-180" : ""]}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          )
+                        }
+                      </div>
+
+                      {
+                        section.subsections && section.subsections.length > 0
+                  && (
+                          <div
+                            class="subsection-nav ml-4 mt-1 space-y-1 transition-all duration-300 ease-in-out overflow-hidden"
+                            class:list={[sectionIndex === 0 ? "" : "hidden"]}
+                            data-subsections={section.id}
+                          >
+                            {
+                              section.subsections.map((subsection: any) => {
+                    const subsectionProgress = calculateSubsectionProgress(
+                      subsection,
+                    )
+                    const subsectionStatus = getStatus(subsectionProgress)
+
+                    return (
+                                <button
+                                  data-subsection-id={subsection.id}
+                                  class="subsection-nav-item w-full text-left px-3 py-1.5 transition-all text-sm hover:bg-zinc-800 block"
+                                >
+                                  <div class="flex items-center justify-between w-full">
+                                    <span class="text-zinc-400 text-xs font-mono">{
+                                      subsection.subsection
+                                    }</span>
+                                    <div class="flex items-center gap-1">
+                                      <div
+                                        class={`w-1.5 h-1.5 ${
+                                          subsectionStatus === "completed"
+                                            ? "bg-accent-500"
+                                            : subsectionStatus === "in-progress"
+                                            ? "bg-white"
+                                            : "bg-zinc-600"
+                                        }`}
+                                      >
+                                      </div>
+                                      <span class="text-xs text-zinc-500">{
+                                          subsectionProgress
+                                        }%</span>
+                                    </div>
+                                  </div>
+                                </button>
+                              )
+                  })
+                            }
+                          </div>
+                        )
+                      }
+                    </div>
+                  )
+              })
+                }
+              </nav>
+            </div>
+          </div>
+
+          <div class="roadmap-layout flex gap-8">
+            {/* Desktop Sidebar Navigation */}
+            <aside class="roadmap-sidebar w-80 flex-shrink-0 hidden lg:block sticky top-4 self-start">
+              <div class="bg-black p-4 border border-zinc-700 shadow-lg max-h-[calc(100vh-2rem)] overflow-y-auto">
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-zinc-800">
+                  <div class="w-1 h-1 bg-accent-500"></div>
+                  <h3 class="font-mono uppercase text-sm font-semibold text-accent-500">
+                    Navigation
+                  </h3>
+                </div>
                 <nav class="space-y-2">
                   {
-                    roadmapData.map((section) => {
+                    roadmapData.map((section, sectionIndex) => {
                   const sectionProgress = calculateProgress(section)
                   const sectionStatus = getStatus(sectionProgress)
 
                   return (
                       <div class="section-nav">
-                        <button
-                          data-section-id={section.id}
-                          class="section-nav-item w-full text-left px-3 py-2 transition-all hover:bg-zinc-800"
-                        >
-                          <span class="font-semibold text-sm">{section.section}</span>
-                        </button>
+                        <div class="flex items-center hover:bg-zinc-800 transition-all group">
+                          <button
+                            data-section-id={section.id}
+                            class="section-nav-item flex-1 text-left px-3 py-2 transition-all"
+                          >
+                            <div class="flex items-center gap-2">
+                              <span class="font-semibold text-sm font-mono uppercase">{
+                                section.section
+                              }</span>
+                              <div class="flex items-center gap-1">
+                                <div
+                                  class={`w-2 h-2 ${
+                                    sectionStatus === "completed"
+                                      ? "bg-accent-500"
+                                      : sectionStatus === "in-progress"
+                                      ? "bg-white"
+                                      : "bg-zinc-600"
+                                  }`}
+                                >
+                                </div>
+                                <span class="text-xs text-zinc-400">{sectionProgress}%</span>
+                              </div>
+                            </div>
+                          </button>
+                          {
+                            section.subsections && section.subsections.length > 0
+                      && (
+                              <button
+                                data-toggle-section={section.id}
+                                class="section-toggle p-2 transition-all"
+                                title="Toggle subsections"
+                              >
+                                <svg
+                                  class="w-4 h-4 toggle-icon transition-transform duration-200 ease-linear"
+                                  class:list={[sectionIndex === 0 ? "rotate-180" : ""]}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fill-rule="evenodd"
+                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                    clip-rule="evenodd"
+                                  />
+                                </svg>
+                              </button>
+                            )
+                          }
+                        </div>
 
                         {
                           section.subsections && section.subsections.length > 0
                     && (
-                            <div class="subsection-nav ml-4 mt-1 space-y-1">
+                            <div
+                              class="subsection-nav ml-4 mt-1 space-y-1 transition-all duration-300 ease-in-out overflow-hidden"
+                              class:list={[sectionIndex === 0 ? "" : "hidden"]}
+                              data-subsections={section.id}
+                            >
                               {
                                 section.subsections.map((subsection: any) => {
                       const subsectionProgress = calculateSubsectionProgress(
@@ -199,9 +372,28 @@ const getStatusColor = (status: string) => {
                       return (
                                   <button
                                     data-subsection-id={subsection.id}
-                                    class="subsection-nav-item w-full text-left px-3 py-1.5 transition-all text-sm hover:bg-zinc-800"
+                                    class="subsection-nav-item w-full text-left px-3 py-1.5 transition-all text-sm hover:bg-zinc-800 block"
                                   >
-                                    <span class="text-zinc-400">{subsection.subsection}</span>
+                                    <div class="flex items-center justify-between w-full">
+                                      <span class="text-zinc-400 text-xs font-mono">{
+                                        subsection.subsection
+                                      }</span>
+                                      <div class="flex items-center gap-1">
+                                        <div
+                                          class={`w-1.5 h-1.5 ${
+                                            subsectionStatus === "completed"
+                                              ? "bg-accent-500"
+                                              : subsectionStatus === "in-progress"
+                                              ? "bg-white"
+                                              : "bg-zinc-600"
+                                          }`}
+                                        >
+                                        </div>
+                                        <span class="text-xs text-zinc-500">{
+                                            subsectionProgress
+                                          }%</span>
+                                      </div>
+                                    </div>
                                   </button>
                                 )
                     })
@@ -218,11 +410,8 @@ const getStatusColor = (status: string) => {
             </aside>
 
             {/* Main Content */}
-            <div>
-              <div
-                class="roadmap-timeline"
-                style="padding-bottom: 70vh;"
-              >
+            <div class="flex-1">
+              <div class="roadmap-timeline pb-[70vh]">
                 {
                   roadmapData.map((section, sectionIndex) => {
                 const sectionProgress = calculateProgress(section)
@@ -236,7 +425,9 @@ const getStatusColor = (status: string) => {
                       {/* Section Header */}
                       <div class="section-header mb-8">
                         <div class="mb-3">
-                          <h2 class="font-supermolot text-3xl font-bold mb-2">{section.section}</h2>
+                          <h2 class="font-supermolot text-3xl font-bold mb-2">
+                            {section.section}
+                          </h2>
                           {
                             section.description && (
                               <p class="text-zinc-400">{section.description}</p>
@@ -248,8 +439,8 @@ const getStatusColor = (status: string) => {
                         <div class="flex items-center gap-4 mt-4">
                           <div class="flex-1 bg-zinc-700 h-2">
                             <div
-                              class="h-2 transition-all duration-500"
-                              style={`width: ${sectionProgress}%; background-color: #A0ECFD;`}
+                              class="h-2 transition-all duration-500 bg-accent-500"
+                              style={`width: ${sectionProgress}%;`}
                             >
                             </div>
                           </div>
@@ -301,8 +492,8 @@ const getStatusColor = (status: string) => {
                                   <div class="flex items-center gap-4">
                                     <div class="flex-1 bg-zinc-700 h-1.5">
                                       <div
-                                        class="h-1.5 transition-all duration-500"
-                                        style={`width: ${subsectionProgress}%; background-color: #A0ECFD;`}
+                                        class="h-1.5 transition-all duration-500 bg-accent-500"
+                                        style={`width: ${subsectionProgress}%;`}
                                       >
                                       </div>
                                     </div>
@@ -338,7 +529,8 @@ const getStatusColor = (status: string) => {
                                                     src={milestone.completeIcon.fields.file.url
                                                       .startsWith("//")
                                                     ? `https:${milestone.completeIcon.fields.file.url}`
-                                                    : milestone.completeIcon.fields.file.url}
+                                                    : milestone.completeIcon.fields.file
+                                                      .url}
                                                     alt="Complete"
                                                     class="w-6 h-6 mt-0.5 flex-shrink-0"
                                                   />
@@ -348,11 +540,13 @@ const getStatusColor = (status: string) => {
                                                 )
                               )
                               : (
-                                milestone.incompleteIcon?.fields?.file
+                                milestone.incompleteIcon?.fields
+                                    ?.file
                                     ?.url
                                   ? (
                                                   <img
-                                                    src={milestone.incompleteIcon.fields.file.url
+                                                    src={milestone.incompleteIcon.fields.file
+                                                      .url
                                                       .startsWith("//")
                                                     ? `https:${milestone.incompleteIcon.fields.file.url}`
                                                     : milestone.incompleteIcon.fields.file
@@ -377,7 +571,8 @@ const getStatusColor = (status: string) => {
                                                   {milestone.milestone}
                                                 </span>
                                                 {
-                                                  milestone.description && (
+                                                  milestone.description
+                                && (
                                                     <p class="text-sm text-zinc-600 mt-1">
                                                       {milestone.description}
                                                     </p>
@@ -390,7 +585,9 @@ const getStatusColor = (status: string) => {
                                       </ul>
                                     )
                           : (
-                                      <p class="text-zinc-500 italic">No milestones defined yet.</p>
+                                      <p class="text-zinc-500 italic">
+                                        No milestones defined yet.
+                                      </p>
                                     )
                                   }
                                 </div>
@@ -420,37 +617,59 @@ const getStatusColor = (status: string) => {
 </AnimationLayout>
 
 <script>
-// Handle sidebar navigation with scrolling
 document.addEventListener("DOMContentLoaded", () => {
-  // Handle section navigation clicks
+  function toggleSection(sectionId: string) {
+    const subsectionsContainers = document.querySelectorAll(`[data-subsections="${sectionId}"]`)
+    const toggleIcons = document.querySelectorAll(
+      `[data-toggle-section="${sectionId}"] .toggle-icon`,
+    )
+
+    if (subsectionsContainers.length > 0 && toggleIcons.length > 0) {
+      const isAnyVisible = Array.from(subsectionsContainers).some(container =>
+        !container.classList.contains("hidden")
+      )
+
+      if (!isAnyVisible) {
+        document.querySelectorAll("[data-subsections]").forEach(container => {
+          container.classList.add("hidden")
+        })
+        document.querySelectorAll(".toggle-icon").forEach(icon => {
+          icon.classList.remove("rotate-180")
+        })
+
+        subsectionsContainers.forEach(container => {
+          container.classList.remove("hidden")
+        })
+        toggleIcons.forEach(icon => {
+          icon.classList.add("rotate-180")
+        })
+      } else {
+        subsectionsContainers.forEach(container => {
+          container.classList.add("hidden")
+        })
+        toggleIcons.forEach(icon => {
+          icon.classList.remove("rotate-180")
+        })
+      }
+    }
+  }
+
+  const toggleButtons = document.querySelectorAll(".section-toggle")
+  toggleButtons.forEach(button => {
+    button.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const sectionId = button.getAttribute("data-toggle-section")
+      toggleSection(sectionId || "")
+    })
+  })
+
   const sectionNavItems = document.querySelectorAll(".section-nav-item")
   sectionNavItems.forEach(item => {
     item.addEventListener("click", () => {
       const sectionId = item.getAttribute("data-section-id")
-      const sectionElement = document.querySelector(`[data-section="${sectionId}"]`)
-
-      if (sectionElement) {
-        // Get the absolute position of the element
-        const rect = sectionElement.getBoundingClientRect()
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-        const targetPosition = rect.top + scrollTop - 100 // 100px offset for header
-
-        // Scroll the main page now
-        window.scrollTo({
-          top: targetPosition,
-          behavior: "smooth",
-        })
-
-        // Immediately highlight the clicked item
-        document.querySelectorAll(".section-nav-item").forEach(navItem => {
-          navItem.classList.remove("bg-zinc-800")
-        })
-        item.classList.add("bg-zinc-800")
-      }
+      toggleSection(sectionId || "")
     })
   })
-
-  // Handle subsection navigation clicks
   const subsectionNavItems = document.querySelectorAll(".subsection-nav-item")
   subsectionNavItems.forEach(item => {
     item.addEventListener("click", (e) => {
@@ -459,28 +678,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const subsectionElement = document.querySelector(`[data-subsection="${subsectionId}"]`)
 
       if (subsectionElement) {
-        // Get the absolute position of the element
         const rect = subsectionElement.getBoundingClientRect()
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-        const targetPosition = rect.top + scrollTop - 100 // 100px offset for header
+        const targetPosition = rect.top + scrollTop - 100
 
-        // Scroll the main page
         window.scrollTo({
           top: targetPosition,
           behavior: "smooth",
         })
 
-        // Highlight parent section
         const parentSection = item.closest(".section-nav")
-        const parentSectionButton = parentSection?.querySelector(".section-nav-item")
-        if (parentSectionButton) {
-          document.querySelectorAll(".section-nav-item").forEach(navItem => {
-            navItem.classList.remove("bg-zinc-800")
+        const parentSectionContainer = parentSection?.querySelector(".flex")
+        if (parentSectionContainer) {
+          document.querySelectorAll(".section-nav .flex").forEach(navContainer => {
+            navContainer.classList.remove("bg-zinc-800")
           })
-          parentSectionButton.classList.add("bg-zinc-800")
+          parentSectionContainer.classList.add("bg-zinc-800")
         }
 
-        // Highlight clicked subsection
         document.querySelectorAll(".subsection-nav-item").forEach(navItem => {
           navItem.classList.remove("bg-zinc-800")
         })
@@ -488,9 +703,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })
   })
-
-  // Removed automatic scroll-based highlighting to prevent jumping
-  // Now only manual clicks will highlight items
 })
 </script>
 
@@ -505,11 +717,9 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
 .roadmap-sidebar {
-  position: sticky;
   align-self: flex-start;
   width: 20rem;
   min-width: 20rem;
-  max-height: calc(100vh - 65px);
 }
 
 
@@ -531,13 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.toggle-icon {
-  transition: transform 0.2s ease;
-}
 
-.toggle-icon.rotate-180 {
-  transform: rotate(180deg);
-}
 
 @media (max-width: 1024px) {
   .roadmap-layout {
@@ -549,3 +753,4 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 }
 </style>
+
