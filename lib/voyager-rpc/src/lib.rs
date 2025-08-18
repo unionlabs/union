@@ -57,6 +57,10 @@ pub const UNPROCESSABLE_JSONRPC_ERROR_CODE: i32 = -0xDEADC0D; // 🐟
 /// requeued and retried.
 pub const MISSING_STATE_ERROR_CODE: i32 = -0xBADB10B;
 
+/// Error code for any kind of external RPC error. If a plugin or module responds with this error code, it will be
+/// requeued and retried.
+pub const RPC_ERROR_ERROR_CODE: i32 = -0xBADACE;
+
 /// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm` [`QueueError`].
 ///
 /// All errors are treated as retryable, unless `error` is a `Call` variant and the contained
@@ -81,6 +85,201 @@ pub fn json_rpc_error_to_error_object(e: jsonrpsee::core::client::Error) -> Erro
     }
 }
 
+pub enum ModuleError {
+    Jsonrpsee(jsonrpsee::core::client::Error),
+}
+
+impl ModuleError {
+    // fn from_error_object(error: ErrorObjectOwned) -> ModuleError {
+    //     let message = error.message().to_owned();
+    //     let data = error
+    //         .data()
+    //         .map(|v| serde_json::to_value(v).expect("infallible; qed;"));
+
+    //     match error.code() {
+    //         MISSING_STATE_ERROR_CODE => Self::MissingState { message, data },
+    //         RPC_ERROR_ERROR_CODE => Self::RpcError {
+    //             message,
+    //             data,
+    //             error: None,
+    //         },
+    //         FATAL_JSONRPC_ERROR_CODE => Self::Fatal {
+    //             message,
+    //             data,
+    //             error: None,
+    //         },
+    //         -1 => Self::Fatal {
+    //             message,
+    //             data,
+    //             error: None,
+    //         },
+    //         UNPROCESSABLE_JSONRPC_ERROR_CODE => Self::Unprocessable {
+    //             message,
+    //             data,
+    //             error: None,
+    //         },
+    //         _ => Self::Other(error),
+    //     }
+    // }
+}
+
+impl From<jsonrpsee::core::client::Error> for ModuleError {
+    fn from(value: jsonrpsee::core::client::Error) -> Self {
+        // match value {
+        //     jsonrpsee::core::client::Error::Call(error) => Self::from_error_object(error),
+        //     value => Self::Retryable {
+        //         message: String::new(),
+        //         data: None,
+        //         error: Some(Box::new(value)),
+        //     },
+        // }
+        Self::Jsonrpsee(value)
+    }
+}
+
+impl From<ErrorObjectOwned> for ModuleError {
+    fn from(value: ErrorObjectOwned) -> Self {
+        // match value {
+        //     jsonrpsee::core::client::Error::Call(error) => Self::from_error_object(error),
+        //     value => Self::Retryable {
+        //         message: String::new(),
+        //         data: None,
+        //         error: Some(Box::new(value)),
+        //     },
+        // }
+        Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(value))
+    }
+}
+
+impl From<ModuleError> for ErrorObjectOwned {
+    fn from(value: ModuleError) -> Self {
+        match value {
+            ModuleError::Jsonrpsee(error) => json_rpc_error_to_error_object(error),
+        }
+        // match value {
+        //     ModuleError::MissingState { message, data } => {
+        //         ErrorObject::owned(MISSING_STATE_ERROR_CODE, message, data)
+        //     }
+        //     ModuleError::RpcError {
+        //         message,
+        //         data,
+        //         error,
+        //     } => ErrorObject::owned(
+        //         RPC_ERROR_ERROR_CODE,
+        //         error.as_deref().map_or(String::new(), |error| {
+        //             ErrorReporter(error).with_message(&message)
+        //         }),
+        //         data,
+        //     ),
+        //     ModuleError::Fatal {
+        //         message,
+        //         data,
+        //         error,
+        //     } => ErrorObject::owned(
+        //         FATAL_JSONRPC_ERROR_CODE,
+        //         error.as_deref().map_or(String::new(), |error| {
+        //             ErrorReporter(error).with_message(&message)
+        //         }),
+        //         data,
+        //     ),
+        //     ModuleError::Retryable {
+        //         message,
+        //         data,
+        //         error,
+        //     } => ErrorObject::owned(
+        //         -1,
+        //         error.as_deref().map_or(String::new(), |error| {
+        //             ErrorReporter(error).with_message(&message)
+        //         }),
+        //         data,
+        //     ),
+        //     ModuleError::Unprocessable {
+        //         message,
+        //         data,
+        //         error,
+        //     } => ErrorObject::owned(
+        //         UNPROCESSABLE_JSONRPC_ERROR_CODE,
+        //         error.as_deref().map_or(String::new(), |error| {
+        //             ErrorReporter(error).with_message(&message)
+        //         }),
+        //         data,
+        //     ),
+        //     ModuleError::Other(other) => other,
+        // }
+    }
+}
+
+impl ModuleError {
+    // /// Some required state was missing (connection/channel end, packet commitment,
+    // /// ..)
+    // pub fn missing_state(message: impl Display, data: Option<Value>) -> impl FnOnce() -> Self {
+    //     move || Self::MissingState {
+    //         message: message.to_string(),
+    //         data,
+    //     }
+    // }
+
+    pub fn retry<E: Error + 'static>(message: impl Display) -> impl FnOnce(E) -> Self {
+        move |e| {
+            Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message(&message.to_string()),
+                None::<()>,
+            )))
+        }
+    }
+
+    pub fn retry_with_data<E: Error + 'static>(
+        message: impl Display,
+        data: Value,
+    ) -> impl FnOnce(E) -> Self {
+        move |e| {
+            Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message(&message.to_string()),
+                Some(data),
+            )))
+        }
+    }
+
+    pub fn fatal<E: Error + 'static>(
+        message: impl Display,
+        data: Option<Value>,
+    ) -> impl FnOnce(E) -> Self {
+        move |e| {
+            Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                ErrorReporter(e).with_message(&message.to_string()),
+                data,
+            )))
+        }
+    }
+
+    pub fn fatal_no_error(message: impl Display, data: Option<Value>) -> Self {
+        Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            message.to_string(),
+            data,
+        )))
+    }
+
+    pub fn new_with_data(message: impl Display, data: Value) -> Self {
+        Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(ErrorObject::owned(
+            -1,
+            message.to_string(),
+            Some(data),
+        )))
+    }
+
+    pub fn new(message: impl Display) -> Self {
+        Self::Jsonrpsee(jsonrpsee::core::client::Error::Call(ErrorObject::owned(
+            -1,
+            message.to_string(),
+            None::<()>,
+        )))
+    }
+}
+
 /// Some required state was missing (connection/channel end, packet commitment,
 /// ..)
 pub fn missing_state(
@@ -94,10 +293,7 @@ pub fn rpc_error<E: Error>(
     message: impl Display,
     data: Option<Value>,
 ) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        ErrorObject::owned(-1, message, data)
-    }
+    move |e| ErrorObject::owned(-1, format!("{message}: {}", ErrorReporter(e)), data)
 }
 
 /// Convert a `jsonrpsee` [`ErrorObject`] to a `voyager-vm` [`QueueError`].
@@ -360,7 +556,7 @@ pub trait Plugin<C: Member, Cb: Member> {
 pub trait StateModule<V: IbcSpec> {
     /// Execute a query on this chain returning the proof as a JSON [`Value`].
     #[method(name = "query", with_extensions)]
-    async fn query(&self, query: V::Query) -> RpcResult<Value>;
+    async fn query(&self, query: V::Query) -> Result<Value, ModuleError>;
 
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].

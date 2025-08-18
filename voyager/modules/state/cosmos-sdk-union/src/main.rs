@@ -33,7 +33,9 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
-    rpc::{rpc_error, types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{
+        rpc_error, types::StateModuleInfo, ModuleError, StateModuleServer, FATAL_JSONRPC_ERROR_CODE,
+    },
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -108,7 +110,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<PacketByHashResponse> {
+    ) -> Result<PacketByHashResponse, ModuleError> {
         let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
 
         let mut res = self
@@ -121,18 +123,14 @@ impl Module {
                 Order::Asc,
             )
             .await
-            .map_err(rpc_error("error querying packet by packet hash", None))?;
+            .map_err(ModuleError::retry("error querying packet by packet hash"))?;
 
         if res.total_count != 1 {
-            return Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error querying for packet {packet_hash}, \
+            return Err(ModuleError::new(format_args!(
+                "error querying for packet {packet_hash}, \
                     expected 1 event but found {}",
-                    res.total_count,
-                ),
-                None::<()>,
-            ));
+                res.total_count,
+            )));
         }
 
         let res = res.txs.pop().unwrap();
@@ -172,7 +170,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<PacketAckByHashResponse> {
+    ) -> Result<PacketAckByHashResponse, ModuleError> {
         let query = format!(
             "wasm-write_ack.packet_hash='{packet_hash}' AND wasm-write_ack.channel_id={channel_id}"
         );
@@ -187,19 +185,18 @@ impl Module {
                 Order::Asc,
             )
             .await
-            .map_err(rpc_error("error querying packet by packet hash", None))?;
+            .map_err(ModuleError::retry(
+                "error querying for acknowledgement for \
+                packet {packet_hash}",
+            ))?;
 
         if res.total_count != 1 {
-            return Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error querying for acknowledgement for \
-                     packet {packet_hash}, expected 1 event \
-                     but found {}",
-                    res.total_count,
-                ),
-                None::<()>,
-            ));
+            return Err(ModuleError::new(format!(
+                "error querying for acknowledgement for \
+                 packet {packet_hash}, expected 1 event \
+                 but found {}",
+                res.total_count,
+            )));
         }
 
         let res = res.txs.pop().unwrap();
@@ -229,7 +226,7 @@ impl Module {
         &self,
         query: &Q,
         height: Option<Height>,
-    ) -> RpcResult<Option<R>> {
+    ) -> Result<Option<R>, ModuleError> {
         let query_data = serde_json::to_string(query).expect("serialization is infallible; qed;");
         let response = self
             .cometbft_client
@@ -261,30 +258,23 @@ impl Module {
             .code
             .is_err_code(option_unwrap!(NonZeroU32::new(26)))
         {
-            Err(ErrorObject::owned(
-                -1,
+            Err(ModuleError::new_with_data(
                 "attempted to query state at a nonexistent height, \
                 potentially due to load balanced rpc endpoints",
-                Some(json!({
+                json!({
                     "height": height,
                     "query_data": query_data
-                })),
+                }),
             ))
         } else {
             response
                 .value
                 .map(|value| {
                     trace!("raw response: {}", String::from_utf8_lossy(&value.data));
-                    serde_json::from_slice(&value.data).map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e).with_message(&format!(
-                                "unable to deserialize response ({})",
-                                std::any::type_name::<R>()
-                            )),
-                            None::<()>,
-                        )
-                    })
+                    serde_json::from_slice(&value.data).map_err(ModuleError::retry(format_args!(
+                        "unable to deserialize response ({})",
+                        std::any::type_name::<R>()
+                    )))
                 })
                 .transpose()
         }
@@ -445,7 +435,7 @@ pub struct ChainIdParseError {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+    async fn query(&self, _: &Extensions, query: Query) -> Result<Value, ModuleError> {
         match query {
             Query::PacketByHash(PacketByHash {
                 channel_id,
@@ -470,32 +460,24 @@ impl StateModuleServer<IbcUnion> for Module {
                         Order::Asc,
                     )
                     .await
-                    .map_err(rpc_error("error querying packet by packet hash", None))?;
+                    .map_err(ModuleError::retry("error querying packet by packet hash"))?;
 
                 if res.total_count != 1 {
-                    return Err(ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying for batch {batch_hash}, \
-                            expected only 1 transaction but found {}",
-                            res.total_count,
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(ModuleError::new(format!(
+                        "error querying for batch {batch_hash}, \
+                        expected only 1 transaction but found {}",
+                        res.total_count,
+                    )));
                 }
 
                 let tx = res.txs[1].clone();
 
                 if tx.tx_result.events.len() < 2 {
-                    return Err(ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying for batch {batch_hash}, \
-                            expected at least 2 events but found {}",
-                            tx.tx_result.events.len()
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(ModuleError::new(format!(
+                        "error querying for batch {batch_hash}, \
+                        expected at least 2 events but found {}",
+                        tx.tx_result.events.len()
+                    )));
                 }
 
                 let packets = tx
@@ -542,10 +524,9 @@ impl StateModuleServer<IbcUnion> for Module {
                         height.map(Height::new),
                     )
                     .await?
-                    .ok_or(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("client {client_id} not found at height {height:?}"),
-                        None::<()>,
+                    .ok_or(ModuleError::fatal_no_error(
+                        format_args!("client {client_id} not found at height {height:?}"),
+                        None,
                     ))?;
 
                 debug!(
