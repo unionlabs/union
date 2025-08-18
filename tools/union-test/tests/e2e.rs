@@ -306,15 +306,10 @@ async fn test_send_vault_success() {
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let pair = union_test::channel_provider::ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
@@ -592,11 +587,6 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 9.try_into().unwrap(),
-    //     dest: 9.try_into().unwrap(),
-    // };
-
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
 
@@ -780,11 +770,6 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     let available_channel = ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
-
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 1.try_into().unwrap(),
-    //     dest: 1.try_into().unwrap(),
-    // };
 
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
@@ -1060,11 +1045,6 @@ async fn test_stake_from_evm_to_union() {
     assert!(available_channel > 0);
 
     let pair = ctx.get_channel().await.expect("channel available");
-
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 29.try_into().unwrap(),
-    //     dest: 37.try_into().unwrap(),
-    // };
 
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
@@ -1518,10 +1498,6 @@ async fn test_stake_and_unstake_from_evm_to_union() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 2.try_into().unwrap(),
-    //     dest: 2.try_into().unwrap(),
-    // };
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -2149,11 +2125,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 1.try_into().unwrap(),
-    //     dest: 1.try_into().unwrap(),
-    // };
-
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -2321,11 +2292,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset(
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 1.try_into().unwrap(),
-    //     dest: 1.try_into().unwrap(),
-    // };
-
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -2346,22 +2312,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset(
 
     let img = keccak256(&img_metadata);
     // Not adding governance token by purpose to test the error
-    // let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
-    // let governance_token = ctx
-    //     .dst
-    //     .setup_governance_token(
-    //         EVM_ZKGM_BYTES.into(),
-    //         pair.dest,
-    //         img,
-    //         zkgm_deployer_provider,
-    //     )
-    //     .await;
-
-    // assert!(
-    //     governance_token.is_ok(),
-    //     "Failed to setup governance token: {:?}",
-    //     governance_token.err()
-    // );
 
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
@@ -2518,11 +2468,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance() {
     let available_channel = ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
-
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 1.try_into().unwrap(),
-    //     dest: 1.try_into().unwrap(),
-    // };
 
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
@@ -2717,11 +2662,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 1.try_into().unwrap(),
-    //     dest: 1.try_into().unwrap(),
-    // };
-
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -2915,11 +2855,6 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
     assert!(available_channel > 0);
     let pair = ctx.get_channel().await.expect("channel available");
 
-    // let pair = union_test::channel_provider::ChannelPair {
-    //     src: 4.try_into().unwrap(),
-    //     dest: 18.try_into().unwrap(),
-    // };
-
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -3014,15 +2949,10 @@ async fn test_from_evm_to_union_batch_err_invalid_batch_instruction() {
     println!("EVM Address: {:?}", evm_address);
     println!("Cosmos Address: {:?}", cosmos_address);
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let pair = union_test::channel_provider::ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
     let dst_chain_id = pair.dest;
     let _src_chain_id = pair.src;
@@ -3108,15 +3038,10 @@ async fn test_from_evm_to_union_batch_err_invalid_forward_instruction() {
     println!("EVM Address: {:?}", evm_address);
     println!("Cosmos Address: {:?}", cosmos_address);
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let pair = union_test::channel_provider::ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
     let dst_chain_id = pair.dest;
     let _src_chain_id: u32 = pair.src;
@@ -3200,15 +3125,10 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let pair = union_test::channel_provider::ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
@@ -3381,15 +3301,10 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let pair = union_test::channel_provider::ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
@@ -3562,15 +3477,10 @@ async fn test_send_vault_unhappy_u_fool() {
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let pair = union_test::channel_provider::ChannelPair {
-        src: 1.try_into().unwrap(),
-        dest: 1.try_into().unwrap(),
-    };
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
@@ -3758,7 +3668,6 @@ async fn from_evm_to_union_refund() {
 
 #[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
 async fn from_union_to_evm_refund() {
-    // TODO: Fix it later. Refund is not happening correctly.
     self::test_send_packet_from_union_to_evm_get_refund().await;
 }
 
