@@ -510,7 +510,7 @@ async fn test_send_vault_success_with_fee() {
 
     let funds = vec![Coin {
         denom: "muno".into(),
-        amount: "15".into(),
+        amount: "15".into(), // So fee will be 5 and will be minted to relayer
     }];
 
     let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
