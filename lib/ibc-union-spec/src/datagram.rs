@@ -34,6 +34,7 @@ pub enum Datagram {
     IntentPacketRecv(MsgIntentPacketRecv),
     BatchSend(MsgBatchSend),
     BatchAcks(MsgBatchAcks),
+    CommitClientStatus(MsgCommitClientStatus),
 }
 
 impl Datagram {
@@ -59,6 +60,7 @@ impl Datagram {
             Self::IntentPacketRecv(_msg) => todo!(),
             Self::BatchSend(_msg) => todo!(),
             Self::BatchAcks(_msg) => todo!(),
+            Self::CommitClientStatus(_msg) => None,
         }
     }
 
@@ -82,6 +84,7 @@ impl Datagram {
             Self::IntentPacketRecv(_) => "intent_packet_recv",
             Self::BatchSend(_) => "batch_send",
             Self::BatchAcks(_) => "batch_acks",
+            Self::CommitClientStatus(_msg) => "commit_client_status",
         }
     }
 }
@@ -315,4 +318,15 @@ pub struct MsgBatchAcks {
     pub packets: Vec<Packet>,
     // TODO: Ensure same length as packets somehow (maybe zip the lists into one field?)
     pub acks: Vec<Bytes>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct MsgCommitClientStatus {
+    pub client_id: ClientId,
 }
