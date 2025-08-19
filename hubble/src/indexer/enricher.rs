@@ -29,10 +29,6 @@ enum EnricherLoopResult {
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_enricher(&self, fetcher_client: T) -> Result<(), IndexerError> {
-        if self.drain {
-            return Ok(());
-        }
-
         loop {
             match self.run_enricher_loop(&fetcher_client).await {
                 Ok(EnricherLoopResult::RunAgain) => {
