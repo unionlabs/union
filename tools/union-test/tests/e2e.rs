@@ -29,16 +29,22 @@ use ucs03_zkgm::{
     },
 };
 use union_test::{
-    channel_provider, cosmos::{self}, evm::{
+    channel_provider,
+    cosmos::{self},
+    evm::{
         self,
         zkgm::{
             IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket, IBC,
         },
         zkgmerc20::ZkgmERC20,
-    }, TestContext
+    },
+    TestContext,
 };
 use unionlabs::{
-    encoding::{Encode, Json}, ethereum::keccak256, ibc::core::channel::channel, primitives::{Bech32, FixedBytes, H160, U256}
+    encoding::{Encode, Json},
+    ethereum::keccak256,
+    ibc::core::channel::channel,
+    primitives::{Bech32, FixedBytes, H160, U256},
 };
 use voyager_sdk::primitives::{ChainId, Timestamp};
 
@@ -445,7 +451,7 @@ async fn test_send_vault_success_with_fee() {
 
     let pair = channel_provider::ChannelPair {
         src: 1u32,
-        dest: 1u32
+        dest: 1u32,
     };
 
     let dst_channel_id = pair.dest;
@@ -469,7 +475,7 @@ async fn test_send_vault_success_with_fee() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: recv_addr.to_vec().into(),
-            base_token: "muno".as_bytes().into(), 
+            base_token: "muno".as_bytes().into(),
             base_amount: "15".parse().unwrap(), // So fee will be 5 and will be minted to relayer
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
@@ -516,11 +522,7 @@ async fn test_send_vault_success_with_fee() {
 
     let initial_u_balance = ctx
         .dst
-        .zkgmerc20_balance_of(
-            H160::from(u_on_eth),
-            recv_addr.into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(H160::from(u_on_eth), recv_addr.into(), evm_provider.clone())
         .await
         .unwrap();
 
@@ -539,7 +541,6 @@ async fn test_send_vault_success_with_fee() {
         )
         .await
         .unwrap();
-
 
     println!("initial U balance on eth: {initial_u_balance}");
     println!("initial U balance on union vault: {initial_vault_balance}");
@@ -565,11 +566,7 @@ async fn test_send_vault_success_with_fee() {
 
     let new_u_balance = ctx
         .dst
-        .zkgmerc20_balance_of(
-            H160::from(u_on_eth),
-            recv_addr.into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(H160::from(u_on_eth), recv_addr.into(), evm_provider.clone())
         .await
         .unwrap();
 
@@ -595,7 +592,10 @@ async fn test_send_vault_success_with_fee() {
 
     assert_eq!(new_u_balance - initial_u_balance, 10u64.into());
     assert_eq!(new_vault_balance - initial_vault_balance, 15u64.into());
-    assert_eq!(new_balance_of_relayer - initial_balance_of_relayer, 5u64.into());
+    assert_eq!(
+        new_balance_of_relayer - initial_balance_of_relayer,
+        5u64.into()
+    );
 }
 
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
@@ -3857,7 +3857,7 @@ async fn test_send_vault_unhappy_u_fool() {
 #[tokio::test]
 async fn test_vault_works_with_fee() {
     self::test_send_vault_success_with_fee().await;
-} 
+}
 
 // // UNHAPPY PATHS
 // #[tokio::test]
