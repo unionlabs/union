@@ -289,7 +289,10 @@ pub struct MsgPacketTimeout {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
-pub struct MsgIntentPacketRecv {}
+pub struct MsgIntentPacketRecv {
+    pub packets: Vec<Packet>,
+    pub market_maker_messages: Vec<Bytes>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]

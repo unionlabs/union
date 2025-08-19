@@ -123,7 +123,6 @@ library IBCMsgs {
         IBCPacket[] packets;
         bytes[] marketMakerMsgs;
         address marketMaker;
-        bytes emptyProof;
     }
 
     struct MsgBatchSend {

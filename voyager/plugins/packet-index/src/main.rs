@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use ibc_union_spec::{
+    datagram::MsgIntentPacketRecv,
     event::{ChannelMetadata, ConnectionMetadata, FullEvent, PacketMetadata, PacketSend, WriteAck},
     path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath, COMMITMENT_MAGIC},
     query::{PacketAckByHash, PacketByHash},
@@ -11,18 +12,19 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{info, instrument};
+use tracing::{info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256};
 use voyager_sdk::{
     anyhow, into_value,
     message::{
-        data::{ChainEvent, Data, EventProvableHeight},
+        call::SubmitTx,
+        data::{ChainEvent, Data, EventProvableHeight, IbcDatagram},
         VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
     rpc::{types::PluginInfo, PluginServer},
-    vm::{data, noop, pass::PassResult, Op},
+    vm::{call, data, noop, pass::PassResult, Op},
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
@@ -52,6 +54,8 @@ pub mod call {
         pub chain_id: ChainId,
         pub channel_id: ChannelId,
         pub packet_hash: H256,
+        #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+        pub intent: bool,
     }
 }
 
@@ -99,13 +103,14 @@ impl Module {
         PLUGIN_NAME.to_owned()
     }
 
-    #[instrument(skip_all, fields(%chain_id, %channel_id, %packet_hash))]
+    #[instrument(skip_all, fields(%chain_id, %channel_id, %packet_hash, %intent))]
     async fn make_packet_event(
         &self,
         voyager_client: &VoyagerClient,
         chain_id: ChainId,
         channel_id: ChannelId,
         packet_hash: H256,
+        intent: bool,
     ) -> RpcResult<Op<VoyagerMessage>> {
         let source_commitment = voyager_client
             .maybe_query_ibc_state(
@@ -245,38 +250,44 @@ impl Module {
                 "client info",
             );
 
-            ChainEvent {
-                chain_id: counterparty_chain_id,
-                client_info,
-                counterparty_chain_id: chain_id,
-                tx_hash: ack_response.tx_hash,
-                provable_height: EventProvableHeight::Min(Height::new(
-                    ack_response.provable_height,
-                )),
-                ibc_spec_id: IbcUnion::ID,
-                event: into_value(FullEvent::WriteAck(WriteAck {
-                    acknowledgement: ack_response.ack,
-                    packet_data: packet_response.packet.data,
-                    packet: PacketMetadata {
-                        destination_channel: ChannelMetadata {
-                            channel_id: channel.counterparty_channel_id.unwrap(),
-                            version: channel.version.clone(),
-                            connection: ConnectionMetadata {
-                                client_id: connection.counterparty_client_id,
-                                connection_id: connection.counterparty_connection_id.unwrap(),
+            if intent {
+                warn!("intent ack not yet supported");
+
+                noop()
+            } else {
+                data(ChainEvent {
+                    chain_id: counterparty_chain_id,
+                    client_info,
+                    counterparty_chain_id: chain_id,
+                    tx_hash: ack_response.tx_hash,
+                    provable_height: EventProvableHeight::Min(Height::new(
+                        ack_response.provable_height,
+                    )),
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value(FullEvent::WriteAck(WriteAck {
+                        acknowledgement: ack_response.ack,
+                        packet_data: packet_response.packet.data,
+                        packet: PacketMetadata {
+                            destination_channel: ChannelMetadata {
+                                channel_id: channel.counterparty_channel_id.unwrap(),
+                                version: channel.version.clone(),
+                                connection: ConnectionMetadata {
+                                    client_id: connection.counterparty_client_id,
+                                    connection_id: connection.counterparty_connection_id.unwrap(),
+                                },
                             },
-                        },
-                        source_channel: ChannelMetadata {
-                            channel_id,
-                            version: channel.version.clone(),
-                            connection: ConnectionMetadata {
-                                client_id: connection.client_id,
-                                connection_id: channel.connection_id,
+                            source_channel: ChannelMetadata {
+                                channel_id,
+                                version: channel.version.clone(),
+                                connection: ConnectionMetadata {
+                                    client_id: connection.client_id,
+                                    connection_id: channel.connection_id,
+                                },
                             },
+                            timeout_timestamp: packet_response.packet.timeout_timestamp,
                         },
-                        timeout_timestamp: packet_response.packet.timeout_timestamp,
-                    },
-                })),
+                    })),
+                })
             }
         } else {
             let client_info = voyager_client
@@ -289,41 +300,51 @@ impl Module {
                 "client info",
             );
 
-            ChainEvent {
-                chain_id,
-                client_info,
-                counterparty_chain_id,
-                tx_hash: packet_response.tx_hash,
-                provable_height: EventProvableHeight::Min(Height::new(
-                    packet_response.provable_height,
-                )),
-                ibc_spec_id: IbcUnion::ID,
-                event: into_value(FullEvent::PacketSend(PacketSend {
-                    packet_data: packet_response.packet.data,
-                    packet: PacketMetadata {
-                        source_channel: ChannelMetadata {
-                            channel_id,
-                            version: channel.version.clone(),
-                            connection: ConnectionMetadata {
-                                client_id: connection.client_id,
-                                connection_id: channel.connection_id,
+            if intent {
+                call(SubmitTx {
+                    chain_id,
+                    datagrams: vec![IbcDatagram::new::<IbcUnion>(MsgIntentPacketRecv {
+                        packets: vec![packet_response.packet],
+                        market_maker_messages: vec![],
+                    })],
+                })
+            } else {
+                data(ChainEvent {
+                    chain_id,
+                    client_info,
+                    counterparty_chain_id,
+                    tx_hash: packet_response.tx_hash,
+                    provable_height: EventProvableHeight::Min(Height::new(
+                        packet_response.provable_height,
+                    )),
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value(FullEvent::PacketSend(PacketSend {
+                        packet_data: packet_response.packet.data,
+                        packet: PacketMetadata {
+                            source_channel: ChannelMetadata {
+                                channel_id,
+                                version: channel.version.clone(),
+                                connection: ConnectionMetadata {
+                                    client_id: connection.client_id,
+                                    connection_id: channel.connection_id,
+                                },
                             },
-                        },
-                        destination_channel: ChannelMetadata {
-                            channel_id: channel.counterparty_channel_id.unwrap(),
-                            version: channel.version.clone(),
-                            connection: ConnectionMetadata {
-                                client_id: connection.counterparty_client_id,
-                                connection_id: connection.counterparty_connection_id.unwrap(),
+                            destination_channel: ChannelMetadata {
+                                channel_id: channel.counterparty_channel_id.unwrap(),
+                                version: channel.version.clone(),
+                                connection: ConnectionMetadata {
+                                    client_id: connection.counterparty_client_id,
+                                    connection_id: connection.counterparty_connection_id.unwrap(),
+                                },
                             },
+                            timeout_timestamp: packet_response.packet.timeout_timestamp,
                         },
-                        timeout_timestamp: packet_response.packet.timeout_timestamp,
-                    },
-                })),
+                    })),
+                })
             }
         };
 
-        Ok(data(event))
+        Ok(event)
     }
 }
 
@@ -345,9 +366,16 @@ impl PluginServer<ModuleCall, Never> for Module {
                 chain_id,
                 channel_id,
                 packet_hash,
+                intent,
             }) => {
-                self.make_packet_event(e.voyager_client()?, chain_id, channel_id, packet_hash)
-                    .await
+                self.make_packet_event(
+                    e.voyager_client()?,
+                    chain_id,
+                    channel_id,
+                    packet_hash,
+                    intent,
+                )
+                .await
             }
         }
     }

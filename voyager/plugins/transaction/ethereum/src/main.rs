@@ -801,6 +801,20 @@ fn process_msgs<'a>(
                         })
                         .clear_decoder(),
                 ),
+                Datagram::IntentPacketRecv(data) => (
+                    msg,
+                    ibc_handler
+                        .recvIntentPacket(ibc_solidity::MsgIntentPacketRecv {
+                            packets: data.packets.into_iter().map(Into::into).collect(),
+                            market_maker_msgs: data
+                                .market_maker_messages
+                                .into_iter()
+                                .map(Into::into)
+                                .collect(),
+                            market_maker: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 _ => todo!(),
             })
         })

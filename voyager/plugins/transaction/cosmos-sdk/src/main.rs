@@ -1147,10 +1147,33 @@ fn process_msgs(
                         })
                     }
                     ibc_union_spec::datagram::Datagram::IntentPacketRecv(
-                        _msg_intent_packet_recv,
-                    ) => todo!(),
+                        msg_intent_packet_recv,
+                    ) => {
+                        let packet_intent_recv = ibc_union_msg::msg::ExecuteMsg::IntentPacketRecv(
+                            ibc_union_msg::msg::MsgIntentPacketRecv {
+                                packets: msg_intent_packet_recv.packets.into_iter().collect(),
+                                market_maker_msgs: msg_intent_packet_recv.market_maker_messages,
+                                market_maker: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
+                            },
+                        );
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
+                            msg: serde_json::to_vec(&packet_intent_recv).unwrap(),
+                            funds: gas_station_config
+                                .clone()
+                                .into_iter()
+                                .map(|coin| protos::cosmos::base::v1beta1::Coin {
+                                    denom: coin.denom,
+                                    amount: coin.amount.to_string(),
+                                })
+                                .collect(),
+                        })
+                    }
                     ibc_union_spec::datagram::Datagram::BatchSend(msg_batch_send) => {
-                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::BatchSend(
+                        let batch_send = ibc_union_msg::msg::ExecuteMsg::BatchSend(
                             ibc_union_msg::msg::MsgBatchSend {
                                 packets: msg_batch_send.packets,
                             },
@@ -1159,7 +1182,7 @@ fn process_msgs(
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&packet_recv).unwrap(),
+                            msg: serde_json::to_vec(&batch_send).unwrap(),
                             funds: vec![],
                         })
                     }

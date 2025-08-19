@@ -214,7 +214,6 @@ pub struct MsgIntentPacketRecv {
     pub packets: Vec<Packet>,
     pub market_maker_msgs: Vec<Bytes>,
     pub market_maker: String,
-    pub empty_proof: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -377,8 +377,7 @@ contract IBCPacketTests is UnionTests {
         IBCMsgs.MsgIntentPacketRecv memory msg_ = IBCMsgs.MsgIntentPacketRecv({
             packets: packets,
             marketMakerMsgs: marketMakerMsgs,
-            marketMaker: address(this),
-            emptyProof: hex""
+            marketMaker: address(this)
         });
         return msg_;
     }

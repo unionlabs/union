@@ -329,12 +329,19 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function recvIntentPacket(
         IBCMsgs.MsgIntentPacketRecv calldata msg_
     ) external override restricted {
+        // make an empty calldata value to pass as the proof, this is not read when intent = true
+        bytes calldata emptyProof;
+        assembly {
+            emptyProof.offset := 0
+            emptyProof.length := 0
+        }
+
         _processReceive(
             msg_.packets,
             msg_.marketMaker,
             msg_.marketMakerMsgs,
             0,
-            msg_.emptyProof,
+            emptyProof,
             true
         );
     }
