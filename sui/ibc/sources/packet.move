@@ -60,6 +60,8 @@
 
 module ibc::packet {
     use ibc::ethabi;
+    use sui::address;
+    use sui::bcs;
 
     public struct Packet has copy, store, drop {
         source_channel_id: u32,
@@ -110,21 +112,66 @@ module ibc::packet {
         new(0, 0, vector::empty(), 0, 0)
     }
 
-    public fun encode(packet: &Packet): vector<u8> {
-        let mut buf = vector::empty();
-
-        ethabi::encode_uint<u32>(&mut buf, packet.source_channel_id);
-        ethabi::encode_uint<u32>(&mut buf, packet.destination_channel_id);
-        ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
-        ethabi::encode_uint<u64>(&mut buf, packet.timeout_height);
-        ethabi::encode_uint<u64>(&mut buf, packet.timeout_timestamp);
-        ethabi::encode_bytes(&mut buf, &packet.data);
-        buf
+    // you don't wanna know
+    public struct PacketBcs has drop {
+        source_channel_id: address,
+        destination_channel_id: address,
+        data_offset: address,
+        timeout_height: address,
+        timeout_timestamp: address,
+        vec_size_off_1: u128,
+        vec_size_off_2: u64,
+        vec_size_off_3: u32,
+        vec_size_off_4: u16,
+        vec_size_off_5: u8,
+        data: vector<u8>                  
     }
+
+    public fun to_bcs_repr(packet: &Packet): PacketBcs {
+        PacketBcs {
+            source_channel_id: address::from_u256(packet.source_channel_id as u256),
+            destination_channel_id: address::from_u256(packet.destination_channel_id as u256),
+            data_offset: address::from_u256(0x20 * 5),
+            timeout_height: address::from_u256(packet.timeout_height as u256),
+            timeout_timestamp: address::from_u256(packet.timeout_timestamp as u256),
+            vec_size_off_1: 0,
+            vec_size_off_2: 0,
+            vec_size_off_3: 0,
+            vec_size_off_4: 0,
+            vec_size_off_5: 0,
+            data: packet.data
+        }
+    }
+
+    // you don't wanna know
+    public fun encode(packet: &Packet): vector<u8> {
+        let mut encoded = bcs::to_bytes(&packet.to_bcs_repr());
+
+        let mut i = 32;
+        let offset = packet.data.length() % 32;
+        while (i > offset) {
+            encoded.push_back(0);
+            i = i - 1;
+        };
+
+        encoded
+    }
+
+    // public fun encode(packet: &Packet): vector<u8> {
+    //     let mut buf = vector::empty();
+
+    //     ethabi::encode_uint<u32>(&mut buf, packet.source_channel_id);
+    //     ethabi::encode_uint<u32>(&mut buf, packet.destination_channel_id);
+    //     ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
+    //     ethabi::encode_uint<u64>(&mut buf, packet.timeout_height);
+    //     ethabi::encode_uint<u64>(&mut buf, packet.timeout_timestamp);
+    //     ethabi::encode_bytes(&mut buf, &packet.data);
+    //     buf
+    // }
 
     #[test]
     fun test_encode_packet() {
-        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
+        let output = x"0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
         let source_channel_id = 2;
         let destination_channel_id = 3;
         let data = b"hello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello worldhello world";
@@ -139,7 +186,9 @@ module ibc::packet {
                 timeout_timestamp
             );
 
-        assert!(encode(&packet) == output, 1);
+        let encoded = packet.encode();
+
+        assert!(encoded == output, 1);
     } 
 
 }

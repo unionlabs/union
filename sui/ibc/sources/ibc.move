@@ -319,7 +319,7 @@ module ibc::ibc {
     /// `client_type`: type of the client (only "cometbls" is supported for now)
     /// `client_state_bytes`: the initial client state bytes with the client-defined encoding
     /// `consensus_state_bytes`: the initial consensus state bytes with the client-defined encoding
-    public entry fun create_client(
+    public fun create_client(
         ibc_store: &mut IBCStore,
         client_type: String, 
         client_state_bytes: vector<u8>, 
@@ -373,7 +373,7 @@ module ibc::ibc {
     ///
     /// `client_id`: the id of the client to be updated
     /// `client_message`: the client-defined update message
-    public entry fun update_client(
+    public fun update_client(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
         client_id: u32,
@@ -407,7 +407,7 @@ module ibc::ibc {
     ///
     /// `client_id`: the id of the client
     /// `misbehaviour`: client-defined misbehaviour
-    public entry fun misbehaviour(
+    public fun misbehaviour(
         ibc_store: &mut IBCStore,
         client_id: u32,
         misbehaviour: vector<u8>,
@@ -429,7 +429,7 @@ module ibc::ibc {
     ///
     /// `client_id`: the id of the client which will be used for verification in for this connection
     /// `counterparty_client_id`: the id of the client on the counterparty chain
-    public entry fun connection_open_init(
+    public fun connection_open_init(
         ibc_store: &mut IBCStore,
         client_id: u32,
         counterparty_client_id: u32
@@ -467,7 +467,7 @@ module ibc::ibc {
     /// `client_id`: the id of the client running on this chain
     /// `proof_init`: the proof of the `ConnectionEnd` commitment on the counterparty
     /// `proof_height`: the height when this proof is generated
-    public entry fun connection_open_try(
+    public fun connection_open_try(
         ibc_store: &mut IBCStore,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
@@ -529,7 +529,7 @@ module ibc::ibc {
     /// `counterparty_connection_id`: the id of the connection that is generated during the try phase on the counterparty
     /// `proof_try`: the proof of the `ConnectionEnd` commitment on the counterparty
     /// `proof_height`: the height when this proof is generated
-    public entry fun connection_open_ack(
+    public fun connection_open_ack(
         ibc_store: &mut IBCStore,
         connection_id: u32,
         counterparty_connection_id: u32,
@@ -585,7 +585,7 @@ module ibc::ibc {
     /// `connection_id`: the id of the connection that is generated during the try phase
     /// `proof_ack`: the proof of the `ConnectionEnd` commitment on the counterparty
     /// `proof_height`: the height when this proof is generated
-    public entry fun connection_open_confirm(
+    public fun connection_open_confirm(
         ibc_store: &mut IBCStore,
         connection_id: u32,
         proof_ack: vector<u8>,
@@ -2142,5 +2142,14 @@ module ibc::ibc {
             port,
             IbcAppWitness {}
         );
+    }
+
+    #[test]
+    fun test_proof_bro() {
+        let proof = vector[66,3,157,163,60,194,185,78,153,137,118,116,88,181,5,164,168,56,94,112,42,200,1,32,109,2,153,49,174,114,139,182,11,247,0,230,95,246,128,140,252,192,16,252,63,105,55,31,168,195,28,213,244,195,214,49,113,37,39,71,124,87,139,52,8,77,241,32,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,2,226,34,8,38,2,4,226,34,32,6,244,144,16,166,62,131,72,63,110,140,80,68,56,17,205,5,81,152,192,156,19,38,64,129,239,188,82,220,80,10,172,32,0,38,4,6,226,34,32,26,34,239,233,254,192,95,202,132,192,62,204,91,211,180,148,89,83,213,224,39,36,1,16,9,99,214,209,129,142,123,201,32,0,5,6,10,226,34,32,33,32,246,158,154,124,28,103,4,32,35,158,173,157,123,111,139,167,158,232,170,134,126,91,217,78,206,212,180,160,165,6,233,246,5,8,16,226,34,32,33,32,165,28,108,126,162,136,226,141,54,82,253,35,183,63,253,107,66,25,135,8,233,114,49,195,108,180,148,89,236,223,220,158,5,10,28,226,34,32,33,32,232,158,110,200,166,214,0,77,69,210,84,233,29,217,85,205,3,125,200,86,247,61,96,62,99,195,59,114,102,250,11,150,5,12,46,226,34,32,33,32,69,127,104,73,59,175,120,242,44,215,154,107,16,118,172,161,73,26,58,205,103,39,58,112,27,170,101,147,13,186,194,148,38,14,100,226,34,32,99,64,196,88,239,62,120,58,187,98,35,91,198,226,113,62,117,175,113,122,143,18,82,250,3,216,207,84,28,35,37,130,32,0,6,16,154,1,226,34,32,33,32,94,9,159,210,244,168,3,254,192,41,45,181,221,82,164,143,172,53,0,28,201,94,117,231,43,60,203,197,10,148,138,249,4,119,97,115,109,32,57,3,118,217,61,244,79,2,241,168,95,102,130,112,144,213,213,64,116,170,6,46,48,165,77,47,72,22,239,112,128,218,1,0,3,33,1,2,163,112,214,244,208,16,106,162,251,190,254,83,88,186,2,81,154,49,248,130,202,227,178,59,147,127,0,47,194,183,150,0,33,1,203,227,131,25,2,252,250,94,200,191,229,120,254,131,31,121,86,45,230,213,180,224,159,117,29,73,134,123,108,85,158,200,0,33,1,255,201,233,159,104,240,196,120,96,190,81,147,182,148,20,24,89,245,220,63,245,230,130,179,84,241,234,117,202,19,91,148,0];
+
+        let proof = ibc::ics23::decode_membership_proof(proof); 
+    
+        std::debug::print(&proof);
     }
 }

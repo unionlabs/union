@@ -182,7 +182,6 @@ module zkgm::zkgm_relay {
         // not by instruction but by set
         cursor: u64,
         acks: vector<vector<u8>>,
-        packet_hash: vector<u8>,
         path: u256,
         salt: vector<u8>,
         ibc_packet: Packet,
@@ -361,13 +360,11 @@ module zkgm::zkgm_relay {
                 packet_timeout_height,
                 packet_timeout_timestamp
             );
-        let packet_hash = commitment::commit_packet(&ibc_packet);
 
         zkgm.session = option::some(ExecutionCtx {
             instruction_set: partition_instructions(zkgm_packet.instruction()),
             cursor: 0,
             acks: vector::empty(),
-            packet_hash,
             path: zkgm_packet.path(),
             salt: zkgm_packet.salt(),
             ibc_packet

@@ -1,7 +1,7 @@
 [package]
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 name    = "ibc"
-published-at = "0xd127df8c4158125c2e28ad477df0788f2326ccea2584cb8e6963ff3dbfd199dd"
+# published-at = "0x52103caa6674ef22c879a6f1dab43dd43baf547ec7c3d8d3307568e2787abc6e"
 # original = 0xf7afcb48d53dcd8f1b75bd73779a23fb80e0750e3db7a9fd7e59fe22bb7cd7d4
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
@@ -21,7 +21,7 @@ published-at = "0xd127df8c4158125c2e28ad477df0788f2326ccea2584cb8e6963ff3dbfd199
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc = "0x0"
+ibc = "_"
 # 0x78268a4b08f968e5d4dc1dcd75c6e76ebde78f4a3b6da5c0b1d14794c04a04cc
 
 
