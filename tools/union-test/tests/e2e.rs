@@ -29,7 +29,6 @@ use ucs03_zkgm::{
     },
 };
 use union_test::{
-    channel_provider,
     cosmos::{self},
     evm::{
         self,
@@ -43,7 +42,6 @@ use union_test::{
 use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
-    ibc::core::channel::channel,
     primitives::{Bech32, FixedBytes, H160, U256},
 };
 use voyager_sdk::primitives::{ChainId, Timestamp};
@@ -462,7 +460,6 @@ async fn test_send_vault_success_with_fee() {
     }
     .abi_encode_params();
 
-    let x = 5;
     let recv_addr = hex_literal::hex!("Dab9b2F47515d2e76DC5F96a5901Ba1a0a018975");
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
