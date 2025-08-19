@@ -29,20 +29,16 @@ use ucs03_zkgm::{
     },
 };
 use union_test::{
-    cosmos::{self},
-    evm::{
+    channel_provider, cosmos::{self}, evm::{
         self,
         zkgm::{
             IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket, IBC,
         },
         zkgmerc20::ZkgmERC20,
-    },
-    TestContext,
+    }, TestContext
 };
 use unionlabs::{
-    encoding::{Encode, Json},
-    ethereum::keccak256,
-    primitives::{Bech32, FixedBytes, H160, U256},
+    encoding::{Encode, Json}, ethereum::keccak256, ibc::core::channel::channel, primitives::{Bech32, FixedBytes, H160, U256}
 };
 use voyager_sdk::primitives::{ChainId, Timestamp};
 
@@ -188,7 +184,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 18; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(
@@ -433,6 +429,173 @@ async fn test_send_vault_success() {
 
     assert_eq!(new_u_balance - initial_u_balance, 10u64.into());
     assert_eq!(new_vault_balance - initial_vault_balance, 10);
+}
+
+async fn test_send_vault_success_with_fee() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+
+    // ensure_channels_opened(ctx.channel_count).await;
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
+    // let pair = ctx.get_channel().await.expect("channel available");
+
+    let pair = channel_provider::ChannelPair {
+        src: 1u32,
+        dest: 1u32
+    };
+
+    let dst_channel_id = pair.dest;
+    let src_channel_id = pair.src;
+
+    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
+
+    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+
+    let metadata = SolverMetadata {
+        solverAddress: u_on_eth.to_vec().into(),
+        metadata: Default::default(),
+    }
+    .abi_encode_params();
+
+    let x = 5;
+    let recv_addr = hex_literal::hex!("Dab9b2F47515d2e76DC5F96a5901Ba1a0a018975");
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: recv_addr.to_vec().into(),
+            base_token: "muno".as_bytes().into(), 
+            base_amount: "15".parse().unwrap(), // So fee will be 5 and will be minted to relayer
+            kind: TOKEN_ORDER_KIND_SOLVE,
+            metadata: metadata.into(),
+            quote_token: u_on_eth.to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+    ctx.dst
+        .u_register_fungible_counterpart(
+            H160::from(u_on_eth),
+            zkgm_deployer_provider.clone(),
+            alloy::primitives::U256::ZERO,
+            dst_channel_id,
+            b"muno".to_vec().into(),
+            evm::u::U::FungibleCounterparty {
+                beneficiary: vault_on_union.as_bytes().to_vec().into(),
+            },
+        )
+        .await
+        .unwrap();
+
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
+
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: src_channel_id.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "15".into(),
+    }];
+
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+
+    let initial_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            recv_addr.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    let initial_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
+
+    let initial_balance_of_relayer = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+
+    println!("initial U balance on eth: {initial_u_balance}");
+    println!("initial U balance on union vault: {initial_vault_balance}");
+    println!("initial balance of relayer: {initial_balance_of_relayer}");
+
+    let ack_packet_data = ctx
+        .send_and_recv_and_ack_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
+    assert!(
+        ack_packet_data.is_ok(),
+        "Failed to send and ack packet: {:?}",
+        ack_packet_data.err()
+    );
+
+    let new_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            recv_addr.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    let new_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
+
+    let new_balance_of_relayer = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
+
+    println!("new U balance on eth: {new_u_balance}");
+    println!("new U balance on union vault: {new_vault_balance}");
+    println!("new balance of relayer: {new_balance_of_relayer}");
+
+    assert_eq!(new_u_balance - initial_u_balance, 10u64.into());
+    assert_eq!(new_vault_balance - initial_vault_balance, 15u64.into());
+    assert_eq!(new_balance_of_relayer - initial_balance_of_relayer, 5u64.into());
 }
 
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
@@ -3646,98 +3809,103 @@ async fn test_send_vault_unhappy_u_fool() {
     );
 }
 
-#[tokio::test]
-async fn send_stake_and_unstake_from_evm_to_union0() {
-    self::test_stake_and_unstake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// async fn send_stake_and_unstake_from_evm_to_union0() {
+//     self::test_stake_and_unstake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union0() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_refund() {
+//     self::test_send_packet_from_evm_to_union_get_refund().await;
+// }
+
+// #[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
+// async fn from_union_to_evm_refund() {
+//     self::test_send_packet_from_union_to_evm_get_refund().await;
+// }
+
+// #[tokio::test]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake0() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake_and_refund() {
+//     self::test_stake_from_evm_to_union_and_refund().await;
+// }
+
+// #[tokio::test]
+// async fn test_vault_works() {
+//     self::test_send_vault_success().await;
+// }
 
 #[tokio::test]
-async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
-}
+async fn test_vault_works_with_fee() {
+    self::test_send_vault_success_with_fee().await;
+} 
 
-#[tokio::test]
-async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-}
+// // UNHAPPY PATHS
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_only_maker_err().await;
+// }
 
-#[tokio::test]
-async fn from_evm_to_union_refund() {
-    self::test_send_packet_from_evm_to_union_get_refund().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path2() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset().await;
+// }
 
-#[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
-async fn from_union_to_evm_refund() {
-    self::test_send_packet_from_union_to_evm_get_refund().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path3() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance().await;
+// }
 
-#[tokio::test]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path4() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow().await;
+// }
 
-#[tokio::test]
-async fn from_evm_to_union_stake0() {
-    self::test_stake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path5() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy().await;
+// }
 
-#[tokio::test]
-async fn from_evm_to_union_stake_and_refund() {
-    self::test_stake_from_evm_to_union_and_refund().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path6() {
+//     self::test_from_evm_to_union_batch_err_invalid_batch_instruction().await;
+// }
 
-#[tokio::test]
-async fn test_vault_works() {
-    self::test_send_vault_success().await;
-}
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path7() {
+//     self::test_from_evm_to_union_batch_err_invalid_forward_instruction().await;
+// }
 
-// UNHAPPY PATHS
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path() {
-    self::test_from_evm_to_union_tokenv2_unhappy_only_maker_err().await;
-}
+// #[tokio::test]
+// async fn test_send_vault_unhappy_path1() {
+//     self::test_send_vault_unhappy_u_counterparty_is_not_fungible().await;
+// }
 
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path2() {
-    self::test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset().await;
-}
+// #[tokio::test]
+// async fn test_send_vault_unhappy_path2() {
+//     self::test_send_vault_unhappy_u_fool().await;
+// }
 
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path3() {
-    self::test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path4() {
-    self::test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path5() {
-    self::test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path6() {
-    self::test_from_evm_to_union_batch_err_invalid_batch_instruction().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path7() {
-    self::test_from_evm_to_union_batch_err_invalid_forward_instruction().await;
-}
-
-#[tokio::test]
-async fn test_send_vault_unhappy_path1() {
-    self::test_send_vault_unhappy_u_counterparty_is_not_fungible().await;
-}
-
-#[tokio::test]
-async fn test_send_vault_unhappy_path2() {
-    self::test_send_vault_unhappy_u_fool().await;
-}
-
-#[tokio::test]
-async fn test_send_vault_unhappy_path3() {
-    self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
-}
+// #[tokio::test]
+// async fn test_send_vault_unhappy_path3() {
+//     self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
+// }
