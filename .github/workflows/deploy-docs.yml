@@ -49,7 +49,7 @@ jobs:
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="docs" deploy result >> /tmp/docs_deploy.txt
 
       - name: Set Deploy Output
@@ -90,7 +90,7 @@ jobs:
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="docs" deploy result
 
   deploy-production:
@@ -114,5 +114,5 @@ jobs:
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="docs" --branch="main" deploy result
