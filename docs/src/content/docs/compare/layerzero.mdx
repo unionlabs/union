@@ -2,4 +2,31 @@
 title: Union vs LayerZero
 ---
 
-Whatever
+While both Union and LayerZero enable cross-chain communication, they take fundamentally different approaches to security, decentralization, and APIs. Union leverages _zero-knowledge proofs and [consensus verification](/concepts/consensus-verification)_ to eliminate trusted intermediaries, whereas LayerZero relies on a configurable DVN security model that defaults to a _Google Cloud 2/3 multisig_.
+
+The fundamental architecture difference is that Union gives chains access to the _consensus-verified state root of the connected chain_, and LayerZero sends _DVN-checked messages_ to the connected chain. Union's architecture enables chains to access arbitrary (historical) state of the connected chain, while being much more efficient and secure.
+
+## Comparison Matrix
+
+| Feature | Union | LayerZero |
+|---------|-------|-----------|
+| **Security Model** | Consensus verification with Zero-Knowledge proofs | Depends on DVN. Defaults to Google Cloud 2/3 multisig |
+| **Decentralization** | Fully permissionless. anyone can generate consensus proofs and relay packets | Depends on DVN. Centralized by default |
+| **Censorship Resistance** | Yes. Anyone can submit proofs | Depends on DVN. Defaults to no censorship resistance |
+| **Liveness Guarantee** | Fully permissionless. Works even if Union Labs stop operating | Requires active DVN operators |
+| **Packet acknowledgements** | Yes. Protocols know when their message has been received and handled succesfully. | No. Requries offchain infrastructure  |
+| **Prove arbitrary state** | Yes. Union sends the state-root of the connected chain, so any data can be proven. | No. LayerZero sends protocol-level messages rather than the state root |
+| **Prove historic state** | Yes. Union allows you to prove against historic state roots. | No. Unless the application manually tracks history in their contract |
+| **Batchability of messages** | Yes. Every proof is a batch because the state root is verfied, not individual messages. | Yes. Protocols can manually batch messages |
+| **Content-addressed packets** | Yes. | Yes. |
+| **Gas Cost** | 138k in the decentralized, maximum-security configuration, gets cheaper per-message because the majority of cost is in the consensus proof. Costs are also shared across all apps using Union.  | 280k in the most centralized/cheapest configuration, scales linearily with message count. Costs are not shared across apps. |
+| **Chain integration requirements** | Union requires both state and consensus to be provable. | No security requirements. LayerZero can be integrated anywhere. |
+| **Smart-contract integration requirements** | Easy. Use pre-existing channels to send and receive data. | Requires manual configuration, because LayerZero operates on a per-application basis. |
+
+_For more details on gas costs, see [our gas cost research article](https://research.union.build/zkGasm-II-12e79e5af45d8038b075f64da60f4b64)._
+
+## Conclusion
+
+While LayerZero pioneered important concepts in cross-chain communication and offers ease of integration through lower security requirements, Union represents the next evolution in interoperability. By eliminating trusted intermediaries and providing cryptographic [consensus verification](/concepts/consensus-verification), Union offers superior security, true decentralization, lower costs, (historical) state proofs, and predictable guarantees that are essential for the future of cross-chain interactions.
+
+The choice between Union and LayerZero ultimately comes down to priorities: if you value flexibility, are willing to accept variable security and trust assumptions, and don't need acknowledgements, LayerZero may suffice. However, if you require the highest level of security, true trustlessness, decentralization, and advanced APIs such as acknowledgements and (historical) state proofs, Union's consensus verification approach provides a fundamentally superior solution for cross-chain communication.
