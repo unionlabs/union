@@ -138,7 +138,7 @@
           "PACKET_SEND_LC_UPDATE_L0": "519141"
         }
       },
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     },
     "3": {
       "comments": "trusted connection to union.union-testnet-10 channel 3 intended for development and testing only",
@@ -184,7 +184,7 @@
           "PACKET_SEND_LC_UPDATE_L2": "1028227"
         }
       },
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     },
     "3": {
       "comments": "babylon.bbn-test-5 channel 2",
@@ -220,7 +220,7 @@
           "PACKET_SEND_LC_UPDATE_L2": "2116634"
         }
       },
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "osmosis.osmosis-1": {
@@ -292,7 +292,7 @@
   "union.union-1": {
     "1": {
       "comments": "ethereum.1 channel 2",
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "xion.xion-testnet-2": {
