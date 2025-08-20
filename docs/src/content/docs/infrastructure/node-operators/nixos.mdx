@@ -16,17 +16,12 @@ The current example does not support remote signers yet. We will expand the guid
 
 Below is an example configuration.nix which can be used in production.
 
-:::caution
-
-The example currently uses `git+ssh://` syntax rather than `github:` syntax because our repository is not public yet. Once it is, this will be simplified. When this happens, `GIT_LFS_SKIP_SMUDGE` will also no longer be required.
-
-:::
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    union.url = "git+ssh://git@github.com/unionlabs/union";
+    union.url = "github:unionlabs/union";
   };
   outputs = { self, nixpkgs, union, ... }:
     {
