@@ -7,6 +7,11 @@
       "comments": "eBABY"
     }
   },
+  "bsc.56": {
+    "0x918b3aa73e2D42D96CF64CBdB16838985992dAbc": {
+      "comments": "CoBTC"
+    }
+  },
   "ethereum.1": {
     "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
       "comments": "WETH"
