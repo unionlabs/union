@@ -330,6 +330,16 @@ export default defineConfig({
                 },
               ],
             },
+            {
+              label: "Compare",
+              collapsed: true,
+              items: [
+                {
+                  label: "LayerZero",
+                  link: "/compare/layerzero",
+                },
+              ],
+            },
           ],
         },
         {
