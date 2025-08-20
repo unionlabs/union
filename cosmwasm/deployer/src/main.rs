@@ -10,7 +10,7 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     TxClient,
 };
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint256};
 use futures::{future::OptionFuture, stream::FuturesOrdered, TryStreamExt};
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
@@ -34,7 +34,7 @@ use unionlabs::{
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
     google::protobuf::any::Any,
-    primitives::{encoding::HexPrefixed, Bech32, Bytes, H256},
+    primitives::{encoding::HexPrefixed, Bech32, Bytes, H256, U256},
     signer::CosmosSigner,
 };
 
@@ -182,6 +182,24 @@ enum TxCmd {
         /// The relayer(s) to whitelist.
         #[arg(trailing_var_arg = true)]
         relayer: Vec<Bech32<Bytes>>,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
+    SetBucketConfig {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        ucs03_address: Bech32<H256>,
+        #[arg(long)]
+        denom: String,
+        #[arg(long, default_value_t = U256::MAX)]
+        capacity: U256,
+        #[arg(long, default_value_t = U256::MAX)]
+        refill_rate: U256,
+        #[arg(long, default_value_t = false)]
+        reset: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -1098,6 +1116,44 @@ async fn do_main() -> Result<()> {
 
                     info!(%tx_hash, "registered relayer {relayer}");
                 }
+            }
+            TxCmd::SetBucketConfig {
+                rpc_url,
+                private_key,
+                ucs03_address,
+                denom,
+                capacity,
+                refill_rate,
+                reset,
+                gas_config,
+            } => {
+                let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+
+                info!("setting bucket config for token {denom}");
+
+                let (tx_hash, _) = ctx
+                    .tx(
+                        MsgExecuteContract {
+                            sender: ctx.wallet().address().map_data(Into::into),
+                            contract: ucs03_address.clone(),
+                            msg: serde_json::to_vec(
+                                &ucs03_zkgm::msg::ExecuteMsg::SetBucketConfig {
+                                    denom: denom.clone(),
+                                    capacity: Uint256::from_be_bytes(capacity.to_be_bytes()),
+                                    refill_rate: Uint256::from_be_bytes(refill_rate.to_be_bytes()),
+                                    reset,
+                                },
+                            )
+                            .unwrap()
+                            .into(),
+                            funds: vec![],
+                        },
+                        "",
+                        gas_config.simulate,
+                    )
+                    .await?;
+
+                info!(%tx_hash, "set bucket config for {denom}");
             }
             TxCmd::CreateSigners {
                 rpc_url,

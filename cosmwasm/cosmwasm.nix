@@ -622,6 +622,30 @@ _: {
           '';
         };
 
+      set-bucket-config =
+        {
+          name,
+          ucs04-chain-id,
+          rpc_url,
+          gas_config,
+          private_key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-set-bucket-config";
+          runtimeInputs = [ cosmwasm-deployer ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              tx \
+              set-bucket-config \
+              --rpc-url ${rpc_url} \
+              --ucs03-address ${(getDeployment ucs04-chain-id).app.ucs03.address} \
+              ${mk-gas-args gas_config} "$@"
+          '';
+        };
+
       # migrate the admin to the multisig address
       finalize-deployment =
         {
@@ -1035,6 +1059,7 @@ _: {
                       finalize-deployment = finalize-deployment chain;
                       get-git-rev = get-git-rev chain;
                       whitelist-relayers = whitelist-relayers chain;
+                      set-bucket-config = set-bucket-config chain;
                       migrate-contract = migrate-contract chain;
                     }
                     // (chain-migration-scripts chain)
