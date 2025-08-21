@@ -160,8 +160,6 @@ module ibc::connection_end {
 
         let encoded = encode(&connection);
 
-        std::debug::print(&encoded);
-
         assert!(encoded == buf, 1);
     }
 }
