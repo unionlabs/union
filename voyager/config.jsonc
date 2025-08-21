@@ -209,6 +209,11 @@
     },
     {
       "enabled": true,
+      "path": "./target/debug/voyager-plugin-packet-timeout",
+      "config": {}
+    },
+    {
+      "enabled": true,
       "path": "./target/debug/voyager-event-source-plugin-ethereum",
       "config": {
         "chain_id": "32382",
