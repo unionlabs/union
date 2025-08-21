@@ -5,10 +5,10 @@ use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketRecv, PacketSend,
-        UpdateClient,
+        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
+        PacketSend, UpdateClient, WriteAck,
     },
-    path::{ChannelPath, ConnectionPath},
+    path::{BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, IbcUnion, Timestamp,
 };
@@ -187,6 +187,18 @@ impl Module {
                 let packet_recv: events::PacketRecv =
                     serde_json::from_value(e.parsed_json).unwrap();
                 Some(events::IbcEvent::PacketRecv(packet_recv))
+            }
+            "WriteAck" => {
+                let write_ack: events::WriteAck = serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::WriteAck(write_ack))
+            }
+            "PacketAck" => {
+                let e: events::PacketAck = serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::PacketAck(e))
+            }
+            "TimeoutPacket" => {
+                let e: events::TimeoutPacket = serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::TimeoutPacket(e))
             }
             "Initiated" => None,
             e => panic!("unknown: {e}"),
@@ -933,6 +945,109 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_info,
                         )
                     }
+                    events::IbcEvent::WriteAck(event) => {
+                        let voyager_client = e.voyager_client()?;
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            destination_channel,
+                            source_channel,
+                        ) = self
+                            .make_packet_metadata(
+                                Height::new(height),
+                                event.channel_id.try_into().unwrap(),
+                                voyager_client,
+                            )
+                            .await?;
+
+                        let packet_hash = event.packet_hash.as_slice().try_into().unwrap();
+
+                        let ack = voyager_client
+                            .maybe_query_ibc_state(
+                                counterparty_chain_id.clone(),
+                                QueryHeight::Latest,
+                                BatchReceiptsPath {
+                                    batch_hash: packet_hash,
+                                },
+                            )
+                            .await?
+                            .state;
+
+                        match ack {
+                            Some(ack) => {
+                                info!(%packet_hash, %ack, "packet already acknowledged");
+                                return Ok(noop());
+                            }
+                            None => {
+                                info!(%packet_hash, "packet not acked yet");
+                            }
+                        }
+
+                        let packet = voyager_client
+                            .query(
+                                counterparty_chain_id.clone(),
+                                PacketByHash {
+                                    channel_id: source_channel.channel_id,
+                                    packet_hash,
+                                },
+                            )
+                            .await?;
+
+                        chain_event(
+                            counterparty_chain_id,
+                            WriteAck {
+                                packet_data: packet.data.to_vec().into(),
+                                acknowledgement: event.acknowledgement.to_vec().into(),
+                                packet: PacketMetadata {
+                                    source_channel,
+                                    destination_channel,
+                                    timeout_timestamp: packet.timeout_timestamp,
+                                },
+                            }
+                            .into(),
+                            client_info,
+                        )
+                    }
+                    events::IbcEvent::PacketAck(event) => {
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                        ) = self
+                            .make_packet_metadata(
+                                Height::new(height),
+                                event.channel_id.try_into().unwrap(),
+                                voyager_client,
+                            )
+                            .await?;
+
+                        let packet = voyager_client
+                            .query(
+                                self.chain_id.clone(),
+                                PacketByHash {
+                                    channel_id: event.channel_id.try_into().unwrap(),
+                                    packet_hash: event.packet_hash.as_slice().try_into().unwrap(),
+                                },
+                            )
+                            .await?;
+
+                        chain_event(
+                            counterparty_chain_id,
+                            PacketAck {
+                                packet: PacketMetadata {
+                                    source_channel,
+                                    destination_channel,
+                                    timeout_timestamp: packet.timeout_timestamp,
+                                },
+                                packet_data: packet.data,
+                                acknowledgement: event.acknowledgement.into(),
+                            }
+                            .into(),
+                            client_info,
+                        )
+                    }
+                    _ => todo!(),
                 }
             }
         }

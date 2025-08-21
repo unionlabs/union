@@ -108,6 +108,26 @@ pub struct PacketRecv {
     pub maker_msg: Vec<u8>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct WriteAck {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub acknowledgement: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PacketAck {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub acknowledgement: Vec<u8>,
+    pub maker: SuiAddress,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct TimeoutPacket {
+    pub packet: Packet,
+}
+
 #[model]
 #[derive(Enumorph)]
 pub enum IbcEvent {
@@ -121,10 +141,9 @@ pub enum IbcEvent {
     ChannelOpenTry(ChannelOpenTry),
     ChannelOpenAck(ChannelOpenAck),
     ChannelOpenConfirm(ChannelOpenConfirm),
-    // WriteAcknowledgement(ibc::WriteAck),
-    // RecvPacket(ibc::PacketRecv),
+    WriteAck(WriteAck),
     PacketSend(PacketSend),
     PacketRecv(PacketRecv),
-    // AcknowledgePacket(ibc::PacketAck),
-    // TimeoutPacket(ibc::TimeoutPacket),
+    PacketAck(PacketAck),
+    TimeoutPacket(TimeoutPacket),
 }

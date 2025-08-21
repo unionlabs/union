@@ -262,11 +262,6 @@ module ibc::ibc {
         packet: Packet
     }
 
-    public struct WriteAcknowledgement has drop, store, copy {
-        packet: Packet,
-        acknowledgement: vector<u8>
-    }
-
     public struct WriteAck has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
