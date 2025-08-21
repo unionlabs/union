@@ -649,6 +649,54 @@ _: {
           }
         );
 
+      set-bucket-config =
+        {
+          name,
+
+          ucs04-chain-id,
+          rpc-url,
+          private-key,
+
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplicationWithArgs {
+            name = "set-bucket-config-${name}";
+            arguments = [
+              {
+                arg = "denom";
+                required = true;
+                help = "Denom to set bucket config for";
+              }
+              {
+                arg = "capacity";
+                help = "Capacity of the bucket";
+              }
+              {
+                arg = "refill_rate";
+                help = "Refill rate of the bucket";
+              }
+              # TODO: Figure out how to set --reset
+            ];
+            runtimeInputs = [ pkgs.foundry-bin ];
+            text = ''
+              echo "setting bucket config for $argc_denom"
+              cast \
+                send \
+                ${(getDeployment ucs04-chain-id).app.ucs03.address} \
+                "function setBucketConfig(address,uint256,uint256,bool)" \
+                "$argc_denom" \
+                "$argc_capacity" \
+                "$argc_refill_rate" \
+                false \
+                --private-key ${private-key} \
+                --rpc-url ${rpc-url}
+
+              echo "set bucket config for $argc_denom"
+            '';
+          }
+        );
+
       deploy-deployer-and-ibc =
         {
           chain-id,
@@ -1152,6 +1200,7 @@ _: {
                   deploy-deployer-and-ibc = deploy-deployer-and-ibc chain;
                   update-deployments-json = update-deployments-json chain;
                   whitelist-relayers = whitelist-relayers chain;
+                  set-bucket-config = set-bucket-config chain;
                   # finalize-deployment = finalize-deployment chain;
                   # get-git-rev = get-git-rev chain;
                 }
