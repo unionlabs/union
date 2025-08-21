@@ -20,7 +20,7 @@ impl ValueCodecViaEncoding for IntentWhitelist {
     type Encoding = Bincode;
 }
 
-#[derive(bincode::Encode, bincode::Decode)]
+#[derive(serde::Serialize, bincode::Encode, bincode::Decode)]
 pub struct FungibleLane {
     pub counterparty_beneficiary: Bytes,
     pub escrowed_denom: String,

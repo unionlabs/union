@@ -132,6 +132,35 @@ impl bincode::Encode for U256 {
     }
 }
 
+#[cfg(feature = "schemars")]
+impl schemars::JsonSchema for U256 {
+    fn schema_name() -> String {
+        "U256".to_owned()
+    }
+
+    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        use schemars::schema::{
+            InstanceType, Metadata, SchemaObject, SingleOrVec, StringValidation,
+        };
+
+        SchemaObject {
+            metadata: Some(Box::new(Metadata {
+                description: Some(
+                    "256-bit unsigned integer, represented as a decimal string".to_owned(),
+                ),
+                ..Default::default()
+            })),
+            instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+            string: Some(Box::new(StringValidation {
+                pattern: Some(r"\d+".to_owned()),
+                ..Default::default()
+            })),
+            ..Default::default()
+        }
+        .into()
+    }
+}
+
 impl fmt::LowerHex for U256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
