@@ -435,7 +435,6 @@ fn recv_intent_packet_ok() {
         }],
         market_maker_msgs: vec![vec![1, 2, 3].into()],
         market_maker: mock_addr("marketmaker").into_string(),
-        empty_proof: vec![].into(),
     };
 
     assert!(execute(
@@ -491,7 +490,6 @@ fn recv_intent_packet_timeout_timestamp() {
         }],
         market_maker_msgs: vec![vec![1, 2, 3].into()],
         market_maker: mock_addr("marketmaker").into_string(),
-        empty_proof: vec![].into(),
     };
 
     assert!(execute(

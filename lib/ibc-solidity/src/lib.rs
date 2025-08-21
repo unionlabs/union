@@ -554,7 +554,6 @@ maybe_sol_attr! {
             Packet[] packets;
             bytes[] market_maker_msgs;
             address market_maker;
-            bytes emptyProof;
         }
 
         struct MsgBatchSend {

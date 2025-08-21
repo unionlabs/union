@@ -548,7 +548,6 @@ pub fn execute(
             packets,
             market_maker_msgs,
             market_maker,
-            empty_proof,
         }) => {
             ensure_relayer(deps.storage, &info.sender)?;
             process_receive(
@@ -558,7 +557,7 @@ pub fn execute(
                 packets,
                 market_maker_msgs.into_iter().collect(),
                 market_maker,
-                empty_proof,
+                Bytes::new_static(&[]),
                 0,
                 true,
             )
