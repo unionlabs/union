@@ -1006,12 +1006,26 @@ pub mod zkgm {
         }
 
         #[derive(Debug)]
+        struct MsgBatchSend {
+            IBCPacket[] packets;
+        }
+
+        #[derive(Debug)]
         struct IBCPacket {
             uint32 sourceChannelId;
             uint32 destinationChannelId;
             bytes data;
             uint64 timeoutHeight;
             uint64 timeoutTimestamp;
+        }
+
+        #[derive(Debug)]
+        struct MsgChannelOpenInit {
+            address portId;
+            bytes counterpartyPortId;
+            uint32 connectionId;
+            string version;
+            address relayer;
         }
 
         #[derive(Debug)]
@@ -1051,6 +1065,11 @@ pub mod zkgm {
             function recvPacket(
                 MsgPacketRecv calldata msg_
             ) external;
+
+            function batchSend(
+                MsgBatchSend calldata msg_
+            ) external;
+
     }
         contract ZkgmERC721 {
             function mint(uint256 tokenId, address to ) external;
