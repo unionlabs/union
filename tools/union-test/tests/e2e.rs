@@ -3853,6 +3853,66 @@ async fn test_from_evm_to_union_batch_send_err_not_enough_packets() {
     );
 }
 
+async fn test_from_evm_to_union_batch_send_err_commitment_not_found() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    println!("EVM Address: {:?}", evm_address);
+
+    // ensure_channels_opened(ctx.channel_count).await;
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
+    // let pair = ctx.get_channel().await.expect("channel available");
+
+    let pair = union_test::channel_provider::ChannelPair {
+        src: 1u32,
+        dest: 1u32,
+    };
+
+    let packets = vec![
+        IBCPacket {
+            sourceChannelId: pair.src,
+            destinationChannelId: pair.dest,
+            data: "".into(),
+            timeoutHeight: 0u64,
+            timeoutTimestamp: 4294967295000000000,
+        },
+        IBCPacket {
+            sourceChannelId: pair.src,
+            destinationChannelId: pair.dest,
+            data: "".into(),
+            timeoutHeight: 0u64,
+            timeoutTimestamp: 4294967295000000000,
+        },
+    ];
+
+    let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+
+    let batch_messages = MsgBatchSend { packets: packets };
+
+    let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
+
+    let call = ibc.batchSend(batch_messages).clear_decoder();
+
+    let expected_revert_code = 0x4d7cfc57; // ErrPacketCommitmentNotFound
+    let recv_packet_data = ctx
+        .send_and_expect_revert::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            EVM_IBC_BYTES.into(),
+            call,
+            expected_revert_code,
+            &zkgm_deployer_provider,
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
+}
+
 // #[tokio::test]
 // async fn send_stake_and_unstake_from_evm_to_union0() {
 //     self::test_stake_and_unstake_from_evm_to_union().await;
@@ -3954,7 +4014,12 @@ async fn test_from_evm_to_union_batch_send_err_not_enough_packets() {
 //     self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
 // }
 
+// #[tokio::test]
+// async fn test_send_from_evm_batch_unhappy_path1() {
+//     self::test_from_evm_to_union_batch_send_err_not_enough_packets().await;
+// }
+
 #[tokio::test]
-async fn test_send_from_evm_batch_unhappy_path1() {
-    self::test_from_evm_to_union_batch_send_err_not_enough_packets().await;
+async fn test_send_from_evm_batch_unhappy_path2() {
+    self::test_from_evm_to_union_batch_send_err_commitment_not_found().await;
 }
