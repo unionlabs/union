@@ -151,6 +151,8 @@ module zkgm::zkgm_relay {
     const E_INVALID_METADATA: u64 = 35;
     const E_ONLY_ONE_SESSION_IS_ALLOWED: u64 = 36;
     const E_ALL_INSTRUCTIONS_ARE_RUN: u64 = 37;
+
+    const E_ALL_PACKETS_ARE_RECEIVED: u64 = 41;
     const E_ACK_SIZE_MISMATCHING: u64 = 38;
     const E_EXECUTION_NOT_COMPLETE: u64 = 39;
     const E_INVALID_PACKET_HASH: u64 = 40;
@@ -177,14 +179,19 @@ module zkgm::zkgm_relay {
 
     public struct Session {}
 
-    public struct ExecutionCtx has store, drop {
-        instruction_set: vector<vector<Instruction>>,
+    public struct ZkgmPacketCtx has store, drop {
+        instruction_set: vector<Instruction>,
         // not by instruction but by set
         cursor: u64,
         acks: vector<vector<u8>>,
         path: u256,
         salt: vector<u8>,
-        ibc_packet: Packet,
+    }
+
+    public struct ExecutionCtx has store, drop {
+        packet_ctxs: vector<ZkgmPacketCtx>,
+        packets: vector<Packet>,
+        cursor: u64,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -202,7 +209,7 @@ module zkgm::zkgm_relay {
         });
     }
 
-    public entry fun channel_open_init(
+    public fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
         port_id: String,
         counterparty_port_id: vector<u8>,
@@ -223,7 +230,7 @@ module zkgm::zkgm_relay {
         };
     }
 
-    public entry fun channel_open_try(
+    public fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
         port_id: String,
         connection_id: u32,
@@ -256,7 +263,7 @@ module zkgm::zkgm_relay {
         );
     }
 
-    public entry fun channel_open_ack(
+    public fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
         port_id: String,
         channel_id: u32,
@@ -281,7 +288,7 @@ module zkgm::zkgm_relay {
         };
     }
 
-    public entry fun channel_open_confirm(
+    public fun channel_open_confirm(
         ibc_store: &mut ibc::IBCStore,
         channel_id: u32, 
         proof_ack: vector<u8>, 
@@ -296,6 +303,7 @@ module zkgm::zkgm_relay {
         );
     }
 
+    #[allow(lint(public_entry))]
     public entry fun send_with_coin<T>(
         zkgm: &mut RelayStore,
         ibc_store: &mut ibc::IBCStore,
@@ -340,37 +348,72 @@ module zkgm::zkgm_relay {
     /// a receiving session. Receiving is done in multi-steps.
     public fun begin_recv(
         zkgm: &mut RelayStore,
-        packet_source_channel: u32,
-        packet_destination_channel: u32,
-        packet_data: vector<u8>,
-        packet_timeout_height: u64,
-        packet_timeout_timestamp: u64,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_data: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
     ): Session {
         if (zkgm.session.is_some()) {
             abort E_ONLY_ONE_SESSION_IS_ALLOWED
         };
 
-        let zkgm_packet = zkgm_packet::decode(&packet_data);
-
-        let ibc_packet =
-            packet::new(
-                packet_source_channel,
-                packet_destination_channel,
-                packet_data,
-                packet_timeout_height,
-                packet_timeout_timestamp
+        let mut packet_ctxs = vector::empty();
+        let packet_len = packet_source_channels.length();
+        let mut i = 0;
+        let mut packets = vector::empty();
+        while (i < packet_len) {
+            let ibc_packet = packet::new(
+                packet_source_channels[i],
+                packet_destination_channels[i],
+                packet_data[i],
+                packet_timeout_heights[i],
+                packet_timeout_timestamps[i]
             );
+            let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+            packet_ctxs.push_back(
+                ZkgmPacketCtx {
+                    instruction_set: extract_batch(zkgm.instruction()),
+                    cursor: 0,
+                    acks: vector::empty(),
+                    path: zkgm_packet.path(),
+                    salt: zkgm_packet.salt(),
+                }
+            );
+            packets.push_back(ibc_packet);
+            i = i + 1;
+        };
 
-        zkgm.session = option::some(ExecutionCtx {
-            instruction_set: partition_instructions(zkgm_packet.instruction()),
-            cursor: 0,
-            acks: vector::empty(),
-            path: zkgm_packet.path(),
-            salt: zkgm_packet.salt(),
-            ibc_packet
-        });
+        zkgm.session = option::some(
+            ExecutionCtx {
+                packet_ctxs,
+                packets,
+                cursor: 0
+            }
+        );
 
         Session {}
+    }
+
+    fun extract_batch(instruction: Instruction): vector<Instruction> {
+        if (instruction.opcode() == OP_BATCH) {
+            if (instruction.version() != INSTR_VERSION_0) {
+                abort E_UNSUPPORTED_VERSION
+            };
+
+            let instructions = batch::decode(instruction.operand()).instructions();
+            let instr_len = instructions.length();
+            while (i < instr_len) {
+                if (!helper::is_allowed_batch_instruction(instructions.borrow(i).opcode())) {
+                    abort E_INVALID_BATCH_INSTRUCTION
+                };
+                i = i + 1;  
+            };
+
+            *instructions
+        } else {
+            vector[instruction]
+        }
     }
 
     /// Partitions the instructions such that all the parts can at most have a single
@@ -424,6 +467,7 @@ module zkgm::zkgm_relay {
         }
     }
 
+    #[allow(lint(public_entry))]
     public entry fun recv_packet_2<T>(
         ibc: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
@@ -433,33 +477,39 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
         // aborts if there is not a session
-        let instr_length = {
-            let exec_ctx = zkgm.session.borrow();
-            assert!(exec_ctx.cursor + 1 <= exec_ctx.instruction_set.length(), E_ALL_INSTRUCTIONS_ARE_RUN);
-            exec_ctx.instruction_set[exec_ctx.cursor].length()
-        };
+        let exec_ctx = zkgm.session.borrow();
+        let current_zkgm_packet = exec_ctx.packet_ctxs.borrow(exec_ctx.cursor);
 
-        let mut acks = vector::empty();
-
-        let mut i = 0;
-        while (i < instr_length) {
+        let mut i = current_zkgm_packet.cursor;
+        let instr_len = current_zkgm_packet.instruction_set.length();
+        while (i < instr_len) {
             let (ack, err) = zkgm.execute_internal_2<T>(
                 ibc,
-                i,
+                &packet,
+                packet_ctx,
+                instructions[i],
                 clock,
                 relayer,
                 relayer_msg,
                 false,
                 ctx
             );
-            assert!(err == 0, err);
-            zkgm.session.borrow_mut().acks.push_back(ack);
-            acks.push_back(ack);
-
             i = i + 1;
         };
 
-        zkgm.session.borrow_mut().cursor = zkgm.session.borrow().cursor + 1;
+        let mut i = 0;
+        let instructions = packet_ctx.instruction_set[packet_ctx.cursor];
+        let instr_length = instructions.length();
+        while (i < instr_length) {
+            assert!(err == 0, err);
+            zkgm.session.borrow_mut().packet_ctxs.borrow_mut(cursor).acks.push_back(ack);
+            i = i + 1;
+        };
+
+        zkgm.session.borrow_mut().packet_ctxs.borrow_mut(cursor).cursor = zkgm.session.borrow().packet_ctxs.borrow(cursor).cursor + 1;
+        if (packet_ctx.cursor == packet_ctx.instruction_set.length()) {
+            zkgm.session.borrow_mut().cursor = zkgm.session.borrow().cursor + 1;
+        };
     }
 
     public fun end_recv(
@@ -476,24 +526,38 @@ module zkgm::zkgm_relay {
 
         let exec_ctx = zkgm.session.extract();
 
-        assert!(exec_ctx.cursor == exec_ctx.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+        // make sure all packets are run
+        assert!(exec_ctx.cursor == exec_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
+        // make sure all instructions in the final packet are run
+        let final_packet = exec_ctx.packet_ctxs.borrow(exec_ctx.packet_ctxs.length() - 1);
+        assert!(final_packet.cursor == final_packet.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
 
-        let ack = if (exec_ctx.instruction_set[0].length() == 1 && exec_ctx.instruction_set.length() == 1) {
-            assert!(exec_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
+        let mut i = 0;
+        let mut acks = vector::empty();
+        let packets_len = exec_ctx.packet_ctxs.length();
 
-            exec_ctx.acks[0]
-        } else {
-            batch_ack::new(exec_ctx.acks).encode()
+        while (i < packets_len) {
+            let packet_ctx = exec_ctx.packet_ctxs.borrow(i);
+            let ack = if (packet_ctx.instruction_set[0].length() == 1 && packet_ctx.instruction_set.length() == 1) {
+                assert!(packet_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
+
+                packet_ctx.acks[0]
+            } else {
+                batch_ack::new(packet_ctx.acks).encode()
+            };
+            acks.push_back(ack);
+
+            i = i + 1;
         };
 
         ibc.recv_packet(
             clock,
-            vector[exec_ctx.ibc_packet],
+            exec_ctx.packets,
             relayer,
             vector[relayer_msg],
             proof,
             proof_height,
-            vector[ack],
+            acks,
             IbcAppWitness {}
         );
     }
@@ -503,51 +567,53 @@ module zkgm::zkgm_relay {
     fun execute_internal_2<T>(
         zkgm: &mut RelayStore,
         ibc: &mut ibc::IBCStore,
-        instr_idx: u64,
+        packet: &Packet,
+        packet_ctx: &ZkgmPacketCtx,
+        instruction: Instruction,
         clock: &Clock,
         relayer: address,
         relayer_msg: vector<u8>,
         intent: bool,
         ctx: &mut TxContext
-    ): (vector<u8>, u64)  {
-        let exec_ctx = zkgm.session.borrow();
-
-        let instruction = exec_ctx.instruction_set[exec_ctx.cursor][instr_idx];
+    ): (bool, vector<u8>, u64)  {
         let version = instruction.version();
 
         match (instruction.opcode()) {
             OP_FUNGIBLE_ASSET_ORDER => {
                 if (version != INSTR_VERSION_2) {
-                    return (vector::empty(), E_UNSUPPORTED_VERSION)  
+                    return (false, vector::empty(), E_UNSUPPORTED_VERSION)  
                 };
-                zkgm.execute_fungible_asset_order<T>(
-                    exec_ctx.ibc_packet,
+                let (ack, err) = zkgm.execute_fungible_asset_order<T>(
+                    *packet,
                     relayer,
                     relayer_msg,
-                    exec_ctx.path,
+                    packet_ctx.path,
                     fungible_asset_order::decode(instruction.operand()),
                     intent,
                     ctx
-                )
+                );
+                (true, ack, err)
             },
             OP_FORWARD => {
                 if (version != INSTR_VERSION_0) {
                     return (vector::empty(), E_UNSUPPORTED_VERSION)  
                 };
 
-                zkgm.execute_forward(
+                let (ack, err) = zkgm.execute_forward(
                     ibc,
                     clock,
-                    exec_ctx.ibc_packet,
+                    *packet,
                     relayer,
                     relayer_msg,
-                    exec_ctx.salt,
-                    exec_ctx.path,
+                    packet_ctx.salt,
+                    packet_ctx.path,
                     instruction.version(),
                     forward::decode(instruction.operand()),
                     intent,
                     ctx,
-                )
+                );
+
+                (false, ack, err)
             },
             OP_MULTIPLEX => (vector::empty(), E_NO_MULTIPLEX_OPERATION),
             _ => (vector::empty(), E_UNKNOWN_SYSCALL)
@@ -556,6 +622,7 @@ module zkgm::zkgm_relay {
 
 
 
+    #[allow(lint(public_entry))]
     public entry fun recv_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
@@ -607,6 +674,7 @@ module zkgm::zkgm_relay {
         );
     }
 
+    #[allow(lint(public_entry))]
     public entry fun acknowledge_packet<T>(
         ibc: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
@@ -653,6 +721,7 @@ module zkgm::zkgm_relay {
         );
     }
 
+    #[allow(lint(public_entry))]
     public entry fun timeout_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
@@ -705,14 +774,15 @@ module zkgm::zkgm_relay {
         );
     }
 
-    public entry fun channel_close_init(_channel_id: u32) {
+    public fun channel_close_init(_channel_id: u32) {
         abort E_INFINITE_GAME
     }
 
-    public entry fun channel_close_confirm(_channel_id: u32) {
+    public fun channel_close_confirm(_channel_id: u32) {
         abort E_INFINITE_GAME
     }
 
+    #[allow(lint(public_entry))]
     public entry fun register_capability<T>(
         zkgm: &mut RelayStore,
         mut capability: TreasuryCap<T>,
