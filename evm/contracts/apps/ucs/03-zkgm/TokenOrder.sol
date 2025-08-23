@@ -463,10 +463,6 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         } else {
             address wrappedToken;
             bytes32 wrappedTokenSalt;
-            // Decode is noop here as it's directly indexing in the calldata,
-            // even if the metadata is empty this will not fail.
-            TokenMetadata calldata metadata =
-                ZkgmLib.decodeTokenMetadata(order.metadata);
             if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_ESCROW) {
                 bytes32 metadataImage = metadataImageOf[quoteToken];
                 if (metadataImage == 0) {
@@ -485,6 +481,8 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                     );
                 }
             } else if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE) {
+                TokenMetadata calldata metadata =
+                    ZkgmLib.decodeTokenMetadata(order.metadata);
                 (wrappedToken, wrappedTokenSalt) = _predictWrappedTokenV2(
                     path,
                     ibcPacket.destinationChannelId,
@@ -494,13 +492,6 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 if (quoteToken != wrappedToken) {
                     revert ZkgmLib.ErrInvalidTokenOrderKind();
                 }
-            }
-
-            if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
-                _optionalRateLimit(quoteToken, order.quoteAmount);
-                // The asset can only be deployed if the metadata preimage is provided.
-                bool canDeploy =
-                    order.kind == ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE;
                 _deployWrappedTokenV2(
                     ibcPacket.destinationChannelId,
                     path,
@@ -508,8 +499,12 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                     wrappedToken,
                     wrappedTokenSalt,
                     metadata,
-                    canDeploy
+                    true
                 );
+            }
+
+            if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
+                _optionalRateLimit(quoteToken, order.quoteAmount);
                 return _protocolFillMint(
                     ibcPacket.destinationChannelId,
                     path,
