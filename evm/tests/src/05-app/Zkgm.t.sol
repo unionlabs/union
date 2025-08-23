@@ -5656,6 +5656,109 @@ contract ZkgmTests is Test {
         );
     }
 
+    function test_onRecvPacket_initialize_then_escrow_same_wrapped_token(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        bytes32 salt1,
+        bytes32 salt2,
+        bytes memory sender,
+        address receiver,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint128 initializeAmount,
+        uint128 escrowAmount
+    ) public {
+        // Setup assumptions
+        {
+            assumeUnusedAddress(receiver);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(initializeAmount > 0);
+            vm.assume(escrowAmount > 0);
+            vm.assume(salt1 != salt2); // Different salts for different packets
+        }
+
+        handler.setChannel(destinationChannelId, sourceChannelId);
+
+        // Step 1: First recv with TOKEN_ORDER_KIND_INITIALIZE - creates wrapped token
+        TokenMetadata memory metadata = _metadata(baseTokenMeta);
+        (address wrappedToken,) = zkgm.predictWrappedTokenV2(
+            0, destinationChannelId, baseToken, metadata
+        );
+
+        assertFalse(ZkgmLib.isDeployed(wrappedToken));
+
+        // Set bucket config for the wrapped token to handle both transfers
+        uint256 total = uint256(initializeAmount) + uint256(escrowAmount);
+        zkgm.doSetBucketConfig(wrappedToken, total, 1, false);
+
+        // First recv: Initialize wrapped token and mint tokens to receiver
+        {
+            TokenOrderV2 memory initOrder = TokenOrderV2({
+                sender: sender,
+                receiver: abi.encodePacked(receiver),
+                baseToken: baseToken,
+                baseAmount: initializeAmount,
+                kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
+                metadata: ZkgmLib.encodeTokenMetadata(metadata),
+                quoteToken: abi.encodePacked(wrappedToken),
+                quoteAmount: initializeAmount
+            });
+
+            expectOnRecvOrderProtocolFillSuccessV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                0, // path
+                salt1,
+                relayer,
+                relayerMsg,
+                initOrder
+            );
+        }
+
+        // Verify wrapped token was created and receiver got tokens
+        assertTrue(ZkgmLib.isDeployed(wrappedToken));
+        assertEq(IERC20(wrappedToken).balanceOf(receiver), initializeAmount);
+
+        // Step 2: Second recv with TOKEN_ORDER_KIND_ESCROW - uses existing wrapped token
+        // This simulates the counterparty sending more tokens of the same type
+        {
+            TokenOrderV2 memory escrowOrder = TokenOrderV2({
+                sender: sender,
+                receiver: abi.encodePacked(receiver),
+                baseToken: baseToken,
+                baseAmount: escrowAmount,
+                kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+                metadata: hex"",
+                quoteToken: abi.encodePacked(wrappedToken),
+                quoteAmount: escrowAmount
+            });
+
+            // Expect mint of additional tokens to receiver
+            vm.expectEmit();
+            emit IERC20.Transfer(address(0), receiver, escrowAmount);
+
+            expectOnRecvOrderProtocolFillSuccessV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                0, // path
+                salt2,
+                relayer,
+                relayerMsg,
+                escrowOrder
+            );
+        }
+
+        // Verify final state - receiver should have both amounts
+        assertEq(IERC20(wrappedToken).balanceOf(receiver), total);
+        assertEq(IERC20(wrappedToken).totalSupply(), total);
+    }
+
     function test_onTimeoutPacket_unstake(
         uint32 sourceChannelId,
         uint32 destinationChannelId,
