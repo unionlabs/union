@@ -1,4 +1,4 @@
-import { Effect, Schedule } from "effect"
+import { Effect, Schedule, pipe } from "effect"
 import fetch from "node-fetch"
 import { clearSslIncident, getSslIncident, markSslIncident } from "./db-queries.js"
 import { getCertExpiry } from "./helpers.js"
@@ -73,11 +73,20 @@ export const checkSSLCertificates = Effect.repeat(
       const fourDaysMs = 4 * 24 * 60 * 60 * 1000
       for (const url of uniqueEndpoints) {
         const existingIncident = getSslIncident(db, url)
-        const expiry: Date = yield* Effect.tryPromise({
-          try: () => getCertExpiry(url),
-          catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`),
-        })
+        const expiry = yield* pipe(
+          Effect.tryPromise({
+            try: () => getCertExpiry(url),
+            catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`),
+          })
+          ,Effect.catchAllCause((err) => {
+            console.error(`❌ SSL check failed for ${url}: ${String(err)}`)
+            return Effect.succeed(undefined)
+          }),
+        );
 
+        if (!expiry){
+          continue;
+        }
         const msLeft = expiry.getTime() - now
         const description = JSON.stringify({ endpoint: url, expiresAt: expiry.toISOString() })
 
