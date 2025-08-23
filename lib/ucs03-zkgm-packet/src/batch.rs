@@ -1,10 +1,9 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{
-    INSTR_VERSION_0, OP_CALL, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS,
+    INSTR_VERSION_0, OP_BATCH, OP_CALL, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS,
     OP_WITHDRAW_STAKE,
 };
-use unionlabs_primitives::Bytes;
 
 use crate::{
     call::{Call, CallAck, CallShape},
@@ -13,7 +12,7 @@ use crate::{
     unstake::{Unstake, UnstakeShape},
     withdraw_rewards::{WithdrawRewards, WithdrawRewardsShape},
     withdraw_stake::{WithdrawStake, WithdrawStakeShape},
-    Result,
+    Instruction, Result,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
@@ -34,17 +33,10 @@ impl Batch {
         }
     }
 
-    pub(crate) fn encode(&self) -> (u8, u8, Bytes) {
-        // match self {
-        //     Batch::V0(BatchV0 { instructions }) => (
-        //         INSTR_VERSION_0,
-        //         OP_BATCH,
-        //         ucs03_zkgm::com::Batch {
-        //             instructions: instructions,
-        //         },
-        //     ),
-        // }
-        todo!()
+    pub(crate) fn into_instruction(self) -> Instruction {
+        match self {
+            Batch::V0(v0) => v0.into_instruction(),
+        }
     }
 
     pub(crate) fn shape(&self) -> BatchShape {
@@ -115,6 +107,20 @@ impl BatchV0 {
                 .map(BatchInstructionV0::from_raw)
                 .collect::<Result<_>>()?,
         })
+    }
+
+    fn into_instruction(self) -> Instruction {
+        Instruction::new(
+            OP_BATCH,
+            INSTR_VERSION_0,
+            ucs03_zkgm::com::Batch {
+                instructions: self
+                    .instructions
+                    .into_iter()
+                    .map(|s| s.into_instruction().into_raw())
+                    .collect(),
+            },
+        )
     }
 }
 
@@ -210,6 +216,19 @@ impl BatchInstructionV0 {
             }
             BatchInstructionV0::WithdrawRewards(withdraw_rewards) => {
                 BatchInstructionV0Shape::WithdrawRewards(withdraw_rewards.shape())
+            }
+        }
+    }
+
+    fn into_instruction(self) -> Instruction {
+        match self {
+            BatchInstructionV0::TokenOrder(token_order) => token_order.into_instruction(),
+            BatchInstructionV0::Call(call) => call.into_instruction(),
+            BatchInstructionV0::Stake(stake) => stake.into_instruction(),
+            BatchInstructionV0::Unstake(unstake) => unstake.into_instruction(),
+            BatchInstructionV0::WithdrawStake(withdraw_stake) => withdraw_stake.into_instruction(),
+            BatchInstructionV0::WithdrawRewards(withdraw_rewards) => {
+                withdraw_rewards.into_instruction()
             }
         }
     }

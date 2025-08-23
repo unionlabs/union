@@ -14,7 +14,7 @@ use crate::{
     unstake::{Unstake, UnstakeShape},
     withdraw_rewards::{WithdrawRewards, WithdrawRewardsShape},
     withdraw_stake::{WithdrawStake, WithdrawStakeShape},
-    Result,
+    Instruction, Result,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
@@ -68,6 +68,19 @@ impl Root {
                 WithdrawRewards::decode(instruction.version, instruction.operand).map(Into::into)
             }
             invalid => Err(format!("invalid opcode: {invalid}").into()),
+        }
+    }
+
+    pub fn into_instruction(self) -> Instruction {
+        match self {
+            Root::Batch(batch) => batch.into_instruction(),
+            Root::TokenOrder(token_order) => token_order.into_instruction(),
+            Root::Call(call) => call.into_instruction(),
+            Root::Forward(forward) => forward.into_instruction(),
+            Root::Stake(stake) => stake.into_instruction(),
+            Root::Unstake(unstake) => unstake.into_instruction(),
+            Root::WithdrawStake(withdraw_stake) => withdraw_stake.into_instruction(),
+            Root::WithdrawRewards(withdraw_rewards) => withdraw_rewards.into_instruction(),
         }
     }
 }

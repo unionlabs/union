@@ -1,15 +1,13 @@
-#![expect(deprecated)]
-
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{
-    FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, INSTR_VERSION_1, INSTR_VERSION_2,
+    FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, INSTR_VERSION_1, INSTR_VERSION_2, OP_TOKEN_ORDER,
     TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
     TOKEN_ORDER_KIND_UNESCROW,
 };
 use unionlabs_primitives::{Bytes, U256};
 
-use crate::Result;
+use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[repr(u8)]
@@ -40,6 +38,13 @@ impl TokenOrder {
         match self {
             TokenOrder::V1(_) => TokenOrderShape::V1,
             TokenOrder::V2(_) => TokenOrderShape::V2,
+        }
+    }
+
+    pub(crate) fn into_instruction(self) -> Instruction {
+        match self {
+            TokenOrder::V1(v1) => v1.into_instruction(),
+            TokenOrder::V2(v2) => v2.into_instruction(),
         }
     }
 }
@@ -102,6 +107,25 @@ impl TokenOrderV1 {
             quote_token: quote_token.into(),
             quote_amount: quote_amount.into(),
         })
+    }
+
+    fn into_instruction(self) -> Instruction {
+        Instruction::new(
+            OP_TOKEN_ORDER,
+            INSTR_VERSION_1,
+            ucs03_zkgm::com::TokenOrderV1 {
+                sender: self.sender.into(),
+                receiver: self.receiver.into(),
+                base_token: self.base_token.into(),
+                base_amount: self.base_amount.into(),
+                base_token_symbol: self.base_token_symbol,
+                base_token_name: self.base_token_name,
+                base_token_decimals: self.base_token_decimals,
+                base_token_path: self.base_token_path.into(),
+                quote_token: self.quote_token.into(),
+                quote_amount: self.quote_amount.into(),
+            },
+        )
     }
 }
 
@@ -203,6 +227,25 @@ impl TokenOrderV2 {
             metadata: TokenOrderV2Metadata::decode(kind, metadata)?,
         })
     }
+
+    pub(crate) fn into_instruction(self) -> Instruction {
+        let (kind, metadata) = self.metadata.encode();
+
+        Instruction::new(
+            OP_TOKEN_ORDER,
+            INSTR_VERSION_2,
+            ucs03_zkgm::com::TokenOrderV2 {
+                sender: self.sender.into(),
+                receiver: self.receiver.into(),
+                base_token: self.base_token.into(),
+                base_amount: self.base_amount.into(),
+                quote_token: self.quote_token.into(),
+                quote_amount: self.quote_amount.into(),
+                kind,
+                metadata: metadata.into(),
+            },
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -210,7 +253,7 @@ pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),
     Escrow(Bytes),
     Unescrow(Bytes),
-    Solve(SolveMetadata),
+    Solve(SolverMetadata),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -220,7 +263,7 @@ pub struct TokenMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SolveMetadata {
+pub struct SolverMetadata {
     pub solver_address: Bytes,
     pub metadata: Bytes,
 }
@@ -250,7 +293,7 @@ impl TokenOrderV2Metadata {
                              solverAddress,
                              metadata,
                          }| {
-                            Self::Solve(SolveMetadata {
+                            Self::Solve(SolverMetadata {
                                 solver_address: solverAddress.into(),
                                 metadata: metadata.into(),
                             })
@@ -258,6 +301,39 @@ impl TokenOrderV2Metadata {
                     )?,
             ),
             invalid => Err(format!("invalid token order v2 metadata kind: {invalid}"))?,
+        }
+    }
+
+    pub(crate) fn encode(self) -> (u8, Bytes) {
+        match self {
+            TokenOrderV2Metadata::Initialize(TokenMetadata {
+                implementation,
+                initializer,
+            }) => (
+                TOKEN_ORDER_KIND_INITIALIZE,
+                ucs03_zkgm::com::TokenMetadata::abi_encode_params(
+                    &ucs03_zkgm::com::TokenMetadata {
+                        implementation: implementation.into(),
+                        initializer: initializer.into(),
+                    },
+                )
+                .into(),
+            ),
+            TokenOrderV2Metadata::Escrow(bytes) => (TOKEN_ORDER_KIND_ESCROW, bytes),
+            TokenOrderV2Metadata::Unescrow(bytes) => (TOKEN_ORDER_KIND_UNESCROW, bytes),
+            TokenOrderV2Metadata::Solve(SolverMetadata {
+                solver_address,
+                metadata,
+            }) => (
+                TOKEN_ORDER_KIND_SOLVE,
+                ucs03_zkgm::com::SolverMetadata::abi_encode_params(
+                    &ucs03_zkgm::com::SolverMetadata {
+                        solverAddress: solver_address.into(),
+                        metadata: metadata.into(),
+                    },
+                )
+                .into(),
+            ),
         }
     }
 }

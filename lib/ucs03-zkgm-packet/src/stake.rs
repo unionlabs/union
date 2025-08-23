@@ -1,9 +1,9 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::INSTR_VERSION_0;
+use ucs03_zkgm::com::{INSTR_VERSION_0, OP_STAKE};
 use unionlabs_primitives::{Bytes, U256};
 
-use crate::Result;
+use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 pub enum Stake {
@@ -26,6 +26,12 @@ impl Stake {
     pub(crate) fn shape(&self) -> StakeShape {
         match self {
             Stake::V0(_) => StakeShape::V0,
+        }
+    }
+
+    pub(crate) fn into_instruction(self) -> Instruction {
+        match self {
+            Stake::V0(v0) => v0.into_instruction(),
         }
     }
 }
@@ -61,5 +67,21 @@ impl StakeV0 {
             validator: validator.into(),
             amount: amount.into(),
         })
+    }
+
+    fn into_instruction(self) -> Instruction {
+        Instruction::new(
+            INSTR_VERSION_0,
+            OP_STAKE,
+            ucs03_zkgm::com::Stake {
+                token_id: self.token_id.into(),
+                governance_token: self.governance_token.into(),
+                governance_token_wrapped: self.governance_token_wrapped.into(),
+                sender: self.sender.into(),
+                beneficiary: self.beneficiary.into(),
+                validator: self.validator.into(),
+                amount: self.amount.into(),
+            },
+        )
     }
 }

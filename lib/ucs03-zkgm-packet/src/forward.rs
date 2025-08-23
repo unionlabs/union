@@ -1,9 +1,9 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::INSTR_VERSION_0;
+use ucs03_zkgm::com::{INSTR_VERSION_0, OP_FORWARD};
 use unionlabs_primitives::U256;
 
-use crate::{root::Root, Result};
+use crate::{root::Root, Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 pub enum Forward {
@@ -26,6 +26,12 @@ impl Forward {
     pub(crate) fn shape(&self) -> ForwardShape {
         match self {
             Forward::V0(_) => ForwardShape::V0,
+        }
+    }
+
+    pub(crate) fn into_instruction(self) -> Instruction {
+        match self {
+            Forward::V0(v0) => v0.into_instruction(),
         }
     }
 }
@@ -53,5 +59,18 @@ impl ForwardV0 {
             timeout_timestamp,
             instruction: Box::new(Root::from_raw(instruction)?),
         })
+    }
+
+    fn into_instruction(self) -> Instruction {
+        Instruction::new(
+            OP_FORWARD,
+            INSTR_VERSION_0,
+            ucs03_zkgm::com::Forward {
+                path: self.path.into(),
+                timeout_height: self.timeout_height,
+                timeout_timestamp: self.timeout_timestamp,
+                instruction: self.instruction.into_instruction().into_raw(),
+            },
+        )
     }
 }

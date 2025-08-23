@@ -1,9 +1,9 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::INSTR_VERSION_0;
+use ucs03_zkgm::com::{INSTR_VERSION_0, OP_WITHDRAW_STAKE};
 use unionlabs_primitives::{Bytes, U256};
 
-use crate::Result;
+use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 pub enum WithdrawStake {
@@ -26,6 +26,12 @@ impl WithdrawStake {
     pub(crate) fn shape(&self) -> WithdrawStakeShape {
         match self {
             WithdrawStake::V0(_) => WithdrawStakeShape::V0,
+        }
+    }
+
+    pub(crate) fn into_instruction(self) -> Instruction {
+        match self {
+            WithdrawStake::V0(v0) => v0.into_instruction(),
         }
     }
 }
@@ -55,5 +61,19 @@ impl WithdrawStakeV0 {
             sender: sender.into(),
             beneficiary: beneficiary.into(),
         })
+    }
+
+    fn into_instruction(self) -> Instruction {
+        Instruction::new(
+            INSTR_VERSION_0,
+            OP_WITHDRAW_STAKE,
+            ucs03_zkgm::com::WithdrawStake {
+                token_id: self.token_id.into(),
+                governance_token: self.governance_token.into(),
+                governance_token_wrapped: self.governance_token_wrapped.into(),
+                sender: self.sender.into(),
+                beneficiary: self.beneficiary.into(),
+            },
+        )
     }
 }

@@ -1,9 +1,9 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::{INSTR_VERSION_0, TAG_ACK_SUCCESS};
+use ucs03_zkgm::com::{INSTR_VERSION_0, OP_CALL, TAG_ACK_SUCCESS};
 use unionlabs_primitives::Bytes;
 
-use crate::Result;
+use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 pub enum Call {
@@ -33,6 +33,12 @@ impl Call {
             Call::V0(CallV0 { eureka, .. }) => CallShape::V0(CallV0Shape { eureka: *eureka }),
         }
     }
+
+    pub(crate) fn into_instruction(self) -> Instruction {
+        match self {
+            Call::V0(v0) => v0.into_instruction(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +63,19 @@ impl CallV0 {
             contract_address: contract_address.into(),
             contract_calldata: contract_calldata.into(),
         })
+    }
+
+    fn into_instruction(self) -> Instruction {
+        Instruction::new(
+            OP_CALL,
+            INSTR_VERSION_0,
+            ucs03_zkgm::com::Call {
+                sender: self.sender.into(),
+                eureka: self.eureka,
+                contract_address: self.contract_address.into(),
+                contract_calldata: self.contract_calldata.into(),
+            },
+        )
     }
 }
 
