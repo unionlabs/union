@@ -46,6 +46,15 @@ Below is an example configuration.nix which can be used in production.
               services.unionvisor = {
                 enable = true;
                 moniker = "your-testnet-moniker";
+                network = "union-testnet-10";
+                seeds = "SEED_NODE_ADDRESS";
+                node-key-json = .path/to/node_key.json;
+                priv-validator-key-json = .path/to/priv_validator_key.json;
+                root = "/var/lib/unionvisor";
+                home = "/var/lib/unionvisor";
+                app-toml = .path/to/app.toml;
+                client-toml = .path/to/client.toml;
+                config-toml = .path/to/config.toml;
               };
 
               # OPTIONAL: Some useful inspection tools for when you SSH into your validator
@@ -64,11 +73,23 @@ Below is an example configuration.nix which can be used in production.
 }
 ```
 
-You can then deploy the configuration by running
+You can then deploy the configuration by running:
 
 ```sh frame="none"
 GIT_LFS_SKIP_SMUDGE=1 nixos-rebuild switch --flake .\#testnet-validator --target-host user@validator.domain -L
 ```
+
+## Interacting with the Node
+
+After the system has been switched to this configuration, Unionvisor will be ran as a `systemd` service.
+
+You can view the logs of Unionvisor with `journalctl`:
+
+```sh frame="none"
+journalctl -xfeu service.unionvisor
+```
+
+You can call the current `uniond` either through Unionvisor binary, or by running the linked binary under `$UNIONVISOR_HOME/uniond`. By default, the `$UNIONVISOR_HOME` will be under `/var/lib/unionvisor`. You can also find the home files of your node containing state and config under `$UNIONVISOR_HOME/home`.
 
 ## Upgrading
 
