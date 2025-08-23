@@ -276,6 +276,7 @@ members = [
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
   "lib/sui-verifier",
+  "lib/ucs03-zkgm-packet",
   "tools/update-deployments",
   "tools/union-test",
 ]
