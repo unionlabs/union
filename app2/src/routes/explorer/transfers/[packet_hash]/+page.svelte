@@ -109,15 +109,18 @@ const simpleStatus = $derived.by(() => {
   }
 
   if (HAS_PACKET_ACK) {
-    return transfer.success
-      ? SimpleTransferStatus.SuccessAck()
-      : SimpleTransferStatus.FailedAck()
+    return transfer.success.pipe(Option.match({
+      onNone: () => SimpleTransferStatus.Failed(),
+      onSome: (s) =>
+        s === true ? SimpleTransferStatus.SuccessAck() : SimpleTransferStatus.FailedAck(),
+    }))
   }
 
   if (HAS_WRITE_ACK) {
-    return transfer.success
-      ? SimpleTransferStatus.Success()
-      : SimpleTransferStatus.Failed()
+    return transfer.success.pipe(Option.match({
+      onNone: () => SimpleTransferStatus.InProgress(),
+      onSome: (s) => s === true ? SimpleTransferStatus.Success() : SimpleTransferStatus.Failed(),
+    }))
   }
   return SimpleTransferStatus.InProgress()
 })
