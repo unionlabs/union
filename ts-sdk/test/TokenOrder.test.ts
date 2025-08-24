@@ -23,7 +23,7 @@ describe("TokenOrder", () => {
           }),
           // USDC on Sepolia
           baseToken: Token.Erc20.make({ address: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238" }),
-          kind: TokenOrder.Kind.Escrow,
+          kind: "escrow",
           baseAmount: 100n,
           // USDC on Sepolia
           quoteAmount: 100n,

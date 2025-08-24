@@ -45,9 +45,10 @@ const program = Effect.gen(function*() {
     // LINK on Holesky
     baseToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
     baseAmount: 10n,
+    // Holesky LINK on Sepolia
     quoteToken: "0x80fdbf104ec58a527ec40f7b03f88c404ef4ba63",
     quoteAmount: 10n,
-    kind: TokenOrder.Kind.Escrow,
+    kind: "escrow",
     metadata: undefined,
     version: 2,
   })

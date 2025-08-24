@@ -65,7 +65,7 @@ export const createContext = Effect.fn((
       args.quoteToken = Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" })
     }
 
-    const kind = overrideForUnion ? TokenOrder.Kind.Solve : args.kind
+    const kind = overrideForUnion ? "solve" : args.kind
     const metadata = overrideForUnion
       ? "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
       : undefined
@@ -136,7 +136,7 @@ export const createContext = Effect.fn((
       destination: args.destinationChain,
       receiver: args.receiver,
       sender: args.sender,
-      kind: TokenOrder.Kind.Escrow,
+      kind: "escrow",
       source: args.sourceChain,
       metadata: undefined,
       version: args.version,

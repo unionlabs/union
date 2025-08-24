@@ -186,8 +186,8 @@ export class TransferData {
             wrapping.wrapped_chain.universal_chain_id === sourceId
             && wrapping.unwrapped_chain.universal_chain_id === destId
           ),
-          Option.map(constant(TokenOrder.Kind.Unescrow)),
-          Option.orElseSome(() => TokenOrder.Kind.Escrow),
+          Option.map(() => "unescrow" as const),
+          Option.orElseSome(() => "escrow" as const),
         )
       }),
     ),

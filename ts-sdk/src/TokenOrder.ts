@@ -37,12 +37,17 @@ export type TypeId = typeof TypeId
  * @category models
  * @since 2.0.0
  */
-export enum Kind {
-  Initialize,
-  Escrow,
-  Unescrow,
-  Solve,
-}
+export const Kind = S.Union(
+  S.Literal("initialize"),
+  S.Literal("escrow"),
+  S.Literal("unescrow"),
+  S.Literal("solve"),
+)
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export type Kind = typeof Kind.Type
 
 /**
  * @category schemas
@@ -57,7 +62,7 @@ export const Input = S.Struct({
   baseAmount: S.BigIntFromSelf,
   quoteToken: S.Union(Token.Any, Token.TokenFromString),
   quoteAmount: S.BigIntFromSelf,
-  kind: S.Enums(Kind),
+  kind: Kind,
   metadata: S.optional(Hex),
   version: S.optional(S.Union(S.Literal(1), S.Literal(2))),
 })

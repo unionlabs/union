@@ -1,4 +1,4 @@
-import { Effect, Inspectable, Predicate, Schema } from "effect"
+import { Effect, Inspectable, Match, Predicate, Schema } from "effect"
 import { dual, pipe } from "effect/Function"
 import { ParseError } from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
@@ -88,7 +88,7 @@ export const empty: TokenOrder.TokenOrder = makeProto(
   void 0 as unknown as bigint,
   void 0 as unknown as Token.Any,
   void 0 as unknown as bigint,
-  -1 as unknown as TokenOrder.Kind,
+  void 0 as unknown as TokenOrder.Kind,
   undefined,
   2,
 )
@@ -413,6 +413,15 @@ export const setQuoteAmount = dual<
   ))
 
 /** @internal */
+const kindToConst = Match.type<TokenOrder.Kind>().pipe(
+  Match.when("initialize", () => 0 as const),
+  Match.when("escrow", () => 1 as const),
+  Match.when("unescrow", () => 2 as const),
+  Match.when("solve", () => 3 as const),
+  Match.exhaustive,
+)
+
+/** @internal */
 export const encodeV1 = (self: TokenOrder.TokenOrder) =>
 (meta: {
   name: string
@@ -436,7 +445,7 @@ export const encodeV1 = (self: TokenOrder.TokenOrder) =>
         meta.symbol,
         meta.name,
         meta.decimals, // decimals
-        self.kind === TokenOrder.Kind.Unescrow ? BigInt(meta.sourceChannelId) : 0n, // path
+        S.is(TokenOrder.Unescrow)(self.kind) ? BigInt(meta.sourceChannelId) : 0n, // path
         Utils.ensureHex(self.quoteToken.address),
         self.quoteAmount,
       ],
@@ -461,7 +470,7 @@ export const encodeV2 = (
         self.baseAmount,
         Utils.ensureHex(self.quoteToken.address),
         self.quoteAmount,
-        self.kind,
+        kindToConst(self.kind),
         self.metadata || "0x",
       ],
     })

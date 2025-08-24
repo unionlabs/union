@@ -42,7 +42,7 @@ const program = Effect.gen(function*() {
     baseAmount: 10n,
     quoteToken: "0xba5eD44733953d79717F6269357C77718C8Ba5ed",
     quoteAmount: 10n,
-    kind: TokenOrder.Kind.Solve,
+    kind: "solve",
     metadata:
       "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     version: 2,
@@ -59,8 +59,6 @@ const program = Effect.gen(function*() {
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
-
-  // const completion = yield* response.waitFor(ZkgmIncomingMessage.isComplete)
 
   yield* Effect.log("TX Hash:", response.txHash)
 }).pipe(
