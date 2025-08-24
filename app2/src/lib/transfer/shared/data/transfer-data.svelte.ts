@@ -22,6 +22,8 @@ import { type Address, fromHex, type Hex } from "viem"
 export class TransferData {
   raw = new RawTransferDataSvelte()
 
+  net = $state<"testnet" | "mainnet" | "all">("mainnet")
+
   // Filter chains by edition before finding specific chains
   filteredChains = $derived(
     chains.data.pipe(

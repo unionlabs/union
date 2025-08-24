@@ -1,4 +1,5 @@
 <script lang="ts">
+import MultiSwitch from "$lib/components/ui/MultiSwitch.svelte"
 import { chainLogoMap } from "$lib/constants/chain-logos"
 import { DISABLED_CHAINS } from "$lib/constants/disabled-chains"
 import { tokensStore } from "$lib/stores/tokens.svelte"
@@ -8,6 +9,8 @@ import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { cn } from "$lib/utils"
 import type { Chain, Token, TokenWrapping } from "@unionlabs/sdk/schema"
 import { Match, Option, pipe, Tuple } from "effect"
+import * as A from "effect/Array"
+import { constant, constVoid, identity } from "effect/Function"
 import { fade } from "svelte/transition"
 
 type Props = {
@@ -53,6 +56,13 @@ const updateSelectedChain = (chain: Chain) => {
   )
   onSelect()
 }
+
+const filterByNet = (chains: Array<Chain>) =>
+  pipe(
+    Match.value(transferData.net),
+    Match.when("all", constant(chains)),
+    Match.orElse((net) => A.filter(chains, x => x.testnet === (net === "testnet"))),
+  )
 
 const filterBySigningMode = (chains: Array<Chain>) =>
   signingMode.mode === "multi" && type === "source"
@@ -186,6 +196,7 @@ const filteredChains = $derived(
       pipe(
         allChains,
         filterBySigningMode,
+        filterByNet,
         chains => filterChainsByTokenAvailability(chains, uiStore.filterWhitelist),
         chainWithAvailability => {
           return chainWithAvailability.sort((a, b) => {
@@ -398,6 +409,34 @@ $effect(() => {
             </div>
           </button>
         {/each}
+
+        {#if type === "source"}
+          <div class="w-full text-center text-sm text-zinc-400 italic pt-8 pb-2">
+            Looking for more?
+          </div>
+          <MultiSwitch
+            selectedKey={transferData.net}
+            orientation="horizontal"
+            class="w-full"
+            onChange={(change) => {
+              transferData.net = change.key
+            }}
+            options={[
+              {
+                key: "mainnet",
+                label: "MAINNET",
+              },
+              {
+                key: "all",
+                label: "ALL",
+              },
+              {
+                key: "testnet",
+                label: "TESTNET",
+              },
+            ]}
+          />
+        {/if}
       </div>
     </div>
 

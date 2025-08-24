@@ -6,7 +6,7 @@ let copied = $state(false)
 
 function copyToClipboard() {
   const currentUrl = window.location.href
-  const modifiedUrl = getModifiedUrl(currentUrl, "btc.union.build")
+  const modifiedUrl = getModifiedUrl(currentUrl, "app.union.build")
 
   navigator.clipboard
     .writeText(modifiedUrl)
