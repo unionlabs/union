@@ -71,8 +71,8 @@ _: {
               cd docs/
 
               export PUPPETEER_SKIP_DOWNLOAD=1 
-              npm install
-              npm run dev
+              pnpm install
+              pnpm run dev
             '';
           };
         };
