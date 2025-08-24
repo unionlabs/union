@@ -115,6 +115,7 @@ export class BalancesStore {
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
   ): RawTokenBalance {
+    // console.log({ data: this.data })
     return this.data.get(createKey(chainId, address, denom)) ?? RawTokenBalance.make(Option.none())
   }
 

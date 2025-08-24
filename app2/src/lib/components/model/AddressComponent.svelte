@@ -1,15 +1,15 @@
 <script lang="ts">
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import { runSync } from "$lib/runtime"
 import { truncate } from "$lib/utils/format"
-import type { AddressCanonicalBytes, AddressCosmosCanonical, Chain } from "@unionlabs/sdk/schema"
+import { Ucs05 } from "@unionlabs/sdk"
+import type { Chain } from "@unionlabs/sdk/schema"
 import type { HTMLAttributes } from "svelte/elements"
 import A from "../ui/A.svelte"
 import Label from "../ui/Label.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
-  address: AddressCanonicalBytes
+  address: Ucs05.AnyDisplay
   chain: Chain
   class?: string
   truncate?: boolean
@@ -29,9 +29,9 @@ const {
 
 // XXX: no type coercion
 const fullDisplayAddress = $derived(
-  runSync(chain.getDisplayAddress(address as AddressCosmosCanonical)),
+  address.address,
 )
-// const fullDisplayAddress = address
+
 const displayAddress = $derived(
   shouldTruncate
     ? truncate(fullDisplayAddress, truncateChars, truncatePosition)
@@ -90,7 +90,7 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
       <section>
         <Label>Canonical</Label>
         <LongMonoWord>
-          {address}
+          {Ucs05.anyDisplayToCanonical(address)}
         </LongMonoWord>
       </section>
 

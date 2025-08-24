@@ -1,5 +1,6 @@
 import { Array as A, Record as R } from "effect"
 
+/** @public */
 export const flattenObject = <T extends Record<string, any>>(
   self: T,
   prefix = "",

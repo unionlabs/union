@@ -11,6 +11,7 @@ import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
+import { Ucs05 } from "@unionlabs/sdk"
 import { Option } from "effect"
 
 function fetchAllBalances() {
@@ -36,7 +37,7 @@ function fetchAllBalances() {
 
     // Fetch all token balances for this chain in a batch
     const denoms = tokens.map(token => token.denom)
-    balancesStore.fetchBalances(chain, address, denoms)
+    balancesStore.fetchBalances(chain, Ucs05.anyDisplayToCanonical(address), denoms)
   }
 }
 

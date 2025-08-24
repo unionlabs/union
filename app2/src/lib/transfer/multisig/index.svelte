@@ -3,24 +3,25 @@ import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { runFork } from "$lib/runtime"
-import { type FeeIntent, FeeStore } from "$lib/stores/fee.svelte"
-import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import transfer from "$lib/transfer/index.svelte"
+import { type FeeIntent } from "$lib/stores/fee.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 import {
   CreateContextState,
   createContextState,
   type StateResult,
 } from "$lib/transfer/multisig/services/filling"
 import { FillingStep, MessageStep, Steps } from "$lib/transfer/multisig/steps"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
+import { Token } from "@unionlabs/sdk"
 import { BABYLON_METADATA } from "@unionlabs/sdk/constants/gas-denoms"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { Array as Arr, Effect, Either as E, Fiber, FiberId, Option } from "effect"
 import { constVoid, pipe } from "effect/Function"
+import * as S from "effect/Schema"
 import { fly } from "svelte/transition"
+
 let currentPage = $state(0)
 let previousPage = $state(0)
 let isLoading = $state(true)
@@ -70,6 +71,7 @@ function handleActionButtonClick() {
 }
 
 $effect(() => {
+  console.log("[multisig/index.svelte] ROOT EFFECT RUNNING", { currentPage })
   if (currentPage !== 0) {
     return
   }
@@ -79,15 +81,16 @@ $effect(() => {
   steps = Option.none()
   errors = Option.none()
 
-  // TODO: replace with real fee
-  const emptyFeeIntent: FeeIntent = {
-    decimals: 0,
-    baseToken: BABYLON_METADATA.address,
-    quoteAmount: TokenRawAmount.make(0n),
-    baseAmount: TokenRawAmount.make(0n),
-  }
-
   const machineEffect = Effect.gen(function*() {
+    // TODO: replace with real fee
+    const emptyFeeIntent: FeeIntent = {
+      decimals: 0,
+      baseToken: Token.CosmosBank.make({ address: "ubbn" }),
+      quoteAmount: TokenRawAmount.make(0n),
+      baseAmount: TokenRawAmount.make(0n),
+    }
+
+    console.log("[multisig/index.svelte] MACHINE RUNNING")
     let currentState: CreateContextState = CreateContextState.Filling()
     let context: TransferContext | null = null
 

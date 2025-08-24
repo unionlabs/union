@@ -59,6 +59,8 @@ export const sendInstructionCosmos = (
     const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")
 
+    console.log("Signing Addr", signingClient.address)
+
     return yield* executeContract(
       signingClient.client,
       signingClient.address,

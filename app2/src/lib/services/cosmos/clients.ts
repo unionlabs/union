@@ -1,13 +1,14 @@
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"
-import type { CosmosWallet } from "$lib/services/cosmos/types.ts"
+import type { CosmosWallet } from "$lib/services/cosmos/types"
 import {
   CosmosWalletNotConnectedError,
   CosmosWalletNotOnWindowError,
   CosmWasmError,
 } from "$lib/services/transfer-ucs03-cosmos"
-import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
+import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { Decimal } from "@cosmjs/math"
 import { GasPrice } from "@cosmjs/stargate"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
@@ -21,10 +22,13 @@ export const getCosmWasmClient = (
     }
 
     const offlineSigner = yield* getCosmosOfflineSigner(chain)
+    console.log({ offlineSigner })
     const gasPriceInfo = yield* getGasPriceForChain(chain)
+    // TODO: burn cosmos sdk
     const gasPrice = GasPrice.fromString(
       `${gasPriceInfo.amount}${gasPriceInfo.denom}`,
     )
+    // const gasPrice = new GasPrice(Decimal.one(18), "au")
 
     const maybeRpcUrl = chain.getRpcUrl("rpc")
     if (Option.isNone(maybeRpcUrl)) {

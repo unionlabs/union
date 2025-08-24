@@ -1,79 +1,202 @@
-import type { FeeIntent } from "$lib/stores/fee.svelte.ts"
-import { uiStore } from "$lib/stores/ui.svelte.ts"
-import { isValidBech32ContractAddress } from "@unionlabs/client"
-import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
+import type { FeeIntent } from "$lib/stores/fee.svelte"
+import { tokensStore } from "$lib/stores/tokens.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { Batch, Token, TokenOrder, Ucs05, Utils, ZkgmClientRequest } from "@unionlabs/sdk"
+import { graphqlQuoteTokenUnwrapQuery } from "@unionlabs/sdk/graphql/unwrapped-quote-token.js"
 import type {
-  AddressCanonicalBytes,
   Chain,
   Channel,
   ChannelId,
   TokenRawAmount,
-  TokenRawDenom,
   UniversalChainId,
 } from "@unionlabs/sdk/schema"
-import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { Match, Option } from "effect"
+import { Effect, Match, Option, ParseResult, pipe } from "effect"
+import * as A from "effect/Array"
+import type { NoSuchElementException, UnknownException } from "effect/Cause"
+import * as S from "effect/Schema"
 import { fromHex, isHex } from "viem"
-import type { TransferArgs } from "./check-filling.ts"
+import type { TransferArgs } from "./check-filling"
 
 export type Intent = {
-  sender: AddressCanonicalBytes
-  receiver: AddressCanonicalBytes
-  baseToken: TokenRawDenom | `0x${string}` | string
+  sender: Ucs05.AnyDisplay
+  receiver: Ucs05.AnyDisplay
+  baseToken: Token.Any
   baseAmount: TokenRawAmount
   quoteAmount: TokenRawAmount
   decimals: number
   sourceChain: Chain
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
+  kind: TokenOrder.Kind
+  quoteToken: Token.Any
   destinationChain: Chain
   channel: Channel
   ucs03address: string
 }
 
 export type Allowance = {
-  // TODO: replace with branded type
-  token: `0x${string}`
+  token: Token.Any
   requiredAmount: bigint
   currentAllowance: bigint
 }
 
 export type TransferContext = {
   intents: Array<Intent>
-  funds: Option.Option<
-    Array<{
-      baseToken: TokenRawDenom | string
-      amount: TokenRawAmount
-    }>
-  >
-  allowances: Option.Option<Array<Allowance>>
-  instruction: Option.Option<Instruction>
-  // XXX: where is message fulfilled?
+  allowances: Option.Option<A.NonEmptyReadonlyArray<Allowance>>
+  request: Option.Option<ZkgmClientRequest.ZkgmClientRequest>
   message: Option.Option<string>
 }
 
-export const createContext = (args: TransferArgs): Option.Option<TransferContext> => {
-  console.debug("[createContext] args:", args)
+export const createContext = Effect.fn((
+  args: TransferArgs,
+): Effect.Effect<
+  TransferContext,
+  NoSuchElementException | ParseResult.ParseError | UnknownException,
+  never
+> =>
+  Effect.gen(function*() {
+    console.debug("[createContext] args:", args)
 
-  return parseBaseAmount(args.baseAmount).pipe(
-    Option.flatMap(baseAmount => {
-      const intents = createIntents(args, baseAmount)
+    const overrideForUnion = args.baseToken.address === "au"
+      || args.baseToken.address.toLowerCase()
+        === "0xba5eD44733953d79717F6269357C77718C8Ba5ed".toLowerCase()
 
-      return intents.length > 0
-        ? Option.some({
-          intents,
-          funds: calculateNativeValue(intents, args),
-          allowances: Option.none(),
-          instruction: Option.none(),
-          message: Option.none(),
+    if (overrideForUnion) {
+      args.quoteToken = Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" })
+    }
+
+    const kind = overrideForUnion ? "solve" : args.kind
+    const metadata = overrideForUnion
+      ? "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      : undefined
+
+    const sendOrder = yield* TokenOrder.make({
+      baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
+      baseToken: args.baseToken,
+      quoteToken: args.quoteToken,
+      quoteAmount: Option.getOrThrow(parseBaseAmount(args.quoteAmount)),
+      destination: args.destinationChain,
+      receiver: args.receiver,
+      sender: args.sender,
+      kind,
+      source: args.sourceChain,
+      metadata,
+      version: args.version,
+    })
+
+    const maybeFeeQuoteToken = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: Utils.ensureHex(args.fee.baseToken.address),
+      sourceChainId: args.sourceChain.universal_chain_id,
+      sourceChannelId: args.sourceChannelId,
+    })
+
+    // on destination chain tokens, find wrappings[] such that one exists where unwrapped_denom matches basetoken and unwrapped_chain and wrapped_chain universal ids match
+    console.log({ maybeFeeQuoteToken })
+    console.log({ data: tokensStore.getData(args.destinationChain.universal_chain_id) })
+    const encodedFeeBaseToken = S.encodeSync(Token.AnyFromEncoded(args.sourceChain.rpc_type))(
+      args.fee.baseToken,
+    )
+    console.log({ encodedFeeBaseToken })
+
+    const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+
+    const produceBatch = Effect.gen(function*() {
+      if (shouldIncludeFees) {
+        const feeQuoteToken = yield* maybeFeeQuoteToken.pipe(
+          Option.orElse(() =>
+            pipe(
+              tokensStore.getData(args.destinationChain.universal_chain_id),
+              Option.flatMap(
+                A.findFirst((token) =>
+                  A.filter(token.wrapping, (x) =>
+                    x.unwrapped_denom === encodedFeeBaseToken
+                    && x.unwrapped_chain.universal_chain_id === args.sourceChain.universal_chain_id
+                    && x.wrapped_chain.universal_chain_id
+                      === args.destinationChain.universal_chain_id)
+                    .length
+                    === 1
+                ),
+              ),
+              Option.map(x => x.denom),
+              Option.flatMap((raw) =>
+                S.decodeOption(Token.AnyFromEncoded(args.destinationChain.rpc_type))(raw)
+              ),
+            )
+          ),
+          Option.orElse(() => {
+            if (args.baseToken.address === "au") {
+              return Option.some(args.quoteToken)
+            }
+            console.error("Could not determine fee quote token.")
+            return Option.none()
+          }),
+        )
+
+        console.log("Got fee quote token", { feeQuoteToken })
+
+        const feeOrder = yield* TokenOrder.make({
+          baseAmount: args.fee.baseAmount,
+          baseToken: args.fee.baseToken,
+          quoteToken: feeQuoteToken,
+          quoteAmount: args.fee.quoteAmount,
+          destination: args.destinationChain,
+          receiver: args.receiver,
+          sender: args.sender,
+          kind: "escrow",
+          source: args.sourceChain,
+          metadata: undefined,
+          version: args.version,
         })
-        : Option.none()
-    }),
-  )
-}
+
+        console.log("Produced fee order")
+
+        return Batch.make([sendOrder, feeOrder]).pipe(
+          Batch.optimize,
+        )
+      } else {
+        return sendOrder
+      }
+    })
+
+    const batch = yield* produceBatch
+
+    console.log("[createContext]", { batch })
+
+    const request = ZkgmClientRequest.make({
+      channelId: args.sourceChannelId,
+      destination: args.destinationChain,
+      source: args.sourceChain,
+      instruction: batch,
+      ucs03Address: args.ucs03address,
+    }).pipe(
+      Option.some,
+    )
+
+    const ctx = yield* parseBaseAmount(args.baseAmount).pipe(
+      Option.flatMap((baseAmount) => {
+        const intents = createIntents(args, baseAmount)
+
+        return intents.length > 0
+          ? Option.some({
+            intents,
+            allowances: Option.none(),
+            request: Option.none(),
+            message: Option.none(),
+          })
+          : Option.none()
+      }),
+    )
+
+    return {
+      ...ctx,
+      request,
+    } as const
+  })
+)
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
   const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+  console.log("[createIntents]", { shouldChargeFees })
   const baseIntent = createBaseIntent(args, baseAmount)
 
   return Match.value(args.sourceChain.rpc_type).pipe(
@@ -81,6 +204,8 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
       const intent: Intent = {
         ...baseIntent,
         baseToken: args.baseToken,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
       }
 
       const feeIntent: Intent = {
@@ -89,6 +214,8 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
       }
 
       return shouldIncludeFees ? [intent, feeIntent] : [intent]
@@ -96,15 +223,21 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
     Match.when("cosmos", () => {
       const intent: Intent = {
         ...baseIntent,
-        baseToken: normalizeToken(args.baseToken, "cosmos"),
+        baseToken: args.baseToken,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
+        // baseToken: normalizeToken(args.baseToken.address, "cosmos"),
       }
 
       const feeIntent: Intent = {
         ...baseIntent,
-        baseToken: normalizeToken(args.fee.baseToken, "cosmos"),
+        // baseToken: normalizeToken(args.fee.baseToken, "cosmos"),
+        baseToken: args.fee.baseToken,
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
       }
 
       return shouldIncludeFees ? [intent, feeIntent] : [intent]
@@ -116,7 +249,7 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
 const createBaseIntent = (
   args: TransferArgs,
   baseAmount: TokenRawAmount,
-): Omit<Intent, "baseToken"> => ({
+): Omit<Intent, "baseToken" | "quoteToken" | "kind"> => ({
   sender: args.sender,
   receiver: args.receiver,
   baseAmount,
@@ -135,10 +268,10 @@ const shouldChargeFees = (fee: FeeIntent, edition: string, sourceChain: Chain): 
   if (fee.baseAmount === 0n) {
     return false
   }
-  return Match.value(edition).pipe(
-    Match.when("btc", () => sourceChain.universal_chain_id === "babylon.bbn-1"),
-    Match.orElse(() => true),
-  )
+  if (sourceChain.testnet) {
+    return true
+  }
+  return sourceChain.universal_chain_id === "babylon.bbn-1"
 }
 
 const normalizeToken = (token: string | `0x${string}`, rpcType: string): string => {
@@ -152,35 +285,4 @@ const parseBaseAmount = (amount: string): Option.Option<TokenRawAmount> => {
       Option.filter(str => /^\d+$/.test(str.trim())),
       Option.map(str => BigInt(str.trim()) as TokenRawAmount),
     )
-}
-
-const calculateNativeValue = (
-  intents: Intent[],
-  args: TransferArgs,
-): Option.Option<Array<{ baseToken: TokenRawDenom | string; amount: TokenRawAmount }>> => {
-  const nativeTokensMap = new Map<string, bigint>()
-
-  const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
-
-  for (const intent of intents) {
-    const normalizedToken = normalizeToken(intent.baseToken, args.sourceChain.rpc_type)
-
-    const isNativeToken = args.sourceChain.rpc_type === "evm"
-      ? chainGasDenom
-        && normalizedToken === normalizeToken(chainGasDenom.address, args.sourceChain.rpc_type)
-      : !isValidBech32ContractAddress(normalizedToken)
-
-    if (isNativeToken) {
-      const currentAmount = nativeTokensMap.get(normalizedToken) || 0n
-      nativeTokensMap.set(normalizedToken, currentAmount + intent.baseAmount)
-    }
-  }
-
-  // Convert map to array
-  const nativeFunds = Array.from(nativeTokensMap.entries()).map(([token, amount]) => ({
-    baseToken: token,
-    amount: amount as TokenRawAmount,
-  }))
-
-  return nativeFunds.length > 0 ? Option.some(nativeFunds) : Option.none()
 }

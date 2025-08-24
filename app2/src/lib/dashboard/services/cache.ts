@@ -1,5 +1,5 @@
 import { type AppContext, runFork } from "$lib/runtime"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { Data, Effect, Option, pipe } from "effect"
 
 export class CacheError extends Data.TaggedError("CacheError")<{

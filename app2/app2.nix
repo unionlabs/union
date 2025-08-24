@@ -36,13 +36,17 @@ _: {
             ../app2
             ../typescript-sdk
             ../ts-sdk
+            ../ts-sdk-evm
+            ../ts-sdk-cosmos
           ];
-          hash = "sha256-gftt90+qAAV4twqp5DBUwEY6+nS0dvFX/EFdvJUL1hk=";
+          hash = "sha256-Wc+E99V1tj+tG7VVha9CBB1YVb+H83GgUJpxhvq1gzU=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
             "app2"
             "@unionlabs/sdk"
+            "@unionlabs/sdk-evm"
+            "@unionlabs/sdk-cosmos"
             "@unionlabs/client"
           ];
           buildPhase = ''

@@ -1,24 +1,28 @@
 import { GenerateMultisigError } from "$lib/transfer/shared/errors"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
-import { instructionAbi } from "@unionlabs/sdk/evm/abi"
-import { AddressCosmosCanonical, Tx } from "@unionlabs/sdk/schema"
-import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
-import { generateSalt } from "@unionlabs/sdk/utils"
-import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
-import { Effect, Option, pipe } from "effect"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
+import { isValidBech32ContractAddress } from "$lib/utils/index"
+import { Token, TokenOrder, Ucs03, ZkgmInstruction } from "@unionlabs/sdk"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { tokenMetaOverride } from "@unionlabs/sdk/Constants"
+import { Tx } from "@unionlabs/sdk/schema/tx"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
+import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout"
+import { Cause, Effect, Match, Option, ParseResult, pipe } from "effect"
+import * as A from "effect/Array"
+import * as E from "effect/Either"
 import * as S from "effect/Schema"
-import { encodeAbiParameters, fromHex } from "viem"
 
 export const createMultisigMessage = (context: TransferContext) =>
   Effect.gen(function*() {
+    console.log("[createMultisigMessage]", { context })
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
-    const sender = yield* context.intents[0].sourceChain.getDisplayAddress(
-      // XXX: discriminate higher
-      context.intents[0].sender as AddressCosmosCanonical,
-    )
+    // XXX: discriminate higher
+    const sender = context.intents[0].sender.address
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")
+    const chain = context.intents[0].sourceChain
+    const rpcUrl = yield* chain.getRpcUrl("rpc")
+    const publicClient = Cosmos.Client.Live(rpcUrl)
 
     const allowanceMsgs = pipe(
       context.allowances,
@@ -29,7 +33,7 @@ export const createMultisigMessage = (context: TransferContext) =>
               {
                 "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
                 sender,
-                "contract": fromHex(allowance.token, "string"),
+                "contract": allowance.token.address,
                 "msg": {
                   increase_allowance: {
                     spender: intent.sourceChain.minter_address_display,
@@ -45,53 +49,128 @@ export const createMultisigMessage = (context: TransferContext) =>
       Option.getOrElse(() => []),
     )
 
-    const instructionMsgs = pipe(
-      context.instruction,
-      Option.map((instruction) => {
-        return context.intents.map((intent) => {
-          const isNative = !isValidBech32ContractAddress(intent.baseToken)
-          const encodedInstruction = encodeAbiParameters(instructionAbi, [
-            instruction.version,
-            instruction.opcode,
-            encodeAbi(instruction),
-          ])
+    const instructionMsgs = yield* pipe(
+      context.request,
+      Option.map((request) => {
+        return context.intents.map((intent) =>
+          Effect.gen(function*() {
+            const isNative = Token.isNative(intent.baseToken)
 
-          return {
-            "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
-            sender,
-            "contract": intent.ucs03address,
-            "msg": {
-              send: {
-                channel_id: intent.sourceChannelId,
-                timeout_height: "0",
-                timeout_timestamp: timeoutTimestamp,
-                salt,
-                instruction: encodedInstruction,
-              },
-            },
-            "funds": isNative
-              ? [
-                {
-                  denom: intent.baseToken,
-                  amount: intent.baseAmount,
+            const encodeInstruction: (
+              u: ZkgmInstruction.ZkgmInstruction,
+            ) => Effect.Effect<
+              Ucs03.Ucs03,
+              | ParseResult.ParseError
+              | Cause.TimeoutException
+              | Cosmos.QueryContractError
+              | Cosmos.ClientError
+            > = pipe(
+              Match.type<ZkgmInstruction.ZkgmInstruction>(),
+              Match.tagsExhaustive({
+                Batch: (batch) =>
+                  pipe(
+                    batch.instructions,
+                    A.map(encodeInstruction),
+                    Effect.allWith({ concurrency: "unbounded" }),
+                    Effect.map((operand) =>
+                      new Ucs03.Batch({
+                        opcode: batch.opcode,
+                        version: batch.version,
+                        operand,
+                      })
+                    ),
+                  ),
+                TokenOrder: (self) =>
+                  pipe(
+                    Match.value(self),
+                    Match.when(
+                      { version: 1 },
+                      (v1) =>
+                        Effect.gen(function*() {
+                          const meta = yield* pipe(
+                            Cosmos.readCw20TokenInfo(v1.baseToken.address as unknown as any),
+                            Effect.either,
+                            Effect.map(
+                              E.getOrElse(() => tokenMetaOverride(v1.baseToken.address)),
+                            ),
+                            Effect.provide(publicClient),
+                          )
+
+                          return yield* TokenOrder.encodeV1(v1)({
+                            ...meta,
+                            sourceChannelId: request.channelId,
+                          })
+                        }),
+                    ),
+                    Match.when(
+                      { version: 2 },
+                      (v2) => TokenOrder.encodeV2(v2),
+                    ),
+                    Match.exhaustive,
+                  ),
+              }),
+            )
+
+            const encodedInstruction = yield* pipe(
+              encodeInstruction(request.instruction),
+              Effect.flatMap(S.encode(Ucs03.Ucs03WithInstructionFromHex)),
+            )
+
+            return {
+              "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+              sender,
+              "contract": intent.ucs03address,
+              "msg": {
+                send: {
+                  channel_id: intent.sourceChannelId,
+                  timeout_height: "0",
+                  timeout_timestamp: timeoutTimestamp,
+                  salt,
+                  instruction: encodedInstruction,
                 },
-              ]
-              : [],
-          }
-        })
+              },
+              "funds": isNative
+                ? [
+                  {
+                    denom: intent.baseToken.address,
+                    amount: intent.baseAmount,
+                  },
+                ]
+                : [],
+            }
+          })
+        )
       }),
-      Option.getOrElse(() => []),
+      Option.flatMap(Option.liftPredicate(A.isNonEmptyArray)),
+      Option.map(Effect.allWith({ concurrency: "unbounded" })),
+      Effect.transposeOption,
     )
 
-    const allMsgs = [...allowanceMsgs, ...instructionMsgs]
+    const _instructionMsgs = yield* pipe(
+      instructionMsgs,
+      Effect.mapError((cause) =>
+        new GenerateMultisigError({
+          reason: "instructionmsgs is none",
+          cause,
+        })
+      ),
+    )
 
-    const encoded = txToJson({
-      body: {
-        messages: allMsgs,
-      },
-    })
+    const allMsgs = [...allowanceMsgs, ..._instructionMsgs]
 
-    return yield* encoded
+    return yield* pipe(
+      txToJson({
+        body: {
+          messages: allMsgs,
+        },
+      }),
+      Effect.mapError((cause) =>
+        new GenerateMultisigError({
+          reason: "Could not generate transaction JSON.",
+          cause,
+        })
+      ),
+    )
   }).pipe(
     Effect.catchAll((cause) => {
       console.error("[generateMultisigTx] Fiber failure:", cause)

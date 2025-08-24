@@ -1,8 +1,8 @@
 <script lang="ts">
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte"
 import TransferAsset from "$lib/transfer/shared/components/ChainAsset/TransferAsset.svelte"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { Token } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { tick } from "svelte"
@@ -89,6 +89,7 @@ const filteredTokens = $derived.by(() => {
 })
 
 function selectAsset(token: Token) {
+  console.log("[AssetSelector] selectAsset", token)
   transferData.raw.updateField("asset", token.denom)
   onSelect()
 }

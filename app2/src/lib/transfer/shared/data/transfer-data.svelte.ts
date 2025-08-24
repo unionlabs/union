@@ -1,22 +1,28 @@
-import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
-import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import { channels } from "$lib/stores/channels.svelte.ts"
-import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import { uiStore } from "$lib/stores/ui.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import * as AppRuntime from "$lib/runtime"
+import { runSync } from "$lib/runtime"
+import { getParsedAmountSafe } from "$lib/services/shared"
+import { getChannelInfo } from "$lib/services/transfer-ucs03-evm/channel"
+import { chains } from "$lib/stores/chains.svelte"
+import { channels } from "$lib/stores/channels.svelte"
+import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte"
+import { tokensStore } from "$lib/stores/tokens.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 import type { Edition } from "$lib/themes"
-import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts"
-import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
-import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
-import type { Chain, Channel, Token } from "@unionlabs/sdk/schema"
-import type { Fees } from "@unionlabs/sdk/schema/fee"
-import { Array as A, Effect, Match, Option, pipe } from "effect"
+import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte"
+import { signingMode } from "$lib/transfer/signingMode.svelte"
+import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
+import * as US from "@unionlabs/sdk/schema"
+import { Array as A, Brand, Effect, Match, Option, pipe, Struct } from "effect"
+import * as B from "effect/Boolean"
+import { constant } from "effect/Function"
+import * as S from "effect/Schema"
 import { type Address, fromHex, type Hex } from "viem"
 
 export class TransferData {
   raw = new RawTransferDataSvelte()
+
+  net = $state<"testnet" | "mainnet" | "all">("mainnet")
 
   // Filter chains by edition before finding specific chains
   filteredChains = $derived(
@@ -53,11 +59,11 @@ export class TransferData {
     ),
   )
 
-  quoteTokens = $derived(
-    this.destinationChain.pipe(
+  quoteTokens: Option.Option<readonly US.Token[]> = $derived.by(() => {
+    return this.destinationChain.pipe(
       Option.flatMap((dc) => tokensStore.getData(dc.universal_chain_id)),
-    ),
-  )
+    )
+  })
 
   sortedBalances = $derived(
     this.sourceChain.pipe(
@@ -77,14 +83,27 @@ export class TransferData {
     this.baseTokens.pipe(
       Option.flatMap((tokens) =>
         Option.fromNullable(
-          tokens.find((t: Token) => t.denom === this.raw.asset),
+          tokens.find((t: US.Token) => t.denom === this.raw.asset),
         )
       ),
     ),
   )
 
-  quoteToken = $derived(
-    Option.all([
+  quoteToken = $derived.by(() => {
+    console.log({ baseToken: Option.map(this.baseToken, x => x.denom) })
+    const baseTokenDenom = Option.getOrUndefined(
+      Option.map(this.baseToken, x => Brand.unbranded(x.denom)),
+    )
+    if (
+      baseTokenDenom === "0x6175" || baseTokenDenom === "0xba5ed44733953d79717f6269357c77718c8ba5ed"
+    ) {
+      console.log("OVERRIDING QUOTE TOKENS")
+      return Option.some(
+        Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" }),
+      )
+    }
+
+    return Option.all([
       this.baseToken,
       this.sourceChain,
       this.destinationChain,
@@ -120,47 +139,93 @@ export class TransferData {
                   )?.denom,
                 ),
             }),
+            Option.flatMap((raw) =>
+              S.decodeOption(Token.AnyFromEncoded(destinationChain.rpc_type))(raw)
+            ),
           )
         },
       ),
-    ),
-  )
+    )
+  })
 
-  channel = $derived<Option.Option<Channel>>(
+  channel = $derived<Option.Option<US.Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.orElse(() =>
-            Option.fromNullable(
-              getChannelInfoSafe(
-                sourceChain.universal_chain_id,
-                destinationChain.universal_chain_id,
-                channelsData,
-              ),
-            )
-          ),
+        runSync(
+          getChannelInfo(
+            sourceChain.universal_chain_id,
+            destinationChain.universal_chain_id,
+            channelsData,
+          ).pipe(Effect.option),
         )
       ),
     ),
   )
 
-  destChannel = $derived<Option.Option<Channel>>(
+  representations = $derived(
+    Option.all([this.baseToken, this.sourceChain, this.destinationChain, this.channel]).pipe(
+      Option.map(([baseToken, sourceChain, destinationChain, channel]) => {
+        return baseToken.wrapping.filter(wrapping =>
+          wrapping.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id
+          && wrapping.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+          && wrapping.destination_channel_id === channel.source_channel_id
+        )
+      }),
+    ),
+  )
+
+  kind = $derived<Option.Option<TokenOrder.Kind>>(
+    Option.all([this.baseToken, this.sourceChain, this.destinationChain]).pipe(
+      Option.flatMap(([baseToken, sourceChain, destinationChain]) => {
+        const sourceId = sourceChain.universal_chain_id
+        const destId = destinationChain.universal_chain_id
+
+        console.log({ sourceId, destId, baseToken })
+
+        return pipe(
+          baseToken.wrapping,
+          A.findFirst(wrapping =>
+            wrapping.wrapped_chain.universal_chain_id === sourceId
+            && wrapping.unwrapped_chain.universal_chain_id === destId
+          ),
+          Option.map(() => "unescrow" as const),
+          Option.orElseSome(() => "escrow" as const),
+        )
+      }),
+    ),
+  )
+
+  destChannel = $derived<Option.Option<US.Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.orElse(() =>
-            Option.fromNullable(
-              getChannelInfoSafe(
-                destinationChain.universal_chain_id,
-                sourceChain.universal_chain_id,
-                channelsData,
-              ),
-            )
-          ),
+        runSync(
+          getChannelInfo(
+            destinationChain.universal_chain_id,
+            sourceChain.universal_chain_id,
+            channelsData,
+          ).pipe(Effect.option),
         )
       ),
     ),
   )
+
+  version = $derived(pipe(
+    this.channel,
+    Option.tap((x) => {
+      console.log("version channel", x)
+      return Option.some(x)
+    }),
+    Option.map(Struct.get("tags")),
+    Option.map(A.contains("tokenorder-v2")),
+    Option.map(B.match({
+      onTrue: constant(2 as const),
+      onFalse: constant(1 as const),
+    })),
+    Option.tap((x) => {
+      console.log("version version", x)
+      return Option.some(x)
+    }),
+  ))
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
@@ -178,9 +243,16 @@ export class TransferData {
     ),
   )
 
-  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
+  derivedReceiver: Option.Option<Ucs05.AnyDisplay> = $derived.by(() => {
+    console.log({ receiver: this.raw.receiver })
 
-  derivedSender = $derived.by(() => {
+    return AppRuntime.runSync(pipe(
+      S.decode(S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString))(this.raw.receiver),
+      Effect.option,
+    ))
+  })
+
+  derivedSender: Option.Option<Ucs05.AnyDisplay> = $derived.by(() => {
     if (Option.isNone(this.sourceChain)) {
       return Option.none()
     }
@@ -253,36 +325,37 @@ export class TransferData {
   }
 }
 
-const getEnvironment = (): "production" | "staging" | "development" => {
-  return pipe(
-    Match.value(globalThis?.window?.location?.hostname ?? "localhost").pipe(
-      Match.when(
-        (hostname) => hostname === "btc.union.build" || hostname === "app.union.build",
-        () => "production" as const,
-      ),
-      Match.when(
-        (hostname) =>
-          hostname === "staging.btc.union.build"
-          || hostname === "staging.app.union.build",
-        () => "staging" as const,
-      ),
-      Match.orElse(() => "development" as const),
+const getEnvironment = (): "production" | "staging" | "development" =>
+  Match.value(globalThis?.window?.location?.hostname ?? "localhost").pipe(
+    Match.when(
+      (hostname) => hostname === "btc.union.build" || hostname === "app.union.build",
+      () => "production" as const,
     ),
+    Match.when(
+      (hostname) =>
+        hostname === "staging.btc.union.build"
+        || hostname === "staging.app.union.build",
+      () => "staging" as const,
+    ),
+    Match.orElse(() => "development" as const),
   )
-}
 
 function filterByEdition(
-  chain: Chain,
+  chain: US.Chain,
   editionName: Edition,
   environment: string,
 ): boolean {
+  if (chain.chain_id === "union-testnet-10") {
+    return true
+  } // XXX: remove me
+
   return pipe(
     Option.fromNullable(chain.editions),
     Option.match({
       onNone: () => false,
       onSome: (editions) =>
         editions.some((edition: { name: string; environment: string }) => {
-          if (edition.name !== editionName) {
+          if (edition.name !== editionName && (editionName !== "app")) {
             return false
           }
 

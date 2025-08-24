@@ -1,5 +1,5 @@
 import { runSync } from "$lib/runtime"
-import { AmountParsingError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { AmountParsingError } from "$lib/services/transfer-ucs03-evm/errors"
 import type { Token } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
 import { parseUnits } from "viem"

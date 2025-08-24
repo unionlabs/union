@@ -1,11 +1,12 @@
-import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { Intent } from "$lib/transfer/shared/services/filling/create-context"
+import type { Token, Ucs05, ZkgmClientRequest } from "@unionlabs/sdk"
 import type {
   AddressCanonicalBytes,
   Chain,
   TokenRawAmount,
   TokenRawDenom,
 } from "@unionlabs/sdk/schema"
-import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
+import type { Instruction } from "@unionlabs/sdk/ucs03/instruction"
 import { Data, Option } from "effect"
 import type { ExtractTag } from "effect/Types"
 
@@ -15,24 +16,18 @@ import type { ExtractTag } from "effect/Types"
 export type Steps = Data.TaggedEnum<{
   Filling: {}
   CheckReceiver: {
-    readonly receiver: AddressCanonicalBytes
+    readonly receiver: Ucs05.AnyDisplay
     readonly destinationChain: Chain
   }
   ApprovalRequired: {
-    readonly token: TokenRawDenom
+    readonly token: Token.Any
     readonly requiredAmount: TokenRawAmount
     readonly currentAllowance: TokenRawAmount
     readonly intent: Intent
   }
   SubmitInstruction: {
-    readonly instruction: Instruction
+    readonly instruction: ZkgmClientRequest.ZkgmClientRequest
     readonly intent: Intent
-    readonly funds: Option.Option<
-      Array<{
-        baseToken: string
-        amount: bigint
-      }>
-    >
   }
   WaitForIndex: {
     readonly intent: Intent

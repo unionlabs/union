@@ -1,14 +1,9 @@
 /**
- * Determine pricing of given token representations.
+ * This module provides a service for determining USD pricing of a given chain's gas denomination.
  *
- * TODO:
- * - Use [ExecutionPlan](https://effect.website/blog/releases/effect/316/#executionplan-module)
- *   to fallback to different pricing sources.
- * - Can `Pricing.Default` layer expose the execution plan?
- * - Make mainnet vs testnet distinction.
- * - (optional) Match selection of potential services by chain if source is chain-specific.
- * - (optional) Allow for choosing localized currency such as not to hardcode USD.
+ * @since 2.0.0
  */
+
 import {
   FetchHttpClient,
   HttpClient,
@@ -38,12 +33,22 @@ import { absurd, constTrue, flow, pipe } from "effect/Function"
 import { GAS_DENOMS } from "./constants/gas-denoms.js"
 import { UniversalChainId } from "./schema/chain.js"
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class PriceError extends Data.TaggedError("@unionlabs/sdk/PriceOracle/PriceError")<{
   message: string
   source: string
   cause?: unknown
 }> {}
 
+/**
+ * Details about the source of pricing data.
+ *
+ * @category models
+ * @since 2.0.0
+ */
 export const PriceSource = S.Struct({
   url: S.URL,
   metadata: S.Option(S.Record({
@@ -51,8 +56,16 @@ export const PriceSource = S.Struct({
     value: S.Any,
   })),
 })
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type PriceSource = typeof PriceSource.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const PriceResult = S.Struct({
   price: S.BigDecimalFromNumber.pipe(
     S.positiveBigDecimal(),
@@ -63,9 +76,19 @@ export const PriceResult = S.Struct({
   ),
   source: PriceSource,
 })
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type PriceResult = typeof PriceResult.Type
 
+/**
+ * @since 2.0.0
+ */
 export declare namespace PriceOracle {
+  /**
+   * @since 2.0.0
+   */
   export interface Service {
     readonly of: (id: UniversalChainId) => Effect.Effect<PriceResult, PriceError>
     readonly ratio: (from: UniversalChainId, to: UniversalChainId) => Effect.Effect<{
@@ -77,11 +100,21 @@ export declare namespace PriceOracle {
   }
 }
 
+/**
+ * @category services
+ * @since 2.0.0
+ */
 export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
   PriceOracle,
   PriceOracle.Service
 >() {}
 
+/**
+ * {@see https://www.pyth.network/}
+ *
+ * @category layers
+ * @since 2.0.0
+ */
 export const Pyth = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
@@ -111,22 +144,20 @@ export const Pyth = Layer.effect(
     })
 
     const queryPriceFeed = yield* (Effect.cachedFunction((symbol: string) =>
-      pipe(
-        Effect.tryPromise({
-          try: () =>
-            client.getPriceFeeds({
-              query: `${symbol}/USD`,
-              assetType: "crypto",
-            }),
+      Effect.tryPromise({
+        try: () =>
+          client.getPriceFeeds({
+            query: `${symbol}/USD`,
+            assetType: "crypto",
+          }),
 
-          catch: (cause) =>
-            new PriceError({
-              message: `Failed to fetch pricing feed for ${symbol}.`,
-              source: "Pyth",
-              cause,
-            }),
-        }),
-      )
+        catch: (cause) =>
+          new PriceError({
+            message: `Failed to fetch pricing feed for ${symbol}.`,
+            source: "Pyth",
+            cause,
+          }),
+      })
     ))
 
     // TODO: move URL resource into dependency
@@ -267,8 +298,11 @@ export const Pyth = Layer.effect(
     })
   }),
 )
+
 /**
- * https://app.redstone.finance
+ * {@see https://www.redstone.finance/}
+ * @category layers
+ * @since 2.0.0
  */
 export const Redstone = Layer.effect(
   PriceOracle,
@@ -447,6 +481,11 @@ export const Redstone = Layer.effect(
   }),
 )
 
+/**
+ * {@see https://www.bandprotocol.com/}
+ * @category layers
+ * @since 2.0.0
+ */
 export const Band = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
@@ -455,7 +494,7 @@ export const Band = Layer.effect(
     const DEFAULT_MIN = 3
 
     const BandPriceRaw = S.Struct({
-      symbol: S.NonEmptyString.pipe(),
+      symbol: S.NonEmptyString,
       multiplier: S.PositiveBigInt,
       px: S.PositiveBigInt,
       request_id: S.PositiveBigInt,
@@ -463,7 +502,7 @@ export const Band = Layer.effect(
     })
 
     const BandPriceFromSelf = S.Struct({
-      symbol: S.NonEmptyString.pipe(),
+      symbol: S.NonEmptyString,
       price: S.PositiveBigDecimalFromSelf,
       multiplier: S.PositiveBigIntFromSelf,
       px: S.PositiveBigIntFromSelf,
@@ -602,6 +641,41 @@ export const Band = Layer.effect(
   }),
 )
 
+const TopSecret = Layer.sync(
+  PriceOracle,
+  () =>
+    PriceOracle.of({
+      of: (id) =>
+        Match.value(id).pipe(
+          Match.when(
+            UniversalChainId.make("union.union-testnet-10"),
+            () =>
+              Effect.succeed(PriceResult.make({
+                price: BigDecimal.fromNumber(0.05),
+                source: {
+                  metadata: O.none(),
+                  url: new URL("https://youtu.be/dQw4w9WgXcQ"),
+                },
+              })),
+          ),
+          Match.orElse(() =>
+            Effect.fail(
+              new PriceError({
+                message: "uwu",
+                source: "TopSecret",
+              }),
+            )
+          ),
+        ),
+      ratio: (from: UniversalChainId, to: UniversalChainId) =>
+        Effect.fail(new PriceError({ message: "not implemented", source: "" })),
+      stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "" })),
+    }),
+)
+
+/**
+ * @since 2.0.0
+ */
 export const LivePlan = ExecutionPlan.make(
   {
     provide: Pyth,
@@ -618,9 +692,17 @@ export const LivePlan = ExecutionPlan.make(
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
+  {
+    provide: TopSecret,
+    attempts: 2,
+    schedule: Schedule.exponential("100 millis", 1.5),
+  },
 )
 
 // TODO: rename to just "Executor" 8)
+/**
+ * @since 2.0.0
+ */
 export class PriceOracleExecutor
   extends Effect.Service<PriceOracle>()("@unionlabs/sdk/PriceOracle", { // XXX: is this a sin?
     effect: Effect.gen(function*() {

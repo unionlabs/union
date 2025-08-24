@@ -2,7 +2,7 @@ import { ENV } from "$lib/constants"
 import * as SvelteConfigProvider from "$lib/services/SvelteConfigProvider.js"
 import { PersistedCache, Persistence } from "@effect/experimental"
 import { KeyValueStore } from "@effect/platform"
-import { operationNamesFromDocumentNode } from "@unionlabs/sdk/utils"
+import { operationNamesFromDocumentNode } from "@unionlabs/sdk/utils/index"
 import {
   absurd,
   Array as A,

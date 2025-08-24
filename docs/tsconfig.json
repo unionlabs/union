@@ -1,5 +1,16 @@
 {
   "extends": ["astro/tsconfigs/strict", "astro/tsconfigs/base"],
+  "references": [
+    {
+      "path": "../ts-sdk"
+    },
+    {
+      "path": "../ts-sdk-evm"
+    },
+    {
+      "path": "../ts-sdk-cosmos"
+    }
+  ],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
@@ -41,7 +52,8 @@
     "svelte.config.js",
     "tailwind.config.ts",
     "postcss.config.cjs",
-    "markdown.config.ts"
+    "markdown.config.ts",
+    "typedoc-example-pages.mjs"
   ],
   "exclude": ["_", "dist", "node_modules"]
 }

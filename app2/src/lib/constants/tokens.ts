@@ -2,6 +2,8 @@ import { TokenRawDenom } from "@unionlabs/sdk/schema"
 
 /**
  * List of token denoms that should be excluded from display and processing
+ *
+ * @public
  */
 export const TOKEN_BLACKLIST: Array<TokenRawDenom> = [
   TokenRawDenom.make("0x0000000000000000000000000000000000000000"),
@@ -11,6 +13,8 @@ export const TOKEN_BLACKLIST: Array<TokenRawDenom> = [
 
 /**
  * Checks if a token denom is blacklisted
+ *
+ * @public
  */
 export const isTokenBlacklisted = (denom: TokenRawDenom): boolean => {
   return TOKEN_BLACKLIST.includes(denom)

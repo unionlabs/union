@@ -30,7 +30,7 @@ let {
     buttonVariants({
       variant: isActive ? "outline" : "ghost",
       size,
-      class: isActive && "text-black",
+      class: isActive && "text-foreground",
     }),
     className,
   )}

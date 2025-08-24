@@ -3,8 +3,9 @@ import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { balancesStore } from "$lib/stores/balances.svelte"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
+import { Ucs05 } from "@unionlabs/sdk"
 import { Option, pipe } from "effect"
 import { formatUnits, toHex } from "viem"
 
@@ -38,7 +39,12 @@ $effect(() => {
     denom: Option.map(transferData.baseToken, x => x.denom),
   })
   if (Option.isSome(rec)) {
-    balancesStore.fetchBalances(rec.value.chain, rec.value.address, rec.value.denom, "2 minutes")
+    balancesStore.fetchBalances(
+      rec.value.chain,
+      Ucs05.anyDisplayToCanonical(rec.value.address),
+      rec.value.denom,
+      "2 minutes",
+    )
   }
 })
 

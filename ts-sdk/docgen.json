@@ -1,0 +1,37 @@
+{
+  "$schema": "../node_modules/@effect/docgen/schema.json",
+  "exclude": [
+    "src/aptos/**/*",
+    "src/constants/**/*",
+    "src/cosmos/**/*",
+    "src/evm/**/*",
+    "src/generated/**/*",
+    "src/graphql/**/*",
+    "src/internal/**/*.ts",
+    "src/schema/**/*",
+    "src/sui/**/*",
+    "src/ucs03/**/*",
+    "src/utils/**/*"
+  ],
+  "srcLink": "https://github.com/unionlabs/union/tree/main/ts-sdk/src/",
+  "enforceVersion": true,
+  "enforceExamples": false,
+  "enforceDescriptions": false,
+  "examplesCompilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "module": "ES2022",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "paths": {
+      "@unionlabs/sdk": ["../ts-sdk/src/index.js"],
+      "@unionlabs/sdk/*": ["../ts-sdk/src/*.js"],
+      "@unionlabs/sdk-evm": ["../ts-sdk-evm/src/index.js"],
+      "@unionlabs/sdk-evm/*": ["../ts-sdk-evm/src/*.js"],
+      "@unionlabs/sdk-cosmos": ["../ts-sdk-cosmos/src/index.js"],
+      "@unionlabs/sdk-cosmos/*": ["../ts-sdk-cosmos/src/*.js"]
+    }
+  }
+}

@@ -1,15 +1,15 @@
-import { runPromiseExit } from "$lib/runtime.ts"
+import { runPromiseExit } from "$lib/runtime"
 
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
-import { approveTransfer } from "./approval.ts"
-import { switchChain } from "./chain.ts"
+import { approveTransfer } from "./approval"
+import { switchChain } from "./chain"
 import {
   ApprovalSubmitState,
   SwitchChainState,
   TransferSubmission,
   TransferSubmitState,
-} from "./state.ts"
-import { submitTransfer } from "./transactions.ts"
+} from "./state"
+import { submitTransfer } from "./transactions"
 
 export async function nextState(
   ts: TransferSubmission,

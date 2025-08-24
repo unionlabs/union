@@ -5,13 +5,13 @@ import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { runFork } from "$lib/runtime"
 import { FeeStore } from "$lib/stores/fee.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
-import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 import {
   CreateContextState,
   createContextState,
   type StateResult,
-} from "$lib/transfer/normal/services/filling.ts"
+} from "$lib/transfer/normal/services/filling"
 import {
   ApprovalStep,
   CheckReceiverStep,
@@ -20,11 +20,11 @@ import {
   Steps,
   SubmitStep,
 } from "$lib/transfer/normal/steps"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
 import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Array as Arr, Effect, Either, Fiber, FiberId, Option, Schema } from "effect"
+import { Array as Arr, Effect, Either, Equal, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { onMount, untrack } from "svelte"
 import { fly } from "svelte/transition"
@@ -178,7 +178,7 @@ $effect(() => {
         if (Option.isNone(walletaddr)) {
           return Option.some(false)
         }
-        return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
+        return Option.some(walletaddr.value.address === receiver.address)
       }),
       Option.match({
         onNone: () => Effect.void,
@@ -202,7 +202,6 @@ $effect(() => {
           const intent = context.intents[i]
 
           // TODO: refactor with Struct.evolve and Effect.all
-          const token = yield* Schema.decode(TokenRawDenom)(allowance.token)
           const requiredAmount = yield* Schema.decode(TokenRawAmountFromSelf)(
             allowance.requiredAmount,
           )
@@ -212,7 +211,7 @@ $effect(() => {
 
           steps.push(
             Steps.ApprovalRequired({
-              token,
+              token: allowance.token,
               requiredAmount,
               currentAllowance,
               intent,
@@ -221,15 +220,14 @@ $effect(() => {
         }
       }
 
-      if (Option.isSome(context.instruction)) {
-        const instruction = context.instruction.value
+      if (Option.isSome(context.request)) {
+        const instruction = context.request.value
 
         // Create steps for the batch instruction, not individual intents
         steps.push(
           Steps.SubmitInstruction({
             instruction,
             intent: context.intents[0],
-            funds: Option.isSome(context.funds) ? Option.some(context.funds.value) : Option.none(),
           }),
           Steps.WaitForIndex({ intent: context.intents[0] }),
         )
@@ -361,20 +359,30 @@ const currentStep = $derived(
 </Card>
 
 {#if showDetails}
-  {#if Option.isSome(transferErrors)}
-    <strong>Error</strong>
-    <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
-  {/if}
+  <div class="bg-zinc-900 p-2">
+    {#if Option.isSome(transferErrors)}
+      <strong>Error</strong>
+      <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
+    {/if}
 
-  {#key statusMessage}
-    <strong>{statusMessage}</strong>
-    <pre>{JSON.stringify(statusMessage, null, 2)}</pre>
-  {/key}
+    {#key transferData}
+      <strong>Transfer Data</strong>
+      <pre>
+{JSON.stringify({
+        quoteTokens: transferData.quoteTokens
+      }, null, 2)}</pre>
+    {/key}
 
-  {#if Option.isSome(transferSteps)}
-    <div class="mt-4">
-      <strong>Steps:</strong>
-      <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
-    </div>
-  {/if}
+    {#key statusMessage}
+      <strong>{statusMessage}</strong>
+      <pre>{JSON.stringify(statusMessage, null, 2)}</pre>
+    {/key}
+
+    {#if Option.isSome(transferSteps)}
+      <div class="mt-4">
+        <strong>Steps:</strong>
+        <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
+      </div>
+    {/if}
+  </div>
 {/if}

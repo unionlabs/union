@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["."],
+  "references": [
+    {
+      "path": "../tsconfig.src.json"
+    }
+  ],
+  "compilerOptions": {
+    "incremental": false,
+    "composite": false,
+    "noUnusedLocals": false,
+    "plugins": [
+      {
+        "name": "@effect/language-server",
+        "diagnostics": false
+      }
+    ]
+  }
+}

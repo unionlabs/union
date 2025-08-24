@@ -4,7 +4,7 @@ import Truncate from "$lib/components/ui/Truncate.svelte"
 import { flip } from "svelte/animate"
 import { quintOut } from "svelte/easing"
 import { fade, fly } from "svelte/transition"
-import { navigation } from "../Sidebar/navigation.ts"
+import { navigation } from "../Sidebar/navigation"
 
 const toTitleCase = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)

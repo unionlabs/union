@@ -1,13 +1,13 @@
-import { runPromiseExit } from "$lib/runtime.ts"
+import { runPromiseExit } from "$lib/runtime"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import { switchChainAptos } from "./chain.ts"
+import { switchChainAptos } from "./chain"
 import {
   SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
   TransferSubmitState,
-} from "./state.ts"
-import { submitTransfer, waitForTransferReceipt } from "./transactions-aptos.ts"
+} from "./state"
+import { submitTransfer, waitForTransferReceipt } from "./transactions-aptos"
 
 /**
  * This state machine is dedicated to Aptos transfers.

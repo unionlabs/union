@@ -1,18 +1,42 @@
 {
+  "name": "docs",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json && pnpm -r --parallel --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos run build",
+    "changeset-publish": "pnpm codemod && pnpm build && TEST_DIST= pnpm vitest && changeset publish",
+    "changeset-version": "changeset version && node scripts/version.mjs",
+    "check": "tsc -b tsconfig.json",
+    "check-recursive": "pnpm --recursive --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos exec tsc -b tsconfig.json",
+    "circular": "node scripts/circular.mjs",
+    "clean": "node scripts/clean.mjs",
+    "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm --filter @unionlabs/sdk-cosmos exec docgen && node scripts/docs.mjs",
+    "test": "vitest",
+    "test-types": "tstyche"
+  },
   "devDependencies": {
-    "@effect/language-service": "0.18.0",
+    "@changesets/cli": "^2.29.5",
+    "@cosmjs/proto-signing": "~0.33.1",
+    "@cosmjs/stargate": "~0.33.1",
+    "@effect/docgen": "^0.5.2",
+    "@effect/language-service": "0.23.5",
+    "@effect/typeclass": "^0.35.5",
     "@effect/vitest": "0.23.3",
+    "glob": "^11.0.3",
+    "madge": "^8.0.0",
+    "tstyche": "^4.3.0",
+    "tsx": "^4.19.4",
     "typescript": "~5.8.2",
-    "viem": "^2.26.2",
+    "viem": "^2.33.3",
     "vite": "~6.3.1",
     "vitest": "~3.1.2"
   },
   "pnpm": {
     "patchedDependencies": {
       "@cosmjs/amino@0.33.1": "patches/@cosmjs__amino@0.33.1.patch",
-      "@cosmjs/tendermint-rpc@0.33.1": "patches/@cosmjs__tendermint-rpc@0.33.1.patch"
+      "@cosmjs/tendermint-rpc@0.33.1": "patches/@cosmjs__tendermint-rpc@0.33.1.patch",
+      "@effect/docgen": "patches/@effect__docgen.patch",
+      "@cosmjs/stargate": "patches/@cosmjs__stargate.patch"
     },
     "onlyBuiltDependencies": ["bufferutil", "utf-8-validate", "esbuild", "keccak", "core-js"]
   }

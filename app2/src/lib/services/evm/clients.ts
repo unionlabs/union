@@ -1,6 +1,6 @@
-import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
+import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
 import type { Chain } from "@unionlabs/sdk/schema"
-import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details.ts"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details"
 import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
 import { Context, Data, Effect, Option } from "effect"
 import {
@@ -16,7 +16,7 @@ import {
   ConnectorClientError,
   CreatePublicClientError,
   CreateWalletClientError,
-} from "../transfer/errors.ts"
+} from "../transfer/errors"
 
 export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
   PublicSourceViemClient,

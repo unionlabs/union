@@ -1,0 +1,52 @@
+---
+import Code from "#/components/Code.astro"
+import { getFileContent } from "#/lib/node-utilities.js"
+import AnchorHeading from "@astrojs/starlight/components/AnchorHeading.astro"
+import type { ComponentProps } from "astro/types"
+import * as A from "effect/Array"
+import { pipe } from "effect/Function"
+
+interface Props {
+  samples: {
+    title: string
+    path: string
+  }[]
+  heading?: ComponentProps<typeof AnchorHeading>["level"] | undefined
+}
+
+const { samples, heading = 4 } = Astro.props
+
+const resolved = await Promise.all(pipe(
+  samples,
+  A.map(async ({ title, path }) =>
+    getFileContent({ filepath: path }).then((code) => ({ title, code }) as const)
+  ),
+))
+---
+
+{
+  resolved.map(({ title, code }) => (
+    <>
+      <details>
+        <summary class="flex">
+          <AnchorHeading
+            level={heading}
+            id={title}
+          >{title}</AnchorHeading>
+        </summary>
+        <Code
+          {code}
+          meta="twoslash"
+          lang={"ts"}
+          title={title}
+        />
+      </details>
+    </>
+  ))
+}
+
+<style is:global>
+.sl-heading-wrapper {
+display: inline-block;
+}
+</style>

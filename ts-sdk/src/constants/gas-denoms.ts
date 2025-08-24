@@ -53,11 +53,11 @@ export const OSMOSIS_METADATA: GasDenomMetadata = {
 } as const
 
 const UNION_METADATA: GasDenomMetadata = {
-  address: TokenRawDenom.make("0x6d756e6f"),
+  address: TokenRawDenom.make("0x6175"),
   name: "Union",
-  symbol: "UNO",
-  tickerSymbol: "UNO",
-  decimals: 6,
+  symbol: "U",
+  tickerSymbol: "U",
+  decimals: 18,
 } as const
 
 const XION_METADATA: GasDenomMetadata = {

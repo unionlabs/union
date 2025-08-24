@@ -1,10 +1,10 @@
-import { runPromiseExit } from "$lib/runtime.ts"
+import { runPromiseExit } from "$lib/runtime"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
-import { EvmSwitchChainError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { EvmSwitchChainError } from "$lib/services/transfer-ucs03-evm/errors"
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
 import type { SwitchChainErrorType } from "viem"
-import { switchChain } from "./chain.ts"
+import { switchChain } from "./chain"
 import {
   ApprovalReceiptState,
   ApprovalSubmitState,
@@ -12,8 +12,8 @@ import {
   TransferReceiptState,
   TransferSubmission,
   TransferSubmitState,
-} from "./state.ts"
-import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
+} from "./state"
+import { submitTransfer, waitForTransferReceipt } from "./transactions"
 
 export async function nextState(
   ts: TransferSubmission,

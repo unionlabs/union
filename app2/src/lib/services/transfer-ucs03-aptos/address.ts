@@ -1,8 +1,8 @@
-import { runSync } from "$lib/runtime.ts"
+import { runSync } from "$lib/runtime"
 import { bech32AddressToHex } from "@unionlabs/client"
 import { Effect, Option } from "effect"
 import { getAddress, isHex } from "viem" // Add isHex to imports
-import { AddressValidationError } from "./errors.ts"
+import { AddressValidationError } from "./errors"
 
 export const deriveReceiverEffect = (input: string) =>
   Effect.gen(function*() {

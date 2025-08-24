@@ -1,5 +1,5 @@
 <script lang="ts">
-import { bannerQuery } from "$lib/queries/banner.svelte.ts"
+import { bannerQuery } from "$lib/queries/banner.svelte"
 import { runFork$ } from "$lib/runtime"
 import { bannerStore } from "$lib/stores/banner.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"

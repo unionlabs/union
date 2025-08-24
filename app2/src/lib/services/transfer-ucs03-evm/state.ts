@@ -1,11 +1,11 @@
 import type {
   approveTransfer,
   waitForApprovalReceipt,
-} from "$lib/services/transfer-ucs03-evm/approval.ts"
+} from "$lib/services/transfer-ucs03-evm/approval"
 import { Data, type Effect, type Exit } from "effect"
 import type { Hash } from "viem"
-import type { switchChain } from "./chain.ts"
-import type { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
+import type { switchChain } from "./chain"
+import type { submitTransfer, waitForTransferReceipt } from "./transactions"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 

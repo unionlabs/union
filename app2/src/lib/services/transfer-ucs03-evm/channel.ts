@@ -1,11 +1,10 @@
-import { runSync } from "$lib/runtime"
-import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors"
 import type { UniversalChainId } from "@unionlabs/sdk/schema"
 import { Channel, type Channels } from "@unionlabs/sdk/schema"
-import { Array as A, Effect } from "effect"
+import { Effect } from "effect"
 
 // TODO(ehegnes): replace this with a schema transform
-export const getChannelInfoEffect = (
+export const getChannelInfo = (
   source_universal_chain_id: UniversalChainId,
   destination_universal_chain_id: UniversalChainId,
   channels: typeof Channels.Type,
@@ -47,20 +46,6 @@ export const getChannelInfoEffect = (
       destination_channel_id: channel.destination_channel_id,
       destination_client_id: channel.destination_client_id,
       destination_port_id: channel.destination_port_id,
+      tags: channel.tags,
     })
   })
-
-// TODO(ehegnes): replace this with a schema transform
-export const getChannelInfoSafe = (
-  source_universal_chain_id: UniversalChainId,
-  destination_universal_chain_id: UniversalChainId,
-  channels: typeof Channels.Type,
-): typeof Channel.Type | null => {
-  const result = runSync(
-    Effect.either(
-      getChannelInfoEffect(source_universal_chain_id, destination_universal_chain_id, channels),
-    ),
-  )
-
-  return result._tag === "Right" ? result.right : null
-}

@@ -1,3 +1,4 @@
+import { Ucs05 } from "@unionlabs/sdk"
 import type {
   AddressCanonicalBytes,
   Chain,
@@ -28,12 +29,20 @@ const getSortedTokens = (
   tokens: Tokens,
   chain: Chain,
   bs: BalancesStore,
-  address: AddressCanonicalBytes,
+  address: Ucs05.AnyDisplay,
 ): Array<SortedTokenInfo> =>
   tokens
     .map(token => {
-      const balance = bs.getBalance(chain.universal_chain_id, address, token.denom)
-      const error = bs.getError(chain.universal_chain_id, address, token.denom)
+      const balance = bs.getBalance(
+        chain.universal_chain_id,
+        Ucs05.anyDisplayToCanonical(address),
+        token.denom,
+      )
+      const error = bs.getError(
+        chain.universal_chain_id,
+        Ucs05.anyDisplayToCanonical(address),
+        token.denom,
+      )
       const tokenInfo = tokensStore
         .getData(chain.universal_chain_id)
         .pipe(
@@ -116,10 +125,10 @@ class SortedBalancesStore {
               Option.isSome(wallets.inputAddress)
                 ? wallets.inputAddress
                 : wallets.getAddressForChain(chain),
-              addr =>
+              (token) =>
                 tokensStore
                   .getData(chain.universal_chain_id)
-                  .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr))),
+                  .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, token))),
             ),
           }
         })
