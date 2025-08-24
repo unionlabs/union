@@ -119,7 +119,7 @@ export const createContextState = (
         Effect.mapBoth({
           onFailure: (cause) =>
             fail(cause.message, new GenericFlowError({ message: cause.message, cause })),
-          onSuccess: (context) => ok(CheckBalance({ context }), "something"),
+          onSuccess: (context) => ok(CheckBalance({ context }), "Checking balance..."),
         }),
         Effect.catchAllDefect((defect) => Effect.logError("[CreateContext] Defect:", defect)),
         Effect.merge,
