@@ -24,6 +24,10 @@ export class Channel extends Schema.Class<Channel>("Channel")({
   source_connection_id: ConnectionId,
   source_port_id: PortId,
   source_universal_chain_id: UniversalChainId,
+  tags: S.Array(S.Union(
+    S.Literal("canonical"),
+    S.Literal("tokenorder-v2"),
+  )),
 }) {}
 
 export const Channels = S.Array(Channel)

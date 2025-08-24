@@ -101,7 +101,7 @@ const program = Effect.gen(function*() {
     Effect.provideService(CosmWasmClientSource, { client: cosmWasmSourceClient }),
     Effect.provideService(CosmWasmClientDestination, { client: cosmWasmDestinationClient }),
     Effect.provideService(CosmosChannelDestination, {
-      ucs03address: "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc",
+      ucs03address: "osmo1336jj8ertl8Categh7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc",
       channelId: 1,
     }),
     Effect.provideService(CosmosChannelSource, {

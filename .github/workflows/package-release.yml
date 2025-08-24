@@ -1,0 +1,43 @@
+name: NPM Release
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ts-sdk/**'
+  workflow_dispatch:
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+permissions: {}
+
+jobs:
+  release:
+    if: github.repository_owner == 'unionlabs'
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - name: Fetch from Cache
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+        run: |
+          nix build .#ts-sdk
+      - name: Create Release Pull Request or Publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset-version
+          publish: pnpm changeset-publish

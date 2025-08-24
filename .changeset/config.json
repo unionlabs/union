@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": ["@changesets/changelog-github", { "repo": "unionlabs/union" }],
+  "commit": false,
+  "fixed": [],
+  "linked": [],
+  "access": "restricted",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": ["@unionlabs/client", "app2", "docs"],
+  "snapshot": {
+    "useCalculatedVersion": false,
+    "prereleaseTemplate": "{tag}-{commit}"
+  }
+}

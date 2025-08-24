@@ -112,23 +112,48 @@ export class Batch extends S.TaggedClass<Batch>()("Batch", {
   operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
 }) {}
 
-export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("FungibleAssetOrder", {
-  opcode: S.Literal(3).pipe(
-    S.optional,
-    S.withDefaults({
-      constructor: () => 3 as const,
-      decoding: () => 3 as const,
-    }),
-  ),
-  version: S.Literal(1).pipe(
-    S.optional,
-    S.withDefaults({
-      constructor: () => 1 as const,
-      decoding: () => 1 as const,
-    }),
-  ),
-  operand: Operand,
-}) {}
+export class FungibleAssetOrderV1
+  extends S.TaggedClass<FungibleAssetOrderV1>()("FungibleAssetOrder", {
+    opcode: S.Literal(3).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 3 as const,
+        decoding: () => 3 as const,
+      }),
+    ),
+    version: S.Literal(1).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 1 as const,
+        decoding: () => 1 as const,
+      }),
+    ),
+    operand: Operand,
+  })
+{}
+
+export class FungibleAssetOrderV2
+  extends S.TaggedClass<FungibleAssetOrderV2>()("FungibleAssetOrder", {
+    opcode: S.Literal(3).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 3 as const,
+        decoding: () => 3 as const,
+      }),
+    ),
+    version: S.Literal(2).pipe(
+      S.optional,
+      S.withDefaults({
+        constructor: () => 2 as const,
+        decoding: () => 2 as const,
+      }),
+    ),
+    operand: Operand,
+  })
+{}
+
+export const FungibleAssetOrder = S.Union(FungibleAssetOrderV1, FungibleAssetOrderV2)
+export type FungibleAssetOrder = typeof FungibleAssetOrder.Type
 
 export type Schema = Forward | Multiplex | Batch | FungibleAssetOrder
 

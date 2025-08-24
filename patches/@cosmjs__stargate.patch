@@ -1,0 +1,123 @@
+diff --git a/build/fee.js b/build/fee.js
+index 9f67849837d300b9187252d68fe0b6920ea6f37a..2560eebaaaec93f668ec64970a71f621cdc44510 100644
+--- a/build/fee.js
++++ b/build/fee.js
+@@ -1,8 +1,8 @@
+-"use strict";
+-Object.defineProperty(exports, "__esModule", { value: true });
+-exports.calculateFee = exports.GasPrice = void 0;
+-const math_1 = require("@cosmjs/math");
+-const proto_signing_1 = require("@cosmjs/proto-signing");
++"use strict"
++Object.defineProperty(exports, "__esModule", { value: true })
++exports.calculateFee = exports.GasPrice = void 0
++const math_1 = require("@cosmjs/math")
++const proto_signing_1 = require("@cosmjs/proto-signing")
+ /**
+  * Denom checker for the Cosmos SDK 0.42 denom pattern
+  * (https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/types/coin.go#L599-L601).
+@@ -10,58 +10,58 @@ const proto_signing_1 = require("@cosmjs/proto-signing");
+  * This is like a regexp but with helpful error messages.
+  */
+ function checkDenom(denom) {
+-    if (denom.length < 3 || denom.length > 128) {
+-        throw new Error("Denom must be between 3 and 128 characters");
+-    }
++  if (denom.length < 2 || denom.length > 128) {
++    throw new Error("Denom must be between 2 and 128 characters")
++  }
+ }
+ /**
+  * A gas price, i.e. the price of a single unit of gas. This is typically a fraction of
+  * the smallest fee token unit, such as 0.012utoken.
+  */
+ class GasPrice {
+-    constructor(amount, denom) {
+-        this.amount = amount;
+-        this.denom = denom;
+-    }
+-    /**
+-     * Parses a gas price formatted as `<amount><denom>`, e.g. `GasPrice.fromString("0.012utoken")`.
+-     *
+-     * The denom must match the Cosmos SDK 0.42 pattern (https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/types/coin.go#L599-L601).
+-     * See `GasPrice` in @cosmjs/stargate for a more generic matcher.
+-     *
+-     * Separators are not yet supported.
+-     */
+-    static fromString(gasPrice) {
+-        // Use Decimal.fromUserInput and checkDenom for detailed checks and helpful error messages
+-        const matchResult = gasPrice.match(/^([0-9.]+)([a-zA-Z][a-zA-Z0-9/:._-]*)$/);
+-        if (!matchResult) {
+-            throw new Error("Invalid gas price string");
+-        }
+-        const [_, amount, denom] = matchResult;
+-        checkDenom(denom);
+-        const fractionalDigits = 18;
+-        const decimalAmount = math_1.Decimal.fromUserInput(amount, fractionalDigits);
+-        return new GasPrice(decimalAmount, denom);
+-    }
+-    /**
+-     * Returns a string representation of this gas price, e.g. "0.025uatom".
+-     * This can be used as an input to `GasPrice.fromString`.
+-     */
+-    toString() {
+-        return this.amount.toString() + this.denom;
++  constructor(amount, denom) {
++    this.amount = amount
++    this.denom = denom
++  }
++  /**
++   * Parses a gas price formatted as `<amount><denom>`, e.g. `GasPrice.fromString("0.012utoken")`.
++   *
++   * The denom must match the Cosmos SDK 0.42 pattern (https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/types/coin.go#L599-L601).
++   * See `GasPrice` in @cosmjs/stargate for a more generic matcher.
++   *
++   * Separators are not yet supported.
++   */
++  static fromString(gasPrice) {
++    // Use Decimal.fromUserInput and checkDenom for detailed checks and helpful error messages
++    const matchResult = gasPrice.match(/^([0-9.]+)([a-zA-Z][a-zA-Z0-9/:._-]*)$/)
++    if (!matchResult) {
++      throw new Error("Invalid gas price string")
+     }
++    const [_, amount, denom] = matchResult
++    checkDenom(denom)
++    const fractionalDigits = 18
++    const decimalAmount = math_1.Decimal.fromUserInput(amount, fractionalDigits)
++    return new GasPrice(decimalAmount, denom)
++  }
++  /**
++   * Returns a string representation of this gas price, e.g. "0.025uatom".
++   * This can be used as an input to `GasPrice.fromString`.
++   */
++  toString() {
++    return this.amount.toString() + this.denom
++  }
+ }
+-exports.GasPrice = GasPrice;
++exports.GasPrice = GasPrice
+ function calculateFee(gasLimit, gasPrice) {
+-    const processedGasPrice = typeof gasPrice === "string" ? GasPrice.fromString(gasPrice) : gasPrice;
+-    const { denom, amount: gasPriceAmount } = processedGasPrice;
+-    // Note: Amount can exceed the safe integer range (https://github.com/cosmos/cosmjs/issues/1134),
+-    // which we handle by converting from Decimal to string without going through number.
+-    const amount = gasPriceAmount.multiply(new math_1.Uint53(gasLimit)).ceil().toString();
+-    return {
+-        amount: (0, proto_signing_1.coins)(amount, denom),
+-        gas: gasLimit.toString(),
+-    };
++  const processedGasPrice = typeof gasPrice === "string" ? GasPrice.fromString(gasPrice) : gasPrice
++  const { denom, amount: gasPriceAmount } = processedGasPrice
++  // Note: Amount can exceed the safe integer range (https://github.com/cosmos/cosmjs/issues/1134),
++  // which we handle by converting from Decimal to string without going through number.
++  const amount = gasPriceAmount.multiply(new math_1.Uint53(gasLimit)).ceil().toString()
++  return {
++    amount: (0, proto_signing_1.coins)(amount, denom),
++    gas: gasLimit.toString(),
++  }
+ }
+-exports.calculateFee = calculateFee;
+-//# sourceMappingURL=fee.js.map
+\ No newline at end of file
++exports.calculateFee = calculateFee
++// # sourceMappingURL=fee.js.map

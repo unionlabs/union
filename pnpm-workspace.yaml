@@ -1,8 +1,7 @@
 packages:
   - 'ts-sdk'
+  - 'ts-sdk-evm'
+  - 'ts-sdk-cosmos'
   - 'typescript-sdk'
   - 'app2'
-
-# Prevent dependencies from being hoisted
-neverHoist:
-  - "**/docs/**"
+  - 'docs'

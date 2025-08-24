@@ -1,0 +1,5 @@
+{
+  "$schema": "https://tstyche.org/schemas/config.json",
+  "checkSuppressedErrors": true,
+  "testFileMatch": ["*/dtslint/**/*.tst.*"]
+}

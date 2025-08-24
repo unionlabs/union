@@ -1,7 +1,30 @@
 import crc32 from "crc/crc32"
 import { Data, Effect, String as Str } from "effect"
 import { fromBytes, fromHex, isHex, toHex } from "viem"
-export { extractErrorDetails } from "./extract-error-details.js"
+
+import type { SchemaAST } from "effect"
+import { Schema } from "effect"
+
+/**
+ * @see https://effect.website/docs/schema/basic-usage/#simplifying-tagged-structs-with-taggedstruct
+ */
+export const TaggedStruct = <
+  Tag extends SchemaAST.LiteralValue,
+  Fields extends Schema.Struct.Fields,
+>(
+  tag: Tag,
+  fields: Fields,
+) =>
+  Schema.Struct({
+    _tag: Schema.Literal(tag).pipe(
+      Schema.optional,
+      Schema.withDefaults({
+        constructor: () => tag, // Apply _tag during instance construction
+        decoding: () => tag, // Apply _tag during decoding
+      }),
+    ),
+    ...fields,
+  })
 
 const CHKSUM_LEN = 4
 
@@ -44,4 +67,5 @@ export const verifySalt = (hex: `0x${string}`): Effect.Effect<boolean> =>
 
 export const ensureHex = <T extends string>(s: T) => (isHex(s) ? s : toHex(s))
 
+export { extractErrorDetails } from "./extract-error-details.js"
 export { operationNamesFromDocumentNode } from "./gql.js"

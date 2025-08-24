@@ -1,8 +1,6 @@
 import { Option } from "effect"
 import { ucs03abi } from "./ucs03.js"
 
-export * from "./ucs03.js"
-
 const packetComponentAbis = Option.fromNullable(
   ucs03abi.find(a => "name" in a && a.name === "ensureExported"),
 ).pipe(Option.map(a => a.inputs))
