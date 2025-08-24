@@ -255,6 +255,7 @@ function isBookmarked(address: Ucs05.AnyDisplay): boolean {
 }
 
 function useAddress(address: Ucs05.AnyDisplay, shouldBookmark = false) {
+  console.log("USE ADDRESS", address)
   // Update the transferData receiver
   transferData.raw.updateField("receiver", address.address)
 

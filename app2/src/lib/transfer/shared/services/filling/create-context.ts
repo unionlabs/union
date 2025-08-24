@@ -98,56 +98,69 @@ export const createContext = Effect.fn((
     )
     console.log({ encodedFeeBaseToken })
 
-    const feeQuoteToken = yield* maybeFeeQuoteToken.pipe(
-      Option.orElse(() =>
-        pipe(
-          tokensStore.getData(args.destinationChain.universal_chain_id),
-          Option.flatMap(
-            A.findFirst((token) =>
-              A.filter(token.wrapping, (x) =>
-                x.unwrapped_denom === encodedFeeBaseToken
-                && x.unwrapped_chain.universal_chain_id === args.sourceChain.universal_chain_id
-                && x.wrapped_chain.universal_chain_id === args.destinationChain.universal_chain_id)
-                .length
-                === 1
-            ),
+    const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+
+    const produceBatch = Effect.gen(function*() {
+      if (shouldIncludeFees) {
+        const feeQuoteToken = yield* maybeFeeQuoteToken.pipe(
+          Option.orElse(() =>
+            pipe(
+              tokensStore.getData(args.destinationChain.universal_chain_id),
+              Option.flatMap(
+                A.findFirst((token) =>
+                  A.filter(token.wrapping, (x) =>
+                    x.unwrapped_denom === encodedFeeBaseToken
+                    && x.unwrapped_chain.universal_chain_id === args.sourceChain.universal_chain_id
+                    && x.wrapped_chain.universal_chain_id
+                      === args.destinationChain.universal_chain_id)
+                    .length
+                    === 1
+                ),
+              ),
+              Option.map(x => x.denom),
+              Option.flatMap((raw) =>
+                S.decodeOption(Token.AnyFromEncoded(args.destinationChain.rpc_type))(raw)
+              ),
+            )
           ),
-          Option.map(x => x.denom),
-          Option.flatMap((raw) =>
-            S.decodeOption(Token.AnyFromEncoded(args.destinationChain.rpc_type))(raw)
-          ),
+          Option.orElse(() => {
+            if (args.baseToken.address === "au") {
+              return Option.some(args.quoteToken)
+            }
+            console.error("Could not determine fee quote token.")
+            return Option.none()
+          }),
         )
-      ),
-      Option.orElse(() => {
-        if (args.baseToken.address === "au") {
-          return Option.some(args.quoteToken)
-        }
-        return Option.none()
-      }),
-    )
 
-    console.log(" GOT FEE QUOTE TOKEN ", { feeQuoteToken })
+        console.log("Got fee quote token", { feeQuoteToken })
 
-    const feeOrder = yield* TokenOrder.make({
-      baseAmount: args.fee.baseAmount,
-      baseToken: args.fee.baseToken,
-      quoteToken: feeQuoteToken,
-      quoteAmount: args.fee.quoteAmount,
-      destination: args.destinationChain,
-      receiver: args.receiver,
-      sender: args.sender,
-      kind: "escrow",
-      source: args.sourceChain,
-      metadata: undefined,
-      version: args.version,
+        const feeOrder = yield* TokenOrder.make({
+          baseAmount: args.fee.baseAmount,
+          baseToken: args.fee.baseToken,
+          quoteToken: feeQuoteToken,
+          quoteAmount: args.fee.quoteAmount,
+          destination: args.destinationChain,
+          receiver: args.receiver,
+          sender: args.sender,
+          kind: "escrow",
+          source: args.sourceChain,
+          metadata: undefined,
+          version: args.version,
+        })
+
+        console.log("Produced fee order")
+
+        return Batch.make([sendOrder, feeOrder]).pipe(
+          Batch.optimize,
+        )
+      } else {
+        return sendOrder
+      }
     })
 
-    console.log(" PRODUCED FEE ORDER ")
+    const batch = yield* produceBatch
 
-    const unopBatch = Batch.make([sendOrder, feeOrder])
-    const batch = Batch.optimize(unopBatch)
-
-    console.log("[createContext]", { unopBatch, batch })
+    console.log("[createContext]", { batch })
 
     const request = ZkgmClientRequest.make({
       channelId: args.sourceChannelId,
@@ -183,6 +196,7 @@ export const createContext = Effect.fn((
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
   const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+  console.log("[createIntents]", { shouldChargeFees })
   const baseIntent = createBaseIntent(args, baseAmount)
 
   return Match.value(args.sourceChain.rpc_type).pipe(
@@ -254,11 +268,10 @@ const shouldChargeFees = (fee: FeeIntent, edition: string, sourceChain: Chain): 
   if (fee.baseAmount === 0n) {
     return false
   }
-  return true
-  // return Match.value(edition).pipe(
-  //   Match.when("btc", () => sourceChain.universal_chain_id === "babylon.bbn-1"),
-  //   Match.orElse(() => true),
-  // )
+  if (sourceChain.testnet) {
+    return true
+  }
+  return sourceChain.universal_chain_id === "babylon.bbn-1"
 }
 
 const normalizeToken = (token: string | `0x${string}`, rpcType: string): string => {
