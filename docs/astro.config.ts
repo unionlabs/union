@@ -354,17 +354,17 @@ export default defineConfig({
               badge: { text: "new", variant: "success" },
             },
             {
-              label: "Typescript SDK",
+              label: "TypeScript SDK",
               autogenerate: { directory: "/reference/@unionlabs/sdk" },
               badge: { text: "evolving", variant: "caution" },
             },
             {
-              label: "EVM SDK",
+              label: "TypeScript SDK (EVM)",
               autogenerate: { directory: "/reference/@unionlabs/sdk-evm" },
               badge: { text: "evolving", variant: "caution" },
             },
             {
-              label: "Cosmos SDK",
+              label: "TypeScript SDK (Cosmos)",
               autogenerate: { directory: "/reference/@unionlabs/sdk-cosmos" },
               badge: { text: "evolving", variant: "caution" },
             },
