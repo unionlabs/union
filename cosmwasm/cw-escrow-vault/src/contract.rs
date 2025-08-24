@@ -10,11 +10,11 @@ use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes, U256};
+use unionlabs::primitives::{encoding::HexPrefixed, Bytes};
 
 use crate::{
     error::Error,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    msg::{ExecuteMsg, FungibleLaneConfig, InstantiateMsg, QueryMsg},
     state::{Admin, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
 };
 
@@ -88,11 +88,7 @@ pub fn execute(
                 .query_wasm_contract_info(escrowed_denom.clone())
                 .is_ok();
             deps.storage.write::<FungibleCounterparty>(
-                &(
-                    U256::from_be_bytes(path.to_be_bytes()),
-                    channel_id,
-                    base_token,
-                ),
+                &(path, channel_id, base_token),
                 &FungibleLane {
                     counterparty_beneficiary,
                     escrowed_denom,
@@ -124,7 +120,7 @@ pub fn execute(
             let fungible_lane = deps
                 .storage
                 .maybe_read::<FungibleCounterparty>(&(
-                    U256::from_be_bytes(path.to_be_bytes()),
+                    path,
                     packet.destination_channel_id,
                     order.base_token,
                 ))?
@@ -202,9 +198,41 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::IsSolver => to_json_binary(&()),
         QueryMsg::AllowMarketMakers => to_json_binary(&true),
+        QueryMsg::GetFungibleCounterparty {
+            path,
+            channel_id,
+            base_token,
+        } => deps
+            .storage
+            .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))
+            .and_then(|data| to_json_binary(&data)),
+        QueryMsg::GetAllFungibleCounterparties => deps
+            .storage
+            .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
+            .map(|res| {
+                res.map(
+                    |(
+                        (path, channel_id, base_token),
+                        FungibleLane {
+                            counterparty_beneficiary,
+                            escrowed_denom,
+                            is_cw20,
+                        },
+                    )| FungibleLaneConfig {
+                        path,
+                        channel_id,
+                        base_token,
+                        counterparty_beneficiary,
+                        escrowed_denom,
+                        is_cw20,
+                    },
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .and_then(|data| to_json_binary(&data)),
     }
 }

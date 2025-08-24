@@ -19,7 +19,7 @@ bincode         = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3"] }
 cw20            = "2.0.0"
-depolama        = { workspace = true }
+depolama        = { workspace = true, features = ["iterator"] }
 embed-commit    = { workspace = true }
 frissitheto     = { workspace = true }
 ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "bincode"] }
