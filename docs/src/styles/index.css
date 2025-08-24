@@ -20,10 +20,6 @@ figure > ::-webkit-scrollbar {
   height: 8px;
 }
 
-figure:not(.has-title) > pre:nth-child(2) {
-  /* border-radius: 8px !important; */
-}
-
 figcaption > span .title {
   padding: 10px !important;
 }
@@ -45,13 +41,6 @@ h1#_top {
 .hero {
   grid-template-columns: auto;
   margin: auto;
-}
-
-*,
-:before,
-:after {
-  border-width: 0;
-  box-sizing: border-box;
 }
 
 html {

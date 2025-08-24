@@ -1,16 +1,9 @@
+import { defineEcConfig } from "@astrojs/starlight/expressive-code"
 import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
 import ecTwoSlash from "expressive-code-twoslash"
 
-/**
- * @typedef {ReturnType<typeof import('@expressive-code/plugin-line-numbers')['pluginLineNumbers']>} ECPlugin
- * @typedef {import('@astrojs/starlight/expressive-code').StarlightExpressiveCodeOptions} EC
- * @typedef {EC & { plugins?: any; defaultProps: EC["defaultProps"] & { showLineNumbers?: boolean } }} ModifiedEC
- */
-
-/** @type {ModifiedEC} */
-// @ts-expect-error
-export default {
+export default defineEcConfig({
   logger: true,
   frames: {
     extractFileNameFromCode: true,
@@ -31,4 +24,4 @@ export default {
     pluginLineNumbers(),
     pluginCollapsibleSections(),
   ],
-}
+})
