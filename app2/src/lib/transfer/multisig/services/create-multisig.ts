@@ -3,6 +3,7 @@ import type { TransferContext } from "$lib/transfer/shared/services/filling/crea
 import { isValidBech32ContractAddress } from "$lib/utils/index"
 import { Token, TokenOrder, Ucs03, ZkgmInstruction } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { tokenMetaOverride } from "@unionlabs/sdk/Constants"
 import { Tx } from "@unionlabs/sdk/schema/tx"
 import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout"
@@ -90,15 +91,7 @@ export const createMultisigMessage = (context: TransferContext) =>
                             Cosmos.readCw20TokenInfo(v1.baseToken.address as unknown as any),
                             Effect.either,
                             Effect.map(
-                              E.getOrElse(() => ({
-                                symbol: v1.baseToken.address === "uxion"
-                                  ? "XION"
-                                  : v1.baseToken.address,
-                                name: v1.baseToken.address === "uxion"
-                                  ? "xion"
-                                  : v1.baseToken.address,
-                                decimals: v1.baseToken.address === "uxion" ? 0 : 6,
-                              })),
+                              E.getOrElse(() => tokenMetaOverride(v1.baseToken.address)),
                             ),
                             Effect.provide(publicClient),
                           )

@@ -1,5 +1,6 @@
 import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate"
 import { Token } from "@unionlabs/sdk"
+import { tokenMetaOverride } from "@unionlabs/sdk/Constants"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
@@ -63,13 +64,7 @@ export const fromSigningClient = (
                     const meta = yield* pipe(
                       Cosmos.readCw20TokenInfo(v1.baseToken.address as unknown as any),
                       Effect.either,
-                      Effect.map(
-                        E.getOrElse(() => ({
-                          symbol: v1.baseToken.address === "uxion" ? "XION" : v1.baseToken.address,
-                          name: v1.baseToken.address === "uxion" ? "xion" : v1.baseToken.address,
-                          decimals: v1.baseToken.address === "uxion" ? 0 : 6,
-                        })),
-                      ),
+                      Effect.map(E.getOrElse(() => tokenMetaOverride(v1.baseToken.address))),
                       Effect.provideService(Cosmos.Client, client),
                     )
 

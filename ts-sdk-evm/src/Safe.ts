@@ -5,8 +5,9 @@
  */
 
 import SafeAppsSDK, { type Opts } from "@safe-global/safe-apps-sdk"
+import { foreverSchedule } from "@unionlabs/sdk/Constants"
 import { Hex } from "@unionlabs/sdk/schema/hex"
-import { Data, Effect, Option as O, pipe, Schedule } from "effect"
+import { Data, Effect, Option as O, pipe } from "effect"
 
 /**
  * @category errors
@@ -61,7 +62,7 @@ export class Safe extends Effect.Service<Safe>()("@unionlabs/sdk-evm/Safe", {
             opts,
             hash,
           }),
-          Effect.retry(Schedule.addDelay(Schedule.forever, () => "500 millis")),
+          Effect.retry(foreverSchedule),
         )
       ),
     } as const

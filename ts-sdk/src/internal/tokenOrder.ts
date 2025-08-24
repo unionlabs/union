@@ -1,4 +1,5 @@
 import { Effect, Inspectable, Match, Predicate, Schema } from "effect"
+import * as B from "effect/Boolean"
 import { dual, pipe } from "effect/Function"
 import { ParseError } from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
@@ -445,7 +446,10 @@ export const encodeV1 = (self: TokenOrder.TokenOrder) =>
         meta.symbol,
         meta.name,
         meta.decimals, // decimals
-        S.is(TokenOrder.Unescrow)(self.kind) ? BigInt(meta.sourceChannelId) : 0n, // path
+        B.match(self.kind == "unescrow", {
+          onTrue: () => BigInt(meta.sourceChannelId),
+          onFalse: () => 0n,
+        }), // path
         Utils.ensureHex(self.quoteToken.address),
         self.quoteAmount,
       ],

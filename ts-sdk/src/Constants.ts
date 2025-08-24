@@ -3,6 +3,7 @@
  *
  * @since 2.0.0
  */
+import { Match, Schedule } from "effect"
 import { UniversalChainId } from "./schema/chain.js"
 import { TokenRawDenom } from "./schema/token.js"
 
@@ -162,3 +163,38 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // BSC
   [UniversalChainId.make("bsc.97")]: BNB_METADATA,
 }
+
+/**
+ * @category schedules
+ * @since 2.0.0
+ */
+export const foreverSchedule = Schedule.addDelay(Schedule.forever, () => "500 millis")
+
+/**
+ * @category schedules
+ * @since 2.0.0
+ */
+export const rpcSchedule = Schedule.compose(
+  Schedule.fixed("2 seconds"),
+  Schedule.recurUpTo("10 seconds"),
+)
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const tokenMetaOverride = Match.type<string>().pipe(
+  Match.when("uxion", () =>
+    ({
+      symbol: "XION",
+      name: "xion",
+      decimals: 0,
+    }) as const),
+  Match.orElse((address) =>
+    ({
+      symbol: address,
+      name: address,
+      decimals: 6,
+    }) as const
+  ),
+)
