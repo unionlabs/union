@@ -25,6 +25,9 @@
       "sei.1328": {
         "environment": "production"
       },
+      "union.union-testnet-10": {
+        "environment": "staging"
+      },
       "xion.xion-testnet-2": {
         "environment": "production"
       }
