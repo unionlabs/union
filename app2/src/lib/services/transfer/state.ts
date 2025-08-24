@@ -1,7 +1,7 @@
 import { Data, type Effect, type Exit } from "effect"
 import type { Hash } from "viem"
-import type { switchChain } from "./chain.ts"
-import type { submitTransfer, waitForReceipt } from "./transactions.ts"
+import type { switchChain } from "./chain"
+import type { submitTransfer, waitForReceipt } from "./transactions"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 

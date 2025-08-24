@@ -2,7 +2,7 @@
 import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { cn } from "$lib/utils/index.js"
 import { type Chain, type Token, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { Option } from "effect"

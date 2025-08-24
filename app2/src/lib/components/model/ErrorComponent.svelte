@@ -26,6 +26,9 @@ import type { Base64EncodeError } from "$lib/utils/base64"
 import type { FromHexError } from "$lib/utils/hex"
 import { safeStringifyJSON } from "$lib/utils/json"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
+import type { ZkgmClientError } from "@unionlabs/sdk"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { Evm, Safe } from "@unionlabs/sdk-evm"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   CreateViemPublicClientError,
@@ -37,7 +40,7 @@ import type {
   NoRpcError,
   NotACosmosChainError,
 } from "@unionlabs/sdk/schema"
-import { CryptoError, extractErrorDetails } from "@unionlabs/sdk/utils"
+import { CryptoError, extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { Effect, flow, Match, pipe } from "effect"
 import type { NoSuchElementException, TimeoutException, UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"
@@ -55,12 +58,18 @@ interface Props {
     | Base64EncodeError
     | ConnectorClientError
     | CosmWasmError
+    | Safe.SafeError
     | CosmosAddressEncodeError
     | CosmosWalletNotConnectedError
     | CosmosWalletNotOnWindowError
     | CreatePublicClientError
     | CreateViemPublicClientError
     | CreateViemWalletClientError
+    | Cosmos.ClientError
+    | Evm.CreatePublicClientError
+    | Evm.CreateWalletClientError
+    | ZkgmClientError.RequestError
+    | ZkgmClientError.ResponseError
     | CreateWalletClientError
     | CryptoError
     | ExecuteContractError

@@ -1,4 +1,5 @@
 import { wallets } from "$lib/stores/wallets.svelte"
+import { Ucs05 } from "@unionlabs/sdk"
 import { AddressEvmCanonical } from "@unionlabs/sdk/schema"
 import {
   connect as _connect,
@@ -11,11 +12,12 @@ import {
   watchAccount,
 } from "@wagmi/core"
 import { Effect, Option } from "effect"
+import * as S from "effect/Schema"
 import type { Hex } from "viem"
 
-import { runSync } from "$lib/runtime.ts"
+import { runSync } from "$lib/runtime"
 import { mainnet } from "@wagmi/core/chains"
-import { type ConfiguredChainId, getWagmiConfig } from "./wagmi-config.svelte.ts"
+import { type ConfiguredChainId, getWagmiConfig } from "./wagmi-config.svelte"
 
 export type Wallet = GetAccountReturnType
 export type ConnectorType = "injected" | "walletConnect"
@@ -186,11 +188,10 @@ class SepoliaStore {
     }
     this.address = account.address
     if (account.address) {
-      const evmAddressFromHex = (hexAddress: Hex) => {
-        const normalized = hexAddress.slice(2).toLowerCase()
-        return AddressEvmCanonical.make(`0x${normalized}`)
-      }
-      wallets.evmAddress = Option.some(evmAddressFromHex(account.address as `0x${string}`))
+      wallets.evmAddress = S.decodeOption(Ucs05.EvmDisplay)({
+        _tag: "EvmDisplay",
+        address: account.address,
+      })
     } else {
       wallets.evmAddress = Option.none()
     }

@@ -2,7 +2,7 @@
 import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
 import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import type { CheckMessage } from "$lib/transfer/multisig/steps/steps.ts"
+import type { CheckMessage } from "$lib/transfer/multisig/steps/steps"
 import { Option } from "effect"
 
 type Props = {
@@ -41,7 +41,7 @@ const exportData = () => {
     {#if step.context?.message && Option.isSome(step.context.message)}
       {@const parsedMessage = JSON.parse(step.context.message.value)}
       <pre class="text-xs rounded whitespace-pre-wrap break-all overflow-x-auto">
-            {JSON.stringify(parsedMessage, null, 2)}
+{JSON.stringify(parsedMessage, null, 2)}
           </pre>
     {:else}
       <p class="text-zinc-300">No error info available.</p>

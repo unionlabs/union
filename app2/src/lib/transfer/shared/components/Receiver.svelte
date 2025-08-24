@@ -9,13 +9,16 @@ import SharpListRemoveIcon from "$lib/components/icons/SharpListRemoveIcon.svelt
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import { getDerivedReceiverSafe } from "$lib/services/shared"
-import { uiStore } from "$lib/stores/ui.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { clickOutside } from "$lib/utils/actions.ts"
+import * as AppRuntime from "$lib/runtime"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
+import { clickOutside } from "$lib/utils/actions"
+import { Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
-import { Array as A, Option } from "effect"
+import { Array as A, Effect, Option, pipe } from "effect"
+import * as S from "effect/Schema"
+
 import { onDestroy, onMount } from "svelte"
 import { crossfade, fade, fly } from "svelte/transition"
 
@@ -53,6 +56,10 @@ function closeModal() {
   close()
 }
 
+const deriveAddress = (a: string): Ucs05.AnyDisplay => {
+  return AppRuntime.runSync(S.decode(Ucs05.AnyDisplayFromString)(a))
+}
+
 function goBack() {
   if (currentView === "main") {
     closeModal()
@@ -82,8 +89,8 @@ $effect(() => {
     if (Option.isSome(walletAddress)) {
       // wallet connected - auto-fill receiver if empty
       if (!transferData.raw.receiver) {
-        transferData.raw.updateField("receiver", walletAddress.value)
-        autoFilledValue = walletAddress.value
+        transferData.raw.updateField("receiver", walletAddress.value.address)
+        autoFilledValue = walletAddress.value.address
       }
     } else {
       // no wallet connected - only clear if receiver matches what we auto-filled
@@ -102,8 +109,8 @@ let manualAddress = $state("")
 let showClearConfirm = $state(false)
 let bookmarkOnAdd = $state(false)
 
-let recentAddresses: Record<string, Array<AddressCanonicalBytes>> = $state({})
-let bookmarkedAddresses: Record<string, Array<AddressCanonicalBytes>> = $state({})
+let recentAddresses: Record<string, Array<`0x${string}` | `${string}1${string}`>> = $state({})
+let bookmarkedAddresses: Record<string, Array<`0x${string}` | `${string}1${string}`>> = $state({})
 
 // Create crossfade transition
 const [send, receive] = crossfade({
@@ -143,7 +150,7 @@ onDestroy(() => {
   document.removeEventListener("keydown", handleKeydown)
 })
 
-function saveAddress(address: AddressCanonicalBytes, isBookmarked = false) {
+function saveAddress(address: Ucs05.AnyDisplay, isBookmarked = false) {
   if (!destinationChainId) {
     return
   }
@@ -154,13 +161,13 @@ function saveAddress(address: AddressCanonicalBytes, isBookmarked = false) {
   }
 
   // Remove if already exists (to move to top)
-  const existingIndex = recentAddresses[destinationChainId].indexOf(address)
+  const existingIndex = recentAddresses[destinationChainId].indexOf(address.address)
   if (existingIndex > -1) {
     recentAddresses[destinationChainId].splice(existingIndex, 1)
   }
 
   // Add to the beginning
-  recentAddresses[destinationChainId].unshift(address)
+  recentAddresses[destinationChainId].unshift(address.address)
 
   // Keep only the last 5 addresses
   if (recentAddresses[destinationChainId].length > 5) {
@@ -176,14 +183,14 @@ function saveAddress(address: AddressCanonicalBytes, isBookmarked = false) {
       bookmarkedAddresses[destinationChainId] = []
     }
 
-    if (!bookmarkedAddresses[destinationChainId].includes(address)) {
-      bookmarkedAddresses[destinationChainId].push(address)
+    if (!bookmarkedAddresses[destinationChainId].includes(address.address)) {
+      bookmarkedAddresses[destinationChainId].push(address.address)
       localStorage.setItem("bookmarkedAddresses", JSON.stringify(bookmarkedAddresses))
     }
   }
 }
 
-function toggleBookmark(address: AddressCanonicalBytes) {
+function toggleBookmark(address: Ucs05.AnyDisplay) {
   if (!destinationChainId) {
     return
   }
@@ -192,31 +199,31 @@ function toggleBookmark(address: AddressCanonicalBytes) {
     bookmarkedAddresses[destinationChainId] = []
   }
 
-  const index = bookmarkedAddresses[destinationChainId].indexOf(address)
+  const index = bookmarkedAddresses[destinationChainId].indexOf(address.address)
   if (index > -1) {
     // Remove from bookmarks
     bookmarkedAddresses[destinationChainId].splice(index, 1)
   } else {
     // Add to bookmarks
-    bookmarkedAddresses[destinationChainId].push(address)
+    bookmarkedAddresses[destinationChainId].push(address.address)
   }
 
   localStorage.setItem("bookmarkedAddresses", JSON.stringify(bookmarkedAddresses))
 }
 
-function removeAddress(address: AddressCanonicalBytes, type: "recent" | "bookmarked") {
+function removeAddress(address: Ucs05.AnyDisplay, type: "recent" | "bookmarked") {
   if (!destinationChainId) {
     return
   }
 
   if (type === "recent" && recentAddresses[destinationChainId]) {
-    const index = recentAddresses[destinationChainId].indexOf(address)
+    const index = recentAddresses[destinationChainId].indexOf(address.address)
     if (index > -1) {
       recentAddresses[destinationChainId].splice(index, 1)
       localStorage.setItem("recentAddresses", JSON.stringify(recentAddresses))
     }
   } else if (type === "bookmarked" && bookmarkedAddresses[destinationChainId]) {
-    const index = bookmarkedAddresses[destinationChainId].indexOf(address)
+    const index = bookmarkedAddresses[destinationChainId].indexOf(address.address)
     if (index > -1) {
       bookmarkedAddresses[destinationChainId].splice(index, 1)
       localStorage.setItem("bookmarkedAddresses", JSON.stringify(bookmarkedAddresses))
@@ -240,16 +247,16 @@ function clearAddresses(type: "recent" | "bookmarked") {
   showClearConfirm = false
 }
 
-function isBookmarked(address: AddressCanonicalBytes): boolean {
+function isBookmarked(address: Ucs05.AnyDisplay): boolean {
   if (!destinationChainId) {
     return false
   }
-  return bookmarkedAddresses[destinationChainId]?.includes(address)
+  return bookmarkedAddresses[destinationChainId]?.includes(address.address)
 }
 
-function useAddress(address: AddressCanonicalBytes, shouldBookmark = false) {
+function useAddress(address: Ucs05.AnyDisplay, shouldBookmark = false) {
   // Update the transferData receiver
-  transferData.raw.updateField("receiver", address)
+  transferData.raw.updateField("receiver", address.address)
 
   // Always save to recent addresses
   if (shouldBookmark || bookmarkOnAdd) {
@@ -258,8 +265,8 @@ function useAddress(address: AddressCanonicalBytes, shouldBookmark = false) {
       bookmarkedAddresses[destinationChainId] = []
     }
 
-    if (destinationChainId && !bookmarkedAddresses[destinationChainId].includes(address)) {
-      bookmarkedAddresses[destinationChainId].push(address)
+    if (destinationChainId && !bookmarkedAddresses[destinationChainId].includes(address.address)) {
+      bookmarkedAddresses[destinationChainId].push(address.address)
       localStorage.setItem("bookmarkedAddresses", JSON.stringify(bookmarkedAddresses))
     }
   }
@@ -285,10 +292,16 @@ function useConnectedWallet() {
 function submitManualAddress() {
   // XXX: add validation to secure types
   if (manualAddress.trim()) {
-    const derivedReceiverAddr = getDerivedReceiverSafe(manualAddress)
-    const derived = Option.getOrNull(derivedReceiverAddr)
-    manualAddress = derived ?? manualAddress
-    useAddress(manualAddress.trim() as unknown as any, bookmarkOnAdd)
+    const addressToUse = manualAddress.trim()
+
+    const derivedReceiverAddr = AppRuntime.runSync(pipe(
+      S.decode(Ucs05.AnyDisplayFromString)(addressToUse),
+      Effect.option,
+    ))
+
+    if (Option.isSome(derivedReceiverAddr)) {
+      useAddress(derivedReceiverAddr.value, bookmarkOnAdd)
+    }
   }
 }
 
@@ -540,38 +553,41 @@ function hasBookmarks() {
             {#if destinationChain && destinationChainId
             && recentAddresses[destinationChainId]?.length > 0}
               <div class="space-y-2">
-                {#each recentAddresses[destinationChainId] as address}
-                  <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded">
-                    <button
-                      onclick={() => useAddress(address)}
-                      class="text-left flex-grow truncate text-zinc-200 hover:text-white text-sm cursor-pointer"
-                    >
-                      <AddressComponent
-                        address={address}
-                        chain={destinationChain}
-                      />
-                    </button>
-                    <div class="flex items-center ml-2">
+                {#each recentAddresses[destinationChainId] as _address}
+                  {@const address = deriveAddress(_address)}
+                  {#if address}
+                    <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded">
                       <button
-                        onclick={() => toggleBookmark(address)}
-                        class="cursor-pointer p-1"
-                        aria-label={isBookmarked(address) ? "Remove bookmark" : "Add bookmark"}
+                        onclick={() => useAddress(address)}
+                        class="text-left flex-grow truncate text-zinc-200 hover:text-white text-sm cursor-pointer"
                       >
-                        {#if isBookmarked(address)}
-                          <FilledBookmarkIcon />
-                        {:else}
-                          <OutlinedBookmarkIcon />
-                        {/if}
+                        <AddressComponent
+                          address={address}
+                          chain={destinationChain}
+                        />
                       </button>
-                      <button
-                        onclick={() => removeAddress(address, "recent")}
-                        class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
-                        aria-label="Remove from recent"
-                      >
-                        <SharpCancelIcon />
-                      </button>
+                      <div class="flex items-center ml-2">
+                        <button
+                          onclick={() => toggleBookmark(address)}
+                          class="cursor-pointer p-1"
+                          aria-label={isBookmarked(address) ? "Remove bookmark" : "Add bookmark"}
+                        >
+                          {#if isBookmarked(address)}
+                            <FilledBookmarkIcon />
+                          {:else}
+                            <OutlinedBookmarkIcon />
+                          {/if}
+                        </button>
+                        <button
+                          onclick={() => removeAddress(address, "recent")}
+                          class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
+                          aria-label="Remove from recent"
+                        >
+                          <SharpCancelIcon />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  {/if}
                 {/each}
               </div>
             {:else}
@@ -589,31 +605,34 @@ function hasBookmarks() {
           >
             {#if destinationChainId && bookmarkedAddresses[destinationChainId]?.length > 0}
               <div class="space-y-2">
-                {#each bookmarkedAddresses[destinationChainId] as address}
-                  <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors rounded cursor-pointer">
-                    <button
-                      onclick={() => useAddress(address)}
-                      class="text-left flex-grow truncate text-zinc-200 hover:text-white cursor-pointer"
-                    >
-                      {address}
-                    </button>
-                    <div class="flex items-center ml-2">
+                {#each bookmarkedAddresses[destinationChainId] as _address}
+                  {@const address = deriveAddress(_address)}
+                  {#if address}
+                    <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors rounded cursor-pointer">
                       <button
-                        onclick={() => toggleBookmark(address)}
-                        class="cursor-pointer p-1"
-                        aria-label="Remove bookmark"
+                        onclick={() => useAddress(address)}
+                        class="text-left flex-grow truncate text-zinc-200 hover:text-white cursor-pointer"
                       >
-                        <FilledBookmarkIcon />
+                        {address}
                       </button>
-                      <button
-                        onclick={() => removeAddress(address, "bookmarked")}
-                        class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
-                        aria-label="Remove from bookmarks"
-                      >
-                        <SharpCancelIcon />
-                      </button>
+                      <div class="flex items-center ml-2">
+                        <button
+                          onclick={() => toggleBookmark(address)}
+                          class="cursor-pointer p-1"
+                          aria-label="Remove bookmark"
+                        >
+                          <FilledBookmarkIcon />
+                        </button>
+                        <button
+                          onclick={() => removeAddress(address, "bookmarked")}
+                          class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
+                          aria-label="Remove from bookmarks"
+                        >
+                          <SharpCancelIcon />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  {/if}
                 {/each}
               </div>
             {:else}

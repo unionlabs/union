@@ -110,6 +110,7 @@ export const fetchCosmosBalance = ({
   walletAddress: AddressCosmosCanonical
 }) =>
   Effect.gen(function*() {
+    console.log("[fetchCosmosBalance]", { walletAddress })
     const rpcUrl = yield* chain.requireRpcUrlAsUrl("rest")
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const decodedDenom = yield* fromHexString(tokenAddress)

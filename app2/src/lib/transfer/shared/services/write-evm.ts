@@ -3,9 +3,9 @@ import {
   switchChain,
   WaitForTransactionReceiptError,
 } from "$lib/services/transfer-ucs03-evm"
-import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
+import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash"
 import type { HasKey } from "$lib/types"
-import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import {
   ViemPublicClient,
   waitForTransactionReceipt,

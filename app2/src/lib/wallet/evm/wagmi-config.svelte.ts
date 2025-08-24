@@ -1,4 +1,4 @@
-import { uiStore } from "$lib/stores/ui.svelte.ts"
+import { uiStore } from "$lib/stores/ui.svelte"
 import type { Edition } from "$lib/themes"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { coinbaseWallet, injected, metaMask, safe, walletConnect } from "@wagmi/connectors"

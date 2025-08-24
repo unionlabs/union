@@ -1,8 +1,8 @@
-import { getCosmosWalletClient } from "$lib/services/cosmos/clients.ts"
-import type { OfflineSigner } from "$lib/services/cosmos/types.ts"
-import { OfflineSignerError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
+import { getCosmosWalletClient } from "$lib/services/cosmos/clients"
+import type { OfflineSigner } from "$lib/services/cosmos/types"
+import { OfflineSignerError } from "$lib/services/transfer-ucs03-cosmos/errors"
 import type { Chain } from "@unionlabs/sdk/schema"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { Effect } from "effect"
 
 export const getCosmosOfflineSigner = (chain: Chain) =>

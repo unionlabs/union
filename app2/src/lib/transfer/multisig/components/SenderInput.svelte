@@ -31,7 +31,6 @@ const validateAddress = (address: string) => {
       onRight: encoded => {
         messages = A.empty()
         transferData.raw.updateField("sender", address)
-        // XXX: improve schema transforms to be partially applicative
         wallets.addInputAddress(encoded as AddressCosmosCanonical)
       },
     }),

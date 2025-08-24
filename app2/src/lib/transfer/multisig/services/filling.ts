@@ -1,24 +1,27 @@
 import type { FeeIntent } from "$lib/stores/fee.svelte"
-import { createMultisigMessage } from "$lib/transfer/multisig/services/create-multisig.ts"
-import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { validateTransfer } from "$lib/transfer/shared/data/validation.ts"
-import { type ContextFlowError, OrderCreationError } from "$lib/transfer/shared/errors"
-import { checkAllowances } from "$lib/transfer/shared/services/filling/check-allowance.ts"
+import { createMultisigMessage } from "$lib/transfer/multisig/services/create-multisig"
+import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
+import { validateTransfer } from "$lib/transfer/shared/data/validation"
+import {
+  type ContextFlowError,
+  GenericFlowError,
+  OrderCreationError,
+} from "$lib/transfer/shared/errors"
+import { checkAllowances } from "$lib/transfer/shared/services/filling/check-allowance"
 import {
   type BalanceCheckResult,
   checkBalanceForIntent,
-} from "$lib/transfer/shared/services/filling/check-balance.ts"
+} from "$lib/transfer/shared/services/filling/check-balance"
 import {
   FillingState,
   getFillingState,
   type TransferArgs,
-} from "$lib/transfer/shared/services/filling/check-filling.ts"
+} from "$lib/transfer/shared/services/filling/check-filling"
 import {
   createContext,
   type TransferContext,
-} from "$lib/transfer/shared/services/filling/create-context.ts"
-import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
-import { Data, Effect, Either as E, Match, Option } from "effect"
+} from "$lib/transfer/shared/services/filling/create-context"
+import { Data, Effect, Either as E, Match, Option, pipe } from "effect"
 
 export type StateResult = {
   nextState: Option.Option<CreateContextState>
@@ -36,9 +39,6 @@ export type CreateContextState = Data.TaggedEnum<{
     context: TransferContext
   }
   CheckAllowance: {
-    context: TransferContext
-  }
-  CreateOrders: {
     context: TransferContext
   }
   CheckReceiver: {
@@ -59,7 +59,6 @@ const {
   CreateContext,
   CheckBalance,
   CheckAllowance,
-  CreateOrders,
   CheckReceiver,
   CreateMessage,
   CreateSteps,
@@ -110,27 +109,28 @@ export const createContextState = (
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),
+        Generic: ({ message }) => Effect.succeed(ok(Empty(), message ?? "Unknown error.")),
       })
     },
 
     Validation: ({ args }) => {
-      const validation = validateTransfer(args)
-      if (validation._tag !== "Success") {
-        return Effect.succeed(fail("Validation failed"))
-      }
+      // const validation = validateTransfer(args)
+      // if (validation._tag !== "Success") {
+      //   return Effect.succeed(fail("Validation failed"))
+      // }
       return Effect.succeed(ok(CreateContext({ args }), "Creating context..."))
     },
 
     CreateContext: ({ args }) => {
-      const contextOpt = createContext(args)
-
-      if (Option.isNone(contextOpt)) {
-        return Effect.succeed(fail("Failed to create context"))
-      }
-
-      const context = contextOpt.value
-      return Effect.succeed(
-        ok(CheckBalance({ context }), "Checking receiver..."),
+      return pipe(
+        createContext(args),
+        Effect.mapBoth({
+          onFailure: (cause) =>
+            fail(cause.message, new GenericFlowError({ message: cause.message, cause })),
+          onSuccess: (context) => ok(CheckBalance({ context }), "something"),
+        }),
+        Effect.catchAllDefect((defect) => Effect.logError("[CreateContext] Defect:", defect)),
+        Effect.merge,
       )
     },
 
@@ -154,12 +154,10 @@ export const createContextState = (
 
     CheckAllowance: ({ context }) => {
       return checkAllowances(context).pipe(
-        Effect.map((allowancesOpt) => {
-          const allowances = Option.getOrElse(allowancesOpt, () => [])
-
+        Effect.map((allowances) => {
           const updatedContext = {
             ...context,
-            allowances: allowances.length > 0 ? Option.some(allowances) : Option.none(),
+            allowances,
           }
 
           return ok(
@@ -173,36 +171,7 @@ export const createContextState = (
 
     CheckReceiver: ({ context }) =>
       Effect.sleep(1000).pipe(
-        Effect.flatMap(() => Effect.succeed(ok(CreateOrders({ context }), "Creating orders..."))),
-      ),
-
-    CreateOrders: ({ context }) =>
-      createOrdersBatch(context).pipe(
-        Effect.flatMap((batchOpt) => {
-          if (Option.isNone(batchOpt)) {
-            return Effect.succeed(
-              fail(
-                "Could not create orders",
-                new OrderCreationError({ details: "No batch returned" }),
-              ),
-            )
-          }
-
-          const batch = batchOpt.value
-
-          const updatedContext = {
-            ...context,
-            instruction: Option.some(batch),
-          }
-
-          return Effect.succeed(
-            ok(
-              CreateMessage({ context: updatedContext }),
-              "Creating message...",
-            ),
-          )
-        }),
-        Effect.catchAll((error) => Effect.succeed(fail("Order creation failed", error))),
+        Effect.flatMap(() => Effect.succeed(ok(CreateMessage({ context }), "Creating message..."))),
       ),
 
     CreateMessage: ({ context }) =>

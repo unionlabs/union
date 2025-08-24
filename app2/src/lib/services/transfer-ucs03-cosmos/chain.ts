@@ -1,15 +1,15 @@
-import { getCosmosWalletClient, getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
-import { cosmosStore } from "$lib/wallet/cosmos/index.ts"
+import { getCosmosWalletClient, getCosmWasmClient } from "$lib/services/cosmos/clients"
+import { cosmosStore } from "$lib/wallet/cosmos/index"
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import type { Chain } from "@unionlabs/sdk/schema"
-import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details.ts"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details"
 import { Effect } from "effect"
-import { getCosmosChainInfo } from "../cosmos/chain-info/index.ts"
+import { getCosmosChainInfo } from "../cosmos/chain-info/index"
 import {
   CosmosSwitchChainError,
   CosmosWalletNotConnectedError,
   NoCosmosChainInfoError,
-} from "./errors.ts"
+} from "./errors"
 
 type SwitchChainSuccess = {
   success: true
@@ -29,9 +29,15 @@ export const switchChain = (chain: Chain) =>
     }
     // END TODO
 
+    console.log("cosmosSwitchChain", { connectedWallet, connectionStatus })
+
     const wallet = yield* getCosmosWalletClient
 
+    console.log("cosmosSwitchChain", { wallet })
+
     const chainInfo = yield* getCosmosChainInfo(chain)
+
+    console.log("cosmosSwitchChain", { chainInfo })
 
     if (!chainInfo) {
       return yield* new NoCosmosChainInfoError({ chain })

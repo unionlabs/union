@@ -1,5 +1,5 @@
 import { runSync } from "$lib/runtime"
-import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors"
 import { Channel, type Channels } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 

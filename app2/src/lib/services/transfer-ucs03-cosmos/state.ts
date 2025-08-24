@@ -1,7 +1,7 @@
-import type { approveTransfer } from "$lib/services/transfer-ucs03-cosmos/approval.ts"
+import type { approveTransfer } from "$lib/services/transfer-ucs03-cosmos/approval"
 import { Data, type Effect, type Exit } from "effect"
-import type { switchChain } from "./chain.ts"
-import type { submitTransfer } from "./transactions.ts"
+import type { switchChain } from "./chain"
+import type { submitTransfer } from "./transactions"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 

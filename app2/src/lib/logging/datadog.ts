@@ -44,37 +44,39 @@ const init = () => {
   datadogLogs.init(config)
 }
 
-const DatadogLogger = pipe(
-  Logger.make(
-    (options) => {
-      const annotations = HashMap.isEmpty(options.annotations)
-        ? undefined
-        : Object.fromEntries(HashMap.toEntries(options.annotations))
-      // const pretty = pipe(
-      //   Cause.prettyErrors(options.cause),
-      //   (xs) => A.isNonEmptyArray(xs) ? xs : undefined,
-      // )
+const DatadogLogger = Logger.make(
+  (options) => {
+    const annotations = HashMap.isEmpty(options.annotations)
+      ? undefined
+      : Object.fromEntries(HashMap.toEntries(options.annotations))
+    // const pretty = pipe(
+    //   Cause.prettyErrors(options.cause),
+    //   (xs) => A.isNonEmptyArray(xs) ? xs : undefined,
+    // )
 
-      const message: string = String(options.message)
-      const context = {
-        ...(annotations && { annotations }),
-        // ...(pretty && { pretty }),
-      } satisfies object
-      const status: StatusType = statusType(options.logLevel)
-      const error: Error | undefined = Cause.isEmpty(options.cause)
-        ? undefined
-        : Cause.squash(options.cause) as Error
+    const message: string = String(options.message)
+    const context = {
+      ...(annotations && { annotations }),
+      // ...(pretty && { pretty }),
+    } satisfies object
+    const status: StatusType = statusType(options.logLevel)
+    const error: Error | undefined = Cause.isEmpty(options.cause)
+      ? undefined
+      : Cause.squash(options.cause) as Error
 
-      const payload: Parameters<typeof datadogLogs.logger.log> = [
-        message,
-        context,
-        status,
-        error,
-      ] as const
+    const payload: Parameters<typeof datadogLogs.logger.log> = [
+      message,
+      context,
+      status,
+      error,
+    ] as const
 
-      datadogLogs.logger.log(...payload)
-    },
-  ),
+    datadogLogs.logger.log(...payload)
+  },
 )
 
-export { DatadogLogger as Logger, init as __init }
+export {
+  DatadogLogger as Logger,
+  /** @public */
+  init as __init,
+}

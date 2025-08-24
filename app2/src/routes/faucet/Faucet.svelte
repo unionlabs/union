@@ -6,8 +6,8 @@ import Card from "$lib/components/ui/Card.svelte"
 import { Option } from "effect"
 
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { chains } from "$lib/stores/chains.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 </script>
 
 <Card

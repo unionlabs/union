@@ -6,7 +6,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import { runPromiseExit, runSync } from "$lib/runtime"
-import { getWalletClient, NoViemChainError } from "$lib/services/evm/clients.ts"
+import { getWalletClient, NoViemChainError } from "$lib/services/evm/clients"
 import type {
   ConnectorClientError,
   CreateWalletClientError,
@@ -23,8 +23,9 @@ import type {
 } from "$lib/services/transfer-ucs03-cosmos"
 import type { WaitForTransactionReceiptError } from "$lib/services/transfer-ucs03-evm"
 import type { Steps } from "$lib/transfer/normal/steps"
-import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
-import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
+import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos"
+import * as WriteEvm from "$lib/transfer/shared/services/write-evm"
+import { Utils } from "@unionlabs/sdk"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   createViemPublicClient,
@@ -37,7 +38,7 @@ import {
   type NotACosmosChainError,
   TokenRawDenom,
 } from "@unionlabs/sdk/schema"
-import { ensureHex } from "@unionlabs/sdk/utils"
+import { ensureHex } from "@unionlabs/sdk/utils/index"
 import { Array as Arr, Cause, Data, Effect, Exit, Match, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { erc20Abi, fromHex, http } from "viem"
@@ -159,7 +160,7 @@ const submit = Effect.gen(function*() {
         WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
           chain: viemChain,
           account: walletClient.account,
-          address: step.token,
+          address: Utils.ensureHex(step.token.address),
           abi: erc20Abi,
           functionName: "approve",
           args: [ensureHex(step.intent.ucs03address), approvalAmount],
@@ -177,9 +178,7 @@ const submit = Effect.gen(function*() {
 
   const doCosmos = Effect.gen(function*() {
     /// XXX: proper type will require discrimination at intent level
-    const sender = yield* chain.getDisplayAddress(
-      step.intent.sender as unknown as AddressCosmosCanonical,
-    )
+    const sender = step.intent.sender
 
     const setCts = (nextCts: typeof cts) =>
       Effect.sync(() => {
@@ -189,7 +188,7 @@ const submit = Effect.gen(function*() {
 
     const nextState = Effect.tap(
       Effect.suspend(() =>
-        WriteCosmos.nextState(cts, chain, sender, fromHex(step.token, "string"), {
+        WriteCosmos.nextState(cts, chain, sender.address, step.token.address, {
           increase_allowance: {
             spender: step.intent.sourceChain.minter_address_display,
             amount: approvalAmount,
@@ -250,7 +249,7 @@ const handleSubmit = () => {
 // XXX: why not reactive
 const sourceChain = step.intent.sourceChain
 // XXX: why not reactive
-const massagedDenom = Schema.decodeSync(TokenRawDenom)(ensureHex(step.token))
+const massagedDenom = Schema.decodeSync(TokenRawDenom)(ensureHex(step.token.address))
 
 function getMaxApprovalAmount() {
   return Match.value(step.intent.sourceChain.rpc_type).pipe(

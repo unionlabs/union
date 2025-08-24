@@ -1,4 +1,4 @@
-import type { Edition } from "$lib/themes.ts"
+import type { Edition } from "$lib/themes"
 import base64Icon from "./base64.txt?raw"
 
 const projectIds: Record<Edition, string> = {

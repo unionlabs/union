@@ -7,7 +7,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
 import FeeDetails from "$lib/transfer/shared/components/FeeDetails.svelte"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
 import { Array as A, Match, Option } from "effect"
@@ -38,28 +38,42 @@ let feeDetailsOpen = $state<boolean>(false)
 
 const uiStatus = $derived.by(() => {
   return Option.match(errors, {
-    onSome: error => {
-      const match = Match.type<ContextFlowError>().pipe(
-        Match.tag("BalanceLookupError", () => ({
-          text: "Failed checking balance",
+    onSome: Match.type<ContextFlowError>().pipe(
+      Match.tagsExhaustive({
+        AllowanceCheckError: (error) => ({
+          text: "Failed to check allowance.",
           error,
-        })),
-        Match.tag("AllowanceCheckError", () => ({
-          text: "Failed checking allowance",
+        }),
+        BalanceLookupError: (error) => ({
+          text: "Failed to check balance.",
           error,
-        })),
-        Match.tag("OrderCreationError", () => ({
-          text: "Could not create orders",
+        }),
+        CosmosQueryError: (error) => ({
+          text: "Failed to query Cosmos.",
           error,
-        })),
-        Match.orElse(() => ({
-          text: statusMessage ?? "Continue",
+        }),
+        GenerateMultisigError: (error) => ({
+          text: "Failed to generate multisig.",
           error,
-        })),
-      )
-      return match(error)
-    },
-
+        }),
+        GenericFlowError: (error) => ({
+          text: "Generic failure.",
+          error,
+        }),
+        InsufficientFundsError: (error) => ({
+          text: "Insufficient funds.",
+          error,
+        }),
+        MissingTransferFieldsError: (error) => ({
+          text: "Missing transfer data.",
+          error,
+        }),
+        OrderCreationError: (error) => ({
+          text: "Order creation failed.",
+          error,
+        }),
+      }),
+    ),
     onNone: () => ({
       text: statusMessage ?? "Continue",
       error: null,
@@ -81,7 +95,7 @@ const isButtonEnabled = $derived.by(() =>
       address={transferData.raw.sender}
       onValid={(address, encoded) => {
         transferData.raw.updateField("sender", address)
-        wallets.addInputAddress(encoded as AddressCosmosCanonical)
+        wallets.addInputAddress(address)
         senderErrors = []
       }}
       onError={(xs) => {

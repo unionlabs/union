@@ -1,6 +1,6 @@
 <script lang="ts">
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { chainLogoMap } from "$lib/constants/chain-logos"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { cn } from "$lib/utils"

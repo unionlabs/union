@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Option } from "effect"
+import { Effect, Option } from "effect"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
@@ -14,7 +14,11 @@ import TransactionHashComponent from "$lib/components/model/TransactionHashCompo
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
+import * as AppRuntime from "$lib/runtime"
+import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import * as S from "effect/Schema"
 import { pipe } from "effect/Function"
+    import { getOrUndefined } from "effect/Option";
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
@@ -149,12 +153,32 @@ const destinationChain = $derived(
     </div>
     
      <div class="p-4">
-      <Label>Packet Data</Label>
-      {#if Option.isSome(packetDetails.data.value.decoded)}
-        <pre class="overflow-auto text-sm mt-2">{JSON.stringify(packetDetails.data.value.decoded.value, null, 2)}</pre>
-      {:else}
-        <div class=" text-zinc-500 mt-2">No data decoding available for this packet</div>
-      {/if}
+      <div class="flex flex-col gap-4 h-full">
+        <div class="flex-1 overflow-x-auto">
+          <Label>Packet Data [Indexed]</Label>
+          <pre class="overflow-auto text-sm mt-2">{JSON.stringify(Option.getOrUndefined(packetDetails.data.value.decoded), null, 2)}</pre>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+          <Label>Packet Data [<code class="lowercase">@unionlabs/sdk</code>]</Label>
+          {#await AppRuntime.runPromise(pipe(
+            S.decode(Ucs03.PacketFromHex)(packetDetails.data.value.data),
+            Effect.flatMap((packet) => pipe(
+              S.decode(Ucs03.Ucs03FromInstruction)(packet.instruction),
+              Effect.map((instruction) => ({
+                ...packet,
+                instruction
+              })
+            )))
+          ))}
+            <pre class="text-zinc-500 mt-2">Decoding...</pre>
+          {:then decoded}
+            <pre class="overflow-auto text-sm mt-2">{JSON.stringify(decoded, null, 2)}</pre>
+          {:catch error}
+            <div class=" text-zinc-500 mt-2">No data decoding available for this packet.</div>
+            <pre class="text-red-700 mt-2 overflow-auto">{error}</pre>
+          {/await}
+        </div>
+      </div>
     </div>
 
     <div class="p-4">

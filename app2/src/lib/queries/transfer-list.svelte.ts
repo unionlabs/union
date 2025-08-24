@@ -6,7 +6,7 @@ import { TransferList } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 
-export const LIMIT = 10
+const LIMIT = 10
 
 export let transferListLatestQuery = (limit = LIMIT, mainnetOnly = false) =>
   createQueryGraphql({

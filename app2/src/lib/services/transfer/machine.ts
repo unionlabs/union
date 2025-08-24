@@ -1,4 +1,3 @@
-// import { submitTransfer, switchChain, waitForReceipt } from "./index.ts"
 import { runPromiseExit } from "$lib/runtime.js"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"

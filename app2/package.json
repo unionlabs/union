@@ -10,16 +10,19 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "knip": "knip",
     "lint": "eslint .",
     "test:watch": "vitest",
     "test": "vitest --run",
     "supabase:generate": "supabase gen types --lang='typescript' --project-id='uorqzpuryrgfnecadajo' > './src/lib/dashboard/database.types.ts'"
   },
   "devDependencies": {
+    "@types/node": "^24.3.0",
     "@aptos-labs/ts-sdk": "1.38.0",
     "@chain-registry/types": "^0.50.144",
     "@cosmjs/amino": "^0.33.1",
     "@cosmjs/cosmwasm-stargate": "0.33.1",
+    "@cosmjs/math": "^0.33.1",
     "@cosmjs/proto-signing": "^0.33.1",
     "@cosmjs/stargate": "0.33.1",
     "@cosmjs/tendermint-rpc": "^0.33.1",
@@ -44,6 +47,8 @@
     "@testing-library/svelte": "^5.2.4",
     "@unionlabs/client": "workspace:*",
     "@unionlabs/sdk": "workspace:*",
+    "@unionlabs/sdk-cosmos": "workspace:*",
+    "@unionlabs/sdk-evm": "workspace:*",
     "@wagmi/connectors": "^5.7.12",
     "@wagmi/core": "^2.16.7",
     "@web3modal/wagmi": "5.1.11",
@@ -56,6 +61,7 @@
     "graphql": "^16.10.0",
     "graphql-request": "^7.1.2",
     "happy-dom": "^17.4.4",
+    "knip": "^5.63.0",
     "ox": "^0.6.9",
     "rehype-rewrite": "^4.0.2",
     "rehype-stringify": "^10.0.1",
@@ -68,7 +74,7 @@
     "typescript-eslint": "^8.30.1",
     "unified": "^11.0.5",
     "vfile": "^6.0.3",
-    "viem": "^2.27.2",
+    "viem": "^2.33.3",
     "vite": "^6.3.1"
   }
 }

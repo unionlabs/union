@@ -1,14 +1,14 @@
-import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
+import { tokenWrappingQuery } from "$lib/queries/tokens.svelte"
 import { getPublicClient as getAptosClient } from "$lib/services/aptos/clients"
-import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
-import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { getCosmosPublicClient } from "$lib/services/cosmos/clients"
+import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors"
 import { MoveVector } from "@aptos-labs/ts-sdk"
-import { ucs03abi } from "@unionlabs/sdk/evm/abi"
+import { Ucs03 } from "@unionlabs/sdk"
 import type { Chain, Channel, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Effect, Schedule } from "effect"
 import type { Hex } from "viem"
 import { type Address, fromHex } from "viem"
-import { getPublicClient } from "../evm/clients.ts"
+import { getPublicClient } from "../evm/clients"
 
 const retryPolicy = Schedule.recurs(2).pipe(
   Schedule.compose(Schedule.exponential(200)),
@@ -57,24 +57,9 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "evm") {
-      const client = yield* getPublicClient(destinationChain)
+      throw new Error("NOT IMPLEMENTED")
 
-      const predictedQuoteToken = yield* Effect.tryPromise({
-        try: () =>
-          client.readContract({
-            address: channel.destination_port_id,
-            abi: ucs03abi,
-            functionName: "predictWrappedToken",
-            args: [0n, channel.destination_channel_id, base_token],
-          }) as Promise<[Address, string]>,
-        catch: error =>
-          new GetQuoteError({ cause: `Failed to predict quote token (EVM): ${error}` }),
-      }).pipe(
-        Effect.map(([address]) => address),
-        Effect.retry(retryPolicy),
-      )
-
-      return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
+      // return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
     }
 
     if (destinationChain.rpc_type === "aptos") {

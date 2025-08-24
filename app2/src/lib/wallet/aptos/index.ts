@@ -3,4 +3,4 @@ export {
   type AptosWalletId,
   aptosWalletsInformation,
   getAptosWallet,
-} from "./config.svelte.ts"
+} from "./config.svelte"

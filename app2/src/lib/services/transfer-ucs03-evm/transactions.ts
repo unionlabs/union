@@ -1,12 +1,12 @@
-import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
+import { getAccount } from "$lib/services/transfer-ucs03-evm/account"
 import { ViemPublicClient } from "@unionlabs/sdk/evm"
 import { readErc20Meta } from "@unionlabs/sdk/evm/erc20"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { Effect } from "effect"
 import type { Hash, WaitForTransactionReceiptErrorType } from "viem"
-import { getPublicClient, getWalletClient } from "../evm/clients.ts"
-import { WaitForTransactionReceiptError } from "./errors.ts"
+import { getPublicClient, getWalletClient } from "../evm/clients"
+import { WaitForTransactionReceiptError } from "./errors"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function*() {

@@ -1,7 +1,7 @@
 import { Option } from "effect"
 import type { Hex } from "viem"
 
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte"
 import type { AptosBrowserWallet } from "@unionlabs/client"
 import { AddressAptosCanonical } from "@unionlabs/sdk/schema"
 
@@ -101,7 +101,8 @@ class AptosStore {
           : `0x${address}`
         return AddressAptosCanonical.make(normalized)
       }
-      wallets.aptosAddress = Option.some(aptosAddressFromHex(hexAddress))
+      // XXX: reeds review; code path not presently in use
+      wallets.aptosAddress = Option.some(aptosAddressFromHex(hexAddress) as unknown as any)
       console.log("Set wallets.aptosAddress to:", hexAddress)
     } else {
       wallets.aptosAddress = Option.none()

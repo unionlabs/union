@@ -1,3 +1,4 @@
+import type { Token, Ucs05 } from "@unionlabs/sdk"
 import { Data } from "effect"
 
 export class MissingTransferFieldsError extends Data.TaggedError("MissingTransferFieldsError")<{
@@ -19,8 +20,8 @@ export class OrderCreationError extends Data.TaggedError("OrderCreationError")<{
 
 export class BalanceLookupError extends Data.TaggedError("BalanceLookupError")<{
   chainId: string
-  sender: string
-  token: string
+  sender: Ucs05.AnyDisplay
+  token: Token.Any
   cause: string
 }> {}
 
@@ -34,7 +35,13 @@ export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigErr
   cause?: unknown
 }> {}
 
+export class GenericFlowError extends Data.TaggedError("GenericFlowError")<{
+  message: string
+  cause?: unknown
+}> {}
+
 export type ContextFlowError =
+  | GenericFlowError
   | MissingTransferFieldsError
   | InsufficientFundsError
   | OrderCreationError

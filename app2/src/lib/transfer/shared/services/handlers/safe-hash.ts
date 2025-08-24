@@ -1,4 +1,4 @@
-import { safeWallet } from "$lib/transfer/shared/services/handlers/safe.ts"
+import { safeWallet } from "$lib/transfer/shared/services/handlers/safe"
 import { Effect, Schedule } from "effect"
 
 // XXX: shouldn't be scheduled forever and shouldn't coerce to untagged error or die

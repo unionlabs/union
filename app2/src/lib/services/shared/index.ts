@@ -1,3 +1,3 @@
-export * from "./address.ts"
-export * from "./amount.ts"
-export * from "./errors.ts"
+export * from "./address"
+export * from "./amount"
+export * from "./errors"

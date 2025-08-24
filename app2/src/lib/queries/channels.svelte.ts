@@ -1,5 +1,5 @@
-import { channels } from "$lib/stores/channels.svelte.ts"
-import { createQueryGraphql } from "$lib/utils/queries.ts"
+import { channels } from "$lib/stores/channels.svelte"
+import { createQueryGraphql } from "$lib/utils/queries"
 import { Channels } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"

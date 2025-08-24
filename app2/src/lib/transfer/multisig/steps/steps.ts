@@ -1,4 +1,4 @@
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
 import { Data } from "effect"
 import type { ExtractTag } from "effect/Types"
 

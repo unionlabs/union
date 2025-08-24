@@ -48,14 +48,22 @@ const make = async () => {
 
 type Runtime = Awaited<ReturnType<typeof make>>
 
+/** @public */
 export let runFork$: Runtime["runFork$"]
+/** @public */
 export let runFork: Runtime["runFork"]
+/** @public */
 export let runPromise: Runtime["runPromise"]
+/** @public */
 export let runPromiseExit$: Runtime["runPromiseExit$"]
+/** @public */
 export let runPromiseExit: Runtime["runPromiseExit"]
+/** @public */
 export let runSync: Runtime["runSync"]
+/** @public */
 export let runSyncExit: Runtime["runSyncExit"]
 
+/** @public */
 export const __init = async () => {
   const runtime = await make()
   ;({

@@ -15,8 +15,8 @@ import { chains } from "$lib/stores/chains.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { getChain, PacketHash, TokenRawDenom, TransactionHash } from "@unionlabs/sdk/schema"
-import { Data, Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
+import { getChain, TokenRawDenom, TransactionHash } from "@unionlabs/sdk/schema"
+import { Data, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 
 // Store for the transfer details
@@ -30,7 +30,7 @@ import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.s
 import A from "$lib/components/ui/A.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
+import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times"
 import { runFork, runPromise } from "$lib/runtime"
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { fromHex } from "viem"
@@ -244,7 +244,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 {#if Option.isSome(sourceChain)}
                   <ChainComponent chain={sourceChain.value} />
                   <AddressComponent
-                    address={transfer.sender_canonical}
+                    address={transfer.sender_display}
                     chain={sourceChain.value}
                     class="text-zinc-400"
                   />
@@ -274,7 +274,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
               {#if Option.isSome(destChain)}
                 <ChainComponent chain={destChain.value} />
                 <AddressComponent
-                  address={transfer.receiver_canonical}
+                  address={transfer.receiver_display}
                   chain={destChain.value}
                   class="text-zinc-400"
                 />

@@ -3,10 +3,11 @@ import { GasPriceError } from "$lib/gasprice/error"
 import { AtomicGasPrice, BaseGasPrice, GasPrice } from "$lib/gasprice/service"
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
-import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { Intent } from "$lib/transfer/shared/services/filling/create-context"
 import * as Writer from "$lib/typeclass/Writer.js"
 import * as ArrayInstances from "@effect/typeclass/data/Array"
 import * as FlatMap from "@effect/typeclass/FlatMap"
+import { Token } from "@unionlabs/sdk"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { PriceError, PriceOracle, PriceResult } from "@unionlabs/sdk/PriceOracle"
@@ -24,6 +25,7 @@ import {
   Predicate,
   Record as R,
   Schedule,
+  Schema as S,
   Stream,
   Struct,
   Tuple,
@@ -659,10 +661,14 @@ const createFeeStore = () => {
     const sourceChain = yield* TransferData.sourceChain
 
     return E.gen(function*() {
-      const { decimals, address: baseToken } = yield* pipe(
+      const { decimals, address } = yield* pipe(
         R.get(GAS_DENOMS, sourceChain.universal_chain_id),
         E.fromOption(() => `No gas denom for ${sourceChain.universal_chain_id}`),
       )
+      const baseToken = yield* S.decodeEither(Token.AnyFromEncoded(sourceChain.rpc_type))(address)
+        .pipe(
+          E.mapLeft((error) => error.message),
+        )
       const baseAmount = BigDecimal.round(_totalFee, { scale: decimals, mode: "half-even" })
       return {
         decimals,

@@ -1,15 +1,16 @@
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
 import { transferListAddress } from "$lib/stores/transfers.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
+import type { Ucs05 } from "@unionlabs/sdk"
 import type { AddressCanonicalBytes, SortOrder } from "@unionlabs/sdk/schema"
 import { TransferList } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 
-export const LIMIT = 10
+const LIMIT = 10
 
 export const transferListLatestAddressQuery = (
-  addresses: Array<typeof AddressCanonicalBytes.Type>,
+  addresses: ReadonlyArray<typeof AddressCanonicalBytes.Type>,
   limit = LIMIT,
 ) =>
   createQueryGraphql({
@@ -39,7 +40,7 @@ export const transferListLatestAddressQuery = (
 
 export const transferListPageLtAddressQuery = (
   page: typeof SortOrder.Type,
-  addresses: Array<typeof AddressCanonicalBytes.Type>,
+  addresses: ReadonlyArray<Ucs05.CanonicalBytes>,
   limit = LIMIT,
 ) =>
   createQueryGraphql({
@@ -105,7 +106,7 @@ export const transferListPageLtAddressQuery = (
 
 export const transferListPageGtAddressQuery = (
   page: typeof SortOrder.Type,
-  addresses: Array<typeof AddressCanonicalBytes.Type>,
+  addresses: ReadonlyArray<Ucs05.CanonicalBytes>,
   limit = LIMIT,
 ) =>
   createQueryGraphql({

@@ -1,10 +1,10 @@
-import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
+import { getAccount } from "$lib/services/transfer-ucs03-aptos/account"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { Effect } from "effect"
 import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
-import { getPublicClient } from "../aptos/clients.ts"
-import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
+import { getPublicClient } from "../aptos/clients"
+import { WaitForTransactionReceiptError, WriteContractError } from "./errors"
 
 export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function*() {

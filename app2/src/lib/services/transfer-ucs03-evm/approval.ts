@@ -1,4 +1,4 @@
-import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
+import { getAccount } from "$lib/services/transfer-ucs03-evm/account"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 import {
@@ -7,8 +7,8 @@ import {
   type WaitForTransactionReceiptErrorType,
   type WriteContractErrorType,
 } from "viem"
-import { getPublicClient, getWalletClient } from "../evm/clients.ts"
-import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
+import { getPublicClient, getWalletClient } from "../evm/clients"
+import { WaitForTransactionReceiptError, WriteContractError } from "./errors"
 
 export const approveTransfer = (transfer: ValidTransfer["args"]) =>
   Effect.gen(function*() {
