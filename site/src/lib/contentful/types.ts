@@ -1,4 +1,3 @@
-import type { EntryFields, EntrySkeletonType } from "contentful"
 
 export interface LandingPageFields {
   firstTitle: EntryFields.RichText

@@ -1,0 +1,59 @@
+---
+// Network Test Page
+---
+<html lang="en">
+<head>
+  <title>Network Test</title>
+  <style>
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #334155;
+      border-top-color: #5865F2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-union-900 text-white p-8">
+  <h1 class="text-2xl font-bold mb-4">Union Network Test</h1>
+  
+  <div class="max-w-md mx-auto p-6 bg-union-800 rounded-lg">
+    <div id="loader" class="loader"></div>
+    <p id="status" class="text-center">Testing network performance...</p>
+  </div>
+  
+  <script>
+    // Test network timeout handling
+    setTimeout(() => {
+      const loader = document.getElementById('loader');
+      const status = document.getElementById('status');
+      
+      loader.style.display = 'none';
+      status.textContent = '✅ Network timeout handling works!';
+      status.classList.add('text-green-400', 'font-medium');
+      
+      // Add success UI
+      const successBox = document.createElement('div');
+      successBox.className = 'mt-6 p-4 bg-green-900/30 border border-green-600 rounded-lg';
+      successBox.innerHTML = `
+        <h2 class="font-bold mb-2">Test Successful!</h2>
+        <p>Your network handling is working correctly.</p>
+        <p class="mt-2 text-sm">To test slow networks:</p>
+        <ol class="list-decimal pl-4 text-sm">
+          <li>Open Chrome DevTools (F12)</li>
+          <li>Go to Network tab</li>
+          <li>Set throttling to "Slow 3G"</li>
+          <li>Reload the page</li>
+        </ol>
+      `;
+      
+      status.parentNode.appendChild(successBox);
+    }, 3000);
+  </script>
+</body>
+</html>

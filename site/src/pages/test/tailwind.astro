@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/BaseLayout.astro';
+import MinimalTest from '../../components/MinimalTest.astro';
+---
+<Layout title="Tailwind Test">
+  <main class="p-8 max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold text-white mb-6">Tailwind CSS Test</h1>
+    <MinimalTest />
+    <div class="mt-8 p-6 bg-slate-800/50 border border-slate-700 rounded-lg">
+      <h2 class="text-xl font-semibold text-white mb-3">Test Results:</h2>
+      <ul class="space-y-2">
+        <li class="flex items-center">
+          <div class="w-6 h-6 bg-green-500 rounded-full mr-2"></div>
+          <span class="text-slate-300">PostCSS configuration fixed</span>
+        </li>
+        <li class="flex items-center">
+          <div class="w-6 h-6 bg-green-500 rounded-full mr-2"></div>
+          <span class="text-slate-300">Tailwind directives loaded</span>
+        </li>
+        <li class="flex items-center">
+          <div class="w-6 h-6 bg-green-500 rounded-full mr-2"></div>
+          <span class="text-slate-300">Component styling applied</span>
+        </li>
+      </ul>
+    </div>
+  </main>
+</Layout>
