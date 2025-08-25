@@ -1,8 +1,11 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { getYapsSeason0, getYapsSeason1, type YapsSeason } from "$lib/dashboard/queries/public"
+import {
+  getYapsSeason0Public,
+  getYapsSeason1Public,
+  type YapsSeason,
+} from "$lib/dashboard/queries/public"
 import { runPromise } from "$lib/runtime"
 import { Effect, Option, pipe } from "effect"
 import { onDestroy, onMount } from "svelte"
@@ -19,7 +22,6 @@ let season0Loading = $state(true)
 let season1Data = $state<YapsSeason[] | null>(null)
 let season1Loading = $state(true)
 let contentReady = $state(false)
-let searchQuery = $state("")
 let currentPage = $state(1)
 const itemsPerPage = 50
 let isTeamModalOpen = $state(false)
@@ -33,7 +35,6 @@ function resetPageState() {
   season1Data = null
   season1Loading = true
   contentReady = false
-  searchQuery = ""
   currentPage = 1
   isTeamModalOpen = false
   showLimitTooltip = false
@@ -66,15 +67,16 @@ onMount(() => {
     }
   }
 
+  // Load public season data
   runPromise(
     pipe(
       Effect.all([
         pipe(
-          getYapsSeason0(),
+          getYapsSeason0Public(),
           Effect.catchAll(() => Effect.succeed(Option.none())),
         ),
         pipe(
-          getYapsSeason1(),
+          getYapsSeason1Public(),
           Effect.catchAll(() => Effect.succeed(Option.none())),
         ),
       ]),
@@ -253,7 +255,6 @@ onDestroy(() => {
                   "
                   onclick={() => {
                     activeTab = "season0"
-                    searchQuery = ""
                     currentPage = 1
                   }}
                 >
@@ -268,7 +269,6 @@ onDestroy(() => {
                   "
                   onclick={() => {
                     activeTab = "season1"
-                    searchQuery = ""
                     currentPage = 1
                   }}
                 >
@@ -299,81 +299,49 @@ onDestroy(() => {
           {@const entries = currentData || []}
 
           <!-- Podium (only show for Season 0) -->
-          {#if !searchQuery && activeTab === "season0"}
+          {#if activeTab === "season0"}
             <YappersPodium {entries} />
           {/if}
 
-          <!-- Search and Display Limit Row -->
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <!-- Display Limit Notice (Season 1 only) -->
-            {#if activeTab === "season1"}
-              <div class="flex items-center gap-1.5 text-zinc-400 text-sm">
-                <span>Display Limited to 1,000 Yappers</span>
-                <div class="relative group">
-                  <button
-                    class="w-3.5 h-3.5 text-orange-500 hover:text-orange-400 transition-colors cursor-pointer flex items-center justify-center -mt-px"
-                    onclick={toggleLimitTooltip}
-                    aria-label="More information about display limit"
-                  >
-                    <svg
-                      class="w-full h-full"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41,16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z" />
-                    </svg>
-                  </button>
+          <!-- Display Limit Notice -->
+          <div class="flex items-center justify-center gap-1.5 text-zinc-400 text-sm mb-4">
+            <span>Display Limited to 100 Yappers</span>
+            <div class="relative group">
+              <button
+                class="w-3.5 h-3.5 text-orange-500 hover:text-orange-400 transition-colors cursor-pointer flex items-center justify-center -mt-px"
+                onclick={toggleLimitTooltip}
+                aria-label="More information about display limit"
+              >
+                <svg
+                  class="w-full h-full"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41,16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z" />
+                </svg>
+              </button>
 
-                  <!-- Custom tooltip -->
-                  <div
-                    class="
-                      absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 sm:w-96 max-w-[90vw] p-3 bg-zinc-900 border border-orange-500/30 rounded-lg shadow-xl text-xs text-zinc-200 leading-relaxed z-50 transition-all duration-200
-                      {showLimitTooltip ? 'opacity-100 visible' : 'opacity-0 invisible'}
-                      group-hover:opacity-100 group-hover:visible
-                    "
-                  >
-                    Season 1 mindshare data is currently limited to displaying the top 1,000 yappers
-                    due to API constraints. However, there is no cap on the total number of eligible
-                    yappers—those ranked beyond 1,000 will still receive rewards proportional to
-                    their mindshare.
-                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900">
-                    </div>
-                  </div>
+              <!-- Custom tooltip -->
+              <div
+                class="
+                  absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 sm:w-96 max-w-[90vw] p-3 bg-zinc-900 border border-orange-500/30 rounded-lg shadow-xl text-xs text-zinc-200 leading-relaxed z-50 transition-all duration-200
+                  {showLimitTooltip ? 'opacity-100 visible' : 'opacity-0 invisible'}
+                  group-hover:opacity-100 group-hover:visible
+                "
+              >
+                Mindshare data is currently limited to displaying the top 100 yappers due to API
+                constraints. However, there is no cap on the total number of eligible yappers—those
+                ranked beyond 100 will still receive rewards proportional to their mindshare.
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-zinc-900">
                 </div>
               </div>
-            {:else}
-              <div></div>
-            {/if}
-
-            <!-- Search Bar -->
-            <div class="relative w-full sm:w-64">
-              <input
-                type="text"
-                bind:value={searchQuery}
-                oninput={() => currentPage = 1}
-                placeholder="Search yappers..."
-                class="w-full px-3 py-2 text-sm bg-zinc-800/50 border border-zinc-700/60 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
-              />
-              <svg
-                class="absolute right-3 top-2.5 w-4 h-4 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
             </div>
           </div>
 
           <!-- Table -->
           <YappersTable
             {entries}
-            {searchQuery}
+            searchQuery=""
             bind:currentPage
             {itemsPerPage}
             {openTeamModal}
