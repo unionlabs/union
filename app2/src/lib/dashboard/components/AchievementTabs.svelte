@@ -122,69 +122,24 @@ let achievementChains = $derived(
   Option.flatMap(
     dashboard.achievements,
     (achievements) =>
-      Option.flatMap(achievements.available, (availableAchievements) => {
-        let filteredAchievements = availableAchievements
+      Option.flatMap(achievements.achievementByChain, (chains) => {
+        let filteredChains = chains
 
         // Filter by category if selected
         if (selectedCategory) {
-          filteredAchievements = filteredAchievements.filter(a =>
-            a.category?.title === selectedCategory
-          )
+          filteredChains = filteredChains.map(chain =>
+            chain.filter(a => a.category?.title === selectedCategory)
+          ).filter(chain => chain.length > 0)
         }
 
         // Filter by subcategory if selected
         if (selectedSubcategory) {
-          filteredAchievements = filteredAchievements.filter(a =>
-            a.subcategory?.title === selectedSubcategory
-          )
+          filteredChains = filteredChains.map(chain =>
+            chain.filter(a => a.subcategory?.title === selectedSubcategory)
+          ).filter(chain => chain.length > 0)
         }
 
-        const achievementsMap = new Map(
-          filteredAchievements.map((achievement: AchievementType) => [achievement.id, achievement]),
-        )
-
-        // Helper function to find the first achievement in a chain
-        const findChainStart = (achievement: AchievementType): AchievementType => {
-          const previous = filteredAchievements.find((a: AchievementType) =>
-            a.next === achievement.id
-          )
-          return previous ? findChainStart(previous) : achievement
-        }
-
-        const chains = filteredAchievements.reduce(
-          (chains: AchievementType[][], achievement: AchievementType) => {
-            // Skip if achievement is already in any chain
-            if (
-              chains.some((chain: AchievementType[]) =>
-                chain.some((a: AchievementType) => a.id === achievement.id)
-              )
-            ) {
-              return chains
-            }
-
-            // Find the actual start of this chain
-            const chainStart = findChainStart(achievement)
-
-            // Build chain from the start
-            const chain: AchievementType[] = []
-            let current: AchievementType | null = chainStart
-
-            while (current) {
-              chain.push(current)
-              const nextId: number | null = current.next
-              const nextAchievement: AchievementType | null = nextId !== null
-                ? achievementsMap.get(nextId) ?? null
-                : null
-              current = nextAchievement
-            }
-
-            chains.push(chain)
-            return chains
-          },
-          [],
-        )
-
-        return Option.some(chains)
+        return Option.some(filteredChains)
       }),
   ),
 )
@@ -488,6 +443,9 @@ let sortedChains = $derived(
                             achievement={achievement}
                             userAchievements={getAchievedAchievements(Option.getOrNull(dashboard.achievements))}
                             isCompleted={true}
+                            isExpired={Option.getOrNull(dashboard.achievements)?.isAchievementExpired(
+                              achievement,
+                            ) ?? false}
                           />
                         {/each}
                       </div>
@@ -499,6 +457,9 @@ let sortedChains = $derived(
                           achievement={organizedChain.current}
                           userAchievements={getAchievedAchievements(Option.getOrNull(dashboard.achievements))}
                           isCurrent={true}
+                          isExpired={Option.getOrNull(dashboard.achievements)?.isAchievementExpired(
+                            organizedChain.current,
+                          ) ?? false}
                         />
                       </div>
                     {/if}
@@ -510,6 +471,9 @@ let sortedChains = $derived(
                             achievement={achievement}
                             userAchievements={getAchievedAchievements(Option.getOrNull(dashboard.achievements))}
                             isNext={true}
+                            isExpired={Option.getOrNull(dashboard.achievements)?.isAchievementExpired(
+                              achievement,
+                            ) ?? false}
                           />
                         {/each}
                       </div>
