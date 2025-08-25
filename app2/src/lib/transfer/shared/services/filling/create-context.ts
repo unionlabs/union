@@ -91,12 +91,9 @@ export const createContext = Effect.fn((
     })
 
     // on destination chain tokens, find wrappings[] such that one exists where unwrapped_denom matches basetoken and unwrapped_chain and wrapped_chain universal ids match
-    console.log({ maybeFeeQuoteToken })
-    console.log({ data: tokensStore.getData(args.destinationChain.universal_chain_id) })
     const encodedFeeBaseToken = S.encodeSync(Token.AnyFromEncoded(args.sourceChain.rpc_type))(
       args.fee.baseToken,
     )
-    console.log({ encodedFeeBaseToken })
 
     const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
 
@@ -132,8 +129,6 @@ export const createContext = Effect.fn((
           }),
         )
 
-        console.log("Got fee quote token", { feeQuoteToken })
-
         const feeOrder = yield* TokenOrder.make({
           baseAmount: args.fee.baseAmount,
           baseToken: args.fee.baseToken,
@@ -148,8 +143,6 @@ export const createContext = Effect.fn((
           version: args.version,
         })
 
-        console.log("Produced fee order")
-
         return Batch.make([sendOrder, feeOrder]).pipe(
           Batch.optimize,
         )
@@ -159,8 +152,6 @@ export const createContext = Effect.fn((
     })
 
     const batch = yield* produceBatch
-
-    console.log("[createContext]", { batch })
 
     const request = ZkgmClientRequest.make({
       channelId: args.sourceChannelId,
@@ -196,7 +187,6 @@ export const createContext = Effect.fn((
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
   const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
-  console.log("[createIntents]", { shouldChargeFees })
   const baseIntent = createBaseIntent(args, baseAmount)
 
   return Match.value(args.sourceChain.rpc_type).pipe(

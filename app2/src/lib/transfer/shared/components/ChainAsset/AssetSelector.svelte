@@ -89,7 +89,6 @@ const filteredTokens = $derived.by(() => {
 })
 
 function selectAsset(token: Token) {
-  console.log("[AssetSelector] selectAsset", token)
   transferData.raw.updateField("asset", token.denom)
   onSelect()
 }

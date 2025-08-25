@@ -19,8 +19,6 @@ export const checkAllowances = Effect.fn((
   context: TransferContext,
 ): Effect.Effect<Option.Option<A.NonEmptyReadonlyArray<ApprovalStep>>> =>
   Effect.option(Effect.gen(function*() {
-    console.log("check allowances", { context })
-
     if (A.isEmptyArray(context.intents)) {
       return yield* Option.none()
     }
@@ -37,8 +35,6 @@ export const checkAllowances = Effect.fn((
       Option.flatMap(ZkgmClientRequest.requiredFunds),
       Option.getOrElse(() => []),
     )
-
-    console.log("allowances", { requiredTokens })
 
     const allowances = yield* Match.value(sender).pipe(
       Match.tagsExhaustive({
@@ -59,8 +55,6 @@ export const checkAllowances = Effect.fn((
       Effect.map(A.map(({ token, allowance }) => [token, allowance] as const)),
       Effect.map(HashMap.fromIterable),
     )
-
-    console.log("allowances (post)", allowances.toJSON())
 
     const result = yield* pipe(
       HashMap.fromIterable(requiredTokens),
@@ -85,8 +79,6 @@ export const checkAllowances = Effect.fn((
       ),
       Option.liftPredicate(A.isNonEmptyArray),
     )
-
-    console.log({ result })
 
     return result
   }))
@@ -147,20 +139,10 @@ export const handleCosmosAllowances = (
     )
     const client = Cosmos.Client.Live(rpc)
 
-    console.log("[handleCosmosAllowances]", {
-      tokenAddresses,
-      sender,
-      sourceChain,
-    })
-
     return yield* pipe(
       tokenAddresses,
       // TODO: check token filtering
       A.filter(S.is(Token.Cw20)),
-      (xs) => {
-        console.log("actually checking", xs)
-        return xs
-      },
       A.map((token) =>
         pipe(
           Cosmos.readCw20Allowance(

@@ -19,7 +19,7 @@ export const themes: Record<Edition, Theme> = {
     staticImage: "/btc-static-video.png",
   },
   app: {
-    label: "V3",
+    label: "V4",
     accent: "var(--color-union)",
     primary: "var(--color-union)",
     background: "var(--color-zinc-950)",

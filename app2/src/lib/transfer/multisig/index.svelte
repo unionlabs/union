@@ -71,7 +71,6 @@ function handleActionButtonClick() {
 }
 
 $effect(() => {
-  console.log("[multisig/index.svelte] ROOT EFFECT RUNNING", { currentPage })
   if (currentPage !== 0) {
     return
   }
@@ -90,7 +89,6 @@ $effect(() => {
       baseAmount: TokenRawAmount.make(0n),
     }
 
-    console.log("[multisig/index.svelte] MACHINE RUNNING")
     let currentState: CreateContextState = CreateContextState.Filling()
     let context: TransferContext | null = null
 

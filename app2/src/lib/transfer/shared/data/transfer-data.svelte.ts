@@ -90,14 +90,12 @@ export class TransferData {
   )
 
   quoteToken = $derived.by(() => {
-    console.log({ baseToken: Option.map(this.baseToken, x => x.denom) })
     const baseTokenDenom = Option.getOrUndefined(
       Option.map(this.baseToken, x => Brand.unbranded(x.denom)),
     )
     if (
       baseTokenDenom === "0x6175" || baseTokenDenom === "0xba5ed44733953d79717f6269357c77718c8ba5ed"
     ) {
-      console.log("OVERRIDING QUOTE TOKENS")
       return Option.some(
         Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" }),
       )
@@ -180,8 +178,6 @@ export class TransferData {
         const sourceId = sourceChain.universal_chain_id
         const destId = destinationChain.universal_chain_id
 
-        console.log({ sourceId, destId, baseToken })
-
         return pipe(
           baseToken.wrapping,
           A.findFirst(wrapping =>
@@ -212,7 +208,6 @@ export class TransferData {
   version = $derived(pipe(
     this.channel,
     Option.tap((x) => {
-      console.log("version channel", x)
       return Option.some(x)
     }),
     Option.map(Struct.get("tags")),
@@ -222,7 +217,6 @@ export class TransferData {
       onFalse: constant(1 as const),
     })),
     Option.tap((x) => {
-      console.log("version version", x)
       return Option.some(x)
     }),
   ))
@@ -244,8 +238,6 @@ export class TransferData {
   )
 
   derivedReceiver: Option.Option<Ucs05.AnyDisplay> = $derived.by(() => {
-    console.log({ receiver: this.raw.receiver })
-
     return AppRuntime.runSync(pipe(
       S.decode(S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString))(this.raw.receiver),
       Effect.option,

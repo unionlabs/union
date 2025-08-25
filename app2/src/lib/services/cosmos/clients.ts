@@ -22,13 +22,11 @@ export const getCosmWasmClient = (
     }
 
     const offlineSigner = yield* getCosmosOfflineSigner(chain)
-    console.log({ offlineSigner })
     const gasPriceInfo = yield* getGasPriceForChain(chain)
     // TODO: burn cosmos sdk
     const gasPrice = GasPrice.fromString(
       `${gasPriceInfo.amount}${gasPriceInfo.denom}`,
     )
-    // const gasPrice = new GasPrice(Decimal.one(18), "au")
 
     const maybeRpcUrl = chain.getRpcUrl("rpc")
     if (Option.isNone(maybeRpcUrl)) {
