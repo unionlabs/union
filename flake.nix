@@ -10,6 +10,7 @@
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
+    nixpkgs-go-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     process-compose.url = "github:F1bonacc1/process-compose";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
@@ -68,6 +69,10 @@
     };
     osmosis = {
       url = "github:osmosis-labs/osmosis/v28.0.5";
+      flake = false;
+    };
+    xion = {
+      url = "github:burnt-labs/xion/v21.0.0";
       flake = false;
     };
     babylon = {
@@ -205,6 +210,7 @@
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
         ./networks/osmosis.nix
+        ./networks/xion.nix
         ./networks/babylon.nix
         ./networks/stride.nix
         ./e2e/all-tests.nix
@@ -249,6 +255,7 @@
           };
 
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
+          pkgsGoUnstable = import inputs.nixpkgs-go-unstable { inherit system; };
 
           gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
           gitShortRev = self.shortRev or (self.dirtyShortRev or "dirty");
@@ -268,6 +275,7 @@
                 get-flake
                 uniondBundleVersions
                 pkgsUnstable
+                pkgsGoUnstable
                 mkCi
                 ;
 
