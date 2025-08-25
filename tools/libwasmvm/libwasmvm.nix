@@ -32,6 +32,11 @@ let
       "aarch64-linux" = "sha256-umy122sUomXIVWMmwEWICQjbmx0v+11KqfCawJskzsw=";
       "aarch64-darwin" = "";
     };
+    "3.0.0" = {
+      "x86_64-linux" = "sha256-zv5z8Mqlqeq6NzPGOc31BAxHRqk8IGcLpskof+OUSLo=";
+      "aarch64-linux" = "";
+      "aarch64-darwin" = "";
+    };
   };
 in
 {
@@ -96,6 +101,9 @@ in
       };
       packages.libwasmvm-2_2_1 = fetchReleaseArtifact {
         version = "2.2.1";
+      };
+      packages.libwasmvm-3_0_0 = fetchReleaseArtifact {
+        version = "3.0.0";
       };
     };
 }

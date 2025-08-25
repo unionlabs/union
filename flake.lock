@@ -428,6 +428,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-go-unstable": {
+      "locked": {
+        "lastModified": 1755615617,
+        "narHash": "sha256-HMwfAJBdrr8wXAkbGhtcby1zGFvs+StOp19xNsbqdOg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "20075955deac2583bb12f07151c2df830ef346b4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lnav": {
       "locked": {
         "lastModified": 1713467351,
@@ -599,6 +615,7 @@
         "interchain-security": "interchain-security",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-go-unstable": "nixpkgs-go-unstable",
         "nixpkgs-lnav": "nixpkgs-lnav",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "osmosis": "osmosis",
@@ -612,7 +629,8 @@
         "v1_0_0": "v1_0_0",
         "v1_1_0": "v1_1_0",
         "v1_2_0": "v1_2_0",
-        "wasmd": "wasmd"
+        "wasmd": "wasmd",
+        "xion": "xion"
       }
     },
     "rust-overlay": {
@@ -801,6 +819,23 @@
         "owner": "unionlabs",
         "repo": "wasmd",
         "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
+        "type": "github"
+      }
+    },
+    "xion": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1755817981,
+        "narHash": "sha256-QdaLYBE7qPwCqoBl7w9VCQMJy+jSw9A9BC6LDWqOLco=",
+        "owner": "burnt-labs",
+        "repo": "xion",
+        "rev": "d7130e5b588e0b6cb64164108aa9e4621fb4e310",
+        "type": "github"
+      },
+      "original": {
+        "owner": "burnt-labs",
+        "ref": "v21.0.0",
+        "repo": "xion",
         "type": "github"
       }
     }
