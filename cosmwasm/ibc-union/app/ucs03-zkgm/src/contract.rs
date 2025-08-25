@@ -3761,33 +3761,29 @@ fn migrate_v1_to_v2(
         let balance = DEPRECATED_CHANNEL_BALANCE_V1.may_load(deps.storage, key.clone())?;
 
         if let Some(balance) = balance {
-            if balance.is_zero() {
-                return Err(StdError::generic_err("no balance").into());
-            }
+            if !balance.is_zero() {
+                // Remove from V1 storage
+                DEPRECATED_CHANNEL_BALANCE_V1.remove(deps.storage, key);
 
-            // Remove from V1 storage
-            DEPRECATED_CHANNEL_BALANCE_V1.remove(deps.storage, key);
-
-            // Add to V2 storage
-            CHANNEL_BALANCE_V2.update(
-                deps.storage,
-                (
-                    migration.channel_id.raw(),
+                // Add to V2 storage
+                CHANNEL_BALANCE_V2.update(
+                    deps.storage,
                     (
-                        migration.path.to_be_bytes().to_vec(),
-                        migration.base_token,
-                        migration.quote_token.to_vec(),
+                        migration.channel_id.raw(),
+                        (
+                            migration.path.to_be_bytes().to_vec(),
+                            migration.base_token,
+                            migration.quote_token.to_vec(),
+                        ),
                     ),
-                ),
-                |existing_balance| match existing_balance {
-                    Some(existing) => existing
-                        .checked_add(balance)
-                        .map_err(|_| ContractError::InvalidChannelBalance),
-                    None => Ok(balance),
-                },
-            )?;
-        } else {
-            return Err(StdError::generic_err("no balance").into());
+                    |existing_balance| match existing_balance {
+                        Some(existing) => existing
+                            .checked_add(balance)
+                            .map_err(|_| ContractError::InvalidChannelBalance),
+                        None => Ok(balance),
+                    },
+                )?;
+            }
         }
     }
 
