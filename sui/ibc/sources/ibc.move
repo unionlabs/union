@@ -153,6 +153,7 @@ module ibc::ibc {
     const E_BATCH_SAME_CHANNEL_ONLY: u64 = 1051;
     const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 1061;
     const E_MAKER_MSG_LEN_MISMATCH: u64 = 1062;
+    const E_ALREADY_RECEIVED: u64 = 1063;
 
     // This event is only emitted during the `init` phase
     // since the voyager event source module requires at least
@@ -1284,7 +1285,13 @@ module ibc::ibc {
                     packet_hash
                 );
 
-            if(!set_packet_receive(ibc_store, commitment_key)) {
+
+            if(set_packet_receive(ibc_store, commitment_key)) {
+                // Normally this is not an error and results in noop in the traditional impls where
+                // the app is called by the ibc. But since it is the other way here, we have to abort
+                // to prevent double processing in the app side. 
+                abort E_ALREADY_RECEIVED;
+            } else {
                 let maker_msg = maker_msgs[i];
                 if (intent) {
                     event::emit(IntentPacketRecv {
