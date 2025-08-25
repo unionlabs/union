@@ -28,6 +28,7 @@ export type YapsSeason = {
   twitter_id: number | null
   pfp: string | null
   team: boolean | null
+  rank: number | null
 }
 
 export const getChains = () =>
@@ -240,10 +241,10 @@ export const getAvailableRewards = () =>
     ),
   )
 
-export const getYapsSeason0 = () =>
+export const getYapsSeason0Public = () =>
   withLocalStorageCacheStale(
     "public",
-    `${CACHE_VERSION}:yaps_season_0`,
+    `${CACHE_VERSION}:yaps_season_0_public`,
     TTL,
     STALE,
     pipe(
@@ -252,13 +253,13 @@ export const getYapsSeason0 = () =>
         Effect.tryPromise({
           try: () =>
             client
-              .from("yaps_season_zero_with_users")
-              .select("user_id, username, mindshare, twitter_id, pfp, team")
+              .from("yaps_season_zero_public")
+              .select("user_id, username, mindshare, twitter_id, pfp, team, rank")
               .order("rank", { ascending: true })
               .limit(20000),
           catch: (error) =>
             new SupabaseError({
-              operation: "loadYapsSeason0",
+              operation: "loadYapsSeason0Public",
               cause: extractErrorDetails(error as Error),
             }),
         })
@@ -266,16 +267,18 @@ export const getYapsSeason0 = () =>
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadYapsSeason0" }))
+        errorStore.showError(
+          new LeaderboardError({ cause: error, operation: "loadYapsSeason0Public" }),
+        )
         return Effect.succeed(Option.none())
       }),
     ),
   )
 
-export const getYapsSeason1 = () =>
+export const getYapsSeason1Public = () =>
   withLocalStorageCacheStale(
     "public",
-    `${CACHE_VERSION}:yaps_season_1`,
+    `${CACHE_VERSION}:yaps_season_1_public`,
     TTL,
     STALE,
     pipe(
@@ -284,13 +287,13 @@ export const getYapsSeason1 = () =>
         Effect.tryPromise({
           try: () =>
             client
-              .from("yaps_season_one_with_users")
-              .select("user_id, username, mindshare, twitter_id, pfp, team")
+              .from("yaps_season_one_public")
+              .select("user_id, username, mindshare, twitter_id, pfp, team, rank")
               .order("rank", { ascending: true })
               .limit(20000),
           catch: (error) =>
             new SupabaseError({
-              operation: "loadYapsSeason1",
+              operation: "loadYapsSeason1Public",
               cause: extractErrorDetails(error as Error),
             }),
         })
@@ -298,7 +301,9 @@ export const getYapsSeason1 = () =>
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadYapsSeason1" }))
+        errorStore.showError(
+          new LeaderboardError({ cause: error, operation: "loadYapsSeason1Public" }),
+        )
         return Effect.succeed(Option.none())
       }),
     ),
