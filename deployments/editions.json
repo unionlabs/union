@@ -41,17 +41,11 @@
       "bob.60808": {
         "environment": "production"
       },
-      "bsc.56": {
-        "environment": "staging"
-      },
       "corn.21000000": {
         "environment": "production"
       },
       "ethereum.1": {
         "environment": "production"
-      },
-      "osmosis.osmosis-1": {
-        "environment": "staging"
       }
     }
   }

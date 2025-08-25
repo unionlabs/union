@@ -23,6 +23,7 @@ import {
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
+import { safeStringifyJSON } from "$lib/utils/json"
 import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Array as Arr, Effect, Either, Equal, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
@@ -359,19 +360,11 @@ const currentStep = $derived(
 </Card>
 
 {#if showDetails}
-  <div class="bg-zinc-900 p-2">
+  <div class="bg-zinc-900 p-2 overflow-x-auto">
     {#if Option.isSome(transferErrors)}
       <strong>Error</strong>
       <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
     {/if}
-
-    {#key transferData}
-      <strong>Transfer Data</strong>
-      <pre>
-{JSON.stringify({
-        quoteTokens: transferData.quoteTokens
-      }, null, 2)}</pre>
-    {/key}
 
     {#key statusMessage}
       <strong>{statusMessage}</strong>
@@ -379,9 +372,9 @@ const currentStep = $derived(
     {/key}
 
     {#if Option.isSome(transferSteps)}
-      <div class="mt-4">
+      <div class="mt-4 whitespace-pre-wrap">
         <strong>Steps:</strong>
-        <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
+        <pre>{Effect.runSync(safeStringifyJSON(transferSteps.value))}</pre>
       </div>
     {/if}
   </div>
