@@ -38,7 +38,6 @@ function back() {
 function onChainSelected() {
   if (type === "destination") {
     // Check if we have multiple representations available for user choice
-    console.log({ representations: transferData.representations })
     const hasMultipleReps = transferData.representations.pipe(
       Option.map(reps => reps.length > 1),
       Option.getOrElse(() => false),

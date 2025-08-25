@@ -14,7 +14,6 @@ import * as S from "effect/Schema"
 
 export const createMultisigMessage = (context: TransferContext) =>
   Effect.gen(function*() {
-    console.log("[createMultisigMessage]", { context })
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
     // XXX: discriminate higher
     const sender = context.intents[0].sender.address

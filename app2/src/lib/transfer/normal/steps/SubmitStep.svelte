@@ -108,7 +108,6 @@ const resetState = () => {
 const request = $derived(step.instruction)
 
 const startPolling = (transactionHash: TransactionHash) => {
-  console.log("GOT TRANSACTION HASH:", transactionHash)
   transferHashStore.startPolling(transactionHash)
   onSubmit()
 }
@@ -216,8 +215,6 @@ export const submit = Effect.gen(function*() {
     const signingClient = yield* getCosmWasmClient(chain)
     const rpcUrl = yield* chain.getRpcUrl("rpc")
 
-    console.log({ signingClient })
-
     const walletClient = Cosmos.SigningClient.FromSigningClient(
       address,
       signingClient,
@@ -265,7 +262,6 @@ const handleSubmit = () => {
   AppRuntime.runPromiseExit(submit).then(exit =>
     Exit.match(exit, {
       onFailure: cause => {
-        console.log("DONE EXECUTING", cause)
         const err = Cause.originalError(cause)
         ctaCopy = "Retry"
         error = pipe(

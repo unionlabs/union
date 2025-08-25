@@ -79,9 +79,6 @@ export const executeCosmWasmInstructions = (
               funds: instr.funds || [],
             }))
 
-            console.log("Sender:", sender)
-            console.log("Formatted instructions:", JSON.stringify(formattedInstructions, null, 2))
-
             return Effect.map(
               Effect.tryPromise({
                 try: () => client.executeMultiple(sender, formattedInstructions, "auto"),
@@ -93,7 +90,6 @@ export const executeCosmWasmInstructions = (
                 },
               }),
               result => {
-                console.log("Transaction hash:", result.transactionHash)
                 return result.transactionHash
               },
             )

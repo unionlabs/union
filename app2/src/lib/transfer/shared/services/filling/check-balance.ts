@@ -55,8 +55,6 @@ export const checkBalanceForIntent = (
 
   const groupedValues = Object.values(grouped)
 
-  console.log({ groupedValues })
-
   return Effect.forEach(groupedValues, group =>
     Effect.gen(function*() {
       let balance = balancesStore.getBalance(
@@ -65,8 +63,6 @@ export const checkBalanceForIntent = (
         // XXX: remove type coercion
         Utils.ensureHex(group.baseToken.address) as TokenRawDenom,
       )
-
-      console.log("checkBalanceForIntent", { balance })
 
       if (Option.isNone(balance)) {
         const chainForToken = context.intents.find(intent =>
@@ -93,7 +89,6 @@ export const checkBalanceForIntent = (
       }
 
       if (Option.isNone(balance)) {
-        console.log(" IS NONE ")
         return yield* Effect.fail(
           new BalanceLookupError({
             cause: "No balance found",
@@ -105,7 +100,6 @@ export const checkBalanceForIntent = (
       }
 
       const actualBalance = balance.value
-      console.log({ denom: group.baseToken, actualBalance })
       const hasEnough = group.required <= BigInt(actualBalance)
 
       return hasEnough
