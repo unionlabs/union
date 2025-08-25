@@ -37,6 +37,7 @@ Below is an example configuration.nix which can be used in production.
             {
               system.stateVersion = "23.11";
               # Base configuration for openstack-based VPSs
+              # If using elitak/nixos-infect, use the hardware and network configuration provided by nixos-infect
               imports = [ "${nixpkgs}/nixos/modules/virtualisation/openstack-config.nix" ];
 
               # Allow other validators to reach you
