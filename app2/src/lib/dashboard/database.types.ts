@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
   }
@@ -38,6 +40,7 @@ export type Database = {
           category: number | null
           created_at: string
           description: string | null
+          end_at: string | null
           id: number
           image: string | null
           meta: Json | null
@@ -55,6 +58,7 @@ export type Database = {
           category?: number | null
           created_at?: string
           description?: string | null
+          end_at?: string | null
           id?: number
           image?: string | null
           meta?: Json | null
@@ -72,6 +76,7 @@ export type Database = {
           category?: number | null
           created_at?: string
           description?: string | null
+          end_at?: string | null
           id?: number
           image?: string | null
           meta?: Json | null
@@ -1085,6 +1090,24 @@ export type Database = {
         }
         Relationships: []
       }
+      raccoons_nft_staging: {
+        Row: {
+          count: number
+          ethereum_address: string
+          initia_address: string
+        }
+        Insert: {
+          count: number
+          ethereum_address: string
+          initia_address: string
+        }
+        Update: {
+          count?: number
+          ethereum_address?: string
+          initia_address?: string
+        }
+        Relationships: []
+      }
       resend_audiences: {
         Row: {
           created_at: string
@@ -1211,6 +1234,27 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_followers: {
+        Row: {
+          smart_follower_count: number
+          twitter_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          smart_follower_count?: number
+          twitter_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          smart_follower_count?: number
+          twitter_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       snag_updated_users: {
         Row: {
           id: number
@@ -1242,7 +1286,6 @@ export type Database = {
           discord_id: string | null
           display_name: string | null
           ip_addresses: string[] | null
-          pfp: string | null
           twitter_id: string | null
           updated_at: string | null
           user_id: string
@@ -1254,7 +1297,6 @@ export type Database = {
           discord_id?: string | null
           display_name?: string | null
           ip_addresses?: string[] | null
-          pfp?: string | null
           twitter_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -1266,7 +1308,6 @@ export type Database = {
           discord_id?: string | null
           display_name?: string | null
           ip_addresses?: string[] | null
-          pfp?: string | null
           twitter_id?: string | null
           updated_at?: string | null
           user_id?: string
@@ -1282,7 +1323,6 @@ export type Database = {
           id: number
           ip_addresses: string[] | null
           operation_type: string
-          pfp: string | null
           processed_at: string | null
           run_id: string
           twitter_id: string | null
@@ -1296,7 +1336,6 @@ export type Database = {
           id?: number
           ip_addresses?: string[] | null
           operation_type: string
-          pfp?: string | null
           processed_at?: string | null
           run_id: string
           twitter_id?: string | null
@@ -1310,7 +1349,6 @@ export type Database = {
           id?: number
           ip_addresses?: string[] | null
           operation_type?: string
-          pfp?: string | null
           processed_at?: string | null
           run_id?: string
           twitter_id?: string | null
@@ -1975,7 +2013,7 @@ export type Database = {
           total_smart_engagements: string | null
           tweet_counts: number | null
           tweet_urls: string | null
-          user_id: string | null
+          user_id: string
           username: string | null
         }
         Insert: {
@@ -1993,7 +2031,7 @@ export type Database = {
           total_smart_engagements?: string | null
           tweet_counts?: number | null
           tweet_urls?: string | null
-          user_id?: string | null
+          user_id: string
           username?: string | null
         }
         Update: {
@@ -2011,7 +2049,7 @@ export type Database = {
           total_smart_engagements?: string | null
           tweet_counts?: number | null
           tweet_urls?: string | null
-          user_id?: string | null
+          user_id?: string
           username?: string | null
         }
         Relationships: []
@@ -2226,6 +2264,30 @@ export type Database = {
           },
         ]
       }
+      yaps_season_one_public: {
+        Row: {
+          mindshare: string | null
+          pfp: string | null
+          rank: number | null
+          team: boolean | null
+          twitter_id: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
+      yaps_season_zero_public: {
+        Row: {
+          mindshare: string | null
+          pfp: string | null
+          rank: number | null
+          team: boolean | null
+          twitter_id: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       bech32_charset: {
@@ -2250,9 +2312,9 @@ export type Database = {
       }
       bulk_import_nfts: {
         Args: {
+          nft_records: Json[]
           p_collection_id: string
           p_provider: string
-          nft_records: Json[]
         }
         Returns: Json
       }
@@ -2261,15 +2323,15 @@ export type Database = {
         Returns: string
       }
       check_twitter_follow: {
-        Args: { p_user_id: string; p_leader_id: number }
+        Args: { p_leader_id: number; p_user_id: string }
         Returns: boolean
       }
       convert_bits: {
         Args: {
-          input_data: string
           from_bits: number
-          to_bits: number
+          input_data: string
           pad: boolean
+          to_bits: number
         }
         Returns: number[]
       }
@@ -2292,17 +2354,17 @@ export type Database = {
       generate_user_codes_readable: {
         Args: Record<PropertyKey, never>
         Returns: {
-          user_id: string
-          user_email: string
           generated_code: string
+          user_email: string
+          user_id: string
         }[]
       }
       get_and_update_twitter_leader: {
         Args: Record<PropertyKey, never>
         Returns: {
-          twitter_id: string
-          screen_name: string
           exit_on_duplicate: boolean
+          screen_name: string
+          twitter_id: string
         }[]
       }
       get_cmd_type: {
@@ -2310,7 +2372,7 @@ export type Database = {
         Returns: string
       }
       get_discord_member: {
-        Args: { p_user_id: string; p_guild_id: number }
+        Args: { p_guild_id: number; p_user_id: string }
         Returns: {
           guild_id: number
           meta: Json
@@ -2319,9 +2381,9 @@ export type Database = {
       get_github_contributions: {
         Args: { p_user_id: string }
         Returns: {
+          meta: Json
           owner: string
           repo: string
-          meta: Json
         }[]
       }
       get_github_starred_repos: {
@@ -2340,8 +2402,8 @@ export type Database = {
           | { batch_size: number }
           | { batch_size: number; update_interval: unknown }
         Returns: {
-          user_id: string
           mission_ids: number[]
+          user_id: string
         }[]
       }
       get_twitter_follows: {
@@ -2353,18 +2415,18 @@ export type Database = {
       get_unearned_achievements: {
         Args: { achievement_type: number } | { p_user_id: string }
         Returns: {
-          user_id: string
-          achievement_id: number
+          id: number
           meta: Json
+          type: string
         }[]
       }
       get_unearned_active_missions: {
         Args: { mission_type: number }
         Returns: {
-          user_id: string
+          meta: Json
           mission_id: number
           type: number
-          meta: Json
+          user_id: string
         }[]
       }
       get_unique_chains: {
@@ -2374,9 +2436,9 @@ export type Database = {
       get_user_missions: {
         Args: { p_user_id: string }
         Returns: {
-          user_id: string
           mission_ids: number[]
           ticked: boolean
+          user_id: string
         }[]
       }
       hex_to_bytea: {
@@ -2393,12 +2455,12 @@ export type Database = {
       }
       http_delete: {
         Args:
+          | { content: string; content_type: string; uri: string }
           | { uri: string }
-          | { uri: string; content: string; content_type: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_get: {
-        Args: { uri: string } | { uri: string; data: Json }
+        Args: { data: Json; uri: string } | { uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_head: {
@@ -2417,17 +2479,17 @@ export type Database = {
         }[]
       }
       http_patch: {
-        Args: { uri: string; content: string; content_type: string }
+        Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_post: {
         Args:
-          | { uri: string; content: string; content_type: string }
-          | { uri: string; data: Json }
+          | { content: string; content_type: string; uri: string }
+          | { data: Json; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_put: {
-        Args: { uri: string; content: string; content_type: string }
+        Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_reset_curlopt: {
@@ -2444,13 +2506,17 @@ export type Database = {
       }
       insert_points: {
         Args: {
-          user_id: string
-          partner_id: number
-          reason: string
-          points: number
-          start_time: string
           end_time: string
+          partner_id: number
+          points: number
+          reason: string
+          start_time: string
+          user_id: string
         }
+        Returns: undefined
+      }
+      migrate_raccoons_nfts: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       pg_stat_monitor_internal: {
@@ -2493,11 +2559,11 @@ export type Database = {
         Args: { batch_size?: number }
         Returns: {
           batch_num: number
-          processed: number
-          total_done: number
-          success: number
           failed: number
+          processed: number
+          success: number
           time_sec: number
+          total_done: number
         }[]
       }
       range: {
@@ -2506,19 +2572,14 @@ export type Database = {
       }
       silent_process_all_users: {
         Args: Record<PropertyKey, never>
-        Returns: {
-          final_count: number
-          new_inserts: number
-          updates: number
-          time_taken: number
-        }[]
+        Returns: undefined
       }
       snag_mark_queue_completed: {
         Args: { queue_ids: number[] }
         Returns: undefined
       }
       snag_mark_queue_failed: {
-        Args: { queue_ids: number[]; error_msg: string }
+        Args: { error_msg: string; queue_ids: number[] }
         Returns: undefined
       }
       text_to_bytea: {
@@ -2531,13 +2592,13 @@ export type Database = {
       }
       upsert_user_achievements: {
         Args: {
-          p_user_id: string
           p_achievements: Json[]
           p_do_update?: boolean
+          p_user_id: string
         }
         Returns: {
-          achievement_id: number
           achieved_at: string
+          achievement_id: number
           created_at: string
           progression: number
           threshold: number

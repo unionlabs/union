@@ -21,6 +21,15 @@ export type UserMission = Entity<"user_missions">
 export type UserReward = Entity<"user_rewards_with_queue">
 export type Wallet = Entity<"wallets">
 export type Device = Entity<"devices">
+export type YapsSeason = {
+  user_id: string | null
+  username: string | null
+  mindshare: string | null
+  twitter_id: number | null
+  pfp: string | null
+  team: boolean | null
+  rank: number | null
+}
 
 type DeviceInsert = {
   ipAddress: string
@@ -332,6 +341,70 @@ export const submitWalletVerification = (
         ),
       )
     }),
+  )
+
+export const getYapsSeason0 = (userId: string) =>
+  withLocalStorageCacheStale(
+    "yaps_season_0",
+    `${CACHE_VERSION}:${userId}`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("yaps_season_zero_with_users")
+              .select("user_id, username, mindshare, twitter_id, pfp, team, rank")
+              .eq("user_id", userId)
+              .order("rank", { ascending: true }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadYapsSeason0",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadYapsSeason0" }))
+        return Effect.succeed(Option.none())
+      }),
+    ),
+  )
+
+export const getYapsSeason1 = (userId: string) =>
+  withLocalStorageCacheStale(
+    "yaps_season_1",
+    `${CACHE_VERSION}:${userId}`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("yaps_season_one_with_users")
+              .select("user_id, username, mindshare, twitter_id, pfp, team, rank")
+              .eq("user_id", userId)
+              .order("rank", { ascending: true }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadYapsSeason1",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadYapsSeason1" }))
+        return Effect.succeed(Option.none())
+      }),
+    ),
   )
 
 export const createSnagUserDevice = (input: DeviceInsert) => {
