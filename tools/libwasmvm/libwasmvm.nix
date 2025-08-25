@@ -34,7 +34,7 @@ let
     };
     "3.0.0" = {
       "x86_64-linux" = "sha256-zv5z8Mqlqeq6NzPGOc31BAxHRqk8IGcLpskof+OUSLo=";
-      "aarch64-linux" = "";
+      "aarch64-linux" = "sha256-oElptPkxvh0uLz8jE6aKIKICaT9nVZ96rx3ZclCCOuw=";
       "aarch64-darwin" = "";
     };
   };
