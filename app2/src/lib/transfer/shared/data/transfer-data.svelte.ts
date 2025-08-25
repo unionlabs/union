@@ -337,10 +337,6 @@ function filterByEdition(
   editionName: Edition,
   environment: string,
 ): boolean {
-  if (chain.chain_id === "union-testnet-10") {
-    return true
-  } // XXX: remove me
-
   return pipe(
     Option.fromNullable(chain.editions),
     Option.match({
