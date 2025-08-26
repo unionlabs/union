@@ -1,66 +1,66 @@
 @layer base, starlight, rapide, theme, components, utilities;
 
-@import '@astrojs/starlight-tailwind';
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+@import "@astrojs/starlight-tailwind";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 
 /* https://starlight.astro.build/guides/css-and-tailwind/#styling-starlight-with-tailwind */
 @theme {
-  --breakpoint-xs : 320px;
+  --breakpoint-xs: 320px;
   --breakpoint-2xl: 1400px;
 
-  --font-sans   : "Inter var", system-ui, sans-serif;
-  --font-display: "Inter var", system-ui, sans-serif;
-  --font-mono   : "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-display: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  --text-md   : 1rem;
+  --text-md: 1rem;
   --leading-md: 1.5rem;
 
-	--radius    : 0.5rem;
-	--radius-xl : calc(var(--radius) + 4px);
-	--radius-lg : var(--radius);
-	--radius-md : calc(var(--radius) - 2px);
-	--radius-sm : calc(var(--radius) - 4px);
+  --radius: 0.5rem;
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 
-	--color-background : var(--background);
-	--color-foreground : var(--foreground);
-	--color-border     : var(--border);
-	--color-input      : var(--input);
-	--color-ring       : var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-	--color-primary            : var(--primary);
-	--color-primary-foreground : var(--primary-foreground);
-	--color-secondary          : var(--secondary);
-	--color-secondary-foreground : var(--secondary-foreground);
-	--color-destructive            : var(--destructive);
-	--color-destructive-foreground : var(--destructive-foreground);
-	--color-muted            : var(--muted);
-	--color-muted-foreground : var(--muted-foreground);
-	--color-popover            : var(--popover);
-	--color-popover-foreground : var(--popover-foreground);
-	--color-card            : var(--card);
-	--color-card-foreground : var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
 
-	--color-sidebar                    : var(--sidebar-background);
-	--color-sidebar-foreground         : var(--sidebar-foreground);
-	--color-sidebar-primary            : var(--sidebar-primary);
-	--color-sidebar-primary-foreground : var(--sidebar-primary-foreground);
-	--color-sidebar-accent             : var(--sidebar-accent);
-	--color-sidebar-accent-foreground  : var(--sidebar-accent-foreground);
-	--color-sidebar-border             : var(--sidebar-border);
-	--color-sidebar-ring               : var(--sidebar-ring);
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-	--color-accent-50  : #fafeff;
-	--color-accent-100 : #f0fcff;
-	--color-accent-200 : #dcf8fe;
-	--color-accent-300 : #c8f4fe;
-	--color-accent-400 : #b4f0fd;
-	--color-accent-500 : #a0ecfd;
-	--color-accent-600 : #5fdfdc;
-	--color-accent-700 : #1ed2fa;
-	--color-accent-800 : #04acd2;
-	--color-accent-900 : #037791;
-	--color-accent-950 : #025c70;
+  --color-accent-50: #fafeff;
+  --color-accent-100: #f0fcff;
+  --color-accent-200: #dcf8fe;
+  --color-accent-300: #c8f4fe;
+  --color-accent-400: #b4f0fd;
+  --color-accent-500: #a0ecfd;
+  --color-accent-600: #5fdfdc;
+  --color-accent-700: #1ed2fa;
+  --color-accent-800: #04acd2;
+  --color-accent-900: #037791;
+  --color-accent-950: #025c70;
 }
 
 @layer base {
@@ -132,7 +132,7 @@
   --sl-text-h1: 1.8125rem;
   --sl-white: #f9f9f9;
   --sl-color-white: #f9f9f9;
-  --bg-gray: #1f1f1f1f;
+  --bg-gray: #081215;
   --sl-color-black: #0d0d0d;
   --sl-color-accent: var(--colors-accent-500) !important;
   --sl-color-accent-high: var(--colors-accent-950) !important;
@@ -173,7 +173,7 @@
   --ec-frm-edBg: #17191e !important;
 }
 
-.sidebar-pane  a[aria-current='page'] {
+.sidebar-pane a[aria-current="page"] {
   color: var(--sl-color-text-accent);
 }
 
@@ -266,6 +266,6 @@ h1 > a {
 
 /* override because rapide is overridden by something */
 .right-sidebar starlight-toc li > a {
-  border-radius       : 0;
+  border-radius: 0;
   padding-inline-start: calc(1rem * var(--depth) + var(--pad-inline) + 0.35rem);
 }
