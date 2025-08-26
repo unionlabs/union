@@ -18,6 +18,11 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum Root {
     Batch(Batch),
     TokenOrder(TokenOrder),
@@ -86,6 +91,11 @@ impl Root {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum RootShape {
     Batch(BatchShape),
     TokenOrder(TokenOrderShape),

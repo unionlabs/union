@@ -11,6 +11,11 @@ use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[repr(u8)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum TokenOrder {
     #[deprecated(since = "TBD")]
     V1(TokenOrderV1) = INSTR_VERSION_1,
@@ -19,6 +24,11 @@ pub enum TokenOrder {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum TokenOrderShape {
     #[deprecated(since = "TBD")]
     V1 = INSTR_VERSION_1,
@@ -51,6 +61,11 @@ impl TokenOrder {
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[repr(u8)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum TokenOrderAck {
     #[deprecated(since = "TBD")]
     V1(TokenOrderV1Ack) = INSTR_VERSION_1,
@@ -68,6 +83,11 @@ impl TokenOrderAck {
 
 #[deprecated(note = "token order v1 will be superceded by v2", since = "TBD")]
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct TokenOrderV1 {
     pub sender: Bytes,
     pub receiver: Bytes,
@@ -131,6 +151,11 @@ impl TokenOrderV1 {
 
 #[deprecated(note = "token order v1 will be superceded by v2", since = "TBD")]
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum TokenOrderV1Ack {
     Protocol,
     MarketMaker { market_maker: Bytes },
@@ -163,6 +188,11 @@ impl TokenOrderV1Ack {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum TokenOrderV2Ack {
     Protocol,
     MarketMaker { market_maker: Bytes },
@@ -195,6 +225,11 @@ impl TokenOrderV2Ack {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct TokenOrderV2 {
     pub sender: Bytes,
     pub receiver: Bytes,
@@ -249,6 +284,11 @@ impl TokenOrderV2 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),
     Escrow(Bytes),
@@ -257,12 +297,22 @@ pub enum TokenOrderV2Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct TokenMetadata {
     pub implementation: Bytes,
     pub initializer: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct SolverMetadata {
     pub solver_address: Bytes,
     pub metadata: Bytes,

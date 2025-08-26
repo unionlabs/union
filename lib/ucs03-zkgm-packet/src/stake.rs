@@ -6,11 +6,21 @@ use unionlabs_primitives::{Bytes, U256};
 use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum Stake {
     V0(StakeV0),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum StakeShape {
     V0,
 }
@@ -37,6 +47,11 @@ impl Stake {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct StakeV0 {
     token_id: U256,
     governance_token: Bytes,
@@ -83,5 +98,41 @@ impl StakeV0 {
                 amount: self.amount.into(),
             },
         )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub enum StakeAck {
+    V0(StakeV0Ack),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub struct StakeV0Ack {}
+
+impl StakeV0Ack {
+    fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
+        if bz.as_ref().is_empty() {
+            Ok(Self {})
+        } else {
+            Err("stake v0 ack must be empty".into())
+        }
+    }
+}
+
+impl StakeAck {
+    pub(crate) fn decode(shape: StakeShape, bz: impl AsRef<[u8]>) -> Result<Self> {
+        match shape {
+            StakeShape::V0 => StakeV0Ack::decode(bz).map(Self::V0),
+        }
     }
 }

@@ -6,16 +6,31 @@ use unionlabs_primitives::Bytes;
 use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum Call {
     V0(CallV0),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum CallShape {
     V0(CallV0Shape),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct CallV0Shape {
     pub eureka: bool,
 }
@@ -42,6 +57,11 @@ impl Call {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct CallV0 {
     pub sender: Bytes,
     pub eureka: bool,
@@ -80,25 +100,35 @@ impl CallV0 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum CallAck {
-    V0(CallAckV0),
+    V0(CallV0Ack),
 }
 
 impl CallAck {
     pub(crate) fn decode(shape: CallShape, ack: impl AsRef<[u8]>) -> Result<Self> {
         match shape {
-            CallShape::V0(shape) => CallAckV0::decode(shape, ack).map(CallAck::V0),
+            CallShape::V0(shape) => CallV0Ack::decode(shape, ack).map(CallAck::V0),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CallAckV0 {
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub enum CallV0Ack {
     NonEureka,
     Eureka(Bytes),
 }
 
-impl CallAckV0 {
+impl CallV0Ack {
     pub(crate) fn decode(shape: CallV0Shape, ack: impl AsRef<[u8]>) -> Result<Self> {
         if shape.eureka {
             Ok(Self::Eureka(ack.as_ref().into()))

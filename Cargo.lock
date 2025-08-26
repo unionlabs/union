@@ -17021,6 +17021,7 @@ dependencies = [
  "enumorph",
  "hex-literal",
  "serde",
+ "serde_json",
  "ucs03-zkgm",
  "unionlabs-primitives",
 ]

@@ -6,11 +6,21 @@ use unionlabs_primitives::{Bytes, U256};
 use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum WithdrawRewards {
     V0(WithdrawRewardsV0),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum WithdrawRewardsShape {
     V0,
 }
@@ -37,6 +47,11 @@ impl WithdrawRewards {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct WithdrawRewardsV0 {
     token_id: U256,
     governance_token: Bytes,
@@ -79,5 +94,44 @@ impl WithdrawRewardsV0 {
                 beneficiary: self.beneficiary.into(),
             },
         )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub enum WithdrawRewardsAck {
+    V0(WithdrawRewardsV0Ack),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub struct WithdrawRewardsV0Ack {
+    pub amount: U256,
+}
+
+impl WithdrawRewardsV0Ack {
+    fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
+        let ucs03_zkgm::com::WithdrawRewardsAck { amount } =
+            ucs03_zkgm::com::WithdrawRewardsAck::abi_decode_params_validate(bz.as_ref())?;
+
+        Ok(Self {
+            amount: amount.into(),
+        })
+    }
+}
+
+impl WithdrawRewardsAck {
+    pub(crate) fn decode(shape: WithdrawRewardsShape, bz: impl AsRef<[u8]>) -> Result<Self> {
+        match shape {
+            WithdrawRewardsShape::V0 => WithdrawRewardsV0Ack::decode(bz).map(Self::V0),
+        }
     }
 }

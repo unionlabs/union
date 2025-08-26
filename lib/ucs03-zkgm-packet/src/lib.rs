@@ -5,7 +5,11 @@ use ucs03_zkgm::com::{TAG_ACK_FAILURE, TAG_ACK_SUCCESS};
 use unionlabs_primitives::{Bytes, H256, U256};
 
 pub use crate::{batch::Batch, call::Call, forward::Forward, root::Root, token_order::TokenOrder};
-use crate::{batch::BatchAck, call::CallAck, root::RootShape, token_order::TokenOrderAck};
+use crate::{
+    batch::BatchAck, call::CallAck, forward::ForwardAck, root::RootShape, stake::StakeAck,
+    token_order::TokenOrderAck, unstake::UnstakeAck, withdraw_rewards::WithdrawRewardsAck,
+    withdraw_stake::WithdrawStakeAck,
+};
 
 pub mod batch;
 pub mod call;
@@ -20,6 +24,11 @@ pub mod withdraw_stake;
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct ZkgmPacket {
     salt: H256,
     path: U256,
@@ -52,16 +61,31 @@ impl ZkgmPacket {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum Ack {
     Success(RootAck),
     Failure(Bytes),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum RootAck {
     Batch(BatchAck),
     TokenOrder(TokenOrderAck),
     Call(CallAck),
+    Forward(ForwardAck),
+    Stake(StakeAck),
+    Unstake(UnstakeAck),
+    WithdrawStake(WithdrawStakeAck),
+    WithdrawRewards(WithdrawRewardsAck),
 }
 
 impl Ack {
@@ -76,11 +100,19 @@ impl Ack {
                     TokenOrderAck::decode(shape, inner_ack).map(RootAck::TokenOrder)
                 }
                 RootShape::Call(shape) => CallAck::decode(shape, inner_ack).map(RootAck::Call),
-                RootShape::Forward(_shape) => todo!(),
-                RootShape::Stake(_shape) => todo!(),
-                RootShape::Unstake(_shape) => todo!(),
-                RootShape::WithdrawStake(_shape) => todo!(),
-                RootShape::WithdrawRewards(_shape) => todo!(),
+                RootShape::Forward(shape) => {
+                    ForwardAck::decode(shape, inner_ack).map(RootAck::Forward)
+                }
+                RootShape::Stake(shape) => StakeAck::decode(shape, inner_ack).map(RootAck::Stake),
+                RootShape::Unstake(shape) => {
+                    UnstakeAck::decode(shape, inner_ack).map(RootAck::Unstake)
+                }
+                RootShape::WithdrawStake(shape) => {
+                    WithdrawStakeAck::decode(shape, inner_ack).map(RootAck::WithdrawStake)
+                }
+                RootShape::WithdrawRewards(shape) => {
+                    WithdrawRewardsAck::decode(shape, inner_ack).map(RootAck::WithdrawRewards)
+                }
             }
             .map(Ack::Success),
             TAG_ACK_FAILURE => Ok(Ack::Failure(inner_ack.into())),
@@ -187,7 +219,7 @@ mod tests {
             BatchInstructionV0, BatchInstructionV0Ack, BatchInstructionV0Shape, BatchV0,
             BatchV0Ack, BatchV0Shape,
         },
-        call::{CallAckV0, CallShape, CallV0, CallV0Shape},
+        call::{CallShape, CallV0, CallV0Ack, CallV0Shape},
         token_order::{TokenOrderShape, TokenOrderV1, TokenOrderV1Ack},
     };
 
@@ -250,7 +282,7 @@ mod tests {
         let expected_ack = Ack::Success(RootAck::Batch(BatchAck::V0(BatchV0Ack {
             instructions: vec![
                 BatchInstructionV0Ack::TokenOrder(TokenOrderAck::V1(TokenOrderV1Ack::Protocol)),
-                BatchInstructionV0Ack::Call(CallAck::V0(CallAckV0::NonEureka)),
+                BatchInstructionV0Ack::Call(CallAck::V0(CallV0Ack::NonEureka)),
             ],
         })));
 
@@ -269,10 +301,14 @@ mod tests {
 
         let shape = decoded_packet.instruction.shape();
 
-        dbg!(shape);
+        dbg!(&shape);
 
         let ack = Ack::decode(decoded_packet.instruction.shape(), ack).unwrap();
 
-        dbg!(ack);
+        dbg!(&ack);
+
+        println!("{}", serde_json::to_string_pretty(&decoded_packet).unwrap());
+        println!("{}", serde_json::to_string_pretty(&shape).unwrap());
+        println!("{}", serde_json::to_string_pretty(&ack).unwrap());
     }
 }

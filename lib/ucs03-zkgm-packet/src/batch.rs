@@ -7,20 +7,30 @@ use ucs03_zkgm::com::{
 
 use crate::{
     call::{Call, CallAck, CallShape},
-    stake::{Stake, StakeShape},
+    stake::{Stake, StakeAck, StakeShape},
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
-    unstake::{Unstake, UnstakeShape},
-    withdraw_rewards::{WithdrawRewards, WithdrawRewardsShape},
-    withdraw_stake::{WithdrawStake, WithdrawStakeShape},
+    unstake::{Unstake, UnstakeAck, UnstakeShape},
+    withdraw_rewards::{WithdrawRewards, WithdrawRewardsAck, WithdrawRewardsShape},
+    withdraw_stake::{WithdrawStake, WithdrawStakeAck, WithdrawStakeShape},
     Instruction, Result,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum Batch {
     V0(BatchV0),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum BatchShape {
     V0(BatchV0Shape),
 }
@@ -49,6 +59,11 @@ impl Batch {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum BatchAck {
     V0(BatchV0Ack),
 }
@@ -81,18 +96,33 @@ impl BatchAck {
 
 // TODO: Non-empty
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct BatchV0 {
     pub instructions: Vec<BatchInstructionV0>,
 }
 
 // TODO: Non-empty
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct BatchV0Ack {
     pub instructions: Vec<BatchInstructionV0Ack>,
 }
 
 // TODO: Non-empty
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct BatchV0Shape {
     pub instructions: Vec<BatchInstructionV0Shape>,
 }
@@ -125,6 +155,11 @@ impl BatchV0 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum BatchInstructionV0 {
     TokenOrder(TokenOrder),
     Call(Call),
@@ -135,13 +170,18 @@ pub enum BatchInstructionV0 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum BatchInstructionV0Ack {
     TokenOrder(TokenOrderAck),
     Call(CallAck),
-    // Stake(StakeAck),
-    // Unstake(UnstakeAck),
-    // WithdrawStake(WithdrawStakeAck),
-    // WithdrawRewards(WithdrawRewardsAck),
+    Stake(StakeAck),
+    Unstake(UnstakeAck),
+    WithdrawStake(WithdrawStakeAck),
+    WithdrawRewards(WithdrawRewardsAck),
 }
 
 impl BatchInstructionV0Ack {
@@ -167,6 +207,11 @@ impl BatchInstructionV0Ack {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum BatchInstructionV0Shape {
     TokenOrder(TokenOrderShape),
     Call(CallShape),

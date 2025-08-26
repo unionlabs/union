@@ -6,11 +6,21 @@ use unionlabs_primitives::{Bytes, U256};
 use crate::{Instruction, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum WithdrawStake {
     V0(WithdrawStakeV0),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum WithdrawStakeShape {
     V0,
 }
@@ -37,6 +47,11 @@ impl WithdrawStake {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct WithdrawStakeV0 {
     token_id: U256,
     governance_token: Bytes,
@@ -75,5 +90,44 @@ impl WithdrawStakeV0 {
                 beneficiary: self.beneficiary.into(),
             },
         )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub enum WithdrawStakeAck {
+    V0(WithdrawStakeV0Ack),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub struct WithdrawStakeV0Ack {
+    pub amount: U256,
+}
+
+impl WithdrawStakeV0Ack {
+    fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
+        let ucs03_zkgm::com::WithdrawStakeAck { amount } =
+            ucs03_zkgm::com::WithdrawStakeAck::abi_decode_params_validate(bz.as_ref())?;
+
+        Ok(Self {
+            amount: amount.into(),
+        })
+    }
+}
+
+impl WithdrawStakeAck {
+    pub(crate) fn decode(shape: WithdrawStakeShape, bz: impl AsRef<[u8]>) -> Result<Self> {
+        match shape {
+            WithdrawStakeShape::V0 => WithdrawStakeV0Ack::decode(bz).map(Self::V0),
+        }
     }
 }
