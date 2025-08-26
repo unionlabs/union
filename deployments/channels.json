@@ -20,7 +20,7 @@
         "forward": "PT20M",
         "reverse": "PT45M"
       },
-      "tags": ["canonical", "tokenorder-v2"]
+      "tags": ["canonical"]
     }
   },
   "babylon.bbn-test-5": {
