@@ -25,7 +25,7 @@ const Proto = {
       destination: this.destination,
       channelId: this.channelId,
       ucs03Address: this.ucs03Address,
-      instruction: this.instruction,
+      instruction: this.instruction.toJSON(),
     }
   },
   pipe() {

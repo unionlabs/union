@@ -83,7 +83,7 @@ const Proto = {
   toJSON(this: Batch): unknown {
     return {
       _id: "@unionlabs/sdk/Batch",
-      instructions: A.map(this.instructions, (x) => x.toString()),
+      instructions: this.instructions,
     }
   },
   pipe() {
