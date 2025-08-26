@@ -273,8 +273,8 @@ export default defineConfig({
               label: "Infrastructure",
               items: [
                 {
-                  label: "Testnet 9",
-                  link: "/infrastructure/testnet-9",
+                  label: "Testnet 10",
+                  link: "/infrastructure/testnet-10",
                 },
                 {
                   label: "Node Operators",
