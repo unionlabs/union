@@ -158,13 +158,13 @@
     "core": {
       "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
       "height": 15699438,
-      "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
     },
     "lightclient": {
       "cometbls": {
         "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
         "height": 15699439,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
       },
       "state-lens/ics23/ics23": {
         "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
@@ -181,7 +181,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 15699440,
-        "commit": "2f7cc0a3822983bb7b75d4e81814227029db50bd"
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
       }
     }
   },
@@ -318,13 +318,13 @@
     "core": {
       "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
       "height": 392723,
-      "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
     },
     "lightclient": {
       "cometbls": {
         "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
         "height": 392724,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
       },
       "state-lens/ics23/ics23": {
         "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
@@ -341,7 +341,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 392727,
-        "commit": "2f7cc0a3822983bb7b75d4e81814227029db50bd"
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
       }
     }
   },
