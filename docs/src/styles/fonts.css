@@ -1,31 +1,15 @@
 @font-face {
-  font-family: "Inter var";
-  font-style: normal;
-  font-weight: 100 900;
+  font-family: "Geist";
+  font-weight: 100 1000;
   font-display: swap;
-  src: url("/fonts/InterVariable.woff2") format("woff2");
+  src: url("/fonts/Geist[wght].woff2") format("woff2-variations");
+  src: url("/fonts/Geist[wght].woff2") format("woff2") tech("variations");
 }
 
 @font-face {
-  font-family: "Inter var";
-  font-style: italic;
-  font-weight: 100 900;
+  font-family: "Geist Mono";
+  font-weight: 100 1000;
   font-display: swap;
-  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "JetBrains Mono";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/JetBrainsMono[wght].woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "JetBrains Mono";
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/JetBrainsMono-Italic[wght].woff2") format("woff2");
+  src: url("/fonts/GeistMono[wght].woff2") format("woff2-variations");
+  src: url("/fonts/GeistMono[wght].woff2") format("woff2") tech("variations");
 }

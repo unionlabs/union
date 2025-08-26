@@ -326,6 +326,10 @@ export default defineConfig({
               link: "/ceremony",
             },
             {
+              label: "Tokenomics",
+              link: "/u",
+            },
+            {
               label: "FAQ",
               collapsed: true,
               items: [
