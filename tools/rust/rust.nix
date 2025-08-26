@@ -109,12 +109,8 @@ _: {
       packages.fetchRustStdCargoLock = mkCi false (
         pkgs.writeShellApplication {
           name = "fetchRustStdCargoLock";
-          runtimeInputs = [ pkgs.xz ];
           text = ''
             ${ensureAtRepositoryRoot}
-
-            # echo ${rustSrc}
-            # ls -al ${rustSrc}
 
             cp ${rustSrc}/lib/rustlib/src/rust/library/Cargo.lock tools/rust/rust-std-Cargo.lock
           '';

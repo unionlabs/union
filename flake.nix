@@ -150,6 +150,15 @@
       solc,
       ...
     }:
+    let
+      getRepoMeta = this: {
+        gitRev = if (builtins.hasAttr "rev" this) then this.rev else "dirty";
+        gitShortRev = this.shortRev or (this.dirtyShortRev or "dirty");
+        lastModified = if this ? lastModified then builtins.toString this.lastModified else "0";
+        lastModifiedDate = this.lastModifiedDate or "1970-01-01T00:00:00Z";
+      };
+    in
+    with (getRepoMeta self);
     flake-parts.lib.mkFlake { inherit inputs; } {
       flake = {
         site = {
@@ -231,6 +240,7 @@
           self',
           pkgs,
           rust,
+          mkCrane,
           system,
           lib,
           ...
@@ -256,11 +266,6 @@
 
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
           pkgsGoUnstable = import inputs.nixpkgs-go-unstable { inherit system; };
-
-          gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
-          gitShortRev = self.shortRev or (self.dirtyShortRev or "dirty");
-          lastModified = if self ? lastModified then builtins.toString self.lastModified else "0";
-          lastModifiedDate = self.lastModifiedDate or "1970-01-01T00:00:00Z";
         in
         {
           _module = {
@@ -470,6 +475,7 @@
           packages = {
             default = mkCi false self'.packages.uniond;
             inherit (pkgs) solc;
+            # lib.mkCrane = import ./tools/rust/mkCrane.nix;
             # sourceInfo = builtins.toFile "gitRev" (
             #   builtins.toJSON (
             #     builtins.removeAttrs self.sourceInfo [
@@ -605,6 +611,11 @@
               ;
           };
         };
+    }
+    // {
+      lib = {
+        inherit getRepoMeta;
+      };
     };
 
   nixConfig = {
