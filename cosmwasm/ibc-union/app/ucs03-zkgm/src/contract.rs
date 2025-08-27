@@ -3761,29 +3761,28 @@ fn migrate_v1_to_v2(
         let balance = DEPRECATED_CHANNEL_BALANCE_V1.may_load(deps.storage, key.clone())?;
 
         if let Some(balance) = balance {
-            if !balance.is_zero() {
-                // Remove from V1 storage
-                DEPRECATED_CHANNEL_BALANCE_V1.remove(deps.storage, key);
-
-                // Add to V2 storage
-                CHANNEL_BALANCE_V2.update(
-                    deps.storage,
-                    (
-                        migration.channel_id.raw(),
-                        (
-                            migration.path.to_be_bytes().to_vec(),
-                            migration.base_token,
-                            migration.quote_token.to_vec(),
-                        ),
-                    ),
-                    |existing_balance| match existing_balance {
-                        Some(existing) => existing
-                            .checked_add(balance)
-                            .map_err(|_| ContractError::InvalidChannelBalance),
-                        None => Ok(balance),
-                    },
-                )?;
+            if balance.is_zero() {
+                return Err(StdError::generic_err(format!(
+                    "balance is zero for migration: {:?}",
+                    migration
+                ))
+                .into());
             }
+            increase_channel_balance_v2(
+                deps.storage,
+                migration.channel_id,
+                U256::from_be_bytes(migration.path.to_be_bytes()),
+                migration.base_token,
+                migration.quote_token,
+                balance,
+            )?;
+            DEPRECATED_CHANNEL_BALANCE_V1.remove(deps.storage, key);
+        } else {
+            return Err(StdError::generic_err(format!(
+                "no balance found for migration: {:?}",
+                migration
+            ))
+            .into());
         }
     }
 
