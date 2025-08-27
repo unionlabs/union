@@ -26,8 +26,8 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
     function _stakingFailed(uint32 channelId, Stake calldata _stake) internal {
         ensureStakeIsFromChannel(channelId, _stake.tokenId);
         address sender = address(bytes20(_stake.sender));
-        (IZkgmERC20 governanceToken,) = _getGovernanceToken(channelId);
-        governanceToken.transfer(sender, _stake.amount);
+        IZkgmERC20 stakedToken = IZkgmERC20(_stake.stakedToken);
+        stakedToken.transfer(sender, _stake.amount);
     }
 
     function _withdrawStakeSucceeded(
@@ -38,7 +38,7 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         ensureStakeIsFromChannel(channelId, _withdrawStake.tokenId);
         ZkgmStake storage _stake = stakes[_withdrawStake.tokenId];
         _stake.state = ZkgmStakeState.UNSTAKED;
-        (IZkgmERC20 governanceToken,) = _getGovernanceToken(_stake.channelId);
+        IZkgmERC20 governanceToken = IZkgmERC20(_stake.stakedToken);
         address beneficiary = address(bytes20(_withdrawStake.beneficiary));
         governanceToken.transfer(beneficiary, _stake.amount);
         if (_stake.amount < _withdrawStakeAck.amount) {
@@ -63,8 +63,7 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         ZkgmStake storage _stake = stakes[_withdrawRewards.tokenId];
         _stake.state = ZkgmStakeState.STAKED;
         if (_withdrawRewardsAck.amount > 0) {
-            (IZkgmERC20 governanceToken,) =
-                _getGovernanceToken(_stake.channelId);
+            IZkgmERC20 governanceToken = IZkgmERC20(_stake.stakedToken);
             address beneficiary = address(bytes20(_withdrawRewards.beneficiary));
             // Mints the reward
             governanceToken.mint(beneficiary, _withdrawRewardsAck.amount);

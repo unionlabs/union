@@ -3,6 +3,22 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint256;
 use unionlabs::primitives::Bytes;
 
+pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
+
+pub const EXECUTE_REPLY_ID: u64 = 0x1337;
+pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
+pub const FORWARD_REPLY_ID: u64 = 0xbabe;
+pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
+pub const MM_RELAYER_FILL_REPLY_ID: u64 = 0xdead;
+pub const MM_SOLVER_FILL_REPLY_ID: u64 = 0xb0cad0;
+pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
+
+pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
+pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
+
+pub const SOLVER_EVENT: &str = "solver";
+pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
+
 pub const INSTR_VERSION_0: u8 = 0x00;
 pub const INSTR_VERSION_1: u8 = 0x01;
 pub const INSTR_VERSION_2: u8 = 0x02;
@@ -110,34 +126,27 @@ alloy_sol_types::sol! {
     #[derive(Debug, PartialEq)]
     struct Stake {
         uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
+        address staked_token;
+        bytes validator;
         bytes sender;
         bytes beneficiary;
-        bytes validator;
         uint256 amount;
     }
 
     struct Unstake {
         uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
-        bytes sender;
         bytes validator;
+        bytes sender;
     }
 
     struct WithdrawStake {
         uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
         bytes sender;
         bytes beneficiary;
     }
 
     struct WithdrawRewards {
         uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
         bytes validator;
         bytes sender;
         bytes beneficiary;

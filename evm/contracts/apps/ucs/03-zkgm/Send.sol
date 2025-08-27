@@ -312,8 +312,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
     }
 
     function _mintNFT(
-        uint256 tokenId,
         uint32 channelId,
+        uint256 tokenId,
+        address stakedToken,
         bytes calldata validator,
         uint256 amount
     ) internal {
@@ -321,6 +322,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         ZkgmStake storage _stake = stakes[tokenId];
         _stake.state = ZkgmStakeState.STAKING;
         _stake.channelId = channelId;
+        _stake.stakedToken = stakedToken;
         _stake.validator = validator;
         _stake.amount = amount;
         _stake.unstakingCompletion = 0;
@@ -331,28 +333,24 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         Stake calldata stake
     ) internal {
-        if (path != 0) {
-            revert ZkgmLib.ErrInstructionCannotBeForwarded();
-        }
-        // Verify the preimage of the governance token.
-        (
-            IZkgmERC20 governanceToken,
-            GovernanceToken memory originGovernanceToken
-        ) = _getGovernanceToken(channelId);
-        if (!stake.governanceToken.eq(originGovernanceToken.unwrappedToken)) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
-        }
+        address expectedStakedToken = address(getGovernanceToken(channelId));
         if (
-            !stake.governanceTokenWrapped.eq(
-                abi.encodePacked(address(governanceToken))
-            )
+            expectedStakedToken == address(0)
+                || stake.stakedToken != expectedStakedToken
         ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
+        IZkgmERC20 stakedToken = IZkgmERC20(stake.stakedToken);
         // Escrow the staked amount.
-        governanceToken.transferFrom(msg.sender, address(this), stake.amount);
+        stakedToken.transferFrom(msg.sender, address(this), stake.amount);
         // Escrow the NFT until the stake is acknowledged.
-        _mintNFT(stake.tokenId, channelId, stake.validator, stake.amount);
+        _mintNFT(
+            channelId,
+            stake.tokenId,
+            stake.stakedToken,
+            stake.validator,
+            stake.amount
+        );
     }
 
     function _canUnstake(
@@ -366,27 +364,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         Unstake calldata unstake
     ) internal {
-        if (path != 0) {
-            revert ZkgmLib.ErrInstructionCannotBeForwarded();
-        }
         ZkgmStake storage _stake = stakes[unstake.tokenId];
         if (channelId != _stake.channelId) {
             revert ZkgmLib.ErrInvalidStakeChannelId();
-        }
-        // Verify the preimage of the governance token.
-        (
-            IZkgmERC20 governanceToken,
-            GovernanceToken memory originGovernanceToken
-        ) = _getGovernanceToken(channelId);
-        if (!unstake.governanceToken.eq(originGovernanceToken.unwrappedToken)) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
-        }
-        if (
-            !unstake.governanceTokenWrapped.eq(
-                abi.encodePacked(address(governanceToken))
-            )
-        ) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (!_canUnstake(_stake)) {
             revert ZkgmLib.ErrStakeNotUnstakable();
@@ -418,30 +398,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         WithdrawStake calldata withdrawStake
     ) internal {
-        if (path != 0) {
-            revert ZkgmLib.ErrInstructionCannotBeForwarded();
-        }
         ZkgmStake storage _stake = stakes[withdrawStake.tokenId];
         if (channelId != _stake.channelId) {
             revert ZkgmLib.ErrInvalidStakeChannelId();
-        }
-        (
-            IZkgmERC20 governanceToken,
-            GovernanceToken memory originGovernanceToken
-        ) = _getGovernanceToken(channelId);
-        if (
-            !withdrawStake.governanceToken.eq(
-                originGovernanceToken.unwrappedToken
-            )
-        ) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
-        }
-        if (
-            !withdrawStake.governanceTokenWrapped.eq(
-                abi.encodePacked(address(governanceToken))
-            )
-        ) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (!_canWithdraw(_stake)) {
             revert ZkgmLib.ErrStakeNotWithdrawable();
@@ -457,30 +416,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         WithdrawRewards calldata withdrawRewards
     ) internal {
-        if (path != 0) {
-            revert ZkgmLib.ErrInstructionCannotBeForwarded();
-        }
         ZkgmStake storage _stake = stakes[withdrawRewards.tokenId];
         if (channelId != _stake.channelId) {
             revert ZkgmLib.ErrInvalidStakeChannelId();
-        }
-        (
-            IZkgmERC20 governanceToken,
-            GovernanceToken memory originGovernanceToken
-        ) = _getGovernanceToken(channelId);
-        if (
-            !withdrawRewards.governanceToken.eq(
-                originGovernanceToken.unwrappedToken
-            )
-        ) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
-        }
-        if (
-            !withdrawRewards.governanceTokenWrapped.eq(
-                abi.encodePacked(address(governanceToken))
-            )
-        ) {
-            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (!_canWithdrawRewards(_stake)) {
             revert ZkgmLib.ErrStakingRewardNotWithdrawable();

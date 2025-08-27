@@ -101,9 +101,9 @@ contract UCS03Zkgm is
 
     function registerGovernanceToken(
         uint32 channelId,
-        GovernanceToken calldata governanceToken
+        address governanceToken
     ) public restricted {
-        if (channelGovernanceToken[channelId].unwrappedToken.length != 0) {
+        if (channelGovernanceToken[channelId] != address(0)) {
             revert ZkgmLib.ErrChannelGovernanceTokenAlreadySet();
         }
         channelGovernanceToken[channelId] = governanceToken;
@@ -111,7 +111,7 @@ contract UCS03Zkgm is
 
     function overwriteGovernanceToken(
         uint32 channelId,
-        GovernanceToken calldata governanceToken
+        address governanceToken
     ) public restricted {
         channelGovernanceToken[channelId] = governanceToken;
     }

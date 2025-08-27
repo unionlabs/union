@@ -846,7 +846,7 @@ _: {
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
                     --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}, \"rate_limit_disabled\":${
                       if apps.ucs03.rate_limit_disabled then "true" else "false"
-                    }, \"cw_account_code_id\": $(cat cw-account-code-id.txt), \"dummy_code_id\": $(cat proxy-code-id.txt)}" \
+                    }, \"cw_account_code_id\": $(cat cw-account-code-id.txt), \"dummy_code_id\": $(cat proxy-code-id.txt), \"cw_escrow_vault\": \"$(echo "$ADDRESSES" | jq '.escrow_vault' -r)\"}" \
                     --force \
                     --new-bytecode ${(mk-app full-app.name).release} \
                     ${mk-gas-args gas_config}

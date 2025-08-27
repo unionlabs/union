@@ -4681,7 +4681,7 @@ dependencies = [
  "ibc-union-spec",
  "serde",
  "thiserror 2.0.12",
- "ucs03-zkgm",
+ "ucs03-zkgm-api",
  "unionlabs",
 ]
 
@@ -17009,7 +17009,22 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.12",
  "token-factory-api",
+ "ucs03-zkgm-api",
  "ucs03-zkgm-token-minter-api",
+ "unionlabs",
+]
+
+[[package]]
+name = "ucs03-zkgm-api"
+version = "0.0.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-sol-types",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "enumorph",
+ "ibc-union-spec",
+ "token-factory-api",
  "unionlabs",
 ]
 

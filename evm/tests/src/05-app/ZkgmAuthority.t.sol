@@ -48,43 +48,20 @@ contract ZkgmAuthorityTest is Test {
     // Test registerGovernanceToken function access control
     function test_registerGovernanceToken_authorized(
         uint32 channelId,
-        bytes memory unwrappedToken,
-        bytes32 metadataImage
+        address governanceToken
     ) public {
         vm.assume(channelId > 0);
-        vm.assume(unwrappedToken.length > 0);
-        vm.assume(metadataImage != bytes32(0));
 
         vm.prank(authority);
-        zkgm.registerGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken,
-                metadataImage: metadataImage
-            })
-        );
-
-        (bytes memory storedToken, bytes32 storedImage) =
-            zkgm.channelGovernanceToken(channelId);
-        assertEq(
-            keccak256(storedToken),
-            keccak256(unwrappedToken),
-            "Unwrapped token not stored correctly"
-        );
-        assertEq(
-            storedImage, metadataImage, "Metadata image not stored correctly"
-        );
+        zkgm.registerGovernanceToken(channelId, governanceToken);
     }
 
     function test_registerGovernanceToken_unauthorized(
         address nonAuthority,
         uint32 channelId,
-        bytes memory unwrappedToken,
-        bytes32 metadataImage
+        address governanceToken
     ) public {
         vm.assume(channelId > 0);
-        vm.assume(unwrappedToken.length > 0);
-        vm.assume(metadataImage != bytes32(0));
         vm.assume(nonAuthority != authority);
         vm.assume(nonAuthority != address(0));
 
@@ -94,104 +71,27 @@ contract ZkgmAuthorityTest is Test {
                 IAccessManaged.AccessManagedUnauthorized.selector, nonAuthority
             )
         );
-        zkgm.registerGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken,
-                metadataImage: metadataImage
-            })
-        );
-    }
-
-    function test_registerGovernanceToken_alreadySet(
-        uint32 channelId,
-        bytes memory unwrappedToken1,
-        bytes memory unwrappedToken2,
-        bytes32 metadataImage1,
-        bytes32 metadataImage2
-    ) public {
-        vm.assume(channelId > 0);
-        vm.assume(unwrappedToken1.length > 0);
-        vm.assume(unwrappedToken2.length > 0);
-        vm.assume(keccak256(unwrappedToken1) != keccak256(unwrappedToken2));
-        vm.assume(metadataImage1 != bytes32(0));
-        vm.assume(metadataImage2 != bytes32(0));
-
-        vm.startPrank(authority);
-        zkgm.registerGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken1,
-                metadataImage: metadataImage1
-            })
-        );
-
-        vm.expectRevert(ZkgmLib.ErrChannelGovernanceTokenAlreadySet.selector);
-        zkgm.registerGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken2,
-                metadataImage: metadataImage2
-            })
-        );
-        vm.stopPrank();
+        zkgm.registerGovernanceToken(channelId, governanceToken);
     }
 
     // Test overwriteGovernanceToken function access control
     function test_overwriteGovernanceToken_authorized(
         uint32 channelId,
-        bytes memory unwrappedToken1,
-        bytes memory unwrappedToken2,
-        bytes32 metadataImage1,
-        bytes32 metadataImage2
+        address governanceToken
     ) public {
         vm.assume(channelId > 0);
-        vm.assume(unwrappedToken1.length > 0);
-        vm.assume(unwrappedToken2.length > 0);
-        vm.assume(metadataImage1 != bytes32(0));
-        vm.assume(metadataImage2 != bytes32(0));
 
         vm.startPrank(authority);
-        zkgm.registerGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken1,
-                metadataImage: metadataImage1
-            })
-        );
-
-        zkgm.overwriteGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken2,
-                metadataImage: metadataImage2
-            })
-        );
+        zkgm.overwriteGovernanceToken(channelId, governanceToken);
         vm.stopPrank();
-
-        (bytes memory storedToken, bytes32 storedImage) =
-            zkgm.channelGovernanceToken(channelId);
-        assertEq(
-            keccak256(storedToken),
-            keccak256(unwrappedToken2),
-            "Unwrapped token not overwritten correctly"
-        );
-        assertEq(
-            storedImage,
-            metadataImage2,
-            "Metadata image not overwritten correctly"
-        );
     }
 
     function test_overwriteGovernanceToken_unauthorized(
         address nonAuthority,
         uint32 channelId,
-        bytes memory unwrappedToken,
-        bytes32 metadataImage
+        address governanceToken
     ) public {
         vm.assume(channelId > 0);
-        vm.assume(unwrappedToken.length > 0);
-        vm.assume(metadataImage != bytes32(0));
         vm.assume(nonAuthority != authority);
         vm.assume(nonAuthority != address(0));
 
@@ -201,13 +101,7 @@ contract ZkgmAuthorityTest is Test {
                 IAccessManaged.AccessManagedUnauthorized.selector, nonAuthority
             )
         );
-        zkgm.overwriteGovernanceToken(
-            channelId,
-            GovernanceToken({
-                unwrappedToken: unwrappedToken,
-                metadataImage: metadataImage
-            })
-        );
+        zkgm.overwriteGovernanceToken(channelId, governanceToken);
     }
 
     // Test pause function access control

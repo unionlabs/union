@@ -1,10 +1,9 @@
 use cosmwasm_std::{Addr, CosmosMsg, Uint256, Uint64};
 use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
+use ucs03_zkgm_api::CwTokenOrderV2;
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
 use unionlabs::primitives::{Bytes, H256};
-
-use crate::com::CwTokenOrderV2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -34,6 +33,8 @@ pub struct Config {
     pub dummy_code_id: u64,
     #[serde(default)]
     pub cw_account_code_id: u64,
+    #[serde(default)]
+    pub cw_escrow_vault: Option<Addr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

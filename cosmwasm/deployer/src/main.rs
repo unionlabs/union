@@ -623,7 +623,7 @@ async fn do_main() -> Result<()> {
                     )
                     .await?;
 
-                contract_addresses.escrow_vault = Some(escrow_vault_address);
+                contract_addresses.escrow_vault = Some(escrow_vault_address.clone());
 
                 info!("ucs03 address is {ucs03_address}");
 
@@ -805,6 +805,9 @@ async fn do_main() -> Result<()> {
                                 rate_limit_disabled: ucs03_config.rate_limit_disabled,
                                 dummy_code_id: bytecode_base_code_id.get(),
                                 cw_account_code_id: cw_account_code_id.get(),
+                                cw_escrow_vault: Some(Addr::unchecked(
+                                    escrow_vault_address.to_string(),
+                                )),
                             },
                             minter_init_params,
                         },

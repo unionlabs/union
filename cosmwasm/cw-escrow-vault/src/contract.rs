@@ -9,7 +9,7 @@ use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
-use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
+use ucs03_zkgm_api::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
 use unionlabs::primitives::{encoding::HexPrefixed, Bytes};
 
 use crate::{

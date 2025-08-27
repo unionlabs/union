@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
 use ibc_union_spec::{ChannelId, Packet};
-use ucs03_zkgm::com::CwTokenOrderV2;
+use ucs03_zkgm_api::CwTokenOrderV2;
 use unionlabs::primitives::{Bytes, H256, U256};
 
 #[cw_serde]

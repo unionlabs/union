@@ -262,11 +262,10 @@ library ZkgmLib {
     ) internal pure returns (bytes memory) {
         return abi.encode(
             stake.tokenId,
-            stake.governanceToken,
-            stake.governanceTokenWrapped,
+            stake.stakedToken,
+            stake.validator,
             stake.sender,
             stake.beneficiary,
-            stake.validator,
             stake.amount
         );
     }
@@ -274,13 +273,7 @@ library ZkgmLib {
     function encodeUnstake(
         Unstake memory unstake
     ) internal pure returns (bytes memory) {
-        return abi.encode(
-            unstake.tokenId,
-            unstake.governanceToken,
-            unstake.governanceTokenWrapped,
-            unstake.sender,
-            unstake.validator
-        );
+        return abi.encode(unstake.tokenId, unstake.validator, unstake.sender);
     }
 
     function encodeWithdrawStake(
@@ -288,8 +281,6 @@ library ZkgmLib {
     ) internal pure returns (bytes memory) {
         return abi.encode(
             withdrawStake.tokenId,
-            withdrawStake.governanceToken,
-            withdrawStake.governanceTokenWrapped,
             withdrawStake.sender,
             withdrawStake.beneficiary
         );
@@ -306,8 +297,6 @@ library ZkgmLib {
     ) internal pure returns (bytes memory) {
         return abi.encode(
             withdrawRewards.tokenId,
-            withdrawRewards.governanceToken,
-            withdrawRewards.governanceTokenWrapped,
             withdrawRewards.validator,
             withdrawRewards.sender,
             withdrawRewards.beneficiary

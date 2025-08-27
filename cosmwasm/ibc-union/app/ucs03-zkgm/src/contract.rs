@@ -18,6 +18,18 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{path::BatchPacketsPath, ChannelId, MustBeZero, Packet, Timestamp};
+use ucs03_zkgm_api::{
+    Ack, Batch, BatchAck, Call, CwTokenOrderV2, Forward, Instruction, SolverMetadata, Stake,
+    TokenMetadata, TokenOrderAck, TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards,
+    WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER,
+    EXECUTE_REPLY_ID, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_REPLY_ID,
+    FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+    MM_RELAYER_FILL_REPLY_ID, MM_SOLVER_FILL_REPLY_ID, MULTIPLEX_REPLY_ID, OP_BATCH, OP_CALL,
+    OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER, OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE,
+    PROTOCOL_VERSION, SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR, TAG_ACK_FAILURE,
+    TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
+    TOKEN_ORDER_KIND_UNESCROW, UNSTAKE_REPLY_ID, ZKGM_CW_ACCOUNT_LABEL, ZKGM_TOKEN_MINTER_LABEL,
+};
 use ucs03_zkgm_token_minter_api::{
     new_wrapped_token_event, LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind,
     WrappedTokenMsg,
@@ -28,16 +40,6 @@ use unionlabs::{
 };
 
 use crate::{
-    com::{
-        Ack, Batch, BatchAck, Call, Forward, Instruction, SolverMetadata, Stake, TokenMetadata,
-        TokenOrderAck, TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards,
-        WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER,
-        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
-        INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER,
-        OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
-        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
-        TOKEN_ORDER_KIND_UNESCROW,
-    },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg,
         V1ToV2Migration, V1ToV2WrappedMigration, ZkgmMsg,
@@ -51,22 +53,6 @@ use crate::{
     token_bucket::TokenBucket,
     ContractError,
 };
-
-pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
-
-pub const EXECUTE_REPLY_ID: u64 = 0x1337;
-pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
-pub const FORWARD_REPLY_ID: u64 = 0xbabe;
-pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
-pub const MM_RELAYER_FILL_REPLY_ID: u64 = 0xdead;
-pub const MM_SOLVER_FILL_REPLY_ID: u64 = 0xb0cad0;
-pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
-
-pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
-pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
-
-pub const SOLVER_EVENT: &str = "solver";
-pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
 
 /// Instantiate `ucs03-zkgm`.
 ///
@@ -1207,7 +1193,7 @@ fn execute_internal(
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
-                execute_fungible_asset_order(
+                execute_token_order(
                     deps,
                     env,
                     info,
@@ -1224,7 +1210,7 @@ fn execute_internal(
             }
             INSTR_VERSION_2 => {
                 let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
-                execute_fungible_asset_order_v2(
+                execute_token_order_v2(
                     deps,
                     env,
                     info,
@@ -1310,6 +1296,9 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
+            if !path.is_zero() {
+                return Err(ContractError::PathMustBeZero);
+            }
             let stake = Stake::abi_decode_params_validate(&instruction.operand)?;
             execute_stake(deps, env, packet, stake, intent)
         }
@@ -1318,6 +1307,9 @@ fn execute_internal(
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
+            }
+            if !path.is_zero() {
+                return Err(ContractError::PathMustBeZero);
             }
             let unstake = Unstake::abi_decode_params_validate(&instruction.operand)?;
             execute_unstake(deps, env, packet, unstake, intent)
@@ -1328,6 +1320,9 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
+            if !path.is_zero() {
+                return Err(ContractError::PathMustBeZero);
+            }
             let withdraw_stake = WithdrawStake::abi_decode_params_validate(&instruction.operand)?;
             execute_withdraw_stake(deps, env, packet, withdraw_stake, intent)
         }
@@ -1336,6 +1331,9 @@ fn execute_internal(
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
+            }
+            if !path.is_zero() {
+                return Err(ContractError::PathMustBeZero);
             }
             let withdraw_rewards =
                 WithdrawRewards::abi_decode_params_validate(&instruction.operand)?;
@@ -1830,7 +1828,7 @@ fn market_maker_fill_v2(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_fungible_asset_order(
+fn execute_token_order(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
@@ -2044,7 +2042,7 @@ fn execute_fungible_asset_order(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_fungible_asset_order_v2(
+fn execute_token_order_v2(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
@@ -2418,10 +2416,9 @@ fn execute_stake(
         )?));
     }
 
+    let governance_token = deps.querier.query_bonded_denom()?;
     let validator =
         str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?;
-    let governance_token = str::from_utf8(&stake.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
     let stake_amount = u128::try_from(stake.amount).map_err(|_| ContractError::AmountOverflow)?;
 
     let stake_account = predict_stake_account(
@@ -2442,7 +2439,7 @@ fn execute_stake(
         });
     }
 
-    let mut messages = Vec::new();
+    let mut messages = Vec::<CosmosMsg>::new();
     let config = CONFIG.load(deps.storage)?;
 
     // 1. Create the staking account
@@ -2476,31 +2473,47 @@ fn execute_stake(
         .into(),
     );
 
-    // 2. Unescrow the gov tokens to the stake account.
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-    decrease_channel_balance_v2(
-        deps,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.into(),
-        stake.governance_token_wrapped.0.to_vec().into(),
-        stake_amount.into(),
-    )?;
-
-    messages.push(make_wasm_msg(
-        LocalTokenMsg::Unescrow {
-            denom: governance_token.into(),
-            recipient: stake_account.clone().into(),
-            amount: stake_amount.into(),
-        },
-        minter,
-        vec![],
-    )?);
+    // 2. Unescrow the gov tokens to the stake account. Pretend to solve an
+    // order and if the configured lane was fungible, it's going to be
+    // fullfilled.
+    let cw_escrow_vault = config
+        .cw_escrow_vault
+        .ok_or_else(|| ContractError::EscrowVaultNotConfigured)?;
+    messages.push(
+        wasm_execute(
+            cw_escrow_vault.clone(),
+            &SolverMsg::DoSolve {
+                packet,
+                order: CwTokenOrderV2 {
+                    sender: stake.sender.to_vec().into(),
+                    receiver: stake_account.as_bytes().to_vec().into(),
+                    base_token: stake.staked_token.to_vec().into(),
+                    base_amount: stake_amount.into(),
+                    quote_token: governance_token.as_bytes().to_vec().into(),
+                    quote_amount: stake_amount.into(),
+                    kind: TOKEN_ORDER_KIND_SOLVE,
+                    metadata: SolverMetadata {
+                        solverAddress: cw_escrow_vault.as_bytes().to_vec().into(),
+                        metadata: Default::default(),
+                    }
+                    .abi_encode_params()
+                    .into(),
+                },
+                path: Uint256::zero(),
+                caller: env.contract.address.clone(),
+                relayer: env.contract.address.clone(),
+                relayer_msg: Bytes::default(),
+                intent,
+            },
+            vec![],
+        )?
+        .into(),
+    );
 
     // 3. Delegate the token to the validator
     messages.push(
         wasm_execute(
-            stake_account.clone(),
+            stake_account,
             &cw_account::msg::ExecuteMsg {
                 messages: vec![StakingMsg::Delegate {
                     validator: validator.into(),
@@ -2545,8 +2558,7 @@ fn execute_unstake(
 
     let validator =
         str::from_utf8(&unstake.validator).map_err(|_| ContractError::InvalidValidator)?;
-    let governance_token = str::from_utf8(&unstake.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let governance_token = deps.querier.query_bonded_denom()?;
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2603,10 +2615,13 @@ fn execute_withdraw_stake(
             vec![],
         )?));
     }
-    let minter = TOKEN_MINTER.load(deps.storage)?;
 
-    let governance_token = str::from_utf8(&withdraw_stake.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let config = CONFIG.load(deps.storage)?;
+    let cw_escrow_vault = config
+        .cw_escrow_vault
+        .ok_or_else(|| ContractError::EscrowVaultNotConfigured)?;
+
+    let governance_token = deps.querier.query_bonded_denom()?;
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2619,21 +2634,12 @@ fn execute_withdraw_stake(
         .querier
         .query_balance(stake_account.clone(), governance_token)?;
 
-    increase_channel_balance_v2(
-        deps.storage,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.to_string(),
-        withdraw_stake.governance_token_wrapped.0.to_vec().into(),
-        coin.amount.u128().into(),
-    )?;
-
     Ok(Response::new()
         .add_message(wasm_execute(
             stake_account.clone(),
             &cw_account::msg::ExecuteMsg {
                 messages: vec![BankMsg::Send {
-                    to_address: minter.into(),
+                    to_address: cw_escrow_vault.into(),
                     amount: vec![coin.clone()],
                 }
                 .into()],
@@ -2671,12 +2677,15 @@ fn execute_withdraw_rewards(
             vec![],
         )?));
     }
-    let minter = TOKEN_MINTER.load(deps.storage)?;
+
+    let config = CONFIG.load(deps.storage)?;
+    let cw_escrow_vault = config
+        .cw_escrow_vault
+        .ok_or_else(|| ContractError::EscrowVaultNotConfigured)?;
 
     let validator =
         str::from_utf8(&withdraw_rewards.validator).map_err(|_| ContractError::InvalidValidator)?;
-    let governance_token = str::from_utf8(&withdraw_rewards.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let governance_token = deps.querier.query_bonded_denom()?;
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2696,21 +2705,12 @@ fn execute_withdraw_rewards(
                 None
             }
         })
-        .unwrap_or(DecCoin::new(Decimal256::zero(), governance_token));
+        .unwrap_or(DecCoin::new(Decimal256::zero(), governance_token.clone()));
 
     let reward = Coin::new(
         Uint128::try_from(reward.amount.to_uint_floor()).expect("impossible"),
         governance_token,
     );
-
-    increase_channel_balance_v2(
-        deps.storage,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.to_string(),
-        withdraw_rewards.governance_token_wrapped.0.to_vec().into(),
-        reward.amount.u128().into(),
-    )?;
 
     Ok(Response::new()
         .add_message(wasm_execute(
@@ -2722,7 +2722,7 @@ fn execute_withdraw_rewards(
                     }
                     .into(),
                     BankMsg::Send {
-                        to_address: minter.into(),
+                        to_address: cw_escrow_vault.into(),
                         amount: vec![reward.clone()],
                     }
                     .into(),
@@ -3362,6 +3362,7 @@ pub struct MigrateMsg {
     rate_limit_disabled: bool,
     dummy_code_id: Option<u64>,
     cw_account_code_id: Option<u64>,
+    cw_escrow_vault: Option<Addr>,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -3390,6 +3391,9 @@ pub fn migrate(
                 }
                 if let Some(cw_account_code_id) = migrate_msg.cw_account_code_id {
                     config.cw_account_code_id = cw_account_code_id;
+                }
+                if let Some(cw_escrow_vault) = migrate_msg.cw_escrow_vault {
+                    config.cw_escrow_vault = Some(cw_escrow_vault);
                 }
                 Ok(config)
             })?;
