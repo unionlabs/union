@@ -2475,7 +2475,7 @@ fn execute_stake(
 
     // 2. Unescrow the gov tokens to the stake account. Pretend to solve an
     // order and if the configured lane was fungible, it's going to be
-    // fullfilled.
+    // fulfilled.
     let cw_escrow_vault = config
         .cw_escrow_vault
         .ok_or_else(|| ContractError::EscrowVaultNotConfigured)?;
