@@ -19,7 +19,7 @@ pub const TOKEN_ORIGIN: Map<String, Uint256> = Map::new("token_origin");
 /// Deprecated V1 channel balance storage for migration purposes.
 /// Maps (channel_id, path, denom) to balance amount.
 pub const DEPRECATED_CHANNEL_BALANCE_V1: Map<(u32, Vec<u8>, String), Uint256> =
-    Map::new("channel_balance");
+    Map::new("channel_balance_v2");
 
 /// Tracks the balance of V2 tokens escrowed for each (channel, path, base_token, quote_token) combination.
 #[allow(clippy::type_complexity)]
