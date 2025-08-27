@@ -60,58 +60,55 @@ let
     }";
   rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion -Zlocation-detail=none";
 in
+crateDirFromRoot:
 {
-  buildWasmContract =
-    crateDirFromRoot:
-    {
-      features ? null,
-      # list of fns taking the file path as an argument and producing arbitrary shell script
-      checks ? [ ],
-      # maximum size of the wasm output
-      maxSize ? DEFAULT_MAX_SIZE,
-      extraBuildInputs ? [ ],
-      extraNativeBuildInputs ? [ ],
-    }:
-    let
-      packageName = "${(crateCargoToml crateDirFromRoot).package.name}${mkFeaturesString features}";
+  features ? null,
+  # list of fns taking the file path as an argument and producing arbitrary shell script
+  checks ? [ ],
+  # maximum size of the wasm output
+  maxSize ? DEFAULT_MAX_SIZE,
+  extraBuildInputs ? [ ],
+  extraNativeBuildInputs ? [ ],
+}:
+let
+  packageName = "${(crateCargoToml crateDirFromRoot).package.name}${mkFeaturesString features}";
 
-      contract-basename = dashesToUnderscores (crateCargoToml crateDirFromRoot).package.name;
+  contract-basename = dashesToUnderscores (crateCargoToml crateDirFromRoot).package.name;
 
-      all = buildWorkspaceMember crateDirFromRoot {
-        inherit extraBuildInputs extraNativeBuildInputs;
-        buildStdTarget = CARGO_BUILD_TARGET;
-        pnameSuffix = mkFeaturesString features;
+  all = buildWorkspaceMember crateDirFromRoot {
+    inherit extraBuildInputs extraNativeBuildInputs;
+    buildStdTarget = CARGO_BUILD_TARGET;
+    pnameSuffix = mkFeaturesString features;
 
-        cargoBuildExtraArgs = cargoBuildExtraArgs features;
-        inherit rustflags;
+    cargoBuildExtraArgs = cargoBuildExtraArgs features;
+    inherit rustflags;
 
-        cargoBuildCheckPhase = ''
-          ls target/wasm32-unknown-unknown/release
+    cargoBuildCheckPhase = ''
+      ls target/wasm32-unknown-unknown/release
 
-          sha256sum target/wasm32-unknown-unknown/release/${contract-basename}.wasm  
-        '';
-        cargoBuildInstallPhase = cargoBuildInstallPhase {
-          inherit
-            features
-            checks
-            maxSize
-            ;
-          contractFileNameWithoutExt = contract-basename;
-        };
-      };
-
-      addPackageName =
-        old:
-        old
-        // {
-          pname = "${packageName}.wasm";
-          passthru = (old.passthru or { }) // {
-            inherit packageName;
-          };
-        };
-    in
-    (all.${packageName}.overrideAttrs addPackageName)
-    // {
-      release = all.${packageName}.release.overrideAttrs addPackageName;
+      sha256sum target/wasm32-unknown-unknown/release/${contract-basename}.wasm  
+    '';
+    cargoBuildInstallPhase = cargoBuildInstallPhase {
+      inherit
+        features
+        checks
+        maxSize
+        ;
+      contractFileNameWithoutExt = contract-basename;
     };
+  };
+
+  addPackageName =
+    old:
+    old
+    // {
+      pname = "${packageName}.wasm";
+      passthru = (old.passthru or { }) // {
+        inherit packageName;
+      };
+    };
+in
+(all.${packageName}.overrideAttrs addPackageName)
+// {
+  release = all.${packageName}.release.overrideAttrs addPackageName;
 }
