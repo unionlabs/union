@@ -19,4 +19,4 @@ cosmwasm-std      = { workspace = true, features = ["std"] }
 enumorph          = { workspace = true }
 ibc-union-spec    = { workspace = true, features = ["schemars", "serde"] }
 token-factory-api = { workspace = true }
-unionlabs         = { workspace = true, default-features = false }
+unionlabs         = { workspace = true }

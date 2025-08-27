@@ -16960,6 +16960,7 @@ dependencies = [
  "tracing-subscriber",
  "trusted-mpt-light-client-types",
  "ucs03-zkgm",
+ "ucs03-zkgm-api",
  "ucs04",
  "unionlabs",
  "voyager-primitives",
