@@ -6,6 +6,7 @@
       pkgs,
       rust,
       dbg,
+      gitRev,
       ...
     }:
     let
