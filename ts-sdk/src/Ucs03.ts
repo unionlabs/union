@@ -1026,10 +1026,26 @@ type OpCode = typeof OpCode.Type
  */
 const CallOperand = S.Union(
   S.Tuple(
-    Hex,
-    S.Boolean,
-    Hex,
-    Hex,
+    Hex.pipe(
+      S.annotations({
+        title: "sender",
+      }),
+    ),
+    S.Boolean.pipe(
+      S.annotations({
+        title: "eureka",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "contractAddress",
+      }),
+    ),
+    Hex.pipe(
+      S.annotations({
+        title: "contractCalldata",
+      }),
+    ),
   ),
 )
 /**

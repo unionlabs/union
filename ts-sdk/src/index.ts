@@ -138,6 +138,13 @@ export * as TokenOrder from "./TokenOrder.js"
 export * as Batch from "./Batch.js"
 
 /**
+ * This module provides a high-level API for UCS03 `Call` instruction construction.
+ *
+ * @since 2.0.0
+ */
+export * as Call from "./Call.js"
+
+/**
  * This module describes high-level requirements for UCS03 instruction, prepared for {@link ZkgmClientRequest}.
  *
  * @since 2.0.0

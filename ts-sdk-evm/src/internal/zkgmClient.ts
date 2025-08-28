@@ -1,4 +1,5 @@
 import { Indexer, ZkgmIncomingMessage } from "@unionlabs/sdk"
+import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
 import * as Token from "@unionlabs/sdk/Token"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
@@ -75,6 +76,7 @@ export const fromWallet = (
               ),
               Match.exhaustive,
             ),
+          Call: Call.encode,
         }),
       )
 

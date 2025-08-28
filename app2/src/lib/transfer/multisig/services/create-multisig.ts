@@ -1,7 +1,7 @@
 import { GenerateMultisigError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
 import { isValidBech32ContractAddress } from "$lib/utils/index"
-import { Token, TokenOrder, Ucs03, ZkgmInstruction } from "@unionlabs/sdk"
+import { Call, Token, TokenOrder, Ucs03, ZkgmInstruction } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { tokenMetaOverride } from "@unionlabs/sdk/Constants"
 import { Tx } from "@unionlabs/sdk/schema/tx"
@@ -107,6 +107,7 @@ export const createMultisigMessage = (context: TransferContext) =>
                     ),
                     Match.exhaustive,
                   ),
+                Call: Call.encode,
               }),
             )
 
