@@ -968,6 +968,8 @@ _: {
 
       multicall = crane.buildWasmContract "cosmwasm/multicall" { };
 
+      on-zkgm-call-proxy = crane.buildWasmContract "cosmwasm/on-zkgm-call-proxy" { };
+
       # native-token-minter = crane.buildWasmContract {
       #   crateDirFromRoot = "cosmwasm/native-token-minter";
       # };
@@ -1018,6 +1020,7 @@ _: {
             osmosis-tokenfactory-token-minter
             ibc-union
             multicall
+            on-zkgm-call-proxy
             cw-account
             cw-escrow-vault
             ;
