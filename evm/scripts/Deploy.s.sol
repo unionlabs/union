@@ -417,7 +417,7 @@ abstract contract UnionScript is UnionBase {
 
         contracts.manager.labelRole(Roles.RELAYER, "RELAYER");
 
-        // Pause selector is the same accross contracts
+        // Pause selector is the same across contracts
         bytes4[] memory pauserSelectors = new bytes4[](1);
         pauserSelectors[0] = CometblsClient.pause.selector;
         contracts.manager.setTargetFunctionRole(
@@ -428,7 +428,7 @@ abstract contract UnionScript is UnionBase {
         );
         contracts.manager.labelRole(Roles.PAUSER, "PAUSER");
 
-        // Unpause selector is the same accross contracts
+        // Unpause selector is the same across contracts
         bytes4[] memory unpauserSelectors = new bytes4[](1);
         pauserSelectors[0] = CometblsClient.unpause.selector;
         contracts.manager.setTargetFunctionRole(
