@@ -108,3 +108,11 @@ export interface RoadmapMilestoneSkeleton
 {}
 
 export type FetchError = string | null
+
+// Trems Types
+export type TermsFields = {
+  title: EntryFields.Text
+  copy: EntryFields.RichText
+}
+
+export interface TermsSkeleton extends EntrySkeletonType<TermsFields, "terms"> {}
