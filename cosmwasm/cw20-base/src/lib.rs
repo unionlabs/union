@@ -17,7 +17,7 @@ For more information on this contract, please check out the
 pub mod allowances;
 pub mod contract;
 pub mod enumerable;
-mod error;
+pub mod error;
 pub mod msg;
 pub mod state;
 

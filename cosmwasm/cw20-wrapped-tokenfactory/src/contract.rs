@@ -5,7 +5,7 @@ use cosmwasm_std::{
     to_json_binary, BankQuery, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response,
     StdResult, Uint128,
 };
-use cw20::{BalanceResponse, Cw20ReceiveMsg, TokenInfoResponse};
+use cw20::{BalanceResponse, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use frissitheto::UpgradeMsg;
 use token_factory_api::{
     BurnTokensMsg, DenomUnit, ForceTransferMsg, Metadata, MintTokensMsg, TokenFactoryMsg,
@@ -246,6 +246,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Balance { address } => to_json_binary(&query_balance(deps, env, address)?),
         QueryMsg::TokenInfo {} => to_json_binary(&query_token_info(deps, env)?),
+        QueryMsg::Minter {} => to_json_binary(&query_minter(deps)?),
         QueryMsg::Allowance { owner, spender } => {
             to_json_binary(&query_allowance(deps, owner, spender)?)
         }
@@ -265,6 +266,18 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             limit,
         )?),
     }
+}
+
+pub fn query_minter(deps: Deps) -> StdResult<Option<MinterResponse>> {
+    let meta = TOKEN_INFO.load(deps.storage)?;
+    let minter = match meta.mint {
+        Some(m) => Some(MinterResponse {
+            minter: m.minter.into(),
+            cap: None,
+        }),
+        None => None,
+    };
+    Ok(minter)
 }
 
 pub fn query_balance(deps: Deps, env: Env, address: String) -> StdResult<BalanceResponse> {

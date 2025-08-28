@@ -4817,6 +4817,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-u"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw-storage-plus 2.0.0",
+ "cw20",
+ "cw20-base",
+ "cw20-wrapped-tokenfactory",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "ibc-union-spec",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "token-factory-api",
+ "ucs03-zkgm",
+ "unionlabs",
+]
+
+[[package]]
 name = "cw-utils"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4925,6 +4948,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
  "cw20",
+ "cw20-base",
  "embed-commit",
  "frissitheto",
  "thiserror 2.0.12",

@@ -77,6 +77,9 @@ pub enum QueryMsg {
     /// Returns metadata on the contract - name, decimals, supply, etc.
     #[returns(cw20::TokenInfoResponse)]
     TokenInfo {},
+    /// Returns who can mint and the hard cap on maximum tokens after minting.
+    #[returns(cw20::MinterResponse)]
+    Minter {},
     /// Only with "allowance" extension.
     /// Returns how much spender can use from owner account, 0 if unset.
     #[returns(cw20::AllowanceResponse)]

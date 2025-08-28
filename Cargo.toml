@@ -250,6 +250,7 @@ members = [
   "cosmwasm/cw20-token-minter",
   "cosmwasm/cw-account",
   "cosmwasm/cw-escrow-vault",
+  "cosmwasm/cw-u",
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/osmosis-tokenfactory-token-owner",
   "cosmwasm/cw20-base",
@@ -384,9 +385,11 @@ frissitheto = { path = "lib/frissitheto", default-features = false }
 
 cw-account      = { path = "cosmwasm/cw-account", default-features = false }
 cw-escrow-vault = { path = "cosmwasm/cw-escrow-vault", default-features = false }
+cw-u            = { path = "cosmwasm/cw-u", default-features = false }
 
 cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
 cw20-token-minter                 = { path = "cosmwasm/cw20-token-minter", default-features = false }
+cw20-wrapped-tokenfactory         = { path = "cosmwasm/cw20-wrapped-tokenfactory", default-features = false }
 osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
 ucs03-zkgm                        = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-token-minter-api       = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
