@@ -8,9 +8,9 @@ use chrono::DateTime;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Binary,
-    CodeInfoResponse, Coin, Coins, CosmosMsg, DecCoin, Decimal256, Deps, DepsMut, DistributionMsg,
-    Empty, Env, Event, MessageInfo, QueryRequest, Reply, Response, StakingMsg, StdError, StdResult,
-    Storage, SubMsg, SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg,
+    CanonicalAddr, CodeInfoResponse, Coin, Coins, CosmosMsg, DecCoin, Decimal256, Deps, DepsMut,
+    DistributionMsg, Empty, Env, Event, MessageInfo, QueryRequest, Reply, Response, StakingMsg,
+    StdError, StdResult, Storage, SubMsg, SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -945,7 +945,7 @@ fn refund_v2(
 
 #[allow(clippy::too_many_arguments)]
 fn acknowledge_fungible_asset_order_v2(
-    deps: DepsMut,
+    mut deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     packet: Packet,
@@ -962,52 +962,76 @@ fn acknowledge_fungible_asset_order_v2(
             FILL_TYPE_PROTOCOL => Ok(Response::new()),
             // A market maker filled, we pay with the sent asset.
             FILL_TYPE_MARKETMAKER => {
-                let market_maker = deps
-                    .api
-                    .addr_validate(
-                        str::from_utf8(ack.market_maker.as_ref())
-                            .map_err(|_| ContractError::InvalidReceiver)?,
-                    )
-                    .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
                 let base_denom = String::from_utf8(order.base_token.to_vec())
                     .map_err(|_| ContractError::InvalidBaseToken)?;
                 let base_amount =
                     u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
 
-                let minter = TOKEN_MINTER.load(deps.storage)?;
-                let mut messages = Vec::<CosmosMsg>::new();
+                let mut messages = Vec::<CosmosMsg>::with_capacity(1);
+                if base_amount != 0 {
+                    let minter = TOKEN_MINTER.load(deps.storage)?;
 
-                if order.kind == TOKEN_ORDER_KIND_UNESCROW {
-                    // Mint tokens to market maker (EVM: IZkgmERC20(address(baseToken)).mint(marketMaker, order.baseAmount))
-                    messages.push(make_wasm_msg(
-                        WrappedTokenMsg::MintTokens {
-                            denom: base_denom,
-                            amount: base_amount.into(),
-                            mint_to_address: market_maker,
-                        },
-                        minter,
-                        vec![],
-                    )?);
-                } else {
-                    // Decrease channel balance and transfer (EVM: _decreaseOutstandingV2 + safeTransfer)
-                    decrease_channel_balance_v2(
-                        deps,
-                        packet.source_channel_id,
-                        path,
-                        base_denom.clone(),
-                        order.quote_token.clone().into(),
-                        base_amount.into(),
-                    )?;
+                    if order.kind == TOKEN_ORDER_KIND_UNESCROW {
+                        let market_maker = deps
+                            .api
+                            .addr_validate(
+                                str::from_utf8(ack.market_maker.as_ref())
+                                    .map_err(|_| ContractError::InvalidReceiver)?,
+                            )
+                            .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
+                        // Mint tokens to market maker (EVM: IZkgmERC20(address(baseToken)).mint(marketMaker, order.baseAmount))
+                        messages.push(make_wasm_msg(
+                            WrappedTokenMsg::MintTokens {
+                                denom: base_denom,
+                                amount: base_amount.into(),
+                                mint_to_address: market_maker,
+                            },
+                            minter,
+                            vec![],
+                        )?);
+                    } else {
+                        // Decrease channel balance and transfer (EVM: _decreaseOutstandingV2 + safeTransfer)
+                        decrease_channel_balance_v2(
+                            deps.branch(),
+                            packet.source_channel_id,
+                            path,
+                            base_denom.clone(),
+                            order.quote_token.clone().into(),
+                            base_amount.into(),
+                        )?;
 
-                    messages.push(make_wasm_msg(
-                        LocalTokenMsg::Unescrow {
-                            denom: base_denom,
-                            recipient: market_maker.into_string(),
-                            amount: base_amount.into(),
-                        },
-                        minter,
-                        vec![],
-                    )?);
+                        let burn_address = get_burn_address(deps.as_ref())?;
+
+                        if ack.market_maker.as_ref() == burn_address.as_bytes() {
+                            messages.push(make_wasm_msg(
+                                WrappedTokenMsg::BurnTokens {
+                                    denom: base_denom,
+                                    amount: base_amount.into(),
+                                    burn_from_address: minter.clone(),
+                                    sender: minter.clone(),
+                                },
+                                minter,
+                                vec![],
+                            )?);
+                        } else {
+                            let market_maker = deps
+                                .api
+                                .addr_validate(
+                                    str::from_utf8(ack.market_maker.as_ref())
+                                        .map_err(|_| ContractError::InvalidReceiver)?,
+                                )
+                                .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
+                            messages.push(make_wasm_msg(
+                                LocalTokenMsg::Unescrow {
+                                    denom: base_denom,
+                                    recipient: market_maker.into_string(),
+                                    amount: base_amount.into(),
+                                },
+                                minter,
+                                vec![],
+                            )?);
+                        }
+                    }
                 }
 
                 Ok(Response::new().add_messages(messages))
@@ -3516,7 +3540,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             let config = CONFIG.load(deps.storage)?;
             Ok(to_json_binary(&config)?)
         }
+        QueryMsg::GetBurnAddress {} => Ok(to_json_binary(&get_burn_address(deps)?)?),
     }
+}
+
+fn get_burn_address(deps: Deps) -> Result<Addr, ContractError> {
+    let burn_address = deps
+        .api
+        .addr_humanize(&CanonicalAddr::from(vec![0u8; 20]))?;
+    Ok(burn_address)
 }
 
 fn rate_limit(
