@@ -23,7 +23,7 @@ use crate::{
     state::{MinterData, TokenInfo, TOKEN_INFO},
 };
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
     panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
 }
@@ -77,6 +77,7 @@ pub fn execute(
             amount,
         } => execute_transfer_from(deps, env, info, owner, recipient, amount),
         ExecuteMsg::BurnFrom { owner, amount } => execute_burn_from(deps, env, info, owner, amount),
+        ExecuteMsg::Burn { amount } => execute_burn(deps, env, info, amount),
         ExecuteMsg::IncreaseAllowance {
             spender,
             amount,

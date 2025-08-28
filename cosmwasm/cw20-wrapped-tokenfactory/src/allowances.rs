@@ -162,6 +162,27 @@ pub fn execute_transfer_from(
     Ok(res)
 }
 
+pub fn execute_burn(
+    _: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    Ok(Response::new()
+        .add_message(CosmosMsg::Custom(TokenFactoryMsg::BurnTokens(
+            BurnTokensMsg {
+                denom: self_tf_denom(&env),
+                amount,
+                burn_from_address: info.sender.clone(),
+            },
+        )))
+        .add_attributes(vec![
+            attr("action", "burn"),
+            attr("from", info.sender),
+            attr("amount", amount),
+        ]))
+}
+
 pub fn execute_burn_from(
     deps: DepsMut,
 

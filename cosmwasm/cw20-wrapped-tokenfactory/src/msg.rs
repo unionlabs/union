@@ -26,6 +26,10 @@ pub enum ExecuteMsg {
         amount: Uint128,
         msg: Binary,
     },
+    /// Burn is a base message to destroy tokens forever
+    Burn {
+        amount: Uint128,
+    },
     /// Only with "approval" extension. Destroys tokens forever
     BurnFrom {
         owner: String,
