@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/state"
+import { page } from "$app/stores"
 import { getUserContribution } from "$lib/supabase"
 import Print from "$lib/components/Terminal/Print.svelte"
 import { sleep } from "$lib/utils/utils.ts"
@@ -7,7 +7,7 @@ import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 import { onMount } from "svelte"
 import { getState } from "$lib/state/index.svelte.ts"
 
-let hash = $derived(page.params.hash)
+let hash = $derived($page.params.hash)
 let prints = $state<Array<string>>([])
 
 const { terminal } = getState()
