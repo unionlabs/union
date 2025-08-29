@@ -13,9 +13,9 @@ use alloy::{
     primitives::{keccak256, Address, U256},
 };
 use clap::Args;
-use sha2::{digest::generic_array::GenericArray, Digest};
+use sha2::digest::{generic_array::GenericArray, FixedOutputReset, Update};
 use unionlabs::{
-    primitives::{H160, H256},
+    primitives::{ByteArrayExt, H160, H256},
     typenum,
 };
 
@@ -90,14 +90,16 @@ impl Cmd {
             })
             .unwrap_or((Vec::new(), None));
 
-        let mut salt_preimage = (<H160>::new(self.sender.into()).to_string() + "/")
+        let mut salt_preimage: [u8; 42 + 1 + 32] = (<H160>::new(self.sender.into()).to_string()
+            + "/")
             .into_bytes()
             .into_iter()
             .chain([0; 32])
-            .collect::<Vec<_>>();
-        let range = (salt_preimage.len() - 32)..salt_preimage.len();
-
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
         let seed = self.seed;
+        let range = (salt_preimage.len() - 32)..salt_preimage.len();
 
         let mut handles = Vec::new();
         for i in 0..self.threads {
@@ -106,112 +108,98 @@ impl Cmd {
             let deployer = self.deployer;
             let prefix_bytes = prefix_bytes.clone();
             let suffix_bytes = suffix_bytes.clone();
-            let mut salt_preimage = salt_preimage.clone();
-            let range = range.clone();
 
             let handle = thread::spawn(move || -> Option<H256> {
                 let mut local_attempts = 0u64;
 
                 let mut salt = (0..(i + 1)).fold(seed, |acc, _| {
-                    U256::from_be_bytes(sha2::Sha256::digest(acc.to_be_bytes::<32>()).into())
+                    U256::from_be_bytes(
+                        <sha2::Sha256 as sha2::Digest>::digest(acc.to_be_bytes::<32>()).into(),
+                    )
                 });
                 println!("{i}: {salt}");
 
+                *salt_preimage.array_slice_mut::<{ 42 + 1 }, 32>() = salt.to_be_bytes();
+
+                let mut counter =
+                    u64::from_be_bytes(salt.to_be_bytes::<32>().array_slice::<0, 8>());
+
+                let mut proxy_preimage: [u8; 1 + 20 + 32 + 32] = [0xff]
+                    .into_iter()
+                    .chain(deployer)
+                    .chain(salt.to_be_bytes::<32>())
+                    .chain(hex!(
+                        "21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f"
+                    ))
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap();
+
+                let mut hasher = <keccak_asm::Keccak256 as sha2::Digest>::new();
+
+                let mut out: GenericArray<u8, typenum::U32> = [0_u8; 32].into();
+
                 while !found.load(Ordering::Relaxed) {
-                    loop {
-                        salt += U256::ONE;
-                        salt_preimage[range.clone()].copy_from_slice(&salt.to_be_bytes::<32>());
+                    'inner: while local_attempts < 100000 {
+                        *salt_preimage.array_slice_mut::<{ 42 + 1 }, 8>() = counter.to_be_bytes();
 
-                        let addr = {
-                            let salt = keccak_asm::Keccak256::digest(&salt_preimage);
-                            let mut out: GenericArray<u8, typenum::U32> = [0_u8; 32].into();
-                            keccak_asm::Keccak256::new()
-                                .chain_update([0xff])
-                                .chain_update(deployer)
-                                .chain_update(salt)
-                                .chain_update(hex!("21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f"))
-                                .finalize_into(&mut out);
+                        <_ as Update>::update(&mut hasher, &salt_preimage);
+                        <_ as FixedOutputReset>::finalize_into_reset(
+                            &mut hasher,
+                            proxy_preimage.array_slice_mut::<21, 32>().into(),
+                        );
 
-                            let mut address_out: GenericArray<u8, typenum::U32> = [0_u8; 32].into();
-                            keccak_asm::Keccak256::new()
-                                .chain_update([0xd6, 0x94])
-                                .chain_update(&out[12..])
-                                .chain_update([0x01])
-                                .finalize_into(&mut address_out);
+                        <_ as Update>::update(&mut hasher, &proxy_preimage);
+                        <_ as FixedOutputReset>::finalize_into_reset(&mut hasher, &mut out);
 
-                            Address::from_slice(&address_out[12..])
-                        };
+                        <_ as Update>::update(&mut hasher, &[0xd6, 0x94]);
+                        <_ as Update>::update(&mut hasher, &out[12..]);
+                        <_ as Update>::update(&mut hasher, &[0x01]);
+                        <_ as FixedOutputReset>::finalize_into_reset(&mut hasher, &mut out);
 
-                        let address_bytes = addr.as_slice();
+                        let addr_bytes = &out[12..];
 
-                        let matches_prefix = if prefix_bytes.is_empty() && prefix_nibble.is_none() {
-                            true
-                        } else {
-                            let full_bytes_match = if prefix_bytes.is_empty() {
-                                true
-                            } else if address_bytes.len() < prefix_bytes.len() {
-                                false
-                            } else {
-                                address_bytes[..prefix_bytes.len()] == prefix_bytes[..]
-                            };
-
+                        let matches_prefix = {
                             if let Some(nibble) = prefix_nibble {
-                                if address_bytes.len() <= prefix_bytes.len() {
-                                    false
-                                } else {
-                                    let byte_to_check = address_bytes[prefix_bytes.len()];
-                                    let high_nibble = (byte_to_check >> 4) & 0xF;
-                                    full_bytes_match && high_nibble == nibble
-                                }
+                                let bytes_match = addr_bytes[..prefix_bytes.len()] == prefix_bytes;
+                                bytes_match
+                                    && ((addr_bytes[prefix_bytes.len()] >> 4) & 0xF == nibble)
                             } else {
-                                full_bytes_match
+                                addr_bytes[..prefix_bytes.len()] == prefix_bytes
                             }
                         };
 
-                        let matches_suffix =
-                            if suffix_bytes.is_empty() && suffix_leading_nibble.is_none() {
-                                true
-                            } else if let Some(leading_nibble) = suffix_leading_nibble {
-                                let required_bytes = suffix_bytes.len() + 1; // +1 for the nibble
-                                if address_bytes.len() < required_bytes {
-                                    false
-                                } else {
-                                    let suffix_start = address_bytes.len() - suffix_bytes.len();
-                                    let bytes_match = if suffix_bytes.is_empty() {
-                                        true
-                                    } else {
-                                        address_bytes[suffix_start..] == suffix_bytes[..]
-                                    };
+                        let matches_suffix = || {
+                            if let Some(leading_nibble) = suffix_leading_nibble {
+                                let bytes_match =
+                                    addr_bytes[20 - suffix_bytes.len()..] == suffix_bytes;
 
-                                    let nibble_byte_index =
-                                        address_bytes.len() - suffix_bytes.len() - 1;
-                                    let byte_with_nibble = address_bytes[nibble_byte_index];
-                                    let low_nibble = byte_with_nibble & 0xF;
-                                    let nibble_matches = low_nibble == leading_nibble;
-
-                                    bytes_match && nibble_matches
-                                }
-                            } else if address_bytes.len() < suffix_bytes.len() {
-                                false
+                                bytes_match
+                                    && (addr_bytes[20 - suffix_bytes.len() - 1] & 0xF
+                                        == leading_nibble)
                             } else {
-                                let suffix_start = address_bytes.len() - suffix_bytes.len();
-                                address_bytes[suffix_start..] == suffix_bytes[..]
-                            };
+                                addr_bytes[20 - suffix_bytes.len()..] == suffix_bytes
+                            }
+                        };
 
-                        local_attempts += 1;
-
-                        if matches_prefix && matches_suffix {
+                        if matches_prefix && matches_suffix() {
+                            let salt_bytes =
+                                H256::new(salt_preimage.array_slice::<{ 42 + 1 }, 32>());
                             found.store(true, Ordering::Relaxed);
                             total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
-                            return Some(salt.to_be_bytes::<32>().into());
-                        }
+                            println!("Salt: {}", salt_bytes);
+                            println!("Address: {}", <H160>::try_from(addr_bytes).unwrap());
+                            return Some(salt_bytes);
+                        } else {
+                            counter = counter.wrapping_add(1);
+                            local_attempts += 1;
 
-                        if local_attempts % 200000 == 0 {
-                            total_attempts.fetch_add(200000, Ordering::Relaxed);
-                            local_attempts = 0;
-                            break;
+                            continue 'inner;
                         }
                     }
+
+                    total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
+                    local_attempts = 0;
                 }
 
                 total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
