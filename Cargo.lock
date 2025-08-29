@@ -4948,7 +4948,6 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
  "cw20",
- "cw20-base",
  "embed-commit",
  "frissitheto",
  "thiserror 2.0.12",

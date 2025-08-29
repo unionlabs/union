@@ -31,7 +31,7 @@ pub enum Error {
     #[error("intent packet hashes must be whitelisted to be executed")]
     IntentMustBeWhitelisted,
 
-    #[error("the lane has not been configured to be fungible")]
+    #[error("the lane has not been configured to be fungible: channel_id={channel_id}")]
     LaneIsNotFungible { channel_id: ChannelId },
 
     #[error("the quote token must be a valid utf8 denom")]
