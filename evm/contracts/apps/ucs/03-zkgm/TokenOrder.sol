@@ -114,7 +114,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
 
             // Special case for gas station where the user is asking for native
             // gas token. The MM has to provide WETH funds that will be
-            // unwrapped, avoiding us from having to manage msg.value accross
+            // unwrapped, avoiding us from having to manage msg.value across
             // the stack.
             if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
                 // Transfert to protocol.
@@ -215,7 +215,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
 
             // Special case for gas station where the user is asking for native
             // gas token. The MM has to provide WETH funds that will be
-            // unwrapped, avoiding us from having to manage msg.value accross
+            // unwrapped, avoiding us from having to manage msg.value across
             // the stack.
             if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
                 if (quoteAmount > 0) {
