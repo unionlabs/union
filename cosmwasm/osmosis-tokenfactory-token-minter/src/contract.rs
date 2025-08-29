@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
-    entry_point, from_json, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, Event, MessageInfo, QueryRequest, Response, StdResult, Uint128,
+    entry_point, from_json, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, CosmosMsg,
+    Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Response, StdResult, Uint128,
 };
 use ibc_union_spec::ChannelId;
 use prost::Message;
@@ -201,6 +201,7 @@ fn wrapped_burn_tokens(
     denom: String,
     amount: Uint128,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
+    // FIXME: no longer true on babylon/osmosis?
     // Although the `BurnTokens` include `burn_from_address`, this functionality is not
     // supported by `TokenFactory` yet and you can only set `burn_from_address` to the token owner.
     // So we are ensuring here that the funds are attached to the call so that we can burn from the
@@ -219,19 +220,28 @@ fn wrapped_burn_tokens(
         });
     }
 
-    let token_owner = TOKEN_OWNERS.load(deps.storage, denom.clone())?;
-
-    execute_admin_operation(
-        deps.as_ref(),
-        env,
-        info,
-        denom.clone(),
-        BurnTokensMsg {
+    if deps.querier.query_wasm_contract_info(denom.clone()).is_ok() {
+        assert_is_zkgm(deps.as_ref(), &info)?;
+        Ok(Response::new().add_message(wasm_execute(
             denom,
-            amount,
-            burn_from_address: token_owner,
-        },
-    )
+            &cw20::Cw20ExecuteMsg::Burn { amount },
+            vec![],
+        )?))
+    } else {
+        let token_owner = TOKEN_OWNERS.load(deps.storage, denom.clone())?;
+
+        execute_admin_operation(
+            deps.as_ref(),
+            env,
+            info,
+            denom.clone(),
+            BurnTokensMsg {
+                denom,
+                amount,
+                burn_from_address: token_owner,
+            },
+        )
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
