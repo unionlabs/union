@@ -106,11 +106,13 @@ contract TestZkgm is UCS03Zkgm {
         bytes memory validator,
         uint256 amount,
         ZkgmStakeState state,
-        uint256 unstakingCompletion
+        uint256 unstakingCompletion,
+        address stakedToken
     ) public {
         // Update the stake state directly in the mapping
         stakes[tokenId] = ZkgmStake({
             state: state,
+            stakedToken: stakedToken,
             channelId: channelId,
             validator: validator,
             amount: amount,
@@ -4588,18 +4590,10 @@ contract ZkgmTests is Test {
     function setupGovernanceToken(
         uint32 channelId
     ) internal returns (address) {
-        // Register governance token for the channel
-        GovernanceToken memory govToken = GovernanceToken({
-            unwrappedToken: hex"BABE",
-            metadataImage: bytes32(uint256(0x123))
-        });
-        zkgm.registerGovernanceToken(channelId, govToken);
-        (ZkgmERC20 governanceTokenImage,) = zkgm.getGovernanceToken(channelId);
-        vm.cloneAccount(
-            address(new TestERC20("Governance Token", "GOV", 18)),
-            address(governanceTokenImage)
-        );
-        return address(governanceTokenImage);
+        address governanceToken =
+            address(new TestERC20("Governance Token", "GOV", 18));
+        zkgm.registerGovernanceToken(channelId, governanceToken);
+        return governanceToken;
     }
 
     function test_verify_stake_ok(
@@ -4640,8 +4634,7 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeStake(
                     Stake({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
+                        stakedToken: governanceToken,
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary,
                         validator: validator,
@@ -4658,6 +4651,7 @@ contract ZkgmTests is Test {
         (
             ZkgmStakeState state,
             uint32 stakeChannelId,
+            address stakeStakedToken,
             bytes memory stakeValidator,
             uint256 stakeAmount,
             uint256 unstakingCompletion
@@ -4702,52 +4696,7 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeStake(
                     Stake({
                         tokenId: tokenId,
-                        governanceToken: abi.encodePacked(wrongToken),
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
-                        sender: abi.encodePacked(staker),
-                        beneficiary: beneficiary,
-                        validator: validator,
-                        amount: amount
-                    })
-                )
-            })
-        );
-    }
-
-    function test_verify_stake_invalidWrappedToken(
-        uint32 channelId,
-        uint256 tokenId,
-        address staker,
-        bytes memory beneficiary,
-        bytes memory validator,
-        uint256 amount,
-        bytes32 wrongMetadataImage
-    ) public {
-        {
-            assumeUnusedAddress(staker);
-            vm.assume(channelId > 0);
-            vm.assume(tokenId > 0);
-            vm.assume(amount > 0);
-            vm.assume(wrongMetadataImage != bytes32(uint256(0x123)));
-        }
-
-        address governanceToken = setupGovernanceToken(channelId);
-
-        vm.expectRevert(ZkgmLib.ErrInvalidStakeGovernanceToken.selector);
-        vm.prank(staker);
-        zkgm.send(
-            channelId,
-            0,
-            type(uint64).max,
-            bytes32(0),
-            Instruction({
-                version: ZkgmLib.INSTR_VERSION_0,
-                opcode: ZkgmLib.OP_STAKE,
-                operand: ZkgmLib.encodeStake(
-                    Stake({
-                        tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: hex"",
+                        stakedToken: wrongToken,
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary,
                         validator: validator,
@@ -4796,8 +4745,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeStake(
                                 Stake({
                                     tokenId: tokenId,
-                                    governanceToken: abi.encodePacked(address(erc20)),
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                                    stakedToken: address(erc20),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: beneficiary,
                                     validator: validator,
@@ -4845,8 +4793,7 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeStake(
                     Stake({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
+                        stakedToken: governanceToken,
                         sender: abi.encodePacked(staker),
                         beneficiary: abi.encodePacked(staker),
                         validator: validator,
@@ -4873,8 +4820,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeStake(
                                 Stake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                                    stakedToken: governanceToken,
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(staker),
                                     validator: validator,
@@ -4914,8 +4860,6 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeUnstake(
                     Unstake({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         validator: validator
                     })
@@ -4948,7 +4892,13 @@ contract ZkgmTests is Test {
         vm.prank(address(zkgm));
         stakeNFT.mint(tokenId, address(zkgm));
         zkgm.doUpdateStake(
-            tokenId, channelId, validator, amount, ZkgmStakeState.STAKING, 0
+            tokenId,
+            channelId,
+            validator,
+            amount,
+            ZkgmStakeState.STAKING,
+            0,
+            governanceToken
         );
 
         // Try to unstake while still in STAKING state
@@ -4965,8 +4915,6 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeUnstake(
                     Unstake({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         validator: validator
                     })
@@ -5005,7 +4953,8 @@ contract ZkgmTests is Test {
             validator,
             amount,
             ZkgmStakeState.UNSTAKING,
-            block.timestamp - 1
+            block.timestamp - 1,
+            governanceToken
         );
 
         // Transfer NFT to staker first
@@ -5027,8 +4976,6 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeWithdrawStake(
                     WithdrawStake({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
                     })
@@ -5059,7 +5006,13 @@ contract ZkgmTests is Test {
         vm.prank(address(zkgm));
         stakeNFT.mint(tokenId, address(zkgm));
         zkgm.doUpdateStake(
-            tokenId, channelId, hex"C0DE", 1000, ZkgmStakeState.STAKED, 0
+            tokenId,
+            channelId,
+            hex"C0DE",
+            1000,
+            ZkgmStakeState.STAKED,
+            0,
+            governanceToken
         );
 
         vm.expectRevert(ZkgmLib.ErrStakeNotWithdrawable.selector);
@@ -5075,8 +5028,6 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeWithdrawStake(
                     WithdrawStake({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
                     })
@@ -5106,7 +5057,13 @@ contract ZkgmTests is Test {
         vm.prank(address(zkgm));
         stakeNFT.mint(tokenId, address(zkgm));
         zkgm.doUpdateStake(
-            tokenId, channelId, validator, 1000, ZkgmStakeState.STAKED, 0
+            tokenId,
+            channelId,
+            validator,
+            1000,
+            ZkgmStakeState.STAKED,
+            0,
+            governanceToken
         );
 
         // Transfer NFT to staker first
@@ -5128,8 +5085,6 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeWithdrawRewards(
                     WithdrawRewards({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         validator: validator,
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
@@ -5142,7 +5097,7 @@ contract ZkgmTests is Test {
         assertEq(stakeNFT.ownerOf(tokenId), address(zkgm));
 
         // Verify state changed to WITHDRAWING_REWARDS
-        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        (ZkgmStakeState state,,,,,) = zkgm.stakes(tokenId);
         assertEq(uint256(state), uint256(ZkgmStakeState.WITHDRAWING_REWARDS));
     }
 
@@ -5166,7 +5121,13 @@ contract ZkgmTests is Test {
         vm.prank(address(zkgm));
         stakeNFT.mint(tokenId, address(zkgm));
         zkgm.doUpdateStake(
-            tokenId, channelId, validator, 1000, ZkgmStakeState.UNSTAKING, 0
+            tokenId,
+            channelId,
+            validator,
+            1000,
+            ZkgmStakeState.UNSTAKING,
+            0,
+            governanceToken
         );
 
         vm.expectRevert(ZkgmLib.ErrStakingRewardNotWithdrawable.selector);
@@ -5182,8 +5143,6 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeWithdrawRewards(
                     WithdrawRewards({
                         tokenId: tokenId,
-                        governanceToken: hex"BABE",
-                        governanceTokenWrapped: abi.encodePacked(governanceToken),
                         validator: validator,
                         sender: abi.encodePacked(staker),
                         beneficiary: beneficiary
@@ -5223,7 +5182,8 @@ contract ZkgmTests is Test {
             validator,
             amount,
             ZkgmStakeState.STAKING,
-            0
+            0,
+            governanceToken
         );
 
         vm.prank(address(handler));
@@ -5242,8 +5202,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeStake(
                                 Stake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                                    stakedToken: governanceToken,
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(beneficiary),
                                     validator: validator,
@@ -5264,7 +5223,7 @@ contract ZkgmTests is Test {
 
         // Verify NFT transferred to beneficiary and state updated
         assertEq(stakeNFT.ownerOf(tokenId), address(bytes20(beneficiary)));
-        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        (ZkgmStakeState state,,,,,) = zkgm.stakes(tokenId);
         assertEq(uint256(state), uint256(ZkgmStakeState.STAKED));
     }
 
@@ -5295,7 +5254,8 @@ contract ZkgmTests is Test {
             validator,
             amount,
             ZkgmStakeState.STAKING,
-            0
+            0,
+            governanceToken
         );
 
         vm.expectEmit();
@@ -5317,8 +5277,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeStake(
                                 Stake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                                    stakedToken: governanceToken,
                                     sender: abi.encodePacked(staker),
                                     beneficiary: beneficiary,
                                     validator: validator,
@@ -5368,7 +5327,8 @@ contract ZkgmTests is Test {
             validator,
             amount,
             ZkgmStakeState.STAKED,
-            0
+            0,
+            governanceToken
         );
 
         vm.prank(address(handler));
@@ -5387,8 +5347,6 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeUnstake(
                                 Unstake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     validator: validator
                                 })
@@ -5410,7 +5368,7 @@ contract ZkgmTests is Test {
 
         // Verify NFT transferred back to staker and state updated
         assertEq(stakeNFT.ownerOf(tokenId), staker);
-        (ZkgmStakeState state,,,, uint256 unstakingCompletion) =
+        (ZkgmStakeState state,,,,, uint256 unstakingCompletion) =
             zkgm.stakes(tokenId);
         assertEq(uint256(state), uint256(ZkgmStakeState.UNSTAKING));
         assertEq(unstakingCompletion, completionTime);
@@ -5444,7 +5402,8 @@ contract ZkgmTests is Test {
             hex"C0DE",
             stakedAmount,
             ZkgmStakeState.UNSTAKING,
-            0
+            0,
+            governanceToken
         );
 
         TestERC20(governanceToken).mint(address(zkgm), stakedAmount);
@@ -5481,8 +5440,6 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeWithdrawStake(
                                 WithdrawStake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(beneficiary)
                                 })
@@ -5505,7 +5462,7 @@ contract ZkgmTests is Test {
         );
 
         // Verify state updated to UNSTAKED
-        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        (ZkgmStakeState state,,,,,) = zkgm.stakes(tokenId);
         assertEq(uint256(state), uint256(ZkgmStakeState.UNSTAKED));
     }
 
@@ -5539,7 +5496,8 @@ contract ZkgmTests is Test {
             validator,
             rewardAmount,
             ZkgmStakeState.WITHDRAWING_REWARDS,
-            0
+            0,
+            governanceToken
         );
 
         vm.expectEmit();
@@ -5561,8 +5519,6 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeWithdrawRewards(
                                 WithdrawRewards({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     validator: validator,
                                     sender: abi.encodePacked(staker),
                                     beneficiary: abi.encodePacked(beneficiary)
@@ -5585,7 +5541,7 @@ contract ZkgmTests is Test {
 
         // Verify NFT transferred back to sender and state updated
         assertEq(stakeNFT.ownerOf(tokenId), staker);
-        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        (ZkgmStakeState state,,,,,) = zkgm.stakes(tokenId);
         assertEq(uint256(state), uint256(ZkgmStakeState.STAKED));
     }
 
@@ -5616,7 +5572,8 @@ contract ZkgmTests is Test {
             validator,
             amount,
             ZkgmStakeState.STAKING,
-            0
+            0,
+            governanceToken
         );
 
         vm.expectEmit();
@@ -5638,8 +5595,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeStake(
                                 Stake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                                    stakedToken: governanceToken,
                                     sender: abi.encodePacked(staker),
                                     beneficiary: beneficiary,
                                     validator: validator,
@@ -5787,7 +5743,8 @@ contract ZkgmTests is Test {
             validator,
             amount,
             ZkgmStakeState.STAKED,
-            0
+            0,
+            governanceToken
         );
 
         vm.prank(address(handler));
@@ -5806,8 +5763,6 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeUnstake(
                                 Unstake({
                                     tokenId: tokenId,
-                                    governanceToken: hex"BABE",
-                                    governanceTokenWrapped: abi.encodePacked(governanceToken),
                                     sender: abi.encodePacked(staker),
                                     validator: validator
                                 })
@@ -5827,49 +5782,24 @@ contract ZkgmTests is Test {
 
     function test_registerGovernanceToken_ok(
         uint32 channelId,
-        bytes memory unwrappedToken,
-        bytes32 metadataImage
+        address governanceToken
     ) public {
         vm.assume(channelId > 0);
-
-        GovernanceToken memory govToken = GovernanceToken({
-            unwrappedToken: unwrappedToken,
-            metadataImage: metadataImage
-        });
-
-        zkgm.registerGovernanceToken(channelId, govToken);
-
-        (bytes memory storedToken, bytes32 storedImage) =
-            zkgm.channelGovernanceToken(channelId);
-        assertEq(storedToken, unwrappedToken);
-        assertEq(storedImage, metadataImage);
+        zkgm.registerGovernanceToken(channelId, governanceToken);
+        address storedGovernanceToken = zkgm.channelGovernanceToken(channelId);
+        assertEq(storedGovernanceToken, governanceToken);
     }
 
     function test_registerGovernanceToken_alreadySet(
         uint32 channelId,
-        bytes memory unwrappedToken1,
-        bytes32 metadataImage1,
-        bytes memory unwrappedToken2,
-        bytes32 metadataImage2
+        address governanceToken
     ) public {
         vm.assume(channelId > 0);
-        vm.assume(unwrappedToken1.length > 0);
-        vm.assume(unwrappedToken2.length > 0);
+        assumeUnusedAddress(governanceToken);
 
-        GovernanceToken memory govToken1 = GovernanceToken({
-            unwrappedToken: unwrappedToken1,
-            metadataImage: metadataImage1
-        });
-
-        GovernanceToken memory govToken2 = GovernanceToken({
-            unwrappedToken: unwrappedToken2,
-            metadataImage: metadataImage2
-        });
-
-        zkgm.registerGovernanceToken(channelId, govToken1);
-
+        zkgm.registerGovernanceToken(channelId, governanceToken);
         vm.expectRevert(ZkgmLib.ErrChannelGovernanceTokenAlreadySet.selector);
-        zkgm.registerGovernanceToken(channelId, govToken2);
+        zkgm.registerGovernanceToken(channelId, governanceToken);
     }
 
     function test_staking_batch_ok(
@@ -5907,8 +5837,7 @@ contract ZkgmTests is Test {
             operand: ZkgmLib.encodeStake(
                 Stake({
                     tokenId: tokenId1,
-                    governanceToken: hex"BABE",
-                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                    stakedToken: governanceToken,
                     sender: abi.encodePacked(staker),
                     beneficiary: beneficiary,
                     validator: validator,
@@ -5922,8 +5851,7 @@ contract ZkgmTests is Test {
             operand: ZkgmLib.encodeStake(
                 Stake({
                     tokenId: tokenId2,
-                    governanceToken: hex"BABE",
-                    governanceTokenWrapped: abi.encodePacked(governanceToken),
+                    stakedToken: governanceToken,
                     sender: abi.encodePacked(staker),
                     beneficiary: beneficiary,
                     validator: validator,
@@ -6320,9 +6248,7 @@ contract ZkgmTests is Test {
     function test_create_stake() public {
         Stake memory stake = Stake({
             tokenId: 1,
-            governanceToken: bytes("muno"),
-            // TODO: wrapped token repr here
-            governanceTokenWrapped: hex"",
+            stakedToken: 0x1234567890123456789012345678901234567890,
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
                 0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
@@ -6344,9 +6270,6 @@ contract ZkgmTests is Test {
     function test_create_unstake() public {
         Unstake memory unstake = Unstake({
             tokenId: 1,
-            governanceToken: bytes("muno"),
-            // TODO: wrapped token repr here
-            governanceTokenWrapped: hex"",
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730"
         });
@@ -6364,9 +6287,6 @@ contract ZkgmTests is Test {
     function test_create_withdraw_stake() public {
         WithdrawStake memory withdrawStake = WithdrawStake({
             tokenId: 1,
-            governanceToken: bytes("muno"),
-            // TODO: wrapped token repr here
-            governanceTokenWrapped: abi.encodePacked(hex""),
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
                 0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
@@ -6386,9 +6306,6 @@ contract ZkgmTests is Test {
     function test_create_withdraw_rewards() public {
         WithdrawRewards memory withdrawRewards = WithdrawRewards({
             tokenId: 1,
-            governanceToken: bytes("muno"),
-            // TODO: wrapped token repr here
-            governanceTokenWrapped: abi.encodePacked(hex""),
             validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(

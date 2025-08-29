@@ -3,11 +3,9 @@ use cosmwasm_std::{Addr, Instantiate2AddressError, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
+use ucs03_zkgm_api::Stake;
 use unionlabs::primitives::Bytes;
 
-use crate::com::Stake;
-
-pub mod com;
 pub mod contract;
 pub mod msg;
 mod state;
@@ -158,4 +156,8 @@ pub enum ContractError {
     StakingAccountAlreadyExist { stake: Box<Stake>, account: Addr },
     #[error("you tried to transfer a token that was not previously bridged using the image of the metadata")]
     WrappedTokenNotDeployed,
+    #[error("only direct channels are allowed to interact")]
+    PathMustBeZero,
+    #[error("the escrow vault has not been configured")]
+    EscrowVaultNotConfigured,
 }
