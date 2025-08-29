@@ -1,0 +1,40 @@
+---
+import { renderTerms } from "#/lib/contentful/render"
+import ContainedSection from "../components/ContainedSection.astro"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
+import { contentfulClient } from "../lib/contentful/client.ts"
+import type { TermsFields, TermsSkeleton } from "../lib/contentful/types.ts"
+
+let data: TermsFields | null = null
+let error: string | null = null
+
+try {
+  const privacyPolicy = await contentfulClient.getEntry<TermsSkeleton>("7r42B6KGZ79je8cTEEyvom")
+  data = privacyPolicy.fields
+} catch (err) {
+  console.error("Error fetching Contentful data:", err)
+  error = "Failed to load content. Please try again later."
+}
+---
+
+{
+  error ? (
+    <div class="error-message">
+      <h2>Error</h2>
+      <p>{error}</p>
+    </div>
+  ) : data ? (
+    <AnimationLayout
+      title={data.title}
+      text=""
+    >
+      <ContainedSection className="">
+        <Fragment set:html={renderTerms(data)} />
+      </ContainedSection>
+    </AnimationLayout>
+  ) : (
+    <div class="loading-message">
+      <p>Loading content...</p>
+    </div>
+  )
+}

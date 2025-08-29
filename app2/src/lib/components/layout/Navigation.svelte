@@ -4,6 +4,7 @@ import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
+import A from "../ui/A.svelte"
 import { navigation } from "./Sidebar/navigation"
 import YapAd from "./YapAd.svelte"
 
@@ -169,6 +170,24 @@ let isMoreUnionFirst = $derived(
             {/each}
           </div>
         </section>
+
+        <div class="flex text-sm text-zinc-500 align-center justify-center">
+          <A
+            class="inline-flex text-zinc-500"
+            href="https://union.build/privacy-policy"
+            external={false}
+          >
+            Privacy Policy
+          </A>
+          <div class="mx-3 shrinkn">&middot;</div>
+          <A
+            class="inline-flex text-zinc-500"
+            href="https://union.build/terms-of-service"
+            external={false}
+          >
+            Terms of Service
+          </A>
+        </div>
       {:else}
         <!-- Regular navigation section rendering -->
         <section class="px-4 py-4 last:flex-1 flex flex-col justify-end">

@@ -1,7 +1,8 @@
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-import { BLOCKS, MARKS } from "@contentful/rich-text-types"
+import { documentToHtmlString, type Options } from "@contentful/rich-text-html-renderer"
+import { BLOCKS, type Document, MARKS } from "@contentful/rich-text-types"
+import type { TermsFields } from "./types.ts"
 
-const defaultOptions = {
+const defaultOptions: Partial<Options> = {
   renderMark: {
     [MARKS.BOLD]: (text: string) => `<span class="text-accent-500">${text}</span>`,
   },
@@ -11,7 +12,7 @@ const defaultOptions = {
   },
 }
 
-export const renderRichText = (content: any, customOptions: any = {}) => {
+export const renderRichText = (content: Document, customOptions: Partial<Options> = {}) => {
   const options = { ...defaultOptions, ...customOptions }
   return documentToHtmlString(content, options)
 }
@@ -33,3 +34,23 @@ export const renderTitle = (title: any) => {
     })
     .join("<br>")
 }
+
+export const renderTerms = (data: TermsFields) =>
+  renderRichText(
+    data.copy,
+    {
+      preserveWhitespace: true,
+      renderMark: {
+        [MARKS.UNDERLINE]: (text) => `<span class="underline">${text}</span>`,
+        [MARKS.ITALIC]: (text) => `<span class="italic">${text}</span>`,
+      },
+      renderNode: {
+        [BLOCKS.HEADING_1]: (node, next) =>
+          `<h1 class="text-xl mt-4 mb-4">${next(node.content)}</h1>`,
+        [BLOCKS.HEADING_2]: (node, next) =>
+          `<h2 class="text-lg mt-3 mb-3 font-bold">${next(node.content)}</h2>`,
+        [BLOCKS.PARAGRAPH]: (node, next) =>
+          `<p class="mb-4 text-justify">${next(node.content)}</p>`,
+      },
+    },
+  )
