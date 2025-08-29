@@ -149,7 +149,7 @@ impl Bundle {
         )
     }
 
-    /// Provides the full path the the versions directory
+    /// Provides the full path the versions directory
     pub fn versions_path(&self) -> PathBuf {
         self.path.join(&self.meta.versions_directory)
     }
