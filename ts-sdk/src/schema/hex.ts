@@ -60,3 +60,24 @@ export const NumberFromHexString = S.transformOrFail(
   },
 )
 export type NumberFromHexString = typeof NumberFromHexString.Type
+
+export const HexFromJson = S.transformOrFail(
+  S.Unknown,
+  Hex,
+  {
+    encode: (toI, options, ast, toA) =>
+      pipe(
+        toI,
+        S.decode(StringFromHex),
+        Effect.flatMap(S.decode(S.parseJson())),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      ),
+    decode: (fromA, options, ast, fromI) =>
+      pipe(
+        fromA,
+        S.encode(S.parseJson()),
+        Effect.flatMap(S.encode(StringFromHex)),
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      ),
+  },
+)

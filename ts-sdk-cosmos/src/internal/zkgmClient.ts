@@ -1,5 +1,5 @@
 import type { ExecuteResult } from "@cosmjs/cosmwasm-stargate"
-import { Token } from "@unionlabs/sdk"
+import { Call, Token } from "@unionlabs/sdk"
 import { tokenMetaOverride } from "@unionlabs/sdk/Constants"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
@@ -80,6 +80,7 @@ export const fromSigningClient = (
               ),
               Match.exhaustive,
             ),
+          Call: Call.encode,
         }),
       )
 
@@ -155,7 +156,7 @@ export const fromSigningClient = (
             description: "writeContract",
           })
         ),
-        Effect.tapErrorCause((cause) => Effect.logError("cosmos submission failed")),
+        Effect.tapErrorCause((cause) => Effect.logError("Cosmos submission failed", cause)),
         Effect.annotateLogs({
           args,
           signingClient,
@@ -193,7 +194,11 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
   waitFor<A extends IncomingMessage.LifecycleEvent>(
     refinement: Predicate.Refinement<NoInfer<IncomingMessage.LifecycleEvent>, A>,
   ) {
-    return Stream.runHead(this.stream)
+    return pipe(
+      this.stream,
+      Stream.filter(refinement),
+      Stream.runHead,
+    )
   }
 }
 

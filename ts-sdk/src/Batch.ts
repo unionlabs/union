@@ -1,20 +1,16 @@
 /**
- * This module interfaces with the indexer via the GraphQL protocol.
+ * This module provides a high-level API for UCS03 `Batch` instruction construction.
  *
  * @since 2.0.0
  */
 import { flow, identity, Inspectable, Match, pipe } from "effect"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import * as A from "effect/Array"
-import * as TokenOrder from "./TokenOrder.js"
-// import { ParseError } from "effect/ParseResult"
-import { Pipeable, pipeArguments } from "effect/Pipeable"
-// import * as Schema from "effect/Schema"
 import * as O from "effect/Option"
+import { Pipeable, pipeArguments } from "effect/Pipeable"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/batch.js"
-// import { Hex } from "./schema/hex.js"
-// import * as Ucs03 from "./Ucs03.js"
+import * as TokenOrder from "./TokenOrder.js"
 
 /**
  * @category type ids
@@ -33,7 +29,7 @@ export type TypeId = typeof TypeId
  * @since 2.0.0
  */
 export interface Batch
-  extends Inspectable.Inspectable, Pipeable, Iterable<ZkgmInstruction.ZkgmInstruction> // ZkgmInstruction.Encodeable<ParseError, never>
+  extends Inspectable.Inspectable, Pipeable, Iterable<ZkgmInstruction.ZkgmInstruction>
 {
   readonly [TypeId]: TypeId
   readonly _tag: "Batch"
@@ -42,48 +38,17 @@ export interface Batch
   readonly version: 0
 }
 
-// /** @internal */
-// const encode = (self: Batch): Effect.Effect<Hex, ParseError, never> =>
-//   Effect.gen(function*() {
-//     const encodedUcs03 = yield* Effect.all(
-//       A.map(self.instructions, x => x.encode),
-//     )
-
-//     const decodedUcs03 = yield* Effect.all(
-//       A.map(encodedUcs03, x => Schema.decode(Ucs03.Ucs03FromHex)(x)),
-//     )
-
-//     console.log({ decodedUcs03 })
-
-//     return yield* pipe(
-//       Ucs03.Batch.make({
-//         opcode: self.opcode,
-//         version: self.version,
-//         operand: decodedUcs03,
-//       }),
-//       (x) => {
-//         console.log("batch.fromoperand", x)
-//         return x
-//       },
-//       Schema.encode(Ucs03.Ucs03FromHex),
-//       Effect.map(Str.toLowerCase),
-//     )
-//   })
-
-const Proto = {
+const BatchProto: Omit<Batch, "instructions" | "opcode" | "version"> = {
   [TypeId]: TypeId,
   _tag: "Batch",
   ...Inspectable.BaseProto,
   [Symbol.iterator](this: Batch) {
     return this.instructions[Symbol.iterator]()
   },
-  // encode(this: Batch) {
-  //   return encode(this)
-  // },
   toJSON(this: Batch): unknown {
     return {
       _id: "@unionlabs/sdk/Batch",
-      instructions: A.map(this.instructions, (x) => x.toString()),
+      instructions: this.instructions,
     }
   },
   pipe() {
@@ -98,13 +63,12 @@ const Proto = {
 export const make = <
   A extends ZkgmInstruction.ZkgmInstruction,
 >(iterable: Iterable<A>): Batch => {
-  const self = Object.create(Proto)
+  const self = Object.create(BatchProto)
 
   self.instructions = iterable
   self.version = 0
   self.opcode = 2
   self._tag = "Batch"
-  // self.encode = encode(self)
 
   return self
 }

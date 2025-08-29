@@ -15,7 +15,10 @@ export const TypeId: ClientRequest.TypeId = Symbol.for(
   "@unionlabs/sdk/ZkgmClientRequest",
 ) as ClientRequest.TypeId
 
-const Proto = {
+const Proto: Omit<
+  ClientRequest.ZkgmClientRequest,
+  "source" | "destination" | "channelId" | "ucs03Address" | "instruction"
+> = {
   [TypeId]: TypeId,
   ...Inspectable.BaseProto,
   toJSON(this: ClientRequest.ZkgmClientRequest): unknown {
@@ -198,6 +201,7 @@ export const requiredFunds = (
           ),
 
         TokenOrder: (x) => [O.some([x.baseToken, x.baseAmount] as const)],
+        Call: () => [O.none<readonly [Token.Any, bigint]>()],
       }),
     )
 
