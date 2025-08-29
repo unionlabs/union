@@ -10688,6 +10688,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "on-zkgm-call-proxy"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "frissitheto",
+ "serde",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
