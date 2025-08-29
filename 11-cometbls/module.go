@@ -41,7 +41,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(*codec.LegacyAmino) {}
 // RegisterInterfaces registers module concrete types into protobuf Any. This allows core IBC
 // to unmarshal tendermint light client types.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	RegisterInterfaces(registry)
+    RegisterCometBLSInterfaces(registry)
 }
 
 // DefaultGenesis performs a no-op. Genesis is not supported for the tendermint light client.
