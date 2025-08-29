@@ -430,6 +430,15 @@ impl Module {
         }
     }
 
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
+    async fn query_committed_client_status(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Option<Status>> {
+        todo!()
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
     async fn packet_by_packet_hash(
         &self,
@@ -816,6 +825,10 @@ impl StateModuleServer<IbcUnion> for Module {
                 .map(into_value),
             StorePath::BatchPackets(path) => self
                 .query_batch_packets(at, path.batch_hash)
+                .await
+                .map(into_value),
+            StorePath::ClientStatus(path) => self
+                .query_committed_client_status(at, path.client_id)
                 .await
                 .map(into_value),
         }

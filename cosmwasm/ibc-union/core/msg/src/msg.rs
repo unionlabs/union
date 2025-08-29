@@ -51,6 +51,7 @@ pub enum ExecuteMsg {
     PacketSend(MsgSendPacket),
     WriteAcknowledgement(MsgWriteAcknowledgement),
     MigrateState(MsgMigrateState),
+    CommitClientStatus(MsgCommitClientStatus),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -242,4 +243,10 @@ pub struct MsgSendPacket {
     pub source_channel_id: ChannelId,
     pub timeout_timestamp: Timestamp,
     pub data: Bytes,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsgCommitClientStatus {
+    pub client_id: ClientId,
 }
