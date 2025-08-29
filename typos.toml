@@ -336,6 +336,7 @@ files.extend-exclude = [
 "agoric"                  = "agoric"
 "aitlahcen"               = "aitlahcen"
 "akash"                   = "akash"
+"allo"                    = "allo"
 "alloc"                   = "alloc"
 "alltables"               = "alltables"
 "alltransfers"            = "alltransfers"

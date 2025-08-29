@@ -10,6 +10,7 @@ import { hasProviderLinked } from "../helpers"
 import { invokeTick } from "../queries/private"
 import { errorStore } from "../stores/errors.svelte"
 import { AchievementsStore } from "./achievements.svelte"
+import { AirdropStore } from "./airdrop.svelte"
 import { CheckStore } from "./check.svelte"
 import { ExperienceStore } from "./experience.svelte"
 import { LeaderboardStore } from "./leaderboard.svelte"
@@ -27,26 +28,14 @@ export class Dashboard {
   user = $derived(Option.flatMap(this.session, (s) => Option.fromNullable(s.user)))
   userId = $derived(Option.flatMap(this.user, (u) => Option.fromNullable(u.id)))
 
-  /** Achievements store instance */
   achievements = $state<Option.Option<AchievementsStore>>(Option.none())
-
-  /** Experience store instance */
   experience = $state<Option.Option<ExperienceStore>>(Option.none())
-
-  /** Missions store instance */
   missions = $state<Option.Option<MissionsStore>>(Option.none())
-
-  /** Rewards store instance */
   rewards = $state<Option.Option<RewardsStore>>(Option.none())
-
-  /** Leaderboard store instance */
   leaderboard = $state<Option.Option<LeaderboardStore>>(Option.none())
-
-  /** Wallet store instance */
   wallets = $state<Option.Option<WalletStore>>(Option.none())
-
-  /** Check store instance */
   check = $state<Option.Option<CheckStore>>(Option.none())
+  airdrop = $state<Option.Option<AirdropStore>>(Option.none())
 
   /**
    * Usernames from all connected providers
@@ -262,6 +251,9 @@ export class Dashboard {
       if (Option.isNone(this.check)) {
         this.check = Option.some(new CheckStore(session.user.id))
       }
+      if (Option.isNone(this.airdrop)) {
+        this.airdrop = Option.some(new AirdropStore(session.user.id))
+      }
       // Start tick polling when user is authenticated
       this.startTickPolling()
     } else {
@@ -308,6 +300,12 @@ export class Dashboard {
       })
       this.check = Option.none()
 
+      Option.match(this.airdrop, {
+        onNone: () => {},
+        onSome: (store) => store.cleanup(),
+      })
+      this.airdrop = Option.none()
+
       // Stop tick polling when user is logged out
       this.stopTickPolling()
     }
@@ -338,7 +336,7 @@ export class Dashboard {
    * @param provider - The authentication provider to use for login
    * @returns An Effect that handles the OAuth login flow
    */
-  login(provider: AuthProvider) {
+  login(provider: AuthProvider, path?: string) {
     return pipe(
       SupabaseClient,
       Effect.flatMap((client) =>
@@ -347,7 +345,7 @@ export class Dashboard {
             client.auth.signInWithOAuth({
               provider,
               options: {
-                redirectTo: `${window.location.origin}/dashboard`,
+                redirectTo: `${window.location.origin}${path || "/dashboard"}`,
                 skipBrowserRedirect: true,
               },
             }),
@@ -428,9 +426,10 @@ export class Dashboard {
   /**
    * Links a new authentication provider to the current user account
    * @param provider - The authentication provider to link
+   * @param returnPath - Optional path to return to after linking (defaults to current pathname)
    * @returns An Effect that handles the identity linking process
    */
-  linkIdentity(provider: AuthProvider) {
+  linkIdentity(provider: AuthProvider, returnPath?: string) {
     return pipe(
       SupabaseClient,
       Effect.flatMap((client) =>
@@ -440,7 +439,7 @@ export class Dashboard {
               provider,
               options: {
                 redirectTo: `${window.location.origin}/auth?linking=true&returnTo=${
-                  encodeURIComponent(window.location.pathname)
+                  encodeURIComponent(returnPath || window.location.pathname)
                 }`,
                 skipBrowserRedirect: true,
               },

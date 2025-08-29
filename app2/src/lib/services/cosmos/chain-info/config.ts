@@ -3,6 +3,7 @@ import {
   babylonTestnet,
   osmosisMainnet,
   osmosisTestnet,
+  stargazeMainnet,
   unionTestnet,
   xionTestnet,
 } from "$lib/config/wallets/info"
@@ -15,4 +16,5 @@ export const chainInfoMap: Record<string, InternalChainInfo> = {
   [xionTestnet.chainId]: xionTestnet,
   [osmosisTestnet.chainId]: osmosisTestnet,
   [osmosisMainnet.chainId]: osmosisMainnet,
+  [stargazeMainnet.chainId]: stargazeMainnet,
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
@@ -69,7 +69,7 @@ $effect(() => {
 })
 
 // Check if we're on the leaderboard page
-let isOnLeaderboardPage = $derived($page.url.pathname === "/dashboard/leaderboard")
+let isOnLeaderboardPage = $derived(page.url.pathname === "/dashboard/leaderboard")
 </script>
 
 <Card class="flex flex-col gap-4 p-4">

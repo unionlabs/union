@@ -71,7 +71,135 @@ export function mapSupabaseErrorToCustomError(
         email: errorDescription?.split(" ")[0] || "unknown",
         message: errorDescription || "Email is already linked to another account",
       })
+    // Twitter OAuth specific errors that come back in URL
+    case "access_denied":
+      return new ProviderLinkError({
+        operation: "link",
+        cause: errorDescription,
+        provider: "twitter",
+        message:
+          "You cancelled the Twitter connection. Please try again if you'd like to connect your account.",
+      })
+    case "user_cancelled":
+      return new ProviderLinkError({
+        operation: "link",
+        cause: errorDescription,
+        provider: "twitter",
+        message:
+          "You cancelled the Twitter connection. Please try again if you'd like to connect your account.",
+      })
+    case "oauth_problem":
+      return new ProviderLinkError({
+        operation: "link",
+        cause: errorDescription,
+        provider: "twitter",
+        message: "There was a problem connecting to Twitter. Please try again.",
+      })
+    case "invalid_request":
+      return new ProviderLinkError({
+        operation: "link",
+        cause: errorDescription,
+        provider: "twitter",
+        message: "Invalid authentication request. Please try connecting again.",
+      })
+    case "temporarily_unavailable":
+      return new DashboardUnknownException({
+        operation: "auth",
+        cause: errorDescription,
+        message:
+          "Twitter authentication is temporarily unavailable. Please try again in a few minutes.",
+      })
+    case "unsupported_response_type":
+      return new DashboardUnknownException({
+        operation: "auth",
+        cause: errorDescription,
+        message: "Authentication configuration error. Please contact support.",
+      })
+    case "server_error":
+      return new DashboardUnknownException({
+        operation: "auth",
+        cause: errorDescription,
+        message: "Server error occurred during authentication. Please try again later.",
+      })
+    // Supabase specific errors for identity linking
+    case "identity_already_exists":
+      return new ProviderLinkError({
+        operation: "link",
+        cause: errorDescription,
+        provider: "twitter",
+        message:
+          "This Twitter account is already linked to another user. Please try a different account.",
+      })
+    case "signup_disabled":
+      return new DashboardUnknownException({
+        operation: "auth",
+        cause: errorDescription,
+        message: "Account registration is currently disabled. Please try again later.",
+      })
     default:
+      // Check if error description contains common patterns
+      if (
+        errorDescription?.toLowerCase().includes("already linked")
+        || errorDescription?.toLowerCase().includes("identity is already linked")
+      ) {
+        return new ProviderLinkError({
+          operation: "link",
+          cause: errorDescription,
+          provider: "twitter",
+          message:
+            "This Twitter account is already linked to another user. Please try a different account.",
+        })
+      }
+
+      if (
+        errorDescription?.toLowerCase().includes("error getting user email")
+        || errorDescription?.toLowerCase().includes("email not verified")
+        || errorDescription?.toLowerCase().includes("no email address")
+      ) {
+        return new ProviderLinkError({
+          operation: "link",
+          cause: errorDescription,
+          provider: "twitter",
+          message:
+            "Your Twitter account doesn't have a verified email address. Please add and verify an email in your Twitter settings, then try again.",
+        })
+      }
+
+      if (
+        errorDescription?.toLowerCase().includes("callback url not approved")
+        || errorDescription?.toLowerCase().includes("callback url")
+      ) {
+        return new DashboardUnknownException({
+          operation: "auth",
+          cause: errorDescription,
+          message: "Authentication configuration error. Please contact support.",
+        })
+      }
+
+      if (
+        errorDescription?.toLowerCase().includes("rate limit")
+        || errorDescription?.toLowerCase().includes("too many requests")
+      ) {
+        return new DashboardUnknownException({
+          operation: "auth",
+          cause: errorDescription,
+          message:
+            "Too many authentication attempts. Please wait a few minutes before trying again.",
+        })
+      }
+
+      if (
+        errorDescription?.toLowerCase().includes("user suspended")
+        || errorDescription?.toLowerCase().includes("account suspended")
+      ) {
+        return new ProviderLinkError({
+          operation: "link",
+          cause: errorDescription,
+          provider: "twitter",
+          message: "This Twitter account has been suspended. Please use a different account.",
+        })
+      }
+
       return new DashboardUnknownException({
         operation: "auth",
         cause: errorDescription,

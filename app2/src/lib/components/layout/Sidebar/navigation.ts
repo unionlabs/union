@@ -1,9 +1,9 @@
+import AirdropIcon from "$lib/components/icons/AirdropIcon.svelte"
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
 import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
-import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
@@ -95,6 +95,13 @@ export const navigation: Array<NavSection> = [
     ],
   },
   {
+    items: [{
+      path: "/udrop",
+      title: "U Drop",
+      icon: AirdropIcon,
+    }],
+  },
+  {
     title: "Developer",
     items: [
       {
@@ -106,11 +113,6 @@ export const navigation: Array<NavSection> = [
         path: "/dashboard",
         title: "Dashboard",
         icon: SharpDashboardIcon,
-      },
-      {
-        path: "/stake",
-        title: "Stake with Escher",
-        icon: SharpStakeIcon,
       },
       {
         path: "/balances",
