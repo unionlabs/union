@@ -57,7 +57,7 @@ const stakingPercentage = $derived(
             {#if isEligible}
               Here's your U Drop allocation based on your activity.
             {:else}
-              Thanks for checking! Keep building with Union for future opportunities.
+              Sorry, you're ineligible for U Drop Season 1. Come back for Season 2.
             {/if}
           </p>
         </div>
@@ -111,7 +111,7 @@ const stakingPercentage = $derived(
           {#if isEligible}
             Here's your U drop allocation based on your activity.
           {:else}
-            Thanks for checking! Keep building with Union for future opportunities.
+            Sorry, you're ineligible for U Drop Season 1. Come back for Season 2.
           {/if}
         </p>
       </div>
@@ -176,7 +176,7 @@ const stakingPercentage = $derived(
                 Thank You 🙏
               </div>
               <div class="text-sm text-zinc-400 mt-4">
-                Keep building with Union!
+                Come back for Season 2
               </div>
             </div>
           </div>
