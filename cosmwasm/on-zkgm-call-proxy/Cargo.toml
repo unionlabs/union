@@ -15,15 +15,8 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-cosmwasm-schema      = { workspace = true }
-cosmwasm-std         = { workspace = true }
-embed-commit         = { workspace = true }
-frissitheto          = { workspace = true }
-ibc-union-spec       = { workspace = true, features = ["serde"] }
-serde                = { workspace = true, features = ["derive"] }
-serde-json-wasm      = "1.0"
-thiserror            = { workspace = true }
-unionlabs-primitives = { workspace = true, features = ["serde"] }
-
-[dev-dependencies]
-hex-literal = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["abort"] }
+embed-commit = { workspace = true }
+frissitheto  = { workspace = true }
+serde        = { workspace = true, features = ["derive"] }
+thiserror    = { workspace = true }

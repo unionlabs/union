@@ -10691,16 +10691,11 @@ dependencies = [
 name = "on-zkgm-call-proxy"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "embed-commit",
  "frissitheto",
- "hex-literal",
- "ibc-union-spec",
  "serde",
- "serde-json-wasm 1.0.1",
  "thiserror 2.0.12",
- "unionlabs-primitives",
 ]
 
 [[package]]

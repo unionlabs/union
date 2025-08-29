@@ -1,14 +1,13 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    entry_point, from_json, Addr, Coin, DepsMut, Env, MessageInfo, Response, StdError, WasmMsg,
+    entry_point, from_json, Addr, Binary, Coin, DepsMut, Env, MessageInfo, Response, StdError,
+    WasmMsg,
 };
 use frissitheto::{UpgradeError, UpgradeMsg};
-use ibc_union_spec::ChannelId;
-use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{Bytes, U256};
+use serde::Deserialize;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InstantiateMsg {}
 
@@ -28,42 +27,24 @@ pub fn instantiate(
     init()
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    OnZkgm {
-        caller: Addr,
-        path: U256,
-        source_channel_id: ChannelId,
-        destination_channel_id: ChannelId,
-        sender: Bytes,
-        message: Bytes,
-        relayer: Addr,
-        relayer_msg: Bytes,
-    },
+    OnZkgm { message: Binary },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Msg {
     pub contract: Addr,
-    pub message: Bytes,
+    pub message: Binary,
     pub funds: Vec<Coin>,
 }
 
 #[entry_point]
 pub fn execute(_: DepsMut, _: Env, _: MessageInfo, msg: ExecuteMsg) -> Result<Response, Error> {
     match msg {
-        ExecuteMsg::OnZkgm {
-            caller: _,
-            path: _,
-            source_channel_id: _,
-            destination_channel_id: _,
-            sender: _,
-            message,
-            relayer: _,
-            relayer_msg: _,
-        } => {
+        ExecuteMsg::OnZkgm { message } => {
             let Msg {
                 contract,
                 message,
@@ -72,14 +53,14 @@ pub fn execute(_: DepsMut, _: Env, _: MessageInfo, msg: ExecuteMsg) -> Result<Re
 
             Ok(Response::new().add_message(WasmMsg::Execute {
                 contract_addr: contract.into(),
-                msg: message.to_vec().into(),
+                msg: message,
                 funds,
             }))
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}
 
@@ -91,7 +72,7 @@ pub fn migrate(
 ) -> Result<Response, Error> {
     msg.run(
         deps,
-        |_, InstantiateMsg {}| {
+        |_, _| {
             let res = init()?;
             Ok((res, None))
         },
@@ -104,6 +85,6 @@ pub enum Error {
     #[error(transparent)]
     StdError(#[from] StdError),
 
-    #[error("migration error: {0}")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
 }
