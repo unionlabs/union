@@ -25,6 +25,12 @@ func (app *App) setupUpgradeStoreLoaders() {
 
 	for _, upgrade := range Upgrades {
 		if upgradeInfo.Name == upgrade.UpgradeName {
+			// Added log statement for visibility
+			app.Logger().Info("Applying store upgrade",
+				"upgrade", upgrade.UpgradeName,
+				"height", upgradeInfo.Height,
+			)
+
 			app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &upgrade.StoreUpgrades))
 		}
 	}
@@ -53,3 +59,4 @@ func (app *App) setupUpgradeHandlers() {
 		)
 	}
 }
+
