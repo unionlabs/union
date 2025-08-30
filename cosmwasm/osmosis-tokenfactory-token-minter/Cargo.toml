@@ -16,6 +16,7 @@ alloy                       = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["stargate", "cosmwasm_1_3"] }
 cw-storage-plus             = { workspace = true }
+cw20                        = "2.0.0"
 embed-commit                = { workspace = true }
 enumorph                    = { workspace = true }
 ibc-union-spec              = { workspace = true }

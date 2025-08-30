@@ -7,8 +7,14 @@ pub enum Error {
     #[error(transparent)]
     StdError(#[from] StdError),
 
-    #[error("migration error: {0}")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
+
+    #[error(transparent)]
+    Cw20(#[from] cw20_base::error::ContractError),
+
+    #[error(transparent)]
+    Cw20WrappedTokenfactory(#[from] cw20_wrapped_tokenfactory::error::ContractError),
 
     #[error("sender is not admin")]
     OnlyAdmin,
@@ -31,9 +37,6 @@ pub enum Error {
     #[error("the quote token must be a valid utf8 denom")]
     InvalidQuoteToken,
 
-    #[error("the order quote token must match the previously escrowed denom: quote_token={quote_token} != escrowed_denom={escrowed_denom}")]
-    InvalidFill {
-        quote_token: String,
-        escrowed_denom: String,
-    },
+    #[error("the order quote token must match the cw20 contract address: quote_token={quote_token} != self")]
+    InvalidFill { quote_token: String },
 }

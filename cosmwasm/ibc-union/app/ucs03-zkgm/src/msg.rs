@@ -242,6 +242,7 @@ pub enum QueryMsg {
         quote_token: Bytes,
     },
     GetConfig {},
+    GetBurnAddress {},
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

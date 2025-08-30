@@ -960,6 +960,8 @@ _: {
 
       cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" { };
 
+      cw-u = crane.buildWasmContract "cosmwasm/cw-u" { };
+
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
       cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
@@ -1023,6 +1025,7 @@ _: {
             on-zkgm-call-proxy
             cw-account
             cw-escrow-vault
+            cw-u
             ;
           cosmwasm-scripts =
             {
