@@ -7,7 +7,7 @@ import { graphql } from "gql.tada"
 export const transferPacketHashQuery = ({ submission_tx_hash }: { submission_tx_hash: string }) =>
   createQueryGraphql({
     schema: Schema.Struct({
-      v2_transfers: Schema.Array(
+      v2_packets: Schema.Array(
         Schema.Struct({
           packet_hash: PacketHash,
         }),
@@ -15,7 +15,7 @@ export const transferPacketHashQuery = ({ submission_tx_hash }: { submission_tx_
     }),
     document: graphql(/* GraphQL */ `
       query GetPacketHashBySubmissionTxHash($submission_tx_hash: String!) {
-          v2_transfers(args: {
+          v2_packets(args: {
               p_transaction_hash: $submission_tx_hash
           }) {
               packet_hash
@@ -29,8 +29,8 @@ export const transferPacketHashQuery = ({ submission_tx_hash }: { submission_tx_
     writeData: data => {
       transferHashStore.data = data.pipe(
         Option.flatMap(result =>
-          result.v2_transfers.length > 0
-            ? Option.some(result.v2_transfers[0].packet_hash)
+          result.v2_packets.length > 0
+            ? Option.some(result.v2_packets[0].packet_hash)
             : Option.none()
         ),
       )
