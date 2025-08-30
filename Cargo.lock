@@ -10715,10 +10715,12 @@ name = "on-zkgm-call-proxy"
 version = "0.0.0"
 dependencies = [
  "cosmwasm-std 2.2.2",
+ "depolama",
  "embed-commit",
  "frissitheto",
  "serde",
  "thiserror 2.0.12",
+ "ucs03-zkgm",
 ]
 
 [[package]]

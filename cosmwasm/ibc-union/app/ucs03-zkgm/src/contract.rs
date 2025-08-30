@@ -39,8 +39,8 @@ use crate::{
         TOKEN_ORDER_KIND_UNESCROW,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg,
-        V1ToV2Migration, V1ToV2WrappedMigration, ZkgmMsg,
+        Config, ExecuteMsg, InitMsg, OnIntentZkgm, OnZkgm, PredictWrappedTokenResponse, QueryMsg,
+        SolverMsg, V1ToV2Migration, V1ToV2WrappedMigration, ZkgmMsg,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, DEPRECATED_CHANNEL_BALANCE_V1,
@@ -1586,7 +1586,7 @@ fn execute_multiplex(
     } else {
         // Standard mode - fire and forget
         let msg = if intent {
-            ZkgmMsg::OnIntentZkgm {
+            ZkgmMsg::OnIntentZkgm(OnIntentZkgm {
                 caller,
                 path: Uint256::from_be_bytes(path.to_be_bytes()),
                 source_channel_id: packet.source_channel_id,
@@ -1595,9 +1595,9 @@ fn execute_multiplex(
                 message: multiplex.contract_calldata.to_vec().into(),
                 market_maker: relayer,
                 market_maker_msg: relayer_msg,
-            }
+            })
         } else {
-            ZkgmMsg::OnZkgm {
+            ZkgmMsg::OnZkgm(OnZkgm {
                 caller,
                 path: Uint256::from_be_bytes(path.to_be_bytes()),
                 source_channel_id: packet.source_channel_id,
@@ -1606,7 +1606,7 @@ fn execute_multiplex(
                 message: multiplex.contract_calldata.to_vec().into(),
                 relayer,
                 relayer_msg,
-            }
+            })
         };
         Ok(Response::new()
             .add_message(wasm_execute(contract_address, &msg, vec![])?)

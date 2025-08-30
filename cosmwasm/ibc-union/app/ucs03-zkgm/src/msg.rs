@@ -131,26 +131,34 @@ pub enum ExecuteMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ZkgmMsg {
-    OnZkgm {
-        caller: Addr,
-        path: Uint256,
-        source_channel_id: ChannelId,
-        destination_channel_id: ChannelId,
-        sender: Bytes,
-        message: Bytes,
-        relayer: Addr,
-        relayer_msg: Bytes,
-    },
-    OnIntentZkgm {
-        caller: Addr,
-        path: Uint256,
-        source_channel_id: ChannelId,
-        destination_channel_id: ChannelId,
-        sender: Bytes,
-        message: Bytes,
-        market_maker: Addr,
-        market_maker_msg: Bytes,
-    },
+    OnZkgm(OnZkgm),
+    OnIntentZkgm(OnIntentZkgm),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct OnZkgm {
+    pub caller: Addr,
+    pub path: Uint256,
+    pub source_channel_id: ChannelId,
+    pub destination_channel_id: ChannelId,
+    pub sender: Bytes,
+    pub message: Bytes,
+    pub relayer: Addr,
+    pub relayer_msg: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct OnIntentZkgm {
+    pub caller: Addr,
+    pub path: Uint256,
+    pub source_channel_id: ChannelId,
+    pub destination_channel_id: ChannelId,
+    pub sender: Bytes,
+    pub message: Bytes,
+    pub market_maker: Addr,
+    pub market_maker_msg: Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
