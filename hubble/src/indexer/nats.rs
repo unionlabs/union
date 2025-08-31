@@ -59,8 +59,8 @@ impl NatsConnection {
         debug!("created context: {context:?}");
 
         let config = jetstream::stream::Config {
-            name: "hubble".to_string(),
-            subjects: vec!["hubble.>".to_string()],
+            name: "spitzer".to_string(),
+            subjects: vec!["spitzer.>".to_string()],
             storage: StorageType::File,
             num_replicas: 3,
             max_bytes: 75 * 1024 * 1024 * 1024, // 75GiB
@@ -69,7 +69,7 @@ impl NatsConnection {
             ..Default::default()
         };
 
-        info!("ensure 'hubble' stream exists");
+        info!("ensure 'spitzer' stream exists");
         let stream = context.get_or_create_stream(&config).await?;
         info!("found: {stream:?}");
 
@@ -181,7 +181,7 @@ impl Message {
 }
 
 pub fn subject_for_block(universal_chain_id: &UniversalChainId) -> String {
-    format!("hubble.block.{}", universal_chain_id)
+    format!("spitzer.block.{}", universal_chain_id)
 }
 
 pub fn durable_name(consumer_id: &str, universal_chain_id: &UniversalChainId) -> String {
