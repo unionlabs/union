@@ -335,6 +335,18 @@ pub trait StorageExt {
         &self,
         order: cosmwasm_std::Order,
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>>;
+
+    /// Iterate over all of the (key, value) pairs in the store within the bounds.
+    ///
+    /// # Errors
+    ///
+    /// Each produced item will return an error if either the key or value cannot be decoded.
+    #[cfg(feature = "iterator")]
+    fn iter_range<S: Store>(
+        &self,
+        order: cosmwasm_std::Order,
+        bounds: impl std::ops::RangeBounds<S::Key>,
+    ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>>;
 }
 
 impl<T: Storage> StorageExt for T {
@@ -360,6 +372,15 @@ impl<T: Storage> StorageExt for T {
         order: cosmwasm_std::Order,
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
         (self as &dyn Storage).iter::<S>(order)
+    }
+
+    #[cfg(feature = "iterator")]
+    fn iter_range<S: Store>(
+        &self,
+        order: cosmwasm_std::Order,
+        bounds: impl std::ops::RangeBounds<S::Key>,
+    ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
+        (self as &dyn Storage).iter_range::<S>(order, bounds)
     }
 }
 
@@ -394,17 +415,65 @@ impl StorageExt for dyn Storage + '_ {
         &self,
         order: cosmwasm_std::Order,
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
-        let from = S::PREFIX.iter_with_separator().copied().collect::<Vec<_>>();
-        let mut to = from.clone();
-        *to.last_mut()
-            .expect("length is at least one due to containing separator; qed;") += 1;
+        self.iter_range::<S>(order, ..)
+    }
 
-        self.range(Some(&from), Some(&to), order).map(|(k, v)| {
-            Ok((
-                S::decode_key(&Bytes::new(k[(S::PREFIX.len() + 1)..].to_vec()))?,
-                S::decode_value(&Bytes::new(v))?,
-            ))
-        })
+    #[cfg(feature = "iterator")]
+    #[inline]
+    fn iter_range<S: Store>(
+        &self,
+        order: cosmwasm_std::Order,
+        bounds: impl std::ops::RangeBounds<S::Key>,
+    ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
+        use std::ops::Bound;
+
+        let key_plus_one = |key| {
+            let raw_key = raw_key::<S>(key);
+
+            let mut raw_key = raw_key.into_vec();
+
+            'block: {
+                for byte in raw_key.iter_mut().rev() {
+                    if *byte == u8::MAX {
+                        continue;
+                    }
+
+                    *byte += 1;
+                    break 'block;
+                }
+
+                // [] < [0]
+                raw_key.push(0);
+            }
+
+            Some(raw_key.into())
+        };
+
+        let from = match bounds.start_bound() {
+            // start is inclusive at the db layer
+            Bound::Included(key) => Some(raw_key::<S>(key)),
+            // to exclude the end, construct a key > raw_key
+            Bound::Excluded(key) => key_plus_one(key),
+            Bound::Unbounded => None,
+        };
+
+        let to = match bounds.end_bound() {
+            // to include the end, construct a key > raw_key
+            Bound::Included(key) => key_plus_one(key),
+            // end is exclusive at the db layer
+            Bound::Excluded(key) => Some(raw_key::<S>(key)),
+            Bound::Unbounded => None,
+        };
+
+        dbg!(&from, &to);
+
+        self.range(from.as_deref(), to.as_deref(), order)
+            .map(|(k, v)| {
+                Ok((
+                    S::decode_key(&Bytes::new(k[(S::PREFIX.len() + 1)..].to_vec()))?,
+                    S::decode_value(&Bytes::new(v))?,
+                ))
+            })
     }
 }
 
