@@ -18,17 +18,19 @@ use ibc_union_msg::{
     msg::{
         ExecuteMsg, InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm,
         MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-        MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgForceUpdateClient, MsgIntentPacketRecv,
-        MsgMigrateState, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
-        MsgRegisterClient, MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
+        MsgChannelOpenTry, MsgCommitClientStatus, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
+        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgForceUpdateClient,
+        MsgIntentPacketRecv, MsgMigrateState, MsgPacketAcknowledgement, MsgPacketRecv,
+        MsgPacketTimeout, MsgRegisterClient, MsgSendPacket, MsgUpdateClient,
+        MsgWriteAcknowledgement,
     },
     query::QueryMsg,
 };
 use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        ClientStatusPath, ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC,
+        COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     MustBeZero, Packet, Status, Timestamp,
@@ -36,7 +38,7 @@ use ibc_union_spec::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{Bytes, H256},
+    primitives::{Bytes, H256, U256},
 };
 
 use crate::{
@@ -621,6 +623,26 @@ pub fn execute(
                 Event::new("whitelisted_relayers")
                     .add_attribute("action", "revoke")
                     .add_attribute("relayer", relayer),
+            ))
+        }
+        ExecuteMsg::CommitClientStatus(MsgCommitClientStatus { client_id }) => {
+            let client_impl = client_impl(deps.as_ref(), client_id)?;
+            let status = query_light_client::<Status>(
+                deps.as_ref(),
+                client_impl,
+                LightClientQuery::GetStatus { client_id },
+            )?;
+
+            store_commit(
+                deps,
+                &ClientStatusPath { client_id }.key(),
+                &U256::from(status).to_be_bytes().into(),
+            );
+
+            Ok(Response::new().add_event(
+                Event::new("commit_client_status")
+                    .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
+                    .add_attribute("status", status.to_string()),
             ))
         }
     }
@@ -2205,6 +2227,13 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         QueryMsg::GetBatchReceipts { batch_hash } => {
             let commit = read_commit(deps, &BatchReceiptsPath { batch_hash }.key());
             Ok(to_json_binary(&commit)?)
+        }
+        QueryMsg::GetCommittedClientStatus { client_id } => {
+            let commit = read_commit(deps, &ClientStatusPath { client_id }.key());
+            Ok(to_json_binary(&commit.map(|commit| {
+                Status::try_from(U256::from_be_bytes(*commit.get()))
+                    .expect("invalid client status; impossible")
+            }))?)
         }
     }
 }
