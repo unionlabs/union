@@ -94,8 +94,8 @@ pub enum OnZkgmCallProxyMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct OnProxyOnZkgmCall {
-    on_zkgm_msg: OnZkgm,
-    msg: Binary,
+    pub on_zkgm_msg: OnZkgm,
+    pub msg: Binary,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
