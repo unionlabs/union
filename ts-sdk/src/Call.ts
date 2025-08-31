@@ -81,7 +81,7 @@ export const make = (options: {
   self.contractAddress = options.contractAddress
   self.contractCalldata = options.contractCalldata
   self.version = 0
-  self.opcode = 2
+  self.opcode = 1
   self._tag = "Call"
 
   return self
