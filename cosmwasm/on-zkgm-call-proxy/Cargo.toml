@@ -16,7 +16,13 @@ workspace = true
 
 [dependencies]
 cosmwasm-std = { workspace = true, features = ["abort"] }
+depolama     = { workspace = true }
 embed-commit = { workspace = true }
 frissitheto  = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }
 thiserror    = { workspace = true }
+ucs03-zkgm   = { workspace = true, features = ["library"] }
+
+[features]
+default = []
+library = []
