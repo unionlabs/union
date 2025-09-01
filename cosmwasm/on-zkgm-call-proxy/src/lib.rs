@@ -31,6 +31,7 @@ impl ValueCodec<Addr> for Zkgm {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InstantiateMsg {
     pub zkgm: Addr,
@@ -54,12 +55,14 @@ pub fn instantiate(
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     OnZkgm(OnZkgm),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Msg {
     pub contract: Addr,
@@ -76,7 +79,8 @@ pub struct Msg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
 pub enum CallAction {
     /// Thread the message through directly to the contract.
     Direct,
@@ -86,12 +90,14 @@ pub enum CallAction {
 
 /// Required interface for a contract supporting [`CallAction::CallOnProxyCall`] behaviour.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum OnZkgmCallProxyMsg {
     OnProxyOnZkgmCall(OnProxyOnZkgmCall),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct OnProxyOnZkgmCall {
     pub on_zkgm_msg: OnZkgm,
@@ -146,6 +152,7 @@ fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}
 

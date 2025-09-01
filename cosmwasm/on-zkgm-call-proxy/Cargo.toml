@@ -19,10 +19,12 @@ cosmwasm-std = { workspace = true, features = ["abort"] }
 depolama     = { workspace = true }
 embed-commit = { workspace = true }
 frissitheto  = { workspace = true }
+schemars     = { workspace = true, optional = true, features = ["derive"] }
 serde        = { workspace = true, features = ["derive"] }
 thiserror    = { workspace = true }
 ucs03-zkgm   = { workspace = true, features = ["library"] }
 
 [features]
-default = []
-library = []
+default  = []
+library  = []
+schemars = ["dep:schemars", "ucs03-zkgm/schemars"]
