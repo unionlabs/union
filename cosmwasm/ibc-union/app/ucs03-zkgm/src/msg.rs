@@ -7,6 +7,7 @@ use unionlabs::primitives::{Bytes, H256};
 use crate::com::CwTokenOrderV2;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
     pub config: Config,
@@ -14,6 +15,7 @@ pub struct InitMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Config {
     /// The address to set as the owner of the minter.
@@ -37,6 +39,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum TokenMinterInitParams {
     /// Instantiate `ucs03-zkgm` with a cw20 minter implementation.
@@ -74,6 +77,7 @@ impl TokenMinterInitParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Update the set of rate limiters.
@@ -96,6 +100,7 @@ pub enum ExecuteMsg {
         // keeping this field for easier migration for integrators, it is ignored
         timeout_height: Uint64,
         #[serde(with = "serde_utils::string")]
+        #[cfg_attr(feature = "schemars", schemars(with = "Timestamp"))]
         timeout_timestamp: Timestamp,
         salt: H256,
         instruction: Bytes,
@@ -129,6 +134,7 @@ pub enum ExecuteMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ZkgmMsg {
     OnZkgm(OnZkgm),
@@ -136,6 +142,7 @@ pub enum ZkgmMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct OnZkgm {
     pub caller: Addr,
@@ -149,6 +156,7 @@ pub struct OnZkgm {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct OnIntentZkgm {
     pub caller: Addr,
@@ -162,6 +170,7 @@ pub struct OnIntentZkgm {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum SolverMsg {
     DoSolve {
@@ -176,6 +185,7 @@ pub enum SolverMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum SolverQuery {
     /// Returns unit if the contract is a solver.
@@ -185,10 +195,12 @@ pub enum SolverQuery {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct V1ToV2Migration {
     pub path: Uint256,
@@ -198,6 +210,7 @@ pub struct V1ToV2Migration {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct V1ToV2WrappedMigration {
     pub path: Uint256,
@@ -207,6 +220,7 @@ pub struct V1ToV2WrappedMigration {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Calculate the stake account address
@@ -254,6 +268,7 @@ pub enum QueryMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct PredictWrappedTokenResponse {
     pub wrapped_token: String,

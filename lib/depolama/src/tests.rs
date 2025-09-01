@@ -1,4 +1,6 @@
-use cosmwasm_std::testing::MockStorage;
+use std::ops::Bound;
+
+use cosmwasm_std::{testing::MockStorage, Order};
 use unionlabs::primitives::ByteArrayExt;
 
 use super::*;
@@ -64,22 +66,142 @@ fn read_write() {
     assert_eq!(value, (1, 1));
 }
 
-#[test]
-fn iterator() {
-    let mut storage = MockStorage::new();
+#[cfg(test)]
+mod iterator {
+    use super::*;
 
-    let kvs = [(1, (1, 1)), (2, (1, 2)), (3, (1, 3))];
+    #[allow(clippy::type_complexity)]
+    fn init() -> (MockStorage, [(u64, (u64, u64)); 3]) {
+        let mut storage = MockStorage::new();
 
-    for (ref k, ref v) in &kvs {
-        storage.write::<TestStore>(k, v);
+        let kvs = [(1, (1, 1)), (2, (1, 2)), (3, (1, 3))];
+
+        for (ref k, ref v) in &kvs {
+            storage.write::<TestStore>(k, v);
+        }
+
+        (storage, kvs)
     }
 
-    let iter_kvs = storage
-        .iter::<TestStore>(cosmwasm_std::Order::Ascending)
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap();
+    #[test]
+    fn iter() {
+        let (storage, kvs) = init();
 
-    assert_eq!(iter_kvs, kvs);
+        let res = storage
+            .iter::<TestStore>(Order::Ascending)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, kvs);
+    }
+
+    #[test]
+    fn iter_range_full() {
+        let (storage, kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, ..)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, kvs);
+    }
+
+    #[test]
+    fn iter_range_both_inclusive() {
+        let (storage, kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, 1..=3)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, kvs);
+    }
+
+    #[test]
+    fn iter_range_start_inclusive_end_exclusive() {
+        let (storage, _kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, 1..3)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, [(1, (1, 1)), (2, (1, 2))]);
+    }
+
+    #[test]
+    fn iter_range_start_unbounded_end_exclusive() {
+        let (storage, _kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, ..3)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, [(1, (1, 1)), (2, (1, 2))]);
+    }
+
+    #[test]
+    fn iter_range_start_unbounded_end_inclusive() {
+        let (storage, kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, ..=3)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, kvs);
+    }
+
+    #[test]
+    fn iter_range_start_inclusive_end_unbounded() {
+        let (storage, kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, 1..)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, kvs);
+    }
+
+    #[test]
+    fn iter_range_start_exclusive_end_unbounded() {
+        let (storage, _kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, (Bound::Excluded(1), Bound::Unbounded))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, [(2, (1, 2)), (3, (1, 3))]);
+    }
+
+    #[test]
+    fn iter_range_start_exclusive_end_inclusive() {
+        let (storage, _kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, (Bound::Excluded(1), Bound::Included(3)))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, [(2, (1, 2)), (3, (1, 3))]);
+    }
+
+    #[test]
+    fn iter_range_both_exclusive() {
+        let (storage, _kvs) = init();
+
+        let res = storage
+            .iter_range::<TestStore>(Order::Ascending, (Bound::Excluded(1), Bound::Excluded(3)))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        assert_eq!(res, [(2, (1, 2))]);
+    }
 }
 
 #[test]
