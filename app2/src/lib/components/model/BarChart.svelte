@@ -2,7 +2,7 @@
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { DailyTransfer } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
+import { Array as A, Option } from "effect"
 import type { TimeoutException } from "effect/Cause"
 import { constVoid } from "effect/Function"
 
@@ -14,16 +14,16 @@ type Props = {
   hoveredDate?: Option.Option<DailyTransfer>
 }
 
-const { data, error, class: className = "", onHoverChange = constVoid, hoveredDate }: Props =
-  $props()
-
-// Format large numbers with commas (used for chart tooltips)
-function formatNumber(num: string | number): string {
-  return Number(num).toLocaleString()
-}
+const {
+  data: _data,
+  error,
+  class: className = "",
+  onHoverChange = constVoid,
+  hoveredDate,
+}: Props = $props()
 
 // Derived values for chart data
-const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].reverse() : [])
+const data = $derived(Option.getOrElse(_data, A.empty<DailyTransfer>))
 
 // Track which bar should be highlighted based on the external hover
 const highlightedDate = $derived.by(() => {
@@ -34,18 +34,29 @@ const highlightedDate = $derived.by(() => {
   return Option.some(String(hoveredDate.value.day_date))
 })
 
-const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
+const maxCount = $derived(
+  Option.match(
+    _data,
+    {
+      onSome: (xs) => Math.max(...xs.map(d => d.count)),
+      onNone: () => 0,
+    },
+  ),
+)
 
 // Track the currently hovered day for display
 let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count
 const highestDay = $derived.by(() => {
-  if (!Option.isSome(data) || data.value.length === 0) {
+  if (!Option.isSome(_data) || _data.value.length === 0) {
     return Option.none()
   }
   return Option.some(
-    data.value.reduce((max, current) => (current.count > max.count ? current : max), data.value[0]),
+    _data.value.reduce(
+      (max, current) => (current.count > max.count ? current : max),
+      _data.value[0],
+    ),
   )
 })
 
@@ -67,14 +78,14 @@ const displayDate = $derived(() =>
 
 // Calculate bar heights as percentages
 const barHeights = $derived(
-  reversedDailyTransfers.map(day => ({
+  data.map(day => ({
     ...day,
     heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1,
   })),
 )
 </script>
 
-{#if Option.isSome(data) && maxCount > 0}
+{#if Option.isSome(_data) && maxCount > 0}
   <!-- Chart container -->
   <div class="h-full relative chart-container {className} {Option.isSome(highlightedDate) ? 'has-hover' : ''}">
     <!-- Grid lines -->
@@ -85,7 +96,7 @@ const barHeights = $derived(
     </div>
 
     <!-- Bars -->
-    <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4 pt-4">
+    <div class="absolute left-0 right-0 top-12 bottom-0 px-4 pt-4">
       <div class="flex h-full items-end">
         {#each barHeights as day, i}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -103,7 +114,7 @@ const barHeights = $derived(
             <div class="w-full size-full flex items-end">
               <div
                 class="relative w-full bg-white bar animate-bar"
-                style="--final-height: {day.heightPercent}%; --delay: {i * 50}ms; min-height: 1px;"
+                style="--final-height: {day.heightPercent}%; --delay: {i * 16.18}ms; min-height: 1px;"
               >
                 <!-- uncomment for tooltip
                 <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-950 border-zinc-900 border text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
