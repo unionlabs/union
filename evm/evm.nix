@@ -191,6 +191,9 @@ _: {
         chain-id:
         "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/${chain-id}/public";
 
+      ba5ed = "0xba5eD44733953d79717F6269357C77718C8Ba5ed";
+      eu = "0xe5Cf13C84c0fEa3236C101Bd7d743d30366E5CF1";
+
       # name                  : plaintext name of network
       # chain-id              : chain id of the network
       # ucs04-chain-id        : ucs04 chain id of the network
@@ -210,6 +213,8 @@ _: {
       # verification-key      : bash expression that evaluates to the verification key, this will be available
       #                         in the $VERIFICATION_KEY env var
       # verifier-url          : contract verification endpoint for this chain
+      #
+      # u                     : the address of $U on this chain
       networks = [
         # devnets
         {
@@ -265,6 +270,8 @@ _: {
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
+
+          u = ba5ed;
         }
         rec {
           chain-id = "17000";
@@ -283,6 +290,9 @@ _: {
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
+
+          u = ba5ed;
+          inherit eu;
         }
         rec {
           chain-id = "21000001";
@@ -415,6 +425,8 @@ _: {
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
+
+          u = ba5ed;
         }
         rec {
           chain-id = "60808";
@@ -467,6 +479,8 @@ _: {
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
+
+          u = ba5ed;
         }
 
         # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
@@ -541,6 +555,8 @@ _: {
           rpc-url,
           ucs04-chain-id,
           name,
+          u ? null,
+          eu ? null,
           ...
         }:
         pkgs.writeShellApplication {
@@ -556,7 +572,9 @@ _: {
               ${ucs04-chain-id} \
               --rpc-url ${rpc-url} \
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
-              --ucs03 "$@"
+               ${pkgs.lib.optionalString (u != null) "--u ${u}"} \
+               ${pkgs.lib.optionalString (eu != null) "--eu ${eu}"} \
+              --ucs03 "$@" 
           '';
         };
 

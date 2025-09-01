@@ -30,7 +30,7 @@ pub fn execute_increase_allowance(
             }
             val.expires = exp;
         }
-        val.allowance += amount;
+        val.allowance = val.allowance.saturating_add(amount);
         Ok(val)
     };
     ALLOWANCES.update(deps.storage, (&info.sender, &spender_addr), update_fn)?;
@@ -162,7 +162,6 @@ pub fn execute_transfer_from(
 
 pub fn execute_burn_from(
     deps: DepsMut,
-
     env: Env,
     info: MessageInfo,
     owner: String,

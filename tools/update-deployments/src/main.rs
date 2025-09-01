@@ -33,6 +33,14 @@ struct Args {
     ucs03: bool,
     #[arg(long)]
     ucs03_minter: Option<Ucs03Minter>,
+    #[arg(long)]
+    u: Option<String>,
+    #[arg(long)]
+    eu: Option<String>,
+    #[arg(long)]
+    lst: bool,
+    #[arg(long)]
+    on_zkgm_call_proxy: bool,
     #[arg(long, default_value_t = false)]
     update_deployment_heights: bool,
     #[arg(
@@ -52,14 +60,14 @@ enum Ucs03Minter {
 const BYTECODE_BASE_CHECKSUM: &[u8] =
     &hex!("ec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1");
 
-fn derive_cosmwasm(deployer: &Bech32<H160>, namespace: &'static str, salt: &str) -> Bech32<H256> {
+fn derive_cosmwasm(deployer: &Bech32<H160>, salt: String) -> Bech32<H256> {
     Bech32::new(
         deployer.hrp().to_string(),
         <Vec<u8>>::from(
             instantiate2_address(
                 BYTECODE_BASE_CHECKSUM,
                 &deployer.data().get().into(),
-                format!("{namespace}/{salt}").as_bytes(),
+                salt.as_bytes(),
             )
             .unwrap(),
         )
@@ -104,6 +112,10 @@ async fn do_main() -> Result<()> {
             lightclient,
             app,
             deployer,
+            u,
+            eu,
+            lst,
+            on_zkgm_call_proxy,
         } => {
             let client = cometbft_rpc::Client::new(args.rpc_url).await?;
 
@@ -134,9 +146,102 @@ async fn do_main() -> Result<()> {
                 );
             }
 
+            if let Some(u_address) = args.u {
+                let contract_info = get_cosmwasm_contract_info(&client, &u_address).await?;
+                let info = DeployedContract {
+                    address: u_address.parse()?,
+                    height: contract_info.created.unwrap().block_height,
+                    commit: get_commit_wasm(&client, contract_info.code_id).await?,
+                    extra: IbcCosmwasmDeployedContractExtra {
+                        code_id: contract_info.code_id,
+                    },
+                };
+                info!(
+                    address = %info.address,
+                    height = info.height,
+                    commit = %info.commit,
+                    code_id = info.extra.code_id,
+                    "updated u"
+                );
+                *u = Some(info);
+            } else {
+                *u = None;
+            }
+
+            if let Some(eu_address) = args.eu {
+                let contract_info = get_cosmwasm_contract_info(&client, &eu_address).await?;
+                let info = DeployedContract {
+                    address: eu_address.parse()?,
+                    height: contract_info.created.unwrap().block_height,
+                    commit: get_commit_wasm(&client, contract_info.code_id).await?,
+                    extra: IbcCosmwasmDeployedContractExtra {
+                        code_id: contract_info.code_id,
+                    },
+                };
+                info!(
+                    address = %info.address,
+                    height = info.height,
+                    commit = %info.commit,
+                    code_id = info.extra.code_id,
+                    "updated eu"
+                );
+                *eu = Some(info);
+            } else {
+                *eu = None;
+            }
+
+            if args.lst {
+                let lst_address = derive_cosmwasm(deployer, "lst/eu".to_owned());
+                let contract_info = get_cosmwasm_contract_info(&client, &lst_address).await?;
+                let info = DeployedContract {
+                    address: lst_address,
+                    height: contract_info.created.unwrap().block_height,
+                    commit: get_commit_wasm(&client, contract_info.code_id).await?,
+                    extra: IbcCosmwasmDeployedContractExtra {
+                        code_id: contract_info.code_id,
+                    },
+                };
+                info!(
+                    address = %info.address,
+                    height = info.height,
+                    commit = %info.commit,
+                    code_id = info.extra.code_id,
+                    "updated lst"
+                );
+                *lst = Some(info);
+            } else {
+                *lst = None;
+            }
+
+            if args.on_zkgm_call_proxy {
+                let on_zkgm_call_proxy_address =
+                    derive_cosmwasm(deployer, "on-zkgm-call-proxy".to_owned());
+                info!(address = %on_zkgm_call_proxy_address, "on-zkgm-call-proxy");
+                let contract_info =
+                    get_cosmwasm_contract_info(&client, &on_zkgm_call_proxy_address).await?;
+                let info = DeployedContract {
+                    address: on_zkgm_call_proxy_address,
+                    height: contract_info.created.unwrap().block_height,
+                    commit: get_commit_wasm(&client, contract_info.code_id).await?,
+                    extra: IbcCosmwasmDeployedContractExtra {
+                        code_id: contract_info.code_id,
+                    },
+                };
+                info!(
+                    address = %info.address,
+                    height = info.height,
+                    commit = %info.commit,
+                    code_id = info.extra.code_id,
+                    "updated on_zkgm_call_proxy"
+                );
+                *on_zkgm_call_proxy = Some(info);
+            } else {
+                *on_zkgm_call_proxy = None;
+            }
+
             if args.ucs00 {
                 let ucs00 = app.ucs00.get_or_insert(DeployedContract {
-                    address: derive_cosmwasm(deployer, "protocols", "ucs00"),
+                    address: derive_cosmwasm(deployer, "protocols/ucs00".to_owned()),
                     height: 0,
                     commit: Commit::Unknown,
                     extra: IbcCosmwasmDeployedContractExtra { code_id: 0 },
@@ -161,7 +266,7 @@ async fn do_main() -> Result<()> {
                 let ucs03 = match app.ucs03.as_mut() {
                     Some(k) => k,
                     None => {
-                        let address = derive_cosmwasm(deployer, "protocols", "ucs03");
+                        let address = derive_cosmwasm(deployer, "protocols/ucs03".to_owned());
                         let minter_address = client
                             .grpc_abci_query::<_, QuerySmartContractStateResponse>(
                                 "/cosmwasm.wasm.v1.Query/SmartContractState",
@@ -229,6 +334,8 @@ async fn do_main() -> Result<()> {
             core,
             lightclient,
             app,
+            u,
+            eu,
         } => {
             let provider = alloy::providers::ProviderBuilder::new_with_network::<AnyNetwork>()
                 .connect(&args.rpc_url)
@@ -325,6 +432,50 @@ async fn do_main() -> Result<()> {
                 );
             } else {
                 app.ucs03 = None;
+            }
+
+            if let Some(u_address) = args.u {
+                let mut info = DeployedContract {
+                    address: u_address.parse()?,
+                    height: 0,
+                    commit: get_commit_evm(&provider, u_address.parse()?).await?,
+                    extra: (),
+                };
+                if args.update_deployment_heights {
+                    info.height =
+                        get_init_height(&provider, info.address, args.eth_get_logs_window).await?;
+                }
+                info!(
+                    address = %info.address,
+                    height = info.height,
+                    commit = %info.commit,
+                    "updated u"
+                );
+                *u = Some(info);
+            } else {
+                *u = None;
+            }
+
+            if let Some(eu_address) = args.eu {
+                let mut info = DeployedContract {
+                    address: eu_address.parse()?,
+                    height: 0,
+                    commit: get_commit_evm(&provider, eu_address.parse()?).await?,
+                    extra: (),
+                };
+                if args.update_deployment_heights {
+                    info.height =
+                        get_init_height(&provider, info.address, args.eth_get_logs_window).await?;
+                }
+                info!(
+                    address = %info.address,
+                    height = info.height,
+                    commit = %info.commit,
+                    "updated eu"
+                );
+                *eu = Some(info);
+            } else {
+                *eu = None;
             }
         }
     }

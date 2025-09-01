@@ -1,8 +1,8 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    entry_point, from_json, to_json_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, StdResult, WasmMsg,
+    from_json, to_json_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, WasmMsg,
 };
 use depolama::{Bytes, Prefix, StorageExt, Store, ValueCodec};
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -33,21 +33,21 @@ impl ValueCodec<Addr> for Zkgm {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct InstantiateMsg {
+pub struct InitMsg {
     pub zkgm: Addr,
 }
 
-fn init(deps: DepsMut, msg: InstantiateMsg) -> Result<Response, Error> {
+fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, Error> {
     deps.storage.write_item::<Zkgm>(&msg.zkgm);
     Ok(Response::default())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
     _: Env,
     _: MessageInfo,
-    msg: InstantiateMsg,
+    msg: InitMsg,
 ) -> Result<Response, Error> {
     frissitheto::init_state_version(&mut deps, const { NonZeroU32::new(1).unwrap() })
         .expect("infallible, instantiate can only be called once; qed;");
@@ -100,11 +100,12 @@ pub enum OnZkgmCallProxyMsg {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct OnProxyOnZkgmCall {
+    // REVIEW: Should we thread through on_zkgm_message.message? That field is decoded to get msg
     pub on_zkgm_msg: OnZkgm,
     pub msg: Binary,
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn execute(
     deps: DepsMut,
     _: Env,
@@ -156,11 +157,11 @@ fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _: Env,
-    msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
+    msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, Error> {
     msg.run(
         deps,

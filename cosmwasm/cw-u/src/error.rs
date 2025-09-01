@@ -22,6 +22,9 @@ pub enum Error {
     #[error("sender is not zkgm")]
     OnlyZkgm,
 
+    #[error("unsupported")]
+    Unsupported,
+
     #[error("base amount must cover quote amount")]
     BaseAmountMustCoverQuoteAmount,
 

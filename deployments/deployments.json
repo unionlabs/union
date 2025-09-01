@@ -263,6 +263,11 @@
         "height": 56059692,
         "commit": "294377c7b5fe1f2140b73756800c5f2533f28372"
       }
+    },
+    "u": {
+      "address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+      "height": 0,
+      "commit": "e51df14c50f073245b66c09d05756d4119b385af"
     }
   },
   "bsc.97": {
@@ -423,6 +428,11 @@
         "height": 22236430,
         "commit": "7113f2661025803021f819add09995fce2f58abf"
       }
+    },
+    "u": {
+      "address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+      "height": 23139438,
+      "commit": "76577fbb239c66ded13828a2b1bb6e40a7c60650"
     }
   },
   "ethereum.11155111": {
@@ -463,6 +473,11 @@
         "height": 8088109,
         "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
       }
+    },
+    "u": {
+      "address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+      "height": 8924485,
+      "commit": "1e67026e83bc299d8766625a921f86d422ee427d"
     }
   },
   "ethereum.17000": {
@@ -503,6 +518,16 @@
         "height": 3646606,
         "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
       }
+    },
+    "u": {
+      "address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+      "height": 4291627,
+      "commit": "1e67026e83bc299d8766625a921f86d422ee427d"
+    },
+    "eu": {
+      "address": "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1",
+      "height": 4447214,
+      "commit": "eb165175bf870fd682a402dce0ec37a5cff9a3cc"
     }
   },
   "osmosis.osmo-test-5": {
@@ -797,6 +822,24 @@
           "code_id": 117
         }
       }
+    },
+    "u": {
+      "address": "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r",
+      "height": 2417976,
+      "commit": "af98d4c1e659408f71e9e591d997554746edbd2b",
+      "code_id": 139
+    },
+    "lst": {
+      "address": "union1d2r4ecsuap4pujrlf3nz09vz8eha8y0z25knq0lfxz4yzn83v6kq0jxsmk",
+      "height": 2758268,
+      "commit": "410c05409ba2aa956c71f3b9cdea3acf0169838c",
+      "code_id": 199
+    },
+    "on_zkgm_call_proxy": {
+      "address": "union1mtxk8tjz85ry2a8a6k58uwrztmwslaxzsurh5l0dlxh7wrnvmxkshqkuwd",
+      "height": 2756683,
+      "commit": "a828db56edd9ffe67ea2779eb48d6bd62139ed1c",
+      "code_id": 196
     }
   },
   "xion.xion-testnet-2": {

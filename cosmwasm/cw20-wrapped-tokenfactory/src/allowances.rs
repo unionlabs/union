@@ -33,7 +33,7 @@ pub fn execute_increase_allowance(
             }
             val.expires = exp;
         }
-        val.allowance += amount;
+        val.allowance = val.allowance.saturating_add(amount);
         Ok(val)
     };
     ALLOWANCES.update(deps.storage, (&info.sender, &spender_addr), update_fn)?;

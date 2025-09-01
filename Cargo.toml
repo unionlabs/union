@@ -8,6 +8,7 @@ members = [
   "cosmwasm/ibc-union/app/ucs03-zkgm",
   "cosmwasm/ibc-union/app/ucs06-funded-dispatch",
   "cosmwasm/multicall",
+  "cosmwasm/lst",
 
   "cosmwasm/ibc-union/core",
   "cosmwasm/ibc-union/core/msg",
@@ -280,6 +281,7 @@ members = [
   "lib/sui-verifier",
   "tools/update-deployments",
   "tools/union-test",
+  "lib/cw20-ctx",
 ]
 
 [workspace.package]
@@ -389,8 +391,10 @@ cw-escrow-vault = { path = "cosmwasm/cw-escrow-vault", default-features = false 
 cw-u            = { path = "cosmwasm/cw-u", default-features = false }
 
 cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
+cw20-ctx                          = { path = "lib/cw20-ctx", default-features = false }
 cw20-token-minter                 = { path = "cosmwasm/cw20-token-minter", default-features = false }
 cw20-wrapped-tokenfactory         = { path = "cosmwasm/cw20-wrapped-tokenfactory", default-features = false }
+on-zkgm-call-proxy                = { path = "cosmwasm/on-zkgm-call-proxy", default-features = false }
 osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
 ucs03-zkgm                        = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-token-minter-api       = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }

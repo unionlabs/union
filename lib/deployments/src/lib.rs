@@ -24,6 +24,15 @@ pub enum Deployment {
         lightclient:
             BTreeMap<ClientType, DeployedContract<Bech32<H256>, IbcCosmwasmDeployedContractExtra>>,
         app: App<Bech32<H256>, IbcCosmwasmDeployedContractExtra, IbcCosmwasmUcs03Extra>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        u: Option<DeployedContract<Bech32<H256>, IbcCosmwasmDeployedContractExtra>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        eu: Option<DeployedContract<Bech32<H256>, IbcCosmwasmDeployedContractExtra>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        lst: Option<DeployedContract<Bech32<H256>, IbcCosmwasmDeployedContractExtra>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        on_zkgm_call_proxy:
+            Option<DeployedContract<Bech32<H256>, IbcCosmwasmDeployedContractExtra>>,
     },
     #[serde(rename = "ibc-solidity")]
     IbcSolidity {
@@ -34,6 +43,10 @@ pub enum Deployment {
         core: DeployedContract<H160>,
         lightclient: BTreeMap<ClientType, DeployedContract<H160>>,
         app: App<H160>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        u: Option<DeployedContract<H160>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        eu: Option<DeployedContract<H160>>,
     },
 }
 
