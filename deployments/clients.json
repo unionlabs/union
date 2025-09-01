@@ -180,6 +180,11 @@
       "client_type": "state-lens/ics23/ics23",
       "counterparty": "babylon.bbn-1",
       "refresh_rate": "500"
+    },
+    "5": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "bsc.56",
+      "refresh_rate": "2000"
     }
   },
   "ethereum.11155111": {
@@ -401,6 +406,11 @@
     "2": {
       "client_type": "state-lens/ics23/ics23",
       "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "ethereum.1",
       "refresh_rate": "500"
     }
   }
