@@ -5,8 +5,8 @@ import { ChannelId } from "./channel.js"
 import { Hex } from "./hex.js"
 
 export const TokenRawDenom = Hex.pipe(
-  Schema.brand("TokenRawDenom"),
   Schema.lowercased(),
+  Schema.brand("TokenRawDenom"),
 )
 export type TokenRawDenom = typeof TokenRawDenom.Type
 
