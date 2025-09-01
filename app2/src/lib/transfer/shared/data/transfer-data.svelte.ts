@@ -18,7 +18,8 @@ import {
   EU_SOLVER_METADATA,
   U_BANK,
   U_ERC20,
-  U_SOLVER_METADATA,
+  U_TO_COSMOS_SOLVER_METADATA,
+  U_TO_ETH_SOLVER_METADATA,
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, Struct } from "effect"
@@ -242,8 +243,8 @@ export class TransferData {
     Option.all([this.kind, this.baseToken]).pipe(
       Option.map(([kind, baseToken]) =>
         Match.value([kind, baseToken.denom]).pipe(
-          Match.when(["solve", "0x6175"], () => U_SOLVER_METADATA),
-          Match.when(["solve", U_ERC20.address.toLowerCase()], () => U_SOLVER_METADATA),
+          Match.when(["solve", "0x6175"], () => U_TO_ETH_SOLVER_METADATA),
+          Match.when(["solve", U_ERC20.address.toLowerCase()], () => U_TO_COSMOS_SOLVER_METADATA),
           Match.when(["solve", "eU (tohex)"], () => EU_SOLVER_METADATA),
           Match.when(["solve", EU_ERC20.address.toLowerCase()], () => EU_SOLVER_METADATA),
           Match.orElse(() => undefined),

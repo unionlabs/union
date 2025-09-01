@@ -21,7 +21,12 @@ import {
 } from "@unionlabs/sdk"
 import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
-import { ON_ZKGM_CALL_PROXY, U_BANK, U_ERC20, U_SOLVER_METADATA } from "@unionlabs/sdk/Constants"
+import {
+  ON_ZKGM_CALL_PROXY,
+  U_BANK,
+  U_ERC20,
+  U_TO_COSMOS_SOLVER_METADATA,
+} from "@unionlabs/sdk/Constants"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
@@ -71,7 +76,7 @@ const sendUnbond = Effect.gen(function*() {
     quoteToken: U_BANK,
     quoteAmount: AMOUNT,
     kind: "solve",
-    metadata: U_SOLVER_METADATA,
+    metadata: U_TO_COSMOS_SOLVER_METADATA,
     version: 2,
   })
 
