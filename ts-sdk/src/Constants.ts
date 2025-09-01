@@ -214,6 +214,12 @@ export const ON_ZKGM_CALL_PROXY = Ucs05.CosmosDisplay.make({
  * @category constants
  * @since 2.0.0
  */
+export const U_BANK = Token.CosmosBank.make({ address: "au" })
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const U_ERC20 = Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" })
 
 /**
@@ -221,12 +227,6 @@ export const U_ERC20 = Token.Erc20.make({ address: "0xba5eD44733953d79717F626935
  * @since 2.0.0
  */
 export const EU_ERC20 = Token.Erc20.make({ address: "0xe5Cf13C84c0fEa3236C101Bd7d743d30366E5CF1" })
-
-/**
- * @category constants
- * @since 2.0.0
- */
-export const U_BANK = Token.CosmosBank.make({ address: "au" })
 
 /**
  * @category constants
