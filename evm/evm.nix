@@ -1084,6 +1084,9 @@ _: {
                   ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > app.ucs03.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/UDrop.sol/UDrop.json > udrop.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/CometblsClient.sol/CometblsClient.json \
                   ${contracts}/out/CometblsClient.sol/CometblsClientLib.json > lightclient.cometbls.json
 
@@ -1219,6 +1222,7 @@ _: {
                     multicall = "Multicall";
                     erc20 = "ZkgmERC20";
                     u = "U";
+                    udrop = "UDrop";
                   }
                 )
                 # other various deployment scripts
@@ -1261,6 +1265,7 @@ _: {
                         state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
                         core = "IBCHandler";
                         u = "U";
+                        udrop = "UDrop";
                       }
                   )
                 ))
