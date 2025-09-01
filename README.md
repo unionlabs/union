@@ -25,20 +25,20 @@ The upgradability of contracts on other chains, connections, token configuration
 
 ## Components
 
-| Component                                             | Description                                          | Language(s)           |
-| ----------------------------------------------------- | ---------------------------------------------------- | --------------------- |
-| [`uniond`](./uniond/README.md)                        | The Union node implementation, using [`CometBLS`]    | [Go]                  |
-| [`galoisd`](./galoisd)                                | The zero-knowledge prover implementation             | [Go] [Gnark]          |
-| [`voyager`](./voyager)                                | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
-| [`hubble`](./hubble)                                  | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
-| [`cosmwasm`](./cosmwasm)                              | [CosmWasm] smart contract stack                      | [Rust]                |
-| [`light-clients`](./cosmwasm/ibc-union/lightclient)   | [Light Clients] for various ecosystems               | [Rust]                |
-| [`unionvisor`](./unionvisor/README.md)                | Node supervisor intended for production usage        | [Rust]                |
-| [`drip`](./drip)                                      | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
-| [`evm`](./evm)                                        | [EVM] smart contract stack                           | [Solidity]            |
-| [`app`](./app2)                                       | [app.union.build]                                    | [TypeScript] [Svelte] |
-| [`site`](./site)                                      | [union.build]                                        | [TypeScript] [Astro]  |
-| [`TypeScript SDK`](./ts-sdk)                  | TypeScript SDK for interacting with Union            | [TypeScript]          |
+| Component                                           | Description                                          | Language(s)           |
+| --------------------------------------------------- | ---------------------------------------------------- | --------------------- |
+| [`uniond`](./uniond/README.md)                      | The Union node implementation, using [`CometBLS`]    | [Go]                  |
+| [`galoisd`](./galoisd)                              | The zero-knowledge prover implementation             | [Go] [Gnark]          |
+| [`voyager`](./voyager)                              | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
+| [`hubble`](./hubble)                                | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
+| [`cosmwasm`](./cosmwasm)                            | [CosmWasm] smart contract stack                      | [Rust]                |
+| [`light-clients`](./cosmwasm/ibc-union/lightclient) | [Light Clients] for various ecosystems               | [Rust]                |
+| [`unionvisor`](./unionvisor/README.md)              | Node supervisor intended for production usage        | [Rust]                |
+| [`drip`](./drip)                                    | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
+| [`evm`](./evm)                                      | [EVM] smart contract stack                           | [Solidity]            |
+| [`app`](./app2)                                     | [app.union.build]                                    | [TypeScript] [Svelte] |
+| [`site`](./site)                                    | [union.build]                                        | [TypeScript] [Astro]  |
+| [`TypeScript SDK`](./ts-sdk)                        | TypeScript SDK for interacting with Union            | [TypeScript]          |
 
 ## Quickstart
 
@@ -77,6 +77,30 @@ nix run .#pre-commit -L
 ```
 
 Check the `#developers` channel on [Union's discord](https://discord.union.build) if you need any help with this.
+
+## Supported Chains
+
+| Network       | Mainnets                    | Testnets                              |
+| ------------- | --------------------------- | ------------------------------------- |
+| **Aptos**     | `aptos.1`                   | `aptos.2`                             |
+| **Arbitrum**  | -                           | `arbitrum.421614`                     |
+| **Babylon**   | `babylon.bbn-1`             | `babylon.bbn-test-5`                  |
+| **Base**      | `base.8453`                 | `base.84532`                          |
+| **Berachain** | `berachain.80094`           | `berachain.80069`, `berachain.80084`  |
+| **Bob**       | `bob.60808`                 | `bob.808813`                          |
+| **BSC**       | `bsc.56`                    | `bsc.97`                              |
+| **Corn**      | `corn.21000000`             | `corn.21000001`                       |
+| **Ethereum**  | `ethereum.1`                | `ethereum.11155111`, `ethereum.17000` |
+| **Movement**  | -                           | `movement.250`                        |
+| **Osmosis**   | -                           | `osmosis.osmo-test-5`                 |
+| **Scroll**    | -                           | `scroll.534351`                       |
+| **Sei**       | `sei.pacific-1`, `sei.1329` | `sei.atlantic-2`, `sei.1328`          |
+| **Stargaze**  | -                           | `stargaze.elgafar-1`                  |
+| **Stride**    | -                           | `stride.stride-internal-1`            |
+| **Union**     | `union.union-1`             | `union.union-testnet-10`              |
+| **Xion**      | `xion.xion-mainnet-1`       | `xion.xion-testnet-2`                 |
+
+*For the full list see https://docs.union.build/ucs/04/*
 
 ## Docs
 
