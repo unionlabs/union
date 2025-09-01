@@ -29,10 +29,10 @@
         "environment": "production"
       },
       "union.union-1": {
-        "environment": "staging"
+        "environment": "production"
       },
       "union.union-testnet-10": {
-        "environment": "staging"
+        "environment": "production"
       },
       "xion.xion-testnet-2": {
         "environment": "production"
