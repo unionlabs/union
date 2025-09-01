@@ -28,6 +28,9 @@
       "sei.1328": {
         "environment": "production"
       },
+      "union.union-1": {
+        "environment": "staging"
+      },
       "union.union-testnet-10": {
         "environment": "staging"
       },
