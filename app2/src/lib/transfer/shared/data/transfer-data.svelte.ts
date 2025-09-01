@@ -108,7 +108,7 @@ export class TransferData {
           // TODO: add eU base
           // TODO: add eU quote
         ],
-        A.some((x) => x === baseToken.denom),
+        A.some((x) => x === baseToken.denom.toLowerCase()),
       )
     ),
     Option.getOrElse(constFalse),
@@ -125,27 +125,28 @@ export class TransferData {
         ([baseToken, sourceChain, destinationChain, quoteTokens]) => {
           if (this.isSolve) {
             return Match.value([
-              Brand.unbranded(baseToken.denom),
+              Brand.unbranded(baseToken.denom).toLowerCase(),
               destinationChain.rpc_type,
+              destinationChain.chain_id,
             ]).pipe(
               Match.when(
-                ["0x6175", "evm"],
+                ["0x6175", "evm", Match.any],
                 () => U_ERC20,
               ),
               Match.when(
-                [U_ERC20.address.toLowerCase(), "evm"],
+                [U_ERC20.address.toLowerCase(), "evm", Match.any],
                 () => U_ERC20,
               ),
               Match.when(
-                [U_ERC20.address.toLowerCase(), "cosmos"],
+                [U_ERC20.address.toLowerCase(), "cosmos", "union-1"],
                 () => U_BANK,
               ),
               Match.when(
-                [EU_ERC20.address.toLowerCase(), "evm"],
+                [EU_ERC20.address.toLowerCase(), "evm", Match.any],
                 () => EU_ERC20,
               ),
               Match.when(
-                [EU_ERC20.address, "cosmos"],
+                [EU_ERC20.address, "cosmos", Match.any],
                 () => Token.Cw20.make({ address: EU_LST.address }),
               ),
               Match.option,
