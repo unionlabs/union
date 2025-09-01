@@ -18,7 +18,7 @@ import {
   EU_LST,
   U_BANK,
   U_ERC20,
-  U_FROM_UNION_SOLVER_METADATA,
+  U_ON_ETH_SOLVER_METADATA,
   U_TO_UNION_SOLVER_METADATA,
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
@@ -244,9 +244,10 @@ export class TransferData {
     Option.all([this.kind, this.baseToken, this.destinationChain]).pipe(
       Option.flatMap(([kind, baseToken, destChain]) =>
         Match.value([kind, baseToken.denom, destChain.rpc_type, destChain.universal_chain_id]).pipe(
-          Match.when(
+          Match.whenOr(
             ["solve", "0x6175", "evm", Match.any],
-            () => Option.some(U_FROM_UNION_SOLVER_METADATA),
+            ["solve", U_ERC20.address.toLowerCase(), "evm", Match.any],
+            () => Option.some(U_ON_ETH_SOLVER_METADATA),
           ),
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
