@@ -7,6 +7,9 @@
       "bob.808813": {
         "environment": "staging"
       },
+      "bsc.56": {
+        "environment": "staging"
+      },
       "bsc.97": {
         "environment": "production"
       },
@@ -24,6 +27,9 @@
       },
       "sei.1328": {
         "environment": "production"
+      },
+      "union.union-1": {
+        "environment": "staging"
       },
       "union.union-testnet-10": {
         "environment": "staging"
