@@ -169,7 +169,7 @@ const filterChainsByTokenAvailability = (
                 if (destinationChain.testnet === true) {
                   return Tuple.make(destinationChain, true)
                 }
-        
+
                 if (transferData.isSolve) {
                   return Tuple.make(destinationChain, true)
                 }

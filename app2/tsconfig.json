@@ -30,9 +30,7 @@
     "exactOptionalPropertyTypes": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "types": [
-      "vitest/importMeta"
-    ],
+    "types": ["vitest/importMeta"],
     "plugins": [
       {
         "name": "@effect/language-service"
