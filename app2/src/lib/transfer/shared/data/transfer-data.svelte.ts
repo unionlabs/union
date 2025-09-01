@@ -12,7 +12,14 @@ import type { Edition } from "$lib/themes"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
-import { EU_ERC20, EU_LST, U_BANK, U_ERC20 } from "@unionlabs/sdk/Constants"
+import {
+  EU_ERC20,
+  EU_LST,
+  EU_SOLVER_METADATA,
+  U_BANK,
+  U_ERC20,
+  U_SOLVER_METADATA,
+} from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, Struct } from "effect"
 import * as B from "effect/Boolean"
@@ -125,15 +132,15 @@ export class TransferData {
                 () => U_ERC20,
               ),
               Match.when(
-                [U_ERC20.address, "evm"],
+                [U_ERC20.address.toLowerCase(), "evm"],
                 () => U_ERC20,
               ),
               Match.when(
-                [U_ERC20.address, "cosmos"],
+                [U_ERC20.address.toLowerCase(), "cosmos"],
                 () => U_BANK,
               ),
               Match.when(
-                [EU_ERC20.address, "evm"],
+                [EU_ERC20.address.toLowerCase(), "evm"],
                 () => EU_ERC20,
               ),
               Match.when(
@@ -228,6 +235,20 @@ export class TransferData {
           Option.orElseSome(() => "escrow" as const),
         )
       }),
+    ),
+  )
+
+  metadata = $derived(
+    Option.all([this.kind, this.baseToken]).pipe(
+      Option.map(([kind, baseToken]) =>
+        Match.value([kind, baseToken.denom]).pipe(
+          Match.when(["solve", "0x6175"], () => U_SOLVER_METADATA),
+          Match.when(["solve", U_ERC20.address.toLowerCase()], () => U_SOLVER_METADATA),
+          Match.when(["solve", "eU (tohex)"], () => EU_SOLVER_METADATA),
+          Match.when(["solve", EU_ERC20.address.toLowerCase()], () => EU_SOLVER_METADATA),
+          Match.orElse(() => undefined),
+        )
+      ),
     ),
   )
 

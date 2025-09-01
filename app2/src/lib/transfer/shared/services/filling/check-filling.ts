@@ -19,6 +19,7 @@ export interface TransferArgs {
   quoteAmount: string
   decimals: number
   kind: TokenOrder.Kind
+  metadata: string | undefined
   receiver: Ucs05.AnyDisplay
   sender: Ucs05.AnyDisplay
   ucs03address: string
@@ -111,7 +112,9 @@ export const getFillingState = (
       }
 
       if (Option.isNone(transferData.quoteToken)) {
-        return FillingState.Generic({ message: "no quote token" })
+        return FillingState.Generic({
+          message: `No quote token for ${transferData.baseToken.value.denom}`,
+        })
       }
 
       const unwrappedFee = fee.value.right
@@ -142,6 +145,7 @@ export const getFillingState = (
           ),
         ),
         baseToken: decodedBaseToken,
+        metadata: transferData.metadata,
         version: transferData.version,
       })
 
@@ -162,6 +166,7 @@ export const getFillingState = (
             decimals,
             ucs03address,
             quoteToken,
+            metadata,
             version,
           },
         ) =>
@@ -176,6 +181,7 @@ export const getFillingState = (
             kind,
             decimals,
             quoteToken,
+            metadata,
             ucs03address,
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,
