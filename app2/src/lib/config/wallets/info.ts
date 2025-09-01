@@ -4,8 +4,8 @@ export const unionMainnet = InternalChainInfo.make({
   chainId: "union-1",
   chainName: "Union",
   nodeProvider: {
-    name: "Union",
-    email: "contact@union.build",
+    name: "union",
+    email: "hello@union.build",
     website: "https://explorer.union.build/union",
   },
   chainSymbolImageUrl:
