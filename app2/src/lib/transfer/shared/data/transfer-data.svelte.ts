@@ -89,13 +89,18 @@ export class TransferData {
     ),
   )
 
+  isUnion = $derived(
+    this.baseToken.pipe(
+      Option.map((token) => {
+        const baseTokenDenom = Brand.unbranded(token.denom)
+        return baseTokenDenom === "0x6175" || baseTokenDenom === "0xba5ed44733953d79717f6269357c77718c8ba5ed"
+      }),
+      Option.getOrElse(() => false),
+    ),
+  )
+
   quoteToken = $derived.by(() => {
-    const baseTokenDenom = Option.getOrUndefined(
-      Option.map(this.baseToken, x => Brand.unbranded(x.denom)),
-    )
-    if (
-      baseTokenDenom === "0x6175" || baseTokenDenom === "0xba5ed44733953d79717f6269357c77718c8ba5ed"
-    ) {
+    if (this.isUnion) {
       return Option.some(
         Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" }),
       )
@@ -175,6 +180,11 @@ export class TransferData {
   kind = $derived<Option.Option<TokenOrder.Kind>>(
     Option.all([this.baseToken, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([baseToken, sourceChain, destinationChain]) => {
+        // Override kind to "solve" for Union
+        if (this.isUnion) {
+          return Option.some("solve" as const)
+        }
+
         const sourceId = sourceChain.universal_chain_id
         const destId = destinationChain.universal_chain_id
 
