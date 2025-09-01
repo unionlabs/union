@@ -54,10 +54,11 @@ export class ChainRegistry extends Effect.Service<ChainRegistry>()("@unionlabs/s
   effect: Effect.gen(function*() {
     const client = yield* Indexer
 
-    const byUniversalId = Effect.fn((id: UniversalChainId) =>
-      pipe(
-        client.fetch({
-          document: graphql(`
+    const byUniversalId: (id: UniversalChainId) => Effect.Effect<Chain, ChainRegistryError, never> =
+      Effect.fn((id) =>
+        pipe(
+          client.fetch({
+            document: graphql(`
 query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
     v2_chains(args: { p_universal_chain_id: $id }) {
         chain_id
@@ -95,32 +96,32 @@ query GetChainByUniversalId($id: String!) @cached(ttl: 60) {
     }
 }
     `),
-          variables: {
-            id,
-          },
-        }),
-        Effect.map(Struct.get("v2_chains")),
-        Effect.flatMap(O.liftPredicate(Predicate.isTupleOf(1))),
-        Effect.map(A.headNonEmpty),
-        Effect.flatMap(Schema.decodeUnknown(Chain)),
-        Effect.catchTags({
-          IndexerError: (cause) =>
-            new ChainRegistryError({
-              message: cause.message,
-              cause,
-            }),
-          NoSuchElementException: () =>
-            new ChainRegistryError({
-              message: `no such element or duplicate elements for ${id}`,
-            }),
-          ParseError: (cause) =>
-            new ChainRegistryError({
-              message: "failed to decode",
-              cause,
-            }),
-        }),
+            variables: {
+              id,
+            },
+          }),
+          Effect.map(Struct.get("v2_chains")),
+          Effect.flatMap(O.liftPredicate(Predicate.isTupleOf(1))),
+          Effect.map(A.headNonEmpty),
+          Effect.flatMap(Schema.decodeUnknown(Chain)),
+          Effect.catchTags({
+            IndexerError: (cause) =>
+              new ChainRegistryError({
+                message: cause.message,
+                cause,
+              }),
+            NoSuchElementException: () =>
+              new ChainRegistryError({
+                message: `no such element or duplicate elements for ${id}`,
+              }),
+            ParseError: (cause) =>
+              new ChainRegistryError({
+                message: "failed to decode",
+                cause,
+              }),
+          }),
+        )
       )
-    )
 
     return {
       byUniversalId,

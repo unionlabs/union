@@ -13,6 +13,9 @@
     },
     {
       "path": "../typescript-sdk"
+    },
+    {
+      "path": "tsconfig.examples.json"
     }
   ],
   "compilerOptions": {
@@ -27,7 +30,9 @@
     "exactOptionalPropertyTypes": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "types": ["vitest/importMeta"],
+    "types": [
+      "vitest/importMeta"
+    ],
     "plugins": [
       {
         "name": "@effect/language-service"
