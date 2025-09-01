@@ -141,7 +141,8 @@ const isButtonEnabled = $derived.by(() => !loading)
                 handleContinueClick()
               }
             }}
-            disabled={!isButtonEnabled && uiStatus.text !== "Connect wallet"}
+            disabled={(!isButtonEnabled && uiStatus.text !== "Connect wallet")
+            || uiStatus.text !== "Transfer ready"}
           >
             {uiStatus.text}
           </Button>

@@ -22,7 +22,7 @@ import {
   U_TO_UNION_SOLVER_METADATA,
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
-import { Array as A, Brand, Effect, Match, Option, pipe, Struct } from "effect"
+import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
 import * as B from "effect/Boolean"
 import { constant, constFalse } from "effect/Function"
 import * as S from "effect/Schema"
@@ -127,7 +127,7 @@ export class TransferData {
             return Match.value([
               Brand.unbranded(baseToken.denom).toLowerCase(),
               destinationChain.rpc_type,
-              destinationChain.chain_id,
+              destinationChain.universal_chain_id,
             ]).pipe(
               Match.when(
                 ["0x6175", "evm", Match.any],
@@ -138,7 +138,7 @@ export class TransferData {
                 () => U_ERC20,
               ),
               Match.when(
-                [U_ERC20.address.toLowerCase(), "cosmos", "union-1"],
+                [U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
                 () => U_BANK,
               ),
               Match.when(
@@ -241,17 +241,30 @@ export class TransferData {
   )
 
   metadata = $derived(
-    Option.all([this.kind, this.baseToken]).pipe(
-      Option.map(([kind, baseToken]) =>
-        Match.value([kind, baseToken.denom]).pipe(
-          Match.when(["solve", "0x6175"], () => U_FROM_UNION_SOLVER_METADATA),
-          Match.when(["solve", U_ERC20.address.toLowerCase()], () => U_TO_UNION_SOLVER_METADATA),
-          Match.when(["solve", "eU (tohex)"], () => EU_FROM_UNION_SOLVER_METADATA),
+    Option.all([this.kind, this.baseToken, this.destinationChain]).pipe(
+      Option.flatMap(([kind, baseToken, destChain]) =>
+        Match.value([kind, baseToken.denom, destChain.rpc_type, destChain.universal_chain_id]).pipe(
           Match.when(
-            ["solve", EU_ERC20.address.toLowerCase()],
-            () => EU_FROM_UNION_SOLVER_METADATA,
+            ["solve", "0x6175", "evm", Match.any],
+            () => Option.some(U_FROM_UNION_SOLVER_METADATA),
           ),
-          Match.orElse(() => undefined),
+          Match.when(
+            ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
+            () => Option.some(U_TO_UNION_SOLVER_METADATA),
+          ),
+          Match.when(
+            ["solve", Match.any, Match.any, Match.any],
+            () => Option.none(),
+          ),
+          // Match.when(
+          //   ["solve", "eU (tohex)", Match.any],
+          //   () => EU_FROM_UNION_SOLVER_METADATA,
+          // ),
+          // Match.when(
+          //   ["solve", EU_ERC20.address.toLowerCase(), Match.any],
+          //   () => EU_FROM_UNION_SOLVER_METADATA,
+          // ),
+          Match.orElse(() => Option.some(undefined)),
         )
       ),
     ),

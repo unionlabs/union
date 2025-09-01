@@ -111,6 +111,12 @@ export const getFillingState = (
         return FillingState.NoFee({ message: fee.value.left })
       }
 
+      if (Option.isNone(transferData.metadata)) {
+        return FillingState.Generic({
+          message: "Could not derive metadata",
+        })
+      }
+
       if (Option.isNone(transferData.quoteToken)) {
         return FillingState.Generic({
           message: `No quote token for ${transferData.baseToken.value.denom}`,
