@@ -7,6 +7,9 @@
       "bob.808813": {
         "environment": "staging"
       },
+      "bsc.56": {
+        "environment": "staging"
+      },
       "bsc.97": {
         "environment": "production"
       },
