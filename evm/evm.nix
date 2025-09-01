@@ -36,8 +36,8 @@ _: {
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "v0.1.12";
-        hash = "sha256-XsIXs3lj5gddBzswNFY1DhnlhUQx+ITf6lvBPSkMY7c=";
+        rev = "v0.1.26";
+        hash = "sha256-ycYSZnpJBJiJTGpJCnt1R/vKP7pTQY6dd8e35HIP0Co=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
