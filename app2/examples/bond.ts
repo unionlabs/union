@@ -26,12 +26,12 @@ import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
   EU_ERC20,
+  EU_FROM_UNION_SOLVER_METADATA,
   EU_LST,
-  EU_SOLVER_METADATA,
   ON_ZKGM_CALL_PROXY,
   U_BANK,
   U_ERC20,
-  U_TO_COSMOS_SOLVER_METADATA,
+  U_TO_UNION_SOLVER_METADATA,
 } from "@unionlabs/sdk/Constants"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
@@ -85,7 +85,7 @@ const sendBond = Effect.gen(function*() {
     quoteToken: U_BANK,
     quoteAmount: 1n,
     kind: "solve",
-    metadata: U_TO_COSMOS_SOLVER_METADATA,
+    metadata: U_TO_UNION_SOLVER_METADATA,
     version: 2,
   })
 
@@ -151,7 +151,7 @@ const sendBond = Effect.gen(function*() {
       quoteToken: EU_ERC20,
       quoteAmount: MIN_MINT_AMOUNT,
       kind: "solve",
-      metadata: EU_SOLVER_METADATA,
+      metadata: EU_FROM_UNION_SOLVER_METADATA,
       version: 2,
     }),
     Effect.flatMap(TokenOrder.encodeV2),
