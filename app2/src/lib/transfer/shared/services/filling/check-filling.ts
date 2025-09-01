@@ -3,7 +3,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { Token, TokenOrder, type Ucs05 } from "@unionlabs/sdk"
-import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
+import type { AddressCanonicalBytes, Chain, Channel, ChannelId, Hex } from "@unionlabs/sdk/schema"
 import { Data, flow, Option, pipe, Struct } from "effect"
 import * as A from "effect/Array"
 import * as E from "effect/Either"
@@ -19,7 +19,7 @@ export interface TransferArgs {
   quoteAmount: string
   decimals: number
   kind: TokenOrder.Kind
-  metadata: string | undefined
+  metadata: Hex | undefined
   receiver: Ucs05.AnyDisplay
   sender: Ucs05.AnyDisplay
   ucs03address: string
