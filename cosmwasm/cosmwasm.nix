@@ -109,8 +109,8 @@ _: {
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
             # "sui"
-            # "trusted-mpt"
-            "parlia"
+            "trusted-mpt"
+            # "parlia"
           ];
         }
         {
@@ -707,6 +707,7 @@ _: {
             );
             app = apps;
             escrow_vault = cw-escrow-vault.release;
+            cw-u = cw-u.release;
           }
         );
 

@@ -73,7 +73,7 @@
           };
         };
         lightClients = [
-          # self'.packages.trusted-mpt-light-client
+          self'.packages.trusted-mpt-light-client
           # self'.packages.ethereum-light-client
           # self'.packages.scroll-light-client
           # self'.packages.arbitrum-light-client
