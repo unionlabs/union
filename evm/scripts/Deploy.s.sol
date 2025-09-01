@@ -7,6 +7,10 @@ import "forge-std/Script.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibString.sol";
 import "solady/utils/LibBytes.sol";
+import "solady/utils/LibSort.sol";
+import "solady/utils/MerkleTreeLib.sol";
+import "solady/utils/EfficientHashLib.sol";
+
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
@@ -2338,5 +2342,57 @@ contract MintedAddress is VersionedScript {
         console.logBytes(salt);
         console.log("Minted address");
         console.log(mintedAddress);
+    }
+}
+
+struct AirdropEntry {
+    address beneficiary;
+    uint256 amount;
+}
+
+contract SimpleMerkleTree is Script {
+    mapping(bytes32 => AirdropEntry) preimages;
+
+    function pushEntry(
+        address beneficiary,
+        uint256 amount
+    ) internal returns (bytes32) {
+        bytes32 image =
+            EfficientHashLib.hash(abi.encodePacked(beneficiary, amount));
+        preimages[image] =
+            AirdropEntry({beneficiary: beneficiary, amount: amount});
+        return image;
+    }
+
+    function run() public {
+        bytes32[] memory leaves = new bytes32[](8);
+        leaves[0] = pushEntry(address(1), 1);
+        leaves[1] = pushEntry(address(2), 2);
+        leaves[2] =
+            pushEntry(address(0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302), 3);
+        leaves[3] = pushEntry(address(4), 4);
+        leaves[4] = pushEntry(address(5), 5);
+        leaves[5] =
+            pushEntry(address(0x2FB055fC77D751e2E6B7c88A1B404505154521c3), 6);
+        leaves[6] = pushEntry(address(7), 7);
+        leaves[7] = pushEntry(address(8), 8);
+        LibSort.sort(leaves);
+
+        bytes32[] memory tree = MerkleTreeLib.build(leaves);
+        bytes32 root = MerkleTreeLib.root(tree);
+        console.log("Root: ");
+        console.logBytes32(root);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            bytes32[] memory proof = MerkleTreeLib.leafProof(tree, i);
+            console.log("==================================");
+            console.log("index: ");
+            console.log(i);
+            console.log("beneficiary: ");
+            console.log(preimages[leaves[i]].beneficiary);
+            console.log("amount: ");
+            console.log(preimages[leaves[i]].amount);
+            console.log("proof: ");
+            console.logBytes(abi.encode(proof));
+        }
     }
 }
