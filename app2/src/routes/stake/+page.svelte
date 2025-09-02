@@ -1,0 +1,555 @@
+<script lang="ts">
+import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import Input from "$lib/components/ui/Input.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import * as AppRuntime from "$lib/runtime"
+import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
+import { chains as ChainStore } from "$lib/stores/chains.svelte"
+import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
+import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
+import { cn } from "$lib/utils"
+import { matchOption, matchRuntimeResult } from "$lib/utils/snippets.svelte"
+import { Staking, Ucs05 } from "@unionlabs/sdk"
+import { EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
+import { Indexer } from "@unionlabs/sdk/Indexer"
+import { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
+import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
+import {
+  BigDecimal,
+  Brand,
+  ConfigProvider,
+  DateTime,
+  Effect,
+  Layer,
+  pipe,
+  Schema,
+  Struct,
+} from "effect"
+import * as A from "effect/Array"
+import { constVoid } from "effect/Function"
+import * as O from "effect/Option"
+import { onMount } from "svelte"
+
+const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.17000")
+
+const QlpConfigProvider = pipe(
+  ConfigProvider.fromMap(
+    new Map([
+      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
+    ]),
+  ),
+  Layer.setConfigProvider,
+)
+
+const uOnEvmToken = $derived(pipe(
+  TokenStore.getData(EVM_UNIVERSAL_CHAIN_ID),
+  O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === U_ERC20.address.toLowerCase())),
+))
+
+const eUOnEvmToken = $derived(pipe(
+  TokenStore.getData(EVM_UNIVERSAL_CHAIN_ID),
+  O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === EU_LST.address.toLowerCase())),
+))
+
+let bondInput = $state<string>("")
+const bondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  bondInput,
+  BigDecimal.fromString,
+  O.map(BigDecimal.multiply(BigDecimal.make(1n, 18))),
+))
+let unbondInput = $state<string>("")
+const unbondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  unbondInput,
+  BigDecimal.fromString,
+  O.map(BigDecimal.multiply(BigDecimal.make(1n, 18))),
+))
+
+const data = AppRuntime.runPromiseExit$(() => {
+  void WalletStore.evmAddress
+
+  return Effect.gen(function*() {
+    const staking = yield* Staking.Staking
+    const address = yield* WalletStore.evmAddress
+    const request = Staking.GetBonds.make({ addresses: [address] })
+    return yield* pipe(
+      Effect.all([
+        staking.getBonds(Staking.GetBonds.make({ addresses: [address] })),
+        staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [address] })),
+      ]),
+      Effect.map(A.getSomes),
+      Effect.map(A.flatten),
+      Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
+    )
+  }).pipe(
+    Effect.provide(Staking.Staking.DefaultWithoutDependencies),
+    Effect.provide(Layer.fresh(Indexer.Default)),
+    Effect.provide(QlpConfigProvider),
+  )
+})
+
+const unbonds = AppRuntime.runPromiseExit$(() => {
+  void WalletStore.evmAddress
+
+  return Effect.gen(function*() {
+    const staking = yield* Staking.Staking
+    const address = yield* WalletStore.evmAddress
+    const request = Staking.GetUnbonds.make({ addresses: [address] })
+    return yield* staking.getUnbonds(request)
+  }).pipe(
+    Effect.provide(Staking.Staking.DefaultWithoutDependencies),
+    Effect.provide(Layer.fresh(Indexer.Default)),
+    Effect.provide(QlpConfigProvider),
+  )
+})
+
+const evmChain = $derived(pipe(
+  ChainStore.data,
+  O.flatMap(A.findFirst(x => x.universal_chain_id === EVM_UNIVERSAL_CHAIN_ID)),
+))
+
+onMount(() => {
+  BalanceStore.interruptBalanceFetching()
+  TokenStore.fetchTokens(EVM_UNIVERSAL_CHAIN_ID)
+})
+
+$effect(() => {
+  // Fetch U Balance on EVM
+  O.match(O.all([evmChain, WalletStore.evmAddress, uOnEvmToken]), {
+    onSome: ([chain, address, { denom }]) =>
+      BalanceStore.fetchBalances(
+        chain,
+        Ucs05.anyDisplayToCanonical(address),
+        denom,
+        "1 second",
+      ),
+    onNone: constVoid,
+  })
+
+  // Fetch eU Balance on EVM
+  O.match(O.all([evmChain, WalletStore.evmAddress, eUOnEvmToken]), {
+    onSome: ([chain, address, { denom }]) =>
+      BalanceStore.fetchBalances(
+        chain,
+        Ucs05.anyDisplayToCanonical(address),
+        denom,
+        "1 second",
+      ),
+    onNone: constVoid,
+  })
+})
+
+const uOnEvmBalance = $derived(pipe(
+  O.all([evmChain, WalletStore.evmAddress, uOnEvmToken]),
+  O.flatMap(([chain, address, { denom }]) =>
+    BalanceStore.getBalance(
+      chain.universal_chain_id,
+      Ucs05.anyDisplayToCanonical(address),
+      denom,
+    )
+  ),
+))
+
+const eUOnEvmBalance = $derived(pipe(
+  O.all([evmChain, WalletStore.evmAddress, eUOnEvmToken]),
+  O.flatMap(([chain, address, { denom }]) =>
+    BalanceStore.getBalance(
+      chain.universal_chain_id,
+      Ucs05.anyDisplayToCanonical(address),
+      denom,
+    )
+  ),
+))
+
+$inspect(data)
+
+/**
+ * Expand/collapse state per bond row
+ */
+let expanded = $state<Set<string>>(new Set())
+const keyForBond = (b: Bond | Unbond): string => Brand.unbranded(b.packet_hash)
+const isOpen = (k: string) => expanded.has(k)
+const toggle = (k: string) => {
+  // Recreate Set to trigger reactivity
+  const next = new Set(expanded)
+  next.has(k) ? next.delete(k) : next.add(k)
+  expanded = next
+}
+const close = (k: string) => {
+  if (!expanded.has(k)) {
+    return
+  }
+  const next = new Set(expanded)
+  next.delete(k)
+  expanded = next
+}
+</script>
+
+{#snippet renderChain(chain: Chain, denom: TokenRawDenom)}
+  <ChainComponent
+    chain={chain}
+    withToken={denom}
+  />
+{/snippet}
+
+{#snippet renderStatus(bond: Bond | Unbond)}
+  {#if bond.status === "success"}
+    <span
+      class="px-1.5 py-0.5 text-xs font-mono font-medium rounded-sm bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30"
+    >
+      success
+    </span>
+  {/if}
+  {#if bond.status === "failure"}
+    <span
+      class="px-1.5 py-0.5 text-xs font-mono font-medium rounded-sm bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30"
+    >
+      failure
+    </span>
+  {/if}
+  {#if bond.status === "pending"}
+    <span
+      class="px-1.5 py-0.5 text-xs font-mono font-medium rounded-sm bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/30"
+    >
+      pending
+    </span>
+  {/if}
+{/snippet}
+
+{#snippet renderBond(bond: Bond | Unbond)}
+  {@const k = keyForBond(bond)}
+  <tr
+    class="even:bg-zinc-900/30 odd:bg-zinc-900/10 hover:bg-zinc-800/30 cursor-pointer select-none"
+    data-open={isOpen(k)}
+    role="button"
+    tabindex="0"
+    aria-expanded={isOpen(k)}
+    onclick={() => toggle(k)}
+    onkeydown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
+        toggle(k)
+      }
+      if (e.key === "Escape") {
+        close(k)
+      }
+    }}
+  >
+    <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
+      <SharpRightArrowIcon
+        class={cn(
+          "size-4 transition-transform duration-200",
+          isOpen(k) && "rotate-90",
+        )}
+      />
+    </td>
+    <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
+      {bond.sendTimestampFormatted}
+    </td>
+    <td class="flex px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300 items-center gap-2">
+      {#if Schema.is(Bond)(bond)}
+        {@render renderChain(bond.source_chain, bond.base_token)}
+        <span class="mx-1 opacity-60">→</span>
+        {@render renderChain(bond.destination_chain, bond.quote_token)}
+      {/if}
+      {#if Schema.is(Unbond)(bond)}
+        {@render renderChain(bond.destination_chain, bond.base_token)}
+      {/if}
+    </td>
+    <td class="px-3 py-2 text-right tabular-nums font-medium">
+      {bond.amountFormatted}
+    </td>
+    <td class="px-3 py-2">
+      {@render renderStatus(bond)}
+    </td>
+  </tr>
+  {#if isOpen(k)}
+    <tr class="bg-zinc-950/60">
+      <td
+        colspan="5"
+        class="px-3 pb-3 pt-0"
+      >
+        <div class="overflow-hidden rounded-b-md border border-zinc-800/70 bg-zinc-900/50">
+          <div class="">
+            <pre>{JSON.stringify(bond, null, 2)}</pre>
+          </div>
+          <details class="group border-t border-zinc-800/70">
+            <summary class="flex cursor-pointer items-center justify-between px-3 py-2 text-zinc-400 hover:text-zinc-200">
+              <span class="text-xs">Raw bond payload</span>
+              <span class="ml-2 text-[10px] opacity-60">(for debugging)</span>
+            </summary>
+            <pre class="max-h-64 overflow-auto px-3 pb-3 text-[10px] leading-tight text-zinc-300">{JSON.stringify(bond, null, 2)}</pre>
+          </details>
+        </div>
+      </td>
+    </tr>
+  {/if}
+{/snippet}
+
+{#snippet maybeRenderBonds(maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>)}
+  {#snippet noBonds()}
+    <div class="flex items-center justify-center rounded-lg border border-dashed border-zinc-700/80 bg-zinc-950/40 text-zinc-400 text-sm h-28">
+      No bonds yet
+    </div>
+  {/snippet}
+  {#snippet hasBonds(bonds: A.NonEmptyReadonlyArray<Bond | Unbond>)}
+    <div class="relative overflow-auto max-h-72 rounded-lg ring-1 ring-zinc-800/80">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+          <tr class="text-zinc-400 border-b border-zinc-800/80">
+            <th class=""></th>
+            <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+              Timestamp
+            </th>
+            <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+              Chain
+            </th>
+            <th class="px-3 py-2 text-right font-semibold tracking-wide text-xs uppercase">
+              Amount
+            </th>
+            <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+              Status
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each bonds as bond}
+            {@render renderBond(bond)}
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  {/snippet}
+
+  {@render matchOption(maybeBonds, hasBonds, noBonds)}
+{/snippet}
+
+{#snippet renderSkeleton()}
+  <div class="relative overflow-auto max-h-72 rounded-lg ring-1 ring-zinc-800/80 animate-pulse">
+    <table class="w-full text-sm">
+      <thead class="sticky top-0 z-10 bg-zinc-950/90">
+        <tr class="text-zinc-400 border-b border-zinc-800/80">
+          <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">arrow</th>
+          <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">Chain</th>
+          <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+            Timestamp
+          </th>
+          <th class="px-3 py-2 text-right font-semibold tracking-wide text-xs uppercase">Amount</th>
+          <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each Array(5) as _}
+          <tr class="even:bg-zinc-900/30 odd:bg-zinc-900/10">
+            <td class="px-3 py-2"><div class="h-4 w-24 bg-zinc-700/50 rounded"></div></td>
+            <td class="px-3 py-2"><div class="h-4 w-32 bg-zinc-700/50 rounded"></div></td>
+            <td class="px-3 py-2 text-right">
+              <div class="h-4 w-16 bg-zinc-700/50 rounded ml-auto"></div>
+            </td>
+            <td class="px-3 py-2"><div class="h-4 w-14 bg-zinc-700/50 rounded"></div></td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+{/snippet}
+
+{#snippet renderError(error: any)}
+  <div>
+    ERROR: {JSON.stringify(error, null, 2)}
+  </div>
+{/snippet}
+
+{#snippet whenWallet()}
+  <div class="flex flex-col gap-6">
+    <!-- Bond / Unbond Tables -->
+    <div class="grid grid-cols-1 gap-6">
+      <section class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <Label>Staking Log</Label>
+        </div>
+        {@render matchRuntimeResult(data.current, {
+          onSuccess: maybeRenderBonds,
+          onFailure: renderError,
+          onNone: renderSkeleton,
+        })}
+      </section>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet noWallet()}
+  <NoWalletConnected title="No EVM Wallet Connected" />
+{/snippet}
+
+{#snippet renderBalanceSkeleton()}
+  <Skeleton class="w-full h-6 ml-auto" />
+{/snippet}
+
+{#snippet renderBalance(amount: bigint)}
+  <div class="font-mono">
+    {
+      pipe(
+        BigDecimal.fromBigInt(amount),
+        // XXX: check decimals
+        BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
+        BigDecimal.format,
+      )
+    }
+  </div>
+{/snippet}
+
+<Sections>
+  <Card>
+    {#if O.isSome(WalletStore.evmAddress)}
+      <!-- Do Bond UI -->
+      <div class="grid grid-cols-2 gap-8 mb-8">
+        <div class="flex grow flex-col gap-4">
+          <div>
+            <Label caseSensitive>U BALANCE</Label>
+            {@render matchOption(uOnEvmBalance, renderBalance, renderBalanceSkeleton)}
+          </div>
+
+          <div>
+            <Input
+              id="bondInput"
+              type="text"
+              required
+              disabled={O.isNone(uOnEvmBalance)}
+              label="Bond Amount"
+              autocorrect="off"
+              placeholder="Enter amount"
+              spellcheck="false"
+              autocomplete="off"
+              inputmode="decimal"
+              data-field="amount"
+              onbeforeinput={(event) => {
+                const { inputType, data, currentTarget } = event
+                const { value } = currentTarget
+                const proposed = value + (data ?? "")
+
+                const maxDecimals = pipe(
+                  uOnEvmToken,
+                  O.map(Struct.get("representations")),
+                  O.flatMap(A.head),
+                  O.map(Struct.get("decimals")),
+                  O.getOrThrow,
+                )
+
+                const validShape = /^\d*[.,]?\d*$/.test(proposed)
+                const validDecimalsDot = !proposed.includes(".")
+                  || proposed.split(".")[1].length <= maxDecimals
+                const validDecimalsComma = !proposed.includes(",")
+                  || proposed.split(",")[1].length <= maxDecimals
+                const isDelete = inputType.startsWith("delete")
+                const validDecimals = validDecimalsComma && validDecimalsDot
+                const noDuplicateLeadingZeroes = !proposed.startsWith("00")
+
+                const allow = isDelete
+                  || (validDecimals && validShape && noDuplicateLeadingZeroes)
+
+                if (!allow) {
+                  event.preventDefault()
+                }
+              }}
+              autocapitalize="none"
+              pattern="^[0-9]*[.,]?[0-9]*$"
+              value={bondInput}
+              class="h-14 text-center text-lg"
+              oninput={(event) => {
+                bondInput = event.currentTarget.value
+              }}
+            />
+            {O.map(bondAmount, BigDecimal.format)}
+          </div>
+          <div>
+            <Button
+              class="w-full"
+              disabled={true}
+            >
+              Stake
+            </Button>
+          </div>
+        </div>
+
+        <!-- Do Unbond UI -->
+        <div class="flex grow flex-col gap-4">
+          <div>
+            <Label caseSensitive>eU BALANCE</Label>
+            {@render matchOption(eUOnEvmBalance, renderBalance, renderBalanceSkeleton)}
+          </div>
+
+          <div>
+            <Input
+              id="unbondInput"
+              type="text"
+              required
+              disabled={false}
+              label="Unbond Amount"
+              autocorrect="off"
+              placeholder="Enter amount"
+              spellcheck="false"
+              autocomplete="off"
+              inputmode="decimal"
+              data-field="amount"
+              onbeforeinput={(event) => {
+                const { inputType, data, currentTarget } = event
+                const { value } = currentTarget
+                const proposed = value + (data ?? "")
+
+                const maxDecimals = pipe(
+                  uOnEvmToken,
+                  O.map(Struct.get("representations")),
+                  O.flatMap(A.head),
+                  O.map(Struct.get("decimals")),
+                  O.getOrThrow,
+                )
+
+                const validShape = /^\d*[.,]?\d*$/.test(proposed)
+                const validDecimalsDot = !proposed.includes(".")
+                  || proposed.split(".")[1].length <= maxDecimals
+                const validDecimalsComma = !proposed.includes(",")
+                  || proposed.split(",")[1].length <= maxDecimals
+                const isDelete = inputType.startsWith("delete")
+                const validDecimals = validDecimalsComma && validDecimalsDot
+                const noDuplicateLeadingZeroes = !proposed.startsWith("00")
+
+                const allow = isDelete
+                  || (validDecimals && validShape && noDuplicateLeadingZeroes)
+
+                if (!allow) {
+                  event.preventDefault()
+                }
+              }}
+              autocapitalize="none"
+              pattern="^[0-9]*[.,]?[0-9]*$"
+              value={unbondInput}
+              class="h-14 text-center text-lg"
+              oninput={(event) => {
+                unbondInput = event.currentTarget.value
+              }}
+            />
+            {O.map(unbondAmount, BigDecimal.format)}
+          </div>
+          <div>
+            <Button
+              class="w-full"
+              disabled={true}
+            >
+              Unstake
+            </Button>
+          </div>
+        </div>
+      </div>
+      <!-- Bond/Unbond Table -->
+      {@render whenWallet()}
+    {:else}
+      {@render noWallet()}
+    {/if}
+  </Card>
+</Sections>

@@ -105,6 +105,8 @@ export const fromWallet = (
         ),
       )
 
+      console.log("[@unionlabs/sdk-evm/internal/zkgmClient] operand", operand)
+
       const funds = ClientRequest.requiredFunds(request).pipe(
         O.map(A.filter(([x]) => Token.isNative(x))),
         O.flatMap(O.liftPredicate(A.isNonEmptyReadonlyArray)),

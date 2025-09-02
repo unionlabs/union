@@ -1,4 +1,6 @@
-import { Schema } from "effect"
+import { pipe, Schema, Struct } from "effect"
+import * as A from "effect/Array"
+import * as O from "effect/Option"
 import { AddressEvmCanonical } from "./address.js"
 import { UniversalChainId } from "./chain.js"
 import { ChannelId } from "./channel.js"
@@ -7,6 +9,15 @@ import { Hex } from "./hex.js"
 export const TokenRawDenom = Hex.pipe(
   Schema.lowercased(),
   Schema.brand("TokenRawDenom"),
+  Schema.annotations({
+    arbitrary: () => (fc) =>
+      fc.constantFrom(
+        ...[
+          "0x6175",
+          "0x7562626e",
+        ] as unknown as any,
+      ),
+  }),
 )
 export type TokenRawDenom = typeof TokenRawDenom.Type
 
@@ -69,7 +80,15 @@ export class Token extends Schema.Class<Token>("Token")({
   wrapping: Schema.Array(TokenWrapping),
   bucket: Schema.OptionFromNullOr(Bucket),
   whitelisted: Schema.optional(Schema.Boolean),
-}) {}
+}) {
+  get decimals(): O.Option<number> {
+    return pipe(
+      this.representations,
+      A.head,
+      O.map(Struct.get("decimals")),
+    )
+  }
+}
 
 export const Tokens = Schema.Array(Token)
 export type Tokens = typeof Tokens.Type

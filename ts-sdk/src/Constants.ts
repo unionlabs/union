@@ -207,12 +207,11 @@ export const tokenMetaOverride = Match.type<string>().pipe(
 )
 
 /**
- * FIXME
  * @category constants
  * @since 2.0.0
  */
 export const ON_ZKGM_CALL_PROXY = Ucs05.CosmosDisplay.make({
-  address: "union122ny3mep2l7nhtafpwav2y9e5jrslhek76hsjl",
+  address: "union1mtxk8tjz85ry2a8a6k58uwrztmwslaxzsurh5l0dlxh7wrnvmxkshqkuwd",
 })
 
 /**
@@ -240,6 +239,15 @@ export const EU_ERC20 = Token.Erc20.make({ address: "0xe5Cf13C84c0fEa3236C101Bd7
 export const EU_LST = Ucs05.CosmosDisplay.make({
   address: "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f",
 })
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const EU_STAKING_HUB = Ucs05.CosmosDisplay.make({
+  address: "union1d2r4ecsuap4pujrlf3nz09vz8eha8y0z25knq0lfxz4yzn83v6kq0jxsmk",
+})
+
 /**
  * @category constants
  * @since 2.0.0
