@@ -618,6 +618,14 @@ impl Module {
         .await
         .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
 
+        if game_index.is_zero() {
+            return Err(ErrorObject::owned(
+                -1,
+                "no dispute games at this L1 block height".to_string(),
+                None::<()>,
+            ));
+        }
+
         let game_index = game_index - U256::ONE;
 
         let dispute_game_factory_account_proof = self
