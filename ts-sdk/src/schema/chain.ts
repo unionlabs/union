@@ -11,6 +11,13 @@ export const ChainId = S.String.pipe(S.brand("ChainId"))
 // TODO: narrow filter for arbitraries
 export const UniversalChainId = S.String.pipe(S.pattern(/^[a-z]+\.[a-z\-0-9]+$/)).pipe(
   S.brand("UniversalChainId"),
+  S.annotations({
+    arbitrary: () => (fc) =>
+      fc.constantFrom(
+        "union.union-1",
+        "babylon.bbn-1",
+      ) as unknown as any,
+  }),
 )
 export type UniversalChainId = typeof UniversalChainId.Type
 
