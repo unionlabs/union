@@ -950,6 +950,8 @@ impl<'a> Module<'a> {
 
         let tx_hash = <H256>::from(*pending.tx_hash());
 
+        println!("counterparty tx hash: {tx_hash}");
+
         self.wait_for_tx_inclusion(&provider, tx_hash).await?;
 
         Ok(())
