@@ -1,6 +1,5 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
-import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import AirdropProfileCard from "$lib/dashboard/components/AirdropProfileCard.svelte"
 import PreStakeCard from "$lib/dashboard/components/PreStakeCard.svelte"
@@ -26,13 +25,6 @@ let isEligible = $derived(
   }),
 )
 
-let hasEvm = $derived(
-  Option.match(dashboard.airdrop, {
-    onNone: () => false,
-    onSome: (store) => store.hasEvmWallet,
-  }),
-)
-
 let isHuman = $derived(
   Option.match(dashboard.airdrop, {
     onNone: () => false,
@@ -40,18 +32,15 @@ let isHuman = $derived(
   }),
 )
 
-// Redirect unauthenticated users to sign-in
 $effect(() => {
   if (Option.isNone(dashboard.session)) {
     goto("/auth/sign-in")
     return
   }
 
-  // For authenticated users, redirect to check if they haven't completed verification
-  // Note: check page will redirect back here, but this preserves the original logic
-  if (!isLoadingAllocation && (!isEligible || !hasEvm || !isHuman)) {
-    // Since check is closed, we could show a message instead, but for now preserve flow
-    // Users who haven't completed verification won't be able to see their allocation
+  if (!isLoadingAllocation && (!isEligible || !isHuman)) {
+    goto("/dashboard")
+    return
   }
 })
 </script>
@@ -107,7 +96,6 @@ $effect(() => {
             </div>
           {:else}
             <div class="text-2xl text-zinc-400">No allocation found</div>
-            <div class="text-sm text-zinc-500">Complete the verification process</div>
           {/if}
         </div>
       </div>
@@ -120,9 +108,9 @@ $effect(() => {
   {:else if !isLoadingAllocation}
     <Card>
       <div class="text-center py-8">
-        <div class="text-zinc-400">Airdrop Verification Closed</div>
+        <div class="text-zinc-400">U Drop Registration Closed</div>
         <div class="text-sm text-zinc-500 mt-2">
-          The verification process is now closed. If you were eligible, you'll be able to claim your
+          The registration process is now closed. If you were eligible, you'll be able to claim your
           tokens when the claim period opens.
         </div>
       </div>
