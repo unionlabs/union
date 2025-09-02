@@ -1,8 +1,17 @@
 import { dailyPackets, dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
-import { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
+import { DailyTransfer, DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 import { Option, Schema, Struct } from "effect"
+import * as A from "effect/Array"
+import * as DateTime from "effect/DateTime"
+import { flow, pipe } from "effect/Function"
+import * as Order from "effect/Order"
 import { graphql } from "gql.tada"
+
+const orderDailyTransfer = Order.mapInput<Date, DailyTransfer>(
+  Order.Date,
+  ({ day_date }) => DateTime.toDate(day_date),
+)
 
 export const statisticsQuery = createQueryGraphql({
   schema: Schema.Struct({ v2_stats_count: Statistics }),
@@ -39,8 +48,12 @@ export const dailyTransfersQuery = (limit = 60) =>
     refetchInterval: "60 seconds",
     writeData: data => {
       // Only show testnet 10 transfers
-      dailyTransfers.data = data.pipe(
-        Option.map(Struct.get("v2_stats_transfers_daily_count")),
+      dailyTransfers.data = pipe(
+        data,
+        Option.map(flow(
+          Struct.get("v2_stats_transfers_daily_count"),
+          A.sortBy(orderDailyTransfer),
+        )),
       )
     },
     writeError: error => {
@@ -62,8 +75,12 @@ export const dailyPacketsQuery = (limit = 60) =>
     variables: { limit },
     refetchInterval: "60 seconds",
     writeData: data => {
-      dailyPackets.data = data.pipe(
-        Option.map(Struct.get("v2_stats_packets_daily_count")),
+      dailyPackets.data = pipe(
+        data,
+        Option.map(flow(
+          Struct.get("v2_stats_packets_daily_count"),
+          A.sortBy(orderDailyTransfer),
+        )),
       )
     },
     writeError: error => {

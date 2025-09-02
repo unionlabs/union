@@ -22,35 +22,35 @@ let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count for transfers
 const highestTransferDay = $derived.by(() => {
-  if (!Option.isSome(dailyTransfers.data) || dailyTransfers.data.value.length === 0) {
+  if (!Option.isSome(dailyTransfers.cumData) || dailyTransfers.cumData.value.length === 0) {
     return Option.none()
   }
   return Option.some(
-    dailyTransfers.data.value.reduce(
+    dailyTransfers.cumData.value.reduce(
       (max, current) => (current.count > max.count ? current : max),
-      dailyTransfers.data.value[0],
+      dailyTransfers.cumData.value[0],
     ),
   )
 })
 
 // Find the day with the highest count for packets
 const highestPacketDay = $derived.by(() => {
-  if (!Option.isSome(dailyPackets.data) || dailyPackets.data.value.length === 0) {
+  if (!Option.isSome(dailyPackets.cumData) || dailyPackets.cumData.value.length === 0) {
     return Option.none()
   }
   return Option.some(
-    dailyPackets.data.value.reduce(
+    dailyPackets.cumData.value.reduce(
       (max, current) => (current.count > max.count ? current : max),
-      dailyPackets.data.value[0],
+      dailyPackets.cumData.value[0],
     ),
   )
 })
 
 // Find the transfer data for the hovered day
 const displayTransferDay = $derived.by(() => {
-  if (Option.isSome(hoveredDay) && Option.isSome(dailyTransfers.data)) {
+  if (Option.isSome(hoveredDay) && Option.isSome(dailyTransfers.cumData)) {
     const hoveredDateString = String(hoveredDay.value.day_date)
-    const transfer = dailyTransfers.data.value.find(
+    const transfer = dailyTransfers.cumData.value.find(
       t => String(t.day_date) === hoveredDateString,
     )
     if (transfer) {
@@ -62,9 +62,9 @@ const displayTransferDay = $derived.by(() => {
 
 // Find the packet data for the hovered day
 const displayPacketDay = $derived.by(() => {
-  if (Option.isSome(hoveredDay) && Option.isSome(dailyPackets.data)) {
+  if (Option.isSome(hoveredDay) && Option.isSome(dailyPackets.cumData)) {
     const hoveredDateString = String(hoveredDay.value.day_date)
-    const packet = dailyPackets.data.value.find(
+    const packet = dailyPackets.cumData.value.find(
       p => String(p.day_date) === hoveredDateString,
     )
     if (packet) {
@@ -75,9 +75,10 @@ const displayPacketDay = $derived.by(() => {
 })
 
 onMount(() => {
+  const DAYS = 100
   statistics.runEffect(statisticsQuery)
-  dailyTransfers.runEffect(dailyTransfersQuery())
-  dailyPackets.runEffect(dailyPacketsQuery())
+  dailyTransfers.runEffect(dailyTransfersQuery(DAYS))
+  dailyPackets.runEffect(dailyPacketsQuery(DAYS))
 
   return () => {
     statistics.interruptFiber()
@@ -131,7 +132,7 @@ onMount(() => {
       </div>
 
       <BarChart
-        data={dailyTransfers.data}
+        data={dailyTransfers.cumData}
         error={dailyTransfers.error}
         onHoverChange={(day) => hoveredDay = day}
         hoveredDate={hoveredDay}
@@ -160,7 +161,7 @@ onMount(() => {
       </div>
 
       <BarChart
-        data={dailyPackets.data}
+        data={dailyPackets.cumData}
         error={dailyPackets.error}
         onHoverChange={(day) => hoveredDay = day}
         hoveredDate={hoveredDay}
