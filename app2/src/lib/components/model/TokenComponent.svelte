@@ -104,14 +104,14 @@ const displayDenom = $derived(
       )}
         {#if Option.isSome(icon) && icon.value.length > 0}
           <img
-            class="size-4"
+            class="size-4 rounded-full"
             src={icon.value}
             alt=""
             loading="lazy"
           />
         {:else if src && alt}
           <img
-            class="size-4"
+            class="size-4 rounded-full"
             {src}
             {alt}
             loading="lazy"
