@@ -498,6 +498,39 @@ export const getUserAllocation = (userId: string) =>
     ),
   )
 
+export const getUserClaim = (userId: string) =>
+  withLocalStorageCacheStale(
+    "user_claim",
+    `${CACHE_VERSION}:${userId}`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("claims")
+              .select("*")
+              .eq("user_id", userId)
+              .single(),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserClaim",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        // Don't show error for missing user claim - this is expected for users without claims
+        console.info("User claim not found (expected for users without claims)", { userId, error })
+        return Effect.succeed(Option.none())
+      }),
+    ),
+  )
+
 /** Update pre-stake amount via edge function */
 export const updatePreStake = (
   additionalAmount: number,

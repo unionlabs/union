@@ -1,0 +1,106 @@
+<script lang="ts">
+import { browser } from "$app/environment"
+import { goto } from "$app/navigation"
+import { page } from "$app/state"
+import StepperCard from "$lib/components/ui/StepperCard.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { Option } from "effect"
+import { onMount } from "svelte"
+import Step1 from "./step/Step1.svelte"
+import Step2 from "./step/Step2.svelte"
+import Step3 from "./step/Step3.svelte"
+import Step4 from "./step/Step4.svelte"
+import Step5 from "./step/Step5.svelte"
+
+let currentSlide = $state(0)
+let stepperCardRef: StepperCard
+let isInitialized = $state(false)
+
+// Initialize from URL search params (only once) with auth guard
+$effect(() => {
+  if (browser && !isInitialized) {
+    const step = page.url.searchParams.get("step")
+    if (step) {
+      const stepNumber = parseInt(step, 10)
+      if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= 5) {
+        // Auth guard: can't go beyond step 1 without authentication
+        if (stepNumber > 1 && Option.isNone(dashboard.session)) {
+          currentSlide = 0
+        } else {
+          currentSlide = stepNumber - 1 // Convert to 0-based index
+        }
+      }
+    }
+    isInitialized = true
+  }
+})
+
+// Update URL when slide changes (but not during initialization)
+$effect(() => {
+  if (browser && isInitialized && currentSlide >= 0) {
+    const currentStep = page.url.searchParams.get("step")
+    const newStep = (currentSlide + 1).toString()
+
+    // Only update if the URL step is different from current slide
+    if (currentStep !== newStep) {
+      const url = new URL(page.url)
+      url.searchParams.set("step", newStep)
+      goto(url.toString(), { replaceState: true, noScroll: true })
+    }
+  }
+})
+
+function goToNextSlide() {
+  // Auth guard: can't proceed beyond step 1 without authentication
+  if (currentSlide === 0 && Option.isNone(dashboard.session)) {
+    return // Don't proceed if not authenticated
+  }
+  stepperCardRef.goToNextSlide()
+}
+
+function goToSlide(index: number) {
+  // Auth guard: can't go beyond step 1 without authentication
+  if (index > 0 && Option.isNone(dashboard.session)) {
+    return // Don't proceed if not authenticated
+  }
+  stepperCardRef.goToSlide(index)
+}
+
+function goToPreviousSlide() {
+  stepperCardRef.goToPreviousSlide()
+}
+</script>
+
+<div class="flex justify-center items-center h-full w-full">
+  <StepperCard
+    bind:this={stepperCardRef}
+    bind:currentSlide
+    totalSlides={5}
+    class="max-w-5xl md:h-auto"
+  >
+    {#snippet children(slideIndex)}
+      <div class="flex flex-col gap-4 h-full w-full">
+        {#if slideIndex === 0}
+          <Step1 onNext={goToNextSlide} />
+        {:else if slideIndex === 1}
+          <Step2
+            onNext={goToNextSlide}
+            onBack={goToPreviousSlide}
+          />
+        {:else if slideIndex === 2}
+          <Step3
+            onNext={goToNextSlide}
+            onBack={goToPreviousSlide}
+          />
+        {:else if slideIndex === 3}
+          <Step4
+            onNext={goToNextSlide}
+            onBack={goToPreviousSlide}
+          />
+        {:else if slideIndex === 4}
+          <Step5 onRestart={() => goToSlide(0)} />
+        {/if}
+      </div>
+    {/snippet}
+  </StepperCard>
+</div>
