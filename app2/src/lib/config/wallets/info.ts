@@ -2,7 +2,7 @@ import { InternalChainInfo } from "$lib/services/cosmos/chain-info/internal-chai
 
 export const unionMainnet = InternalChainInfo.make({
   chainId: "union-1",
-  chainName: "union",
+  chainName: "Union",
   rpc: "https://rpc.union.build",
   rest: "https://rest.union.build",
   bip44: {
