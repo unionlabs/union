@@ -1,7 +1,7 @@
 {
-  "name": "Union BTC",
-  "description": "Bridge app for Babylon and Bitcoin Secured Networks ",
-  "short_name": "Union BTC",
+  "name": "Union",
+  "description": "Bridge app connecting chains across EVM, MoveVM, BitVM, IBC, and more.",
+  "short_name": "Union",
   "iconPath": "/web-app-manifest-192x192.png",
   "start_url": "/transfer",
   "icons": [
