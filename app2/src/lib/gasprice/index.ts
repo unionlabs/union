@@ -12,6 +12,7 @@ import {
   Option as O,
   pipe,
   Record as R,
+  Schedule,
   Schema as S,
   unsafeCoerce,
 } from "effect"
@@ -38,27 +39,31 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                 new GasPriceError({
                   module: "Evm",
                   method: "chain",
-                  description: "could not convert internal chain to viem chain",
+                  description: "Could not convert internal chain to viem chain",
                   cause,
                 })
               ),
             )
 
-            const connectorClient = yield* getWagmiConnectorClient.pipe(
-              Effect.mapError((cause) =>
-                new GasPriceError({
-                  module: "Evm",
-                  method: "connectorClient",
-                  description: "could not derive wagmi client",
-                  cause,
-                })
+            /**
+             * For resilience, try wagmi connector or fail eventually with viem default RPC
+             */
+            const transport = yield* pipe(
+              getWagmiConnectorClient,
+              Effect.retry(
+                Schedule.compose(
+                  Schedule.spaced("200 millis"),
+                  Schedule.recurs(10),
+                ),
               ),
+              Effect.map(V.custom),
+              Effect.orElseSucceed(() => V.http()),
             )
 
             const client = yield* pipe(
               createViemPublicClient({
                 chain: viemChain,
-                transport: V.custom(connectorClient),
+                transport,
               }),
               Effect.mapError((cause) =>
                 new GasPriceError({
