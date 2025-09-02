@@ -4,6 +4,8 @@ import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
 import * as Datadog from "$lib/logging/datadog"
 import { PriceOracle } from "@unionlabs/sdk"
+import * as SvelteConfigProvider from "$lib/services/SvelteConfigProvider.js"
+import { Indexer } from "@unionlabs/sdk/Indexer"
 import { Layer, Logger, LogLevel, Match } from "effect"
 
 const minimumLogLevel = Logger.minimumLogLevel(
@@ -15,11 +17,17 @@ const minimumLogLevel = Logger.minimumLogLevel(
   ),
 )
 
+const IndexerLive = Layer.mergeAll(
+  Indexer.Default,
+  SvelteConfigProvider.StaticPublic,
+)
+
 export default Layer.mergeAll(
   GraphQL.Default,
   GasPriceMap.Default,
   PriceOracle.layerExecutor,
   SupabaseClient.Default({ auth: { autoRefreshToken: true } }),
+  IndexerLive,
   Logger.replace(
     Logger.defaultLogger,
     Logger.zip(

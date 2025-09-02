@@ -180,6 +180,13 @@ export * as Indexer from "./Indexer.js"
 export * as Constants from "./Constants.js"
 
 /**
+ * This module handles liquid staking.
+ *
+ * @since 2.0.0
+ */
+export * as Staking from "./Staking.js"
+
+/**
  * This module provides a chain-agnostic service for determining gas price.
  *
  * @since 2.0.0
