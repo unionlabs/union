@@ -37,4 +37,5 @@ tracing                     = { workspace = true }
 tracing-subscriber          = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
 ucs03-zkgm                  = { workspace = true, features = ["library"] }
 ucs03-zkgm-token-minter-api = { workspace = true }
+on-zkgm-call-proxy = { workspace = true, features = ["library"] }
 unionlabs                   = { workspace = true, features = ["proto"] }

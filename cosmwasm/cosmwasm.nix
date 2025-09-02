@@ -707,7 +707,7 @@ _: {
             );
             app = apps;
             escrow_vault = cw-escrow-vault.release;
-            cw-u = cw-u.release;
+            zkgm_proxy_call = on-zkgm-call-proxy.release;
           }
         );
 

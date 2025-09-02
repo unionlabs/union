@@ -360,6 +360,7 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
 }
 
 const ESCROW_VAULT: &str = "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965";
+const ZKGM_PROXY_CALL: &str = "zkgm-proxy";
 const CORE: &str = "ibc-is-based";
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
@@ -376,6 +377,7 @@ struct ContractPaths {
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
     escrow_vault: PathBuf,
+    zkgm_proxy_call: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -417,6 +419,8 @@ struct ContractAddresses {
     app: AppAddresses,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     escrow_vault: Option<Bech32<H256>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    zkgm_proxy_call: Option<Bech32<H256>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -635,6 +639,7 @@ async fn do_main() -> Result<()> {
                     ucs03: None,
                 },
                 escrow_vault: None,
+                zkgm_proxy_call: None,
             };
 
             for (client_type, path) in contracts.lightclient {
@@ -723,11 +728,24 @@ async fn do_main() -> Result<()> {
                             zkgm: Addr::unchecked(ucs03_address.to_string()),
                             admin: Addr::unchecked(ctx.wallet().address().to_string()),
                         },
-                        ESCROW_VAULT.to_owned(),
+                        ESCROW_VAULT.into(),
                     )
                     .await?;
 
                 contract_addresses.escrow_vault = Some(escrow_vault_address);
+
+                let zkgm_proxy_address = ctx
+                    .deploy_and_initiate(
+                        std::fs::read(contracts.zkgm_proxy_call)?,
+                        bytecode_base_code_id,
+                        on_zkgm_call_proxy::InstantiateMsg {
+                            zkgm: Addr::unchecked(ucs03_address.to_string()),
+                        },
+                        ZKGM_PROXY_CALL.into(),
+                    )
+                    .await?;
+
+                contract_addresses.zkgm_proxy_call = Some(zkgm_proxy_address);
 
                 info!("ucs03 address is {ucs03_address}");
 
@@ -1421,13 +1439,16 @@ fn calculate_contract_addresses(
         )?);
     }
 
-    let escrow_vault = instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), ESCROW_VAULT)?;
+    let escrow_vault =
+        instantiate2_address(deployer.clone(), sha2(BYTECODE_BASE_BYTECODE), ESCROW_VAULT)?;
+    let zkgm_proxy = instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), ZKGM_PROXY_CALL)?;
 
     Ok(ContractAddresses {
         core,
         lightclient,
         app,
         escrow_vault: Some(escrow_vault),
+        zkgm_proxy_call: Some(zkgm_proxy),
     })
 }
 

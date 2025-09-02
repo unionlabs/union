@@ -3866,8 +3866,8 @@ async fn test_escher_lst() {
     //     .unwrap();
     // println!("u counterpart is registered");
 
-    // let mut salt_bytes = [0u8; 32];
-    // rand::rng().fill_bytes(&mut salt_bytes);
+    let mut salt_bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut salt_bytes);
 
     // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
     //     channel_id: src_channel_id.try_into().unwrap(),
@@ -3924,7 +3924,7 @@ async fn test_escher_lst() {
     // assert!(new_u_balance > U256::ZERO);
     // assert!(new_vault_balance > 0);
     //
-    let lst_hub = "union1n234trhxyj4ze95td2t5ngdpyqd8529urm54epum3aqg3205pcasf44692";
+    let lst_hub = "union1smzlm9t79kur392nu9egl8p8je9j92q4gzguewj56a05kyxxra0qzndt4q";
     // let lst = "union1jansh23v7teaznyljq6ss4vx6eym8yrz0dsjchap4u7j3etx94vqhmcwn5";
     let zkgm_proxy = "union1dp0e6nscnq2z2v540h4ls26wj0fntyllpshw9z0fyr20k58f395sqyvzur";
 

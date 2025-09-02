@@ -4080,6 +4080,7 @@ dependencies = [
  "ibc-union-light-client",
  "ibc-union-msg",
  "num-rational 0.4.2",
+ "on-zkgm-call-proxy",
  "protos",
  "rand 0.6.5",
  "rand_chacha 0.3.1",
