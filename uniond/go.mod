@@ -241,7 +241,7 @@ replace (
 	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250725184025-cd8b620c9675
 )
 
-replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508
+replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20250902022954-26c2c7f3c5f0
 
 replace (
 	github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go/modules/capability v0.0.0-20250228202801-8024a4241fb8
