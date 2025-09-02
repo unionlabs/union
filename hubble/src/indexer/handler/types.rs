@@ -1,15 +1,17 @@
 use std::{fmt::Display, ops::Deref};
 
+use base64::{engine::general_purpose, Engine};
 use bytes::Bytes;
 use hex::encode;
 use ruint::aliases::U256;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Value;
 
 use crate::indexer::{
     api::IndexerError,
     event::types::{
         CanonicalChainId, ChannelId, ChannelVersion, ClientId, ClientType, ConnectionId, Denom,
-        PortId, UniversalChainId,
+        PacketHash, PortId, UniversalChainId,
     },
     record::{ChainNetwork, InternalChainId},
 };
@@ -34,6 +36,7 @@ pub struct ChannelMetaData {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,
     pub channel_id: ChannelId,
+    pub counterparty_channel_id: ChannelId,
     pub port_id: PortId,
     pub counterparty_port_id: PortId,
     pub channel_version: ChannelVersion,
@@ -65,6 +68,62 @@ pub struct Transfer {
     pub metadata: Option<Metadata>,
     pub fee: Fee,
     pub wrap_direction: Option<WrapDirection>,
+    pub packet_shape: PacketShape,
+}
+
+pub struct Bond {
+    pub source_channel_id: ChannelId,
+    pub universal_chain_id: UniversalChainId,
+    pub remote_source_channel_id: ChannelId,
+    pub remote_destination_channel_id: ChannelId,
+    pub destination_channel_id: ChannelId,
+    pub source_client_id: ClientId,
+    pub remote_source_client_id: ClientId,
+    pub remote_destination_client_id: ClientId,
+    pub destination_client_id: ClientId,
+    pub source_connection_id: ConnectionId,
+    pub remote_source_connection_id: ConnectionId,
+    pub remote_destination_connection_id: ConnectionId,
+    pub destination_connection_id: ConnectionId,
+    pub source_port_id: PortId,
+    pub remote_source_port_id: PortId,
+    pub remote_destination_port_id: PortId,
+    pub destination_port_id: PortId,
+    pub internal_remote_chain_id: InternalChainId,
+    pub internal_destination_chain_id: InternalChainId,
+    pub remote_universal_chain_id: UniversalChainId,
+    pub destination_universal_chain_id: UniversalChainId,
+    pub source_network: ChainNetwork,
+    pub remote_network: ChainNetwork,
+    pub destination_network: ChainNetwork,
+    pub sender_zkgm: AddressZkgm,
+    pub sender_canonical: AddressCanonical,
+    pub sender_display: AddressDisplay,
+    pub receiver_zkgm: AddressZkgm, // (from send-call.receiver)
+    pub receiver_canonical: AddressCanonical, // (from send-call.receiver)
+    pub receiver_display: AddressDisplay, // (from send-call.receiver)
+    pub base_token: Denom,          // 0xba5ed (U) (from token-order.base-token)
+    pub base_amount: Amount,        // (from token-order.base-amount)
+    pub quote_token: Denom,         // 0xe5cf1 (eU) (from send-call.quote-token)
+    pub quote_amount: Amount,       // (from send-call.quote-amount)
+    pub remote_base_token: Denom,   // au (from token-order.quote-token)
+    pub remote_base_amount: Amount, // (from token-order.quote-amount)
+    pub remote_quote_token: Denom,  // eU union1eueueu (from send-call.base-token)
+    pub remote_quote_amount: Amount, // (from send-call.base-amount)
+    pub delivery_packet_hash: PacketHash,
+    pub packet_shape: PacketShape,
+}
+
+pub struct Unbond {
+    pub sender_zkgm: AddressZkgm,
+    pub sender_canonical: AddressCanonical,
+    pub sender_display: AddressDisplay,
+    pub receiver_zkgm: AddressZkgm,
+    pub receiver_canonical: AddressCanonical,
+    pub receiver_display: AddressDisplay,
+    pub base_token: Denom,     // 0xe5cf1 (eU) (from token-order.base-token)
+    pub base_amount: Amount,   // (from token-order.base-amount)
+    pub unbond_amount: Amount, // (from token-order.quote-amount)
     pub packet_shape: PacketShape,
 }
 
@@ -266,7 +325,7 @@ impl TryFrom<&String> for OperandContractAddress {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RpcType {
     #[serde(rename = "cosmos")]
     Cosmos,
@@ -351,6 +410,15 @@ impl AddressZkgm {
     }
 }
 
+pub fn bytes_to_value(bytes: &Bytes, context: &str) -> Result<Value, IndexerError> {
+    serde_json::from_slice(bytes.as_ref()).map_err(|_| {
+        IndexerError::ZkgmExpectingInstructionField(
+            format!("{context} is json: {}", hex::encode(bytes)),
+            hex::encode(bytes),
+        )
+    })
+}
+
 pub fn string_0x_to_bytes(string_0x: &str, context: &str) -> Result<Bytes, IndexerError> {
     let hex_str = string_0x.strip_prefix("0x").ok_or_else(|| {
         IndexerError::HexDecodeErrorExpecting0x(context.to_string(), string_0x.to_string())
@@ -368,6 +436,20 @@ pub fn string_0x_to_bytes(string_0x: &str, context: &str) -> Result<Bytes, Index
     })?;
 
     Ok(Bytes::from(vec))
+}
+
+pub fn string_base64_to_bytes(string_base64: &str, context: &str) -> Result<Bytes, IndexerError> {
+    let decoded = general_purpose::STANDARD
+        .decode(string_base64)
+        .map_err(|_| {
+            IndexerError::Base64DecodeErrorInvalidBase64(
+                string_base64.to_string(),
+                context.to_string(),
+            )
+        })?;
+
+    // Convert into Bytes
+    Ok(Bytes::from(decoded))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -679,6 +761,10 @@ pub enum PacketShape {
     BatchV0TransferV2Fee,
     #[serde(rename = "transfer_v2")]
     TransferV2,
+    #[serde(rename = "bond_v2")]
+    BondV2,
+    #[serde(rename = "unbond_v2")]
+    UnbondV2,
 }
 
 pub mod bytes_as_hex {

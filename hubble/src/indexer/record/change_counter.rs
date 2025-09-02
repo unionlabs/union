@@ -326,9 +326,11 @@ pub enum RecordKind {
     PacketTimeout,
     TokenBucketUpdate,
     WalletMutationEntry,
+    PacketSendBond,
     PacketSendDecoded,
     PacketSendTransfers,
     PacketSendInstructionsSearch,
+    PacketSendUnbond,
     CreateWrappedToken,
     CreateWrappedTokenRelation,
 }

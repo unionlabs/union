@@ -42,10 +42,12 @@ pub(crate) mod create_wrapped_token_relation_record;
 pub(crate) mod event_handler;
 pub(crate) mod packet_ack_record;
 pub(crate) mod packet_recv_record;
+pub(crate) mod packet_send_bond_record;
 pub(crate) mod packet_send_decoded_record;
 pub(crate) mod packet_send_instructions_search_record;
 pub(crate) mod packet_send_record;
 pub(crate) mod packet_send_transfers_record;
+pub(crate) mod packet_send_unbond_record;
 pub(crate) mod packet_timeout_record;
 pub(crate) mod token_bucket_update_record;
 pub(crate) mod update_client_record;
@@ -131,7 +133,7 @@ impl PgValue<String> for RpcType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum ChainNetwork {
     Mainnet,
     Testnet,
@@ -710,6 +712,8 @@ impl PgValue<String> for PacketShape {
             PacketShape::BatchV0TransferV2 => "batch_v0_transfer_v2",
             PacketShape::BatchV0TransferV2Fee => "batch_v0_transfer_v2_fee",
             PacketShape::TransferV2 => "transfer_v2",
+            PacketShape::BondV2 => "bond_v2",
+            PacketShape::UnbondV2 => "unbond_v2",
         }
         .to_string())
     }

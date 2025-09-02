@@ -308,7 +308,7 @@ impl Display for NatsConsumerSequence {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionId(pub u32);
 
 impl From<u32> for ConnectionId {
@@ -317,7 +317,7 @@ impl From<u32> for ConnectionId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientId(pub u32);
 
 impl From<u32> for ClientId {
@@ -326,7 +326,7 @@ impl From<u32> for ClientId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelId(pub u32);
 
 impl From<u32> for ChannelId {
