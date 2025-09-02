@@ -101,11 +101,14 @@ function handleContinue() {
             <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin">
+                  </div>
                 </div>
                 <div>
                   <div class="text-sm font-medium text-blue-400">Checking Claim Status</div>
-                  <div class="text-xs text-zinc-400">Please wait while we verify your eligibility...</div>
+                  <div class="text-xs text-zinc-400">
+                    Please wait while we verify your eligibility...
+                  </div>
                 </div>
               </div>
             </div>
@@ -160,7 +163,9 @@ function handleContinue() {
                 </div>
                 <div>
                   <div class="text-sm font-medium text-orange-400">No Claim Available</div>
-                  <div class="text-xs text-zinc-400">You don't have any U to claim at this time</div>
+                  <div class="text-xs text-zinc-400">
+                    You don't have any U to claim at this time
+                  </div>
                 </div>
               </div>
             </div>

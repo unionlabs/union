@@ -292,8 +292,8 @@ function handleRetry() {
               <div class="flex-1">
                 <div class="text-sm font-medium text-orange-400 mb-2">U Already Claimed</div>
                 <div class="text-xs text-zinc-400">
-                  This address has already claimed {claimAmount} U from this airdrop. Each
-                  address can only claim once.
+                  This address has already claimed {claimAmount} U from this airdrop. Each address
+                  can only claim once.
                 </div>
               </div>
             </div>

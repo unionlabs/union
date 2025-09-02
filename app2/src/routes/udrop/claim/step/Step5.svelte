@@ -52,8 +52,8 @@ function handleDone() {
             Thank You!
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Your U have been successfully claimed and should be in your Ethereum wallet shortly. Thank you for
-            being part of the Union.
+            Your U have been successfully claimed and should be in your Ethereum wallet shortly.
+            Thank you for being part of the Union.
           </p>
         </div>
       </div>
