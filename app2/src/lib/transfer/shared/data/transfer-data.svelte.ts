@@ -12,10 +12,19 @@ import type { Edition } from "$lib/themes"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
+import {
+  EU_ERC20,
+  EU_FROM_UNION_SOLVER_METADATA,
+  EU_LST,
+  U_BANK,
+  U_ERC20,
+  U_ON_ETH_SOLVER_METADATA,
+  U_TO_UNION_SOLVER_METADATA,
+} from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
-import { Array as A, Brand, Effect, Match, Option, pipe, Struct } from "effect"
+import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
 import * as B from "effect/Boolean"
-import { constant } from "effect/Function"
+import { constant, constFalse } from "effect/Function"
 import * as S from "effect/Schema"
 import { type Address, fromHex, type Hex } from "viem"
 
@@ -89,18 +98,23 @@ export class TransferData {
     ),
   )
 
-  quoteToken = $derived.by(() => {
-    const baseTokenDenom = Option.getOrUndefined(
-      Option.map(this.baseToken, x => Brand.unbranded(x.denom)),
-    )
-    if (
-      baseTokenDenom === "0x6175" || baseTokenDenom === "0xba5ed44733953d79717f6269357c77718c8ba5ed"
-    ) {
-      return Option.some(
-        Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" }),
+  isSolve = $derived(pipe(
+    this.baseToken,
+    Option.map((baseToken) =>
+      pipe(
+        [
+          "0x6175",
+          "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+          // TODO: add eU base
+          // TODO: add eU quote
+        ],
+        A.some((x) => x === baseToken.denom.toLowerCase()),
       )
-    }
+    ),
+    Option.getOrElse(constFalse),
+  ))
 
+  quoteToken = $derived.by(() => {
     return Option.all([
       this.baseToken,
       this.sourceChain,
@@ -109,6 +123,36 @@ export class TransferData {
     ]).pipe(
       Option.flatMap(
         ([baseToken, sourceChain, destinationChain, quoteTokens]) => {
+          if (this.isSolve) {
+            return Match.value([
+              Brand.unbranded(baseToken.denom).toLowerCase(),
+              destinationChain.rpc_type,
+              destinationChain.universal_chain_id,
+            ]).pipe(
+              Match.when(
+                ["0x6175", "evm", Match.any],
+                () => U_ERC20,
+              ),
+              Match.when(
+                [U_ERC20.address.toLowerCase(), "evm", Match.any],
+                () => U_ERC20,
+              ),
+              Match.when(
+                [U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
+                () => U_BANK,
+              ),
+              Match.when(
+                [EU_ERC20.address.toLowerCase(), "evm", Match.any],
+                () => EU_ERC20,
+              ),
+              Match.when(
+                [EU_ERC20.address, "cosmos", Match.any],
+                () => Token.Cw20.make({ address: EU_LST.address }),
+              ),
+              Match.option,
+            )
+          }
+
           const baseDenom = baseToken.denom.toLowerCase()
 
           const maybeUnwrapped = baseToken.wrapping.find(
@@ -175,6 +219,11 @@ export class TransferData {
   kind = $derived<Option.Option<TokenOrder.Kind>>(
     Option.all([this.baseToken, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([baseToken, sourceChain, destinationChain]) => {
+        // Override kind to "solve" for Union
+        if (this.isSolve) {
+          return Option.some("solve" as const)
+        }
+
         const sourceId = sourceChain.universal_chain_id
         const destId = destinationChain.universal_chain_id
 
@@ -188,6 +237,37 @@ export class TransferData {
           Option.orElseSome(() => "escrow" as const),
         )
       }),
+    ),
+  )
+
+  metadata = $derived(
+    Option.all([this.kind, this.baseToken, this.destinationChain]).pipe(
+      Option.flatMap(([kind, baseToken, destChain]) =>
+        Match.value([kind, baseToken.denom, destChain.rpc_type, destChain.universal_chain_id]).pipe(
+          Match.whenOr(
+            ["solve", "0x6175", "evm", Match.any],
+            ["solve", U_ERC20.address.toLowerCase(), "evm", Match.any],
+            () => Option.some(U_ON_ETH_SOLVER_METADATA),
+          ),
+          Match.when(
+            ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
+            () => Option.some(U_TO_UNION_SOLVER_METADATA),
+          ),
+          Match.when(
+            ["solve", Match.any, Match.any, Match.any],
+            () => Option.none(),
+          ),
+          // Match.when(
+          //   ["solve", "eU (tohex)", Match.any],
+          //   () => EU_FROM_UNION_SOLVER_METADATA,
+          // ),
+          // Match.when(
+          //   ["solve", EU_ERC20.address.toLowerCase(), Match.any],
+          //   () => EU_FROM_UNION_SOLVER_METADATA,
+          // ),
+          Match.orElse(() => Option.some(undefined)),
+        )
+      ),
     ),
   )
 

@@ -169,6 +169,10 @@ const filterChainsByTokenAvailability = (
                 if (destinationChain.testnet === true) {
                   return Tuple.make(destinationChain, true)
                 }
+
+                if (transferData.isSolve) {
+                  return Tuple.make(destinationChain, true)
+                }
                 if (!filterWhitelist) {
                   return Tuple.make(destinationChain, true)
                 }
@@ -190,7 +194,6 @@ const filterChainsByTokenAvailability = (
 
 const filteredChains = $derived(
   pipe(
-    // Now use transferData.filteredChains which already includes edition filtering
     transferData.filteredChains,
     Option.map(allChains =>
       pipe(

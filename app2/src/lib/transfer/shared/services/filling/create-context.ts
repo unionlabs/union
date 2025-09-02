@@ -57,19 +57,6 @@ export const createContext = Effect.fn((
   Effect.gen(function*() {
     console.debug("[createContext] args:", args)
 
-    const overrideForUnion = args.baseToken.address === "au"
-      || args.baseToken.address.toLowerCase()
-        === "0xba5eD44733953d79717F6269357C77718C8Ba5ed".toLowerCase()
-
-    if (overrideForUnion) {
-      args.quoteToken = Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" })
-    }
-
-    const kind = overrideForUnion ? "solve" : args.kind
-    const metadata = overrideForUnion
-      ? "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-      : undefined
-
     const sendOrder = yield* TokenOrder.make({
       baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
       baseToken: args.baseToken,
@@ -78,9 +65,9 @@ export const createContext = Effect.fn((
       destination: args.destinationChain,
       receiver: args.receiver,
       sender: args.sender,
-      kind,
+      kind: args.kind,
       source: args.sourceChain,
-      metadata,
+      metadata: args.metadata,
       version: args.version,
     })
 

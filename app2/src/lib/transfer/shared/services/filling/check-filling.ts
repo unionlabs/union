@@ -3,7 +3,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { Token, TokenOrder, type Ucs05 } from "@unionlabs/sdk"
-import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
+import type { AddressCanonicalBytes, Chain, Channel, ChannelId, Hex } from "@unionlabs/sdk/schema"
 import { Data, flow, Option, pipe, Struct } from "effect"
 import * as A from "effect/Array"
 import * as E from "effect/Either"
@@ -19,6 +19,7 @@ export interface TransferArgs {
   quoteAmount: string
   decimals: number
   kind: TokenOrder.Kind
+  metadata: Hex | undefined
   receiver: Ucs05.AnyDisplay
   sender: Ucs05.AnyDisplay
   ucs03address: string
@@ -110,8 +111,16 @@ export const getFillingState = (
         return FillingState.NoFee({ message: fee.value.left })
       }
 
+      if (Option.isNone(transferData.metadata)) {
+        return FillingState.Generic({
+          message: "Could not derive metadata",
+        })
+      }
+
       if (Option.isNone(transferData.quoteToken)) {
-        return FillingState.Generic({ message: "no quote token" })
+        return FillingState.Generic({
+          message: `No quote token for ${transferData.baseToken.value.denom}`,
+        })
       }
 
       const unwrappedFee = fee.value.right
@@ -142,6 +151,7 @@ export const getFillingState = (
           ),
         ),
         baseToken: decodedBaseToken,
+        metadata: transferData.metadata,
         version: transferData.version,
       })
 
@@ -162,6 +172,7 @@ export const getFillingState = (
             decimals,
             ucs03address,
             quoteToken,
+            metadata,
             version,
           },
         ) =>
@@ -176,6 +187,7 @@ export const getFillingState = (
             kind,
             decimals,
             quoteToken,
+            metadata,
             ucs03address,
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,

@@ -374,7 +374,7 @@ const currentStep = $derived(
     {#if Option.isSome(transferSteps)}
       <div class="mt-4 whitespace-pre-wrap">
         <strong>Steps:</strong>
-        <pre>{Effect.runSync(safeStringifyJSON(transferSteps.value))}</pre>
+        <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
       </div>
     {/if}
   </div>

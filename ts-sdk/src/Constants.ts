@@ -6,6 +6,8 @@
 import { Match, Schedule } from "effect"
 import { UniversalChainId } from "./schema/chain.js"
 import { TokenRawDenom } from "./schema/token.js"
+import * as Token from "./Token.js"
+import * as Ucs05 from "./Ucs05.js"
 
 /**
  * @category models
@@ -198,3 +200,58 @@ export const tokenMetaOverride = Match.type<string>().pipe(
     }) as const
   ),
 )
+
+/**
+ * FIXME
+ * @category constants
+ * @since 2.0.0
+ */
+export const ON_ZKGM_CALL_PROXY = Ucs05.CosmosDisplay.make({
+  address: "union122ny3mep2l7nhtafpwav2y9e5jrslhek76hsjl",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const U_BANK = Token.CosmosBank.make({ address: "au" })
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const U_ERC20 = Token.Erc20.make({ address: "0xba5eD44733953d79717F6269357C77718C8Ba5ed" })
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const EU_ERC20 = Token.Erc20.make({ address: "0xe5Cf13C84c0fEa3236C101Bd7d743d30366E5CF1" })
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const EU_LST = Ucs05.CosmosDisplay.make({
+  address: "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f",
+})
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const U_ON_ETH_SOLVER_METADATA =
+  "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as const
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const U_TO_UNION_SOLVER_METADATA =
+  "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000040756e696f6e3175757575757575757539756e3271706b73616d37726c747470786338646337366d63706868736d70333970786a6e7376727463717679763537720000000000000000000000000000000000000000000000000000000000000000" as const
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const EU_FROM_UNION_SOLVER_METADATA =
+  "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014e5cf13c84c0fea3236c101bd7d743d30366e5cf10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as const

@@ -4,7 +4,10 @@ import { UniversalChainId } from "./chain.js"
 import { ChannelId } from "./channel.js"
 import { Hex } from "./hex.js"
 
-export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
+export const TokenRawDenom = Hex.pipe(
+  Schema.lowercased(),
+  Schema.brand("TokenRawDenom"),
+)
 export type TokenRawDenom = typeof TokenRawDenom.Type
 
 export const CosmosBankDenom = Schema.String.pipe(Schema.brand("CosmosBankDenom"))

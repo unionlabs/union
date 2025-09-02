@@ -647,8 +647,9 @@ const TopSecret = Layer.sync(
     PriceOracle.of({
       of: (id) =>
         Match.value(id).pipe(
-          Match.when(
+          Match.whenOr(
             UniversalChainId.make("union.union-testnet-10"),
+            UniversalChainId.make("union.union-1"),
             () =>
               Effect.succeed(PriceResult.make({
                 price: BigDecimal.fromNumber(0.05),

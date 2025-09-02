@@ -1,5 +1,57 @@
 import { InternalChainInfo } from "$lib/services/cosmos/chain-info/internal-chain-info"
 
+export const unionMainnet = InternalChainInfo.make({
+  chainId: "union-1",
+  chainName: "union",
+  rpc: "https://rpc.union.build",
+  rest: "https://rest.union.build",
+  bip44: {
+    coinType: 118,
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "union",
+    bech32PrefixAccPub: "unionpub",
+    bech32PrefixValAddr: "unionvaloper",
+    bech32PrefixValPub: "unionvaloperpub",
+    bech32PrefixConsAddr: "unionvalcons",
+    bech32PrefixConsPub: "unionvalconspub",
+  },
+  currencies: [
+    {
+      coinDenom: "U",
+      coinMinimalDenom: "au",
+      coinDecimals: 18,
+    },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "U",
+      coinMinimalDenom: "au",
+      coinDecimals: 18,
+      gasPriceStep: {
+        low: 1,
+        average: 2,
+        high: 3,
+      },
+    },
+  ],
+  stakeCurrency: {
+    coinDenom: "U",
+    coinMinimalDenom: "au",
+    coinDecimals: 18,
+  },
+  features: [
+    "cosmwasm",
+  ],
+  beta: true,
+  theme: {
+    primaryColor: "#fff",
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)",
+  },
+  image:
+    "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png",
+})
+
 export const unionTestnet = InternalChainInfo.make({
   chainId: "union-testnet-10",
   chainName: "Union Testnet",
