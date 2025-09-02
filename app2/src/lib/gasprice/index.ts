@@ -1,4 +1,5 @@
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
+import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import { type Chain, NumberFromHexString, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
@@ -15,7 +16,7 @@ import {
   unsafeCoerce,
 } from "effect"
 import { type GetGasPriceErrorType, http } from "viem"
-import type * as V from "viem"
+import * as V from "viem"
 import { publicActionsL2 } from "viem/op-stack"
 import { GasPriceError } from "./error"
 import * as GasPrice from "./service"
@@ -43,16 +44,27 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
               ),
             )
 
+            const connectorClient = yield* getWagmiConnectorClient.pipe(
+              Effect.mapError((cause) =>
+                new GasPriceError({
+                  module: "Evm",
+                  method: "connectorClient",
+                  description: "could not derive wagmi client",
+                  cause,
+                })
+              ),
+            )
+
             const client = yield* pipe(
               createViemPublicClient({
                 chain: viemChain,
-                transport: http(),
+                transport: V.custom(connectorClient),
               }),
               Effect.mapError((cause) =>
                 new GasPriceError({
                   module: "Evm",
                   method: "of",
-                  description: "Could not create public client.",
+                  description: "Could not create public client",
                   cause,
                 })
               ),
