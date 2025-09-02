@@ -9,7 +9,6 @@ import {
   createWalletClient,
   type CreateWalletClientErrorType,
   custom,
-  http,
   type PublicClient,
 } from "viem"
 import {
@@ -44,6 +43,8 @@ export const getPublicClient = (chain: Chain) =>
   Effect.gen(function*() {
     const viemChain = chain.toViemChain()
 
+    const connectorClient = yield* getWagmiConnectorClient
+
     if (Option.isNone(viemChain)) {
       return yield* new NoViemChainError({ chain })
     }
@@ -52,7 +53,7 @@ export const getPublicClient = (chain: Chain) =>
       try: () =>
         createPublicClient({
           chain: viemChain.value,
-          transport: http(),
+          transport: custom(connectorClient),
         }),
       catch: err =>
         new CreatePublicClientError({

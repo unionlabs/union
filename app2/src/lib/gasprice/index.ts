@@ -1,4 +1,5 @@
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
+import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import { type Chain, NumberFromHexString, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
@@ -11,11 +12,12 @@ import {
   Option as O,
   pipe,
   Record as R,
+  Schedule,
   Schema as S,
   unsafeCoerce,
 } from "effect"
 import { type GetGasPriceErrorType, http } from "viem"
-import type * as V from "viem"
+import * as V from "viem"
 import { publicActionsL2 } from "viem/op-stack"
 import { GasPriceError } from "./error"
 import * as GasPrice from "./service"
@@ -37,22 +39,37 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                 new GasPriceError({
                   module: "Evm",
                   method: "chain",
-                  description: "could not convert internal chain to viem chain",
+                  description: "Could not convert internal chain to viem chain",
                   cause,
                 })
               ),
             )
 
+            /**
+             * For resilience, try wagmi connector or fail eventually with viem default RPC
+             */
+            const transport = yield* pipe(
+              getWagmiConnectorClient,
+              Effect.retry(
+                Schedule.compose(
+                  Schedule.spaced("200 millis"),
+                  Schedule.recurs(10),
+                ),
+              ),
+              Effect.map(V.custom),
+              Effect.orElseSucceed(() => V.http()),
+            )
+
             const client = yield* pipe(
               createViemPublicClient({
                 chain: viemChain,
-                transport: http(),
+                transport,
               }),
               Effect.mapError((cause) =>
                 new GasPriceError({
                   module: "Evm",
                   method: "of",
-                  description: "Could not create public client.",
+                  description: "Could not create public client",
                   cause,
                 })
               ),

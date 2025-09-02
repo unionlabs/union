@@ -44,10 +44,10 @@ const transports: Transports = {
       key: "unstable_connector-injected-mainnet",
       name: "unstable_connector-injected-mainnet",
     }),
-    http(`https://rpc.1.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Mainnet",
+    http(`https://rpc.${mainnet.id}.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Ethereum",
     }),
-    http(sepolia.rpcUrls.default.http.at(0), {
+    http(mainnet.rpcUrls.default.http.at(0), {
       name: "default Mainnet RPC",
     }),
   ]),
@@ -58,7 +58,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-sepolia",
       name: "unstable_connector-injected-sepolia",
     }),
-    http(`https://rpc.11155111.sepolia.chain.kitchen`, {
+    http(`https://rpc.${sepolia.id}.ethereum.chain.kitchen`, {
       name: "Chain Kitchen - Sepolia",
     }),
     http(sepolia.rpcUrls.default.http.at(0), {
@@ -72,7 +72,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-holesky",
       name: "unstable_connector-injected-holesky",
     }),
-    http(`https://rpc.17000.holesky.chain.kitchen`, {
+    http(`https://rpc.${holesky.id}.ethereum.chain.kitchen`, {
       name: "Chain Kitchen - Holesky",
     }),
     http(holesky.rpcUrls.default.http.at(0), {
@@ -119,6 +119,9 @@ const transports: Transports = {
       key: "unstable_connector-injected-bob-sepolia",
       name: "unstable_connector-injected-bob-sepolia",
     }),
+    http(`https://rpc.${bobSepolia.id}.bob.chain.kitchen`, {
+      name: "Chain Kitchen - BOB Sepolia",
+    }),
     http(bobSepolia.rpcUrls.default.http.at(0), {
       name: "default Bob Sepolia RPC",
     }),
@@ -130,6 +133,9 @@ const transports: Transports = {
       key: "unstable_connector-injected-bob",
       name: "unstable_connector-injected-bob",
     }),
+    http(`https://rpc.${bob.id}.bob.chain.kitchen`, {
+      name: "Chain Kitchen - BOB",
+    }),
     http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
   ]),
   [corn.id]: fallback([
@@ -139,6 +145,9 @@ const transports: Transports = {
       key: "unstable_connector-injected-corn",
       name: "unstable_connector-injected-corn",
     }),
+    http(`https://rpc.${corn.id}.corn.chain.kitchen`, {
+      name: "Chain Kitchen - Corn",
+    }),
     http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
   ]),
   [cornTestnet.id]: fallback([
@@ -147,6 +156,9 @@ const transports: Transports = {
       retryDelay: 100,
       key: "unstable_connector-injected-corn-testnet",
       name: "unstable_connector-injected-corn-testnet",
+    }),
+    http(`https://rpc.${cornTestnet.id}.corn.chain.kitchen`, {
+      name: "Chain Kitchen - Corn Testnet",
     }),
     http(cornTestnet.rpcUrls.default.http.at(0), {
       name: "default Corn Testnet RPC",
@@ -159,6 +171,9 @@ const transports: Transports = {
       key: "unstable_connector-injected-sei",
       name: "unstable_connector-injected-sei",
     }),
+    http(`https://evm-rpc.${sei.id}.sei.chain.kitchen`, {
+      name: "Chain Kitchen - Sei",
+    }),
     http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
   ]),
   [seiTestnet.id]: fallback([
@@ -167,6 +182,9 @@ const transports: Transports = {
       retryDelay: 100,
       key: "unstable_connector-injected-sei-testnet",
       name: "unstable_connector-injected-sei-testnet",
+    }),
+    http(`https://evm-rpc.${seiTestnet.id}.sei.chain.kitchen`, {
+      name: "Chain Kitchen - Sei Testnet",
     }),
     http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
   ]),
@@ -177,6 +195,9 @@ const transports: Transports = {
       key: "unstable_connector-injected-bsc",
       name: "unstable_connector-injected-bsc",
     }),
+    http(`https://rpc.${bsc.id}.bsc.chain.kitchen`, {
+      name: "Chain Kitchen - BNB Chain",
+    }),
     http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
   ]),
   [bscTestnet.id]: fallback([
@@ -185,6 +206,9 @@ const transports: Transports = {
       retryDelay: 100,
       key: "unstable_connector-injected-bsc-testnet",
       name: "unstable_connector-injected-bsc-testnet",
+    }),
+    http(`https://rpc.${bscTestnet.id}.bsc.chain.kitchen`, {
+      name: "Chain Kitchen - BNB Chain Testnet",
     }),
     http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
   ]),
