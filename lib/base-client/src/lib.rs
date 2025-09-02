@@ -21,7 +21,7 @@ pub async fn finalized_l2_block_number_of_l1_block_number(
         l1_provider,
         l1_block_number,
         l1_dispute_game_factory_proxy,
-        count - U256::ONE,
+        count.saturating_sub(U256::ONE),
     )
     .await
 }
