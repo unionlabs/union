@@ -1,3 +1,4 @@
+import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { AllowanceCheckError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
 import { Token, Ucs05, Utils, ZkgmClientRequest } from "@unionlabs/sdk"
@@ -7,7 +8,7 @@ import type { Chain } from "@unionlabs/sdk/schema"
 import { Data, Effect, HashMap, Match, Option, pipe, Tuple } from "effect"
 import * as A from "effect/Array"
 import * as S from "effect/Schema"
-import { type Address, http } from "viem"
+import { type Address, custom, http } from "viem"
 
 export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   token: Token.Any
@@ -96,12 +97,18 @@ const handleEvmAllowances = (
 > =>
   Effect.gen(function*() {
     const chain = yield* sourceChain.toViemChain().pipe(
-      Effect.mapError(() => new AllowanceCheckError({ message: "could not" })),
+      Effect.mapError(() => new AllowanceCheckError({ message: "Could not determine viem chain" })),
+    )
+
+    const connectorClient = yield* getWagmiConnectorClient.pipe(
+      Effect.mapError(() =>
+        new AllowanceCheckError({ message: "Could not determine wagmi client" })
+      ),
     )
 
     const client = Evm.PublicClient.Live({
       chain,
-      transport: http(),
+      transport: custom(connectorClient),
     })
 
     return yield* pipe(
