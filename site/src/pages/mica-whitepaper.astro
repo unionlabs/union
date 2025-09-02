@@ -1,0 +1,18 @@
+---
+import ContainedSection from "../components/ContainedSection.astro"
+import PdfViewer from "../components/PdfViewer.svelte"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
+---
+
+<AnimationLayout
+  title="MiCA White Paper"
+  text=""
+>
+  <ContainedSection className="">
+    <PdfViewer
+      client:load
+      src="https://pdfs.cdn.union.build/union-mica-whitepaper.pdf"
+      fileName="Union - MiCA White Paper - AFM"
+    />
+  </ContainedSection>
+</AnimationLayout>
