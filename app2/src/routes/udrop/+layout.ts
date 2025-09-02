@@ -4,5 +4,5 @@ import type { LayoutLoad } from "./$types"
 export const ssr = false
 
 export const load: LayoutLoad = async ({ url }) => {
-  return await requireAuth(url, "/udrop/check", ["/udrop/check"])
+  return await requireAuth(url, "/auth/sign-in", [])
 }

@@ -40,9 +40,18 @@ let isHuman = $derived(
   }),
 )
 
+// Redirect unauthenticated users to sign-in
 $effect(() => {
+  if (Option.isNone(dashboard.session)) {
+    goto("/auth/sign-in")
+    return
+  }
+
+  // For authenticated users, redirect to check if they haven't completed verification
+  // Note: check page will redirect back here, but this preserves the original logic
   if (!isLoadingAllocation && (!isEligible || !hasEvm || !isHuman)) {
-    goto("/udrop/check")
+    // Since check is closed, we could show a message instead, but for now preserve flow
+    // Users who haven't completed verification won't be able to see their allocation
   }
 })
 </script>
@@ -111,14 +120,10 @@ $effect(() => {
   {:else if !isLoadingAllocation}
     <Card>
       <div class="text-center py-8">
-        <div class="text-zinc-400">Complete verification to access your allocation</div>
+        <div class="text-zinc-400">Airdrop Verification Closed</div>
         <div class="text-sm text-zinc-500 mt-2">
-          <Button
-            variant="secondary"
-            onclick={() => goto("/udrop/check")}
-          >
-            Continue Verification
-          </Button>
+          The verification process is now closed. If you were eligible, you'll be able to claim your
+          tokens when the claim period opens.
         </div>
       </div>
     </Card>
