@@ -249,7 +249,7 @@ export class GetBalanceError extends Data.TaggedError("@unionlabs/sdk/Cosmos/Get
  * @since 2.0.0
  */
 export const queryContract = <T = unknown>(
-  contractAddress: string,
+  contractAddress: Ucs05.CosmosDisplay,
   queryMsg: Record<string, unknown>,
 ) =>
   pipe(
@@ -257,12 +257,12 @@ export const queryContract = <T = unknown>(
     Effect.andThen(({ client }) =>
       Effect.tryPromise({
         try: async () => {
-          const result = await client.queryContractSmart(contractAddress, queryMsg)
+          const result = await client.queryContractSmart(contractAddress.address, queryMsg)
           return result as T
         },
         catch: error =>
           new QueryContractError({
-            address: contractAddress,
+            address: contractAddress.address,
             cause: Utils.extractErrorDetails(error as Error),
           }),
       })

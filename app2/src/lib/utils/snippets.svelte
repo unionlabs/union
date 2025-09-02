@@ -35,17 +35,19 @@ export { empty, getOptionOrNull, mapOption, matchOption, matchRuntimeResult }
 
 {#snippet matchRuntimeResult<A, E>(
   self: Option.Option<Exit.Exit<A, E>>,
-  onSuccess: Snippet<[A]>,
-  onFailure: Snippet<[Cause.Cause<E>]>,
-  onNone: Snippet<[]>,
+  options: {
+    onSuccess: Snippet<[A]>
+    onFailure: Snippet<[Cause.Cause<E>]>
+    onNone: Snippet<[]>
+  },
 )}
   {#if self._tag === "Some"}
     {#if self.value._tag === "Success"}
-      {@render onSuccess(self.value.value)}
+      {@render options.onSuccess(self.value.value)}
     {:else}
-      {@render onFailure(self.value.cause)}
+      {@render options.onFailure(self.value.cause)}
     {/if}
   {:else}
-    {@render onNone()}
+    {@render options.onNone()}
   {/if}
 {/snippet}

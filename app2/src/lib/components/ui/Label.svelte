@@ -4,13 +4,20 @@ import type { HTMLLabelAttributes } from "svelte/elements"
 
 interface Props extends HTMLLabelAttributes {
   children: Snippet
+  caseSensitive?: boolean | undefined
   class?: string
 }
 
-const { children, class: className = "", ...rest }: Props = $props()
+const {
+  children,
+  caseSensitive = false,
+  class: className = "",
+  ...rest
+}: Props = $props()
 </script>
 
 <label
-  class="uppercase text-zinc-500 text-xs font-semibold block {className}"
+  class:uppercase={!caseSensitive}
+  class="text-zinc-500 text-xs font-semibold block {className}"
   {...rest}
 >{@render children()}</label>

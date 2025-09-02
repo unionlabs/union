@@ -4,7 +4,7 @@
  * @since 2.0.0
  */
 import crc32 from "crc/crc32"
-import { Data, Effect, String as Str } from "effect"
+import { Data, Effect, Schema, SchemaAST, String as Str } from "effect"
 import { dual, LazyArg, pipe } from "effect/Function"
 import * as M from "effect/Match"
 import * as O from "effect/Option"
@@ -169,3 +169,26 @@ export const matchOptionBool: {
       }),
     ),
 )
+
+/**
+ * @see https://effect.website/docs/schema/basic-usage/#simplifying-tagged-structs-with-taggedstruct
+ * @category utils
+ * @since 2.0.0
+ */
+export const TaggedStruct = <
+  Tag extends SchemaAST.LiteralValue,
+  Fields extends Schema.Struct.Fields,
+>(
+  tag: Tag,
+  fields: Fields,
+) =>
+  Schema.Struct({
+    _tag: Schema.Literal(tag).pipe(
+      Schema.optional,
+      Schema.withDefaults({
+        constructor: () => tag, // Apply _tag during instance construction
+        decoding: () => tag, // Apply _tag during decoding
+      }),
+    ),
+    ...fields,
+  })
