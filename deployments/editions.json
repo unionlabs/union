@@ -8,7 +8,7 @@
         "environment": "staging"
       },
       "bsc.56": {
-        "environment": "staging"
+        "environment": "production"
       },
       "bsc.97": {
         "environment": "production"
