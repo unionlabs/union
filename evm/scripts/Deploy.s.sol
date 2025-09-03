@@ -7,6 +7,10 @@ import "forge-std/Script.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibString.sol";
 import "solady/utils/LibBytes.sol";
+import "solady/utils/LibSort.sol";
+import "solady/utils/MerkleTreeLib.sol";
+import "solady/utils/EfficientHashLib.sol";
+
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
@@ -25,6 +29,7 @@ import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../contracts/apps/ucs/06-funded-dispatch/FundedDispatch.sol";
 import "../contracts/tge/Vesting.sol";
+import "../contracts/tge/UDrop.sol";
 
 import "./Deployer.sol";
 
@@ -53,6 +58,8 @@ struct UCS03Parameters {
 library INSTANCE_SALT {
     bytes constant U =
         hex"12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047";
+    bytes constant UDROP =
+        hex"96de8fc8c256fa1e1556d41af431cace7dca68707c78dd88c3acab8b17177504";
 }
 
 library LIB_SALT {
@@ -194,6 +201,25 @@ abstract contract UnionScript is UnionBase {
                             decimals,
                             hex""
                         )
+                    )
+                )
+            )
+        );
+    }
+
+    function deployUDrop(
+        Manager authority,
+        bytes32 root,
+        address token,
+        bool active
+    ) internal returns (UDrop) {
+        return UDrop(
+            deploy(
+                string(INSTANCE_SALT.UDROP),
+                abi.encode(
+                    address(new UDrop(root, token)),
+                    abi.encodeCall(
+                        UDrop.initialize, (address(authority), active)
                     )
                 )
             )
@@ -910,6 +936,7 @@ contract GetDeployed is VersionedScript {
         address ucs03 = getDeployed(Protocols.UCS03);
 
         address u = getDeployed(string(INSTANCE_SALT.U));
+        address udrop = getDeployed(string(INSTANCE_SALT.UDROP));
 
         console.log(
             string(abi.encodePacked("Manager: ", manager.toHexString()))
@@ -953,6 +980,8 @@ contract GetDeployed is VersionedScript {
         );
         console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
         console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
+        console.log(string(abi.encodePacked("U: ", u.toHexString())));
+        console.log(string(abi.encodePacked("UDrop: ", udrop.toHexString())));
 
         string memory impls = "base";
 
@@ -987,7 +1016,27 @@ contract GetDeployed is VersionedScript {
                 )
             )
         );
-        impls.serialize(manager.toHexString(), proxyU);
+        impls.serialize(u.toHexString(), proxyU);
+
+        if (udrop.code.length > 0) {
+            string memory proxyUDrop = "proxyUDrop";
+            proxyUDrop.serialize(
+                "contract",
+                string(
+                    "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                )
+            );
+            proxyUDrop = proxyUDrop.serialize(
+                "args",
+                abi.encode(
+                    implOf(udrop),
+                    abi.encodeCall(
+                        UDrop.initialize, (manager, UDrop(udrop).active())
+                    )
+                )
+            );
+            impls.serialize(udrop.toHexString(), proxyUDrop);
+        }
 
         string memory proxyMulticall = "proxyMulticall";
         proxyMulticall.serialize(
@@ -1135,6 +1184,17 @@ contract GetDeployed is VersionedScript {
         implU.serialize("contract", string("contracts/U.sol:U"));
         implU = implU.serialize("args", bytes(hex""));
         impls.serialize(implOf(u).toHexString(), implU);
+
+        if (udrop.code.length > 0) {
+            string memory implUDrop = "implUDrop";
+            implUDrop.serialize(
+                "contract", string("contracts/tge/UDrop.sol:UDrop")
+            );
+            implUDrop = implUDrop.serialize(
+                "args", abi.encode(UDrop(udrop).ROOT(), UDrop(udrop).TOKEN())
+            );
+            impls.serialize(implOf(udrop).toHexString(), implUDrop);
+        }
 
         string memory implHandler = "implHandler";
         implHandler.serialize(
@@ -2179,6 +2239,85 @@ contract DryDeployU is UnionScript, VersionedScript {
     }
 }
 
+contract DeployUDrop is UnionScript, VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    bytes32 immutable root;
+    bool immutable active;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        root = vm.envBytes32("MERKLE_ROOT");
+        active = vm.envBool("ACTIVE");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        address token = getDeployed(string(INSTANCE_SALT.U));
+
+        vm.startBroadcast(privateKey);
+        UDrop udrop = deployUDrop(manager, root, token, active);
+        vm.stopBroadcast();
+
+        console.log("UDrop: ", address(udrop));
+    }
+}
+
+contract UpgradeUDrop is VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        UDrop udrop = UDrop(getDeployed(string(INSTANCE_SALT.UDROP)));
+
+        console.log(
+            string(abi.encodePacked("UDrop: ", address(udrop).toHexString()))
+        );
+
+        vm.startBroadcast(privateKey);
+        address newImplementation =
+            address(new UDrop(udrop.ROOT(), udrop.TOKEN()));
+        udrop.upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
 contract MintedAddress is VersionedScript {
     using LibString for *;
     using LibBytes for *;
@@ -2203,5 +2342,57 @@ contract MintedAddress is VersionedScript {
         console.logBytes(salt);
         console.log("Minted address");
         console.log(mintedAddress);
+    }
+}
+
+struct AirdropEntry {
+    address beneficiary;
+    uint256 amount;
+}
+
+contract SimpleMerkleTree is Script {
+    mapping(bytes32 => AirdropEntry) preimages;
+
+    function pushEntry(
+        address beneficiary,
+        uint256 amount
+    ) internal returns (bytes32) {
+        bytes32 image =
+            EfficientHashLib.hash(abi.encodePacked(beneficiary, amount));
+        preimages[image] =
+            AirdropEntry({beneficiary: beneficiary, amount: amount});
+        return image;
+    }
+
+    function run() public {
+        bytes32[] memory leaves = new bytes32[](8);
+        leaves[0] = pushEntry(address(1), 1);
+        leaves[1] = pushEntry(address(2), 2);
+        leaves[2] =
+            pushEntry(address(0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302), 3);
+        leaves[3] = pushEntry(address(4), 4);
+        leaves[4] = pushEntry(address(5), 5);
+        leaves[5] =
+            pushEntry(address(0x2FB055fC77D751e2E6B7c88A1B404505154521c3), 6);
+        leaves[6] = pushEntry(address(7), 7);
+        leaves[7] = pushEntry(address(8), 8);
+        LibSort.sort(leaves);
+
+        bytes32[] memory tree = MerkleTreeLib.build(leaves);
+        bytes32 root = MerkleTreeLib.root(tree);
+        console.log("Root: ");
+        console.logBytes32(root);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            bytes32[] memory proof = MerkleTreeLib.leafProof(tree, i);
+            console.log("==================================");
+            console.log("index: ");
+            console.log(i);
+            console.log("beneficiary: ");
+            console.log(preimages[leaves[i]].beneficiary);
+            console.log("amount: ");
+            console.log(preimages[leaves[i]].amount);
+            console.log("proof: ");
+            console.logBytes(abi.encode(proof));
+        }
     }
 }
