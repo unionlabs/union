@@ -99,6 +99,12 @@ let { onBack, isLoadingAllocation, preStakedAmount }: Props = $props()
             </div>
           {/if}
         </div>
+        
+        <!-- Powered by Escher -->
+        <div class="absolute bottom-4 left-4 flex flex-col gap-1 text-zinc-500 text-left">
+          <span class="text-xs font-mono mb-1">POWERED BY</span>
+          <img src="escher-logo.svg" alt="Escher" class="w-28 h-auto" />
+        </div>
       </div>
     </div>
   {/snippet}

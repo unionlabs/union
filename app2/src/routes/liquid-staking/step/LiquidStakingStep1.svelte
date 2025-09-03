@@ -81,7 +81,7 @@ let { onNext, providers, loading, handleLogin }: Props = $props()
       <div class="block lg:hidden mb-4">
         <h1 class="text-2xl font-semibold">eU Liquid Staking</h1>
         <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-          Stake your eU and earn rewards while maintaining liquidity.
+          Stake your U and earn rewards while maintaining liquidity.
         </p>
       </div>
 
@@ -109,6 +109,12 @@ let { onNext, providers, loading, handleLogin }: Props = $props()
               </div>
             </div>
           </video>
+        </div>
+        
+        <!-- Powered by Escher -->
+        <div class="absolute bottom-4 left-4 flex flex-col gap-1 text-zinc-500 text-left">
+          <span class="text-xs font-mono mb-1">POWERED BY</span>
+          <img src="escher-logo.svg" alt="Escher" class="w-28 h-auto" />
         </div>
       </div>
     </div>
