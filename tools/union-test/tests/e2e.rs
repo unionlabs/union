@@ -4033,20 +4033,20 @@ async fn test_escher_lst() {
 }
 
 
-async fn test_escher_lst_unhappy() {
+async fn test_escher_lst_unhappy_less_money_than_required() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
+    ensure_channels_opened(ctx.channel_count).await;
+    let available_channel = ctx.get_available_channel_count().await;
+    assert!(available_channel > 0);
+    let pair = ctx.get_channel().await.expect("channel available");
 
-    let dst_channel_id = 1;
-    let src_channel_id = 1;
+    let dst_channel_id = pair.dest;
+    let src_channel_id = pair.src;
 
     let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
 
@@ -4058,100 +4058,99 @@ async fn test_escher_lst_unhappy() {
     }
     .abi_encode_params();
 
-    // let instruction_cosmos = Instruction {
-    //     version: INSTR_VERSION_2,
-    //     opcode: OP_TOKEN_ORDER,
-    //     operand: TokenOrderV2 {
-    //         sender: cosmos_address_bytes.clone().into(),
-    //         receiver: evm_address.to_vec().into(),
-    //         base_token: "muno".as_bytes().into(),
-    //         base_amount: "100000".parse().unwrap(),
-    //         kind: TOKEN_ORDER_KIND_SOLVE,
-    //         metadata: metadata.into(),
-    //         quote_token: u_on_eth.to_vec().into(),
-    //         quote_amount: "100000".parse().unwrap(),
-    //     }
-    //     .abi_encode_params()
-    //     .into(),
-    // };
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_TOKEN_ORDER,
+        operand: TokenOrderV2 {
+            sender: cosmos_address_bytes.clone().into(),
+            receiver: evm_address.to_vec().into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "100000".parse().unwrap(),
+            kind: TOKEN_ORDER_KIND_SOLVE,
+            metadata: metadata.into(),
+            quote_token: u_on_eth.to_vec().into(),
+            quote_amount: "100000".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
 
-    // let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
-    // println!("registering u counterpart");
-    // ctx.dst
-    //     .u_register_fungible_counterpart(
-    //         H160::from(u_on_eth),
-    //         zkgm_deployer_provider.clone(),
-    //         alloy::primitives::U256::ZERO,
-    //         dst_channel_id,
-    //         b"muno".to_vec().into(),
-    //         evm::u::U::FungibleCounterparty {
-    //             beneficiary: vault_on_union.as_bytes().to_vec().into(),
-    //         },
-    //     )
-    //     .await
-    //     .unwrap();
-    // println!("u counterpart is registered");
+    let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+    println!("registering u counterpart");
+    ctx.dst
+        .u_register_fungible_counterpart(
+            H160::from(u_on_eth),
+            zkgm_deployer_provider.clone(),
+            alloy::primitives::U256::ZERO,
+            dst_channel_id,
+            b"muno".to_vec().into(),
+            evm::u::U::FungibleCounterparty {
+                beneficiary: vault_on_union.as_bytes().to_vec().into(),
+            },
+        )
+        .await
+        .unwrap();
+    println!("u counterpart is registered");
 
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
 
-    // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-    //     channel_id: src_channel_id.try_into().unwrap(),
-    //     timeout_height: 0u64.into(),
-    //     timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-    //     salt: salt_bytes.into(),
-    //     instruction: instruction_cosmos.abi_encode_params().into(),
-    // };
-    // let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: src_channel_id.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
-    // let funds = vec![Coin {
-    //     denom: "muno".into(),
-    //     amount: "100000".into(),
-    // }];
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "100000".into(),
+    }];
 
-    // let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
-    // let ack_packet_data = ctx
-    //     .send_and_recv_and_ack_with_retry::<cosmos::Module, evm::Module>(
-    //         &ctx.src,
-    //         contract,
-    //         (bin_msg, funds),
-    //         &ctx.dst,
-    //         3,
-    //         Duration::from_secs(20),
-    //         Duration::from_secs(720),
-    //         cosmos_provider,
-    //     )
-    //     .await;
+    let ack_packet_data = ctx
+        .send_and_recv_and_ack_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+            cosmos_provider,
+        )
+        .await;
 
-    // assert!(
-    //     ack_packet_data.is_ok(),
-    //     "Failed to send and ack packet: {:?}",
-    //     ack_packet_data.err()
-    // );
+    assert!(
+        ack_packet_data.is_ok(),
+        "Failed to send and ack packet: {:?}",
+        ack_packet_data.err()
+    );
 
-    // let new_u_balance = ctx
-    //     .dst
-    //     .zkgmerc20_balance_of(
-    //         H160::from(u_on_eth),
-    //         evm_address.into(),
-    //         evm_provider.clone(),
-    //     )
-    //     .await
-    //     .unwrap();
+    let new_u_balance = ctx
+        .dst
+        .zkgmerc20_balance_of(
+            H160::from(u_on_eth),
+            evm_address.into(),
+            evm_provider.clone(),
+        )
+        .await
+        .unwrap();
 
-    // let new_vault_balance = ctx
-    //     .src
-    //     .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
-    //     .await
-    //     .unwrap();
+    let new_vault_balance = ctx
+        .src
+        .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+        .await
+        .unwrap();
 
-    // // both balances are updated
-    // assert!(new_u_balance > U256::ZERO);
-    // assert!(new_vault_balance > 0);
+    // both balances are updated
+    assert!(new_u_balance > U256::ZERO);
+    assert!(new_vault_balance > 0);
     
     let lst_hub = "union1jn8qmdda5m6f6fqu9qv46rt7ajhklg40ukpqchkejcvy8x7w26cqrw248n";
-    // let lst = "union1jansh23v7teaznyljq6ss4vx6eym8yrz0dsjchap4u7j3etx94vqhmcwn5";
     let zkgm_proxy = "union1dp0e6nscnq2z2v540h4ls26wj0fntyllpshw9z0fyr20k58f395sqyvzur";
 
 
@@ -4387,5 +4386,5 @@ async fn test_escher_lst_unhappy() {
 
 #[tokio::test]
 async fn test_escher_lst_unhappy_path1() {
-    self::test_escher_lst_unhappy().await;
+    self::test_escher_lst_unhappy_less_money_than_required().await;
 }
