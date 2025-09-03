@@ -26,6 +26,7 @@ hex-literal                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
 num-rational                = "0.4.2"
+on-zkgm-call-proxy          = { workspace = true, features = ["library"] }
 protos                      = { workspace = true }
 rand                        = "0.6"
 rand_chacha                 = "0.3.1"

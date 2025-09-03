@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, num::NonZeroU64, ops::Deref, path::PathBuf, str::FromStr};
+use core::fmt;
+use std::{
+    collections::BTreeMap, fmt::Display, num::NonZeroU64, ops::Deref, path::PathBuf, str::FromStr,
+    sync::LazyLock,
+};
 
 use anyhow::{bail, Context, Result};
 use bip32::secp256k1::ecdsa::SigningKey;
@@ -34,7 +38,7 @@ use unionlabs::{
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
     google::protobuf::any::Any,
-    primitives::{encoding::HexPrefixed, Bech32, Bytes, H256, U256},
+    primitives::{Bech32, Bytes, H256, U256},
     signer::CosmosSigner,
 };
 
@@ -64,6 +68,38 @@ enum App {
         // rate_limit_admin: Bech32<Bytes>,
         // #[arg(long)]
         // rate_limit_operators: Vec<Bech32<Bytes>>,
+    },
+    DeployContract {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        bytecode: PathBuf,
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+        )]
+        init_msg: Value,
+        #[arg(long)]
+        salt: String,
+        /// Whether or not the salt should be interpreted as hex.
+        #[arg(long)]
+        salt_hex: bool,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
+    Instantiate2Address {
+        #[arg(long)]
+        deployer: Bech32<Bytes>,
+        #[arg(long)]
+        salt: String,
+        /// Whether or not the salt should be interpreted as hex.
+        #[arg(long)]
+        salt_hex: bool,
     },
     Migrate {
         #[arg(long)]
@@ -334,14 +370,22 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
 }
 
-const ESCROW_VAULT: &str = "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965";
-const CORE: &str = "ibc-is-based";
+static ESCROW_VAULT: LazyLock<Salt> = LazyLock::new(|| {
+    Salt::Raw(
+        "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965"
+            .parse()
+            .unwrap(),
+    )
+});
+static ON_ZKGM_CALL_PROXY: LazyLock<Salt> =
+    LazyLock::new(|| Salt::Utf8("on-zkgm-call-proxy".to_owned()));
+static CORE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("ibc-is-based".to_owned()));
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
 
 const UCS03: &str = "ucs03";
 
-const BYTECODE_BASE: &str = "bytecode-base";
+static BYTECODE_BASE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("bytecode-base".to_owned()));
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -350,7 +394,8 @@ struct ContractPaths {
     // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
-    escrow_vault: PathBuf,
+    escrow_vault: Option<PathBuf>,
+    on_zkgm_call_proxy: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -392,6 +437,7 @@ struct ContractAddresses {
     app: AppAddresses,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     escrow_vault: Option<Bech32<H256>>,
+    on_zkgm_call_proxy: Bech32<H256>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -419,7 +465,7 @@ async fn do_main() -> Result<()> {
         } => {
             let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
             let bytecode_base_address = ctx
-                .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
+                .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), &BYTECODE_BASE)
                 .await?;
             let code_id = ctx
                 .instantiate_code_id_of_contract(bytecode_base_address)
@@ -455,61 +501,7 @@ async fn do_main() -> Result<()> {
 
             let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
-            let bytecode_base_address = ctx
-                .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
-                .await?;
-
-            let bytecode_base_contract = ctx.contract_info(&bytecode_base_address).await?;
-
-            let bytecode_base_code_id = match bytecode_base_contract {
-                Some(_) => ctx
-                    .instantiate_code_id_of_contract(bytecode_base_address)
-                    .await?
-                    .unwrap(),
-                // contract does not exist on chain
-                None => {
-                    info!("bytecode-base has not yet been stored");
-
-                    let (tx_hash, store_code_response) = ctx
-                        .tx(
-                            MsgStoreCode {
-                                sender: ctx.wallet().address().map_data(Into::into),
-                                wasm_byte_code: BYTECODE_BASE_BYTECODE.into(),
-                                instantiate_permission: Some(AccessConfig::Everybody),
-                            },
-                            "",
-                            gas_config.simulate,
-                        )
-                        .await
-                        .context("store code")?;
-
-                    info!(%tx_hash, code_id = store_code_response.code_id, "stored bytecode-base");
-
-                    let (tx_hash, instantiate_response) = ctx
-                        .tx(
-                            MsgInstantiateContract2 {
-                                sender: ctx.wallet().address().map_data(Into::into),
-                                admin: ctx.wallet().address().map_data(Into::into),
-                                code_id: store_code_response.code_id,
-                                label: BYTECODE_BASE.to_string(),
-                                msg: b"{}".into(),
-                                salt: BYTECODE_BASE.as_bytes().into(),
-                                funds: vec![],
-                                fix_msg: false,
-                            },
-                            "",
-                            gas_config.simulate,
-                        )
-                        .await
-                        .context("instantiate2")?;
-
-                    info!(%tx_hash, address = %instantiate_response.address, "instantiated bytecode-base");
-
-                    store_code_response.code_id
-                }
-            };
-
-            info!("bytecode-base code_id is {bytecode_base_code_id}");
+            let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
 
             let core_address = ctx
                 .deploy_and_initiate(
@@ -519,9 +511,15 @@ async fn do_main() -> Result<()> {
                         relayers_admin: Some(ctx.wallet().address().to_string()),
                         relayers: vec![ctx.wallet().address().to_string()],
                     },
-                    CORE.to_owned(),
+                    &CORE,
                 )
                 .await?;
+
+            let on_zkgm_call_proxy_address = instantiate2_address(
+                ctx.wallet().address(),
+                sha2(BYTECODE_BASE_BYTECODE),
+                &ON_ZKGM_CALL_PROXY,
+            )?;
 
             let mut contract_addresses = ContractAddresses {
                 core: core_address.clone(),
@@ -531,6 +529,7 @@ async fn do_main() -> Result<()> {
                     ucs03: None,
                 },
                 escrow_vault: None,
+                on_zkgm_call_proxy: on_zkgm_call_proxy_address.clone(),
             };
 
             for (client_type, path) in contracts.lightclient {
@@ -541,7 +540,7 @@ async fn do_main() -> Result<()> {
                         ibc_union_light_client::msg::InitMsg {
                             ibc_host: Addr::unchecked(core_address.to_string()),
                         },
-                        format!("{LIGHTCLIENT}/{client_type}"),
+                        &Salt::Utf8(format!("{LIGHTCLIENT}/{client_type}")),
                     )
                     .await?;
 
@@ -602,7 +601,7 @@ async fn do_main() -> Result<()> {
             if let Some(_ucs00) = contracts.app.ucs00 {}
 
             if let Some(ucs03_config) = contracts.app.ucs03 {
-                let salt = format!("{APP}/{UCS03}");
+                let salt = Salt::Utf8(format!("{APP}/{UCS03}"));
 
                 let ucs03_address = instantiate2_address(
                     ctx.wallet().address(),
@@ -610,20 +609,6 @@ async fn do_main() -> Result<()> {
                     &salt,
                 )
                 .unwrap();
-
-                let escrow_vault_address = ctx
-                    .deploy_and_initiate(
-                        std::fs::read(contracts.escrow_vault)?,
-                        bytecode_base_code_id,
-                        cw_escrow_vault::msg::InstantiateMsg {
-                            zkgm: Addr::unchecked(ucs03_address.to_string()),
-                            admin: Addr::unchecked(ctx.wallet().address().to_string()),
-                        },
-                        ESCROW_VAULT.to_owned(),
-                    )
-                    .await?;
-
-                contract_addresses.escrow_vault = Some(escrow_vault_address);
 
                 info!("ucs03 address is {ucs03_address}");
 
@@ -682,7 +667,7 @@ async fn do_main() -> Result<()> {
                     let token_minter_address = instantiate2_address(
                         ucs03_address.clone(),
                         response.checksum,
-                        &ucs03_zkgm::contract::minter_salt(),
+                        &Salt::Utf8(ucs03_zkgm::contract::minter_salt()),
                     )
                     .unwrap();
 
@@ -808,16 +793,62 @@ async fn do_main() -> Result<()> {
                             },
                             minter_init_params,
                         },
-                        salt,
+                        &salt,
                     )
                     .await?;
                 }
+
+                if let Some(escrow_vault_path) = contracts.escrow_vault {
+                    let escrow_vault_address = ctx
+                        .deploy_and_initiate(
+                            std::fs::read(escrow_vault_path)?,
+                            bytecode_base_code_id,
+                            cw_escrow_vault::msg::InstantiateMsg {
+                                zkgm: Addr::unchecked(ucs03_address.to_string()),
+                                admin: Addr::unchecked(ctx.wallet().address().to_string()),
+                            },
+                            &ESCROW_VAULT,
+                        )
+                        .await?;
+
+                    info!("escrow vault address is {escrow_vault_address}");
+
+                    contract_addresses.escrow_vault = Some(escrow_vault_address);
+                }
+
+                ctx.deploy_and_initiate(
+                    std::fs::read(contracts.on_zkgm_call_proxy)?,
+                    bytecode_base_code_id,
+                    on_zkgm_call_proxy::InitMsg {
+                        zkgm: Addr::unchecked(ucs03_address.to_string()),
+                    },
+                    &ON_ZKGM_CALL_PROXY,
+                )
+                .await?;
+
+                info!("on-zkgm-call-proxy address is {on_zkgm_call_proxy_address}");
 
                 contract_addresses.app.ucs03 = Some(ucs03_address);
             }
 
             write_output(output, contract_addresses)?;
         }
+        App::Instantiate2Address {
+            deployer,
+            salt,
+            salt_hex,
+        } => println!(
+            "{}",
+            instantiate2_address(
+                deployer,
+                sha2(BYTECODE_BASE_BYTECODE),
+                &if salt_hex {
+                    Salt::Raw(salt.parse()?)
+                } else {
+                    Salt::Utf8(salt)
+                },
+            )?,
+        ),
         App::InitHeights {
             rpc_url,
             addresses,
@@ -1016,7 +1047,10 @@ async fn do_main() -> Result<()> {
                         .lightclient
                         .into_iter()
                         .map(|(client_type, address)| {
-                            check_contract(format!("{LIGHTCLIENT}/{client_type}"), address)
+                            check_contract(
+                                Salt::Utf8(format!("{LIGHTCLIENT}/{client_type}")),
+                                address,
+                            )
                         })
                         .collect::<FuturesOrdered<_>>()
                         .try_collect::<Vec<_>>()
@@ -1024,12 +1058,9 @@ async fn do_main() -> Result<()> {
                 )
                 // .chain(check_contract(addresses.app.ucs00))
                 .chain(
-                    OptionFuture::from(
-                        addresses
-                            .app
-                            .ucs03
-                            .map(|address| check_contract(format!("{APP}/{UCS03}"), address)),
-                    )
+                    OptionFuture::from(addresses.app.ucs03.map(|address| {
+                        check_contract(Salt::Utf8(format!("{APP}/{UCS03}")), address)
+                    }))
                     .await
                     .transpose()?,
                 )
@@ -1081,6 +1112,34 @@ async fn do_main() -> Result<()> {
             info!(%tx_hash, %code_id, "stored code");
 
             write_output(output, code_id)?;
+        }
+        App::DeployContract {
+            rpc_url,
+            private_key,
+            bytecode,
+            output,
+            init_msg,
+            salt,
+            salt_hex,
+            gas_config,
+        } => {
+            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+
+            let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
+
+            let bytecode_base_code_id = deployer.store_bytecode_base(&gas_config).await?;
+
+            let salt = if salt_hex {
+                Salt::Raw(salt.parse()?)
+            } else {
+                Salt::Utf8(salt)
+            };
+
+            let res = deployer
+                .deploy_and_initiate(bytecode, bytecode_base_code_id, init_msg, &salt)
+                .await?;
+
+            write_output(output, res)?;
         }
         App::Tx(tx_cmd) => match tx_cmd {
             TxCmd::WhitelistRelayers {
@@ -1287,7 +1346,7 @@ fn calculate_contract_addresses(
     lightclient: Vec<String>,
     apps: AppFlags,
 ) -> Result<ContractAddresses> {
-    let core = instantiate2_address(deployer.clone(), sha2(BYTECODE_BASE_BYTECODE), CORE)?;
+    let core = instantiate2_address(deployer.clone(), sha2(BYTECODE_BASE_BYTECODE), &CORE)?;
 
     let lightclient = lightclient
         .into_iter()
@@ -1297,7 +1356,7 @@ fn calculate_contract_addresses(
                 instantiate2_address(
                     deployer.clone(),
                     sha2(BYTECODE_BASE_BYTECODE),
-                    &format!("{LIGHTCLIENT}/{salt}"),
+                    &Salt::Utf8(format!("{LIGHTCLIENT}/{salt}")),
                 )?,
             ))
         })
@@ -1313,17 +1372,24 @@ fn calculate_contract_addresses(
         app.ucs03 = Some(instantiate2_address(
             deployer.clone(),
             sha2(BYTECODE_BASE_BYTECODE),
-            &format!("{APP}/{UCS03}"),
+            &Salt::Utf8(format!("{APP}/{UCS03}")),
         )?);
     }
 
-    let escrow_vault = instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), ESCROW_VAULT)?;
+    let escrow_vault = instantiate2_address(
+        deployer.clone(),
+        sha2(BYTECODE_BASE_BYTECODE),
+        &ESCROW_VAULT,
+    )?;
+    let on_zkgm_call_proxy =
+        instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), &ON_ZKGM_CALL_PROXY)?;
 
     Ok(ContractAddresses {
         core,
         lightclient,
         app,
         escrow_vault: Some(escrow_vault),
+        on_zkgm_call_proxy,
     })
 }
 
@@ -1498,7 +1564,7 @@ impl Deployer {
             .into_result())
     }
 
-    async fn instantiate2_address(&self, checksum: H256, salt: &str) -> Result<Bech32<H256>> {
+    async fn instantiate2_address(&self, checksum: H256, salt: &Salt) -> Result<Bech32<H256>> {
         let bech32 = self.wallet().address();
         instantiate2_address(bech32, checksum, salt)
     }
@@ -1509,18 +1575,15 @@ impl Deployer {
         wasm_byte_code: Vec<u8>,
         bytecode_base_code_id: NonZeroU64,
         msg: impl Serialize,
-        salt: String,
+        salt: &Salt,
     ) -> Result<Bech32<H256>> {
         let address = self
-            .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), &salt)
+            .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), salt)
             .await?;
 
         info!("{salt} address is {address}");
 
-        let raw_salt = match Bytes::<HexPrefixed>::from_str(&salt) {
-            Ok(salt) => salt.to_vec(),
-            Err(_) => salt.as_bytes().to_vec(),
-        };
+        let raw_salt = salt.as_bytes();
 
         match self.contract_deploy_state(address.clone()).await? {
             // only need to instantiate if the contract has not yet been instantiated with the base code
@@ -1531,7 +1594,7 @@ impl Deployer {
                             sender: self.wallet().address().map_data(Into::into),
                             admin: self.wallet().address().map_data(Into::into),
                             code_id: bytecode_base_code_id,
-                            label: salt.clone(),
+                            label: salt.to_string(),
                             msg: json!({}).to_string().into_bytes().into(),
                             salt: raw_salt.into(),
                             funds: vec![],
@@ -1678,6 +1741,68 @@ impl Deployer {
 
         Ok(())
     }
+
+    async fn store_bytecode_base(
+        &self,
+        gas_config: &GasFillerArgs,
+    ) -> Result<std::num::NonZero<u64>, anyhow::Error> {
+        let bytecode_base_address = self
+            .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), &BYTECODE_BASE)
+            .await?;
+
+        let bytecode_base_contract = self.contract_info(&bytecode_base_address).await?;
+
+        let bytecode_base_code_id = match bytecode_base_contract {
+            Some(_) => self
+                .instantiate_code_id_of_contract(bytecode_base_address)
+                .await?
+                .unwrap(),
+            // contract does not exist on chain
+            None => {
+                info!("bytecode-base has not yet been stored");
+
+                let (tx_hash, store_code_response) = self
+                    .tx(
+                        MsgStoreCode {
+                            sender: self.wallet().address().map_data(Into::into),
+                            wasm_byte_code: BYTECODE_BASE_BYTECODE.into(),
+                            instantiate_permission: Some(AccessConfig::Everybody),
+                        },
+                        "",
+                        gas_config.simulate,
+                    )
+                    .await
+                    .context("store code")?;
+
+                info!(%tx_hash, code_id = store_code_response.code_id, "stored bytecode-base");
+
+                let (tx_hash, instantiate_response) = self
+                    .tx(
+                        MsgInstantiateContract2 {
+                            sender: self.wallet().address().map_data(Into::into),
+                            admin: self.wallet().address().map_data(Into::into),
+                            code_id: store_code_response.code_id,
+                            label: BYTECODE_BASE.to_string(),
+                            msg: b"{}".into(),
+                            salt: BYTECODE_BASE.as_bytes().into(),
+                            funds: vec![],
+                            fix_msg: false,
+                        },
+                        "",
+                        gas_config.simulate,
+                    )
+                    .await
+                    .context("instantiate2")?;
+
+                info!(%tx_hash, address = %instantiate_response.address, "instantiated bytecode-base");
+
+                store_code_response.code_id
+            }
+        };
+        info!("bytecode-base code_id is {bytecode_base_code_id}");
+
+        Ok(bytecode_base_code_id)
+    }
 }
 
 enum ContractDeployState {
@@ -1689,18 +1814,40 @@ enum ContractDeployState {
 fn instantiate2_address(
     address: Bech32<impl AsRef<[u8]>>,
     checksum: H256,
-    salt: &str,
+    salt: &Salt,
 ) -> Result<Bech32<H256>> {
-    let salt = match Bytes::<HexPrefixed>::from_str(salt) {
-        Ok(salt) => salt.to_vec(),
-        Err(_) => salt.as_bytes().to_vec(),
-    };
-
-    let addr =
-        cosmwasm_std::instantiate2_address(checksum.get(), &address.data().as_ref().into(), &salt)?;
+    let addr = cosmwasm_std::instantiate2_address(
+        checksum.get(),
+        &address.data().as_ref().into(),
+        salt.as_bytes(),
+    )?;
 
     Ok(Bech32::new(
         address.hrp().to_owned(),
         addr.as_slice().try_into().unwrap(),
     ))
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum Salt {
+    Raw(Bytes),
+    Utf8(String),
+}
+
+impl Salt {
+    fn as_bytes(&self) -> &[u8] {
+        match self {
+            Salt::Raw(raw) => raw,
+            Salt::Utf8(utf8) => utf8.as_bytes(),
+        }
+    }
+}
+
+impl Display for Salt {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Raw(raw) => raw.fmt(f),
+            Self::Utf8(utf8) => utf8.fmt(f),
+        }
+    }
 }

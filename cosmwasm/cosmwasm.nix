@@ -142,6 +142,10 @@ _: {
             "state-lens-ics23-mpt"
             # "state-lens-ics23-smt"
           ];
+          u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
+          eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
+          lst = true;
+          on-zkgm-call-proxy = true;
         }
         {
           chain-id = "union-1";
@@ -171,6 +175,9 @@ _: {
             # "state-lens-ics23-smt"
             "parlia"
           ];
+          u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
+          lst = true;
+          on-zkgm-call-proxy = true;
         }
         {
           chain-id = "elgafar-1";
@@ -707,6 +714,7 @@ _: {
             );
             app = apps;
             escrow_vault = cw-escrow-vault.release;
+            on_zkgm_call_proxy = on-zkgm-call-proxy.release;
           }
         );
 
@@ -891,6 +899,38 @@ _: {
           }
         );
 
+      deploy-contract =
+        {
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          bech32_prefix,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "deploy-contract-${name}";
+          runtimeInputs = [
+            cosmwasm-deployer
+          ];
+          text = ''
+            DEPLOYER=$(
+              PRIVATE_KEY=${private_key} \
+                cosmwasm-deployer \
+                address-of-private-key \
+                --bech32-prefix ${bech32_prefix}
+            )
+            echo "deployer address: $DEPLOYER"
+
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              deploy-contract \
+              --rpc-url ${rpc_url} \
+              ${mk-gas-args gas_config} "$@"
+          '';
+        };
+
       migrate-contract =
         {
           name,
@@ -962,6 +1002,8 @@ _: {
 
       cw-u = crane.buildWasmContract "cosmwasm/cw-u" { };
 
+      lst = crane.buildWasmContract "cosmwasm/lst" { };
+
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
       cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
@@ -989,6 +1031,9 @@ _: {
           ucs04-chain-id,
           lightclients,
           apps,
+          lst ? false,
+          u ? null,
+          on-zkgm-call-proxy ? false,
           ...
         }:
         pkgs.writeShellApplication {
@@ -1005,7 +1050,10 @@ _: {
               --rpc-url ${rpc_url} \
               ${pkgs.lib.concatMapStringsSep " " (lc: "--lightclient ${lc}") lightclients} \
               ${if apps ? ucs03 then "--ucs03 --ucs03-minter ${apps.ucs03.type}" else ""} \
-              ${if apps ? ucs00 then "--ucs00" else ""}
+              ${if apps ? ucs00 then "--ucs00" else ""} \
+              ${if lst then "--lst" else ""} \
+              ${if on-zkgm-call-proxy then "--on-zkgm-call-proxy" else ""} \
+              ${pkgs.lib.optionalString (u != null) "--u ${u}"}
           '';
         };
     in
@@ -1026,6 +1074,7 @@ _: {
             cw-account
             cw-escrow-vault
             cw-u
+            lst
             ;
           cosmwasm-scripts =
             {
@@ -1066,6 +1115,7 @@ _: {
                       get-git-rev = get-git-rev chain;
                       whitelist-relayers = whitelist-relayers chain;
                       set-bucket-config = set-bucket-config chain;
+                      deploy-contract = deploy-contract chain;
                       migrate-contract = migrate-contract chain;
                     }
                     // (chain-migration-scripts chain)

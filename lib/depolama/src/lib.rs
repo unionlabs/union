@@ -271,7 +271,7 @@ pub trait StorageExt {
         Ok(v)
     }
 
-    /// Read the value from the item store, run the provided closure on the result, and then store
+    /// Read the value from the store, run the provided closure on the result, and then store
     /// the new value.
     ///
     /// If the value has not yet been set in the item store, `f` will be called with `None`,
@@ -279,13 +279,48 @@ pub trait StorageExt {
     ///
     /// # Errors
     ///
-    /// This will return an error if the value cannot be decoded.
+    /// This will return an error if the value is not found or cannot be decoded.
     #[inline]
     fn upsert_item<S: Store<Key = ()>, E: From<StdError>>(
         &mut self,
         f: impl FnOnce(Option<S::Value>) -> Result<S::Value, E>,
     ) -> Result<S::Value, E> {
         self.upsert::<S, E>(&(), f)
+    }
+
+    /// Read the value from the item store, run the provided closure on the result, and then store
+    /// the new value.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value is not found or cannot be decoded.
+    #[inline]
+    fn update<S: Store, E: From<StdError>, R>(
+        &mut self,
+        k: &S::Key,
+        f: impl FnOnce(&mut S::Value) -> Result<R, E>,
+    ) -> Result<R, E> {
+        let mut v = self.read::<S>(k)?;
+        let r = f(&mut v)?;
+        self.write::<S>(k, &v);
+        Ok(r)
+    }
+
+    /// Read the value from the item store, run the provided closure on the result, and then store
+    /// the new value.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value is not found or cannot be decoded.
+    #[inline]
+    fn update_item<S: Store<Key = ()>, E: From<StdError>, R>(
+        &mut self,
+        f: impl FnOnce(&mut S::Value) -> Result<R, E>,
+    ) -> Result<R, E> {
+        let mut v = self.read_item::<S>()?;
+        let r = f(&mut v)?;
+        self.write_item::<S>(&v);
+        Ok(r)
     }
 
     /// Write a value to the store.

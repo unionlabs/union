@@ -23,7 +23,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils",
+ "cw-utils 2.0.0",
  "cw20-ics20",
  "hex",
  "itertools 0.13.0",
@@ -1056,7 +1056,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "rlp",
  "serde",
@@ -1069,7 +1069,7 @@ name = "arbitrum-types"
 version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "solidity-slot",
  "unionlabs-primitives",
 ]
@@ -1081,7 +1081,7 @@ dependencies = [
  "arbitrum-light-client-types",
  "arbitrum-types",
  "evm-storage-verifier",
- "hex-literal",
+ "hex-literal 0.4.1",
  "rlp",
  "serde_json",
  "sha3",
@@ -2291,7 +2291,7 @@ name = "base-client"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "hex-literal",
+ "hex-literal 0.4.1",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -2325,7 +2325,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "rlp",
  "serde",
@@ -2342,7 +2342,7 @@ dependencies = [
  "base-light-client-types",
  "evm-storage-verifier",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "rlp",
  "sha3",
@@ -2463,7 +2463,7 @@ name = "beacon-api-types"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde",
  "serde-utils",
  "ssz",
@@ -2950,7 +2950,7 @@ name = "bob-client"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "hex-literal",
+ "hex-literal 0.4.1",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -2985,7 +2985,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "rlp",
  "serde",
@@ -2999,7 +2999,7 @@ name = "bob-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "hex-literal",
+ "hex-literal 0.4.1",
  "unionlabs",
 ]
 
@@ -3011,7 +3011,7 @@ dependencies = [
  "bob-light-client-types",
  "evm-storage-verifier",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "rlp",
  "sha3",
@@ -3688,7 +3688,7 @@ dependencies = [
  "base64 0.21.7",
  "cometbft-types",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "jsonrpsee 0.25.1",
  "macros",
  "reconnecting-jsonrpc-ws-client",
@@ -3708,7 +3708,7 @@ version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
  "cometbft-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "prost 0.12.6",
  "protos",
  "serde",
@@ -3727,7 +3727,7 @@ dependencies = [
  "byteorder",
  "cometbls-light-client-types",
  "gnark-key-parser",
- "hex-literal",
+ "hex-literal 0.4.1",
  "sha2 0.10.9",
  "sha3",
  "substrate-bn",
@@ -3744,7 +3744,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "embed-commit",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -3766,7 +3766,7 @@ dependencies = [
  "cometbls-light-client-types",
  "consensus-primitives",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "protos",
  "serde",
  "serde-utils",
@@ -3800,7 +3800,7 @@ dependencies = [
  "bip32 0.5.3",
  "crossbeam-queue",
  "futures",
- "hex-literal",
+ "hex-literal 0.4.1",
  "rand 0.8.5",
  "serde",
  "serde-utils",
@@ -4076,10 +4076,11 @@ dependencies = [
  "embed-commit",
  "frissitheto",
  "futures",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "num-rational 0.4.2",
+ "on-zkgm-call-proxy",
  "protos",
  "rand 0.6.5",
  "rand_chacha 0.3.1",
@@ -4645,7 +4646,7 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "embed-commit",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde",
  "thiserror 2.0.12",
  "unionlabs",
@@ -4660,7 +4661,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils",
+ "cw-utils 2.0.0",
  "schemars",
  "serde",
  "thiserror 1.0.69",
@@ -4677,12 +4678,31 @@ dependencies = [
  "depolama",
  "embed-commit",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "serde",
  "thiserror 2.0.12",
  "ucs03-zkgm",
  "unionlabs",
+]
+
+[[package]]
+name = "cw-multi-test"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d818f5323c80ed4890db7f89d65eda3f0261fe21878e628c27ea2d8de4b7ba4"
+dependencies = [
+ "anyhow",
+ "cosmwasm-std 1.5.11",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "derivative",
+ "itertools 0.11.0",
+ "prost 0.12.6",
+ "schemars",
+ "serde",
+ "sha2 0.10.9",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -4696,7 +4716,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils",
+ "cw-utils 2.0.0",
  "itertools 0.14.0",
  "prost 0.13.5",
  "schemars",
@@ -4718,7 +4738,7 @@ dependencies = [
  "cw-orch-fns-derive",
  "cw-orch-mock",
  "cw-orch-traits",
- "cw-utils",
+ "cw-utils 2.0.0",
  "hex",
  "log",
  "schemars",
@@ -4748,7 +4768,7 @@ dependencies = [
  "cosmos-sdk-proto",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils",
+ "cw-utils 2.0.0",
  "dirs 5.0.1",
  "log",
  "serde",
@@ -4778,7 +4798,7 @@ dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-std 2.2.2",
  "cw-orch-core",
- "cw-utils",
+ "cw-utils 2.0.0",
  "log",
  "serde",
  "sha2 0.10.9",
@@ -4826,6 +4846,7 @@ dependencies = [
  "cw-storage-plus 2.0.0",
  "cw20",
  "cw20-base",
+ "cw20-ctx",
  "cw20-wrapped-tokenfactory",
  "depolama",
  "embed-commit",
@@ -4841,6 +4862,21 @@ dependencies = [
 
 [[package]]
 name = "cw-utils"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c4a657e5caacc3a0d00ee96ca8618745d050b8f757c709babafb81208d4239c"
+dependencies = [
+ "cosmwasm-schema 1.5.11",
+ "cosmwasm-std 1.5.11",
+ "cw2 1.1.2",
+ "schemars",
+ "semver 1.0.26",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "cw-utils"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07dfee7f12f802431a856984a32bce1cb7da1e6c006b5409e3981035ce562dec"
@@ -4848,6 +4884,21 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "schemars",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "cw2"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6c120b24fbbf5c3bedebb97f2cc85fbfa1c3287e09223428e7e597b5293c1fa"
+dependencies = [
+ "cosmwasm-schema 1.5.11",
+ "cosmwasm-std 1.5.11",
+ "cw-storage-plus 1.2.0",
+ "schemars",
+ "semver 1.0.26",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -4875,7 +4926,7 @@ checksum = "a42212b6bf29bbdda693743697c621894723f35d3db0d5df930be22903d0e27c"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
- "cw-utils",
+ "cw-utils 2.0.0",
  "schemars",
  "serde",
 ]
@@ -4886,17 +4937,27 @@ version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
- "cw-multi-test",
+ "cw-multi-test 2.4.0",
  "cw-storage-plus 2.0.0",
- "cw-utils",
- "cw2",
+ "cw-utils 2.0.0",
+ "cw2 2.0.0",
  "cw20",
+ "cw20-ctx",
  "embed-commit",
  "frissitheto",
  "schemars",
  "semver 1.0.26",
  "serde",
  "thiserror 2.0.12",
+]
+
+[[package]]
+name = "cw20-ctx"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "cw20",
+ "hex-literal 0.4.1",
 ]
 
 [[package]]
@@ -4909,8 +4970,8 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-controllers",
  "cw-storage-plus 2.0.0",
- "cw-utils",
- "cw2",
+ "cw-utils 2.0.0",
+ "cw2 2.0.0",
  "cw20",
  "schemars",
  "semver 1.0.26",
@@ -4931,7 +4992,7 @@ dependencies = [
  "cw20-base",
  "embed-commit",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "serde",
  "thiserror 2.0.12",
@@ -4948,6 +5009,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
  "cw20",
+ "cw20-ctx",
  "embed-commit",
  "frissitheto",
  "thiserror 2.0.12",
@@ -6063,7 +6125,7 @@ dependencies = [
  "ethereum-sync-protocol-types",
  "evm-storage-verifier",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "protos",
@@ -6085,7 +6147,7 @@ dependencies = [
  "consensus-primitives",
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde",
  "thiserror 2.0.12",
  "unionlabs",
@@ -6098,7 +6160,7 @@ dependencies = [
  "beacon-api-types",
  "ethereum-sync-protocol-types",
  "fork-schedules",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde-utils",
  "serde_json",
  "sha2 0.10.9",
@@ -6453,7 +6515,7 @@ dependencies = [
  "alloy",
  "hash-db",
  "hash256-std-hasher",
- "hex-literal",
+ "hex-literal 0.4.1",
  "memory-db",
  "rlp",
  "serde-utils",
@@ -6545,7 +6607,7 @@ dependencies = [
  "fastcrypto-derive",
  "generic-array 0.14.7",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "hkdf",
  "lazy_static",
  "num-bigint 0.4.6",
@@ -6848,7 +6910,7 @@ name = "fork-schedules"
 version = "0.0.0"
 dependencies = [
  "beacon-api-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "macros",
  "unionlabs-primitives",
 ]
@@ -7582,6 +7644,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
 
 [[package]]
+name = "hex-literal"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcaaec4551594c969335c98c903c1397853d4198408ea609190f420500f6be71"
+
+[[package]]
 name = "hidapi-rusb"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7748,7 +7816,7 @@ dependencies = [
  "embed-commit",
  "futures",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "itertools 0.13.0",
  "jsonrpsee 0.25.1",
  "lazy_static",
@@ -7986,7 +8054,7 @@ dependencies = [
  "ethabi",
  "frissitheto",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
@@ -8085,7 +8153,7 @@ dependencies = [
  "anyhow",
  "cometbft-types",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "prost 0.12.6",
  "protos",
  "ripemd",
@@ -9169,7 +9237,7 @@ name = "linea-light-client-types"
 version = "0.0.0"
 dependencies = [
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "linea-types",
  "serde",
  "unionlabs",
@@ -9203,7 +9271,7 @@ version = "0.0.0"
 dependencies = [
  "gnark-mimc",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "linea-types",
  "serde",
  "serde_json",
@@ -9367,6 +9435,35 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "url",
+]
+
+[[package]]
+name = "lst"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw-multi-test 0.17.0",
+ "cw-utils 2.0.0",
+ "cw20",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 1.0.0",
+ "ibc-union-spec",
+ "itertools 0.13.0",
+ "on-zkgm-call-proxy",
+ "prost 0.12.6",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "sha2 0.10.9",
+ "thiserror 2.0.12",
+ "ucs03-zkgm",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -9988,7 +10085,7 @@ dependencies = [
  "bincode 2.0.1",
  "consensus-primitives",
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde",
  "unionlabs",
 ]
@@ -11197,7 +11294,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "parlia-types",
  "rlp",
@@ -11212,7 +11309,7 @@ version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
  "consensus-primitives",
- "hex-literal",
+ "hex-literal 0.4.1",
  "rlp",
  "serde",
  "serde-utils",
@@ -11227,7 +11324,7 @@ dependencies = [
  "blst",
  "consensus-primitives",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "parlia-types",
  "rlp",
  "serde_json",
@@ -13503,7 +13600,7 @@ name = "scroll-codec"
 version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "sha3",
  "thiserror 2.0.12",
  "unionlabs",
@@ -13514,7 +13611,7 @@ name = "scroll-light-client-types"
 version = "0.0.0"
 dependencies = [
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde",
  "unionlabs",
 ]
@@ -14364,7 +14461,7 @@ dependencies = [
 name = "solidity-slot"
 version = "0.0.0"
 dependencies = [
- "hex-literal",
+ "hex-literal 0.4.1",
  "sha3",
  "unionlabs-primitives",
 ]
@@ -14647,7 +14744,7 @@ name = "ssz"
 version = "0.0.0"
 dependencies = [
  "derivative",
- "hex-literal",
+ "hex-literal 0.4.1",
  "itertools 0.13.0",
  "lazy_static",
  "serde",
@@ -14816,7 +14913,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "embed-commit",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -14836,7 +14933,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "serde",
  "state-lens-ics23-ics23-light-client-types",
@@ -14855,7 +14952,7 @@ dependencies = [
  "ethereum-light-client-types",
  "evm-storage-verifier",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -14875,7 +14972,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "consensus-primitives",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "protos",
  "serde",
@@ -14892,7 +14989,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "consensus-primitives",
- "hex-literal",
+ "hex-literal 0.4.1",
  "protos",
  "serde",
  "state-lens-light-client-types",
@@ -14907,7 +15004,7 @@ dependencies = [
  "alloy",
  "bcs",
  "bincode 2.0.1",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "serde",
  "serde_json",
@@ -15280,7 +15377,7 @@ dependencies = [
  "depolama",
  "embed-commit",
  "frissitheto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "serde",
@@ -15303,7 +15400,7 @@ dependencies = [
  "bincode 2.0.1",
  "blake2",
  "cosmwasm-std 2.2.2",
- "hex-literal",
+ "hex-literal 0.4.1",
  "roaring",
  "serde",
  "serde_json",
@@ -15830,7 +15927,7 @@ dependencies = [
  "alloy",
  "bincode 2.0.1",
  "cometbft-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ics23",
  "protos",
  "serde",
@@ -15907,7 +16004,7 @@ version = "0.0.0"
 dependencies = [
  "cometbft-types",
  "ed25519-dalek",
- "hex-literal",
+ "hex-literal 0.4.1",
  "prost 0.12.6",
  "protos",
  "serde-utils",
@@ -16798,7 +16895,7 @@ dependencies = [
  "bincode 2.0.1",
  "consensus-primitives",
  "ethereum-light-client-types",
- "hex-literal",
+ "hex-literal 0.4.1",
  "serde",
  "thiserror 2.0.12",
  "unionlabs",
@@ -17030,7 +17127,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-account",
- "cw-multi-test",
+ "cw-multi-test 2.4.0",
  "cw-storage-plus 2.0.0",
  "cw20",
  "cw20-base",
@@ -17038,7 +17135,7 @@ dependencies = [
  "embed-commit",
  "frissitheto",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-msg",
  "ibc-union-spec",
  "schemars",
@@ -17216,7 +17313,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw20",
  "ethers",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -17253,7 +17350,7 @@ dependencies = [
  "either",
  "frame-support-procedural",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "k256 0.13.4",
  "macros",
  "near-primitives-core",
@@ -17909,7 +18006,7 @@ dependencies = [
  "cometbls-light-client-types",
  "embed-commit",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "jsonrpsee 0.25.1",
  "macros",
  "num-bigint 0.4.6",
@@ -18309,7 +18406,7 @@ dependencies = [
  "bcs",
  "embed-commit",
  "enumorph",
- "hex-literal",
+ "hex-literal 0.4.1",
  "jsonrpsee 0.25.1",
  "macros",
  "reqwest 0.11.27",
@@ -19106,7 +19203,7 @@ dependencies = [
  "clap 4.5.39",
  "embed-commit",
  "enumorph",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
@@ -19185,7 +19282,7 @@ dependencies = [
  "embed-commit",
  "enumorph",
  "fastcrypto",
- "hex-literal",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
  "macros",

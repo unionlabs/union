@@ -1,0 +1,47 @@
+[package]
+edition      = "2021"
+license-file = "LICENSE"
+name         = "lst"
+version      = "0.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+bincode              = { workspace = true, features = ["derive"] }
+cosmwasm-schema      = { workspace = true, optional = true }
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0"] }
+cw-utils             = { version = "2.0.0" }
+cw20                 = { version = "2.0.0" }
+depolama             = { workspace = true, features = ["iterator"] }
+embed-commit         = { workspace = true }
+frissitheto          = { workspace = true }
+ibc-union-spec       = { workspace = true, features = ["serde", "bincode"] }
+itertools            = { workspace = true }
+on-zkgm-call-proxy   = { workspace = true, features = ["library"] }
+prost                = { workspace = true, features = ["prost-derive"] }
+schemars             = { workspace = true, optional = true }
+serde                = { workspace = true }
+serde-json-wasm      = "1.0"
+serde-utils          = { workspace = true }
+sha2                 = { workspace = true }
+thiserror            = { workspace = true }
+unionlabs-encoding   = { workspace = true, features = ["bincode"] }
+unionlabs-primitives = { workspace = true, features = ["bincode"] }
+
+[dev-dependencies]
+cw-multi-test = "0.17.0"
+hex-literal   = { version = "1.0" }
+ucs03-zkgm    = { workspace = true, features = ["library"] }
+
+[features]
+default  = []
+library  = []
+schemars = ["dep:schemars", "dep:cosmwasm-schema", "on-zkgm-call-proxy/schemars"]
+
+[[bin]]
+name              = "schema"
+required-features = ["schemars"]

@@ -1,22 +1,27 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, Uint128,
+    entry_point, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult,
+    Uint128,
 };
-use cw20_base::ContractError;
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes};
+use unionlabs::{
+    primitives::{encoding::HexPrefixed, Bytes},
+    ErrorReporter,
+};
 
 use crate::{
     error::Error,
-    msg::{Cw20InstantiateMsg, ExecuteMsg, InstantiateMsg},
+    msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg},
     state::{
-        Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm,
+        Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist,
+        Minters, Zkgm,
     },
+    CwUCtx,
 };
 
 #[entry_point]
@@ -31,14 +36,17 @@ pub struct MigrateMsg {}
 pub fn migrate(
     deps: DepsMut,
     env: Env,
-    msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
+    msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
     msg.run(
         deps,
         |deps, init_msg| {
             let sender = env.contract.address.clone();
+
             deps.storage.write_item::<Admin>(&init_msg.admin);
             deps.storage.write_item::<Zkgm>(&init_msg.zkgm);
+            deps.storage.write_item::<Minters>(&init_msg.extra_minters);
+
             let res = {
                 match init_msg.cw20_init {
                     Cw20InstantiateMsg::Cw20(cw20_init) => {
@@ -54,7 +62,7 @@ pub fn migrate(
                         )?;
                         Ok(res.change_custom().expect("impossible"))
                     }
-                    Cw20InstantiateMsg::TokenFactory(cw20_init) => {
+                    Cw20InstantiateMsg::Tokenfactory(cw20_init) => {
                         deps.storage
                             .write_item::<Cw20Type>(&Cw20ImplType::Tokenfactory);
                         cw20_wrapped_tokenfactory::contract::init(deps, env, cw20_init)
@@ -68,8 +76,8 @@ pub fn migrate(
 }
 
 fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
-    let admin = deps.storage.read_item::<Zkgm>()?;
-    if info.sender != admin {
+    let zkgm = deps.storage.read_item::<Zkgm>()?;
+    if info.sender != zkgm {
         return Err(Error::OnlyZkgm);
     }
     Ok(())
@@ -93,13 +101,15 @@ pub fn execute(
     match msg {
         ExecuteMsg::Cw20(raw_msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => {
-                let msg = from_value(raw_msg).unwrap();
-                let res = cw20_base::contract::execute(deps, env, info, msg)?;
+                let msg = from_value(raw_msg)
+                    .map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?;
+                let res = cw20_base::contract::do_execute::<CwUCtx>(deps, env, info, msg)?;
                 Ok(res.change_custom().expect("impossible"))
             }
             Cw20ImplType::Tokenfactory => {
-                let msg = from_value(raw_msg).unwrap();
-                cw20_wrapped_tokenfactory::contract::execute(deps, env, info, msg)
+                let msg = from_value(raw_msg)
+                    .map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?;
+                cw20_wrapped_tokenfactory::contract::do_execute::<CwUCtx>(deps, env, info, msg)
                     .map_err(Into::into)
             }
         },
@@ -136,6 +146,7 @@ pub fn execute(
             intent,
         } => {
             ensure_zkgm(deps.as_ref(), &info)?;
+
             if intent {
                 let whitelisted = deps
                     .storage
@@ -165,18 +176,6 @@ pub fn execute(
             }
 
             let cw20_type = deps.storage.read_item::<Cw20Type>()?;
-            let minter = match cw20_type {
-                Cw20ImplType::Base => cw20_base::contract::query_minter(deps.as_ref()),
-                Cw20ImplType::Tokenfactory => {
-                    cw20_wrapped_tokenfactory::contract::query_minter(deps.as_ref())
-                }
-            }?
-            .ok_or(ContractError::Unauthorized {})?
-            .minter;
-            let minter_info = MessageInfo {
-                sender: Addr::unchecked(minter),
-                funds: vec![],
-            };
 
             let mint = |deps: DepsMut,
                         env: Env,
@@ -186,13 +185,13 @@ pub fn execute(
              -> Result<Response<TokenFactoryMsg>, Error> {
                 if !amount.is_zero() {
                     match cw20_type {
-                        Cw20ImplType::Base => {
-                            cw20_base::contract::execute_mint(deps, env, info, recipient, amount)
-                                .map(|x| x.change_custom().unwrap())
-                                .map_err(Into::<Error>::into)
-                        }
+                        Cw20ImplType::Base => cw20_base::contract::execute_mint::<CwUCtx>(
+                            deps, env, info, recipient, amount,
+                        )
+                        .map(|x| x.change_custom().unwrap())
+                        .map_err(Into::<Error>::into),
                         Cw20ImplType::Tokenfactory => {
-                            cw20_wrapped_tokenfactory::contract::execute_mint(
+                            cw20_wrapped_tokenfactory::contract::execute_mint::<CwUCtx>(
                                 deps, env, info, recipient, amount,
                             )
                             .map_err(Into::<Error>::into)
@@ -212,7 +211,7 @@ pub fn execute(
             let mint_quote_res = mint(
                 deps.branch(),
                 env.clone(),
-                minter_info.clone(),
+                info.clone(),
                 receiver.into(),
                 order.quote_amount.try_into().expect("impossible"),
             )?;
@@ -224,7 +223,7 @@ pub fn execute(
             let mint_fee_res = mint(
                 deps,
                 env,
-                minter_info,
+                info.clone(),
                 relayer.into(),
                 fee.try_into().expect("impossible"),
             )?;
@@ -244,5 +243,26 @@ pub fn execute(
                     ),
                 ))
         }
+    }
+}
+
+// we are intentionally using cw20 wrapped tokenfactory's querymsg since its more restrictive
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
+    match msg {
+        QueryMsg::Minter {} => Err(Error::Unsupported),
+        QueryMsg::Cw20(msg) => match deps.storage.read_item::<Cw20Type>()? {
+            Cw20ImplType::Base => cw20_base::contract::query(
+                deps,
+                env,
+                from_value(msg).map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?,
+            )
+            .map_err(Into::into),
+            Cw20ImplType::Tokenfactory => cw20_wrapped_tokenfactory::contract::query(
+                deps,
+                env,
+                from_value(msg).map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?,
+            )
+            .map_err(Into::into),
+        },
     }
 }

@@ -6,6 +6,7 @@ use cosmwasm_std::{
     StdResult, Uint128,
 };
 use cw20::{BalanceResponse, Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
+use cw20_ctx::Cw20Ctx;
 use frissitheto::UpgradeMsg;
 use token_factory_api::{
     BurnTokensMsg, DenomUnit, ForceTransferMsg, Metadata, MintTokensMsg, TokenFactoryMsg,
@@ -21,6 +22,7 @@ use crate::{
     msg::{ExecuteMsg, InitMsg, MintInfo, QueryMsg},
     self_tf_denom,
     state::{MinterData, TokenInfo, TOKEN_INFO},
+    Cw20WrappedTokenfactoryCtx,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -35,6 +37,18 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    do_execute::<Cw20WrappedTokenfactoryCtx>(deps, env, info, msg)
+}
+
+pub fn do_execute<Ctx>(
+    deps: DepsMut<'_>,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response<TokenFactoryMsg>, ContractError>
+where
+    Ctx: Cw20Ctx,
+{
     match msg {
         ExecuteMsg::MigrateBalances { count } => {
             const BALANCES: cw_storage_plus::Map<&cosmwasm_std::Addr, Uint128> =
@@ -70,7 +84,9 @@ pub fn execute(
             amount,
             msg,
         } => execute_send(deps, env, info, contract, amount, msg),
-        ExecuteMsg::Mint { recipient, amount } => execute_mint(deps, env, info, recipient, amount),
+        ExecuteMsg::Mint { recipient, amount } => {
+            execute_mint::<Ctx>(deps, env, info, recipient, amount)
+        }
         ExecuteMsg::TransferFrom {
             owner,
             recipient,
@@ -134,26 +150,17 @@ pub fn execute_burn(
         .add_attribute("amount", amount))
 }
 
-pub fn execute_mint(
+pub fn execute_mint<Ctx>(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     recipient: String,
     amount: Uint128,
-) -> Result<Response<TokenFactoryMsg>, ContractError> {
-    let config = TOKEN_INFO
-        .may_load(deps.storage)?
-        .ok_or(ContractError::Unauthorized {})?;
-
-    if config
-        .mint
-        .as_ref()
-        .ok_or(ContractError::Unauthorized {})?
-        .minter
-        != info.sender
-    {
-        return Err(ContractError::Unauthorized {});
-    }
+) -> Result<Response<TokenFactoryMsg>, ContractError>
+where
+    Ctx: Cw20Ctx,
+{
+    Ctx::check_can_mint(deps.as_ref(), &info.sender, amount)?;
 
     // add amount to recipient balance
     let rcpt_addr = deps.api.addr_validate(&recipient)?;

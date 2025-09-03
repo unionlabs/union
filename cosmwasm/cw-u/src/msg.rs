@@ -1,24 +1,28 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
 use ibc_union_spec::{ChannelId, Packet};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use ucs03_zkgm::com::CwTokenOrderV2;
 use unionlabs::primitives::{Bytes, H256, U256};
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum Cw20InstantiateMsg {
     Cw20(cw20_base::msg::InstantiateMsg),
-    TokenFactory(cw20_wrapped_tokenfactory::msg::InitMsg),
+    Tokenfactory(cw20_wrapped_tokenfactory::msg::InitMsg),
 }
 
-#[cw_serde]
-pub struct InstantiateMsg {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct InitMsg {
     pub zkgm: Addr,
     pub admin: Addr,
+    pub extra_minters: Vec<String>,
     pub cw20_init: Cw20InstantiateMsg,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     WhitelistIntents {
         hashes_whitelist: Vec<(H256, bool)>,
@@ -38,6 +42,14 @@ pub enum ExecuteMsg {
         relayer_msg: Bytes,
         intent: bool,
     },
+    #[serde(untagged)]
+    Cw20(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum QueryMsg {
+    Minter {},
     #[serde(untagged)]
     Cw20(Value),
 }

@@ -1,0 +1,22 @@
+[package]
+name    = "cw20-ctx"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cw20         = { version = "2.0" }
+
+[dev-dependencies]
+hex-literal = { workspace = true }

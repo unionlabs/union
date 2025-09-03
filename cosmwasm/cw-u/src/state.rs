@@ -93,3 +93,15 @@ impl Store for Cw20Type {
 impl ValueCodecViaEncoding for Cw20Type {
     type Encoding = Bincode;
 }
+
+pub enum Minters {}
+
+impl Store for Minters {
+    const PREFIX: Prefix = Prefix::new(b"minters");
+    type Key = ();
+    type Value = Vec<String>;
+}
+
+impl ValueCodecViaEncoding for Minters {
+    type Encoding = Bincode;
+}

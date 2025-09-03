@@ -10,6 +10,7 @@ use cw20::{
     BalanceResponse, Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg, DownloadLogoResponse, EmbeddedLogo,
     Logo, LogoInfo, MarketingInfoResponse, MinterResponse, TokenInfoResponse,
 };
+use cw20_ctx::Cw20Ctx;
 use frissitheto::UpgradeMsg;
 
 use crate::{
@@ -21,6 +22,7 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO},
+    Cw20BaseCtx,
 };
 
 // version info for migration info
@@ -125,6 +127,18 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    do_execute::<Cw20BaseCtx>(deps, env, info, msg)
+}
+
+pub fn do_execute<Ctx>(
+    deps: DepsMut<'_>,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError>
+where
+    Ctx: Cw20Ctx,
+{
     match msg {
         ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Transfer { recipient, amount }) => {
             execute_transfer(deps, env, info, recipient, amount)
@@ -138,7 +152,7 @@ pub fn execute(
             msg,
         }) => execute_send(deps, env, info, contract, amount, msg),
         ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Mint { recipient, amount }) => {
-            execute_mint(deps, env, info, recipient, amount)
+            execute_mint::<Ctx>(deps, env, info, recipient, amount)
         }
         ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::IncreaseAllowance {
             spender,
@@ -271,34 +285,24 @@ pub fn execute_burn(
     Ok(res)
 }
 
-pub fn execute_mint(
+pub fn execute_mint<Ctx>(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     recipient: String,
     amount: Uint128,
-) -> Result<Response, ContractError> {
+) -> Result<Response, ContractError>
+where
+    Ctx: Cw20Ctx,
+{
     let mut config = TOKEN_INFO
         .may_load(deps.storage)?
         .ok_or(ContractError::Unauthorized {})?;
 
-    if config
-        .mint
-        .as_ref()
-        .ok_or(ContractError::Unauthorized {})?
-        .minter
-        != info.sender
-    {
-        return Err(ContractError::Unauthorized {});
-    }
+    Ctx::check_can_mint(deps.as_ref(), &info.sender, amount)?;
 
     // update supply and enforce cap
     config.total_supply += amount;
-    if let Some(limit) = config.get_cap() {
-        if config.total_supply > limit {
-            return Err(ContractError::CannotExceedCap {});
-        }
-    }
     TOKEN_INFO.save(deps.storage, &config)?;
 
     // add amount to recipient balance
