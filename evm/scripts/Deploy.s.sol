@@ -15,6 +15,8 @@ import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
+import "@safe-utils/Safe.sol";
+
 import "../contracts/U.sol";
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
@@ -32,6 +34,10 @@ import "../contracts/tge/Vesting.sol";
 import "../contracts/tge/UDrop.sol";
 
 import "./Deployer.sol";
+
+library SafeLib {
+    address constant ADDRESS = 0x6a742078f90c2e16d8c9F83E41749410C314eDD4;
+}
 
 struct Contracts {
     Manager manager;
@@ -2532,5 +2538,128 @@ contract SimpleMerkleTree is Script {
             console.log("proof: ");
             console.logBytes(abi.encode(proof));
         }
+    }
+}
+
+abstract contract AbstractSafeUpgrade is VersionedScript {
+    using LibString for *;
+    using Safe for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    Safe.Client safe;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+
+        safe.initialize(SafeLib.ADDRESS);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function upgradeParameters()
+        internal
+        virtual
+        returns (address, address, bytes memory);
+
+    function run() public {
+        vm.startBroadcast(privateKey);
+        (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        ) = upgradeParameters();
+        vm.stopBroadcast();
+        safe.proposeTransaction(
+            targetContract,
+            abi.encodeCall(
+                UUPSUpgradeable.upgradeToAndCall,
+                (newImplementation, upgradeCall)
+            ),
+            vm.createWallet(privateKey).addr
+        );
+    }
+}
+
+contract SafeUpgradeU is AbstractSafeUpgrade {
+    function upgradeParameters()
+        internal
+        override
+        returns (address, address, bytes memory)
+    {
+        return (
+            getDeployed(string(INSTANCE_SALT.U)), address(new U()), new bytes(0)
+        );
+    }
+}
+
+contract SafeUpgradeEU is AbstractSafeUpgrade {
+    function upgradeParameters()
+        internal
+        override
+        returns (address, address, bytes memory)
+    {
+        return (
+            getDeployed(string(INSTANCE_SALT.EU)),
+            address(new U()),
+            new bytes(0)
+        );
+    }
+}
+
+contract SafeUpgradeIBCHandler is AbstractSafeUpgrade {
+    function upgradeParameters()
+        internal
+        override
+        returns (address, address, bytes memory)
+    {
+        return (
+            getDeployed(IBC_SALT.BASED), address(new IBCHandler()), new bytes(0)
+        );
+    }
+}
+
+contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
+    function upgradeParameters()
+        internal
+        override
+        returns (address, address, bytes memory)
+    {
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
+        ZkgmERC20 zkgmERC20 =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+        address newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    zkgmERC20,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmStakeImpl(handler),
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
+            )
+        );
+        return (address(ucs03), newImplementation, new bytes(0));
     }
 }
