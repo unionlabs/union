@@ -30,7 +30,7 @@ let transactionHash = $derived<Option.Option<string>>(
 function handleViewTransaction() {
   Option.match(transactionHash, {
     onNone: () => {},
-    onSome: (hash) => window.open(`https://holesky.etherscan.io/tx/${hash}`, "_blank"),
+    onSome: (hash) => window.open(`https://etherscan.io/tx/${hash}`, "_blank"),
   })
 }
 

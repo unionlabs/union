@@ -8,7 +8,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import { Evm } from "@unionlabs/sdk-evm"
 import { Data, Effect, Match, Option } from "effect"
 import { createPublicClient, custom, formatUnits } from "viem"
-import { holesky } from "viem/chains"
+import { mainnet } from "viem/chains"
 import StepLayout from "../StepLayout.svelte"
 
 interface Props {
@@ -114,7 +114,7 @@ runPromiseExit$(() =>
       checkingClaimed = true
       yield* Effect.log("Checking if already claimed")
       const publicClientCheck = createPublicClient({
-        chain: holesky,
+        chain: mainnet,
         transport: custom(connectorClient),
       })
 
@@ -139,18 +139,18 @@ runPromiseExit$(() =>
         return yield* Effect.fail(new Error("Tokens already claimed for this address"))
       }
 
-      yield* Effect.log("Switching to Holesky chain")
-      yield* switchChain(holesky)
+      yield* Effect.log("Switching to mainnet")
+      yield* switchChain(mainnet)
 
       yield* Effect.log("Creating public and wallet clients")
       const publicClient = Evm.PublicClient.Live({
-        chain: holesky,
+        chain: mainnet,
         transport: custom(connectorClient),
       })
 
       const walletClient = Evm.WalletClient.Live({
         account: connectorClient.account,
-        chain: holesky,
+        chain: mainnet,
         transport: custom(connectorClient),
       })
 
@@ -166,7 +166,7 @@ runPromiseExit$(() =>
         abi: AIRDROP_ABI,
         functionName: "claim",
         account: connectorClient.account,
-        chain: holesky,
+        chain: mainnet,
         args: [
           params.beneficiary,
           BigInt(params.amount),

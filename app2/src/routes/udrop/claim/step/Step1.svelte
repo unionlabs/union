@@ -7,9 +7,10 @@ import StepLayout from "../StepLayout.svelte"
 
 interface Props {
   onNext: () => void
+  isActive: boolean
 }
 
-let { onNext }: Props = $props()
+let { onNext, isActive }: Props = $props()
 
 let isLoadingClaim = $derived(
   Option.match(dashboard.airdrop, {
@@ -112,7 +113,7 @@ function handleContinue() {
                 </div>
               </div>
             </div>
-          {:else if hasClaim}
+          {:else if hasClaim && isActive}
             <div class="bg-accent/10 border border-accent/20 rounded-lg p-4">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
@@ -142,6 +143,39 @@ function handleContinue() {
               onclick={handleContinue}
             >
               Continue to Claim
+            </Button>
+          {:else if hasClaim && !isActive}
+            <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+                  <svg
+                    class="w-4 h-4 text-orange-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-orange-400">Airdrop Not Active</div>
+                  <div class="text-xs text-zinc-400">
+                    The airdrop claiming is currently disabled
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              class="flex w-full items-center justify-center gap-3"
+              href="/dashboard"
+            >
+              Back to Dashboard
             </Button>
           {:else}
             <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">

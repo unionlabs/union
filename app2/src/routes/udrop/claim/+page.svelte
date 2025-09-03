@@ -3,7 +3,10 @@ import { goto } from "$app/navigation"
 import { page } from "$app/state"
 import StepperCard from "$lib/components/ui/StepperCard.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
-import { Option } from "effect"
+import { runPromiseExit$ } from "$lib/runtime"
+import { Effect, Option } from "effect"
+import { createPublicClient, custom, http } from "viem"
+import { mainnet } from "viem/chains"
 import Step1 from "./step/Step1.svelte"
 import Step2 from "./step/Step2.svelte"
 import Step3 from "./step/Step3.svelte"
@@ -14,8 +17,55 @@ import Step6 from "./step/Step6.svelte"
 let currentSlide = $state(0)
 let stepperCardRef: StepperCard
 let isInitialized = $state(false)
+let isActive = $state<boolean>(false)
 
-// Protect against URL manipulation - redirect to step 1 if no claim data and trying to access later steps
+const AIRDROP_ABI = [
+  {
+    name: "active",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const
+
+const AIRDROP_CONTRACT_ADDRESS = "0xC0DEB405dd405Ee54F2Fc24E8E3DB5D417001631" as const
+
+let shouldCheckActive = $state(true)
+
+// TODO CHANGE TO MAINNET
+runPromiseExit$(() =>
+  shouldCheckActive
+    ? Effect.gen(function*() {
+      const publicClient = createPublicClient({
+        chain: mainnet,
+        transport: http("https://rpc.1.ethereum.chain.kitchen"),
+      })
+
+      const active = yield* Effect.tryPromise({
+        try: () =>
+          publicClient.readContract({
+            address: AIRDROP_CONTRACT_ADDRESS,
+            abi: AIRDROP_ABI,
+            functionName: "active",
+            args: [],
+          }),
+        catch: () => false,
+      })
+      isActive = active as boolean
+      shouldCheckActive = false
+      return active
+    }).pipe(
+      Effect.catchAll(() =>
+        Effect.gen(function*() {
+          shouldCheckActive = false
+          return yield* Effect.succeed(false)
+        })
+      ),
+    )
+    : Effect.void
+)
+
 let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
 $effect(() => {
   if (currentSlide > 0 && Option.isNone(claim)) {
@@ -90,7 +140,10 @@ function goToPreviousSlide() {
     {#snippet children(slideIndex)}
       <div class="flex flex-col gap-4 h-full w-full">
         {#if slideIndex === 0}
-          <Step1 onNext={goToNextSlide} />
+          <Step1
+            onNext={goToNextSlide}
+            {isActive}
+          />
         {:else if slideIndex === 1}
           <Step2
             onNext={goToNextSlide}
