@@ -1,11 +1,11 @@
 import AirdropIcon from "$lib/components/icons/AirdropIcon.svelte"
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
+import EscherLogo from "$lib/components/icons/EscherLogo.svelte"
 import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
-import StakeIcon from "$lib/components/icons/StakeIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
 
@@ -106,7 +106,7 @@ export const navigation: Array<NavSection> = [
     items: [{
       path: "/liquid-staking",
       title: "Liquid Staking",
-      icon: StakeIcon,
+      icon: EscherLogo,
     }],
   },
   {
