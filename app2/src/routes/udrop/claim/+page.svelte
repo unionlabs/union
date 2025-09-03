@@ -5,18 +5,17 @@ import { page } from "$app/state"
 import StepperCard from "$lib/components/ui/StepperCard.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
-import { onMount } from "svelte"
 import Step1 from "./step/Step1.svelte"
 import Step2 from "./step/Step2.svelte"
 import Step3 from "./step/Step3.svelte"
 import Step4 from "./step/Step4.svelte"
 import Step5 from "./step/Step5.svelte"
+import Step6 from "./step/Step6.svelte"
 
 let currentSlide = $state(0)
 let stepperCardRef: StepperCard
 let isInitialized = $state(false)
 
-// Initialize from URL search params (only once) with auth guard
 $effect(() => {
   if (browser && !isInitialized) {
     const step = page.url.searchParams.get("step")
@@ -25,7 +24,7 @@ $effect(() => {
       if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= 5) {
         // Auth guard: can't go beyond step 1 without authentication
         if (stepNumber > 1 && Option.isNone(dashboard.session)) {
-          currentSlide = 0
+          currentSlide = 0 
         } else {
           currentSlide = stepNumber - 1 // Convert to 0-based index
         }
@@ -75,7 +74,7 @@ function goToPreviousSlide() {
   <StepperCard
     bind:this={stepperCardRef}
     bind:currentSlide
-    totalSlides={5}
+    totalSlides={6}
     class="max-w-5xl md:h-auto"
   >
     {#snippet children(slideIndex)}
@@ -98,7 +97,14 @@ function goToPreviousSlide() {
             onBack={goToPreviousSlide}
           />
         {:else if slideIndex === 4}
-          <Step5 onRestart={() => goToSlide(0)} />
+          <Step5
+            onNext={goToNextSlide}
+            onBack={goToPreviousSlide}
+          />
+        {:else if slideIndex === 5}
+          <Step6
+            onRestart={() => goToSlide(0)}
+          />
         {/if}
       </div>
     {/snippet}
