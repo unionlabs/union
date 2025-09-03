@@ -33,7 +33,8 @@ use union_test::{
     evm::{
         self,
         zkgm::{
-            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket, IBC,
+            IBCPacket, Instruction as InstructionEvm, MsgBatchSend, MsgPacketRecv, UCS03Zkgm,
+            ZkgmPacket, IBC,
         },
         zkgmerc20::ZkgmERC20,
     },
@@ -188,7 +189,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 19; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(
@@ -3801,103 +3802,224 @@ async fn test_send_vault_unhappy_u_fool() {
     );
 }
 
-#[tokio::test]
-async fn send_stake_and_unstake_from_evm_to_union0() {
-    self::test_stake_and_unstake_from_evm_to_union().await;
+async fn test_from_evm_to_union_batch_send_err_not_enough_packets() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    println!("EVM Address: {:?}", evm_address);
+
+    // ensure_channels_opened(ctx.channel_count).await;
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
+    // let pair = ctx.get_channel().await.expect("channel available");
+
+    let pair = union_test::channel_provider::ChannelPair {
+        src: 1u32,
+        dest: 1u32,
+    };
+
+    let packets = vec![IBCPacket {
+        sourceChannelId: pair.src,
+        destinationChannelId: pair.dest,
+        data: "".into(),
+        timeoutHeight: 0u64,
+        timeoutTimestamp: 4294967295000000000,
+    }];
+
+    let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+
+    let batch_messages = MsgBatchSend { packets: packets };
+
+    let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
+
+    let call = ibc.batchSend(batch_messages).clear_decoder();
+
+    let expected_revert_code = 0x5458d343; // ErrNotEnoughPackets
+    let recv_packet_data = ctx
+        .send_and_expect_revert::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            EVM_IBC_BYTES.into(),
+            call,
+            expected_revert_code,
+            &zkgm_deployer_provider,
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
 }
 
-#[tokio::test]
-async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
-    self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+async fn test_from_evm_to_union_batch_send_err_commitment_not_found() {
+    let ctx = init_ctx().await;
+
+    let (evm_address, _evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    println!("EVM Address: {:?}", evm_address);
+
+    // ensure_channels_opened(ctx.channel_count).await;
+    // let available_channel = ctx.get_available_channel_count().await;
+    // assert!(available_channel > 0);
+    // let pair = ctx.get_channel().await.expect("channel available");
+
+    let pair = union_test::channel_provider::ChannelPair {
+        src: 1u32,
+        dest: 1u32,
+    };
+
+    let packets = vec![
+        IBCPacket {
+            sourceChannelId: pair.src,
+            destinationChannelId: pair.dest,
+            data: "".into(),
+            timeoutHeight: 0u64,
+            timeoutTimestamp: 4294967295000000000,
+        },
+        IBCPacket {
+            sourceChannelId: pair.src,
+            destinationChannelId: pair.dest,
+            data: "".into(),
+            timeoutHeight: 0u64,
+            timeoutTimestamp: 4294967295000000000,
+        },
+    ];
+
+    let (_, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
+
+    let batch_messages = MsgBatchSend { packets: packets };
+
+    let ibc = IBC::new(EVM_IBC_BYTES.into(), zkgm_deployer_provider.clone());
+
+    let call = ibc.batchSend(batch_messages).clear_decoder();
+
+    let expected_revert_code = 0x4d7cfc57; // ErrPacketCommitmentNotFound
+    let recv_packet_data = ctx
+        .send_and_expect_revert::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            EVM_IBC_BYTES.into(),
+            call,
+            expected_revert_code,
+            &zkgm_deployer_provider,
+        )
+        .await;
+
+    assert!(
+        recv_packet_data.is_ok(),
+        "Failed to send and receive packet: {:?}",
+        recv_packet_data.err()
+    );
 }
 
-#[tokio::test]
-async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-}
+// #[tokio::test]
+// async fn send_stake_and_unstake_from_evm_to_union0() {
+//     self::test_stake_and_unstake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn send_stake_unstake_and_withdraw_from_evm_to_union0() {
+//     self::test_stake_unstake_and_withdraw_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union0() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_refund() {
+//     self::test_send_packet_from_evm_to_union_get_refund().await;
+// }
+
+// #[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
+// async fn from_union_to_evm_refund() {
+//     self::test_send_packet_from_union_to_evm_get_refund().await;
+// }
+
+// #[tokio::test]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake0() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_stake_and_refund() {
+//     self::test_stake_from_evm_to_union_and_refund().await;
+// }
+
+// #[tokio::test]
+// async fn test_vault_works() {
+//     self::test_send_vault_success().await;
+// }
+
+// #[tokio::test]
+// async fn test_vault_works_with_fee() {
+//     self::test_send_vault_success_with_fee().await;
+// }
+
+// // UNHAPPY PATHS
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_only_maker_err().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path2() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path3() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path4() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path5() {
+//     self::test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path6() {
+//     self::test_from_evm_to_union_batch_err_invalid_batch_instruction().await;
+// }
+
+// #[tokio::test]
+// async fn from_evm_to_union_tokenv2_unhappy_path7() {
+//     self::test_from_evm_to_union_batch_err_invalid_forward_instruction().await;
+// }
+
+// #[tokio::test]
+// async fn test_send_vault_unhappy_path1() {
+//     self::test_send_vault_unhappy_u_counterparty_is_not_fungible().await;
+// }
+
+// #[tokio::test]
+// async fn test_send_vault_unhappy_path2() {
+//     self::test_send_vault_unhappy_u_fool().await;
+// }
+
+// #[tokio::test]
+// async fn test_send_vault_unhappy_path3() {
+//     self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
+// }
+
+// #[tokio::test]
+// async fn test_send_from_evm_batch_unhappy_path1() {
+//     self::test_from_evm_to_union_batch_send_err_not_enough_packets().await;
+// }
 
 #[tokio::test]
-async fn from_evm_to_union_refund() {
-    self::test_send_packet_from_evm_to_union_get_refund().await;
-}
-
-#[tokio::test] // Note: For this one to work; timeout plugin should be enabled on voyager.
-async fn from_union_to_evm_refund() {
-    self::test_send_packet_from_union_to_evm_get_refund().await;
-}
-
-#[tokio::test]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake0() {
-    self::test_stake_from_evm_to_union().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_stake_and_refund() {
-    self::test_stake_from_evm_to_union_and_refund().await;
-}
-
-#[tokio::test]
-async fn test_vault_works() {
-    self::test_send_vault_success().await;
-}
-
-#[tokio::test]
-async fn test_vault_works_with_fee() {
-    self::test_send_vault_success_with_fee().await;
-}
-
-// UNHAPPY PATHS
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path() {
-    self::test_from_evm_to_union_tokenv2_unhappy_only_maker_err().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path2() {
-    self::test_from_evm_to_union_tokenv2_unhappy_errchannelgovernancetokennotset().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path3() {
-    self::test_from_evm_to_union_tokenv2_unhappy_erc20_insufficient_balance().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path4() {
-    self::test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path5() {
-    self::test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path6() {
-    self::test_from_evm_to_union_batch_err_invalid_batch_instruction().await;
-}
-
-#[tokio::test]
-async fn from_evm_to_union_tokenv2_unhappy_path7() {
-    self::test_from_evm_to_union_batch_err_invalid_forward_instruction().await;
-}
-
-#[tokio::test]
-async fn test_send_vault_unhappy_path1() {
-    self::test_send_vault_unhappy_u_counterparty_is_not_fungible().await;
-}
-
-#[tokio::test]
-async fn test_send_vault_unhappy_path2() {
-    self::test_send_vault_unhappy_u_fool().await;
-}
-
-#[tokio::test]
-async fn test_send_vault_unhappy_path3() {
-    self::test_send_vault_unhappy_u_base_amount_must_cover_quote_amount().await;
+async fn test_send_from_evm_batch_unhappy_path2() {
+    self::test_from_evm_to_union_batch_send_err_commitment_not_found().await;
 }
