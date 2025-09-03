@@ -409,26 +409,37 @@ async fn try_get_bonds(
     let delivery_contract_calldata = delivery.get_call_message("contractCalldata")?;
     trace!("get_bonds: delivery calldata: {delivery_contract_calldata}");
 
+    let Value::Object(send) = delivery_contract_calldata.get("send").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'send' in contractCalldata".to_string(),
+            delivery_contract_calldata.to_string(),
+        )
+    })?
+    else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting 'send' as Object in contractCalldata".to_string(),
+            delivery_contract_calldata.to_string(),
+        ));
+    };
+
     // delivery channel_id
-    let Value::Number(delivery_channel_id) = delivery_contract_calldata
-        .get("channel_id")
-        .ok_or_else(|| {
-            IndexerError::ZkgmExpectingInstructionField(
-                "missing 'channel_id' in contractCalldata".to_string(),
-                delivery_contract_calldata.to_string(),
-            )
-        })?
+    let Value::Number(delivery_channel_id) = send.get("channel_id").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'channel_id' in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "expecting 'channel_id' as Number in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         ));
     };
 
     let Some(delivery_channel_id) = delivery_channel_id.as_u64() else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "expecting 'channel_id' as integer in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         ));
     };
 
@@ -436,7 +447,7 @@ async fn try_get_bonds(
         .map_err(|_| {
             IndexerError::ZkgmExpectingInstructionField(
                 "expecting 'channel_id' as u32 in contractCalldata".to_string(),
-                delivery_contract_calldata.to_string(),
+                Value::Object(send.clone()).to_string(),
             )
         })?
         .into();
@@ -444,18 +455,17 @@ async fn try_get_bonds(
     trace!("get_bonds: delivery channel_id: {delivery_channel_id}");
 
     // delivery timeout_timestamp
-    let Value::String(delivery_timeout_timestamp) = delivery_contract_calldata
-        .get("timeout_timestamp")
-        .ok_or_else(|| {
+    let Value::String(delivery_timeout_timestamp) =
+        send.get("timeout_timestamp").ok_or_else(|| {
             IndexerError::ZkgmExpectingInstructionField(
                 "missing 'timeout_timestamp' in contractCalldata".to_string(),
-                delivery_contract_calldata.to_string(),
+                Value::Object(send.clone()).to_string(),
             )
         })?
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "expecting 'timeout_timestamp' as String in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         ));
     };
 
@@ -463,7 +473,7 @@ async fn try_get_bonds(
         TimeoutTimestamp(delivery_timeout_timestamp.parse().map_err(|_| {
             IndexerError::ZkgmExpectingInstructionField(
                 "expecting 'timeout_timestamp' as u64 in contractCalldata".to_string(),
-                delivery_contract_calldata.to_string(),
+                Value::Object(send.clone()).to_string(),
             )
         })?);
 
@@ -473,17 +483,16 @@ async fn try_get_bonds(
     );
 
     // delivery salt
-    let Value::String(delivery_salt_string) =
-        delivery_contract_calldata.get("salt").ok_or_else(|| {
-            IndexerError::ZkgmExpectingInstructionField(
-                "missing 'salt' in contractCalldata".to_string(),
-                delivery_contract_calldata.to_string(),
-            )
-        })?
+    let Value::String(delivery_salt_string) = send.get("salt").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'salt' in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "expecting 'salt' as String in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         ));
     };
 
@@ -500,41 +509,39 @@ async fn try_get_bonds(
     trace!("get_bonds: delivery salt: 0x{}", hex::encode(delivery_salt));
 
     // delivery path
-    let Value::String(delivery_path) = delivery_contract_calldata.get("path").ok_or_else(|| {
+    let Value::String(delivery_path) = send.get("path").ok_or_else(|| {
         IndexerError::ZkgmExpectingInstructionField(
             "missing 'path' in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         )
     })?
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "expecting 'path' as String in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         ));
     };
 
     let delivery_path: alloy_sol_types::private::U256 = delivery_path.parse().map_err(|_| {
         IndexerError::ZkgmExpectingInstructionField(
             "expecting 'instruction' as U256 string in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         )
     })?;
 
     trace!("get_bonds: delivery path: {delivery_path}");
 
     // delivery instruction
-    let Value::String(delivery_instruction) = delivery_contract_calldata
-        .get("instruction")
-        .ok_or_else(|| {
-            IndexerError::ZkgmExpectingInstructionField(
-                "missing 'instruction' in contractCalldata".to_string(),
-                delivery_contract_calldata.to_string(),
-            )
-        })?
+    let Value::String(delivery_instruction) = send.get("instruction").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'instruction' in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "expecting 'instruction' as String in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         ));
     };
     let delivery_instruction = string_0x_to_bytes(delivery_instruction, "contractCalldata")?;
@@ -546,7 +553,7 @@ async fn try_get_bonds(
         .map_err(|_| {
             IndexerError::ZkgmExpectingInstructionField(
                 "cannot parse delivery instruction".to_string(),
-                delivery_contract_calldata.to_string(),
+                Value::Object(send.clone()).to_string(),
             )
         })?;
 
@@ -610,13 +617,14 @@ async fn try_get_bonds(
     let delivery_zkgm_packet_json = serde_json::to_value(delivery_zkgm_packet).map_err(|_| {
         IndexerError::ZkgmExpectingInstructionField(
             "cannot format instruction".to_string(),
-            delivery_contract_calldata.to_string(),
+            Value::Object(send.clone()).to_string(),
         )
     })?;
 
     trace!("get_bonds: delivery zkgm_packet (json): {delivery_zkgm_packet_json}");
 
-    let Value::Array(delivery_zkgm_packet_flattened) = format_flatten(&delivery_zkgm_packet_json)
+    let Value::Array(mut delivery_zkgm_packet_flattened) =
+        format_flatten(&delivery_zkgm_packet_json)
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "cannot convert delivery instruction".to_string(),
@@ -624,7 +632,27 @@ async fn try_get_bonds(
         ));
     };
 
-    trace!("get_bonds: delivery zkgm_packet (json-flattened): {delivery_zkgm_packet_flattened:?}");
+    if delivery_zkgm_packet_flattened.len() != 1 {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting one instruction in flattened delivery zkgm_packet".to_string(),
+            delivery_zkgm_packet_json.to_string(),
+        ));
+    }
+
+    // add fields that are added when calling flatten InstructionDecoder::from_values_with_index expects it
+    if let Value::Object(ref mut map) = delivery_zkgm_packet_flattened[0] {
+        map.insert("_index".to_string(), Value::String("".to_string()));
+        map.insert(
+            "_instruction_hash".to_string(),
+            Value::String("0x00".to_string()),
+        );
+    }
+
+    let delivery_zkgm_packet_flattened_value = Value::Array(delivery_zkgm_packet_flattened.clone());
+
+    trace!(
+        "get_bonds: delivery zkgm_packet (json-flattened): {delivery_zkgm_packet_flattened_value}"
+    );
 
     let delivery_token_order =
         InstructionDecoder::from_values_with_index(&delivery_zkgm_packet_flattened, 0)?;
@@ -1162,7 +1190,7 @@ fn packet_shape(
             // one transfer (v2)
             Some(PacketShape::TransferV2)
         }
-        ":2/0:3/2,1/0,1/0,1/0" if is_bond(flatten)? => {
+        ":2/0,0:3/2,1:1/0,2:1/0,3:1/0" if is_bond(flatten)? => {
             // batch with
             // - token-order to transfer token
             // - call to bond and create lst
@@ -1170,7 +1198,7 @@ fn packet_shape(
             // - call to deliver lst
             Some(PacketShape::BondV2)
         }
-        ":2/0:3/2,1/0" if is_unbond(flatten)? => {
+        ":2/0:0:3/2,1:1/0" if is_unbond(flatten)? => {
             // batch with:
             // - token-order to transfer lst
             // - call to unbond lst
@@ -1216,15 +1244,15 @@ const ON_ZKGM_CALL_PROXY_BECH32: &str =
     "union1mtxk8tjz85ry2a8a6k58uwrztmwslaxzsurh5l0dlxh7wrnvmxkshqkuwd";
 
 fn is_bond(flatten: &[Value]) -> Result<bool, IndexerError> {
-    Ok(is_transfer_to(flatten, 0, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
+    Ok(is_transfer_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
         && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 3, ON_ZKGM_CALL_PROXY_BECH32)?)
+        && is_call_to(flatten, 3, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 4, ON_ZKGM_CALL_PROXY_BECH32)?)
 }
 
 fn is_unbond(flatten: &[Value]) -> Result<bool, IndexerError> {
-    Ok(is_transfer_to(flatten, 0, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?)
+    Ok(is_transfer_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?)
 }
 
 // check if the instruction at index is a transfer to the specified address
@@ -1240,14 +1268,21 @@ fn is_transfer_to(
         ));
     };
 
-    if Some(Value::String("TokenOrder".to_string())) != instruction.get("_type").cloned() {
+    let Some(Value::Object(operand)) = instruction.get("operand").cloned() else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            format!("operand in instruction with index {index}"),
+            Value::Array(flatten.to_vec()).to_string(),
+        ));
+    };
+
+    if Some(Value::String("TokenOrder".to_string())) != operand.get("_type").cloned() {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             format!("token-order instruction with index {index}"),
             Value::Array(flatten.to_vec()).to_string(),
         ));
     }
 
-    let Some(Value::String(contract_address_0x)) = instruction.get("receiver") else {
+    let Some(Value::String(receiver_address_0x)) = operand.get("receiver") else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             format!("receiver in token-order instruction with index {index}"),
             Value::Array(flatten.to_vec()).to_string(),
@@ -1255,19 +1290,17 @@ fn is_transfer_to(
     };
 
     let actual_receiver_address = string_0x_to_bytes(
-        contract_address_0x,
+        receiver_address_0x,
         format!("receiver is 0x hex in token-order instruction with index {index}").as_str(),
     )?;
 
-    let (_, expected_receiver_address) =
-        bech32::decode(expected_receiver_address_bech32).map_err(|_| {
-            IndexerError::ZkgmExpectingInstructionField(
-                format!("configured address ({expected_receiver_address_bech32}) is not bech32"),
-                expected_receiver_address_bech32.to_string(),
-            )
-        })?;
+    let expected_receiver_address = Bytes::from(expected_receiver_address_bech32.to_string());
 
-    let expected_receiver_address: Bytes = expected_receiver_address.into();
+    trace!(
+        "is_transfer_to: expected: {}, actual: {}",
+        hex::encode(&expected_receiver_address),
+        hex::encode(&actual_receiver_address)
+    );
 
     Ok(actual_receiver_address == expected_receiver_address)
 }
@@ -1285,14 +1318,21 @@ fn is_call_to(
         ));
     };
 
-    if Some(Value::String("Call".to_string())) != instruction.get("_type").cloned() {
+    let Some(Value::Object(operand)) = instruction.get("operand").cloned() else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            format!("operand in instruction with index {index}"),
+            Value::Array(flatten.to_vec()).to_string(),
+        ));
+    };
+
+    if Some(Value::String("Call".to_string())) != operand.get("_type").cloned() {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             format!("call instruction with index {index}"),
             Value::Array(flatten.to_vec()).to_string(),
         ));
     }
 
-    let Some(Value::String(contract_address_0x)) = instruction.get("contractAddress") else {
+    let Some(Value::String(contract_address_0x)) = operand.get("contractAddress") else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             format!("contract address in call instruction with index {index}"),
             Value::Array(flatten.to_vec()).to_string(),
@@ -1304,15 +1344,13 @@ fn is_call_to(
         format!("contract address is 0x hex in call instruction with index {index}").as_str(),
     )?;
 
-    let (_, expected_contract_address) =
-        bech32::decode(expected_contract_address_bech32).map_err(|_| {
-            IndexerError::ZkgmExpectingInstructionField(
-                format!("configured address ({expected_contract_address_bech32}) is not bech32"),
-                expected_contract_address_bech32.to_string(),
-            )
-        })?;
+    let expected_contract_address = Bytes::from(expected_contract_address_bech32.to_string());
 
-    let expected_contract_address: Bytes = expected_contract_address.into();
+    trace!(
+        "is_call_to: expected: {}, actual: {}",
+        hex::encode(&expected_contract_address),
+        hex::encode(&actual_contract_address)
+    );
 
     Ok(actual_contract_address == expected_contract_address)
 }
