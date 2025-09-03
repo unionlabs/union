@@ -1033,6 +1033,7 @@ _: {
           apps,
           lst ? false,
           u ? null,
+          eu ? null,
           on-zkgm-call-proxy ? false,
           ...
         }:
@@ -1053,6 +1054,7 @@ _: {
               ${if apps ? ucs00 then "--ucs00" else ""} \
               ${if lst then "--lst" else ""} \
               ${if on-zkgm-call-proxy then "--on-zkgm-call-proxy" else ""} \
+              ${pkgs.lib.optionalString (eu != null) "--eu ${eu}"} \
               ${pkgs.lib.optionalString (u != null) "--u ${u}"}
           '';
         };
