@@ -102,6 +102,13 @@ export const navigation: Array<NavSection> = [
     }],
   },
   {
+    items: [{
+      path: "/liquid-staking",
+      title: "Liquid Staking",
+      icon: AirdropIcon,
+    }],
+  },
+  {
     title: "Developer",
     items: [
       {

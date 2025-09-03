@@ -1,5 +1,6 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
+import { UDROP_ABI, UDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
@@ -9,7 +10,6 @@ import { Evm } from "@unionlabs/sdk-evm"
 import { Data, Effect, Match, Option } from "effect"
 import { createPublicClient, custom, formatUnits } from "viem"
 import { mainnet } from "viem/chains"
-import { UDROP_ABI, UDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import StepLayout from "../StepLayout.svelte"
 
 interface Props {

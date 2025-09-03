@@ -30,21 +30,7 @@ export type YapsSeason = {
   rank: number | null
 }
 
-import type {
-  AcceptTermsResponse,
-  ClaimReferralCodeResponse,
-  CreateAirdropEntryResponse,
-  DeviceInsert,
-  GenerateReferralCodeResponse,
-  RemoveReferralCodeResponse,
-  ScanAllocationResponse,
-  SubmitWalletVerificationInput,
-  UpdatePreStakeResponse,
-  UpdateTwitterResponse,
-  VerifyHumanResponse,
-  VerifyStargazeWalletResponse,
-  VerifyWalletSignatureResponse,
-} from "./types"
+import type { DeviceInsert, SubmitWalletVerificationInput } from "./types"
 
 export const getUserAchievements = (userId: string) =>
   withLocalStorageCacheStale(
@@ -491,6 +477,39 @@ export const getUserClaim = (userId: string) =>
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll(() => {
+        return Effect.succeed(Option.none())
+      }),
+    ),
+  )
+
+export const getUserAllocation = (userId: string) =>
+  withLocalStorageCacheStale(
+    "user_allocation",
+    `${CACHE_VERSION}:${userId}`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("user_allocations")
+              .select("*")
+              .eq("user_id", userId)
+              .single(),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserAllocation",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        // Don't show error for missing user allocation - this is expected for new users
+        console.info("User allocation not found (expected for new users)", { userId, error })
         return Effect.succeed(Option.none())
       }),
     ),

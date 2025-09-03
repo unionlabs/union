@@ -8,7 +8,7 @@ export const UDROP_ABI = [
     type: "function",
     stateMutability: "view",
     inputs: [],
-    outputs: [{ name: "", type: "bool" }]
+    outputs: [{ name: "", type: "bool" }],
   },
   {
     name: "claim",
@@ -17,19 +17,19 @@ export const UDROP_ABI = [
     inputs: [
       { name: "beneficiary", type: "address" },
       { name: "amount", type: "uint256" },
-      { name: "proof", type: "bytes32[]" }
+      { name: "proof", type: "bytes32[]" },
     ],
-    outputs: []
+    outputs: [],
   },
   {
     name: "claimed",
     type: "function",
     stateMutability: "view",
     inputs: [
-      { name: "", type: "address" }
+      { name: "", type: "address" },
     ],
     outputs: [
-      { name: "", type: "bool" }
-    ]
-  }
+      { name: "", type: "bool" },
+    ],
+  },
 ] as const

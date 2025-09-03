@@ -11,16 +11,6 @@ interface Props {
 
 let { onRestart }: Props = $props()
 
-let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
-
-let claimAmount = $derived(
-  Option.match(claim, {
-    onNone: () => "0",
-    onSome: (claimData) => formatUnits(BigInt(claimData.amount), 18),
-  }),
-)
-
-// Get transaction hash from localStorage
 let transactionHash = $derived<Option.Option<string>>(
   typeof window !== "undefined"
     ? Option.fromNullable(localStorage.getItem("lastClaimTxHash"))
@@ -100,15 +90,29 @@ function handleDone() {
       </div>
 
       <div class="w-full h-full bg-zinc-950 rounded-lg border border-zinc-800 overflow-hidden flex flex-col relative">
-        <!-- Thank you celebration -->
+        <!-- Thank U Video -->
         <div
-          class="text-center w-full h-full flex items-center justify-center"
+          class="w-full h-full flex items-center justify-center"
           style="background-color: #0D2024;"
         >
-          <div>
-            <div class="relative mb-6"></div>
-            <div class="text-4xl font-bold text-accent mb-2">Thank U!</div>
-          </div>
+          <video
+            class="w-full h-full object-cover"
+            autoplay
+            loop
+            muted
+            playsinline
+          >
+            <source
+              src="https://videos.cdn.union.build/thank-u.webm"
+              type="video/webm"
+            >
+            <!-- Fallback for browsers that don't support the video -->
+            <div class="w-full h-full flex items-center justify-center">
+              <div class="text-center">
+                <div class="text-xl font-bold text-accent mb-2">Thank U!</div>
+              </div>
+            </div>
+          </video>
         </div>
       </div>
     </div>
