@@ -79,12 +79,15 @@ function handleLogin(provider: AuthProvider) {
     <!-- Before Sign In -->
     <Card>
       <div class="flex flex-col items-center gap-6">
-        <div class="text-center space-y-3">
+        <div class="text-center space-y-4">
           <h1 class="text-3xl font-bold text-white">
-            eU Staking
+            eU Liquid Staking
           </h1>
-          <p class="text-zinc-400">
-            Sign in with your X/Github/Discord to see your pre-staked eU.
+          <p class="text-zinc-400 max-w-md">
+            Stake your eU tokens and earn rewards while maintaining liquidity. Coming soon to Union.
+          </p>
+          <p class="text-sm text-zinc-500">
+            Sign in to check your pre-staked allocation
           </p>
         </div>
 
@@ -104,7 +107,7 @@ function handleLogin(provider: AuthProvider) {
                 {@html provider.icon}
               </svg>
               <span>
-                {provider.name}
+                Continue with {provider.name}
               </span>
               {#if loading}
                 <div class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin">

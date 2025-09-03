@@ -5,6 +5,7 @@ import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPo
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
+import StakeIcon from "$lib/components/icons/StakeIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
 
@@ -105,7 +106,7 @@ export const navigation: Array<NavSection> = [
     items: [{
       path: "/liquid-staking",
       title: "Liquid Staking",
-      icon: AirdropIcon,
+      icon: StakeIcon,
     }],
   },
   {
