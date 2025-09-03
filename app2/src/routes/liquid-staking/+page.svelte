@@ -1,10 +1,18 @@
 <script lang="ts">
+import { goto } from "$app/navigation"
+import { page } from "$app/state"
 import Button from "$lib/components/ui/Button.svelte"
-import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
+import StepperCard from "$lib/components/ui/StepperCard.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromise } from "$lib/runtime"
 import { Effect, Option } from "effect"
+import LiquidStakingStep1 from "./step/LiquidStakingStep1.svelte"
+import LiquidStakingStep2 from "./step/LiquidStakingStep2.svelte"
+
+let currentSlide = $state(0)
+let stepperCardRef: StepperCard
+let isInitialized = $state(false)
 
 let isLoadingAllocation = $derived(
   Option.match(dashboard.airdrop, {
@@ -23,6 +31,59 @@ let preStakedAmount = $derived(
     onSome: (alloc) => alloc.tokens_prestaked.toLocaleString(),
   }),
 )
+
+$effect(() => {
+  if (!isInitialized) {
+    const step = page.url.searchParams.get("step")
+    if (step) {
+      const stepNumber = parseInt(step, 10)
+      if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= 2) {
+        // Auth guard: can't go to step 2 without authentication
+        if (stepNumber > 1 && Option.isNone(dashboard.session)) {
+          currentSlide = 0
+        } else {
+          currentSlide = stepNumber - 1 // Convert to 0-based index
+        }
+      }
+    }
+    isInitialized = true
+  }
+})
+
+// Update URL when slide changes (but not during initialization)
+$effect(() => {
+  if (isInitialized && currentSlide >= 0) {
+    const currentStep = page.url.searchParams.get("step")
+    const newStep = (currentSlide + 1).toString()
+
+    // Only update if the URL step is different from current slide
+    if (currentStep !== newStep) {
+      const url = new URL(page.url)
+      url.searchParams.set("step", newStep)
+      goto(url.toString(), { replaceState: true, noScroll: true })
+    }
+  }
+})
+
+function goToNextSlide() {
+  // Auth guard: can't proceed beyond step 1 without authentication
+  if (currentSlide === 0 && Option.isNone(dashboard.session)) {
+    return // Don't proceed if not authenticated
+  }
+  stepperCardRef.goToNextSlide()
+}
+
+function goToSlide(index: number) {
+  // Auth guard: can't go beyond step 1 without authentication
+  if (index > 0 && Option.isNone(dashboard.session)) {
+    return // Don't proceed if not authenticated
+  }
+  stepperCardRef.goToSlide(index)
+}
+
+function goToPreviousSlide() {
+  stepperCardRef.goToPreviousSlide()
+}
 
 type AuthProvider = {
   id: "twitter" | "github" | "discord"
@@ -75,100 +136,31 @@ function handleLogin(provider: AuthProvider) {
 </script>
 
 <Sections>
-  {#if Option.isNone(dashboard.session)}
-    <!-- Before Sign In -->
-    <Card>
-      <div class="flex flex-col items-center gap-6">
-        <div class="text-center space-y-4">
-          <h1 class="text-3xl font-bold text-white">
-            eU Liquid Staking
-          </h1>
-          <p class="text-zinc-400 max-w-md">
-            Stake your eU tokens and earn rewards while maintaining liquidity. Coming soon to Union.
-          </p>
-          <p class="text-sm text-zinc-500">
-            Sign in to check your pre-staked allocation
-          </p>
+  <div class="flex justify-center items-center h-full w-full">
+    <StepperCard
+      bind:this={stepperCardRef}
+      bind:currentSlide
+      totalSlides={2}
+      class="max-w-5xl md:h-auto"
+    >
+      {#snippet children(slideIndex)}
+        <div class="flex flex-col gap-4 h-full w-full">
+          {#if slideIndex === 0}
+            <LiquidStakingStep1
+              onNext={goToNextSlide}
+              {providers}
+              {loading}
+              {handleLogin}
+            />
+          {:else if slideIndex === 1}
+            <LiquidStakingStep2
+              onBack={goToPreviousSlide}
+              {isLoadingAllocation}
+              {preStakedAmount}
+            />
+          {/if}
         </div>
-
-        <!-- Auth Providers -->
-        <div class="w-full max-w-sm space-y-3">
-          {#each providers as provider (provider.id)}
-            <Button
-              variant="secondary"
-              class="flex w-full items-center justify-center gap-3 relative"
-              disabled={loading}
-              onclick={() => handleLogin(provider)}
-            >
-              <svg
-                class="w-5 h-5 {provider.iconColor}"
-                viewBox="0 0 24 24"
-              >
-                {@html provider.icon}
-              </svg>
-              <span>
-                Continue with {provider.name}
-              </span>
-              {#if loading}
-                <div class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin">
-                </div>
-              {/if}
-            </Button>
-          {/each}
-        </div>
-      </div>
-    </Card>
-  {:else}
-    <!-- After Sign In -->
-    <Card>
-      <div class="flex flex-col gap-6">
-        <!-- Header -->
-        <div class="text-center">
-          <h1 class="text-2xl font-bold text-white mb-2">
-            eU Staking
-          </h1>
-          <p class="text-zinc-400">
-            Once liquid staking goes live, you will receive
-          </p>
-        </div>
-
-        {#if isLoadingAllocation}
-          <!-- Loading State -->
-          <div class="flex items-center justify-center py-12">
-            <div class="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin">
-            </div>
-            <span class="ml-3 text-zinc-400">Loading your allocation...</span>
-          </div>
-        {:else}
-          <!-- Main Content -->
-          <div class="text-center py-8">
-            <!-- Big eU Amount -->
-            <div class="relative mb-6">
-              <div class="text-6xl md:text-7xl font-black bg-gradient-to-r from-accent to-accent-400 bg-clip-text text-transparent leading-none">
-                {preStakedAmount}
-              </div>
-              <div class="text-2xl font-bold text-accent mt-2">
-                eU
-              </div>
-            </div>
-
-            <p class="text-sm text-zinc-500 max-w-md mx-auto">
-              Your pre-staked allocation will automatically convert to liquid staking rewards when
-              eU launches.
-            </p>
-          </div>
-        {/if}
-
-        <!-- Footer -->
-        <div class="flex justify-center pt-4 border-t border-zinc-800">
-          <Button
-            variant="secondary"
-            href="/dashboard"
-          >
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
-    </Card>
-  {/if}
+      {/snippet}
+    </StepperCard>
+  </div>
 </Sections>
