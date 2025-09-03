@@ -17,7 +17,7 @@ let { onNext, onBack }: Props = $props()
 const U_ADDRESS = "0xba5eD44733953d79717F6269357C77718C8Ba5ed"
 const U_SYMBOL = "U"
 const U_DECIMALS = 18
-const U_IMAGE = "https://union.build/logo.png"
+const U_IMAGE = "https://union.build/u.svg"
 
 type AddTokenState = Data.TaggedEnum<{
   Ready: {}

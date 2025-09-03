@@ -24,7 +24,7 @@ $effect(() => {
       if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= 5) {
         // Auth guard: can't go beyond step 1 without authentication
         if (stepNumber > 1 && Option.isNone(dashboard.session)) {
-          currentSlide = 0 
+          currentSlide = 0
         } else {
           currentSlide = stepNumber - 1 // Convert to 0-based index
         }
@@ -102,9 +102,7 @@ function goToPreviousSlide() {
             onBack={goToPreviousSlide}
           />
         {:else if slideIndex === 5}
-          <Step6
-            onRestart={() => goToSlide(0)}
-          />
+          <Step6 onRestart={() => goToSlide(0)} />
         {/if}
       </div>
     {/snippet}
