@@ -107,28 +107,8 @@ function handleDone() {
         >
           <div>
             <div class="relative mb-6">
-              <div class="w-24 h-24 bg-accent/30 rounded-full flex items-center justify-center mx-auto border-4 border-accent">
-                <span class="text-3xl font-bold text-accent">U</span>
-              </div>
-              <!-- Success checkmark -->
-              <div class="absolute -bottom-2 -right-2 w-10 h-10 bg-accent rounded-full flex items-center justify-center">
-                <svg
-                  class="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
             </div>
-            <div class="text-xl font-bold text-accent mb-2">Thank U!</div>
-            <div class="text-sm text-zinc-300">{claimAmount} U claimed successfully</div>
+            <div class="text-4xl font-bold text-accent mb-2">Thank U!</div>
           </div>
         </div>
       </div>
