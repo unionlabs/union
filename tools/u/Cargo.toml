@@ -38,7 +38,8 @@ subtle-encoding    = { workspace = true, features = ["bech32-preview"] }
 tokio              = { workspace = true, features = ["macros"] }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
-ucs03-zkgm         = { workspace = true }
+ucs03-zkgm         = { workspace = true, features = ["library"] }
+ucs03-zkgm-api     = { workspace = true }
 ucs04              = { workspace = true, features = ["serde"] }
 unionlabs          = { workspace = true, features = ["bcs", "bincode", "ethabi", "proto", "ssz"] }
 voyager-primitives = { workspace = true, features = ["serde"] }

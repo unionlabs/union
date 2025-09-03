@@ -1,7 +1,7 @@
 use alloy::sol_types::SolValue;
 use anyhow::Result;
 use clap::{Args, Subcommand};
-use ucs03_zkgm::com::{Instruction, TokenOrderV1, INSTR_VERSION_1, OP_TOKEN_ORDER};
+use ucs03_zkgm_api::{Instruction, TokenOrderV1, INSTR_VERSION_1, OP_TOKEN_ORDER};
 use unionlabs::primitives::{Bytes, U256};
 
 #[derive(Debug, Subcommand)]

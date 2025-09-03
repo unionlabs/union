@@ -25,7 +25,7 @@ frissitheto     = { workspace = true }
 ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 serde           = { workspace = true, features = ["derive"] }
 thiserror       = { workspace = true }
-ucs03-zkgm      = { workspace = true, features = ["library"] }
+ucs03-zkgm-api  = { workspace = true }
 unionlabs       = { workspace = true, features = ["schemars", "bincode"] }
 
 [dev-dependencies]

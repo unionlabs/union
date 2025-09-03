@@ -256,27 +256,22 @@ contract VestingTests is Test {
         bytes32 salt,
         uint32 sourceChannelId,
         uint32 destinationChannelId,
-        GovernanceToken calldata governanceToken,
+        address governanceToken,
         bytes calldata validator
     ) public {
-        vm.assume(governanceToken.unwrappedToken.length > 0);
+        vm.assume(governanceToken != address(0));
         vm.assume(sourceChannelId != 0);
         vm.assume(destinationChannelId != 0);
         vm.assume(amount > 0);
         vm.assume(cliff < duration);
         vm.assume(timestamp < uint64(start) + uint64(cliff));
         vm.assume(beneficiary != address(0));
+        assumeUnusedAddress(governanceToken);
         handler.setChannel(sourceChannelId, destinationChannelId);
         vestingMgr.update(key, beneficiary, start, cliff, duration);
         VestingAccount account = vestingMgr.vestingAccount(key);
         erc20.mint(address(account), amount);
-        (address localGovernanceToken,) = zkgm
-            .predictWrappedTokenFromMetadataImageV2(
-            0,
-            sourceChannelId,
-            governanceToken.unwrappedToken,
-            governanceToken.metadataImage
-        );
+        address localGovernanceToken = governanceToken;
         zkgm.registerGovernanceToken(sourceChannelId, governanceToken);
         // Clone our ERC20 to the predicted token address.
         vm.cloneAccount(address(erc20), localGovernanceToken);
@@ -291,8 +286,7 @@ contract VestingTests is Test {
             localGovernanceToken,
             Stake({
                 tokenId: tokenId,
-                governanceToken: governanceToken.unwrappedToken,
-                governanceTokenWrapped: abi.encodePacked(localGovernanceToken),
+                stakedToken: localGovernanceToken,
                 sender: abi.encodePacked(address(account)),
                 beneficiary: abi.encodePacked(address(account)),
                 validator: validator,
@@ -315,10 +309,10 @@ contract VestingTests is Test {
         bytes32 salt,
         uint32 sourceChannelId,
         uint32 destinationChannelId,
-        GovernanceToken calldata governanceToken,
+        address governanceToken,
         bytes calldata validator
     ) public {
-        vm.assume(governanceToken.unwrappedToken.length > 0);
+        vm.assume(governanceToken != address(0));
         vm.assume(sourceChannelId != 0);
         vm.assume(destinationChannelId != 0);
         vm.assume(amount > 0);
@@ -330,13 +324,7 @@ contract VestingTests is Test {
         vestingMgr.update(key, beneficiary, start, cliff, duration);
         VestingAccount account = vestingMgr.vestingAccount(key);
         erc20.mint(address(account), amount);
-        (address localGovernanceToken,) = zkgm
-            .predictWrappedTokenFromMetadataImageV2(
-            0,
-            sourceChannelId,
-            governanceToken.unwrappedToken,
-            governanceToken.metadataImage
-        );
+        address localGovernanceToken = governanceToken;
         vm.expectRevert(VestingManager.VestingManager_OnlyBeneficiary.selector);
         vm.prank(operator);
         vestingMgr.stake(
@@ -347,8 +335,7 @@ contract VestingTests is Test {
             localGovernanceToken,
             Stake({
                 tokenId: tokenId,
-                governanceToken: governanceToken.unwrappedToken,
-                governanceTokenWrapped: abi.encodePacked(localGovernanceToken),
+                stakedToken: localGovernanceToken,
                 sender: abi.encodePacked(address(account)),
                 beneficiary: abi.encodePacked(address(account)),
                 validator: validator,

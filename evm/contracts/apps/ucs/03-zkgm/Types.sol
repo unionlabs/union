@@ -66,34 +66,27 @@ struct SolverMetadata {
 
 struct Stake {
     uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
+    address stakedToken;
+    bytes validator;
     bytes sender;
     bytes beneficiary;
-    bytes validator;
     uint256 amount;
 }
 
 struct Unstake {
     uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
-    bytes sender;
     bytes validator;
+    bytes sender;
 }
 
 struct WithdrawStake {
     uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
     bytes sender;
     bytes beneficiary;
 }
 
 struct WithdrawRewards {
     uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
     bytes validator;
     bytes sender;
     bytes beneficiary;
@@ -145,17 +138,14 @@ struct ZkgmStake {
     ZkgmStakeState state;
     // The channel we staked on.
     uint32 channelId;
+    // The staked token.
+    address stakedToken;
     // Validator we staked for.
     bytes validator;
-    // Bonded amount.
+    // Staked amount.
     uint256 amount;
-    // Time at which unbonding will complete (allows the NFT to be burnt in exchange for withdrawal).
+    // Time at which unstaking will complete (allows the NFT to be burnt in exchange for withdrawal).
     uint256 unstakingCompletion;
-}
-
-struct GovernanceToken {
-    bytes unwrappedToken;
-    bytes32 metadataImage;
 }
 
 struct V1ToV2Migration {

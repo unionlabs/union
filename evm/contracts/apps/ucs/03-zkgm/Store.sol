@@ -55,13 +55,14 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         _deprecated_channelBalanceV1;
-    mapping(uint32 => GovernanceToken) public channelGovernanceToken;
+    uint256 private _deprecated_channelGovernanceToken;
     mapping(uint256 => ZkgmStake) public stakes;
     mapping(address => bytes32) public metadataImageOf;
     mapping(
         uint32
             => mapping(uint256 => mapping(address => mapping(bytes => uint256)))
     ) public channelBalanceV2;
+    mapping(uint32 => address) public channelGovernanceToken;
 
     function decodeZkgmERC20InitializeCall(
         bytes calldata call
@@ -83,28 +84,10 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         return abi.decode(relayerMsg, (bool, bytes));
     }
 
-    function _getGovernanceToken(
-        uint32 channelId
-    ) internal view returns (ZkgmERC20, GovernanceToken memory) {
-        GovernanceToken memory governanceToken =
-            channelGovernanceToken[channelId];
-        if (governanceToken.unwrappedToken.length == 0) {
-            revert ZkgmLib.ErrChannelGovernanceTokenNotSet();
-        }
-        (address wrappedGovernanceToken,) =
-        _predictWrappedTokenFromMetadataImageV2(
-            0,
-            channelId,
-            governanceToken.unwrappedToken,
-            governanceToken.metadataImage
-        );
-        return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
-    }
-
     function getGovernanceToken(
         uint32 channelId
-    ) public view returns (ZkgmERC20, GovernanceToken memory) {
-        return _getGovernanceToken(channelId);
+    ) public view returns (ZkgmERC20) {
+        return ZkgmERC20(channelGovernanceToken[channelId]);
     }
 
     function _predictStakeManagerAddress() internal view returns (ZkgmERC721) {
