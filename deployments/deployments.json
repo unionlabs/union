@@ -813,8 +813,8 @@
       "ucs03": {
         "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
         "height": 354920,
-        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-        "code_id": 186,
+        "commit": "7c1e65224d3aa37a41f846a59d185fecf7288d94",
+        "code_id": 205,
         "minter": {
           "type": "cw20",
           "address": "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0",
