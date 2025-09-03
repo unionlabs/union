@@ -28,3 +28,6 @@ ucs03-zkgm   = { workspace = true, features = ["library"] }
 default  = []
 library  = []
 schemars = ["dep:schemars", "ucs03-zkgm/schemars"]
+
+[dev-dependencies]
+ibc-union-spec.workspace = true
