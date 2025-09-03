@@ -114,6 +114,8 @@ pub fn execute(
 ) -> Result<Response, Error> {
     match msg {
         ExecuteMsg::OnZkgm(on_zkgm_msg) => {
+            ensure_zkgm(deps.as_ref(), &info)?;
+
             let Msg {
                 contract,
                 msg,
@@ -121,24 +123,23 @@ pub fn execute(
                 call_action,
             } = from_json::<Msg>(&*on_zkgm_msg.message)?;
 
+            if from_json::<OnZkgmCallProxyMsg>(&msg).is_ok() {
+                return Err(Error::NestedProxyCallForbidden);
+            };
+
             match call_action {
                 CallAction::Direct => Ok(Response::new().add_message(WasmMsg::Execute {
                     contract_addr: contract.into(),
                     msg,
                     funds,
                 })),
-                CallAction::CallOnProxyCall => {
-                    // we only need to check this here because the sensitive fields are ignored in the direct entrypoint
-                    ensure_zkgm(deps.as_ref(), &info)?;
-
-                    Ok(Response::new().add_message(WasmMsg::Execute {
-                        contract_addr: contract.into(),
-                        msg: to_json_binary(&OnZkgmCallProxyMsg::OnProxyOnZkgmCall(
-                            OnProxyOnZkgmCall { on_zkgm_msg, msg },
-                        ))?,
-                        funds,
-                    }))
-                }
+                CallAction::CallOnProxyCall => Ok(Response::new().add_message(WasmMsg::Execute {
+                    contract_addr: contract.into(),
+                    msg: to_json_binary(&OnZkgmCallProxyMsg::OnProxyOnZkgmCall(
+                        OnProxyOnZkgmCall { on_zkgm_msg, msg },
+                    ))?,
+                    funds,
+                })),
             }
         }
     }
@@ -173,7 +174,7 @@ pub fn migrate(
     )
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     StdError(#[from] StdError),
@@ -183,4 +184,71 @@ pub enum Error {
 
     #[error("unauthorized")]
     Unauthorized,
+
+    #[error("nested proxy calls are forbidden")]
+    NestedProxyCallForbidden,
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{message_info, mock_dependencies, mock_env},
+        to_json_vec, Uint256,
+    };
+    use ibc_union_spec::ChannelId;
+
+    use super::*;
+
+    #[test]
+    fn nested_is_forbidden() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let zkgm = Addr::unchecked("zkgm");
+
+        let info = message_info(&zkgm, &[]);
+
+        init(deps.as_mut(), InitMsg { zkgm: zkgm.clone() }).unwrap();
+
+        let err = execute(
+            deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::OnZkgm(OnZkgm {
+                caller: Addr::unchecked("caller"),
+                path: Uint256::zero(),
+                source_channel_id: ChannelId!(1),
+                destination_channel_id: ChannelId!(1),
+                sender: b"".into(),
+                message: to_json_vec(&Msg {
+                    contract: Addr::unchecked("contract"),
+                    msg: to_json_binary(&OnZkgmCallProxyMsg::OnProxyOnZkgmCall(
+                        OnProxyOnZkgmCall {
+                            on_zkgm_msg: OnZkgm {
+                                caller: Addr::unchecked("caller"),
+                                path: Uint256::zero(),
+                                source_channel_id: ChannelId!(1),
+                                destination_channel_id: ChannelId!(1),
+                                sender: b"".into(),
+                                message: b"".into(),
+                                relayer: Addr::unchecked("relayer"),
+                                relayer_msg: b"".into(),
+                            },
+                            msg: b"".into(),
+                        },
+                    ))
+                    .unwrap(),
+                    funds: vec![],
+                    call_action: CallAction::Direct,
+                })
+                .unwrap()
+                .into(),
+                relayer: Addr::unchecked("relayer"),
+                relayer_msg: b"".into(),
+            }),
+        )
+        .unwrap_err();
+
+        assert_eq!(err, Error::NestedProxyCallForbidden);
+    }
 }

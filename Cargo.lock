@@ -10815,6 +10815,7 @@ dependencies = [
  "depolama",
  "embed-commit",
  "frissitheto",
+ "ibc-union-spec",
  "schemars",
  "serde",
  "thiserror 2.0.12",
