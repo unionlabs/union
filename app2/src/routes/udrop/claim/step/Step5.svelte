@@ -19,6 +19,7 @@ interface Props {
 let { onNext, onBack }: Props = $props()
 
 let alreadyClaimed = $state<boolean>(false)
+let checkingClaimed = $state<boolean>(false)
 
 const AIRDROP_ABI = [
   {
@@ -110,7 +111,7 @@ runPromiseExit$(() =>
         onSome: (p) => Effect.succeed(p),
       })
 
-      // First, check if already claimed
+      checkingClaimed = true
       yield* Effect.log("Checking if already claimed")
       const publicClientCheck = createPublicClient({
         chain: holesky,
@@ -125,10 +126,12 @@ runPromiseExit$(() =>
             functionName: "claimed",
             args: [params.beneficiary],
           }),
-        catch: () => false, // If read fails, assume not claimed
+        catch: () => false,
       }).pipe(
-        Effect.catchAll(() => Effect.succeed(false)), // Ensure we never fail on the check
+        Effect.catchAll(() => Effect.succeed(false)),
       )
+
+      checkingClaimed = false
 
       if (isClaimed) {
         alreadyClaimed = true
@@ -216,6 +219,7 @@ runPromiseExit$(() =>
 
           claimState = ClaimState.Error({ message: shortMessage })
           shouldClaim = false
+          checkingClaimed = false
           return yield* Effect.succeed(false)
         })
       ),
@@ -421,7 +425,7 @@ function handleRetry() {
           <Button
             variant={isError ? "secondary" : "primary"}
             class="flex w-full items-center justify-center gap-3"
-            disabled={isClaiming || isSuccess}
+            disabled={isClaiming || isSuccess || checkingClaimed}
             onclick={isError ? handleRetry : handleClaim}
           >
             {#if isClaiming}
