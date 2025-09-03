@@ -97,7 +97,7 @@ export const navigation: Array<NavSection> = [
   {
     items: [{
       path: "/udrop/claim",
-      title: "Claim U",
+      title: "U Claim",
       icon: AirdropIcon,
     }],
   },

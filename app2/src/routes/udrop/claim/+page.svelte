@@ -1,5 +1,4 @@
 <script lang="ts">
-import { browser } from "$app/environment"
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
 import StepperCard from "$lib/components/ui/StepperCard.svelte"
@@ -16,14 +15,25 @@ let currentSlide = $state(0)
 let stepperCardRef: StepperCard
 let isInitialized = $state(false)
 
+// Protect against URL manipulation - redirect to step 1 if no claim data and trying to access later steps
+let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
 $effect(() => {
-  if (browser && !isInitialized) {
+  if (currentSlide > 0 && Option.isNone(claim)) {
+    goto("/udrop/claim?step=1")
+  }
+})
+
+$effect(() => {
+  if (!isInitialized) {
     const step = page.url.searchParams.get("step")
     if (step) {
       const stepNumber = parseInt(step, 10)
-      if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= 5) {
+      if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= 6) {
         // Auth guard: can't go beyond step 1 without authentication
         if (stepNumber > 1 && Option.isNone(dashboard.session)) {
+          currentSlide = 0
+        } // Claim guard: can't go beyond step 1 without claim data
+        else if (stepNumber > 1 && Option.isNone(claim)) {
           currentSlide = 0
         } else {
           currentSlide = stepNumber - 1 // Convert to 0-based index
@@ -36,7 +46,7 @@ $effect(() => {
 
 // Update URL when slide changes (but not during initialization)
 $effect(() => {
-  if (browser && isInitialized && currentSlide >= 0) {
+  if (isInitialized && currentSlide >= 0) {
     const currentStep = page.url.searchParams.get("step")
     const newStep = (currentSlide + 1).toString()
 

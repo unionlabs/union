@@ -4,7 +4,6 @@ import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { Data, Effect, Match, Option } from "effect"
-import { formatUnits } from "viem"
 import StepLayout from "../StepLayout.svelte"
 
 interface Props {
@@ -13,6 +12,8 @@ interface Props {
 }
 
 let { onNext, onBack }: Props = $props()
+
+let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
 
 const U_ADDRESS = "0xba5eD44733953d79717F6269357C77718C8Ba5ed"
 const U_SYMBOL = "U"
@@ -34,17 +35,6 @@ const isReady = $derived(AddTokenState.$is("Ready")(addTokenState))
 const isAdding = $derived(AddTokenState.$is("Adding")(addTokenState))
 const isSuccess = $derived(AddTokenState.$is("Success")(addTokenState))
 const isError = $derived(AddTokenState.$is("Error")(addTokenState))
-
-let claim = $derived(
-  Option.flatMap(dashboard.airdrop, (store) => store.claim),
-)
-
-let claimAmount = $derived(
-  Option.match(claim, {
-    onNone: () => "0",
-    onSome: (claimData) => formatUnits(BigInt(claimData.amount), 18),
-  }),
-)
 
 // Add token to wallet using wagmi
 let shouldAddToken = $state(false)

@@ -5,10 +5,8 @@ import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
 import { wallets } from "$lib/stores/wallets.svelte"
-import * as WriteEvm from "$lib/transfer/shared/services/write-evm"
 import { Evm } from "@unionlabs/sdk-evm"
 import { Data, Effect, Match, Option } from "effect"
-import { onMount } from "svelte"
 import { createPublicClient, custom, formatUnits } from "viem"
 import { holesky } from "viem/chains"
 import StepLayout from "../StepLayout.svelte"
@@ -66,13 +64,11 @@ const ClaimState = Data.taggedEnum<ClaimState>()
 
 let claimState = $state<ClaimState>(ClaimState.Ready())
 
+let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
+
 const isClaiming = $derived(ClaimState.$is("Claiming")(claimState))
 const isSuccess = $derived(ClaimState.$is("Success")(claimState))
 const isError = $derived(ClaimState.$is("Error")(claimState))
-
-let claim = $derived(
-  Option.flatMap(dashboard.airdrop, (store) => store.claim),
-)
 
 let claimAmount = $derived(
   Option.match(claim, {
@@ -97,7 +93,6 @@ let claimParams = $derived<Option.Option<ClaimParams>>(
     })),
 )
 
-// Use Effect-based claim execution
 let shouldClaim = $state(false)
 
 runPromiseExit$(() =>
@@ -122,13 +117,17 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
-      const isClaimed = yield* Effect.tryPromise(() =>
-        publicClientCheck.readContract({
-          address: AIRDROP_CONTRACT_ADDRESS,
-          abi: AIRDROP_ABI,
-          functionName: "claimed",
-          args: [params.beneficiary],
-        })
+      const isClaimed = yield* Effect.tryPromise({
+        try: () =>
+          publicClientCheck.readContract({
+            address: AIRDROP_CONTRACT_ADDRESS,
+            abi: AIRDROP_ABI,
+            functionName: "claimed",
+            args: [params.beneficiary],
+          }),
+        catch: () => false, // If read fails, assume not claimed
+      }).pipe(
+        Effect.catchAll(() => Effect.succeed(false)), // Ensure we never fail on the check
       )
 
       if (isClaimed) {
@@ -205,15 +204,19 @@ runPromiseExit$(() =>
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
-          // Extract short user-friendly message
+          // Log the full error for debugging
+          console.error("Claim error:", error)
+
           const errorObj = error as any
-          const fullError = errorObj?.cause?.cause?.shortMessage || errorObj?.cause?.message
-            || errorObj?.message || "Unknown error occurred"
+          const fullError = errorObj?.cause?.cause?.shortMessage
+            || errorObj?.cause?.message
+            || errorObj?.message
+            || JSON.stringify(error)
           const shortMessage = String(fullError).split(".")[0]
 
           claimState = ClaimState.Error({ message: shortMessage })
           shouldClaim = false
-          return yield* Effect.fail(error)
+          return yield* Effect.succeed(false)
         })
       ),
     )
@@ -250,7 +253,7 @@ function handleRetry() {
                 Match.when(ClaimState.$is("Error"), () =>
                   "There was an error processing your claim transaction. Please try again."),
                 Match.when(ClaimState.$is("Ready"), () =>
-                  "Execute the claim transaction on EVM mainnet to receive your allocated U tokens."),
+                  "Execute the claim transaction on EVM mainnet to receive your allocated U."),
                 Match.exhaustive,
               )
             }

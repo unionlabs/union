@@ -70,7 +70,7 @@ function handleContinue() {
             Connect Ethereum Wallet
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Connect your Ethereum wallet to claim your U tokens on Ethereum.
+            Connect your Ethereum wallet to claim your U on Ethereum.
           </p>
         </div>
       </div>
@@ -283,11 +283,11 @@ function handleContinue() {
       <div class="w-full h-full bg-zinc-950 rounded-lg border border-zinc-800 overflow-hidden flex flex-col relative">
         <!-- Ethereum Logo as full background -->
         <div
-          class="w-full h-full flex items-center justify-center"
+          class="w-full h-full flex items-center justify-center {isEvmConnected ? '' : 'filter grayscale'}"
           style="background-color: #0D2024;"
         >
           <svg
-            class="w-32 h-32 {isEvmConnected ? 'text-accent' : 'text-rose-400'} opacity-80"
+            class="w-32 h-32 {isEvmConnected ? 'text-accent' : 'text-zinc-400'} opacity-80"
             fill="currentColor"
             viewBox="0 0 24 24"
           >

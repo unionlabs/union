@@ -11,9 +11,7 @@ interface Props {
 
 let { onRestart }: Props = $props()
 
-let claim = $derived(
-  Option.flatMap(dashboard.airdrop, (store) => store.claim),
-)
+let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
 
 let claimAmount = $derived(
   Option.match(claim, {
@@ -23,18 +21,17 @@ let claimAmount = $derived(
 )
 
 // Get transaction hash from localStorage
-let transactionHash = $derived.by(() => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("lastClaimTxHash") || null
-  }
-  return null
-})
+let transactionHash = $derived<Option.Option<string>>(
+  typeof window !== "undefined"
+    ? Option.fromNullable(localStorage.getItem("lastClaimTxHash"))
+    : Option.none(),
+)
 
 function handleViewTransaction() {
-  if (transactionHash) {
-    // Open Holesky block explorer
-    window.open(`https://holesky.etherscan.io/tx/${transactionHash}`, "_blank")
-  }
+  Option.match(transactionHash, {
+    onNone: () => {},
+    onSome: (hash) => window.open(`https://holesky.etherscan.io/tx/${hash}`, "_blank"),
+  })
 }
 
 function handleDone() {
@@ -48,24 +45,23 @@ function handleDone() {
       <div class="space-y-4 hidden lg:block">
         <div>
           <h1 class="text-2xl font-semibold">
-            Thank You!
+            U Claimed
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Your U tokens have been successfully claimed and are now in your wallet. Thank you for
-            being part of the Union ecosystem.
+            Your U has been successfully claimed. Thank you for being part of the Union.
           </p>
         </div>
       </div>
 
       <div class="space-y-4">
         <!-- Transaction Info -->
-        {#if transactionHash}
+        {#if Option.isSome(transactionHash)}
           <div class="bg-zinc-950/50 rounded-lg p-4 border border-zinc-800">
             <div class="flex items-center justify-between">
               <div>
                 <div class="text-sm font-medium text-white mb-1">Transaction Hash</div>
                 <div class="text-xs font-mono text-zinc-400">
-                  {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+                  {transactionHash.value.slice(0, 10)}...{transactionHash.value.slice(-8)}
                 </div>
               </div>
               <Button
@@ -97,7 +93,7 @@ function handleDone() {
     <div class="relative w-full h-full flex flex-col p-4">
       <!-- Mobile Title -->
       <div class="block lg:hidden mb-4">
-        <h1 class="text-2xl font-semibold">Thank You!</h1>
+        <h1 class="text-2xl font-semibold">Thank U!</h1>
         <p class="text-sm text-zinc-400 leading-relaxed mt-3">
           Your tokens have been successfully claimed.
         </p>
@@ -131,7 +127,7 @@ function handleDone() {
                 </svg>
               </div>
             </div>
-            <div class="text-xl font-bold text-accent mb-2">Thank You!</div>
+            <div class="text-xl font-bold text-accent mb-2">Thank U!</div>
             <div class="text-sm text-zinc-300">{claimAmount} U claimed successfully</div>
           </div>
         </div>

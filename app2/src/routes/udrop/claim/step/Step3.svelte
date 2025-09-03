@@ -16,6 +16,12 @@ let claim = $derived(
   Option.flatMap(dashboard.airdrop, (store) => store.claim),
 )
 
+$effect(() => {
+  if (Option.isNone(claim)) {
+    window.location.href = "/udrop/claim?step=1"
+  }
+})
+
 let isLoadingClaim = $derived(
   Option.match(dashboard.airdrop, {
     onNone: () => true,
