@@ -34,9 +34,6 @@ pub struct PacketSendUnbondRecord {
     pub sender_canonical: Vec<u8>,
     pub sender_display: String,
     pub sender_zkgm: Vec<u8>,
-    pub receiver_canonical: Vec<u8>,
-    pub receiver_display: String,
-    pub receiver_zkgm: Vec<u8>,
     pub base_token: Vec<u8>,
     pub base_amount: BigDecimal,
     pub unbond_amount: BigDecimal,
@@ -83,9 +80,6 @@ impl TryFrom<(&PacketSendRecord, &Unbond, &ChannelMetaData, &String)> for Packet
             sender_canonical: unbond.sender_canonical.pg_value()?,
             sender_display: unbond.sender_display.pg_value()?,
             sender_zkgm: unbond.sender_zkgm.pg_value()?,
-            receiver_canonical: unbond.receiver_canonical.pg_value()?,
-            receiver_display: unbond.receiver_display.pg_value()?,
-            receiver_zkgm: unbond.receiver_zkgm.pg_value()?,
             base_token: unbond.base_token.pg_value()?,
             base_amount: unbond.base_amount.pg_value()?,
             unbond_amount: unbond.unbond_amount.pg_value()?,
@@ -131,47 +125,47 @@ impl PacketSendUnbondRecord {
                 sender_display,
                 sender_zkgm,
 
-                receiver_canonical,
-                receiver_display,
-                receiver_zkgm,
                 base_token,
                 base_amount,
-
                 unbond_amount,
                 packet_shape,
+
                 sort_order,
                 network,
                 counterparty_network
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
             "#,
+            // 1
             self.internal_chain_id,
             self.universal_chain_id,
             self.internal_counterparty_chain_id,
             self.counterparty_universal_chain_id,
             self.client_id,
+            // 6
             self.counterparty_client_id,
             self.connection_id,
             self.counterparty_connection_id,
             self.source_channel_id,
             self.destination_channel_id,
+            // 11
             self.port_id,
             &self.counterparty_port_id[..],
             &self.block_hash[..],
             &self.transaction_hash[..],
             &self.packet_hash[..],
+            // 16
             self.height,
             self.timestamp,
             &self.sender_canonical[..],
             self.sender_display,
             &self.sender_zkgm[..],
-            &self.receiver_canonical[..],
-            self.receiver_display,
-            &self.receiver_zkgm[..],
+            // 21
             &self.base_token[..],
             self.base_amount,
             self.unbond_amount,
             self.packet_shape,
             self.sort_order,
+            // 26
             self.network,
             self.counterparty_network,
         )

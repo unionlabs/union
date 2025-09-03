@@ -71,6 +71,7 @@ pub struct Transfer {
     pub packet_shape: PacketShape,
 }
 
+#[derive(Debug)]
 pub struct Bond {
     pub source_channel_id: ChannelId,
     pub universal_chain_id: UniversalChainId,
@@ -114,13 +115,11 @@ pub struct Bond {
     pub packet_shape: PacketShape,
 }
 
+#[derive(Debug)]
 pub struct Unbond {
     pub sender_zkgm: AddressZkgm,
     pub sender_canonical: AddressCanonical,
     pub sender_display: AddressDisplay,
-    pub receiver_zkgm: AddressZkgm,
-    pub receiver_canonical: AddressCanonical,
-    pub receiver_display: AddressDisplay,
     pub base_token: Denom,     // 0xe5cf1 (eU) (from token-order.base-token)
     pub base_amount: Amount,   // (from token-order.base-amount)
     pub unbond_amount: Amount, // (from token-order.quote-amount)

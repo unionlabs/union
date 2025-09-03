@@ -195,51 +195,61 @@ impl PacketSendBondRecord {
                 sort_order
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47)
             "#,
+            // 1
             &self.internal_chain_id,
             &self.universal_chain_id,
             &self.remote_universal_chain_id,
             &self.destination_universal_chain_id,
             &self.source_network,
+            // 6
             &self.remote_network,
             &self.destination_network,
             &self.internal_remote_chain_id,
             &self.internal_destination_chain_id,
             &self.source_client_id,
+            // 11
             &self.remote_source_client_id,
             &self.remote_destination_client_id,
             &self.destination_client_id,
             &self.source_connection_id,
             &self.remote_source_connection_id,
+            // 16
             &self.remote_destination_connection_id,
             &self.destination_connection_id,
             &self.source_channel_id,
             &self.remote_source_channel_id,
             &self.remote_destination_channel_id,
+            // 21
             &self.destination_channel_id,
             &self.source_port_id,
             &self.remote_source_port_id,
             &self.remote_destination_port_id,
             &self.destination_port_id,
+            // 26
             &self.block_hash[..],
             &self.transaction_hash[..],
             &self.packet_hash[..],
             self.height,
             self.timestamp,
+            // 31
             &self.sender_canonical[..],
             self.sender_display,
             &self.sender_zkgm[..],
             &self.receiver_canonical[..],
             self.receiver_display,
+            // 36
             &self.receiver_zkgm[..],
             &self.base_token[..],
             self.base_amount,
             &self.quote_token[..],
             self.quote_amount,
+            // 41
             &self.remote_base_token[..],
             self.remote_base_amount,
             &self.remote_quote_token[..],
             self.remote_quote_amount,
             self.delivery_packet_hash,
+            // 46
             self.packet_shape,
             self.sort_order,
         )
