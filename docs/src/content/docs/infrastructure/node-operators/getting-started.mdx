@@ -30,14 +30,14 @@ Double-check the version and architecture in the link before downloading.
     ```sh frame="none"
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-x86_64-linux
     ```
-    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-10'}).current} />*
+    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-1'}).current} />*
 
   </TabItem>
   <TabItem label='aarch64-linux'>
     ```sh frame='none'
     curl --output uniond --location https://github.com/unionlabs/union/releases/download/$UNIOND_VERSION/uniond-release-aarch64-linux
     ```
-    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-10'}).current} />*
+    *Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-1'}).current} />*
 
   </TabItem>
 </Tabs>
@@ -62,7 +62,7 @@ We also provide containers in our [package registry](https://github.com/orgs/uni
 docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 ```
 
-_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-10'}).current} />_
+_Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-1'}).current} />_
 
 When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](/infrastructure/node-operators/docker-compose/) section is more suited for docker users.
 
@@ -79,7 +79,7 @@ We'll need to set up a few configuration files and obtain the <DownloadFile file
 First, set some environment variables, which are used throughout initialization.
 
 ```sh title="env.sh"
-export CHAIN_ID=union-testnet-10
+export CHAIN_ID=union-1
 export MONIKER="unionized-goblin"
 export KEY_NAME=alice
 export GENESIS_URL="https://union.build/genesis.json"
@@ -177,7 +177,7 @@ Then you can submit this file using the `create-union-validator` sub-command:
 ```sh frame="none"
 uniond tx union-staking create-union-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
 	--from $KEY_NAME \
-	--chain-id union-testnet-10
+	--chain-id union-1
 ```
 
 _Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`_
@@ -197,7 +197,7 @@ touch ~/.unionvisor/validator.json
 
 uniond tx union-staking create-union-validator /.unionvisor/validator.json $POSSESSION_PROOF \
 	--from $KEY_NAME \
-	--chain-id union-testnet-10
+	--chain-id union-1
 ```
 
 :::
