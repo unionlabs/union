@@ -95,13 +95,6 @@ export const navigation: Array<NavSection> = [
     ],
   },
   {
-    items: [{
-      path: "/udrop",
-      title: "U Drop",
-      icon: AirdropIcon,
-    }],
-  },
-  {
     title: "Developer",
     items: [
       {
