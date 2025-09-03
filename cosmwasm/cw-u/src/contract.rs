@@ -246,6 +246,7 @@ pub fn execute(
     }
 }
 
+#[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
         QueryMsg::Minter {} => Err(Error::Unsupported),
