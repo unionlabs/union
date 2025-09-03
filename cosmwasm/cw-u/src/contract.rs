@@ -246,7 +246,6 @@ pub fn execute(
     }
 }
 
-// we are intentionally using cw20 wrapped tokenfactory's querymsg since its more restrictive
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
         QueryMsg::Minter {} => Err(Error::Unsupported),
