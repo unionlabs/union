@@ -20,7 +20,8 @@ let { onBack, isLoadingAllocation, preStakedAmount }: Props = $props()
             Your pre-stake
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Your pre-stake allocation will automatically convert to liquid staking rewards when eU launches.
+            Your pre-stake allocation will automatically convert to liquid staking rewards when eU
+            launches.
           </p>
         </div>
       </div>

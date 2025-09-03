@@ -19,7 +19,6 @@ interface Props {
 }
 
 let { onNext, providers, loading, handleLogin }: Props = $props()
-
 </script>
 
 <StepLayout>
@@ -31,12 +30,13 @@ let { onNext, providers, loading, handleLogin }: Props = $props()
             eU Liquid Staking
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Stake your eU and earn rewards while maintaining liquidity. Sign in to check your pre stake allocation.
+            Stake your eU and earn rewards while maintaining liquidity. Sign in to check your pre
+            stake allocation.
           </p>
         </div>
       </div>
 
-{#if Option.isNone(dashboard.session)}
+      {#if Option.isNone(dashboard.session)}
         <div class="space-y-3">
           {#each providers as provider (provider.id)}
             <Button
