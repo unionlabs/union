@@ -46,6 +46,13 @@ _: {
         hash = "sha256-4y1Hf0Te2oJxwKBOgVBEHZeKYt7hs+wTgdIO+rItj0E=";
         fetchSubmodules = true;
       };
+      safe-utils = pkgs.fetchFromGitHub {
+        owner = "Recon-Fuzz";
+        repo = "safe-utils";
+        rev = "eccb79f80cad0f3ad98137cf3e859aac5d66e425";
+        hash = "sha256-6tOXRjKQQP+I8tjkY8IcLMKVHXP4KDsaUo4bKi3D1ig=";
+        fetchSubmodules = true;
+      };
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
@@ -80,6 +87,14 @@ _: {
         {
           name = "forge-std";
           path = "${forge-std}/src";
+        }
+        {
+          name = "@safe-utils";
+          path = "${safe-utils}/src";
+        }
+        {
+          name = "lib";
+          path = "${safe-utils}/lib";
         }
         {
           name = "@openzeppelin";
@@ -152,6 +167,7 @@ _: {
         memory_limit = 33554432
 
         [profile.script]
+        ffi = true
         src = "scripts"
 
         [profile.test]
@@ -967,6 +983,7 @@ _: {
       upgrade =
         {
           dry ? false,
+          safe ? false,
           protocol,
 
           ucs04-chain-id,
@@ -987,7 +1004,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplicationWithArgs {
-            name = "evm-${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
+            name = "evm-${pkgs.lib.optionalString safe "safe"}${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
             runtimeInputs = [
               self'.packages.forge
               pkgs.jq
@@ -1042,7 +1059,7 @@ _: {
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
-                forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
+                forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString safe "Safe"}${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                   --slow \
                   --rpc-url ${if dry then "$argc_dry_url" else rpc-url} \
                   --broadcast "''${VERIFICATION_ARGS[@]}"
@@ -1272,6 +1289,18 @@ _: {
                             false
                           ]
                         )
+                        ++ [
+                          {
+                            ${"safe-upgrade-${name}"} = upgrade (
+                              chain
+                              // {
+                                inherit protocol;
+                                dry = false;
+                                safe = true;
+                              }
+                            );
+                          }
+                        ]
                       )
                       {
                         ucs00 = "UCS00";
