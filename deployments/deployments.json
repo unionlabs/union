@@ -838,8 +838,8 @@
     "on_zkgm_call_proxy": {
       "address": "union1mtxk8tjz85ry2a8a6k58uwrztmwslaxzsurh5l0dlxh7wrnvmxkshqkuwd",
       "height": 2756683,
-      "commit": "cf53555db1eb8334cf4d960f90a34018a324b119",
-      "code_id": 201
+      "commit": "fbf017f1ff0bb40a09312dc6846e9c0059c5f74c",
+      "code_id": 202
     }
   },
   "xion.xion-testnet-2": {
