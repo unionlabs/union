@@ -4,7 +4,7 @@ use ibc_union_spec::{Packet, Timestamp};
 use itertools::Itertools;
 use serde_json::{Map, Value};
 use time::{macros::format_description, UtcOffset};
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 pub(crate) mod ucs03_zkgm_0;
 mod wrapping;
@@ -359,10 +359,13 @@ async fn get_bonds(
 ) -> Result<Vec<Bond>, IndexerError> {
     Ok(
         match try_get_bonds(tx, channel, packet_structure, flatten).await {
-            Ok(bonds) => bonds,
+            Ok(bonds) => {
+                trace!("get_bonds: found {bonds:?}");
+                bonds
+            }
             Err(error) => {
                 let packet = Value::Array(flatten.to_vec());
-                warn!("error reading bond: {error} => {packet}");
+                warn!("get_bonds: error reading instructions: {error} => {packet}");
                 vec![]
             }
         },
@@ -375,9 +378,14 @@ async fn try_get_bonds(
     packet_structure: &str,
     flatten: &[Value],
 ) -> Result<Vec<Bond>, IndexerError> {
+    trace!("get_bonds: channel: {channel}, packet_structure: {packet_structure}");
+
     let Some(packet_shape) = packet_shape(packet_structure, flatten)? else {
+        trace!("get_bonds: cannot determine packet_shape");
         return Ok(vec![]);
     };
+
+    trace!("get_bonds: packet_shape: {packet_shape:?}");
 
     let Some((token_order, _bond, _increase_allowance, delivery)) = (match packet_shape {
         PacketShape::BondV2 => Some((
@@ -388,15 +396,18 @@ async fn try_get_bonds(
         )),
         _ => None,
     }) else {
-        // not a bond
+        trace!("get_bonds: not a bond");
         return Ok(vec![]);
     };
+
+    trace!("get_bonds: bond with token_order: {token_order} and delivery: {delivery}");
 
     // -------------------------------------------------
     // fetch details from call that will deliver the lst
     // -------------------------------------------------
 
     let delivery_contract_calldata = delivery.get_call_message("contractCalldata")?;
+    trace!("get_bonds: delivery calldata: {delivery_contract_calldata}");
 
     // delivery channel_id
     let Value::Number(delivery_channel_id) = delivery_contract_calldata
@@ -430,6 +441,8 @@ async fn try_get_bonds(
         })?
         .into();
 
+    trace!("get_bonds: delivery channel_id: {delivery_channel_id}");
+
     // delivery timeout_timestamp
     let Value::String(delivery_timeout_timestamp) = delivery_contract_calldata
         .get("timeout_timestamp")
@@ -454,6 +467,11 @@ async fn try_get_bonds(
             )
         })?);
 
+    trace!(
+        "get_bonds: delivery timeout_timestamp: {}",
+        delivery_timeout_timestamp.0
+    );
+
     // delivery salt
     let Value::String(delivery_salt_string) =
         delivery_contract_calldata.get("salt").ok_or_else(|| {
@@ -469,8 +487,17 @@ async fn try_get_bonds(
         ));
     };
 
-    let mut delivery_salt = [0u8; 32];
-    delivery_salt.copy_from_slice(&string_0x_to_bytes(delivery_salt_string, "salt")?);
+    let delivery_salt: [u8; 32] = string_0x_to_bytes(delivery_salt_string, "delivery-salt")?
+        .as_ref()
+        .try_into()
+        .map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "salt must be exactly 32 bytes".to_string(),
+                delivery_salt_string.to_string(),
+            )
+        })?;
+
+    trace!("get_bonds: delivery salt: 0x{}", hex::encode(delivery_salt));
 
     // delivery path
     let Value::String(delivery_path) = delivery_contract_calldata.get("path").ok_or_else(|| {
@@ -492,6 +519,8 @@ async fn try_get_bonds(
             delivery_contract_calldata.to_string(),
         )
     })?;
+
+    trace!("get_bonds: delivery path: {delivery_path}");
 
     // delivery instruction
     let Value::String(delivery_instruction) = delivery_contract_calldata
@@ -521,6 +550,8 @@ async fn try_get_bonds(
             )
         })?;
 
+    trace!("get_bonds: delivery instruction: {delivery_instruction:?}");
+
     // delivery channel details
     let delivery_internal_chain_id = channel.internal_counterparty_chain_id;
 
@@ -532,6 +563,8 @@ async fn try_get_bonds(
         );
         return Ok(vec![]);
     };
+
+    trace!("get_bonds: delivery channel: {delivery_channel}");
 
     // ------------------------------------------------------
     // construct delivery packet to calculate the packet-hash
@@ -564,9 +597,13 @@ async fn try_get_bonds(
         timeout_timestamp: Timestamp::from_nanos(delivery_timeout_timestamp.0),
     };
 
+    trace!("get_bonds: delivery packet: {delivery_packet:?}");
+
     let delivery_packet_hash = crate::indexer::event::types::PacketHash(
         delivery_packet.hash().into_bytes().to_vec().into(),
     );
+
+    trace!("get_bonds: delivery packet_hash: {delivery_packet_hash}");
 
     // use existing logic to transform zkgm packet to json (originates from postgres plugin)
     // so we can extract the token-order details
@@ -577,6 +614,8 @@ async fn try_get_bonds(
         )
     })?;
 
+    trace!("get_bonds: delivery zkgm_packet (json): {delivery_zkgm_packet_json}");
+
     let Value::Array(delivery_zkgm_packet_flattened) = format_flatten(&delivery_zkgm_packet_json)
     else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
@@ -585,8 +624,12 @@ async fn try_get_bonds(
         ));
     };
 
+    trace!("get_bonds: delivery zkgm_packet (json-flattened): {delivery_zkgm_packet_flattened:?}");
+
     let delivery_token_order =
         InstructionDecoder::from_values_with_index(&delivery_zkgm_packet_flattened, 0)?;
+
+    trace!("get_bonds: delivery token-order: {delivery_token_order}");
 
     // sender is sender of token-order in the batch
     let sender_zkgm =
@@ -658,10 +701,14 @@ async fn get_unbonds(
 ) -> Result<Vec<Unbond>, IndexerError> {
     Ok(
         match try_get_unbonds(channel, packet_structure, flatten).await {
-            Ok(bonds) => bonds,
+            Ok(unbonds) => {
+                trace!("get_unbonds: found {unbonds:?}");
+
+                unbonds
+            }
             Err(error) => {
                 let packet = Value::Array(flatten.to_vec());
-                warn!("error reading unbond: {error} => {packet}");
+                warn!("get_unbonds: error reading instructions: {error} => {packet}");
                 vec![]
             }
         },
@@ -673,27 +720,33 @@ async fn try_get_unbonds(
     packet_structure: &str,
     flatten: &[Value],
 ) -> Result<Vec<Unbond>, IndexerError> {
+    trace!("get_unbonds: channel: {channel}, packet_structure: {packet_structure}");
+
     let Some(packet_shape) = packet_shape(packet_structure, flatten)? else {
+        trace!("get_unbonds: cannot determine packet_shape");
         return Ok(vec![]);
     };
+
+    trace!("get_unbonds: packet_shape: {packet_shape:?}");
 
     let Some((token_order, _unbond)) = (match packet_shape {
         PacketShape::UnbondV2 => Some((
             InstructionDecoder::from_values_with_index(flatten, 1)?,
             InstructionDecoder::from_values_with_index(flatten, 2)?,
         )),
-        _ => None,
+        _ => {
+            trace!("get_unbonds: not an unbond");
+            None
+        }
     }) else {
         // not an unbond
         return Ok(vec![]);
     };
 
+    trace!("get_unbonds: unbond with token_order: {token_order}");
+
     let sender_zkgm =
         &AddressZkgm::from_string_0x(token_order.get_string("sender")?, channel.rpc_type)?;
-    let receiver_zkgm = &AddressZkgm::from_string_0x(
-        token_order.get_string("receiver")?,
-        channel.counterparty_rpc_type,
-    )?;
     let base_token = token_order.get_string("baseToken")?.try_into()?;
     let base_amount: Amount = token_order.get_string("baseAmount")?.try_into()?;
     let unbond_amount: Amount = token_order.get_string("quoteAmount")?.try_into()?;
@@ -702,9 +755,6 @@ async fn try_get_unbonds(
         sender_zkgm: sender_zkgm.clone(),
         sender_canonical: sender_zkgm.try_into()?,
         sender_display: sender_zkgm.try_into()?,
-        receiver_zkgm: receiver_zkgm.clone(),
-        receiver_canonical: receiver_zkgm.try_into()?,
-        receiver_display: receiver_zkgm.try_into()?,
         base_token,
         base_amount,
         unbond_amount,
@@ -792,6 +842,22 @@ struct InstructionDecoder<'a> {
     version: InstructionVersion,
     instruction_hash: InstructionHash,
     operand: &'a Map<String, Value>,
+}
+
+impl<'a> std::fmt::Display for InstructionDecoder<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "InstructionDecoder {{ root_path: 0x{}, root_salt: 0x{}, instruction_path: {}, opcode: {}, version: {}, instruction_hash: 0x{}, operand: {} }}",
+            hex::encode(&self.root_path.0),
+            hex::encode(&self.root_salt.0),
+            self.instruction_path.0,
+            self.opcode.0,
+            self.version.0,
+            hex::encode(&self.instruction_hash.0),
+            Value::Object(self.operand.clone())
+        )
+    }
 }
 
 impl<'a> InstructionDecoder<'a> {
