@@ -98,14 +98,14 @@ function handleContinue() {
       {#if Option.isSome(dashboard.session)}
         <div class="space-y-3">
           {#if isLoadingClaim}
-            <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div class="bg-accent/10 border border-accent/20 rounded-lg p-4">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin">
+                <div class="w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
+                  <div class="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin">
                   </div>
                 </div>
                 <div>
-                  <div class="text-sm font-medium text-blue-400">Checking Claim Status</div>
+                  <div class="text-sm font-medium text-accent">Checking Claim Status</div>
                   <div class="text-xs text-zinc-400">
                     Please wait while we verify your eligibility...
                   </div>
