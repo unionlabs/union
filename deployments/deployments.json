@@ -141,7 +141,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 27935624,
-        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+        "commit": "eb165175bf870fd682a402dce0ec37a5cff9a3cc"
       }
     }
   },
@@ -448,7 +448,7 @@
     "core": {
       "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
       "height": 8088108,
-      "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      "commit": "dirty"
     },
     "lightclient": {
       "cometbls": {
@@ -471,7 +471,7 @@
       "ucs03": {
         "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
         "height": 8088109,
-        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+        "commit": "dirty"
       }
     },
     "u": {
