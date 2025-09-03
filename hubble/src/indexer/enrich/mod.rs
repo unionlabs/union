@@ -1212,25 +1212,26 @@ fn has_fee(flatten: &[Value]) -> Result<bool, IndexerError> {
     Ok(is_zero)
 }
 
-const ON_ZKGM_CALL_PROXY: Bytes = Bytes::from_static(&hex_literal::hex!("00"));
+const ON_ZKGM_CALL_PROXY_BECH32: &str =
+    "union1mtxk8tjz85ry2a8a6k58uwrztmwslaxzsurh5l0dlxh7wrnvmxkshqkuwd";
 
 fn is_bond(flatten: &[Value]) -> Result<bool, IndexerError> {
-    Ok(is_transfer_to(flatten, 0, &ON_ZKGM_CALL_PROXY)?
-        && is_call_to(flatten, 1, &ON_ZKGM_CALL_PROXY)?
-        && is_call_to(flatten, 2, &ON_ZKGM_CALL_PROXY)?
-        && is_call_to(flatten, 3, &ON_ZKGM_CALL_PROXY)?)
+    Ok(is_transfer_to(flatten, 0, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 3, ON_ZKGM_CALL_PROXY_BECH32)?)
 }
 
 fn is_unbond(flatten: &[Value]) -> Result<bool, IndexerError> {
-    Ok(is_transfer_to(flatten, 0, &ON_ZKGM_CALL_PROXY)?
-        && is_call_to(flatten, 1, &ON_ZKGM_CALL_PROXY)?)
+    Ok(is_transfer_to(flatten, 0, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?)
 }
 
 // check if the instruction at index is a transfer to the specified address
 fn is_transfer_to(
     flatten: &[Value],
     index: usize,
-    expected_receiver_address: &Bytes,
+    expected_receiver_address_bech32: &str,
 ) -> Result<bool, IndexerError> {
     let Some(Value::Object(instruction)) = flatten.get(index) else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
@@ -1258,6 +1259,16 @@ fn is_transfer_to(
         format!("receiver is 0x hex in token-order instruction with index {index}").as_str(),
     )?;
 
+    let (_, expected_receiver_address) =
+        bech32::decode(expected_receiver_address_bech32).map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                format!("configured address ({expected_receiver_address_bech32}) is not bech32"),
+                expected_receiver_address_bech32.to_string(),
+            )
+        })?;
+
+    let expected_receiver_address: Bytes = expected_receiver_address.into();
+
     Ok(actual_receiver_address == expected_receiver_address)
 }
 
@@ -1265,7 +1276,7 @@ fn is_transfer_to(
 fn is_call_to(
     flatten: &[Value],
     index: usize,
-    expected_contract_address: &Bytes,
+    expected_contract_address_bech32: &str,
 ) -> Result<bool, IndexerError> {
     let Some(Value::Object(instruction)) = flatten.get(index) else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
@@ -1292,6 +1303,16 @@ fn is_call_to(
         contract_address_0x,
         format!("contract address is 0x hex in call instruction with index {index}").as_str(),
     )?;
+
+    let (_, expected_contract_address) =
+        bech32::decode(expected_contract_address_bech32).map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                format!("configured address ({expected_contract_address_bech32}) is not bech32"),
+                expected_contract_address_bech32.to_string(),
+            )
+        })?;
+
+    let expected_contract_address: Bytes = expected_contract_address.into();
 
     Ok(actual_contract_address == expected_contract_address)
 }
