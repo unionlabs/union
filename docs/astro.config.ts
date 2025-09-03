@@ -277,6 +277,10 @@ export default defineConfig({
                   link: "/infrastructure/testnet-10",
                 },
                 {
+                  label: "Mainnet",
+                  link: "/infrastructure/mainnet",
+                },
+                {
                   label: "Node Operators",
                   collapsed: true,
                   autogenerate: {

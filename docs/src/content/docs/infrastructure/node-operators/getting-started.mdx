@@ -99,11 +99,11 @@ Download the `genesis.json` and copy it to your `uniond` home directory.
 curl $GENESIS_URL | jq '.result.genesis' > ~/.union/config/genesis.json
 ```
 
-### Registration
+### Creating a Validator
 
-To join as a validator, you need to submit a registration transaction. You can do this from the command line on your validator node.
+To join as a validator, you need to create a proof of possession for your consensus key and submit a creation transaction. You can do this from the command line with `uniond`.
 
-First, add a wallet that holds Union tokens.
+1) Add a wallet that holds Union tokens.
 
 ```sh frame="none"
 uniond keys add $KEY_NAME --recover
@@ -115,20 +115,98 @@ For production usage, we recommend not storing the wallet on a server.
 
 :::
 
-To submit the registration transaction and become a validator, you must submit a `create-validator` transaction:
+2) Create a Validator JSON File
 
 ```sh frame="none"
-uniond tx staking create-validator \
-  --amount 1000000muno \
-  --pubkey $(uniond tendermint show-validator) \
-  --moniker $MONIKER \
-  --chain-id $CHAIN_ID \
-  --from $KEY_NAME \
-  --commission-max-change-rate "0.1" \
-  --commission-max-rate "0.20" \
-  --commission-rate "0.1" \
-  --min-self-delegation "1"
+touch validator.json
 ```
+
+Add the following content to the file:
+
+```json title="validator.json"
+{
+	"pubkey": <PUBKEY>,
+	"amount": "1000000au",
+	"moniker": "<MONIKER>",
+	"identity": "optional identity signature (ex. UPort or Keybase)",
+	"website": "validator's (optional) website",
+	"security": "validator's (optional) security contact email",
+	"details": "validator's (optional) details",
+	"commission-rate": "0.1",
+	"commission-max-rate": "0.2",
+	"commission-max-change-rate": "0.01",
+	"min-self-delegation": "1"
+}
+```
+
+Replacing:
+
+- `<PUBKEY>` with the result of running `uniond comet show-validator`
+- `<MONIKER>` with your moniker
+- And the optional content with your preferred details
+
+3) Create a Proof of Possession
+
+:::note
+
+This step is specific to the Union network, other Cosmos based chains do not currently replicate this process.
+
+:::
+
+Assuming your private validator key is in the default location:
+
+<Tabs>
+  <TabItem label='uniond-release'>
+    ```sh frame="none"
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.union/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
+	```
+  </TabItem>
+  <TabItem label='Unionvisor'>
+    ```sh frame="none"
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.unionvisor/home/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
+	```
+  </TabItem>
+</Tabs>
+
+4) Submit a Create Validator Transaction
+
+Then you can submit this file using the `create-union-validator` sub-command:
+
+```sh frame="none"
+uniond tx union-staking create-union-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
+	--from $KEY_NAME \
+	--chain-id union-testnet-10
+```
+
+_Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`_
+
+:::caution
+
+If you're running a node with a Docker container, your `validator.json` will need to be in a folder accessible by your Docker container.
+
+If you've followed our instructions for setting up either of our Docker images, you should be able to place this file under `/.unionvisor` (for Unionvisor containers) or under `/.union` (for union-release containers).
+
+For example, when creating a validator with `unionvisor`, you can
+
+```sh frame="none"
+touch ~/.unionvisor/validator.json
+
+# Then after editing the json content
+
+uniond tx union-staking create-union-validator /.unionvisor/validator.json $POSSESSION_PROOF \
+	--from $KEY_NAME \
+	--chain-id union-testnet-10
+```
+
+:::
+
+:::note
+
+If your keys are stored on a machine other than your node, you can pass the `--node-id` flag to override the node ID ensuring it's the one from the node you're making into a validator.
+
+:::
 
 :::note
 
