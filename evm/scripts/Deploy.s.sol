@@ -60,6 +60,8 @@ library INSTANCE_SALT {
         hex"12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047";
     bytes constant UDROP =
         hex"96de8fc8c256fa1e1556d41af431cace7dca68707c78dd88c3acab8b17177504";
+    bytes constant EU =
+        hex"0dec0db7b56214f189bc3d33052145c6d7558c6a7ee0da79e34bdd8a29d569c2";
 }
 
 library LIB_SALT {
@@ -189,6 +191,34 @@ abstract contract UnionScript is UnionBase {
         return U(
             deploy(
                 string(INSTANCE_SALT.U),
+                abi.encode(
+                    address(new U()),
+                    abi.encodeCall(
+                        U.initialize,
+                        (
+                            address(authority),
+                            address(zkgm),
+                            name,
+                            symbol,
+                            decimals,
+                            hex""
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function deployEU(
+        Manager authority,
+        UCS03Zkgm zkgm,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) internal returns (U) {
+        return U(
+            deploy(
+                string(INSTANCE_SALT.EU),
                 abi.encode(
                     address(new U()),
                     abi.encodeCall(
@@ -1982,6 +2012,40 @@ contract UpgradeU is VersionedScript {
     }
 }
 
+contract UpgradeEU is VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address eu = getDeployed(string(INSTANCE_SALT.EU));
+
+        console.log(string(abi.encodePacked("eU: ", eu.toHexString())));
+
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new U());
+        U(eu).upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
 contract DeployRoles is UnionScript {
     using LibString for *;
 
@@ -2236,6 +2300,80 @@ contract DryDeployU is UnionScript, VersionedScript {
         vm.stopPrank();
 
         console.log("U: ", address(u));
+    }
+}
+
+contract DeployEU is UnionScript, VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
+        vm.startBroadcast(privateKey);
+        U eu = deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
+        vm.stopBroadcast();
+
+        console.log("eU: ", address(eu));
+    }
+}
+
+contract DryDeployEU is UnionScript, VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
+        vm.startPrank(sender);
+        U eu = deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
+        vm.stopPrank();
+
+        console.log("eU: ", address(eu));
     }
 }
 
