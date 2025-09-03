@@ -20,6 +20,7 @@ _: {
         pkg-config
         nodePackages_latest.nodejs
         pnpm_10
+        imagemagick
       ];
       PUBLIC_DATADOG_CLIENT_TOKEN = "pub69b8a3deb766e91a19b44cccf0c3352e";
       PUBLIC_GIT_REV = gitShortRev;
@@ -110,6 +111,19 @@ _: {
               export PUBLIC_SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
               export PUBLIC_SUPABASE_ANON_KEY="${PUBLIC_SUPABASE_ANON_KEY}"
               pnpm run check --watch --threshold error
+            '';
+          };
+        };
+        app2-sync-logo = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "app-sync-logo";
+            runtimeInputs = deps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              for s in 192 512;
+                do magick site/public/u.svg -resize "$s"x$"$s" -background none app2/static/web-app-manifest-"$s"x"$s".png
+              done
             '';
           };
         };
