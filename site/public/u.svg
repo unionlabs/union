@@ -1,9 +1,9 @@
-<svg width="1020" height="1020" viewBox="0 0 1020 1020" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="1020" height="1020" fill="black"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M629.421 605.421C629.421 711.299 543.589 797.132 437.711 797.132C331.832 797.132 246 711.299 246 605.421H339.899C339.899 658.36 384.771 701.276 437.711 701.276C490.65 701.276 535.522 658.36 535.522 605.421H629.421Z" fill="white"/>
-<path d="M679.711 555.138H773.995V460.854H679.711V555.138Z" fill="white"/>
-<path d="M629.416 460.853H535.132V555.136H629.416V460.853Z" fill="white"/>
-<path d="M390.579 555.138H484.863V460.854H390.579V555.138Z" fill="white"/>
-<path d="M340.284 460.853H246V555.136H340.284V460.853Z" fill="white"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M390.573 413.71C390.573 307.831 476.406 221.999 582.284 221.999C688.162 221.999 773.995 307.831 773.995 413.71H680.095C680.095 360.77 635.223 317.854 582.284 317.854C529.345 317.854 484.472 360.77 484.472 413.71H390.573Z" fill="white"/>
+<svg width="144" height="144" viewBox="0 0 144 144" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="144" height="144" fill="black"/>
+<path d="M92 88.0001C92 105.673 77.6731 120 60 120C42.3269 120 28 105.673 28 88.0001H44C44 96.8366 51.1635 104 60 104C68.8365 104 76 96.8366 76 88.0001H92Z" fill="white"/>
+<rect x="116" y="80" width="16" height="16" transform="rotate(-180 116 80)" fill="white"/>
+<rect x="76" y="64" width="16" height="16" fill="white"/>
+<rect x="68" y="80" width="16" height="16" transform="rotate(-180 68 80)" fill="white"/>
+<rect x="28" y="64" width="16" height="16" fill="white"/>
+<path d="M52 56C52 38.3269 66.3269 24 84 24C101.673 24 116 38.3269 116 56L100 56C100 47.1634 92.8366 40 84 40C75.1635 40 68 47.1634 68 56L52 56Z" fill="white"/>
 </svg>
