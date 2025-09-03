@@ -5,8 +5,9 @@ import StepperCard from "$lib/components/ui/StepperCard.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { Effect, Option } from "effect"
-import { createPublicClient, custom, http } from "viem"
+import { createPublicClient, http } from "viem"
 import { mainnet } from "viem/chains"
+import { UDROP_ABI, UDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import Step1 from "./step/Step1.svelte"
 import Step2 from "./step/Step2.svelte"
 import Step3 from "./step/Step3.svelte"
@@ -19,23 +20,17 @@ let stepperCardRef: StepperCard
 let isInitialized = $state(false)
 let isActive = $state<boolean>(false)
 
-const AIRDROP_ABI = [
-  {
-    name: "active",
-    type: "function",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "bool" }],
-  },
-] as const
-
-const AIRDROP_CONTRACT_ADDRESS = "0xC0DEB405dd405Ee54F2Fc24E8E3DB5D417001631" as const
+let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
+$effect(() => {
+  if (currentSlide > 0 && Option.isNone(claim)) {
+    goto("/udrop/claim?step=1")
+  }
+})
 
 let shouldCheckActive = $state(true)
 
-// TODO CHANGE TO MAINNET
 runPromiseExit$(() =>
-  shouldCheckActive
+  shouldCheckActive && Option.isSome(claim)
     ? Effect.gen(function*() {
       const publicClient = createPublicClient({
         chain: mainnet,
@@ -45,14 +40,14 @@ runPromiseExit$(() =>
       const active = yield* Effect.tryPromise({
         try: () =>
           publicClient.readContract({
-            address: AIRDROP_CONTRACT_ADDRESS,
-            abi: AIRDROP_ABI,
+            address: UDROP_CONTRACT_ADDRESS,
+            abi: UDROP_ABI,
             functionName: "active",
             args: [],
           }),
         catch: () => false,
       })
-      isActive = active as boolean
+      isActive = active
       shouldCheckActive = false
       return active
     }).pipe(
@@ -65,13 +60,6 @@ runPromiseExit$(() =>
     )
     : Effect.void
 )
-
-let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
-$effect(() => {
-  if (currentSlide > 0 && Option.isNone(claim)) {
-    goto("/udrop/claim?step=1")
-  }
-})
 
 $effect(() => {
   if (!isInitialized) {

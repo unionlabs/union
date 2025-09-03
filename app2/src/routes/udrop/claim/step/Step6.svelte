@@ -106,8 +106,7 @@ function handleDone() {
           style="background-color: #0D2024;"
         >
           <div>
-            <div class="relative mb-6">
-            </div>
+            <div class="relative mb-6"></div>
             <div class="text-4xl font-bold text-accent mb-2">Thank U!</div>
           </div>
         </div>

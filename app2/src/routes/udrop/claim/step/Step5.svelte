@@ -9,6 +9,7 @@ import { Evm } from "@unionlabs/sdk-evm"
 import { Data, Effect, Match, Option } from "effect"
 import { createPublicClient, custom, formatUnits } from "viem"
 import { mainnet } from "viem/chains"
+import { UDROP_ABI, UDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import StepLayout from "../StepLayout.svelte"
 
 interface Props {
@@ -20,33 +21,6 @@ let { onNext, onBack }: Props = $props()
 
 let alreadyClaimed = $state<boolean>(false)
 let checkingClaimed = $state<boolean>(false)
-
-const AIRDROP_ABI = [
-  {
-    name: "claim",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "beneficiary", type: "address" },
-      { name: "amount", type: "uint256" },
-      { name: "proof", type: "bytes32[]" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "claimed",
-    type: "function",
-    stateMutability: "view",
-    inputs: [
-      { name: "", type: "address" },
-    ],
-    outputs: [
-      { name: "", type: "bool" },
-    ],
-  },
-] as const
-
-const AIRDROP_CONTRACT_ADDRESS = "0xC0DEB405dd405Ee54F2Fc24E8E3DB5D417001631" as const
 
 interface ClaimParams {
   beneficiary: `0x${string}`
@@ -121,8 +95,8 @@ runPromiseExit$(() =>
       const isClaimed = yield* Effect.tryPromise({
         try: () =>
           publicClientCheck.readContract({
-            address: AIRDROP_CONTRACT_ADDRESS,
-            abi: AIRDROP_ABI,
+            address: UDROP_CONTRACT_ADDRESS,
+            abi: UDROP_ABI,
             functionName: "claimed",
             args: [params.beneficiary],
           }),
@@ -157,13 +131,13 @@ runPromiseExit$(() =>
       yield* Effect.log("Executing claim transaction", {
         beneficiary: params.beneficiary,
         amount: params.amount,
-        contract: AIRDROP_CONTRACT_ADDRESS,
+        contract: UDROP_CONTRACT_ADDRESS,
       })
 
       // Execute claim transaction
       const txHash = yield* Evm.writeContract({
-        address: AIRDROP_CONTRACT_ADDRESS,
-        abi: AIRDROP_ABI,
+        address: UDROP_CONTRACT_ADDRESS,
+        abi: UDROP_ABI,
         functionName: "claim",
         account: connectorClient.account,
         chain: mainnet,
