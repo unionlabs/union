@@ -20,10 +20,12 @@ use crate::indexer::{
         create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_ack_record::PacketAckRecord,
         packet_recv_record::PacketRecvRecord,
+        packet_send_bond_record::PacketSendBondRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
         packet_send_transfers_record::PacketSendTransfersRecord,
+        packet_send_unbond_record::PacketSendUnbondRecord,
         packet_timeout_record::PacketTimeoutRecord,
         token_bucket_update_record::TokenBucketUpdateRecord,
         update_client_record::UpdateClientRecord,
@@ -126,6 +128,11 @@ pub async fn delete_event_data_at_height(
             height,
         )
         .await?;
+        changes +=
+            PacketSendBondRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            PacketSendUnbondRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
         changes +=
             CreateWrappedTokenRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
                 .await?;

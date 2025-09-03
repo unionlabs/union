@@ -7749,6 +7749,7 @@ dependencies = [
  "futures",
  "hex",
  "hex-literal",
+ "ibc-union-spec",
  "itertools 0.13.0",
  "jsonrpsee 0.25.1",
  "lazy_static",

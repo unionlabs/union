@@ -312,6 +312,8 @@ fn should_trigger_enrich_reset(kind: RecordKind) -> bool {
         PacketSendDecoded => false,
         PacketSendTransfers => false,
         PacketSendInstructionsSearch => false,
+        PacketSendBond => false,
+        PacketSendUnbond => false,
     }
 }
 
