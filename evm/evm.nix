@@ -253,7 +253,7 @@ _: {
           ucs04-chain-id = "ethereum.11155111";
 
           name = "sepolia";
-          rpc-url = "https://sepolia.gateway.tenderly.co";
+          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
           rate-limit-enabled = "false";
@@ -271,7 +271,7 @@ _: {
           ucs04-chain-id = "ethereum.17000";
 
           name = "holesky";
-          rpc-url = "https://holesky.gateway.tenderly.co";
+          rpc-url = "https://eth-holesky.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
           rate-limit-enabled = "false";
@@ -1222,6 +1222,7 @@ _: {
                     multicall = "Multicall";
                     erc20 = "ZkgmERC20";
                     u = "U";
+                    eu = "EU";
                     udrop = "UDrop";
                   }
                 )
@@ -1265,6 +1266,7 @@ _: {
                         state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
                         core = "IBCHandler";
                         u = "U";
+                        eu = "EU";
                         udrop = "UDrop";
                       }
                   )
