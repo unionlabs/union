@@ -45,25 +45,10 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
               ),
             )
 
-            /**
-             * For resilience, try wagmi connector or fail eventually with viem default RPC
-             */
-            const transport = yield* pipe(
-              getWagmiConnectorClient,
-              Effect.retry(
-                Schedule.compose(
-                  Schedule.spaced("200 millis"),
-                  Schedule.recurs(10),
-                ),
-              ),
-              Effect.map(V.custom),
-              Effect.orElseSucceed(() => V.http()),
-            )
-
             const client = yield* pipe(
               createViemPublicClient({
                 chain: viemChain,
-                transport,
+                transport: http(),
               }),
               Effect.mapError((cause) =>
                 new GasPriceError({
