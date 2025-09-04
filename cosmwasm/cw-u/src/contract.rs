@@ -1,16 +1,16 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult,
-    Uint128,
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    StdError, StdResult, Uint128,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use ibc_union_spec::path::commit_packets;
+use ibc_union_spec::{path::commit_packets, ChannelId};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes},
+    primitives::{encoding::HexPrefixed, Bytes, U256},
     ErrorReporter,
 };
 
@@ -249,6 +249,36 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
+        QueryMsg::GetFungibleCounterparty {
+            path,
+            channel_id,
+            base_token,
+        } => deps
+            .storage
+            .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))
+            .and_then(|data| to_json_binary(&data))
+            .map_err(Into::into),
+        QueryMsg::GetAllFungibleCounterparties => deps
+            .storage
+            .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
+            .map(|res| {
+                res.map(
+                    |(
+                        (path, channel_id, base_token),
+                        FungibleLane {
+                            counterparty_beneficiary,
+                        },
+                    )| FungibleLaneConfig {
+                        path,
+                        channel_id,
+                        base_token,
+                        counterparty_beneficiary,
+                    },
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .and_then(|data| to_json_binary(&data))
+            .map_err(Into::into),
         QueryMsg::Minter {} => Err(Error::Unsupported),
         QueryMsg::Cw20(msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => cw20_base::contract::query(
@@ -265,4 +295,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             .map_err(Into::into),
         },
     }
+}
+
+#[derive(serde::Serialize)]
+pub struct FungibleLaneConfig {
+    pub path: U256,
+    pub channel_id: ChannelId,
+    pub base_token: Bytes,
+    pub counterparty_beneficiary: Bytes,
 }
