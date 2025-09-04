@@ -813,8 +813,8 @@
       "ucs03": {
         "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
         "height": 354920,
-        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-        "code_id": 186,
+        "commit": "4b40e844d64fd8783b6d881d2dd2429b85b165ba",
+        "code_id": 210,
         "minter": {
           "type": "cw20",
           "address": "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0",
@@ -828,6 +828,12 @@
       "height": 2417976,
       "commit": "af98d4c1e659408f71e9e591d997554746edbd2b",
       "code_id": 139
+    },
+    "eu": {
+      "address": "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f",
+      "height": 2756976,
+      "commit": "966fd1e452bc12ed697851545272eb9f74465a02",
+      "code_id": 207
     },
     "lst": {
       "address": "union1d2r4ecsuap4pujrlf3nz09vz8eha8y0z25knq0lfxz4yzn83v6kq0jxsmk",

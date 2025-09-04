@@ -116,7 +116,10 @@ pub fn deduct_allowance(
                     Ok(a)
                 }
             }
-            None => Err(ContractError::NoAllowance {}),
+            None => Err(ContractError::NoAllowance {
+                owner: owner.clone(),
+                spender: spender.clone(),
+            }),
         }
     };
     ALLOWANCES.update(storage, (owner, spender), update_fn)?;

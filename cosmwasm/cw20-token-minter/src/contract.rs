@@ -210,14 +210,20 @@ pub fn execute(
                 amount,
                 sender,
                 ..
-            } => Response::new().add_message(wasm_execute(
-                denom,
-                &cw20::Cw20ExecuteMsg::BurnFrom {
-                    owner: sender.to_string(),
-                    amount,
-                },
-                vec![],
-            )?),
+            } => Response::new().add_message(if sender == env.contract.address {
+                // if we are burning from ourself, we can't use BurnFrom since that requires an allowance
+                // on acknowledgement, the token has been escrowed on the minter and needs to be burnt (sent to the zero address)
+                wasm_execute(denom, &cw20::Cw20ExecuteMsg::Burn { amount }, vec![])?
+            } else {
+                wasm_execute(
+                    denom,
+                    &cw20::Cw20ExecuteMsg::BurnFrom {
+                        owner: sender.to_string(),
+                        amount,
+                    },
+                    vec![],
+                )?
+            }),
         },
         ExecuteMsg::Local(msg) => match msg {
             LocalTokenMsg::Escrow {

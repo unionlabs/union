@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{Addr, StdError};
 use frissitheto::UpgradeError;
 use thiserror::Error;
 
@@ -19,8 +19,8 @@ pub enum ContractError {
     #[error("Allowance is expired")]
     Expired {},
 
-    #[error("No allowance for this account")]
-    NoAllowance {},
+    #[error("No allowance for this account ({spender} attempting to spend for {owner})")]
+    NoAllowance { owner: Addr, spender: Addr },
 
     #[error("Minting cannot exceed the cap")]
     CannotExceedCap {},
