@@ -126,6 +126,7 @@ _: {
                   site/public/u.svg \
                   -resize "$s"x$"$s" \
                   -background none \
+                  -density 4096 \
                   +antialias \
                   app2/static/web-app-manifest-"$s"x"$s".png
               done
