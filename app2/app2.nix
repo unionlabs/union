@@ -118,17 +118,13 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "app-sync-logo";
-            runtimeInputs = deps;
+            runtimeInputs = with pkgs; [
+              inkscape
+            ];
             text = ''
               ${ensureAtRepositoryRoot}
               for s in 192 512; do
-                magick \
-                  site/public/u.svg \
-                  -resize "$s"x$"$s" \
-                  -background none \
-                  -density 4096 \
-                  +antialias \
-                  app2/static/web-app-manifest-"$s"x"$s".png
+                inkscape site/public/u.svg -w $s -h $s -o app2/static/web-app-manifest-"$s"x"$s".png
               done
             '';
           };
