@@ -2,6 +2,7 @@ import { BigDecimal, DateTime, pipe } from "effect"
 import * as B from "effect/Boolean"
 import * as O from "effect/Option"
 import * as S from "effect/Schema"
+import * as Utils from "../Utils.js"
 import { Chain, UniversalChainId } from "./chain.js"
 import { Hex } from "./hex.js"
 import { PacketHash } from "./packet.js"
@@ -109,6 +110,9 @@ export class Bond extends S.TaggedClass<Bond>("Bond")("Bond", {
   remote_base_token_meta: Token,
   remote_quote_token_meta: S.OptionFromNullOr(Token),
 }) {
+  get sortDate() {
+    return this.bond_send_timestamp
+  }
   get amountFormatted() {
     return pipe(
       this.base_amount,
@@ -120,7 +124,7 @@ export class Bond extends S.TaggedClass<Bond>("Bond")("Bond", {
   get sendTimestampFormatted() {
     return pipe(
       this.bond_send_timestamp,
-      DateTime.formatUtc,
+      DateTime.formatIso,
     )
   }
   get status() {
@@ -146,31 +150,33 @@ export class Unbond extends S.TaggedClass<Unbond>("Unbond")("Unbond", {
   sender_zkgm: S.String,
   base_token: TokenRawDenom,
   base_amount: S.BigInt,
-  unbond_amount: S.BigInt,
   unbond_send_timestamp: S.DateTimeUtc,
   unbond_send_transaction_hash: TransactionHash,
-  unbond_recv_timestamp: S.DateTimeUtc,
-  unbond_recv_transaction_hash: TransactionHash,
-  unbond_timeout_timestamp: S.DateTimeUtc,
-  unbond_timeout_transaction_hash: TransactionHash,
+  unbond_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  unbond_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+  unbond_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  unbond_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
   sort_order: S.String,
   // traces: S.Array(PacketTrace),
   source_chain: Chain,
   destination_chain: Chain,
   base_token_meta: Token,
 }) {
+  get sortDate() {
+    return this.unbond_send_timestamp
+  }
   get amountFormatted() {
     return pipe(
       this.base_amount,
       BigDecimal.fromBigInt,
       BigDecimal.unsafeDivide(BigDecimal.make(1n, -O.getOrThrow(this.base_token_meta.decimals))),
-      BigDecimal.format,
+      Utils.formatBigDecimal,
     )
   }
   get sendTimestampFormatted() {
     return pipe(
       this.unbond_send_timestamp,
-      DateTime.formatUtc,
+      DateTime.formatIso,
     )
   }
   get status() {

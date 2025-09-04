@@ -199,7 +199,6 @@ query GetUnbondsByAddress($addresses: jsonb!) @cached(ttl: 10) {
     sender_zkgm
     base_token
     base_amount
-    unbond_amount
     unbond_send_timestamp
     unbond_send_transaction_hash
     unbond_recv_timestamp
