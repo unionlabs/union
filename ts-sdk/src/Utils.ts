@@ -4,7 +4,7 @@
  * @since 2.0.0
  */
 import crc32 from "crc/crc32"
-import { Data, Effect, Schema, SchemaAST, String as Str } from "effect"
+import { BigDecimal, Data, Effect, Schema, SchemaAST, String as Str } from "effect"
 import { dual, LazyArg, pipe } from "effect/Function"
 import * as M from "effect/Match"
 import * as O from "effect/Option"
@@ -192,3 +192,35 @@ export const TaggedStruct = <
     ),
     ...fields,
   })
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const formatBigDecimal = (n: BigDecimal.BigDecimal): string => {
+  const normalized = BigDecimal.normalize(n)
+
+  const negative = normalized.value < BigInt(0)
+  const absolute = negative ? `${normalized.value}`.substring(1) : `${normalized.value}`
+
+  let before: string
+  let after: string
+
+  if (normalized.scale >= absolute.length) {
+    before = "0"
+    after = "0".repeat(normalized.scale - absolute.length) + absolute
+  } else {
+    const location = absolute.length - normalized.scale
+    if (location > absolute.length) {
+      const zeros = location - absolute.length
+      before = `${absolute}${"0".repeat(zeros)}`
+      after = ""
+    } else {
+      after = absolute.slice(location)
+      before = absolute.slice(0, location)
+    }
+  }
+
+  const complete = after === "" ? before : `${before}.${after}`
+  return negative ? `-${complete}` : complete
+}
