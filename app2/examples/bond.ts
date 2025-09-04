@@ -60,11 +60,12 @@ const UCS03_MINTER_ON_UNION = Ucs05.CosmosDisplay.make({
 const UCS03_ZKGM = Ucs05.CosmosDisplay.make({
   address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
 })
-const MIN_MINT_AMOUNT = (10n ** 18n) * 1_000n
+const SEND_AMOUNT = (10n ** 18n) * 1_000n
+const MIN_MINT_AMOUNT = 999999999000000000000n
 const VIEM_CHAIN = holesky
 const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
 const SENDER = Ucs05.EvmDisplay.make({
-  address: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
+  address: "0x2C96e52fCE14BAa13868CA8182f8A7903e4e76E0",
 })
 
 const VIEM_ACCOUNT = privateKeyToAccount(
@@ -98,9 +99,9 @@ const sendBond = Effect.gen(function*() {
     sender: SENDER,
     receiver: ON_ZKGM_CALL_PROXY,
     baseToken: U_ERC20,
-    baseAmount: MIN_MINT_AMOUNT,
+    baseAmount: SEND_AMOUNT,
     quoteToken: U_BANK,
-    quoteAmount: MIN_MINT_AMOUNT,
+    quoteAmount: SEND_AMOUNT,
     kind: "solve",
     metadata: U_TO_UNION_SOLVER_METADATA,
     version: 2,
