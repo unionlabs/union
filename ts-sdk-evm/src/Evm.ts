@@ -6,6 +6,7 @@
 import { GAS_DENOMS } from "@unionlabs/sdk/Constants"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import * as Ucs05 from "@unionlabs/sdk/Ucs05"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
 import { type Address, erc20Abi } from "viem"
@@ -417,7 +418,7 @@ export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) 
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =>
+export const readErc20Balance = (tokenAddress: Hex, ownerAddress: Ucs05.EvmDisplay) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
 
@@ -590,8 +591,8 @@ export const readErc20Allowance = (
  * @since 0.0.0
  */
 export const increaseErc20Allowance = (
-  tokenAddress: Address,
-  spenderAddress: Address,
+  tokenAddress: Hex,
+  spenderAddress: Ucs05.EvmDisplay,
   amount: bigint,
 ) =>
   Effect.gen(function*() {
@@ -603,7 +604,7 @@ export const increaseErc20Allowance = (
       address: tokenAddress,
       abi: erc20Abi,
       functionName: "approve",
-      args: [spenderAddress, amount],
+      args: [spenderAddress.address, amount],
     })
   })
 

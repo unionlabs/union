@@ -1,10 +1,12 @@
 <script lang="ts">
+import ChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Input from "$lib/components/ui/Input.svelte"
+import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -16,21 +18,11 @@ import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { cn } from "$lib/utils"
 import { matchOption, matchRuntimeResult } from "$lib/utils/snippets.svelte"
 import { Staking, Ucs05 } from "@unionlabs/sdk"
-import { EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
+import { EU_ERC20, EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
 import { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
-import {
-  BigDecimal,
-  Brand,
-  ConfigProvider,
-  DateTime,
-  Effect,
-  Layer,
-  pipe,
-  Schema,
-  Struct,
-} from "effect"
+import { BigDecimal, Brand, ConfigProvider, Effect, Layer, pipe, Schema, Struct } from "effect"
 import * as A from "effect/Array"
 import { constVoid } from "effect/Function"
 import * as O from "effect/Option"
@@ -54,7 +46,7 @@ const uOnEvmToken = $derived(pipe(
 
 const eUOnEvmToken = $derived(pipe(
   TokenStore.getData(EVM_UNIVERSAL_CHAIN_ID),
-  O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === EU_LST.address.toLowerCase())),
+  O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === EU_ERC20.address.toLowerCase())),
 ))
 
 let bondInput = $state<string>("")
@@ -76,31 +68,16 @@ const data = AppRuntime.runPromiseExit$(() => {
   return Effect.gen(function*() {
     const staking = yield* Staking.Staking
     const address = yield* WalletStore.evmAddress
-    const request = Staking.GetBonds.make({ addresses: [address] })
     return yield* pipe(
       Effect.all([
         staking.getBonds(Staking.GetBonds.make({ addresses: [address] })),
-        staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [address] })),
+        staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [] })),
       ]),
       Effect.map(A.getSomes),
       Effect.map(A.flatten),
       Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
+      Effect.map(x => x as O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>),
     )
-  }).pipe(
-    Effect.provide(Staking.Staking.DefaultWithoutDependencies),
-    Effect.provide(Layer.fresh(Indexer.Default)),
-    Effect.provide(QlpConfigProvider),
-  )
-})
-
-const unbonds = AppRuntime.runPromiseExit$(() => {
-  void WalletStore.evmAddress
-
-  return Effect.gen(function*() {
-    const staking = yield* Staking.Staking
-    const address = yield* WalletStore.evmAddress
-    const request = Staking.GetUnbonds.make({ addresses: [address] })
-    return yield* staking.getUnbonds(request)
   }).pipe(
     Effect.provide(Staking.Staking.DefaultWithoutDependencies),
     Effect.provide(Layer.fresh(Indexer.Default)),
@@ -240,11 +217,11 @@ const close = (k: string) => {
       }
     }}
   >
-    <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
-      <SharpRightArrowIcon
+    <td class="pl-2 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
+      <ChevronDownIcon
         class={cn(
-          "size-4 transition-transform duration-200",
-          isOpen(k) && "rotate-90",
+          "size-4 transition-transform rotate-270 duration-200",
+          isOpen(k) && "rotate-360",
         )}
       />
     </td>
@@ -276,14 +253,13 @@ const close = (k: string) => {
       >
         <div class="overflow-hidden rounded-b-md border border-zinc-800/70 bg-zinc-900/50">
           <div class="">
-            <pre>{JSON.stringify(bond, null, 2)}</pre>
+            <div class="m-3">TODO</div>
           </div>
           <details class="group border-t border-zinc-800/70">
-            <summary class="flex cursor-pointer items-center justify-between px-3 py-2 text-zinc-400 hover:text-zinc-200">
-              <span class="text-xs">Raw bond payload</span>
-              <span class="ml-2 text-[10px] opacity-60">(for debugging)</span>
+            <summary class="flex cursor-pointer items-center justify-between px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200">
+              <span class="text-xs uppercase">RAW DATA</span>
             </summary>
-            <pre class="max-h-64 overflow-auto px-3 pb-3 text-[10px] leading-tight text-zinc-300">{JSON.stringify(bond, null, 2)}</pre>
+            <JsonPreview value={bond} />
           </details>
         </div>
       </td>
@@ -298,15 +274,15 @@ const close = (k: string) => {
     </div>
   {/snippet}
   {#snippet hasBonds(bonds: A.NonEmptyReadonlyArray<Bond | Unbond>)}
-    <div class="relative overflow-auto max-h-72 rounded-lg ring-1 ring-zinc-800/80">
+    <div class="relative overflow-auto max-h-screen rounded-lg ring-1 ring-zinc-800/80">
       <table class="w-full text-sm">
         <thead class="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
           <tr class="text-zinc-400 border-b border-zinc-800/80">
-            <th class=""></th>
-            <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+            <th class="pl-2"></th>
+            <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
               Timestamp
             </th>
-            <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+            <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
               Chain
             </th>
             <th class="px-3 py-2 text-right font-semibold tracking-wide text-xs uppercase">
