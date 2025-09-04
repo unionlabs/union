@@ -258,7 +258,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))
             .and_then(|data| to_json_binary(&data))
             .map_err(Into::into),
-        QueryMsg::GetAllFungibleCounterparties => deps
+        QueryMsg::GetAllFungibleCounterparties {} => deps
             .storage
             .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
             .map(|res| {

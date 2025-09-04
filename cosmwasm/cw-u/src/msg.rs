@@ -54,7 +54,7 @@ pub enum QueryMsg {
         channel_id: ChannelId,
         base_token: Bytes,
     },
-    GetAllFungibleCounterparties,
+    GetAllFungibleCounterparties {},
     // prevent from routing to the inner cw20 impl message
     Minter {},
     #[serde(untagged)]
