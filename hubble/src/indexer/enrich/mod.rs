@@ -784,10 +784,11 @@ async fn try_get_unbonds(
 
     trace!("get_unbonds: packet_shape: {packet_shape:?}");
 
-    let Some((token_order, _unbond)) = (match packet_shape {
+    let Some((token_order, _increase_allowance, _unbond)) = (match packet_shape {
         PacketShape::UnbondV2 => Some((
             InstructionDecoder::from_values_with_index(flatten, 1)?,
             InstructionDecoder::from_values_with_index(flatten, 2)?,
+            InstructionDecoder::from_values_with_index(flatten, 3)?,
         )),
         _ => {
             trace!("get_unbonds: not an unbond");
@@ -1225,7 +1226,7 @@ fn packet_shape(
             // - call to deliver lst
             Some(PacketShape::BondV2)
         }
-        ":2/0:0:3/2,1:1/0" if is_unbond(flatten)? => {
+        ":2/0,0:3/2,1:1/0,2:1/0" if is_unbond(flatten)? => {
             // batch with:
             // - token-order to transfer lst
             // - call to unbond lst
@@ -1279,7 +1280,8 @@ fn is_bond(flatten: &[Value]) -> Result<bool, IndexerError> {
 
 fn is_unbond(flatten: &[Value]) -> Result<bool, IndexerError> {
     Ok(is_transfer_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?)
+        && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?
+        && is_call_to(flatten, 3, ON_ZKGM_CALL_PROXY_BECH32)?)
 }
 
 // check if the instruction at index is a transfer to the specified address
