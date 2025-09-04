@@ -1,4 +1,4 @@
-import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
+import { fallbackTransport, getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details"
 import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
@@ -9,7 +9,6 @@ import {
   createWalletClient,
   type CreateWalletClientErrorType,
   custom,
-  http,
   type PublicClient,
 } from "viem"
 import {
@@ -44,8 +43,6 @@ export const getPublicClient = (chain: Chain) =>
   Effect.gen(function*() {
     const viemChain = chain.toViemChain()
 
-    const connectorClient = yield* getWagmiConnectorClient
-
     if (Option.isNone(viemChain)) {
       return yield* new NoViemChainError({ chain })
     }
@@ -54,7 +51,7 @@ export const getPublicClient = (chain: Chain) =>
       try: () =>
         createPublicClient({
           chain: viemChain.value,
-          transport: http(),
+          transport: fallbackTransport(viemChain.value),
         }),
       catch: err =>
         new CreatePublicClientError({

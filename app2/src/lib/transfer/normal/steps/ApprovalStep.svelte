@@ -25,6 +25,7 @@ import type { WaitForTransactionReceiptError } from "$lib/services/transfer-ucs0
 import type { Steps } from "$lib/transfer/normal/steps"
 import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos"
 import * as WriteEvm from "$lib/transfer/shared/services/write-evm"
+import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { Utils } from "@unionlabs/sdk"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -144,7 +145,7 @@ const submit = Effect.gen(function*() {
     const viemChain = yield* chain.toViemChain()
     const publicClient = yield* createViemPublicClient({
       chain: viemChain,
-      transport: http(),
+      transport: fallbackTransport(viemChain),
     })
     const walletClient = yield* getWalletClient(chain)
 

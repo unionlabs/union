@@ -1,5 +1,6 @@
 import { AllowanceCheckError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context"
+import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { Token, Ucs05, Utils, ZkgmClientRequest } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm } from "@unionlabs/sdk-evm"
@@ -101,7 +102,7 @@ const handleEvmAllowances = (
 
     const client = Evm.PublicClient.Live({
       chain,
-      transport: http(),
+      transport: fallbackTransport(chain),
     })
 
     return yield* pipe(

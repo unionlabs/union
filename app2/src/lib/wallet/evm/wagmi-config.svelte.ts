@@ -28,13 +28,112 @@ import {
   sepolia,
 } from "@wagmi/core/chains"
 import { Option } from "effect"
-import type { Chain as ViemChain, FallbackTransport, Transport } from "viem"
+import { flow, pipe } from "effect/Function"
+import type { Chain, Chain as ViemChain, FallbackTransport, Transport } from "viem"
 
 let wagmiConfig: Option.Option<ReturnType<typeof createWagmiConfigInstance>> = Option.none()
 
 type Transports = {
   [Item in (typeof VIEM_CHAINS)[number] as Item["id"]]: FallbackTransport<Transport[]>
 }
+
+export const ownedFallbacks: Transports = {
+  [mainnet.id]: fallback([
+    http(mainnet.rpcUrls.default.http.at(0), {
+      name: "default Mainnet RPC",
+    }),
+    http(`https://rpc.1.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Ethereum",
+    }),
+  ]),
+  [sepolia.id]: fallback([
+    http(sepolia.rpcUrls.default.http.at(0), {
+      name: "default Sepolia RPC",
+    }),
+    http(`https://rpc.11155111.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Sepolia",
+    }),
+  ]),
+  [holesky.id]: fallback([
+    http(holesky.rpcUrls.default.http.at(0), {
+      name: "default Holesky RPC",
+    }),
+    http(`https://rpc.17000.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Holesky",
+    }),
+  ]),
+  [berachainTestnetbArtio.id]: fallback([
+    http(berachainTestnetbArtio.rpcUrls.default.http.at(0), {
+      name: "default Berachain RPC",
+    }),
+  ]),
+  [arbitrumSepolia.id]: fallback([
+    http(arbitrumSepolia.rpcUrls.default.http.at(0), {
+      name: "default Arbitrum Sepolia RPC",
+    }),
+  ]),
+  [scrollSepolia.id]: fallback([
+    http(scrollSepolia.rpcUrls.default.http.at(0), {
+      name: "default Scroll Sepolia RPC",
+    }),
+  ]),
+  [bobSepolia.id]: fallback([
+    http(bobSepolia.rpcUrls.default.http.at(0), {
+      name: "default Bob Sepolia RPC",
+    }),
+    http(`https://rpc.808813.bob.chain.kitchen`, {
+      name: "Chain Kitchen - BOB Sepolia",
+    }),
+  ]),
+  [bob.id]: fallback([
+    http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
+    http(`https://rpc.60808.bob.chain.kitchen`, {
+      name: "Chain Kitchen - BOB",
+    }),
+  ]),
+  [corn.id]: fallback([
+    http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
+    http(`https://rpc.21000000.corn.chain.kitchen`, {
+      name: "Chain Kitchen - Corn",
+    }),
+  ]),
+  [cornTestnet.id]: fallback([
+    http(cornTestnet.rpcUrls.default.http.at(0), {
+      name: "default Corn Testnet RPC",
+    }),
+    http(`https://rpc.21000001.corn.chain.kitchen`, {
+      name: "Chain Kitchen - Corn Testnet",
+    }),
+  ]),
+  [sei.id]: fallback([
+    http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
+    http(`https://evm-rpc.1329.sei.chain.kitchen`, {
+      name: "Chain Kitchen - Sei",
+    }),
+  ]),
+  [seiTestnet.id]: fallback([
+    http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
+    http(`https://evm-rpc.1328.sei.chain.kitchen`, {
+      name: "Chain Kitchen - Sei Testnet",
+    }),
+  ]),
+  [bsc.id]: fallback([
+    http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
+    http(`https://rpc.56.bsc.chain.kitchen`, {
+      name: "Chain Kitchen - BNB Chain",
+    }),
+  ]),
+  [bscTestnet.id]: fallback([
+    http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
+    http(`https://rpc.97.bsc.chain.kitchen`, {
+      name: "Chain Kitchen - BNB Chain Testnet",
+    }),
+  ]),
+}
+
+export const fallbackTransport = flow(
+  (chain: Chain) => ownedFallbacks[chain.id as (typeof VIEM_CHAINS)[number]["id"]],
+)
 
 const transports: Transports = {
   [mainnet.id]: fallback([
@@ -44,12 +143,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-mainnet",
       name: "unstable_connector-injected-mainnet",
     }),
-    http(`https://rpc.${mainnet.id}.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Ethereum",
-    }),
-    http(mainnet.rpcUrls.default.http.at(0), {
-      name: "default Mainnet RPC",
-    }),
+    ownedFallbacks[mainnet.id],
   ]),
   [sepolia.id]: fallback([
     unstable_connector(injected, {
@@ -58,12 +152,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-sepolia",
       name: "unstable_connector-injected-sepolia",
     }),
-    http(`https://rpc.${sepolia.id}.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Sepolia",
-    }),
-    http(sepolia.rpcUrls.default.http.at(0), {
-      name: "default Sepolia RPC",
-    }),
+    ownedFallbacks[sepolia.id],
   ]),
   [holesky.id]: fallback([
     unstable_connector(injected, {
@@ -72,12 +161,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-holesky",
       name: "unstable_connector-injected-holesky",
     }),
-    http(`https://rpc.${holesky.id}.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Holesky",
-    }),
-    http(holesky.rpcUrls.default.http.at(0), {
-      name: "default Holesky RPC",
-    }),
+    ownedFallbacks[holesky.id],
   ]),
   [berachainTestnetbArtio.id]: fallback([
     unstable_connector(injected, {
@@ -86,9 +170,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-berachain",
       name: "unstable_connector-injected-berachain",
     }),
-    http(berachainTestnetbArtio.rpcUrls.default.http.at(0), {
-      name: "default Berachain RPC",
-    }),
+    ownedFallbacks[berachainTestnetbArtio.id],
   ]),
   [arbitrumSepolia.id]: fallback([
     unstable_connector(injected, {
@@ -97,9 +179,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-arbitrum-sepolia",
       name: "unstable_connector-injected-arbitrum-sepolia",
     }),
-    http(arbitrumSepolia.rpcUrls.default.http.at(0), {
-      name: "default Arbitrum Sepolia RPC",
-    }),
+    ownedFallbacks[arbitrumSepolia.id],
   ]),
   [scrollSepolia.id]: fallback([
     unstable_connector(injected, {
@@ -108,9 +188,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-scroll-sepolia",
       name: "unstable_connector-injected-scroll-sepolia",
     }),
-    http(scrollSepolia.rpcUrls.default.http.at(0), {
-      name: "default Scroll Sepolia RPC",
-    }),
+    ownedFallbacks[scrollSepolia.id],
   ]),
   [bobSepolia.id]: fallback([
     unstable_connector(injected, {
@@ -119,12 +197,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-bob-sepolia",
       name: "unstable_connector-injected-bob-sepolia",
     }),
-    http(`https://rpc.${bobSepolia.id}.bob.chain.kitchen`, {
-      name: "Chain Kitchen - BOB Sepolia",
-    }),
-    http(bobSepolia.rpcUrls.default.http.at(0), {
-      name: "default Bob Sepolia RPC",
-    }),
+    ownedFallbacks[bobSepolia.id],
   ]),
   [bob.id]: fallback([
     unstable_connector(injected, {
@@ -133,10 +206,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-bob",
       name: "unstable_connector-injected-bob",
     }),
-    http(`https://rpc.${bob.id}.bob.chain.kitchen`, {
-      name: "Chain Kitchen - BOB",
-    }),
-    http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
+    ownedFallbacks[bob.id],
   ]),
   [corn.id]: fallback([
     unstable_connector(injected, {
@@ -145,10 +215,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-corn",
       name: "unstable_connector-injected-corn",
     }),
-    http(`https://rpc.${corn.id}.corn.chain.kitchen`, {
-      name: "Chain Kitchen - Corn",
-    }),
-    http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
+    ownedFallbacks[corn.id],
   ]),
   [cornTestnet.id]: fallback([
     unstable_connector(injected, {
@@ -157,12 +224,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-corn-testnet",
       name: "unstable_connector-injected-corn-testnet",
     }),
-    http(`https://rpc.${cornTestnet.id}.corn.chain.kitchen`, {
-      name: "Chain Kitchen - Corn Testnet",
-    }),
-    http(cornTestnet.rpcUrls.default.http.at(0), {
-      name: "default Corn Testnet RPC",
-    }),
+    ownedFallbacks[cornTestnet.id],
   ]),
   [sei.id]: fallback([
     unstable_connector(injected, {
@@ -171,10 +233,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-sei",
       name: "unstable_connector-injected-sei",
     }),
-    http(`https://evm-rpc.${sei.id}.sei.chain.kitchen`, {
-      name: "Chain Kitchen - Sei",
-    }),
-    http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
+    ownedFallbacks[sei.id],
   ]),
   [seiTestnet.id]: fallback([
     unstable_connector(injected, {
@@ -183,10 +242,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-sei-testnet",
       name: "unstable_connector-injected-sei-testnet",
     }),
-    http(`https://evm-rpc.${seiTestnet.id}.sei.chain.kitchen`, {
-      name: "Chain Kitchen - Sei Testnet",
-    }),
-    http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
+    ownedFallbacks[seiTestnet.id],
   ]),
   [bsc.id]: fallback([
     unstable_connector(injected, {
@@ -195,10 +251,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-bsc",
       name: "unstable_connector-injected-bsc",
     }),
-    http(`https://rpc.${bsc.id}.bsc.chain.kitchen`, {
-      name: "Chain Kitchen - BNB Chain",
-    }),
-    http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
+    ownedFallbacks[bsc.id],
   ]),
   [bscTestnet.id]: fallback([
     unstable_connector(injected, {
@@ -207,10 +260,7 @@ const transports: Transports = {
       key: "unstable_connector-injected-bsc-testnet",
       name: "unstable_connector-injected-bsc-testnet",
     }),
-    http(`https://rpc.${bscTestnet.id}.bsc.chain.kitchen`, {
-      name: "Chain Kitchen - BNB Chain Testnet",
-    }),
-    http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
+    ownedFallbacks[bscTestnet.id],
   ]),
 }
 
