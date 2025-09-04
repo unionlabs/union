@@ -11,6 +11,7 @@ use crate::phase0::AttestationData;
     serde(deny_unknown_fields)
 )]
 pub struct IndexedAttestation {
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string_list"))]
     pub attesting_indices: Vec<u64>,
     pub data: AttestationData,
     pub signature: H768,
@@ -24,6 +25,7 @@ pub struct IndexedAttestation {
     serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct IndexedAttestationSsz<C: MAX_VALIDATORS_PER_COMMITTEE> {
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string_list"))]
     pub attesting_indices: List<u64, C::MAX_VALIDATORS_PER_COMMITTEE>,
     pub data: AttestationData,
     pub signature: H768,
