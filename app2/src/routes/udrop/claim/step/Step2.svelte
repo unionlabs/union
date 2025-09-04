@@ -33,7 +33,7 @@ const evmAddress = $derived(
 const claimBeneficiary = $derived(
   Option.flatMap(
     dashboard.airdrop,
-    (store) => Option.map(store.claim, (claim) => claim.beneficiary),
+    (store) => Option.flatMap(store.claim, (claim) => Option.fromNullable(claim.beneficiary)),
   ),
 )
 

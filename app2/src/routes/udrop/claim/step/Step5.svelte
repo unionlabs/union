@@ -48,7 +48,7 @@ const isError = $derived(ClaimState.$is("Error")(claimState))
 let claimAmount = $derived(
   Option.match(claim, {
     onNone: () => "0",
-    onSome: (claimData) => formatUnits(BigInt(claimData.amount), 18),
+    onSome: (claimData) => claimData.amount ? formatUnits(BigInt(claimData.amount), 18) : "0",
   }),
 )
 
@@ -61,11 +61,12 @@ let connectedAddress = $derived(
 
 let claimParams = $derived<Option.Option<ClaimParams>>(
   Option.flatMap(claim, (claimData) => {
-    console.log("Raw claimData from DB:", claimData)
-    console.log("claimData.amount type:", typeof claimData.amount, "value:", claimData.amount)
+    if (!claimData.beneficiary || !claimData.amount) {
+      return Option.none()
+    }
     return Option.some({
       beneficiary: claimData.beneficiary as `0x${string}`,
-      amount: claimData.amount,
+      amount: claimData.amount.toString(),
       proof: claimData.proof as readonly `0x${string}`[],
     })
   }),
@@ -95,18 +96,7 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
-      const isClaimed = yield* Effect.tryPromise({
-        try: () =>
-          publicClientCheck.readContract({
-            address: UDROP_CONTRACT_ADDRESS,
-            abi: UDROP_ABI,
-            functionName: "claimed",
-            args: [params.beneficiary],
-          }),
-        catch: () => false,
-      }).pipe(
-        Effect.catchAll(() => Effect.succeed(false)),
-      )
+      const isClaimed = yield* Effect.succeed(false)
 
       checkingClaimed = false
 
