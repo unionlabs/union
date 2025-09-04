@@ -691,7 +691,7 @@ async fn try_get_bonds(
         &AddressZkgm::from_string_0x(token_order.get_string("sender")?, channel.rpc_type)?;
     // receiver is receiver of deliver token-order from the call in the batch
     let receiver_zkgm = &AddressZkgm::from_string_0x(
-        token_order.get_string("receiver")?,
+        delivery_token_order.get_string("receiver")?,
         delivery_channel.counterparty_rpc_type,
     )?;
     let base_token = token_order.get_string("baseToken")?.try_into()?;
