@@ -179,20 +179,19 @@ pub fn execute(
 
             let mint = |deps: DepsMut,
                         env: Env,
-                        info: MessageInfo,
                         recipient: String,
                         amount: Uint128|
              -> Result<Response<TokenFactoryMsg>, Error> {
                 if !amount.is_zero() {
                     match cw20_type {
-                        Cw20ImplType::Base => cw20_base::contract::execute_mint::<CwUCtx>(
-                            deps, env, info, recipient, amount,
-                        )
-                        .map(|x| x.change_custom().unwrap())
-                        .map_err(Into::<Error>::into),
+                        Cw20ImplType::Base => {
+                            cw20_base::contract::unchecked_internal_mint(deps, recipient, amount)
+                                .map(|x| x.change_custom().unwrap())
+                                .map_err(Into::<Error>::into)
+                        }
                         Cw20ImplType::Tokenfactory => {
-                            cw20_wrapped_tokenfactory::contract::execute_mint::<CwUCtx>(
-                                deps, env, info, recipient, amount,
+                            cw20_wrapped_tokenfactory::contract::unchecked_internal_mint(
+                                deps, env, recipient, amount,
                             )
                             .map_err(Into::<Error>::into)
                         }
@@ -211,7 +210,6 @@ pub fn execute(
             let mint_quote_res = mint(
                 deps.branch(),
                 env.clone(),
-                info.clone(),
                 receiver.into(),
                 order.quote_amount.try_into().expect("impossible"),
             )?;
@@ -223,7 +221,6 @@ pub fn execute(
             let mint_fee_res = mint(
                 deps,
                 env,
-                info.clone(),
                 relayer.into(),
                 fee.try_into().expect("impossible"),
             )?;
@@ -249,6 +246,11 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
+        QueryMsg::AllMinters {} => deps
+            .storage
+            .read_item::<Minters>()
+            .and_then(|minters| to_json_binary(&minters))
+            .map_err(Into::into),
         QueryMsg::GetFungibleCounterparty {
             path,
             channel_id,
