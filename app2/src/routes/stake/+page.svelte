@@ -11,6 +11,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import * as AppRuntime from "$lib/runtime"
+import * as DoBond from "$lib/stake/bond.js"
 import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
 import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
@@ -22,9 +23,21 @@ import { EU_ERC20, EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
 import { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
-import { BigDecimal, Brand, ConfigProvider, Effect, Layer, pipe, Schema, Struct } from "effect"
+import * as Utils from "@unionlabs/sdk/Utils"
+import {
+  BigDecimal,
+  Brand,
+  ConfigProvider,
+  DateTime,
+  Effect,
+  Layer,
+  Order,
+  pipe,
+  Schema,
+  Struct,
+} from "effect"
 import * as A from "effect/Array"
-import { constVoid } from "effect/Function"
+import { constVoid, flow } from "effect/Function"
 import * as O from "effect/Option"
 import { onMount } from "svelte"
 
@@ -75,6 +88,13 @@ const data = AppRuntime.runPromiseExit$(() => {
       ]),
       Effect.map(A.getSomes),
       Effect.map(A.flatten),
+      Effect.map(A.sort(pipe(
+        Order.mapInput<Date, Bond | Unbond>(
+          Order.Date,
+          (x) => DateTime.toDate(x.sortDate),
+        ),
+        Order.reverse,
+      ))),
       Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
       Effect.map(x => x as O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>),
     )
@@ -84,6 +104,20 @@ const data = AppRuntime.runPromiseExit$(() => {
     Effect.provide(QlpConfigProvider),
   )
 })
+
+const submitBond = $derived(pipe(
+  O.all({
+    sender: WalletStore.evmAddress,
+    baseAmount: O.map(bondAmount, flow(BigDecimal.normalize, x => x.value)),
+  }),
+  O.map(({ sender, baseAmount }) =>
+    DoBond.sendBond({
+      sender,
+      baseAmount,
+      quoteAmount: baseAmount,
+    })
+  ),
+))
 
 const evmChain = $derived(pipe(
   ChainStore.data,
@@ -226,6 +260,13 @@ const close = (k: string) => {
       />
     </td>
     <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
+      {#if bond._tag === "Bond"}
+        BOND
+      {:else}
+        UNBOND
+      {/if}
+    </td>
+    <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
       {bond.sendTimestampFormatted}
     </td>
     <td class="flex px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300 items-center gap-2">
@@ -280,6 +321,9 @@ const close = (k: string) => {
           <tr class="text-zinc-400 border-b border-zinc-800/80">
             <th class="pl-2"></th>
             <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
+              Type
+            </th>
+            <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
               Timestamp
             </th>
             <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
@@ -311,6 +355,7 @@ const close = (k: string) => {
       <thead class="sticky top-0 z-10 bg-zinc-950/90">
         <tr class="text-zinc-400 border-b border-zinc-800/80">
           <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">arrow</th>
+          <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">Type</th>
           <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">Chain</th>
           <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
             Timestamp
@@ -336,9 +381,7 @@ const close = (k: string) => {
 {/snippet}
 
 {#snippet renderError(error: any)}
-  <div>
-    ERROR: {JSON.stringify(error, null, 2)}
-  </div>
+  <pre class="text-red-500 overflow-auto">{JSON.stringify(error, null, 2)}</pre>
 {/snippet}
 
 {#snippet whenWallet()}
@@ -374,7 +417,7 @@ const close = (k: string) => {
         BigDecimal.fromBigInt(amount),
         // XXX: check decimals
         BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
-        BigDecimal.format,
+        Utils.formatBigDecimal,
       )
     }
   </div>
