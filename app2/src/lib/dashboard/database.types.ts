@@ -358,8 +358,6 @@ export type Database = {
           amount: number
           beneficiary: string
           created_at: string
-          id: string
-          idx: number
           proof: Json
           user_id: string
         }
@@ -367,8 +365,6 @@ export type Database = {
           amount: number
           beneficiary: string
           created_at?: string
-          id?: string
-          idx: number
           proof: Json
           user_id: string
         }
@@ -376,8 +372,6 @@ export type Database = {
           amount?: number
           beneficiary?: string
           created_at?: string
-          id?: string
-          idx?: number
           proof?: Json
           user_id?: string
         }
@@ -2361,6 +2355,27 @@ export type Database = {
       }
     }
     Views: {
+      claims_v2: {
+        Row: {
+          amount: string | null
+          beneficiary: string | null
+          proof: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: never
+          beneficiary?: string | null
+          proof?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: never
+          beneficiary?: string | null
+          proof?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       current_incentives: {
         Row: {
           incentives_percent_effective: number | null

@@ -463,7 +463,7 @@ export const getUserClaim = (userId: string) =>
         Effect.tryPromise({
           try: () =>
             client
-              .from("claims")
+              .from("claims_v2")
               .select("*")
               .eq("user_id", userId)
               .single(),
