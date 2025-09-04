@@ -16,7 +16,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
-use unionlabs::{never::Never, traits::Member};
+use unionlabs::never::Never;
 use voyager_sdk::{
     anyhow,
     hook::simple_take_filter,

@@ -23,7 +23,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{
     debug, debug_span, error, info, info_span, instrument, trace, trace_span, warn, Instrument,
 };
-use unionlabs::{traits::Member, ErrorReporter};
+use unionlabs::ErrorReporter;
 use voyager_message::{
     call::{
         Call, FetchUpdateHeaders, Index, IndexRange, SubmitTx, WaitForClientUpdate, WaitForHeight,

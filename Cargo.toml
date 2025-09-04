@@ -250,6 +250,7 @@ members = [
   "cosmwasm/osmosis-tokenfactory-token-minter",
   "cosmwasm/cw20-token-minter",
   "cosmwasm/cw-account",
+  "cosmwasm/access-manager",
   "cosmwasm/cw-escrow-vault",
   "cosmwasm/cw-unionversal-token",
   "cosmwasm/ucs03-zkgm-token-minter-api",
@@ -389,6 +390,7 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
+access-manager       = { path = "cosmwasm/access-manager", default-features = false }
 cw-account           = { path = "cosmwasm/cw-account", default-features = false }
 cw-escrow-vault      = { path = "cosmwasm/cw-escrow-vault", default-features = false }
 cw-unionversal-token = { path = "cosmwasm/cw-unionversal-token", default-features = false }
