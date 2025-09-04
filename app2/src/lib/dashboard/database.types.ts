@@ -355,7 +355,7 @@ export type Database = {
       }
       claims: {
         Row: {
-          amount: number
+          amount: string
           beneficiary: string
           created_at: string
           id: string
@@ -364,7 +364,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          amount: number
+          amount: string
           beneficiary: string
           created_at?: string
           id?: string
@@ -373,7 +373,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          amount?: number
+          amount?: string
           beneficiary?: string
           created_at?: string
           id?: string

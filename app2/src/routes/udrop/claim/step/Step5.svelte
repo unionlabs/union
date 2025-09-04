@@ -60,12 +60,15 @@ let connectedAddress = $derived(
 )
 
 let claimParams = $derived<Option.Option<ClaimParams>>(
-  Option.flatMap(claim, (claimData) =>
-    Option.some({
+  Option.flatMap(claim, (claimData) => {
+    console.log("Raw claimData from DB:", claimData)
+    console.log("claimData.amount type:", typeof claimData.amount, "value:", claimData.amount)
+    return Option.some({
       beneficiary: claimData.beneficiary as `0x${string}`,
-      amount: claimData.amount.toString(),
+      amount: claimData.amount,
       proof: claimData.proof as readonly `0x${string}`[],
-    })),
+    })
+  }),
 )
 
 let shouldClaim = $state(false)
