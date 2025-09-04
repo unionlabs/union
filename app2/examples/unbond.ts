@@ -42,7 +42,7 @@ const JsonFromBase64 = Schema.compose(
   Schema.parseJson(),
 )
 
-const AMOUNT = 1n
+const AMOUNT = 4n
 const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
 const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
@@ -59,15 +59,20 @@ const VIEM_ACCOUNT = privateKeyToAccount(
   process.env.KEY as any,
 )
 
+const submitAllowance = pipe(
+  Evm.increaseErc20Allowance(
+    EU_ERC20.address,
+    UCS03_EVM,
+    AMOUNT,
+  ),
+  Effect.andThen(Evm.waitForTransactionReceipt),
+)
+
 const sendUnbond = Effect.gen(function*() {
   const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
   const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
 
-  yield* Evm.increaseErc20Allowance(
-    EU_ERC20.address,
-    UCS03_EVM,
-    1n,
-  )
+  yield* submitAllowance
 
   const tokenOrder = yield* TokenOrder.make({
     source: ethereumChain,
