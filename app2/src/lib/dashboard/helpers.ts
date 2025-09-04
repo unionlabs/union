@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { extractErrorDetails } from "@unionlabs/sdk/Utils"
 import { Effect, Option, pipe } from "effect"
 import { AuthenticationError, SupabaseError } from "./errors"
 import type { AuthProvider } from "./stores/user.svelte"

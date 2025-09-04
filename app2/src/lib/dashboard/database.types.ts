@@ -353,6 +353,36 @@ export type Database = {
         }
         Relationships: []
       }
+      claims: {
+        Row: {
+          amount: number
+          beneficiary: string
+          created_at: string
+          id: string
+          idx: number
+          proof: Json
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          beneficiary: string
+          created_at?: string
+          id?: string
+          idx: number
+          proof: Json
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          beneficiary?: string
+          created_at?: string
+          id?: string
+          idx?: number
+          proof?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       crypto_influencers: {
         Row: {
           author_description: string | null
@@ -2334,6 +2364,7 @@ export type Database = {
       current_incentives: {
         Row: {
           incentives_percent_effective: number | null
+          total_staked: number | null
         }
         Relationships: []
       }

@@ -1,5 +1,6 @@
 import AirdropIcon from "$lib/components/icons/AirdropIcon.svelte"
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
+import EscherLogo from "$lib/components/icons/EscherLogo.svelte"
 import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
@@ -93,6 +94,20 @@ export const navigation: Array<NavSection> = [
         ],
       },
     ],
+  },
+  {
+    items: [{
+      path: "/udrop/claim",
+      title: "U Claim",
+      icon: AirdropIcon,
+    }],
+  },
+  {
+    items: [{
+      path: "/liquid-staking",
+      title: "Liquid Staking",
+      icon: EscherLogo,
+    }],
   },
   {
     title: "Developer",

@@ -22,6 +22,7 @@ export type Wallet = Entity<"wallets">
 export type Device = Entity<"devices">
 export type ReferralCode = Entity<"referral_codes">
 export type UserAllocation = Entity<"user_allocations">
+export type UserClaim = Entity<"claims">
 
 // Input types for functions
 export interface DeviceInsert {
