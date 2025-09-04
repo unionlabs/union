@@ -453,7 +453,7 @@ export const createSnagUserDevice = (input: DeviceInsert) => {
 
 export const getUserClaim = (userId: string) =>
   withLocalStorageCacheStale(
-    "user_claim",
+    "user_claim_v2",
     `${CACHE_VERSION}:${userId}`,
     TTL,
     STALE,

@@ -174,7 +174,11 @@ function handleProceedToClaim() {
                 <div>
                   <div class="text-xs text-zinc-500 mb-2 uppercase tracking-wider">Amount</div>
                   <div class="text-sm font-mono text-zinc-300 bg-zinc-900 p-3 rounded border border-zinc-800">
-                    {formatUnits(BigInt(claim.value.amount), 18)} U
+                    {
+                      claim.value.amount
+                      ? formatUnits(BigInt(claim.value.amount), 18)
+                      : "0"
+                    } U
                   </div>
                 </div>
 
