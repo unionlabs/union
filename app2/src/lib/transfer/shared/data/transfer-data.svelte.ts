@@ -14,12 +14,12 @@ import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
 import {
   EU_ERC20,
-  EU_FROM_UNION_SOLVER_METADATA,
   EU_LST,
+  EU_SOLVER_ON_UNION_METADATA,
   U_BANK,
   U_ERC20,
-  U_ON_ETH_SOLVER_METADATA,
-  U_TO_UNION_SOLVER_METADATA,
+  U_SOLVER_ON_ETH_METADATA,
+  U_SOLVER_ON_UNION_METADATA,
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
@@ -247,11 +247,11 @@ export class TransferData {
           Match.whenOr(
             ["solve", "0x6175", "evm", Match.any],
             ["solve", U_ERC20.address.toLowerCase(), "evm", Match.any],
-            () => Option.some(U_ON_ETH_SOLVER_METADATA),
+            () => Option.some(U_SOLVER_ON_ETH_METADATA),
           ),
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
-            () => Option.some(U_TO_UNION_SOLVER_METADATA),
+            () => Option.some(U_SOLVER_ON_UNION_METADATA),
           ),
           Match.when(
             ["solve", Match.any, Match.any, Match.any],
