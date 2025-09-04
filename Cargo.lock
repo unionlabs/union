@@ -4694,6 +4694,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-manager"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "frissitheto",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde_json",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "cw-multi-test"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
