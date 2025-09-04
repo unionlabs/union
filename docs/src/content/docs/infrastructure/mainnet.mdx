@@ -1,0 +1,61 @@
+---
+title: "Union Mainnet"
+---
+
+Union's mainnet is now generally available. Developers and infrastructure providers can find helpful information about the network here.
+
+Most end-users will interact with Union's mainnet from Ethereum using cross-chain staking and governance.
+
+
+## Network
+
+### Chain ID
+
+`union-1`
+
+### Genesis
+
+[Download union-1 Genesis](https://rpc.union.build/genesis)
+
+### Seeds
+
+- `20e1000e88125698264454a884812746c2eb4807@seeds.lavenderfive.com:24656`
+- `ade4d8bc8cbe014af6ebdf3cb7b1e9ad36f412c0@seeds.polkachu.com:24656`
+
+### Public Endpoints
+
+| RPC                                   | Provider                                  |
+| ------------------------------------  | ----------------------------------------- |
+| `https://rpc.union.build`             | Union                                     |
+| `https://rpc-1.union.nodes.guru`      | [Nodes.Guru](https://nodes.guru)          |
+| `https://rpc.lavenderfive.com/union`  | [Lavender.Five](https://lavenderfive.com) |
+| `https://union-rpc.polkachu.com`      | [Polkachu](https://polkachu.com)          |
+| `https://union-rpc.kingnodes.com`     | [Kingnodes](https://kingnodes.com)        |
+| `https://union-rpc.stakeandrelax.net` | [Stake&Relax](https://stakeandrelax.net)  |
+
+| GRPC                                 | Provider                                  |
+| ----------------------------------   | ----------------------------------------- |
+| `grpc.union.build:443`               | Union                                     |
+| `grpc-1.union.nodes.guru:443`        | [Nodes.Guru](https://nodes.guru)          |
+| `union.lavenderfive.com:443`         | [Lavender.Five](https://lavenderfive.com) |
+| `union-grpc.polkachu.com:24690`      | [Polkachu](https://polkachu.com)          |
+| `union-grpc.kingnodes.com:443`       | [Kingnodes](https://kingnodes.com)        |
+| `union-grpc.stakeandrelax.net:24690` | [Stake&Relax](https://stakeandrelax.net)  |
+
+| REST                                  | Provider                                  |
+| ------------------------------------- | ----------------------------------------- |
+| `https://rest.union.build`            | Union                                     |
+| `https://api-1.union.nodes.guru`      | [Nodes.Guru](https://nodes.guru)          |
+| `https://rest.lavenderfive.com/union` | [Lavender.Five](https://lavenderfive.com) |
+| `https://union-api.polkachu.com`      | [Polkachu](https://polkachu.com)          |
+| `https://union-rest.kingnodes.com`    | [Kingnodes](https://kingnodes.com)        |
+| `https://union-api.stakeandrelax.net` | [Stake&Relax](https://stakeandrelax.net)  |
+
+## Gas and Staking
+
+The primary gas and staking token for Union is \$U. On-chain, \$U is represented by the base denom `au` (atto U) - which has 18 decimals of precision.
+
+## Fee Market
+
+To increase network stability, Union uses an on-chain fee market. This adds dynamic fee rates to transactions on the network. For end-users, this means that each transaction will need to include a non-zero fee. You can read more in Skip's docs for [Changes for End-Users](https://github.com/skip-mev/feemarket/blob/f1f216e15aa6bcc05075a7079496764820a0f545/docs/UPGRADING.md#changes-for-end-users) and their [Integration Guide](https://github.com/skip-mev/feemarket/blob/f1f216e15aa6bcc05075a7079496764820a0f545/docs/INTEGRATIONS.md).
+
