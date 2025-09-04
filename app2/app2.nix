@@ -121,8 +121,13 @@ _: {
             runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
-              for s in 192 512;
-                do magick site/public/u.svg -resize "$s"x$"$s" -background none app2/static/web-app-manifest-"$s"x"$s".png
+              for s in 192 512; do
+                magick \
+                  site/public/u.svg \
+                  -resize "$s"x$"$s" \
+                  -background none \
+                  +antialias \
+                  app2/static/web-app-manifest-"$s"x"$s".png
               done
             '';
           };
