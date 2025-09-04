@@ -391,9 +391,9 @@ export class TransferData {
   })
 
   flipTransfer = () => {
-    if (Option.isSome(this.quoteToken)) {
-      this.raw.flip(this.quoteToken.value)
-    }
+    // if (Option.isSome(this.quoteToken)) {
+    //   this.raw.flip(this.quoteToken.value)
+    // }
   }
 }
 
