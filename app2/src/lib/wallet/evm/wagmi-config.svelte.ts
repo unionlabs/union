@@ -39,27 +39,27 @@ type Transports = {
 
 export const ownedFallbacks: Transports = {
   [mainnet.id]: fallback([
-    http(`https://rpc.1.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Ethereum",
-    }),
     http(mainnet.rpcUrls.default.http.at(0), {
       name: "default Mainnet RPC",
     }),
+    http(`https://rpc.1.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Ethereum",
+    }),
   ]),
   [sepolia.id]: fallback([
-    http(`https://rpc.11155111.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Sepolia",
-    }),
     http(sepolia.rpcUrls.default.http.at(0), {
       name: "default Sepolia RPC",
     }),
+    http(`https://rpc.11155111.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Sepolia",
+    }),
   ]),
   [holesky.id]: fallback([
-    http(`https://rpc.17000.ethereum.chain.kitchen`, {
-      name: "Chain Kitchen - Holesky",
-    }),
     http(holesky.rpcUrls.default.http.at(0), {
       name: "default Holesky RPC",
+    }),
+    http(`https://rpc.17000.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Holesky",
     }),
   ]),
   [berachainTestnetbArtio.id]: fallback([
@@ -78,56 +78,56 @@ export const ownedFallbacks: Transports = {
     }),
   ]),
   [bobSepolia.id]: fallback([
-    http(`https://rpc.808813.bob.chain.kitchen`, {
-      name: "Chain Kitchen - BOB Sepolia",
-    }),
     http(bobSepolia.rpcUrls.default.http.at(0), {
       name: "default Bob Sepolia RPC",
     }),
+    http(`https://rpc.808813.bob.chain.kitchen`, {
+      name: "Chain Kitchen - BOB Sepolia",
+    }),
   ]),
   [bob.id]: fallback([
+    http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
     http(`https://rpc.60808.bob.chain.kitchen`, {
       name: "Chain Kitchen - BOB",
     }),
-    http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
   ]),
   [corn.id]: fallback([
+    http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
     http(`https://rpc.21000000.corn.chain.kitchen`, {
       name: "Chain Kitchen - Corn",
     }),
-    http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
   ]),
   [cornTestnet.id]: fallback([
-    http(`https://rpc.21000001.corn.chain.kitchen`, {
-      name: "Chain Kitchen - Corn Testnet",
-    }),
     http(cornTestnet.rpcUrls.default.http.at(0), {
       name: "default Corn Testnet RPC",
     }),
+    http(`https://rpc.21000001.corn.chain.kitchen`, {
+      name: "Chain Kitchen - Corn Testnet",
+    }),
   ]),
   [sei.id]: fallback([
+    http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
     http(`https://evm-rpc.1329.sei.chain.kitchen`, {
       name: "Chain Kitchen - Sei",
     }),
-    http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
   ]),
   [seiTestnet.id]: fallback([
+    http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
     http(`https://evm-rpc.1328.sei.chain.kitchen`, {
       name: "Chain Kitchen - Sei Testnet",
     }),
-    http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
   ]),
   [bsc.id]: fallback([
+    http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
     http(`https://rpc.56.bsc.chain.kitchen`, {
       name: "Chain Kitchen - BNB Chain",
     }),
-    http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
   ]),
   [bscTestnet.id]: fallback([
+    http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
     http(`https://rpc.97.bsc.chain.kitchen`, {
       name: "Chain Kitchen - BNB Chain Testnet",
     }),
-    http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
   ]),
 }
 
