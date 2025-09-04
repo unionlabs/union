@@ -9,6 +9,7 @@ import {
   createWalletClient,
   type CreateWalletClientErrorType,
   custom,
+  http,
   type PublicClient,
 } from "viem"
 import {
@@ -53,7 +54,7 @@ export const getPublicClient = (chain: Chain) =>
       try: () =>
         createPublicClient({
           chain: viemChain.value,
-          transport: custom(connectorClient),
+          transport: http(),
         }),
       catch: err =>
         new CreatePublicClientError({
