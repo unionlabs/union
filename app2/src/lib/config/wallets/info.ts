@@ -21,6 +21,9 @@ export const unionMainnet = InternalChainInfo.make({
       coinDenom: "U",
       coinMinimalDenom: "au",
       coinDecimals: 18,
+      coinGeckoId: "union-2",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union/chain.png",
     },
   ],
   feeCurrencies: [
@@ -28,10 +31,13 @@ export const unionMainnet = InternalChainInfo.make({
       coinDenom: "U",
       coinMinimalDenom: "au",
       coinDecimals: 18,
+      coinGeckoId: "union-2",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union/chain.png",
       gasPriceStep: {
-        low: 1,
-        average: 2,
-        high: 3,
+        low: 100000000,
+        average: 100000000,
+        high: 200000000,
       },
     },
   ],
@@ -39,6 +45,9 @@ export const unionMainnet = InternalChainInfo.make({
     coinDenom: "U",
     coinMinimalDenom: "au",
     coinDecimals: 18,
+    coinGeckoId: "union-2",
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union/chain.png",
   },
   features: [
     "cosmwasm",
@@ -49,7 +58,10 @@ export const unionMainnet = InternalChainInfo.make({
     gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)",
   },
   image:
-    "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png",
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union/chain.png",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union/chain.png",
+  walletUrlForStaking: "https://wallet.keplr.app/chains/union",
 })
 
 export const unionTestnet = InternalChainInfo.make({
