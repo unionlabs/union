@@ -85,7 +85,6 @@ function handleProceedToClaim() {
             </div>
           </div>
 
-          <!-- Action Buttons -->
           <div class="flex gap-3">
             <Button
               variant="primary"
