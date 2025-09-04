@@ -1,4 +1,5 @@
-use alloy_sol_types::SolType;
+use alloy_primitives::keccak256;
+use alloy_sol_types::SolValue;
 use bytes::Bytes;
 use ibc_union_spec::{Packet, Timestamp};
 use itertools::Itertools;
@@ -71,6 +72,18 @@ pub async fn delete_enriched_data_for_block(
     )
     .await?;
     changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendBondRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendUnbondRecord::delete_by_chain_and_height(
         tx,
         chain_context.internal_chain_id,
         *height,
@@ -508,6 +521,20 @@ async fn try_get_bonds(
 
     trace!("get_bonds: delivery salt: 0x{}", hex::encode(delivery_salt));
 
+    let hash_salt_preimage = (ON_ZKGM_CALL_PROXY_BECH32, delivery_salt).abi_encode();
+
+    trace!(
+        "get_bonds: delivery hash_salt_preimage: 0x{}",
+        hex::encode(hash_salt_preimage.clone())
+    );
+
+    let hashed_salt = keccak256(&hash_salt_preimage);
+
+    trace!(
+        "get_bonds: delivery hashed_salt: 0x{}",
+        hex::encode(hashed_salt)
+    );
+
     // delivery path (we need to figure out where to read the path from)
     // let Value::String(delivery_path) = send.get("path").ok_or_else(|| {
     //     IndexerError::ZkgmExpectingInstructionField(
@@ -577,7 +604,7 @@ async fn try_get_bonds(
     // construct delivery packet to calculate the packet-hash
     // ------------------------------------------------------
     let delivery_zkgm_packet = ZkgmPacket {
-        salt: alloy_sol_types::private::FixedBytes::from(delivery_salt),
+        salt: hashed_salt,
         path: alloy_sol_types::private::U256::from(0u64),
         instruction: delivery_instruction,
     };
@@ -599,7 +626,7 @@ async fn try_get_bonds(
                 delivery_channel.channel_id.to_string(),
             )
         })?,
-        data: <ZkgmPacket>::abi_encode_sequence(&delivery_zkgm_packet).into(),
+        data: <ZkgmPacket>::abi_encode_params(&delivery_zkgm_packet).into(),
         timeout_height: ibc_union_spec::MustBeZero, //delivery_timeout_height.into(),
         timeout_timestamp: Timestamp::from_nanos(delivery_timeout_timestamp.0),
     };
