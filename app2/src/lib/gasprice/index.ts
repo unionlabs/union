@@ -1,5 +1,5 @@
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
-import { getWagmiConnectorClient } from "$lib/services/evm/clients"
+import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import { type Chain, NumberFromHexString, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
@@ -12,12 +12,9 @@ import {
   Option as O,
   pipe,
   Record as R,
-  Schedule,
-  Schema as S,
   unsafeCoerce,
 } from "effect"
-import { type GetGasPriceErrorType, http } from "viem"
-import * as V from "viem"
+import { type GetGasPriceErrorType } from "viem"
 import { publicActionsL2 } from "viem/op-stack"
 import { GasPriceError } from "./error"
 import * as GasPrice from "./service"
@@ -48,7 +45,7 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
             const client = yield* pipe(
               createViemPublicClient({
                 chain: viemChain,
-                transport: http(),
+                transport: fallbackTransport(viemChain),
               }),
               Effect.mapError((cause) =>
                 new GasPriceError({
