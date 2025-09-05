@@ -8,7 +8,7 @@ use crate::indexer::{
     handler::EventContext,
     record::{
         change_counter::{Changes, HasKind, RecordKind},
-        ChainContext, InternalChainId, PgValue,
+        ChainContext, InternalChainId, PgValue, PgValueExt,
     },
 };
 
@@ -19,6 +19,7 @@ pub struct CreateLensClientRecord {
     pub timestamp: OffsetDateTime,
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
+    pub message_index: Option<i64>,
     pub client_id: i32,
     pub l1_client_id: i32,
     pub l2_client_id: i32,
@@ -45,6 +46,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, CreateLensClientEvent>>
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             client_id: value.event.client_id.pg_value()?,
             l1_client_id: value.event.l1_client_id.pg_value()?,
             l2_client_id: value.event.l2_client_id.pg_value()?,
@@ -69,11 +71,12 @@ impl CreateLensClientRecord {
                 timestamp,
                 transaction_hash,
                 transaction_index,
+                message_index,
                 client_id,
                 l1_client_id,
                 l2_client_id,
                 l2_chain_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             "#,
             self.internal_chain_id,
             &self.block_hash[..],
@@ -81,6 +84,7 @@ impl CreateLensClientRecord {
             self.timestamp,
             &self.transaction_hash[..],
             self.transaction_index,
+            self.message_index,
             self.client_id,
             self.l1_client_id,
             self.l2_client_id,

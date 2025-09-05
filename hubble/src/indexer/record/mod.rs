@@ -8,7 +8,7 @@ use crate::indexer::{
     event::types::{
         Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
         ChannelId, ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom,
-        EventIndex, Maker, MakerMsg, MessageHash, MessageSequence, MutationAmount,
+        EventIndex, Maker, MakerMsg, MessageHash, MessageIndex, MessageSequence, MutationAmount,
         MutationDirection, NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash, Path,
         PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash,
         TransactionIndex, UniversalChainId, WalletAddress,
@@ -526,6 +526,16 @@ impl PgValue<i64> for TransactionIndex {
     }
 }
 impl PgValue<i64> for TransactionEventIndex {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
+        i64::try_from(self.0).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "transaction-event-index".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+impl PgValue<i64> for MessageIndex {
     fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(

@@ -65,18 +65,6 @@ pub async fn delete_enriched_data_for_block(
         *height,
     )
     .await?;
-    changes += PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
-        tx,
-        chain_context.internal_chain_id,
-        *height,
-    )
-    .await?;
-    changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
-        tx,
-        chain_context.internal_chain_id,
-        *height,
-    )
-    .await?;
     changes += PacketSendBondRecord::delete_by_chain_and_height(
         tx,
         chain_context.internal_chain_id,
@@ -84,6 +72,18 @@ pub async fn delete_enriched_data_for_block(
     )
     .await?;
     changes += PacketSendUnbondRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
         tx,
         chain_context.internal_chain_id,
         *height,

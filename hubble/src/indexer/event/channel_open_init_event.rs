@@ -59,6 +59,7 @@ mod tests {
   "counterparty_port_id": "0x636f756e746572706172742d3432",
   "event_index": "42",
   "height": "10042",
+  "message_index": "542",
   "port_id": "0x706f72742d3432",
   "timestamp": "2020-09-13T12:27:22Z",
   "transaction_event_index": "242",

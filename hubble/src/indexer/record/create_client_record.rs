@@ -8,7 +8,7 @@ use crate::indexer::{
     handler::EventContext,
     record::{
         change_counter::{Changes, HasKind, RecordKind},
-        ChainContext, InternalChainId, PgValue,
+        ChainContext, InternalChainId, PgValue, PgValueExt,
     },
 };
 
@@ -19,6 +19,7 @@ pub struct CreateClientRecord {
     pub timestamp: OffsetDateTime,
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
+    pub message_index: Option<i64>,
     pub client_id: i64,
     pub client_type: String,
     pub counterparty_chain_id: String,
@@ -42,6 +43,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, CreateClientEvent>> for Crea
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             client_id: value.event.client_id.pg_value()? as i64, // stored as bigint in postgres, should be i32
             client_type: value.event.client_type.pg_value()?,
             counterparty_chain_id: value.event.counterparty_chain_id.pg_value()?,
@@ -65,10 +67,11 @@ impl CreateClientRecord {
                 timestamp,
                 transaction_hash,
                 transaction_index,
+                message_index,
                 client_id,
                 client_type,
                 counterparty_chain_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
             self.internal_chain_id,
             &self.block_hash[..],
@@ -76,6 +79,7 @@ impl CreateClientRecord {
             self.timestamp,
             &self.transaction_hash[..],
             self.transaction_index,
+            self.message_index,
             self.client_id,
             self.client_type,
             self.counterparty_chain_id,

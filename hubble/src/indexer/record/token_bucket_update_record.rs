@@ -21,6 +21,7 @@ pub struct TokenBucketUpdateRecord {
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
     pub transaction_event_index: Option<i64>,
+    pub message_index: Option<i64>,
     pub denom: Vec<u8>,
     pub capacity: BigDecimal,
     pub refill_rate: BigDecimal,
@@ -48,6 +49,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, TokenBucketUpdateEvent>>
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
             transaction_event_index: value.event.header.transaction_event_index.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             denom: value.event.denom.pg_value()?,
             capacity: value.event.capacity.pg_value()?,
             refill_rate: value.event.refill_rate.pg_value()?,
@@ -73,10 +75,11 @@ impl TokenBucketUpdateRecord {
                 transaction_hash,
                 transaction_index,
                 transaction_event_index,
+                message_index,
                 denom,
                 capacity,
                 refill_rate
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             "#,
             self.internal_chain_id,
             &self.block_hash[..],
@@ -86,6 +89,7 @@ impl TokenBucketUpdateRecord {
             &self.transaction_hash[..],
             self.transaction_index,
             self.transaction_event_index,
+            self.message_index,
             &self.denom[..],
             self.capacity,
             self.refill_rate,
