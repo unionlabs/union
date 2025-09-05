@@ -65,7 +65,7 @@ use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
     Decimal, Deps, Storage, Uint128,
 };
-use depolama::StorageExt;
+use depolama::{raw_key, StorageExt};
 use hex_literal::hex;
 use ibc_union_spec::ChannelId;
 use serde::de::DeserializeOwned;
@@ -76,8 +76,11 @@ use crate::{
     error::ContractError,
     msg::{AccountingStateResponse, Batch, BatchesResponse, IdentifiedBatch, QueryMsg},
     query::query_batches_by_ids,
-    state::{AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequestsByStakerHash},
-    tests::test_helper::{mock_init_msg, setup, UNION1},
+    state::{
+        AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequests,
+        UnstakeRequestsByStakerHash, Zkgm,
+    },
+    tests::test_helper::{mock_init_msg, setup, UNION1, ZKGM_ADDRESS},
     types::{
         AccountingState, BatchId, PendingBatch, ReceivedBatch, Staker, SubmittedBatch,
         UnstakeRequest, UnstakeRequestKey,
@@ -373,7 +376,12 @@ fn unstake_requests_by_user() {
 
 #[test]
 fn all_unstake_requests() {
-    let mut deps = mock_dependencies();
+    let mut deps = setup();
+
+    assert_eq!(
+        deps.storage.read_item::<Zkgm>().unwrap().as_str(),
+        ZKGM_ADDRESS
+    );
 
     deps.storage.set(
         &hex!("756E7374616B655F72657175657374730000000000000000018CEC68F17FE9B07AA92127C903A61C2FFB47FE91A66CA52A1624CEC2334674E9"),
