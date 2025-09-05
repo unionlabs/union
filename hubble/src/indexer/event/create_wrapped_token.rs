@@ -60,6 +60,7 @@ mod tests {
   "channel_id": 42,
   "event_index": "42",
   "height": "10042",
+  "message_index": "542",
   "path": "0x2a",
   "quote_token": "0x71756f74652d746f6b656e",
   "timestamp": "2020-09-13T12:27:22Z",

@@ -53,6 +53,7 @@ mod tests {
   "direction": "in",
   "event_index": "42",
   "height": "10042",
+  "message_index": "542",
   "timestamp": "2020-09-13T12:27:22Z",
   "transaction_event_index": "242",
   "transaction_hash": "0x54585f484153485f3432",

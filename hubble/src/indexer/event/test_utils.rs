@@ -9,9 +9,9 @@ pub mod test_helpers {
         types::{
             Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
             ChannelId, ClientId, ClientType, ConnectionId, ContractAddress, Denom, EventIndex,
-            Maker, MakerMsg, MutationAmount, MutationDirection, PacketData, PacketHash, PortId,
-            RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash, TransactionIndex,
-            UniversalChainId, WalletAddress,
+            Maker, MakerMsg, MessageIndex, MutationAmount, MutationDirection, PacketData,
+            PacketHash, PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex,
+            TransactionHash, TransactionIndex, UniversalChainId, WalletAddress,
         },
     };
 
@@ -32,6 +32,7 @@ pub mod test_helpers {
             transaction_hash: TransactionHash(Bytes::from(format!("TX_HASH_{}", suffix))),
             transaction_index: TransactionIndex(100 + suffix as u64),
             transaction_event_index: Some(TransactionEventIndex(200 + suffix as u64)),
+            message_index: Some(MessageIndex(500 + suffix as u64)),
         }
     }
 

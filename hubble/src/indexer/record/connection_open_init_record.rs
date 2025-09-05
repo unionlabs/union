@@ -8,7 +8,7 @@ use crate::indexer::{
     handler::EventContext,
     record::{
         change_counter::{Changes, HasKind, RecordKind},
-        ChainContext, InternalChainId, PgValue,
+        ChainContext, InternalChainId, PgValue, PgValueExt,
     },
 };
 
@@ -19,6 +19,7 @@ pub struct ConnectionOpenInitRecord {
     pub timestamp: OffsetDateTime,
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
+    pub message_index: Option<i64>,
     pub connection_id: i32,
     pub client_id: i32,
     pub counterparty_client_id: i32,
@@ -44,6 +45,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ConnectionOpenInitEvent>>
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             connection_id: value.event.connection_id.pg_value()?,
             client_id: value.event.client_id.pg_value()?,
             counterparty_client_id: value.event.counterparty_client_id.pg_value()?,
@@ -67,10 +69,11 @@ impl ConnectionOpenInitRecord {
                 timestamp,
                 transaction_hash,
                 transaction_index,
+                message_index,
                 connection_id,
                 client_id,
                 counterparty_client_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
             self.internal_chain_id,
             &self.block_hash,
@@ -78,6 +81,7 @@ impl ConnectionOpenInitRecord {
             self.timestamp,
             &self.transaction_hash,
             self.transaction_index,
+            self.message_index,
             self.connection_id,
             self.client_id,
             self.counterparty_client_id,

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v2_sync.create_client_sync (\n                internal_chain_id,\n                block_hash,\n                height,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                message_index,\n                client_id,\n                client_type,\n                counterparty_chain_id\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Bytea",
+        "Int8",
+        "Timestamptz",
+        "Bytea",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7a8b29be4ae0b19aaf387b17659995383e4682ba20147c166fd7ccff61c6460d"
+}

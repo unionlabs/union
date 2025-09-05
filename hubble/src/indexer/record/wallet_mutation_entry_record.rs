@@ -21,6 +21,7 @@ pub struct WalletMutationEntryRecord {
     pub transaction_index: i64,
     pub transaction_event_index: Option<i64>,
     // missing event_index
+    pub message_index: Option<i64>,
     pub contract_address_canonical: Vec<u8>,
     pub wallet_address_canonical: Vec<u8>,
     pub amount: BigDecimal,
@@ -48,6 +49,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, WalletMutationEntryEvent>>
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
             transaction_event_index: value.event.header.transaction_event_index.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             contract_address_canonical: value.event.contract_address_canonical.pg_value()?,
             wallet_address_canonical: value.event.wallet_address_canonical.pg_value()?,
             amount: value.event.amount.pg_value()?,
@@ -73,11 +75,12 @@ impl WalletMutationEntryRecord {
                 transaction_hash,
                 transaction_index,
                 transaction_event_index,
+                message_index,
                 contract_address_canonical,
                 wallet_address_canonical,
                 amount,
                 direction
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             "#,
             self.internal_chain_id,
             &self.block_hash[..],
@@ -86,6 +89,7 @@ impl WalletMutationEntryRecord {
             &self.transaction_hash[..],
             self.transaction_index,
             self.transaction_event_index,
+            self.message_index,
             &self.contract_address_canonical[..],
             &self.wallet_address_canonical[..],
             self.amount,

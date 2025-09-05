@@ -101,6 +101,7 @@ impl<'a> Decoder<'a> {
             transaction_hash: self.transaction.hash.into(),
             transaction_index: self.transaction.index.into(),
             transaction_event_index: None,
+            message_index: None, // not applicable in evm
         })
     }
 }

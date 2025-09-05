@@ -50,6 +50,7 @@ mod tests {
   "denom": "0x64656e6f6d2d3432",
   "event_index": "42",
   "height": "10042",
+  "message_index": "542",
   "refill_rate": "0x8e",
   "timestamp": "2020-09-13T12:27:22Z",
   "transaction_event_index": "242",

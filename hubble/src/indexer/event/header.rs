@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::indexer::event::types::{
-    BlockHash, BlockHeight, BlockTimestamp, EventIndex, TransactionEventIndex, TransactionHash,
-    TransactionIndex, UniversalChainId,
+    BlockHash, BlockHeight, BlockTimestamp, EventIndex, MessageIndex, TransactionEventIndex,
+    TransactionHash, TransactionIndex, UniversalChainId,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -16,4 +16,6 @@ pub struct Header {
     pub transaction_index: TransactionIndex,
     /// deprecated
     pub transaction_event_index: Option<TransactionEventIndex>,
+    /// only in cosmos
+    pub message_index: Option<MessageIndex>,
 }

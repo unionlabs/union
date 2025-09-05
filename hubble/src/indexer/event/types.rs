@@ -487,6 +487,15 @@ impl TryFrom<usize> for TransactionIndex {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MessageIndex(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u64> for MessageIndex {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionEventIndex(#[serde(with = "flexible_u64")] pub u64);
 
