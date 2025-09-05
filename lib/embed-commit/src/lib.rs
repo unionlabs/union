@@ -1,6 +1,6 @@
 use bytemuck::CheckedBitPattern;
 
-/// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the [`commit_hash`] export.
+/// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the `commit_hash` export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, CheckedBitPattern)]
 #[repr(C, u64)]
 #[rustfmt::skip]

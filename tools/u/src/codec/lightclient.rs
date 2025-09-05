@@ -13,6 +13,8 @@ use unionlabs::encoding::{
     Bcs, Bincode, Decode, DecodeAs, Encode, EncodeAs, Encoding, EthAbi, Json, Proto, Ssz,
 };
 
+use crate::Format;
+
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
     #[command(visible_alias = "arb")]
@@ -121,18 +123,6 @@ pub enum StateType {
     ConsensusState,
     #[value(alias = "h")]
     Header,
-}
-
-#[derive(Debug, Clone, Copy, Default, ValueEnum)]
-pub enum Format {
-    #[default]
-    Hex,
-    #[value(alias = "b64")]
-    Base64,
-    #[value(alias = "string")]
-    Utf8,
-    #[value(alias = "bytes", alias = "bz")]
-    Raw,
 }
 
 pub struct Tag<E, T>(PhantomData<fn() -> (E, T)>);

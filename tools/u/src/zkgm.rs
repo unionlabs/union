@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::Subcommand;
 
+pub mod decode;
 pub mod make;
 pub mod predict_wrapped_token;
 
@@ -10,6 +11,8 @@ pub enum Cmd {
     PredictWrappedToken(predict_wrapped_token::Cmd),
     #[command(visible_alias = "mk", subcommand)]
     Make(make::Cmd),
+    #[command(visible_alias = "d")]
+    Decode(decode::Cmd),
 }
 
 impl Cmd {
@@ -17,6 +20,7 @@ impl Cmd {
         match self {
             Cmd::PredictWrappedToken(cmd) => cmd.run().await,
             Cmd::Make(cmd) => cmd.run(),
+            Cmd::Decode(cmd) => cmd.run(),
         }
     }
 }

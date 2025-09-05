@@ -31,6 +31,10 @@ use sqlx::{
 };
 use tracing::{debug, info, info_span, instrument, trace, warn, Instrument};
 use ucs03_zkgm::com::{Ack, BatchAck, TokenOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
+use ucs03_zkgm_packet::{
+    batch::{BatchInstructionV0Shape, BatchShape},
+    root::RootShape,
+};
 use unionlabs::{
     self,
     cosmos::tx::{tx_body::TxBody, tx_raw::TxRaw},
@@ -98,6 +102,7 @@ pub struct Module {
     whitelisted_addresses: HashSet<Bytes>,
     // i64 for ease of use with the sqlx types
     max_invalid_per_address: i64,
+    only_allow_token_order: bool,
 }
 
 pub enum ChainProvider {
@@ -120,6 +125,7 @@ pub struct Config {
     #[serde(default)]
     whitelisted_addresses_cosmos: HashSet<Bech32<Bytes>>,
     max_invalid_per_address: usize,
+    only_allow_token_order: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -219,6 +225,7 @@ impl Plugin for Module {
                 )
                 .collect(),
             max_invalid_per_address: config.max_invalid_per_address.try_into().unwrap(),
+            only_allow_token_order: config.only_allow_token_order,
         })
     }
 
@@ -547,6 +554,24 @@ impl Module {
         }: CheckSendPacket,
     ) -> RpcResult<Op<VoyagerMessage>> {
         let packet_hash = event.packet().hash();
+
+        if self.only_allow_token_order {
+            let decoded_packet = ucs03_zkgm_packet::ZkgmPacket::decode(&event.packet_data).unwrap();
+
+            let is_only_token_orders = match decoded_packet.instruction.shape() {
+                RootShape::Batch(BatchShape::V0(batch_shape)) => batch_shape
+                    .instructions
+                    .into_iter()
+                    .all(|shape| matches!(shape, BatchInstructionV0Shape::TokenOrder(_))),
+                RootShape::TokenOrder(_) => true,
+                _ => false,
+            };
+
+            if !is_only_token_orders {
+                warn!("packet is not only token orders, it will not be relayed");
+                return Ok(noop());
+            }
+        }
 
         let (valid, address) = match &self.provider {
             ChainProvider::Cosmos { client } => {

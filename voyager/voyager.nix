@@ -40,6 +40,7 @@
     {
       packages =
         voyager
+        // (crane.buildWorkspaceMember "voyager/plugins/zkgm-filter" { })
         // schema.packages
         // {
           voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (
