@@ -162,6 +162,16 @@ where
 {
     Ctx::check_can_mint(deps.as_ref(), &info.sender, amount)?;
 
+    unchecked_internal_mint(deps, env, recipient, amount)
+}
+
+// same as execute_mint, but without any checks for mint
+pub fn unchecked_internal_mint(
+    deps: DepsMut<'_>,
+    env: Env,
+    recipient: String,
+    amount: Uint128,
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     // add amount to recipient balance
     let rcpt_addr = deps.api.addr_validate(&recipient)?;
 

@@ -196,7 +196,10 @@ pub fn query_all_unstake_requests(
             start_after.unwrap_or(UnstakeRequestKey {
                 batch_id: BatchId::ONE,
                 staker_hash: H256::new([0x00; 32]),
-            })..,
+            })..UnstakeRequestKey {
+                batch_id: BatchId::from_raw(u64::MAX).unwrap(),
+                staker_hash: H256::new([0xFF; 32]),
+            },
         )
         .take(limit.unwrap_or(usize::MAX))
         .map_ok(|(_, unstake_request)| unstake_request)

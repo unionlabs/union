@@ -1,16 +1,16 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult,
-    Uint128,
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    StdError, StdResult, Uint128,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use ibc_union_spec::path::commit_packets;
+use ibc_union_spec::{path::commit_packets, ChannelId};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes},
+    primitives::{encoding::HexPrefixed, Bytes, U256},
     ErrorReporter,
 };
 
@@ -179,20 +179,19 @@ pub fn execute(
 
             let mint = |deps: DepsMut,
                         env: Env,
-                        info: MessageInfo,
                         recipient: String,
                         amount: Uint128|
              -> Result<Response<TokenFactoryMsg>, Error> {
                 if !amount.is_zero() {
                     match cw20_type {
-                        Cw20ImplType::Base => cw20_base::contract::execute_mint::<CwUCtx>(
-                            deps, env, info, recipient, amount,
-                        )
-                        .map(|x| x.change_custom().unwrap())
-                        .map_err(Into::<Error>::into),
+                        Cw20ImplType::Base => {
+                            cw20_base::contract::unchecked_internal_mint(deps, recipient, amount)
+                                .map(|x| x.change_custom().unwrap())
+                                .map_err(Into::<Error>::into)
+                        }
                         Cw20ImplType::Tokenfactory => {
-                            cw20_wrapped_tokenfactory::contract::execute_mint::<CwUCtx>(
-                                deps, env, info, recipient, amount,
+                            cw20_wrapped_tokenfactory::contract::unchecked_internal_mint(
+                                deps, env, recipient, amount,
                             )
                             .map_err(Into::<Error>::into)
                         }
@@ -211,7 +210,6 @@ pub fn execute(
             let mint_quote_res = mint(
                 deps.branch(),
                 env.clone(),
-                info.clone(),
                 receiver.into(),
                 order.quote_amount.try_into().expect("impossible"),
             )?;
@@ -223,7 +221,6 @@ pub fn execute(
             let mint_fee_res = mint(
                 deps,
                 env,
-                info.clone(),
                 relayer.into(),
                 fee.try_into().expect("impossible"),
             )?;
@@ -249,6 +246,41 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
+        QueryMsg::AllMinters {} => deps
+            .storage
+            .read_item::<Minters>()
+            .and_then(|minters| to_json_binary(&minters))
+            .map_err(Into::into),
+        QueryMsg::GetFungibleCounterparty {
+            path,
+            channel_id,
+            base_token,
+        } => deps
+            .storage
+            .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))
+            .and_then(|data| to_json_binary(&data))
+            .map_err(Into::into),
+        QueryMsg::GetAllFungibleCounterparties {} => deps
+            .storage
+            .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
+            .map(|res| {
+                res.map(
+                    |(
+                        (path, channel_id, base_token),
+                        FungibleLane {
+                            counterparty_beneficiary,
+                        },
+                    )| FungibleLaneConfig {
+                        path,
+                        channel_id,
+                        base_token,
+                        counterparty_beneficiary,
+                    },
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .and_then(|data| to_json_binary(&data))
+            .map_err(Into::into),
         QueryMsg::Minter {} => Err(Error::Unsupported),
         QueryMsg::Cw20(msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => cw20_base::contract::query(
@@ -265,4 +297,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             .map_err(Into::into),
         },
     }
+}
+
+#[derive(serde::Serialize)]
+pub struct FungibleLaneConfig {
+    pub path: U256,
+    pub channel_id: ChannelId,
+    pub base_token: Bytes,
+    pub counterparty_beneficiary: Bytes,
 }

@@ -295,11 +295,20 @@ pub fn execute_mint<Ctx>(
 where
     Ctx: Cw20Ctx,
 {
+    Ctx::check_can_mint(deps.as_ref(), &info.sender, amount)?;
+
+    unchecked_internal_mint(deps, recipient, amount)
+}
+
+// same as execute_mint, but without any checks for mint
+pub fn unchecked_internal_mint(
+    deps: DepsMut<'_>,
+    recipient: String,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
     let mut config = TOKEN_INFO
         .may_load(deps.storage)?
         .ok_or(ContractError::Unauthorized {})?;
-
-    Ctx::check_can_mint(deps.as_ref(), &info.sender, amount)?;
 
     // update supply and enforce cap
     config.total_supply += amount;

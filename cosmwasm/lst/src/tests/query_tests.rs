@@ -63,18 +63,23 @@ use std::fmt::Debug;
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env},
-    Decimal, Deps, Uint128,
+    Decimal, Deps, Storage, Uint128,
 };
 use depolama::StorageExt;
+use hex_literal::hex;
+use ibc_union_spec::ChannelId;
 use serde::de::DeserializeOwned;
+use unionlabs_primitives::{encoding::Base64, Bytes, U256};
 
 use crate::{
     contract::{init, query},
     error::ContractError,
     msg::{AccountingStateResponse, Batch, BatchesResponse, IdentifiedBatch, QueryMsg},
     query::query_batches_by_ids,
-    state::{AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequestsByStakerHash},
-    tests::test_helper::{mock_init_msg, setup, UNION1},
+    state::{
+        AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequestsByStakerHash, Zkgm,
+    },
+    tests::test_helper::{mock_init_msg, setup, UNION1, ZKGM_ADDRESS},
     types::{
         AccountingState, BatchId, PendingBatch, ReceivedBatch, Staker, SubmittedBatch,
         UnstakeRequest, UnstakeRequestKey,
@@ -363,6 +368,64 @@ fn unstake_requests_by_user() {
                 batch_id: BatchId::ONE.increment(),
                 staker: staker.clone(),
                 amount: 2,
+            },
+        ],
+    );
+}
+
+#[test]
+fn all_unstake_requests() {
+    let mut deps = setup();
+
+    assert_eq!(
+        deps.storage.read_item::<Zkgm>().unwrap().as_str(),
+        ZKGM_ADDRESS
+    );
+
+    deps.storage.set(
+        &hex!("756E7374616B655F72657175657374730000000000000000018CEC68F17FE9B07AA92127C903A61C2FFB47FE91A66CA52A1624CEC2334674E9"),
+        &"AQAAAAAAAAABAAAAFAAAAAAAAAAMbx0tRx2V8jmtcKDgl6Zc5f4AEhQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
+    );
+
+    deps.storage.set(
+        &hex!("756E7374616B655F7265717565737473000000000000000001C193453EB2D0F78A20ACFB33EE486A3D90FCAF389048A9E2C93CA7E7110C533D"),
+        &"AQAAAAAAAAABAAAAFAAAAAAAAAAGYncU8/F6cB9wdKEsAoR6XSykhxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGYAAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
+    );
+
+    deps.storage.set(
+        &hex!("756E7374616B655F72657175657374735F62795F7374616B65725F68617368008CEC68F17FE9B07AA92127C903A61C2FFB47FE91A66CA52A1624CEC2334674E90000000000000001"),
+        &"AQAAAAAAAAABAAAAFAAAAAAAAAAMbx0tRx2V8jmtcKDgl6Zc5f4AEhQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
+    );
+
+    deps.storage.set(
+        &hex!("756E7374616B655F72657175657374735F62795F7374616B65725F6861736800C193453EB2D0F78A20ACFB33EE486A3D90FCAF389048A9E2C93CA7E7110C533D0000000000000001"),
+        &"AQAAAAAAAAABAAAAFAAAAAAAAAAGYncU8/F6cB9wdKEsAoR6XSykhxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGYAAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
+    );
+
+    assert_query_result::<Vec<UnstakeRequest>>(
+        deps.as_ref(),
+        QueryMsg::AllUnstakeRequests {
+            start_after: None,
+            limit: None,
+        },
+        &vec![
+            UnstakeRequest {
+                batch_id: BatchId::ONE,
+                staker: Staker::Remote {
+                    address: hex!("0c6f1d2d471d95f239ad70a0e097a65ce5fe0012").into(),
+                    channel_id: ChannelId!(20),
+                    path: U256::ZERO,
+                },
+                amount: 30,
+            },
+            UnstakeRequest {
+                batch_id: BatchId::ONE,
+                staker: Staker::Remote {
+                    address: hex!("06627714f3f17a701f7074a12c02847a5d2ca487").into(),
+                    channel_id: ChannelId!(20),
+                    path: U256::ZERO,
+                },
+                amount: 102,
             },
         ],
     );

@@ -500,12 +500,17 @@ impl StorageExt for dyn Storage + '_ {
             Bound::Unbounded => None,
         };
 
-        dbg!(&from, &to);
-
         self.range(from.as_deref(), to.as_deref(), order)
             .map(|(k, v)| {
+                let key = k.get((S::PREFIX.len() + 1)..).ok_or_else(|| {
+                    StdError::generic_err(format!(
+                        "unable to decode key, missing prefix bytes: {}",
+                        <Bytes>::new(k.clone())
+                    ))
+                })?;
+
                 Ok((
-                    S::decode_key(&Bytes::new(k[(S::PREFIX.len() + 1)..].to_vec()))?,
+                    S::decode_key(&Bytes::new(key.to_vec()))?,
                     S::decode_value(&Bytes::new(v))?,
                 ))
             })

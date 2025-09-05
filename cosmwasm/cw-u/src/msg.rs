@@ -49,6 +49,14 @@ pub enum ExecuteMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
+    AllMinters {},
+    GetFungibleCounterparty {
+        path: U256,
+        channel_id: ChannelId,
+        base_token: Bytes,
+    },
+    GetAllFungibleCounterparties {},
+    // prevent from routing to the inner cw20 impl message
     Minter {},
     #[serde(untagged)]
     Cw20(Value),
