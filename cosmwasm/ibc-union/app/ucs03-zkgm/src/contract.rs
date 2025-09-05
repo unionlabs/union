@@ -972,23 +972,21 @@ fn acknowledge_fungible_asset_order_v2(
                     let minter = TOKEN_MINTER.load(deps.storage)?;
 
                     if order.kind == TOKEN_ORDER_KIND_UNESCROW {
-                        let market_maker = deps
-                            .api
-                            .addr_validate(
-                                str::from_utf8(ack.market_maker.as_ref())
-                                    .map_err(|_| ContractError::InvalidReceiver)?,
-                            )
-                            .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
                         // Mint tokens to market maker (EVM: IZkgmERC20(address(baseToken)).mint(marketMaker, order.baseAmount))
-                        messages.push(make_wasm_msg(
-                            WrappedTokenMsg::MintTokens {
-                                denom: base_denom,
-                                amount: base_amount.into(),
-                                mint_to_address: market_maker,
-                            },
-                            minter,
-                            vec![],
-                        )?);
+                        if let Some(market_maker) = str::from_utf8(ack.market_maker.as_ref())
+                            .ok()
+                            .and_then(|x| deps.api.addr_validate(x).ok())
+                        {
+                            messages.push(make_wasm_msg(
+                                WrappedTokenMsg::MintTokens {
+                                    denom: base_denom,
+                                    amount: base_amount.into(),
+                                    mint_to_address: market_maker,
+                                },
+                                minter,
+                                vec![],
+                            )?);
+                        }
                     } else {
                         // Decrease channel balance and transfer (EVM: _decreaseOutstandingV2 + safeTransfer)
                         decrease_channel_balance_v2(
@@ -1013,14 +1011,10 @@ fn acknowledge_fungible_asset_order_v2(
                                 minter,
                                 vec![],
                             )?);
-                        } else {
-                            let market_maker = deps
-                                .api
-                                .addr_validate(
-                                    str::from_utf8(ack.market_maker.as_ref())
-                                        .map_err(|_| ContractError::InvalidReceiver)?,
-                                )
-                                .map_err(|_| ContractError::UnableToValidateMarketMaker)?;
+                        } else if let Some(market_maker) = str::from_utf8(ack.market_maker.as_ref())
+                            .ok()
+                            .and_then(|x| deps.api.addr_validate(x).ok())
+                        {
                             messages.push(make_wasm_msg(
                                 LocalTokenMsg::Unescrow {
                                     denom: base_denom,

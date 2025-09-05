@@ -615,13 +615,15 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
             } else if (assetOrderAck.fillType == ZkgmLib.FILL_TYPE_MARKETMAKER)
             {
                 // A market maker filled, we pay with the sent asset.
-                address marketMaker =
-                    address(bytes20(assetOrderAck.marketMaker));
                 address baseToken = address(bytes20(order.baseToken));
                 if (order.kind == ZkgmLib.TOKEN_ORDER_KIND_UNESCROW) {
-                    IZkgmERC20(address(baseToken)).mint(
-                        marketMaker, order.baseAmount
-                    );
+                    if (assetOrderAck.marketMaker.length == 20) {
+                        address marketMaker =
+                            address(bytes20(assetOrderAck.marketMaker));
+                        IZkgmERC20(address(baseToken)).mint(
+                            marketMaker, order.baseAmount
+                        );
+                    }
                 } else {
                     _decreaseOutstandingV2(
                         ibcPacket.sourceChannelId,
@@ -631,14 +633,22 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                         order.baseAmount
                     );
                     // Check if the counterparty minted and wants us to burn to net.
-                    if (marketMaker == address(0)) {
+                    if (
+                        assetOrderAck.marketMaker.eq(
+                            abi.encodePacked(address(0))
+                        )
+                    ) {
                         IZkgmERC20(baseToken).burn(
                             address(this), order.baseAmount
                         );
                     } else {
-                        IERC20(baseToken).safeTransfer(
-                            marketMaker, order.baseAmount
-                        );
+                        if (assetOrderAck.marketMaker.length == 20) {
+                            address marketMaker =
+                                address(bytes20(assetOrderAck.marketMaker));
+                            IERC20(baseToken).safeTransfer(
+                                marketMaker, order.baseAmount
+                            );
+                        }
                     }
                 }
             } else {
