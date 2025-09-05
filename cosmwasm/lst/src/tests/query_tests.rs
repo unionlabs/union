@@ -65,7 +65,7 @@ use cosmwasm_std::{
     testing::{mock_dependencies, mock_env},
     Decimal, Deps, Storage, Uint128,
 };
-use depolama::{raw_key, StorageExt};
+use depolama::StorageExt;
 use hex_literal::hex;
 use ibc_union_spec::ChannelId;
 use serde::de::DeserializeOwned;
@@ -77,8 +77,7 @@ use crate::{
     msg::{AccountingStateResponse, Batch, BatchesResponse, IdentifiedBatch, QueryMsg},
     query::query_batches_by_ids,
     state::{
-        AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequests,
-        UnstakeRequestsByStakerHash, Zkgm,
+        AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequestsByStakerHash, Zkgm,
     },
     tests::test_helper::{mock_init_msg, setup, UNION1, ZKGM_ADDRESS},
     types::{
