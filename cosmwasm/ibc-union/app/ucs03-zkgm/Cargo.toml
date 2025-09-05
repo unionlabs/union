@@ -17,7 +17,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 alloy-primitives            = { workspace = true }
 alloy-sol-types             = { workspace = true }
-chrono                      = { workspace = true }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "cosmwasm_1_4", "staking"] }
 cw-account                  = { workspace = true }

@@ -8,8 +8,6 @@ interface IZkgmStore {
     function tokenOrigin(
         address token
     ) external view returns (uint256);
-
-    function predictStakeManagerAddress() external view returns (ZkgmERC721);
 }
 
 interface IZkgm is IZkgmStore {
@@ -40,9 +38,4 @@ interface IZkgm is IZkgmStore {
         bytes calldata token,
         bytes32 metadataHash
     ) external returns (address, bytes32);
-
-    function registerGovernanceToken(
-        uint32 channelId,
-        GovernanceToken calldata governanceToken
-    ) external;
 }

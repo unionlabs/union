@@ -223,13 +223,6 @@ pub struct V1ToV2WrappedMigration {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Calculate the stake account address
-    PredictStakeAccount {
-        /// The channel ID
-        channel_id: ChannelId,
-        /// The NFT ID
-        token_id: Uint256,
-    },
     /// Calculate the wrapped token denom
     PredictWrappedToken {
         path: String,

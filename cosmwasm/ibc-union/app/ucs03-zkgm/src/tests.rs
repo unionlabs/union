@@ -27,8 +27,8 @@ use crate::{
     contract::{
         dequeue_channel_from_path, execute, increase_channel_balance_v2, instantiate,
         is_forwarded_packet, migrate, pop_channel_from_path, query, reply, reverse_channel_path,
-        tint_forward_salt, update_channel_path, verify_batch, verify_forward, verify_internal,
-        verify_multiplex, PROTOCOL_VERSION,
+        tint_forward_salt, update_channel_path, verify_batch, verify_call, verify_forward,
+        verify_internal, PROTOCOL_VERSION,
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitParams,
@@ -446,35 +446,32 @@ fn test_verify_forward_invalid_instruction() {
 }
 
 #[test]
-fn test_verify_multiplex_sender_ok() {
+fn test_verify_call_sender_ok() {
     let sender = Addr::unchecked("sender");
     // Test with matching sender
-    let multiplex = Call {
+    let call = Call {
         sender: sender.as_bytes().to_vec().into(),
         eureka: false,
         contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
         contract_calldata: vec![].into(),
     };
     let mut response = Response::new();
-    assert_eq!(
-        verify_multiplex(&multiplex, sender.clone(), &mut response),
-        Ok(())
-    );
+    assert_eq!(verify_call(&call, sender.clone(), &mut response), Ok(()));
     assert_eq!(response, Response::new());
 }
 
 #[test]
-fn test_verify_multiplex_invalid_sender() {
+fn test_verify_call_invalid_sender() {
     let sender = Addr::unchecked("sender");
     // Test with matching sender
-    let multiplex = Call {
+    let call = Call {
         sender: sender.as_bytes().to_vec().into(),
         eureka: false,
         contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
         contract_calldata: vec![].into(),
     };
     let wrong_sender = Addr::unchecked("wrong_sender");
-    let result = verify_multiplex(&multiplex, wrong_sender, &mut Response::new());
+    let result = verify_call(&call, wrong_sender, &mut Response::new());
     assert!(matches!(result, Err(ContractError::InvalidCallSender)));
 }
 
@@ -482,7 +479,7 @@ fn test_verify_multiplex_invalid_sender() {
 fn test_verify_batch_ok() {
     let sender = Addr::unchecked(DEFAULT_IBC_HOST);
     // Test with matching sender
-    let multiplex = Instruction {
+    let call = Instruction {
         version: INSTR_VERSION_0,
         opcode: OP_CALL,
         operand: Call {
@@ -505,7 +502,7 @@ fn test_verify_batch_ok() {
         ChannelId!(1),
         U256::ZERO,
         &Batch {
-            instructions: vec![multiplex],
+            instructions: vec![call],
         },
         &mut response,
     );

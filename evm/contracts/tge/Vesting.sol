@@ -32,11 +32,6 @@ contract VestingAccount is
     using LibCall for *;
 
     error VestingAccount_Unauthorized();
-    error VestingAccount_StakeBeneficiaryMustBeSelf();
-    error VestingAccount_StakeSenderMustBeSelf();
-    error VestingAccount_UnstakeSenderMustBeSelf();
-    error VestingAccount_WithdrawStakeSenderMustBeSelf();
-    error VestingAccount_WithdrawStakeBeneficiaryMustBeSelf();
 
     bytes32 internal constant VESTING_ACCOUNT_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.storage.tge.vestingAccount")) - 1)
@@ -77,89 +72,6 @@ contract VestingAccount is
         uint256 amount
     ) public onlyVestingManager {
         SafeERC20.safeTransfer(IERC20(token), beneficiary, amount);
-    }
-
-    function stake(
-        IZkgm zkgm,
-        uint32 channelId,
-        uint64 timeout,
-        bytes32 salt,
-        address governanceToken,
-        Stake calldata stake
-    ) public onlyVestingManager {
-        if (!stake.beneficiary.eq(abi.encodePacked(address(this)))) {
-            revert VestingAccount_StakeBeneficiaryMustBeSelf();
-        }
-        if (!stake.sender.eq(abi.encodePacked(address(this)))) {
-            revert VestingAccount_StakeSenderMustBeSelf();
-        }
-        IERC20(governanceToken).approve(address(zkgm), stake.amount);
-        zkgm.send(
-            channelId,
-            0,
-            timeout,
-            salt,
-            Instruction({
-                version: ZkgmLib.INSTR_VERSION_0,
-                opcode: ZkgmLib.OP_STAKE,
-                operand: ZkgmLib.encodeStake(stake)
-            })
-        );
-    }
-
-    function unstake(
-        IZkgm zkgm,
-        uint32 channelId,
-        uint64 timeout,
-        bytes32 salt,
-        Unstake calldata unstake
-    ) public onlyVestingManager {
-        if (!unstake.sender.eq(abi.encodePacked(address(this)))) {
-            revert VestingAccount_UnstakeSenderMustBeSelf();
-        }
-        zkgm.predictStakeManagerAddress().approve(
-            address(zkgm), unstake.tokenId
-        );
-        zkgm.send(
-            channelId,
-            0,
-            timeout,
-            salt,
-            Instruction({
-                version: ZkgmLib.INSTR_VERSION_0,
-                opcode: ZkgmLib.OP_UNSTAKE,
-                operand: ZkgmLib.encodeUnstake(unstake)
-            })
-        );
-    }
-
-    function withdrawStake(
-        IZkgm zkgm,
-        uint32 channelId,
-        uint64 timeout,
-        bytes32 salt,
-        WithdrawStake calldata withdrawStake
-    ) public onlyVestingManager {
-        if (!withdrawStake.beneficiary.eq(abi.encodePacked(address(this)))) {
-            revert VestingAccount_WithdrawStakeBeneficiaryMustBeSelf();
-        }
-        if (!withdrawStake.sender.eq(abi.encodePacked(address(this)))) {
-            revert VestingAccount_WithdrawStakeSenderMustBeSelf();
-        }
-        zkgm.predictStakeManagerAddress().approve(
-            address(zkgm), withdrawStake.tokenId
-        );
-        zkgm.send(
-            channelId,
-            0,
-            timeout,
-            salt,
-            Instruction({
-                version: ZkgmLib.INSTR_VERSION_0,
-                opcode: ZkgmLib.OP_WITHDRAW_STAKE,
-                operand: ZkgmLib.encodeWithdrawStake(withdrawStake)
-            })
-        );
     }
 
     function execute(
@@ -206,17 +118,6 @@ contract VestingManager is
         uint64 start,
         uint64 duration
     );
-
-    event Staked(
-        bytes32 indexed key,
-        address indexed governanceToken,
-        uint256 indexed nftId,
-        uint256 amount
-    );
-
-    event Unstaked(bytes32 indexed key, uint256 indexed nftId);
-
-    event StakeWithdrawn(bytes32 indexed key, uint256 indexed nftId);
 
     bytes32 internal constant VESTING_MANAGER_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.storage.tge.vestingManager")) - 1)
@@ -407,59 +308,6 @@ contract VestingManager is
         $.duration = duration;
         _deployVestingAccount(key);
         emit Updated(key, beneficiary, start, cliff, duration);
-    }
-
-    function stake(
-        bytes32 key,
-        uint32 channelId,
-        uint64 timeout,
-        bytes32 salt,
-        address governanceToken,
-        Stake calldata stake
-    ) public {
-        VestingManagerStorage storage $ = _getVestingManagerStorage();
-        VestingSchedule storage schedule = $.schedules[key];
-        if (msg.sender != schedule.beneficiary) {
-            revert VestingManager_OnlyBeneficiary();
-        }
-        _vestingAccount(key).stake(
-            $.zkgm, channelId, timeout, salt, governanceToken, stake
-        );
-        emit Staked(key, governanceToken, stake.tokenId, stake.amount);
-    }
-
-    function unstake(
-        bytes32 key,
-        uint32 channelId,
-        uint64 timeout,
-        bytes32 salt,
-        Unstake calldata unstake
-    ) public {
-        VestingManagerStorage storage $ = _getVestingManagerStorage();
-        VestingSchedule storage schedule = $.schedules[key];
-        if (msg.sender != schedule.beneficiary) {
-            revert VestingManager_OnlyBeneficiary();
-        }
-        _vestingAccount(key).unstake($.zkgm, channelId, timeout, salt, unstake);
-        emit Unstaked(key, unstake.tokenId);
-    }
-
-    function withdrawStake(
-        bytes32 key,
-        uint32 channelId,
-        uint64 timeout,
-        bytes32 salt,
-        WithdrawStake calldata withdrawStake
-    ) public {
-        VestingManagerStorage storage $ = _getVestingManagerStorage();
-        VestingSchedule storage schedule = $.schedules[key];
-        if (msg.sender != schedule.beneficiary) {
-            revert VestingManager_OnlyBeneficiary();
-        }
-        _vestingAccount(key).withdrawStake(
-            $.zkgm, channelId, timeout, salt, withdrawStake
-        );
-        emit StakeWithdrawn(key, withdrawStake.tokenId);
     }
 
     function _authorizeUpgrade(

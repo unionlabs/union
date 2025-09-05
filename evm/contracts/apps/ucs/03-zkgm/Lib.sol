@@ -37,11 +37,6 @@ library ZkgmLib {
     uint8 public constant OP_BATCH = 0x02;
     uint8 public constant OP_TOKEN_ORDER = 0x03;
 
-    uint8 public constant OP_STAKE = 0x04;
-    uint8 public constant OP_UNSTAKE = 0x05;
-    uint8 public constant OP_WITHDRAW_STAKE = 0x06;
-    uint8 public constant OP_WITHDRAW_REWARDS = 0x07;
-
     uint8 public constant WRAPPED_TOKEN_KIND_PROTOCOL = 0x00;
     uint8 public constant WRAPPED_TOKEN_KIND_THIRD_PARTY = 0x01;
 
@@ -81,18 +76,8 @@ library ZkgmLib {
     error ErrChannelGovernanceTokenNotSet();
     error ErrInvalidUnwrappedGovernanceToken();
     error ErrChannelGovernanceTokenAlreadySet();
-    error ErrNotStakeNFTOwner();
-    error ErrStakeNotWithdrawable();
-    error ErrStakeNotUnstakable();
-    error ErrStillStaked();
     error ErrWaitForUnstakingCompletion();
-    error ErrNotStaked();
-    error ErrWithdrawStakeAmountMustBeLE();
     error ErrInstructionCannotBeForwarded();
-    error ErrInvalidStakeGovernanceToken();
-    error ErrInvalidStakeChannelId();
-    error ErrInvalidStakeAmount();
-    error ErrInvalidStakeValidator();
     error ErrCannotDeploy();
     error ErrInvalidTokenOrderKind();
     error ErrInvalidUnescrow();
@@ -134,36 +119,6 @@ library ZkgmLib {
             meta := stream.offset
         }
         return meta;
-    }
-
-    function decodeUnstakeAck(
-        bytes calldata stream
-    ) internal pure returns (UnstakeAck calldata) {
-        UnstakeAck calldata ack;
-        assembly {
-            ack := stream.offset
-        }
-        return ack;
-    }
-
-    function decodeWithdrawStakeAck(
-        bytes calldata stream
-    ) internal pure returns (WithdrawStakeAck calldata) {
-        WithdrawStakeAck calldata ack;
-        assembly {
-            ack := stream.offset
-        }
-        return ack;
-    }
-
-    function decodeWithdrawRewardsAck(
-        bytes calldata stream
-    ) internal pure returns (WithdrawRewardsAck calldata) {
-        WithdrawRewardsAck calldata ack;
-        assembly {
-            ack := stream.offset
-        }
-        return ack;
     }
 
     function decodeTokenOrderAck(
@@ -257,63 +212,6 @@ library ZkgmLib {
         );
     }
 
-    function encodeStake(
-        Stake memory stake
-    ) internal pure returns (bytes memory) {
-        return abi.encode(
-            stake.tokenId,
-            stake.governanceToken,
-            stake.governanceTokenWrapped,
-            stake.sender,
-            stake.beneficiary,
-            stake.validator,
-            stake.amount
-        );
-    }
-
-    function encodeUnstake(
-        Unstake memory unstake
-    ) internal pure returns (bytes memory) {
-        return abi.encode(
-            unstake.tokenId,
-            unstake.governanceToken,
-            unstake.governanceTokenWrapped,
-            unstake.sender,
-            unstake.validator
-        );
-    }
-
-    function encodeWithdrawStake(
-        WithdrawStake memory withdrawStake
-    ) internal pure returns (bytes memory) {
-        return abi.encode(
-            withdrawStake.tokenId,
-            withdrawStake.governanceToken,
-            withdrawStake.governanceTokenWrapped,
-            withdrawStake.sender,
-            withdrawStake.beneficiary
-        );
-    }
-
-    function encodeWithdrawStakeAck(
-        WithdrawStakeAck memory withdrawStakeAck
-    ) internal pure returns (bytes memory) {
-        return abi.encode(withdrawStakeAck.amount);
-    }
-
-    function encodeWithdrawRewards(
-        WithdrawRewards memory withdrawRewards
-    ) internal pure returns (bytes memory) {
-        return abi.encode(
-            withdrawRewards.tokenId,
-            withdrawRewards.governanceToken,
-            withdrawRewards.governanceTokenWrapped,
-            withdrawRewards.validator,
-            withdrawRewards.sender,
-            withdrawRewards.beneficiary
-        );
-    }
-
     function decodeForward(
         bytes calldata stream
     ) internal pure returns (Forward calldata) {
@@ -339,46 +237,6 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (Call calldata) {
         Call calldata operand;
-        assembly {
-            operand := stream.offset
-        }
-        return operand;
-    }
-
-    function decodeStake(
-        bytes calldata stream
-    ) internal pure returns (Stake calldata) {
-        Stake calldata operand;
-        assembly {
-            operand := stream.offset
-        }
-        return operand;
-    }
-
-    function decodeUnstake(
-        bytes calldata stream
-    ) internal pure returns (Unstake calldata) {
-        Unstake calldata operand;
-        assembly {
-            operand := stream.offset
-        }
-        return operand;
-    }
-
-    function decodeWithdrawStake(
-        bytes calldata stream
-    ) internal pure returns (WithdrawStake calldata) {
-        WithdrawStake calldata operand;
-        assembly {
-            operand := stream.offset
-        }
-        return operand;
-    }
-
-    function decodeWithdrawRewards(
-        bytes calldata stream
-    ) internal pure returns (WithdrawRewards calldata) {
-        WithdrawRewards calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -510,9 +368,7 @@ library ZkgmLib {
     function isAllowedBatchInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_CALL || opcode == OP_TOKEN_ORDER
-            || opcode == OP_STAKE || opcode == OP_UNSTAKE
-            || opcode == OP_WITHDRAW_STAKE;
+        return opcode == OP_CALL || opcode == OP_TOKEN_ORDER;
     }
 
     function isAllowedForwardInstruction(

@@ -31,8 +31,6 @@ contract ZkgmChannelTokenIsolationTest is Test {
             abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
         );
         zkgm = TestZkgm(payable(address(proxy)));
-        zkgm.doCreateStakeNFTManager();
-
         erc20.approve(address(zkgm), type(uint256).max);
     }
 

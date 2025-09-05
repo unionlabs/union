@@ -18,6 +18,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import "@safe-utils/Safe.sol";
 
 import "../contracts/U.sol";
+import "../contracts/Account.sol";
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/clients/CometblsClient.sol";
@@ -385,7 +386,6 @@ abstract contract UnionScript is UnionBase {
                                     params.nativeTokenSymbol,
                                     params.nativeTokenDecimals
                                 ),
-                                new UCS03ZkgmStakeImpl(handler),
                                 new UCS03ZkgmTokenOrderImpl(
                                     params.weth,
                                     zkgmERC20,
@@ -1321,16 +1321,6 @@ contract GetDeployed is VersionedScript {
             UCS03Zkgm(payable(ucs03)).SEND_IMPL().toHexString(), implUCS03Send
         );
 
-        string memory implUCS03Stake = "implUCS03Stake";
-        implUCS03Stake.serialize(
-            "contract",
-            string("contracts/apps/ucs/03-zkgm/Stake.sol:UCS03ZkgmStakeImpl")
-        );
-        implUCS03Stake = implUCS03Stake.serialize("args", abi.encode(handler));
-        impls.serialize(
-            UCS03Zkgm(payable(ucs03)).STAKE_IMPL().toHexString(), implUCS03Stake
-        );
-
         string memory implUCS03FAO = "implUCS03FAO";
         implUCS03FAO.serialize(
             "contract",
@@ -1354,7 +1344,6 @@ contract GetDeployed is VersionedScript {
             abi.encode(
                 handler,
                 UCS03Zkgm(payable(ucs03)).SEND_IMPL(),
-                UCS03Zkgm(payable(ucs03)).STAKE_IMPL(),
                 UCS03Zkgm(payable(ucs03)).FAO_IMPL()
             )
         );
@@ -1413,7 +1402,6 @@ contract DryUpgradeUCS03 is VersionedScript {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmStakeImpl(handler),
                 new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
             )
         );
@@ -1473,7 +1461,6 @@ contract UpgradeUCS03 is VersionedScript {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmStakeImpl(handler),
                 new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
             )
         );
@@ -1537,7 +1524,6 @@ abstract contract UCS03FromV1ToV2 is VersionedScript {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmStakeImpl(handler),
                 new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
             )
         );
@@ -2656,7 +2642,6 @@ contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmStakeImpl(handler),
                 new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
             )
         );

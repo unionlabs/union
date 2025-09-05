@@ -1,6 +1,5 @@
 pragma solidity ^0.8.27;
 
-import "./Stake.sol";
 import "./Send.sol";
 import "./TokenOrder.sol";
 import "./Store.sol";
@@ -71,19 +70,16 @@ contract UCS03Zkgm is
 
     IIBCModulePacket public immutable IBC_HANDLER;
     address public immutable SEND_IMPL;
-    address public immutable STAKE_IMPL;
     address public immutable FAO_IMPL;
 
     constructor(
         IIBCModulePacket _ibcHandler,
         UCS03ZkgmSendImpl _sendImpl,
-        UCS03ZkgmStakeImpl _stakeImpl,
         UCS03ZkgmTokenOrderImpl _faoImpl
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         SEND_IMPL = address(_sendImpl);
-        STAKE_IMPL = address(_stakeImpl);
         FAO_IMPL = address(_faoImpl);
     }
 
@@ -97,23 +93,6 @@ contract UCS03Zkgm is
 
     function ibcAddress() public view virtual override returns (address) {
         return address(IBC_HANDLER);
-    }
-
-    function registerGovernanceToken(
-        uint32 channelId,
-        GovernanceToken calldata governanceToken
-    ) public restricted {
-        if (channelGovernanceToken[channelId].unwrappedToken.length != 0) {
-            revert ZkgmLib.ErrChannelGovernanceTokenAlreadySet();
-        }
-        channelGovernanceToken[channelId] = governanceToken;
-    }
-
-    function overwriteGovernanceToken(
-        uint32 channelId,
-        GovernanceToken calldata governanceToken
-    ) public restricted {
-        channelGovernanceToken[channelId] = governanceToken;
     }
 
     function predictWrappedToken(
@@ -543,12 +522,6 @@ contract UCS03Zkgm is
         return FAO_IMPL.delegateCallContract(data);
     }
 
-    function _callStakeImpl(
-        bytes memory data
-    ) internal {
-        STAKE_IMPL.delegateCallContract(data);
-    }
-
     function _acknowledgeInternal(
         address caller,
         IBCPacket calldata ibcPacket,
@@ -616,65 +589,6 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeCall(instruction.operand),
                 successful,
                 ack
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeStake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeStake(instruction.operand),
-                        successful
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeUnstake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeUnstake(instruction.operand),
-                        successful,
-                        ack
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeWithdrawStake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawStake(instruction.operand),
-                        successful,
-                        ack
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeWithdrawRewards,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawRewards(instruction.operand),
-                        successful,
-                        ack
-                    )
-                )
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
@@ -847,52 +761,6 @@ contract UCS03Zkgm is
                 relayer,
                 path,
                 ZkgmLib.decodeCall(instruction.operand)
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutStake,
-                    (ibcPacket, ZkgmLib.decodeStake(instruction.operand))
-                )
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutUnstake,
-                    (ibcPacket, ZkgmLib.decodeUnstake(instruction.operand))
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutWithdrawStake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawStake(instruction.operand)
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutWithdrawRewards,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawRewards(instruction.operand)
-                    )
-                )
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();

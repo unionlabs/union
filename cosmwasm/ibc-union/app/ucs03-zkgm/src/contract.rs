@@ -3,14 +3,13 @@ use std::str::FromStr;
 
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
-use chrono::DateTime;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Binary,
-    CanonicalAddr, CodeInfoResponse, Coin, Coins, CosmosMsg, DecCoin, Decimal256, Deps, DepsMut,
-    DistributionMsg, Empty, Env, Event, MessageInfo, QueryRequest, Reply, Response, StakingMsg,
-    StdError, StdResult, Storage, SubMsg, SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg,
+    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
+    CanonicalAddr, CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, Event,
+    MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, Storage, SubMsg,
+    SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -29,17 +28,15 @@ use unionlabs::{
 
 use crate::{
     com::{
-        Ack, Batch, BatchAck, Call, Forward, Instruction, SolverMetadata, Stake, TokenMetadata,
-        TokenOrderAck, TokenOrderV1, TokenOrderV2, Unstake, UnstakeAck, WithdrawRewards,
-        WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER,
+        Ack, Batch, BatchAck, Call, Forward, Instruction, SolverMetadata, TokenMetadata,
+        TokenOrderAck, TokenOrderV1, TokenOrderV2, ZkgmPacket, ACK_ERR_ONLY_MAKER,
         FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
-        INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD, OP_STAKE, OP_TOKEN_ORDER,
-        OP_UNSTAKE, OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
-        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
-        TOKEN_ORDER_KIND_UNESCROW,
+        INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER,
+        TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
+        TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, OnIntentZkgm, OnZkgm, PredictWrappedTokenResponse, QueryMsg,
+        ExecuteMsg, InitMsg, OnIntentZkgm, OnZkgm, PredictWrappedTokenResponse, QueryMsg,
         SolverMsg, V1ToV2Migration, V1ToV2WrappedMigration, ZkgmMsg,
     },
     state::{
@@ -57,10 +54,9 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
-pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
+pub const CALL_REPLY_ID: u64 = 0xface;
 pub const MM_RELAYER_FILL_REPLY_ID: u64 = 0xdead;
 pub const MM_SOLVER_FILL_REPLY_ID: u64 = 0xb0cad0;
-pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
@@ -624,8 +620,8 @@ fn timeout_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
-            timeout_multiplex(deps, caller, packet, relayer, path, multiplex)
+            let call = Call::abi_decode_params_validate(&instruction.operand)?;
+            timeout_call(deps, caller, packet, relayer, path, call)
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -633,33 +629,27 @@ fn timeout_internal(
     }
 }
 
-fn timeout_multiplex(
+fn timeout_call(
     deps: DepsMut,
     caller: Addr,
     packet: Packet,
     relayer: Addr,
     path: U256,
-    multiplex: Call,
+    call: Call,
 ) -> Result<Response, ContractError> {
-    if multiplex.eureka {
+    if call.eureka {
         // For eureka mode, forward the timeout to the sender contract
         let sender_addr = deps
             .api
-            .addr_validate(
-                str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?,
-            )
+            .addr_validate(str::from_utf8(&call.sender).map_err(|_| ContractError::InvalidSender)?)
             .map_err(|_| ContractError::UnableToValidateSender)?;
 
-        // Create a virtual packet with the multiplex data
-        let multiplex_packet = Packet {
+        // Create a virtual packet with the call data
+        let call_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(
-                path,
-                multiplex.sender.into(),
-                multiplex.contract_calldata.into(),
-            )
-            .into(),
+            data: encode_call_calldata(path, call.sender.into(), call.contract_calldata.into())
+                .into(),
             timeout_height: MustBeZero,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -669,7 +659,7 @@ fn timeout_multiplex(
             sender_addr,
             &IbcUnionMsg::OnTimeoutPacket {
                 caller: caller.into(),
-                packet: multiplex_packet,
+                packet: call_packet,
                 relayer: relayer.into(),
             },
             vec![],
@@ -758,7 +748,7 @@ fn acknowledge_internal(
                 } else {
                     None
                 };
-                acknowledge_fungible_asset_order(
+                acknowledge_token_order_v1(
                     deps, env, info, packet, relayer, salt, path, order, order_ack,
                 )
             }
@@ -769,7 +759,7 @@ fn acknowledge_internal(
                 } else {
                     None
                 };
-                acknowledge_fungible_asset_order_v2(
+                acknowledge_token_order_v2(
                     deps, env, info, packet, relayer, salt, path, order, order_ack,
                 )
             }
@@ -820,10 +810,8 @@ fn acknowledge_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
-            acknowledge_multiplex(
-                deps, caller, packet, relayer, path, multiplex, successful, ack,
-            )
+            let call = Call::abi_decode_params_validate(&instruction.operand)?;
+            acknowledge_call(deps, caller, packet, relayer, path, call, successful, ack)
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -944,7 +932,7 @@ fn refund_v2(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn acknowledge_fungible_asset_order_v2(
+fn acknowledge_token_order_v2(
     mut deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
@@ -1045,7 +1033,7 @@ fn acknowledge_fungible_asset_order_v2(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn acknowledge_fungible_asset_order(
+fn acknowledge_token_order_v1(
     deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
@@ -1124,35 +1112,29 @@ fn acknowledge_fungible_asset_order(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn acknowledge_multiplex(
+fn acknowledge_call(
     deps: DepsMut,
     caller: Addr,
     packet: Packet,
     relayer: Addr,
     path: U256,
-    multiplex: Call,
+    call: Call,
     successful: bool,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
-    if successful && multiplex.eureka {
+    if successful && call.eureka {
         // For eureka mode, forward the acknowledgement to the sender contract
         let sender_addr = deps
             .api
-            .addr_validate(
-                str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?,
-            )
+            .addr_validate(str::from_utf8(&call.sender).map_err(|_| ContractError::InvalidSender)?)
             .map_err(|_| ContractError::UnableToValidateSender)?;
 
-        // Create a virtual packet with the multiplex data
-        let multiplex_packet = Packet {
+        // Create a virtual packet with the call data
+        let call_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(
-                path,
-                multiplex.sender.into(),
-                multiplex.contract_calldata.into(),
-            )
-            .into(),
+            data: encode_call_calldata(path, call.sender.into(), call.contract_calldata.into())
+                .into(),
             timeout_height: MustBeZero,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -1162,7 +1144,7 @@ fn acknowledge_multiplex(
             sender_addr,
             &IbcUnionMsg::OnAcknowledgementPacket {
                 caller: caller.into(),
-                packet: multiplex_packet,
+                packet: call_packet,
                 acknowledgement: ack,
                 relayer: relayer.into(),
             },
@@ -1209,7 +1191,7 @@ fn execute_packet(
 #[allow(clippy::too_many_arguments)]
 /// Executes the internal logic for a packet based on its instruction type.
 /// This is the core execution function that handles different instruction types:
-/// - Fungible asset orders (transfers)
+/// - token orders (transfers)
 /// - Batch operations
 /// - Call operations
 /// - Forward operations
@@ -1231,7 +1213,7 @@ fn execute_internal(
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
-                execute_fungible_asset_order(
+                execute_token_order_v1(
                     deps,
                     env,
                     info,
@@ -1248,7 +1230,7 @@ fn execute_internal(
             }
             INSTR_VERSION_2 => {
                 let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
-                execute_fungible_asset_order_v2(
+                execute_token_order_v2(
                     deps,
                     env,
                     info,
@@ -1295,8 +1277,8 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
-            execute_multiplex(
+            let call = Call::abi_decode_params_validate(&instruction.operand)?;
+            execute_call(
                 deps,
                 env,
                 caller,
@@ -1304,7 +1286,7 @@ fn execute_internal(
                 relayer,
                 relayer_msg,
                 path,
-                multiplex,
+                call,
                 intent,
             )
         }
@@ -1328,69 +1310,10 @@ fn execute_internal(
                 intent,
             )
         }
-        OP_STAKE => {
-            if instruction.version > INSTR_VERSION_0 {
-                return Err(ContractError::UnsupportedVersion {
-                    version: instruction.version,
-                });
-            }
-            let stake = Stake::abi_decode_params_validate(&instruction.operand)?;
-            execute_stake(deps, env, packet, stake, intent)
-        }
-        OP_UNSTAKE => {
-            if instruction.version > INSTR_VERSION_0 {
-                return Err(ContractError::UnsupportedVersion {
-                    version: instruction.version,
-                });
-            }
-            let unstake = Unstake::abi_decode_params_validate(&instruction.operand)?;
-            execute_unstake(deps, env, packet, unstake, intent)
-        }
-        OP_WITHDRAW_STAKE => {
-            if instruction.version > INSTR_VERSION_0 {
-                return Err(ContractError::UnsupportedVersion {
-                    version: instruction.version,
-                });
-            }
-            let withdraw_stake = WithdrawStake::abi_decode_params_validate(&instruction.operand)?;
-            execute_withdraw_stake(deps, env, packet, withdraw_stake, intent)
-        }
-        OP_WITHDRAW_REWARDS => {
-            if instruction.version > INSTR_VERSION_0 {
-                return Err(ContractError::UnsupportedVersion {
-                    version: instruction.version,
-                });
-            }
-            let withdraw_rewards =
-                WithdrawRewards::abi_decode_params_validate(&instruction.operand)?;
-            execute_withdraw_rewards(deps, env, packet, withdraw_rewards, intent)
-        }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
         }),
     }
-}
-
-fn calculate_stake_account_salt(channel_id: ChannelId, token_id: U256) -> Vec<u8> {
-    keccak256((channel_id.raw(), token_id.to_be_bytes_vec()).abi_encode_params())
-        .into_bytes()
-        .to_vec()
-}
-
-fn predict_stake_account(
-    deps: Deps,
-    env: Env,
-    channel_id: ChannelId,
-    token_id: U256,
-) -> Result<Addr, ContractError> {
-    let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
-    let code_hash = get_code_hash(deps, dummy_code_id)?;
-    let token_addr = instantiate2_address(
-        &code_hash.into_bytes(),
-        &deps.api.addr_canonicalize(env.contract.address.as_str())?,
-        &calculate_stake_account_salt(channel_id, token_id),
-    )?;
-    Ok(deps.api.addr_humanize(&token_addr)?)
 }
 
 fn predict_wrapped_token(
@@ -1529,7 +1452,7 @@ fn execute_forward(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_multiplex(
+fn execute_call(
     deps: DepsMut,
     env: Env,
     caller: Addr,
@@ -1537,28 +1460,24 @@ fn execute_multiplex(
     relayer: Addr,
     relayer_msg: Bytes,
     path: U256,
-    multiplex: Call,
+    call: Call,
     intent: bool,
 ) -> Result<Response, ContractError> {
     let contract_address = deps
         .api
         .addr_validate(
-            str::from_utf8(&multiplex.contract_address)
+            str::from_utf8(&call.contract_address)
                 .map_err(|_| ContractError::InvalidContractAddress)?,
         )
         .map_err(|_| ContractError::UnableToValidateCallTarget)?;
 
-    if multiplex.eureka {
-        // Create a virtual packet with the multiplex data, consistent with ack and timeout handling
-        let multiplex_packet = Packet {
+    if call.eureka {
+        // Create a virtual packet with the call data, consistent with ack and timeout handling
+        let call_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(
-                path,
-                multiplex.sender.into(),
-                multiplex.contract_calldata.into(),
-            )
-            .into(),
+            data: encode_call_calldata(path, call.sender.into(), call.contract_calldata.into())
+                .into(),
             timeout_height: MustBeZero,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -1567,21 +1486,21 @@ fn execute_multiplex(
         let msg = if intent {
             IbcUnionMsg::OnIntentRecvPacket {
                 caller: caller.into(),
-                packet: multiplex_packet,
+                packet: call_packet,
                 market_maker: relayer.into(),
                 market_maker_msg: relayer_msg,
             }
         } else {
             IbcUnionMsg::OnRecvPacket {
                 caller: caller.into(),
-                packet: multiplex_packet,
+                packet: call_packet,
                 relayer: relayer.into(),
                 relayer_msg,
             }
         };
         Ok(Response::new().add_submessage(SubMsg::reply_on_success(
             wasm_execute(contract_address, &msg, vec![])?,
-            MULTIPLEX_REPLY_ID,
+            CALL_REPLY_ID,
         )))
     } else {
         // Standard mode - fire and forget
@@ -1591,8 +1510,8 @@ fn execute_multiplex(
                 path: Uint256::from_be_bytes(path.to_be_bytes()),
                 source_channel_id: packet.source_channel_id,
                 destination_channel_id: packet.destination_channel_id,
-                sender: multiplex.sender.to_vec().into(),
-                message: multiplex.contract_calldata.to_vec().into(),
+                sender: call.sender.to_vec().into(),
+                message: call.contract_calldata.to_vec().into(),
                 market_maker: relayer,
                 market_maker_msg: relayer_msg,
             })
@@ -1602,8 +1521,8 @@ fn execute_multiplex(
                 path: Uint256::from_be_bytes(path.to_be_bytes()),
                 source_channel_id: packet.source_channel_id,
                 destination_channel_id: packet.destination_channel_id,
-                sender: multiplex.sender.to_vec().into(),
-                message: multiplex.contract_calldata.to_vec().into(),
+                sender: call.sender.to_vec().into(),
+                message: call.contract_calldata.to_vec().into(),
                 relayer,
                 relayer_msg,
             })
@@ -1854,7 +1773,7 @@ fn market_maker_fill_v2(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_fungible_asset_order(
+fn execute_token_order_v1(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
@@ -2068,7 +1987,7 @@ fn execute_fungible_asset_order(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_fungible_asset_order_v2(
+fn execute_token_order_v2(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,
@@ -2423,350 +2342,6 @@ fn protocol_fill_unescrow_v2(
         )?))
 }
 
-#[allow(clippy::too_many_arguments)]
-fn execute_stake(
-    deps: DepsMut,
-    env: Env,
-    packet: Packet,
-    stake: Stake,
-    intent: bool,
-) -> Result<Response, ContractError> {
-    // Market makers not allowed to fill staking requests.
-    if intent {
-        return Ok(Response::new().add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: ACK_ERR_ONLY_MAKER.into(),
-            },
-            vec![],
-        )?));
-    }
-
-    let validator =
-        str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?;
-    let governance_token = str::from_utf8(&stake.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
-    let stake_amount = u128::try_from(stake.amount).map_err(|_| ContractError::AmountOverflow)?;
-
-    let stake_account = predict_stake_account(
-        deps.as_ref(),
-        env.clone(),
-        packet.destination_channel_id,
-        stake.token_id,
-    )?;
-
-    if deps
-        .querier
-        .query_wasm_contract_info(&stake_account)
-        .is_ok()
-    {
-        return Err(ContractError::StakingAccountAlreadyExist {
-            stake: Box::new(stake),
-            account: stake_account,
-        });
-    }
-
-    let mut messages = Vec::new();
-    let config = CONFIG.load(deps.storage)?;
-
-    // 1. Create the staking account
-    messages.push(
-        WasmMsg::Instantiate2 {
-            admin: Some(env.contract.address.to_string()),
-            code_id: config.dummy_code_id,
-            label: format!(
-                "ucs03-staking-account:{}-{}",
-                packet.destination_channel_id, stake.token_id
-            ),
-            msg: to_json_binary(&cosmwasm_std::Empty {})?,
-            funds: vec![],
-            salt: Binary::new(calculate_stake_account_salt(
-                packet.destination_channel_id,
-                stake.token_id,
-            )),
-        }
-        .into(),
-    );
-    messages.push(
-        WasmMsg::Migrate {
-            contract_addr: stake_account.to_string(),
-            new_code_id: config.cw_account_code_id,
-            msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
-                cw_account::msg::InstantiateMsg {
-                    owner: env.contract.address.clone(),
-                },
-            ))?,
-        }
-        .into(),
-    );
-
-    // 2. Unescrow the gov tokens to the stake account.
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-    decrease_channel_balance_v2(
-        deps,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.into(),
-        stake.governance_token_wrapped.0.to_vec().into(),
-        stake_amount.into(),
-    )?;
-
-    messages.push(make_wasm_msg(
-        LocalTokenMsg::Unescrow {
-            denom: governance_token.into(),
-            recipient: stake_account.clone().into(),
-            amount: stake_amount.into(),
-        },
-        minter,
-        vec![],
-    )?);
-
-    // 3. Delegate the token to the validator
-    messages.push(
-        wasm_execute(
-            stake_account.clone(),
-            &cw_account::msg::ExecuteMsg {
-                messages: vec![StakingMsg::Delegate {
-                    validator: validator.into(),
-                    amount: Coin::new(stake_amount, governance_token),
-                }
-                .into()],
-            },
-            vec![],
-        )?
-        .into(),
-    );
-
-    Ok(Response::new()
-        .add_messages(messages)
-        .add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: TAG_ACK_SUCCESS.abi_encode().into(),
-            },
-            vec![],
-        )?))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn execute_unstake(
-    deps: DepsMut,
-    env: Env,
-    packet: Packet,
-    unstake: Unstake,
-    intent: bool,
-) -> Result<Response, ContractError> {
-    // Market makers not allowed to fill unstaking requests.
-    if intent {
-        return Ok(Response::new().add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: ACK_ERR_ONLY_MAKER.into(),
-            },
-            vec![],
-        )?));
-    }
-
-    let validator =
-        str::from_utf8(&unstake.validator).map_err(|_| ContractError::InvalidValidator)?;
-    let governance_token = str::from_utf8(&unstake.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
-
-    let stake_account = predict_stake_account(
-        deps.as_ref(),
-        env.clone(),
-        packet.destination_channel_id,
-        unstake.token_id,
-    )?;
-
-    let stake_amount = deps
-        .querier
-        .query_delegation(stake_account.clone(), validator)?
-        .map(|delegation| delegation.amount.amount)
-        .unwrap_or(0u128.into());
-
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        wasm_execute(
-            stake_account.clone(),
-            &cw_account::msg::ExecuteMsg {
-                messages: vec![
-                    // Withdraw the pending rewards because we won't earn any
-                    // new reward after undelegating
-                    DistributionMsg::WithdrawDelegatorReward {
-                        validator: validator.into(),
-                    }
-                    .into(),
-                    StakingMsg::Undelegate {
-                        validator: validator.into(),
-                        amount: Coin::new(stake_amount, governance_token),
-                    }
-                    .into(),
-                ],
-            },
-            vec![],
-        )?,
-        UNSTAKE_REPLY_ID,
-    )))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn execute_withdraw_stake(
-    deps: DepsMut,
-    env: Env,
-    packet: Packet,
-    withdraw_stake: WithdrawStake,
-    intent: bool,
-) -> Result<Response, ContractError> {
-    // Market makers not allowed to fill unstaking requests.
-    if intent {
-        return Ok(Response::new().add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: ACK_ERR_ONLY_MAKER.into(),
-            },
-            vec![],
-        )?));
-    }
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-
-    let governance_token = str::from_utf8(&withdraw_stake.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
-
-    let stake_account = predict_stake_account(
-        deps.as_ref(),
-        env.clone(),
-        packet.destination_channel_id,
-        withdraw_stake.token_id,
-    )?;
-
-    let coin = deps
-        .querier
-        .query_balance(stake_account.clone(), governance_token)?;
-
-    increase_channel_balance_v2(
-        deps.storage,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.to_string(),
-        withdraw_stake.governance_token_wrapped.0.to_vec().into(),
-        coin.amount.u128().into(),
-    )?;
-
-    Ok(Response::new()
-        .add_message(wasm_execute(
-            stake_account.clone(),
-            &cw_account::msg::ExecuteMsg {
-                messages: vec![BankMsg::Send {
-                    to_address: minter.into(),
-                    amount: vec![coin.clone()],
-                }
-                .into()],
-            },
-            vec![],
-        )?)
-        .add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: WithdrawStakeAck {
-                    amount: U256::from(coin.amount.u128()),
-                }
-                .abi_encode_params()
-                .into(),
-            },
-            vec![],
-        )?))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn execute_withdraw_rewards(
-    deps: DepsMut,
-    env: Env,
-    packet: Packet,
-    withdraw_rewards: WithdrawRewards,
-    intent: bool,
-) -> Result<Response, ContractError> {
-    // Market makers not allowed to fill unstaking requests.
-    if intent {
-        return Ok(Response::new().add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: ACK_ERR_ONLY_MAKER.into(),
-            },
-            vec![],
-        )?));
-    }
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-
-    let validator =
-        str::from_utf8(&withdraw_rewards.validator).map_err(|_| ContractError::InvalidValidator)?;
-    let governance_token = str::from_utf8(&withdraw_rewards.governance_token)
-        .map_err(|_| ContractError::InvalidGovernanceToken)?;
-
-    let stake_account = predict_stake_account(
-        deps.as_ref(),
-        env.clone(),
-        packet.destination_channel_id,
-        withdraw_rewards.token_id,
-    )?;
-
-    let reward = deps
-        .querier
-        .query_delegation_rewards(stake_account.clone(), validator)?
-        .into_iter()
-        .find_map(|reward| {
-            if reward.denom == governance_token {
-                Some(reward)
-            } else {
-                None
-            }
-        })
-        .unwrap_or(DecCoin::new(Decimal256::zero(), governance_token));
-
-    let reward = Coin::new(
-        Uint128::try_from(reward.amount.to_uint_floor()).expect("impossible"),
-        governance_token,
-    );
-
-    increase_channel_balance_v2(
-        deps.storage,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.to_string(),
-        withdraw_rewards.governance_token_wrapped.0.to_vec().into(),
-        reward.amount.u128().into(),
-    )?;
-
-    Ok(Response::new()
-        .add_message(wasm_execute(
-            stake_account.clone(),
-            &cw_account::msg::ExecuteMsg {
-                messages: vec![
-                    DistributionMsg::WithdrawDelegatorReward {
-                        validator: validator.into(),
-                    }
-                    .into(),
-                    BankMsg::Send {
-                        to_address: minter.into(),
-                        amount: vec![reward.clone()],
-                    }
-                    .into(),
-                ],
-            },
-            vec![],
-        )?)
-        .add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: WithdrawRewardsAck {
-                    amount: U256::from(reward.amount.u128()),
-                }
-                .abi_encode_params()
-                .into(),
-            },
-            vec![],
-        )?))
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
@@ -2898,12 +2473,12 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
         }
         // This reply is triggered after we call a contract in eureka mode.
         // We need to handle this reply to capture the acknowledgement returned by the target
-        // contract. In the eureka mode of multiplex operations, the target contract must return
+        // contract. In the eureka mode of call operations, the target contract must return
         // an acknowledgement that needs to be forwarded back to the source chain. This reply
         // allows us to capture that acknowledgement and store it so it can be included in the
         // packet acknowledgement. Without this reply, we wouldn't be able to support the
-        // eureka mode of multiplex operations.
-        MULTIPLEX_REPLY_ID => {
+        // eureka mode of call operations.
+        CALL_REPLY_ID => {
             // Extract the acknowledgement from the reply
             match reply.result {
                 SubMsgResult::Ok(reply_data) => {
@@ -3003,38 +2578,6 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                 )?)),
             }
         }
-        UNSTAKE_REPLY_ID => match reply.result {
-            SubMsgResult::Ok(response) => {
-                let completion_time_utc_str = response
-                    .events
-                    .into_iter()
-                    .find_map(|e| {
-                        if e.ty == "unbond" {
-                            e.attributes
-                                .into_iter()
-                                .find(|a| a.key == "completion_time")
-                        } else {
-                            None
-                        }
-                    })
-                    .expect("impossible");
-                let completion_time_utc =
-                    DateTime::parse_from_rfc3339(&completion_time_utc_str.value)
-                        .expect("impossible");
-                Ok(Response::new().add_message(wasm_execute(
-                    env.contract.address,
-                    &ExecuteMsg::InternalWriteAck {
-                        ack: UnstakeAck {
-                            completion_time: U256::from(completion_time_utc.timestamp()),
-                        }
-                        .abi_encode_params()
-                        .into(),
-                    },
-                    vec![],
-                )?))
-            }
-            SubMsgResult::Err(_) => panic!("reply_on_success with error branch, impossible"),
-        },
         // For any other reply ID, we don't know how to handle it, so we return an error.
         // This is a safety measure to ensure we don't silently ignore unexpected replies,
         // which could indicate a bug in the contract or an attempt to exploit it.
@@ -3058,7 +2601,7 @@ pub fn verify_internal(
         OP_TOKEN_ORDER => match instruction.version {
             INSTR_VERSION_1 => {
                 let order = TokenOrderV1::abi_decode_params_validate(&instruction.operand)?;
-                verify_fungible_asset_order(deps, info, funds, channel_id, path, &order, response)
+                verify_token_order_v1(deps, info, funds, channel_id, path, &order, response)
             }
             INSTR_VERSION_2 => {
                 let order = TokenOrderV2::abi_decode_params_validate(&instruction.operand)?;
@@ -3092,8 +2635,8 @@ pub fn verify_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Call::abi_decode_params_validate(&instruction.operand)?;
-            verify_multiplex(&multiplex, info.sender, response)
+            let call = Call::abi_decode_params_validate(&instruction.operand)?;
+            verify_call(&call, info.sender, response)
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -3101,10 +2644,10 @@ pub fn verify_internal(
     }
 }
 
-/// Verifies a fungible asset order instruction.
+/// Verifies a token order instruction.
 /// Checks token metadata matches and validates unwrapping conditions by comparing
 /// the token origin path with the current path and channel.
-pub fn verify_fungible_asset_order(
+pub fn verify_token_order_v1(
     deps: DepsMut,
     info: MessageInfo,
     funds: &mut Coins,
@@ -3271,7 +2814,7 @@ pub fn verify_batch(
 }
 
 /// Verifies a forward instruction by checking the sub-instruction is allowed and valid.
-/// Forward instructions can contain batch, multiplex or fungible asset orders.
+/// Forward instructions can contain batch, call or token orders.
 pub fn verify_forward(
     deps: DepsMut,
     info: MessageInfo,
@@ -3298,17 +2841,16 @@ pub fn verify_forward(
     Ok(())
 }
 
-/// Verifies a multiplex instruction by checking the sender matches the transaction sender.
-/// This prevents unauthorized parties from impersonating others in multiplex operations.
-pub fn verify_multiplex(
-    multiplex: &Call,
+/// Verifies a call instruction by checking the sender matches the transaction sender.
+/// This prevents unauthorized parties from impersonating others in call operations.
+pub fn verify_call(
+    call: &Call,
     sender: Addr,
     _response: &mut Response,
 ) -> Result<(), ContractError> {
     // Verify the sender matches msg.sender
-    let multiplex_sender =
-        str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?;
-    if multiplex_sender != sender.as_str() {
+    let call_sender = str::from_utf8(&call.sender).map_err(|_| ContractError::InvalidSender)?;
+    if call_sender != sender.as_str() {
         return Err(ContractError::InvalidCallSender);
     }
     Ok(())
@@ -3447,20 +2989,8 @@ fn make_wasm_msg(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::PredictStakeAccount {
-            channel_id,
-            token_id,
-        } => Ok(to_json_binary(
-            predict_stake_account(
-                deps,
-                env,
-                channel_id,
-                U256::from_be_bytes(token_id.to_be_bytes()),
-            )?
-            .as_str(),
-        )?),
         QueryMsg::PredictWrappedToken {
             path,
             channel_id,
@@ -3836,6 +3366,6 @@ fn migrate_v1_to_v2(
         .add_events(events))
 }
 
-pub fn encode_multiplex_calldata(path: U256, sender: Bytes, contract_calldata: Bytes) -> Vec<u8> {
+pub fn encode_call_calldata(path: U256, sender: Bytes, contract_calldata: Bytes) -> Vec<u8> {
     (path, sender, contract_calldata).abi_encode()
 }

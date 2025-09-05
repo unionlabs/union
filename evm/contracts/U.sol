@@ -145,10 +145,6 @@ contract U is
         }
     }
 
-    function allowMarketMakers() external override returns (bool) {
-        return true;
-    }
-
     function solve(
         IBCPacket calldata packet,
         TokenOrderV2 calldata order,
