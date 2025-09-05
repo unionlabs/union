@@ -95,6 +95,13 @@ library ZkgmLib {
         uint8 kind
     );
 
+    event CreateProxyAccount(
+        uint256 path,
+        uint32 indexed channelId,
+        bytes owner,
+        address indexed proxyAccount
+    );
+
     function encodeTokenOrderAck(
         TokenOrderAck memory ack
     ) internal pure returns (bytes memory) {

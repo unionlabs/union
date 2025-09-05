@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import "@safe-utils/Safe.sol";
 
 import "../contracts/U.sol";
-import "../contracts/Account.sol";
+import "../contracts/ProxyAccount.sol";
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/clients/CometblsClient.sol";
@@ -74,6 +74,7 @@ library INSTANCE_SALT {
 library LIB_SALT {
     string constant MULTICALL = "lib/multicall-v2";
     string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
+    string constant UCS03_ZKGM_ACCOUNT_IMPL = "lib/account";
 }
 
 library IBC_SALT {
@@ -183,6 +184,16 @@ abstract contract UnionScript is UnionBase {
             getDeployer().deploy(
                 LIB_SALT.UCS03_ZKGM_ERC20_IMPL,
                 abi.encodePacked(type(ZkgmERC20).creationCode),
+                0
+            )
+        );
+    }
+
+    function deployAccount() internal returns (ProxyAccount) {
+        return ProxyAccount(
+            getDeployer().deploy(
+                LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL,
+                abi.encodePacked(type(ProxyAccount).creationCode),
                 0
             )
         );
@@ -368,6 +379,7 @@ abstract contract UnionScript is UnionBase {
         IBCHandler handler,
         Manager manager,
         ZkgmERC20 zkgmERC20,
+        ProxyAccount accountImpl,
         UCS03Parameters memory params
     ) internal returns (UCS03Zkgm) {
         UCS03Zkgm zkgm = UCS03Zkgm(
@@ -390,7 +402,8 @@ abstract contract UnionScript is UnionBase {
                                     params.weth,
                                     zkgmERC20,
                                     params.rateLimitEnabled
-                                )
+                                ),
+                                accountImpl
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
@@ -435,7 +448,9 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23SmtClient(handler, manager);
         PingPong ucs00 = deployUCS00(handler, manager, 100000000000000);
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
-        UCS03Zkgm ucs03 = deployUCS03(handler, manager, zkgmERC20, ucs03Params);
+        ProxyAccount accountImpl = deployAccount();
+        UCS03Zkgm ucs03 =
+            deployUCS03(handler, manager, zkgmERC20, accountImpl, ucs03Params);
         UCS06FundedDispatch ucs06 = deployUCS06(manager);
         Multicall multicall = deployMulticall(manager);
         Contracts memory contracts = Contracts({
@@ -681,6 +696,41 @@ contract DeployZkgmERC20 is UnionScript, VersionedScript {
     }
 }
 
+contract DeployProxyAccount is UnionScript, VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        vm.startBroadcast(privateKey);
+        ProxyAccount accountImpl = new ProxyAccount();
+        vm.stopBroadcast();
+
+        console.log("ProxyAccount: ", address(accountImpl));
+    }
+}
+
 contract DeployUCS03 is UnionScript, VersionedScript {
     using LibString for *;
 
@@ -712,10 +762,13 @@ contract DeployUCS03 is UnionScript, VersionedScript {
         IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
         ZkgmERC20 zkgmERC20 =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        ProxyAccount accountImpl =
+            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
 
         vm.startBroadcast(privateKey);
-        UCS03Zkgm zkgm =
-            deployUCS03(handler, manager, zkgmERC20, getUCS03Params());
+        UCS03Zkgm zkgm = deployUCS03(
+            handler, manager, zkgmERC20, accountImpl, getUCS03Params()
+        );
         vm.stopBroadcast();
 
         console.log("UCS03: ", address(zkgm));
@@ -1385,6 +1438,8 @@ contract DryUpgradeUCS03 is VersionedScript {
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
         ZkgmERC20 zkgmERC20 =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        ProxyAccount accountImpl =
+            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
@@ -1402,7 +1457,8 @@ contract DryUpgradeUCS03 is VersionedScript {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled),
+                accountImpl
             )
         );
 
@@ -1443,6 +1499,8 @@ contract UpgradeUCS03 is VersionedScript {
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
         ZkgmERC20 zkgmERC20 =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        ProxyAccount accountImpl =
+            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
@@ -1461,7 +1519,8 @@ contract UpgradeUCS03 is VersionedScript {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled),
+                accountImpl
             )
         );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
@@ -1506,6 +1565,8 @@ abstract contract UCS03FromV1ToV2 is VersionedScript {
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
         ZkgmERC20 zkgmERC20 =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        ProxyAccount accountImpl =
+            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
@@ -1524,7 +1585,8 @@ abstract contract UCS03FromV1ToV2 is VersionedScript {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled),
+                accountImpl
             )
         );
 
@@ -2630,6 +2692,8 @@ contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
         ZkgmERC20 zkgmERC20 =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        ProxyAccount accountImpl =
+            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
         address newImplementation = address(
             new UCS03Zkgm(
@@ -2642,7 +2706,8 @@ contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled)
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled),
+                accountImpl
             )
         );
         return (address(ucs03), newImplementation, new bytes(0));

@@ -38,4 +38,10 @@ interface IZkgm is IZkgmStore {
         bytes calldata token,
         bytes32 metadataHash
     ) external returns (address, bytes32);
+
+    function predictProxyAccount(
+        uint256 path,
+        uint32 channel,
+        bytes calldata sender
+    ) external returns (address, bytes32);
 }

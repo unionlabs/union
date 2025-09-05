@@ -283,7 +283,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         uint32 channel,
         bytes calldata token
-    ) public view returns (address, bytes32) {
+    ) external view returns (address, bytes32) {
         return _predictWrappedToken(path, channel, token);
     }
 
@@ -292,7 +292,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint32 channel,
         bytes calldata token,
         TokenMetadata calldata metadata
-    ) public returns (address, bytes32) {
+    ) external returns (address, bytes32) {
         return _predictWrappedTokenV2(path, channel, token, metadata);
     }
 
@@ -301,9 +301,17 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint32 channel,
         bytes calldata token,
         bytes32 metadataImage
-    ) public returns (address, bytes32) {
+    ) external returns (address, bytes32) {
         return _predictWrappedTokenFromMetadataImageV2(
             path, channel, token, metadataImage
         );
+    }
+
+    function predictProxyAccount(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) external returns (bytes32, address) {
+        return _predictProxyAccount(path, channelId, sender);
     }
 }

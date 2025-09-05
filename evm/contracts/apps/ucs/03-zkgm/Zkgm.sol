@@ -4,6 +4,8 @@ import "./Send.sol";
 import "./TokenOrder.sol";
 import "./Store.sol";
 
+import "../../../ProxyAccount.sol";
+
 // Dummy lib to ensure all types are exported
 contract AbiExport {
     function ensureExported(
@@ -32,6 +34,15 @@ contract AbiExport {
         emit ZkgmLib.CreateWrappedToken(
             path, channelId, baseToken, quoteToken, metadata, kind
         );
+    }
+
+    function ensureCreateProxyAccountExported(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata owner,
+        address proxyAccount
+    ) public {
+        emit ZkgmLib.CreateProxyAccount(path, channelId, owner, proxyAccount);
     }
 }
 
@@ -71,16 +82,19 @@ contract UCS03Zkgm is
     IIBCModulePacket public immutable IBC_HANDLER;
     address public immutable SEND_IMPL;
     address public immutable FAO_IMPL;
+    address public immutable ACCOUNT_IMPL;
 
     constructor(
         IIBCModulePacket _ibcHandler,
         UCS03ZkgmSendImpl _sendImpl,
-        UCS03ZkgmTokenOrderImpl _faoImpl
+        UCS03ZkgmTokenOrderImpl _faoImpl,
+        ProxyAccount _accountImpl
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         SEND_IMPL = address(_sendImpl);
         FAO_IMPL = address(_faoImpl);
+        ACCOUNT_IMPL = address(_accountImpl);
     }
 
     function initialize(
@@ -108,7 +122,7 @@ contract UCS03Zkgm is
         uint32 channel,
         bytes calldata token,
         TokenMetadata calldata metadata
-    ) public returns (address, bytes32) {
+    ) external returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
 
@@ -117,7 +131,15 @@ contract UCS03Zkgm is
         uint32 channel,
         bytes calldata token,
         bytes32 metadataImage
-    ) public returns (address, bytes32) {
+    ) external returns (address, bytes32) {
+        passthrough(address(SEND_IMPL));
+    }
+
+    function predictProxyAccount(
+        uint256 path,
+        uint32 channel,
+        bytes calldata token
+    ) external returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
 
@@ -437,6 +459,37 @@ contract UCS03Zkgm is
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(call.contractAddress));
         if (!call.eureka) {
+            (bytes32 proxySalt, address proxyAccount) = _predictProxyAccount(
+                path, ibcPacket.destinationChannelId, call.sender
+            );
+            if (contractAddress == proxyAccount) {
+                if (!ZkgmLib.isDeployed(proxyAccount)) {
+                    CREATE3.deployDeterministic(
+                        abi.encodePacked(
+                            type(ERC1967Proxy).creationCode,
+                            abi.encode(
+                                ACCOUNT_IMPL,
+                                abi.encodeCall(
+                                    ProxyAccount.initializeRemote,
+                                    (
+                                        address(this),
+                                        path,
+                                        ibcPacket.destinationChannelId,
+                                        call.sender
+                                    )
+                                )
+                            )
+                        ),
+                        proxySalt
+                    );
+                    emit ZkgmLib.CreateProxyAccount(
+                        path,
+                        ibcPacket.destinationChannelId,
+                        call.sender,
+                        proxyAccount
+                    );
+                }
+            }
             if (intent) {
                 IZkgmable(contractAddress).onIntentZkgm(
                     caller,

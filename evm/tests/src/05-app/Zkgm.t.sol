@@ -32,7 +32,8 @@ contract TestZkgm is UCS03Zkgm {
             new UCS03ZkgmSendImpl(
                 _ibcHandler, _weth, _erc20Impl, "Ether", "ETH", 18
             ),
-            new UCS03ZkgmTokenOrderImpl(_weth, _erc20Impl, true)
+            new UCS03ZkgmTokenOrderImpl(_weth, _erc20Impl, true),
+            new ProxyAccount()
         )
     {}
 
