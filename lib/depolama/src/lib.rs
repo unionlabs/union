@@ -500,8 +500,6 @@ impl StorageExt for dyn Storage + '_ {
             Bound::Unbounded => None,
         };
 
-        dbg!(&from, &to);
-
         self.range(from.as_deref(), to.as_deref(), order)
             .map(|(k, v)| {
                 Ok((

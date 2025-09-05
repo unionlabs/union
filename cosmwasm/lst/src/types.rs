@@ -317,6 +317,7 @@ pub struct AccountingState {
     bincode::Decode,
 )]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum Staker {
     /// The staking was initiated on this chain.
     Local {
