@@ -29,9 +29,9 @@ export const unionMainnet = InternalChainInfo.make({
       coinMinimalDenom: "au",
       coinDecimals: 18,
       gasPriceStep: {
-        low: 1,
-        average: 2,
-        high: 3,
+        low: 100000000,
+        average: 100000000,
+        high: 200000000,
       },
     },
   ],
