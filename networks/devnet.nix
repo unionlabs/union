@@ -70,6 +70,7 @@
             slashing.params = {
               signed_blocks_window = "10";
             };
+            feemarket.params.max_block_utilization = "200000000";
           };
         };
         lightClients = [
