@@ -6,14 +6,14 @@ use ucs03_zkgm::com::{
 };
 
 use crate::{
-    batch::{Batch, BatchShape},
-    call::{Call, CallShape},
-    forward::{Forward, ForwardShape},
-    stake::{Stake, StakeShape},
-    token_order::{TokenOrder, TokenOrderShape},
-    unstake::{Unstake, UnstakeShape},
-    withdraw_rewards::{WithdrawRewards, WithdrawRewardsShape},
-    withdraw_stake::{WithdrawStake, WithdrawStakeShape},
+    batch::{Batch, BatchAck, BatchShape},
+    call::{Call, CallAck, CallShape},
+    forward::{Forward, ForwardAck, ForwardShape},
+    stake::{Stake, StakeAck, StakeShape},
+    token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
+    unstake::{Unstake, UnstakeAck, UnstakeShape},
+    withdraw_rewards::{WithdrawRewards, WithdrawRewardsAck, WithdrawRewardsShape},
+    withdraw_stake::{WithdrawStake, WithdrawStakeAck, WithdrawStakeShape},
     Instruction, Result,
 };
 
@@ -105,4 +105,21 @@ pub enum RootShape {
     Unstake(UnstakeShape),
     WithdrawStake(WithdrawStakeShape),
     WithdrawRewards(WithdrawRewardsShape),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+pub enum RootAck {
+    Batch(BatchAck),
+    TokenOrder(TokenOrderAck),
+    Call(CallAck),
+    Forward(ForwardAck),
+    Stake(StakeAck),
+    Unstake(UnstakeAck),
+    WithdrawStake(WithdrawStakeAck),
+    WithdrawRewards(WithdrawRewardsAck),
 }

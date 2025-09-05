@@ -6,8 +6,14 @@ use unionlabs_primitives::{Bytes, H256, U256};
 
 pub use crate::{batch::Batch, call::Call, forward::Forward, root::Root, token_order::TokenOrder};
 use crate::{
-    batch::BatchAck, call::CallAck, forward::ForwardAck, root::RootShape, stake::StakeAck,
-    token_order::TokenOrderAck, unstake::UnstakeAck, withdraw_rewards::WithdrawRewardsAck,
+    batch::BatchAck,
+    call::CallAck,
+    forward::ForwardAck,
+    root::{RootAck, RootShape},
+    stake::StakeAck,
+    token_order::TokenOrderAck,
+    unstake::UnstakeAck,
+    withdraw_rewards::WithdrawRewardsAck,
     withdraw_stake::WithdrawStakeAck,
 };
 
@@ -69,23 +75,6 @@ impl ZkgmPacket {
 pub enum Ack {
     Success(RootAck),
     Failure(Bytes),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub enum RootAck {
-    Batch(BatchAck),
-    TokenOrder(TokenOrderAck),
-    Call(CallAck),
-    Forward(ForwardAck),
-    Stake(StakeAck),
-    Unstake(UnstakeAck),
-    WithdrawStake(WithdrawStakeAck),
-    WithdrawRewards(WithdrawRewardsAck),
 }
 
 impl Ack {
