@@ -100,10 +100,6 @@ module zkgm::zkgm_relay {
     const OP_MULTIPLEX: u8 = 0x01;
     const OP_BATCH: u8 = 0x02;
     const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
-    // const OP_STAKE: u8 = 0x04;
-    // const OP_UNSTAKE: u8 = 0x05;
-    // const OP_WITHDRAW_STAKE: u8 = 0x06;
-    // const OP_WITHDRAW_REWARDS: u8 = 0x07;
 
     const FILL_TYPE_PROTOCOL: u256 = 0xB0CAD0;
     const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
@@ -167,7 +163,6 @@ module zkgm::zkgm_relay {
         type_name_t_to_capability: ObjectBag,
         bag_to_coin: ObjectBag,
         wrapped_denom_to_t: Table<vector<u8>, String>,
-        session: Option<ExecutionCtx>,
     }
 
     public struct ChannelBalancePair has copy, drop, store {
@@ -179,7 +174,7 @@ module zkgm::zkgm_relay {
 
     public struct Session {}
 
-    public struct ZkgmPacketCtx has store, drop {
+    public struct ZkgmPacketCtx has drop {
         instruction_set: vector<Instruction>,
         // not by instruction but by set
         cursor: u64,
@@ -188,7 +183,7 @@ module zkgm::zkgm_relay {
         salt: vector<u8>,
     }
 
-    public struct ExecutionCtx has store, drop {
+    public struct ExecutionCtx {
         packet_ctxs: vector<ZkgmPacketCtx>,
         packets: vector<Packet>,
         cursor: u64,
@@ -205,7 +200,6 @@ module zkgm::zkgm_relay {
             type_name_t_to_capability: object_bag::new(ctx),
             bag_to_coin: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
-            session: option::none(),
         });
     }
 
@@ -353,11 +347,7 @@ module zkgm::zkgm_relay {
         packet_data: vector<vector<u8>>,
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
-    ): Session {
-        if (zkgm.session.is_some()) {
-            abort E_ONLY_ONE_SESSION_IS_ALLOWED
-        };
-
+    ): ExecutionCtx {
         let mut packet_ctxs = vector::empty();
         let packet_len = packet_source_channels.length();
         let mut i = 0;
@@ -373,7 +363,7 @@ module zkgm::zkgm_relay {
             let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
             packet_ctxs.push_back(
                 ZkgmPacketCtx {
-                    instruction_set: extract_batch(zkgm.instruction()),
+                    instruction_set: extract_batch(zkgm_packet.instruction()),
                     cursor: 0,
                     acks: vector::empty(),
                     path: zkgm_packet.path(),
@@ -384,15 +374,11 @@ module zkgm::zkgm_relay {
             i = i + 1;
         };
 
-        zkgm.session = option::some(
-            ExecutionCtx {
-                packet_ctxs,
-                packets,
-                cursor: 0
-            }
-        );
-
-        Session {}
+        ExecutionCtx {
+            packet_ctxs,
+            packets,
+            cursor: 0
+        }
     }
 
     fun extract_batch(instruction: Instruction): vector<Instruction> {
@@ -403,6 +389,7 @@ module zkgm::zkgm_relay {
 
             let instructions = batch::decode(instruction.operand()).instructions();
             let instr_len = instructions.length();
+            let mut i = 0;
             while (i < instr_len) {
                 if (!helper::is_allowed_batch_instruction(instructions.borrow(i).opcode())) {
                     abort E_INVALID_BATCH_INSTRUCTION
@@ -416,100 +403,60 @@ module zkgm::zkgm_relay {
         }
     }
 
-    /// Partitions the instructions such that all the parts can at most have a single
-    /// instruction that requires a generic type T. This drastically reduces the cost of
-    /// having one `moveCall` per instruction within the PTB.
-    ///
-    /// Some examples:
-    /// 1. Batch [ Forward, FAO<T>, Forward ] -> [ Forward, FAO<T>, Forward ]
-    /// 2. Batch [ Forward, FAO<T>, Forward, FAO<T>, Forward ] -> [ Forward, FAO<T>, Forward ], [ FAO<T>, Forward ]
-    ///
-    /// *NOTE*: We also do not allow nested batching since it greatly complicates the
-    /// execution for absolutely no benefit.
-    #[allow(implicit_const_copy)]
-    fun partition_instructions(instruction: Instruction): vector<vector<Instruction>> {
-        if (instruction.opcode() == OP_BATCH) {
-            if (instruction.version() != INSTR_VERSION_0) {
-                abort E_UNSUPPORTED_VERSION
-            };
-
-            let instructions: vector<Instruction> = *(batch::decode(instruction.operand()).instructions());
-
-            let mut seen_t = false;
-            let mut i = 0;
-            let mut partitions = vector::empty();
-            let mut temp_instrs = vector::empty(); 
-            while (i < instructions.length()) {
-                if (!helper::is_allowed_batch_instruction(instructions[i].opcode())) {
-                    abort E_INVALID_BATCH_INSTRUCTION
-                } else if (instructions[i].opcode() == OP_FUNGIBLE_ASSET_ORDER) {
-                    // if we already hit an instr with T, it's time to partition
-                    if (seen_t == true) {
-                        partitions.push_back(temp_instrs);
-                        temp_instrs = vector::empty(); 
-                    } else {
-                        seen_t = true;
-                    };
-                };
-
-                temp_instrs.push_back(instructions[i]);
-
-                i = i + 1;
-            };
-            
-            if (!temp_instrs.is_empty()) {
-                partitions.push_back(temp_instrs);
-            };
-
-            partitions
-        } else {
-            vector[vector[instruction]]
-        }
-    }
-
-    #[allow(lint(public_entry))]
-    public entry fun recv_packet_2<T>(
+    public fun recv_packet<T>(
         ibc: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
         clock: &Clock,
         relayer: address,
         relayer_msg: vector<u8>,
+        mut exec_ctx: ExecutionCtx,
         ctx: &mut TxContext
-    ) {
+    ): ExecutionCtx {
         // aborts if there is not a session
-        let exec_ctx = zkgm.session.borrow();
-        let current_zkgm_packet = exec_ctx.packet_ctxs.borrow(exec_ctx.cursor);
+        let packet_cursor = exec_ctx.cursor;
+        let packet = exec_ctx.packets[exec_ctx.cursor];
+        let mut zkgm_packet = exec_ctx.packet_ctxs.borrow_mut(packet_cursor);
 
-        let mut i = current_zkgm_packet.cursor;
-        let instr_len = current_zkgm_packet.instruction_set.length();
-        while (i < instr_len) {
+        let instr_len = zkgm_packet.instruction_set.length();
+        let mut type_is_exhausted = false;
+        while (zkgm_packet.cursor < instr_len) {
+            let instruction = zkgm_packet.instruction_set[zkgm_packet.cursor];
+
+            // if we previously run an instruction where type type `T` is used, we should
+            // return exec_ctx and expect to be called with the appropriate type again.
+            if (instruction.opcode() == OP_FUNGIBLE_ASSET_ORDER) {
+                if (type_is_exhausted) {
+                    return exec_ctx;   
+                } else {
+                    type_is_exhausted = true;
+                };
+            };
+            
             let (ack, err) = zkgm.execute_internal_2<T>(
                 ibc,
-                &packet,
-                packet_ctx,
-                instructions[i],
+                packet,
+                zkgm_packet,
+                instruction,
                 clock,
                 relayer,
                 relayer_msg,
                 false,
                 ctx
             );
-            i = i + 1;
+            // TODO(aeryz): should we abort here?
+            if (err != 0) {
+                abort 1
+            };
+            zkgm_packet.acks.push_back(ack);
+
+            zkgm_packet.cursor = zkgm_packet.cursor + 1;
         };
 
-        let mut i = 0;
-        let instructions = packet_ctx.instruction_set[packet_ctx.cursor];
-        let instr_length = instructions.length();
-        while (i < instr_length) {
-            assert!(err == 0, err);
-            zkgm.session.borrow_mut().packet_ctxs.borrow_mut(cursor).acks.push_back(ack);
-            i = i + 1;
+        if (zkgm_packet.cursor == zkgm_packet.instruction_set.length()) {
+            exec_ctx.cursor = exec_ctx.cursor + 1;  
         };
 
-        zkgm.session.borrow_mut().packet_ctxs.borrow_mut(cursor).cursor = zkgm.session.borrow().packet_ctxs.borrow(cursor).cursor + 1;
-        if (packet_ctx.cursor == packet_ctx.instruction_set.length()) {
-            zkgm.session.borrow_mut().cursor = zkgm.session.borrow().cursor + 1;
-        };
+        exec_ctx
     }
 
     public fun end_recv(
@@ -520,12 +467,8 @@ module zkgm::zkgm_relay {
         proof_height: u64,
         relayer: address,
         relayer_msg: vector<u8>,
-        session: Session,
+        exec_ctx: ExecutionCtx,
     ) {
-        let Session { .. } = session;
-
-        let exec_ctx = zkgm.session.extract();
-
         // make sure all packets are run
         assert!(exec_ctx.cursor == exec_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
         // make sure all instructions in the final packet are run
@@ -538,7 +481,7 @@ module zkgm::zkgm_relay {
 
         while (i < packets_len) {
             let packet_ctx = exec_ctx.packet_ctxs.borrow(i);
-            let ack = if (packet_ctx.instruction_set[0].length() == 1 && packet_ctx.instruction_set.length() == 1) {
+            let ack = if (packet_ctx.instruction_set.length() == 1) {
                 assert!(packet_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
 
                 packet_ctx.acks[0]
@@ -560,6 +503,9 @@ module zkgm::zkgm_relay {
             acks,
             IbcAppWitness {}
         );
+
+        // dropping the execution ctx by decontstructing it
+        let ExecutionCtx { .. } = exec_ctx;
     }
 
     
@@ -567,7 +513,7 @@ module zkgm::zkgm_relay {
     fun execute_internal_2<T>(
         zkgm: &mut RelayStore,
         ibc: &mut ibc::IBCStore,
-        packet: &Packet,
+        packet: Packet,
         packet_ctx: &ZkgmPacketCtx,
         instruction: Instruction,
         clock: &Clock,
@@ -575,34 +521,33 @@ module zkgm::zkgm_relay {
         relayer_msg: vector<u8>,
         intent: bool,
         ctx: &mut TxContext
-    ): (bool, vector<u8>, u64)  {
+    ): (vector<u8>, u64)  {
         let version = instruction.version();
 
         match (instruction.opcode()) {
             OP_FUNGIBLE_ASSET_ORDER => {
                 if (version != INSTR_VERSION_2) {
-                    return (false, vector::empty(), E_UNSUPPORTED_VERSION)  
+                    return (vector::empty(), E_UNSUPPORTED_VERSION)  
                 };
-                let (ack, err) = zkgm.execute_fungible_asset_order<T>(
-                    *packet,
+                zkgm.execute_fungible_asset_order<T>(
+                    packet,
                     relayer,
                     relayer_msg,
                     packet_ctx.path,
                     fungible_asset_order::decode(instruction.operand()),
                     intent,
                     ctx
-                );
-                (true, ack, err)
+                )
             },
             OP_FORWARD => {
                 if (version != INSTR_VERSION_0) {
                     return (vector::empty(), E_UNSUPPORTED_VERSION)  
                 };
 
-                let (ack, err) = zkgm.execute_forward(
+                zkgm.execute_forward(
                     ibc,
                     clock,
-                    *packet,
+                    packet,
                     relayer,
                     relayer_msg,
                     packet_ctx.salt,
@@ -611,67 +556,11 @@ module zkgm::zkgm_relay {
                     forward::decode(instruction.operand()),
                     intent,
                     ctx,
-                );
-
-                (false, ack, err)
+                )
             },
             OP_MULTIPLEX => (vector::empty(), E_NO_MULTIPLEX_OPERATION),
             _ => (vector::empty(), E_UNKNOWN_SYSCALL)
         }
-    }
-
-
-
-    #[allow(lint(public_entry))]
-    public entry fun recv_packet<T>(
-        ibc_store: &mut ibc::IBCStore,
-        zkgm: &mut RelayStore,
-        clock: &Clock,
-        packet_source_channels: vector<u32>,
-        packet_destination_channels: vector<u32>,
-        packet_data: vector<vector<u8>>,
-        packet_timeout_heights: vector<u64>,
-        packet_timeout_timestamps: vector<u64>,
-        proof: vector<u8>,
-        proof_height: u64,
-        relayer: address,
-        relayer_msgs: vector<vector<u8>>,
-        ctx: &mut TxContext
-    ) {
-        let mut packets = vector::empty();
-        let mut acks = vector::empty();
-        let mut i = 0;
-        while (i < packet_source_channels.length()) {
-            packets.push_back(packet::new(
-                packet_source_channels[i],
-                packet_destination_channels[i],
-                packet_data[i],
-                packet_timeout_heights[i],
-                packet_timeout_timestamps[i],
-            ));
-            acks.push_back(zkgm.process_receive<T>(
-                ibc_store,
-                clock,              
-                packets[i],
-                relayer,
-                relayer_msgs[i],
-                false,
-                ctx
-            ));
-            i = i + 1;
-        };
-
-        ibc::recv_packet(
-            ibc_store,
-            clock,
-            packets,
-            relayer,
-            relayer_msgs,
-            proof,
-            proof_height,
-            acks,
-            IbcAppWitness {}
-        );
     }
 
     #[allow(lint(public_entry))]
