@@ -189,7 +189,7 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployAccount() internal returns (ProxyAccount) {
+    function deployProxyAccount() internal returns (ProxyAccount) {
         return ProxyAccount(
             getDeployer().deploy(
                 LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL,
@@ -448,7 +448,7 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23SmtClient(handler, manager);
         PingPong ucs00 = deployUCS00(handler, manager, 100000000000000);
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
-        ProxyAccount accountImpl = deployAccount();
+        ProxyAccount accountImpl = deployProxyAccount();
         UCS03Zkgm ucs03 =
             deployUCS03(handler, manager, zkgmERC20, accountImpl, ucs03Params);
         UCS06FundedDispatch ucs06 = deployUCS06(manager);
@@ -724,7 +724,7 @@ contract DeployProxyAccount is UnionScript, VersionedScript {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(privateKey);
-        ProxyAccount accountImpl = new ProxyAccount();
+        ProxyAccount accountImpl = deployProxyAccount();
         vm.stopBroadcast();
 
         console.log("ProxyAccount: ", address(accountImpl));
