@@ -279,6 +279,7 @@ members = [
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
   "lib/sui-verifier",
+  "lib/ucs03-zkgm-packet",
   "tools/update-deployments",
   "tools/union-test",
   "lib/cw20-ctx",
@@ -400,6 +401,7 @@ on-zkgm-call-proxy                = { path = "cosmwasm/on-zkgm-call-proxy", defa
 osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
 ucs03-solvable                    = { path = "lib/ucs03-solvable", default-features = false }
 ucs03-zkgm                        = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
+ucs03-zkgm-packet                 = { path = "lib/ucs03-zkgm-packet", default-features = false }
 ucs03-zkgm-token-minter-api       = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 ucs03-zkgmable                    = { path = "lib/ucs03-zkgmable", default-features = false }
 

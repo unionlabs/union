@@ -56,7 +56,7 @@ pub enum QueryMsg {
     GetStatus {
         client_id: ClientId,
     },
-    /// NOTE: Reads state through the [`QueryStore`].
+    /// NOTE: Reads state through the `QueryStore`.
     VerifyCreation {
         caller: String,
         client_id: ClientId,
@@ -75,13 +75,13 @@ pub enum QueryMsg {
         proof: Bytes,
         path: Bytes,
     },
-    /// NOTE: Reads state through the [`QueryStore`].
+    /// NOTE: Reads state through the `QueryStore`.
     UpdateState {
         caller: String,
         client_id: ClientId,
         relayer: String,
     },
-    /// TODO: Should read state through the [`QueryStore`].
+    /// TODO: Should read state through the `QueryStore`.
     Misbehaviour {
         caller: String,
         client_id: ClientId,
