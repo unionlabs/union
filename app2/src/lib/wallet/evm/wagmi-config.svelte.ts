@@ -285,12 +285,6 @@ function createWagmiConfigInstance() {
         shimDisconnect: true,
         unstable_shimAsyncInject: 2_500,
       }),
-      coinbaseWallet({
-        darkMode: true,
-        appName: uiStore.appInfo.name,
-        appLogoUrl: uiStore.appInfo.iconUrl,
-        enableMobileWalletLink: true,
-      }),
       metaMask({
         injectProvider: true,
         dappMetadata: {
@@ -299,6 +293,12 @@ function createWagmiConfigInstance() {
           iconUrl: uiStore.appInfo.iconUrl,
         },
         useDeeplink: true,
+      }),
+      coinbaseWallet({
+        darkMode: true,
+        appName: uiStore.appInfo.name,
+        appLogoUrl: uiStore.appInfo.iconUrl,
+        enableMobileWalletLink: true,
       }),
       safe({
         allowedDomains: [
