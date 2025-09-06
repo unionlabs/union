@@ -3,14 +3,15 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event,
-    MessageInfo, Response, StdResult, Uint128,
+    MessageInfo, Response, StdResult,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
+use ucs03_solvable::Solvable;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes};
+use unionlabs_primitives::{encoding::HexPrefixed, Bytes};
 
 use crate::{
     error::Error,
@@ -97,7 +98,7 @@ pub fn execute(
             );
             Ok(Response::new())
         }
-        ExecuteMsg::DoSolve {
+        ExecuteMsg::Solvable(Solvable::DoSolve {
             packet,
             order,
             path,
@@ -105,7 +106,7 @@ pub fn execute(
             relayer,
             relayer_msg: _,
             intent,
-        } => {
+        }) => {
             ensure_zkgm(deps.as_ref(), &info)?;
             if intent {
                 let whitelisted = deps
@@ -139,15 +140,15 @@ pub fn execute(
             }
 
             let mut messages = Vec::<CosmosMsg>::with_capacity(2);
-            let mut push_transfer = |to, amount: Uint128| -> StdResult<()> {
-                if !amount.is_zero() {
+            let mut push_transfer = |to, amount: u128| -> StdResult<()> {
+                if !amount == 0 {
                     if fungible_lane.is_cw20 {
                         messages.push(
                             wasm_execute(
                                 fungible_lane.escrowed_denom.clone(),
                                 &Cw20ExecuteMsg::Transfer {
                                     recipient: to,
-                                    amount,
+                                    amount: amount.into(),
                                 },
                                 vec![],
                             )?
@@ -172,7 +173,7 @@ pub fn execute(
             let fee = order
                 .base_amount
                 .checked_sub(order.quote_amount)
-                .map_err(|_| Error::BaseAmountMustCoverQuoteAmount)?;
+                .ok_or_else(|| Error::BaseAmountMustCoverQuoteAmount)?;
             push_transfer(relayer.into(), fee.try_into().expect("impossible"))?;
 
             let receiver = deps

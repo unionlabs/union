@@ -21,7 +21,6 @@ embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }
 ibc-union-spec       = { workspace = true, features = ["serde", "bincode"] }
 itertools            = { workspace = true }
-on-zkgm-call-proxy   = { workspace = true, features = ["library"] }
 prost                = { workspace = true, features = ["prost-derive"] }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true }
@@ -40,7 +39,7 @@ ucs03-zkgm    = { workspace = true, features = ["library"] }
 [features]
 default  = []
 library  = []
-schemars = ["dep:schemars", "dep:cosmwasm-schema", "on-zkgm-call-proxy/schemars"]
+schemars = ["dep:schemars", "dep:cosmwasm-schema"]
 
 [[bin]]
 name              = "schema"

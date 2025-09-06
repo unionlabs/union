@@ -1,7 +1,5 @@
 use alloy_primitives::U256;
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint256;
-use unionlabs::primitives::Bytes;
+use ucs03_solvable::CwTokenOrderV2;
 
 pub const INSTR_VERSION_0: u8 = 0x00;
 pub const INSTR_VERSION_1: u8 = 0x01;
@@ -119,27 +117,15 @@ alloy_sol_types::sol! {
     }
 }
 
-#[cw_serde]
-pub struct CwTokenOrderV2 {
-    pub sender: Bytes,
-    pub receiver: Bytes,
-    pub base_token: Bytes,
-    pub base_amount: Uint256,
-    pub quote_token: Bytes,
-    pub quote_amount: Uint256,
-    pub kind: u8,
-    pub metadata: Bytes,
-}
-
 impl From<TokenOrderV2> for CwTokenOrderV2 {
     fn from(value: TokenOrderV2) -> Self {
         Self {
             sender: Vec::from(value.sender.0).into(),
             receiver: Vec::from(value.receiver.0).into(),
             base_token: Vec::from(value.base_token.0).into(),
-            base_amount: Uint256::from_be_bytes(value.base_amount.to_be_bytes()),
+            base_amount: value.base_amount.into(),
             quote_token: Vec::from(value.quote_token.0).into(),
-            quote_amount: Uint256::from_be_bytes(value.quote_amount.to_be_bytes()),
+            quote_amount: value.quote_amount.into(),
             kind: value.kind,
             metadata: Vec::from(value.metadata.0).into(),
         }

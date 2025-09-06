@@ -71,8 +71,7 @@ use crate::{
     msg::ExecuteMsg,
     state::{AccountingStateStore, ConfigStore, CurrentPendingBatch, SubmittedBatches},
     tests::test_helper::{
-        mock_init_msg, setup, ADMIN, LIQUID_STAKE_TOKEN_ADDRESS, NATIVE_TOKEN, UNION1, UNION2,
-        UNION3,
+        mock_init_msg, setup, ADMIN, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2, UNION3,
     },
     types::{BatchId, PendingBatch, SubmittedBatch},
 };
@@ -196,7 +195,7 @@ fn submit_batch_works() {
     assert_eq!(
         res.messages[0].msg,
         CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: LIQUID_STAKE_TOKEN_ADDRESS.into(),
+            contract_addr: LST_ADDRESS.into(),
             msg: to_json_binary(&Cw20ExecuteMsg::Burn {
                 amount: 500u128.into()
             })

@@ -4641,15 +4641,19 @@ dependencies = [
 name = "cw-account"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 2.2.2",
+ "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
- "cw-storage-plus 2.0.0",
+ "depolama",
  "embed-commit",
  "frissitheto",
  "hex-literal 0.4.1",
+ "ibc-union-spec",
+ "schemars",
  "serde",
  "thiserror 2.0.12",
- "unionlabs",
+ "ucs03-zkgmable",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -4680,10 +4684,13 @@ dependencies = [
  "frissitheto",
  "hex-literal 0.4.1",
  "ibc-union-spec",
+ "schemars",
  "serde",
  "thiserror 2.0.12",
+ "ucs03-solvable",
  "ucs03-zkgm",
- "unionlabs",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -4856,8 +4863,10 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.12",
  "token-factory-api",
+ "ucs03-solvable",
  "ucs03-zkgm",
- "unionlabs",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -9453,7 +9462,6 @@ dependencies = [
  "hex-literal 1.0.0",
  "ibc-union-spec",
  "itertools 0.13.0",
- "on-zkgm-call-proxy",
  "prost 0.12.6",
  "schemars",
  "serde",
@@ -10819,7 +10827,8 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror 2.0.12",
- "ucs03-zkgm",
+ "ucs03-zkgmable",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -17119,6 +17128,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucs03-solvable"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "ibc-union-spec",
+ "schemars",
+ "serde",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
@@ -17145,7 +17165,9 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.12",
  "token-factory-api",
+ "ucs03-solvable",
  "ucs03-zkgm-token-minter-api",
+ "ucs03-zkgmable",
  "unionlabs",
 ]
 
@@ -17161,6 +17183,17 @@ dependencies = [
  "ibc-union-spec",
  "token-factory-api",
  "unionlabs",
+]
+
+[[package]]
+name = "ucs03-zkgmable"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "ibc-union-spec",
+ "schemars",
+ "serde",
+ "unionlabs-primitives",
 ]
 
 [[package]]

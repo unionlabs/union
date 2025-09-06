@@ -62,31 +62,31 @@ use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
     Addr, OwnedDeps,
 };
-use hex_literal::hex;
 
 use crate::{contract::init, msg::InitMsg, types::ProtocolFeeConfig};
 
 pub const NATIVE_TOKEN: &str = "au";
-pub const ETH_SENDER1: &[u8] = hex!("1111111111111111111111111111111111111111").as_slice();
-pub const ETH_SENDER2: &[u8] = hex!("2222222222222222222222222222222222222222").as_slice();
+
 pub const ADMIN: &str = "union1admin";
+
 pub const UNION1: &str = "union1union1";
 pub const UNION2: &str = "union1union2";
 pub const UNION3: &str = "union1union3";
-pub const RELAYER: &str = "union1relayer";
+
 pub const UNION_STAKER: &str = "union1unionstaker";
+
 pub const FEE_RECIPIENT: &str = "union1feerecipient";
+
 pub const UNION_MONITOR_1: &str = "union1unionmonitor1";
 pub const UNION_MONITOR_2: &str = "union1unionmonitor2";
-pub const LIQUID_STAKE_TOKEN_ADDRESS: &str = "union1lsttokenaddress";
-pub const ON_ZKGM_CALL_PROXY_ADDRESS: &str = "union1onzkgmcallproxyaddress";
-pub const ZKGM_ADDRESS: &str = "union1zkgmaddress";
+
+pub const LST_ADDRESS: &str = "union1lsttokenaddress";
 
 pub fn mock_init_msg() -> InitMsg {
     InitMsg {
         staker_address: Addr::unchecked(UNION_STAKER),
         minimum_liquid_stake_amount: 100,
-        lst_address: Addr::unchecked(LIQUID_STAKE_TOKEN_ADDRESS),
+        lst_address: Addr::unchecked(LST_ADDRESS),
         monitors: vec![
             Addr::unchecked(UNION_MONITOR_1),
             Addr::unchecked(UNION_MONITOR_2),
@@ -99,8 +99,6 @@ pub fn mock_init_msg() -> InitMsg {
         },
         admin: Addr::unchecked(ADMIN),
         native_token_denom: "au".to_owned(),
-        ucs03_zkgm_address: Addr::unchecked(ZKGM_ADDRESS),
-        on_zkgm_call_proxy_address: Addr::unchecked(ON_ZKGM_CALL_PROXY_ADDRESS),
     }
 }
 

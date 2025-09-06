@@ -198,6 +198,12 @@ impl From<u64> for U256 {
     }
 }
 
+impl From<u128> for U256 {
+    fn from(value: u128) -> Self {
+        Self(primitive_types::U256::from(value))
+    }
+}
+
 impl TryFrom<U256> for u32 {
     type Error = ();
 
@@ -218,6 +224,18 @@ impl TryFrom<U256> for u64 {
             Err(())
         } else {
             Ok(value.0.as_u64())
+        }
+    }
+}
+
+impl TryFrom<U256> for u128 {
+    type Error = ();
+
+    fn try_from(value: U256) -> Result<Self, Self::Error> {
+        if value > U256::from(u128::MAX) {
+            Err(())
+        } else {
+            Ok(value.0.as_u128())
         }
     }
 }
@@ -358,6 +376,10 @@ impl U256 {
         } else {
             Self(d) + Self::ONE
         }
+    }
+
+    pub fn checked_sub(self, other: Self) -> Option<Self> {
+        self.0.checked_sub(other.0).map(Self)
     }
 }
 

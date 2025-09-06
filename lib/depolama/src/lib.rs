@@ -65,6 +65,7 @@ use cosmwasm_std::{
     StdResult, Storage, WasmQuery,
 };
 use num_traits::{CheckedAdd, One};
+use unionlabs_encoding::{Decode, Encode, Encoding};
 #[doc(no_inline)]
 pub use unionlabs_primitives::Bytes;
 
@@ -462,10 +463,8 @@ impl StorageExt for dyn Storage + '_ {
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
         use std::ops::Bound;
 
-        let key_plus_one = |key| {
-            let raw_key = raw_key::<S>(key);
-
-            let mut raw_key = raw_key.into_vec();
+        fn key_plus_one(raw_key: impl Into<Vec<u8>>) -> Bytes {
+            let mut raw_key = raw_key.into();
 
             'block: {
                 for byte in raw_key.iter_mut().rev() {
@@ -481,39 +480,46 @@ impl StorageExt for dyn Storage + '_ {
                 raw_key.push(0);
             }
 
-            Some(raw_key.into())
-        };
+            raw_key.into()
+        }
 
         let from = match bounds.start_bound() {
             // start is inclusive at the db layer
-            Bound::Included(key) => Some(raw_key::<S>(key)),
+            Bound::Included(key) => raw_key::<S>(key),
             // to exclude the end, construct a key > raw_key
-            Bound::Excluded(key) => key_plus_one(key),
-            Bound::Unbounded => None,
+            Bound::Excluded(key) => key_plus_one(raw_key::<S>(key)),
+            // include everything under this prefix
+            Bound::Unbounded => S::PREFIX
+                .iter_with_separator()
+                .copied()
+                .collect::<Vec<_>>()
+                .into(),
         };
 
         let to = match bounds.end_bound() {
             // to include the end, construct a key > raw_key
-            Bound::Included(key) => key_plus_one(key),
+            Bound::Included(key) => key_plus_one(raw_key::<S>(key)),
             // end is exclusive at the db layer
-            Bound::Excluded(key) => Some(raw_key::<S>(key)),
-            Bound::Unbounded => None,
+            Bound::Excluded(key) => raw_key::<S>(key),
+            // include everything under this prefix
+            Bound::Unbounded => {
+                key_plus_one(S::PREFIX.iter_with_separator().copied().collect::<Vec<_>>())
+            }
         };
 
-        self.range(from.as_deref(), to.as_deref(), order)
-            .map(|(k, v)| {
-                let key = k.get((S::PREFIX.len() + 1)..).ok_or_else(|| {
-                    StdError::generic_err(format!(
-                        "unable to decode key, missing prefix bytes: {}",
-                        <Bytes>::new(k.clone())
-                    ))
-                })?;
-
-                Ok((
-                    S::decode_key(&Bytes::new(key.to_vec()))?,
-                    S::decode_value(&Bytes::new(v))?,
+        self.range(Some(&from), Some(&to), order).map(|(k, v)| {
+            let key = k.get((S::PREFIX.len() + 1)..).ok_or_else(|| {
+                StdError::generic_err(format!(
+                    "unable to decode key, missing prefix bytes: {}",
+                    <Bytes>::new(k.clone())
                 ))
-            })
+            })?;
+
+            Ok((
+                S::decode_key(&Bytes::new(key.to_vec()))?,
+                S::decode_value(&Bytes::new(v))?,
+            ))
+        })
     }
 }
 
@@ -587,5 +593,29 @@ impl ValueCodec<Bytes> for RawStore {
 
     fn decode_value(raw: &Bytes) -> StdResult<Bytes> {
         Ok(raw.clone())
+    }
+}
+
+/// Default [`Addr`] encoding. This will encode and decode the address as raw bytes.
+pub enum RawAddrEncoding {}
+
+impl Encoding for RawAddrEncoding {}
+impl Encode<RawAddrEncoding> for Addr {
+    fn encode(self) -> Vec<u8> {
+        self.into_string().into_bytes()
+    }
+}
+impl Encode<RawAddrEncoding> for &Addr {
+    fn encode(self) -> Vec<u8> {
+        self.as_str().into()
+    }
+}
+impl Decode<RawAddrEncoding> for Addr {
+    type Error = StdError;
+
+    fn decode(raw: &[u8]) -> Result<Self, Self::Error> {
+        String::from_utf8(raw.to_vec())
+            .map(Addr::unchecked)
+            .map_err(|e| StdError::generic_err(format!("invalid value: {e}")))
     }
 }

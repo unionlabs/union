@@ -11,25 +11,35 @@ repository   = { workspace = true }
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-library = []
+[lints]
+workspace = true
 
 [dependencies]
-bincode         = { workspace = true }
-cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3"] }
-cw20            = "2.0.0"
-depolama        = { workspace = true, features = ["iterator"] }
-embed-commit    = { workspace = true }
-frissitheto     = { workspace = true }
-ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-serde           = { workspace = true, features = ["derive"] }
-thiserror       = { workspace = true }
-ucs03-zkgm      = { workspace = true, features = ["library"] }
-unionlabs       = { workspace = true, features = ["schemars", "bincode"] }
+bincode              = { workspace = true }
+cosmwasm-schema      = { workspace = true }
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_1_3"] }
+cw20                 = "2.0.0"
+depolama             = { workspace = true, features = ["iterator"] }
+embed-commit         = { workspace = true }
+frissitheto          = { workspace = true }
+ibc-union-spec       = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+schemars             = { workspace = true, optional = true }
+serde                = { workspace = true, features = ["derive"] }
+thiserror            = { workspace = true }
+ucs03-solvable       = { workspace = true }
+ucs03-zkgm           = { workspace = true, features = ["library"] }
+unionlabs-encoding   = { workspace = true, features = ["bincode"] }
+unionlabs-primitives = { workspace = true, features = ["schemars", "bincode"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
 
-[lints]
-workspace = true
+[features]
+default = []
+library = []
+schemars = [
+  "dep:schemars",
+  "unionlabs-primitives/schemars",
+  "ibc-union-spec/schemars",
+  "ucs03-solvable/schemars",
+]

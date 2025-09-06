@@ -93,9 +93,13 @@ id!(ClientId);
 id!(ConnectionId);
 id!(ChannelId);
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub enum Status {
     Active = 1,
     Expired = 2,

@@ -62,7 +62,7 @@ use cosmwasm_std::{Addr, StdError};
 use cw_utils::PaymentError;
 use frissitheto::UpgradeError;
 
-use crate::types::{BatchId, Staker, MAX_FEE_RATE};
+use crate::types::{BatchId, MAX_FEE_RATE};
 
 pub type ContractResult<T> = core::result::Result<T, ContractError>;
 
@@ -137,8 +137,8 @@ pub enum ContractError {
     #[error("batch {batch_id} is not yet received")]
     BatchNotYetReceived { batch_id: BatchId },
 
-    #[error("staker {staker} not found in batch {batch_id} (hash={})", staker.hash())]
-    NoRequestInBatch { batch_id: BatchId, staker: Staker },
+    #[error("staker {staker} not found in batch {batch_id}")]
+    NoRequestInBatch { batch_id: BatchId, staker: Addr },
 
     #[error(
         "unbond slippage exceeded (total_issued_lst={total_issued_lst}, \

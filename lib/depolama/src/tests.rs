@@ -76,6 +76,13 @@ mod iterator {
 
         let kvs = [(1, (1, 1)), (2, (1, 2)), (3, (1, 3))];
 
+        // write additional values to storage to ensure only the prefixed store is iterated
+
+        // b"test" - 1
+        storage.set(b"tess".as_slice(), &[0]);
+        // b"test" + 1
+        storage.set(b"tesu".as_slice(), &[0]);
+
         for (ref k, ref v) in &kvs {
             storage.write::<TestStore>(k, v);
         }

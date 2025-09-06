@@ -59,14 +59,12 @@
 // TITLE.
 
 use cosmwasm_std::{
-    ensure, entry_point, from_json, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo,
-    Response, StdResult,
+    ensure, entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    StdResult,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use on_zkgm_call_proxy::OnProxyOnZkgmCall;
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::U256;
 
 use crate::{
     error::ContractError,
@@ -75,17 +73,16 @@ use crate::{
         resume_contract, revoke_ownership_transfer, slash_batches, submit_batch,
         transfer_ownership, unbond, update_config, withdraw,
     },
-    msg::{ExecuteMsg, InitMsg, QueryMsg, RemoteExecuteMsg},
+    msg::{ExecuteMsg, InitMsg, QueryMsg},
     query::{
         query_all_unstake_requests, query_batch, query_batches, query_batches_by_ids, query_config,
-        query_pending_batch, query_state, query_unstake_requests_by_staker_hash,
+        query_pending_batch, query_state, query_unstake_requests,
     },
     state::{
         AccountingStateStore, Admin, ConfigStore, CurrentPendingBatch, LstAddress, Monitors,
-        OnZkgmCallProxy, ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped,
-        SubmittedBatches, Zkgm,
+        ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped, SubmittedBatches,
     },
-    types::{AccountingState, BatchId, Config, PendingBatch, Staker, MAX_FEE_RATE},
+    types::{AccountingState, BatchId, Config, PendingBatch, MAX_FEE_RATE},
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -104,8 +101,6 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
         unbonding_period_seconds,
         monitors,
         admin,
-        ucs03_zkgm_address,
-        on_zkgm_call_proxy_address,
     } = msg;
 
     // TODO: Use this once unbonding period is queryable from the chain
@@ -129,9 +124,6 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
     deps.storage.write_item::<Admin>(&admin);
     deps.storage.write_item::<StakerAddress>(&staker_address);
     deps.storage.write_item::<LstAddress>(&lst_address);
-    deps.storage.write_item::<Zkgm>(&ucs03_zkgm_address);
-    deps.storage
-        .write_item::<OnZkgmCallProxy>(&on_zkgm_call_proxy_address);
     deps.storage
         .write_item::<Monitors>(&monitors.into_iter().map(Into::into).collect());
 
@@ -178,9 +170,7 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
                 unbonding_period_seconds.to_string(),
             )
             .add_attribute("staker_address", staker_address)
-            .add_attribute("lst_address", lst_address)
-            .add_attribute("ucs03_zkgm_address", ucs03_zkgm_address)
-            .add_attribute("on_zkgm_call_proxy_address", on_zkgm_call_proxy_address),
+            .add_attribute("lst_address", lst_address),
     ))
 }
 
@@ -196,29 +186,13 @@ pub fn execute(
             mint_to_address,
             min_mint_amount,
         } => bond(deps, info, mint_to_address, None, min_mint_amount.u128()),
-        ExecuteMsg::Unbond { amount, staker } => unbond(
-            deps,
-            env,
-            info,
-            amount.u128(),
-            Staker::Local {
-                address: staker.to_string(),
-            },
-        ),
+        ExecuteMsg::Unbond { amount, staker } => unbond(deps, env, info, amount.u128(), staker),
         ExecuteMsg::SubmitBatch {} => submit_batch(deps, env),
         ExecuteMsg::Withdraw {
             batch_id,
             staker,
             withdraw_to_address,
-        } => withdraw(
-            deps,
-            info,
-            batch_id,
-            Staker::Local {
-                address: staker.to_string(),
-            },
-            withdraw_to_address,
-        ),
+        } => withdraw(deps, info, batch_id, staker, withdraw_to_address),
         ExecuteMsg::TransferOwnership { new_owner } => {
             transfer_ownership(deps, env, info, new_owner)
         }
@@ -256,53 +230,6 @@ pub fn execute(
             },
         ),
         ExecuteMsg::SlashBatches { new_amounts } => slash_batches(deps, info, new_amounts),
-        ExecuteMsg::OnProxyOnZkgmCall(OnProxyOnZkgmCall { on_zkgm_msg, msg }) => {
-            if deps.storage.read_item::<OnZkgmCallProxy>()? != info.sender {
-                return Err(ContractError::Unauthorized {
-                    sender: info.sender.clone(),
-                });
-            }
-
-            // this is `Call.message` as sent from the source chain
-            match from_json::<RemoteExecuteMsg>(msg)? {
-                RemoteExecuteMsg::Bond {
-                    mint_to_address,
-                    min_mint_amount,
-                } => bond(
-                    deps,
-                    info,
-                    mint_to_address,
-                    Some(on_zkgm_msg.relayer),
-                    min_mint_amount.u128(),
-                ),
-                RemoteExecuteMsg::Unbond { amount } => unbond(
-                    deps,
-                    env,
-                    info,
-                    amount.u128(),
-                    Staker::Remote {
-                        // REVIEW: What address to use here?
-                        address: on_zkgm_msg.sender,
-                        channel_id: on_zkgm_msg.destination_channel_id,
-                        path: U256::from_be_bytes(on_zkgm_msg.path.to_be_bytes()),
-                    },
-                ),
-                RemoteExecuteMsg::Withdraw {
-                    batch_id,
-                    withdraw_to_address,
-                } => withdraw(
-                    deps,
-                    info,
-                    batch_id,
-                    Staker::Remote {
-                        address: on_zkgm_msg.sender,
-                        channel_id: on_zkgm_msg.destination_channel_id,
-                        path: U256::from_be_bytes(on_zkgm_msg.path.to_be_bytes()),
-                    },
-                    withdraw_to_address,
-                ),
-            }
-        }
     }
 }
 
@@ -327,10 +254,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
         }
         QueryMsg::PendingBatch {} => to_json_binary(&query_pending_batch(deps)?)?,
         QueryMsg::UnstakeRequestsByStaker { staker } => {
-            to_json_binary(&query_unstake_requests_by_staker_hash(deps, staker.hash())?)?
-        }
-        QueryMsg::UnstakeRequestsByStakerHash { staker_hash } => {
-            to_json_binary(&query_unstake_requests_by_staker_hash(deps, staker_hash)?)?
+            to_json_binary(&query_unstake_requests(deps, &staker)?)?
         }
         QueryMsg::AllUnstakeRequests { start_after, limit } => {
             to_json_binary(&query_all_unstake_requests(deps, start_after, limit)?)?

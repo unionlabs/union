@@ -11,6 +11,9 @@ repository   = { workspace = true }
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[lints]
+workspace = true
+
 [dependencies]
 bincode                   = { workspace = true }
 cosmwasm-schema           = { workspace = true }
@@ -28,9 +31,7 @@ serde                     = { workspace = true, features = ["derive"] }
 serde_json                = { workspace = true, features = ["raw_value"] }
 thiserror                 = { workspace = true }
 token-factory-api         = { workspace = true }
+ucs03-solvable            = { workspace = true, features = [] }
 ucs03-zkgm                = { workspace = true, features = ["library"] }
-unionlabs                 = { workspace = true, features = ["schemars"] }
-
-
-[lints]
-workspace = true
+unionlabs-encoding        = { workspace = true, features = ["bincode"] }
+unionlabs-primitives      = { workspace = true, features = ["schemars"] }
