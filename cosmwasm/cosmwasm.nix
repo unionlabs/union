@@ -176,8 +176,8 @@ _: {
             "parlia"
           ];
           u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
-          lst = true;
-          on-zkgm-call-proxy = true;
+          lst = false;
+          on-zkgm-call-proxy = false;
         }
         {
           chain-id = "elgafar-1";
