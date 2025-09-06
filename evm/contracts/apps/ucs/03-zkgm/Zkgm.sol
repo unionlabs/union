@@ -1,9 +1,10 @@
 pragma solidity ^0.8.27;
 
-import "./Stake.sol";
 import "./Send.sol";
 import "./TokenOrder.sol";
 import "./Store.sol";
+
+import "../../../ProxyAccount.sol";
 
 // Dummy lib to ensure all types are exported
 contract AbiExport {
@@ -33,6 +34,15 @@ contract AbiExport {
         emit ZkgmLib.CreateWrappedToken(
             path, channelId, baseToken, quoteToken, metadata, kind
         );
+    }
+
+    function ensureCreateProxyAccountExported(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata owner,
+        address proxyAccount
+    ) public {
+        emit ZkgmLib.CreateProxyAccount(path, channelId, owner, proxyAccount);
     }
 }
 
@@ -71,20 +81,20 @@ contract UCS03Zkgm is
 
     IIBCModulePacket public immutable IBC_HANDLER;
     address public immutable SEND_IMPL;
-    address public immutable STAKE_IMPL;
     address public immutable FAO_IMPL;
+    address public immutable ACCOUNT_IMPL;
 
     constructor(
         IIBCModulePacket _ibcHandler,
         UCS03ZkgmSendImpl _sendImpl,
-        UCS03ZkgmStakeImpl _stakeImpl,
-        UCS03ZkgmTokenOrderImpl _faoImpl
+        UCS03ZkgmTokenOrderImpl _faoImpl,
+        ProxyAccount _accountImpl
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         SEND_IMPL = address(_sendImpl);
-        STAKE_IMPL = address(_stakeImpl);
         FAO_IMPL = address(_faoImpl);
+        ACCOUNT_IMPL = address(_accountImpl);
     }
 
     function initialize(
@@ -97,23 +107,6 @@ contract UCS03Zkgm is
 
     function ibcAddress() public view virtual override returns (address) {
         return address(IBC_HANDLER);
-    }
-
-    function registerGovernanceToken(
-        uint32 channelId,
-        GovernanceToken calldata governanceToken
-    ) public restricted {
-        if (channelGovernanceToken[channelId].unwrappedToken.length != 0) {
-            revert ZkgmLib.ErrChannelGovernanceTokenAlreadySet();
-        }
-        channelGovernanceToken[channelId] = governanceToken;
-    }
-
-    function overwriteGovernanceToken(
-        uint32 channelId,
-        GovernanceToken calldata governanceToken
-    ) public restricted {
-        channelGovernanceToken[channelId] = governanceToken;
     }
 
     function predictWrappedToken(
@@ -129,7 +122,7 @@ contract UCS03Zkgm is
         uint32 channel,
         bytes calldata token,
         TokenMetadata calldata metadata
-    ) public returns (address, bytes32) {
+    ) external returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
 
@@ -138,7 +131,15 @@ contract UCS03Zkgm is
         uint32 channel,
         bytes calldata token,
         bytes32 metadataImage
-    ) public returns (address, bytes32) {
+    ) external returns (address, bytes32) {
+        passthrough(address(SEND_IMPL));
+    }
+
+    function predictProxyAccount(
+        uint256 path,
+        uint32 channel,
+        bytes calldata token
+    ) external returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
 
@@ -458,6 +459,37 @@ contract UCS03Zkgm is
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(call.contractAddress));
         if (!call.eureka) {
+            (bytes32 proxySalt, address proxyAccount) = _predictProxyAccount(
+                path, ibcPacket.destinationChannelId, call.sender
+            );
+            if (contractAddress == proxyAccount) {
+                if (!ZkgmLib.isDeployed(proxyAccount)) {
+                    CREATE3.deployDeterministic(
+                        abi.encodePacked(
+                            type(ERC1967Proxy).creationCode,
+                            abi.encode(
+                                ACCOUNT_IMPL,
+                                abi.encodeCall(
+                                    ProxyAccount.initializeRemote,
+                                    (
+                                        address(this),
+                                        path,
+                                        ibcPacket.destinationChannelId,
+                                        call.sender
+                                    )
+                                )
+                            )
+                        ),
+                        proxySalt
+                    );
+                    emit ZkgmLib.CreateProxyAccount(
+                        path,
+                        ibcPacket.destinationChannelId,
+                        call.sender,
+                        proxyAccount
+                    );
+                }
+            }
             if (intent) {
                 IZkgmable(contractAddress).onIntentZkgm(
                     caller,
@@ -543,12 +575,6 @@ contract UCS03Zkgm is
         return FAO_IMPL.delegateCallContract(data);
     }
 
-    function _callStakeImpl(
-        bytes memory data
-    ) internal {
-        STAKE_IMPL.delegateCallContract(data);
-    }
-
     function _acknowledgeInternal(
         address caller,
         IBCPacket calldata ibcPacket,
@@ -616,65 +642,6 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeCall(instruction.operand),
                 successful,
                 ack
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeStake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeStake(instruction.operand),
-                        successful
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeUnstake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeUnstake(instruction.operand),
-                        successful,
-                        ack
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeWithdrawStake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawStake(instruction.operand),
-                        successful,
-                        ack
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.acknowledgeWithdrawRewards,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawRewards(instruction.operand),
-                        successful,
-                        ack
-                    )
-                )
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
@@ -847,52 +814,6 @@ contract UCS03Zkgm is
                 relayer,
                 path,
                 ZkgmLib.decodeCall(instruction.operand)
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutStake,
-                    (ibcPacket, ZkgmLib.decodeStake(instruction.operand))
-                )
-            );
-        } else if (
-            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutUnstake,
-                    (ibcPacket, ZkgmLib.decodeUnstake(instruction.operand))
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutWithdrawStake,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawStake(instruction.operand)
-                    )
-                )
-            );
-        } else if (
-            instruction.isInst(
-                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
-            )
-        ) {
-            _callStakeImpl(
-                abi.encodeCall(
-                    UCS03ZkgmStakeImpl.timeoutWithdrawRewards,
-                    (
-                        ibcPacket,
-                        ZkgmLib.decodeWithdrawRewards(instruction.operand)
-                    )
-                )
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();

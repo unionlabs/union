@@ -15,9 +15,4 @@ interface ISolver {
         bytes calldata relayerMsg,
         bool intent
     ) external returns (bytes memory);
-
-    // Specificy whether the local ISolver is implemented by a token (likely
-    // ERC20) and enables third party marker makers to provide the funds if the
-    // solver itself failed to fill.
-    function allowMarketMakers() external returns (bool);
 }

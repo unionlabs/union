@@ -64,41 +64,6 @@ struct SolverMetadata {
     bytes metadata;
 }
 
-struct Stake {
-    uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
-    bytes sender;
-    bytes beneficiary;
-    bytes validator;
-    uint256 amount;
-}
-
-struct Unstake {
-    uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
-    bytes sender;
-    bytes validator;
-}
-
-struct WithdrawStake {
-    uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
-    bytes sender;
-    bytes beneficiary;
-}
-
-struct WithdrawRewards {
-    uint256 tokenId;
-    bytes governanceToken;
-    bytes governanceTokenWrapped;
-    bytes validator;
-    bytes sender;
-    bytes beneficiary;
-}
-
 struct Ack {
     uint256 tag;
     bytes innerAck;
@@ -111,51 +76,6 @@ struct BatchAck {
 struct TokenOrderAck {
     uint256 fillType;
     bytes marketMaker;
-}
-
-struct UnstakeAck {
-    uint256 completionTime;
-}
-
-struct WithdrawStakeAck {
-    uint256 amount;
-}
-
-struct WithdrawRewardsAck {
-    uint256 amount;
-}
-
-enum ZkgmStakeState {
-    // The position doesn't exist yet.
-    UNDEFINED,
-    // The tokens are in-flight to be staked.
-    STAKING,
-    // The tokens are bonded and the position is being rewarded.
-    STAKED,
-    // The rewards are being withdrawn.
-    WITHDRAWING_REWARDS,
-    // The tokens are being unbonded, the position no longer earns rewards.
-    UNSTAKING,
-    // The tokens has been unstaked and withdrawn.
-    UNSTAKED
-}
-
-struct ZkgmStake {
-    // Staking position state.
-    ZkgmStakeState state;
-    // The channel we staked on.
-    uint32 channelId;
-    // Validator we staked for.
-    bytes validator;
-    // Bonded amount.
-    uint256 amount;
-    // Time at which unbonding will complete (allows the NFT to be burnt in exchange for withdrawal).
-    uint256 unstakingCompletion;
-}
-
-struct GovernanceToken {
-    bytes unwrappedToken;
-    bytes32 metadataImage;
 }
 
 struct V1ToV2Migration {

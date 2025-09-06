@@ -55,8 +55,8 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         _deprecated_channelBalanceV1;
-    mapping(uint32 => GovernanceToken) public channelGovernanceToken;
-    mapping(uint256 => ZkgmStake) public stakes;
+    uint256 public _deprecated_channelGovernanceToken;
+    uint256 public _deprecated_stakes;
     mapping(address => bytes32) public metadataImageOf;
     mapping(
         uint32
@@ -81,65 +81,6 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         bytes calldata relayerMsg
     ) external pure returns (bool, bytes memory) {
         return abi.decode(relayerMsg, (bool, bytes));
-    }
-
-    function _getGovernanceToken(
-        uint32 channelId
-    ) internal view returns (ZkgmERC20, GovernanceToken memory) {
-        GovernanceToken memory governanceToken =
-            channelGovernanceToken[channelId];
-        if (governanceToken.unwrappedToken.length == 0) {
-            revert ZkgmLib.ErrChannelGovernanceTokenNotSet();
-        }
-        (address wrappedGovernanceToken,) =
-        _predictWrappedTokenFromMetadataImageV2(
-            0,
-            channelId,
-            governanceToken.unwrappedToken,
-            governanceToken.metadataImage
-        );
-        return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
-    }
-
-    function getGovernanceToken(
-        uint32 channelId
-    ) public view returns (ZkgmERC20, GovernanceToken memory) {
-        return _getGovernanceToken(channelId);
-    }
-
-    function _predictStakeManagerAddress() internal view returns (ZkgmERC721) {
-        return ZkgmERC721(
-            CREATE3.predictDeterministicAddress(STAKE_NFT_MANAGER_SALT)
-        );
-    }
-
-    function predictStakeManagerAddress() public view returns (ZkgmERC721) {
-        return _predictStakeManagerAddress();
-    }
-
-    function _getStakeNFTManager() internal returns (ZkgmERC721) {
-        ZkgmERC721 stakeManager = _predictStakeManagerAddress();
-        if (!ZkgmLib.isDeployed(address(stakeManager))) {
-            CREATE3.deployDeterministic(
-                abi.encodePacked(
-                    type(ERC1967Proxy).creationCode,
-                    abi.encode(
-                        new ZkgmERC721(),
-                        abi.encodeCall(
-                            ZkgmERC721.initialize,
-                            (
-                                authority(),
-                                address(this),
-                                STAKE_NFT_NAME,
-                                STAKE_NFT_SYMBOL
-                            )
-                        )
-                    )
-                ),
-                STAKE_NFT_MANAGER_SALT
-            );
-        }
-        return stakeManager;
     }
 
     function _increaseOutstandingV2(
@@ -202,5 +143,15 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         return _predictWrappedTokenFromMetadataImageV2(
             path, channel, token, metadataImage
         );
+    }
+
+    function _predictProxyAccount(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) internal returns (bytes32, address) {
+        bytes32 proxySalt =
+            EfficientHashLib.hash(abi.encode(path, channelId, sender));
+        return (proxySalt, CREATE3.predictDeterministicAddress(proxySalt));
     }
 }

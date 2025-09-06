@@ -537,9 +537,6 @@ interface ISolver {
         bytes calldata relayerMsg,
         bool intent
     ) external returns (bytes memory);
-
-    // Reserved for future use - not currently called by the protocol
-    function allowMarketMakers() external returns (bool);
 }
 ```
 
@@ -671,10 +668,6 @@ contract MultiDEXSolver is ISolver {
         bytes memory beneficiary = beneficiaries[path][packet.destinationChannelId][order.baseToken];
         require(beneficiary.length > 0, "No beneficiary configured");
         return beneficiary;
-    }
-
-    function allowMarketMakers() external pure returns (bool) {
-        return false; // This solver handles everything itself
     }
 }
 ```
@@ -916,7 +909,6 @@ TokenOrderV2 memory order = TokenOrderV2({
 4. Ensure your solver returns a valid market maker address to receive base tokens
 5. Validate all inputs in your solver's `solve()` function
 6. Provide clear error messages when solver execution fails
-7. Implement `allowMarketMakers()` for future compatibility (currently not used by protocol)
 8. In CosmWasm, emit a `solver` event with `market_maker` attribute containing the recipient address
 
 **Security Considerations**:

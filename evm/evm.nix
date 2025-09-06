@@ -1256,6 +1256,7 @@ _: {
                     state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
                     multicall = "Multicall";
                     erc20 = "ZkgmERC20";
+                    proxy-account = "ProxyAccount";
                     u = "U";
                     eu = "EU";
                     udrop = "UDrop";

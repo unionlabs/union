@@ -1,11 +1,9 @@
 use alloy_primitives::{ruint::ParseError, U256};
-use cosmwasm_std::{Addr, Instantiate2AddressError, StdError};
+use cosmwasm_std::{Instantiate2AddressError, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
-
-use crate::com::Stake;
 
 pub mod com;
 pub mod contract;
@@ -147,15 +145,11 @@ pub enum ContractError {
     #[error("the instruction cannot be executed by a market maker")]
     InvalidMarketMakerOperation,
     #[error(transparent)]
-    StakeInstantiate2(#[from] Instantiate2AddressError),
+    Instantiate2(#[from] Instantiate2AddressError),
     #[error("validator must be a valid address")]
     InvalidValidator,
     #[error("the validator address can't be validated, make sure the bech prefix matches the current chain")]
     UnableToValidateValidator,
-    #[error("the governance token must match the local native token")]
-    InvalidGovernanceToken,
-    #[error("staking position must be unique but found an already deployed staking account")]
-    StakingAccountAlreadyExist { stake: Box<Stake>, account: Addr },
     #[error("you tried to transfer a token that was not previously bridged using the image of the metadata")]
     WrappedTokenNotDeployed,
 }

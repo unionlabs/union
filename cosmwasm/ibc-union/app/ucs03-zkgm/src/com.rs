@@ -12,11 +12,6 @@ pub const OP_CALL: u8 = 0x01;
 pub const OP_BATCH: u8 = 0x02;
 pub const OP_TOKEN_ORDER: u8 = 0x03;
 
-pub const OP_STAKE: u8 = 0x04;
-pub const OP_UNSTAKE: u8 = 0x05;
-pub const OP_WITHDRAW_STAKE: u8 = 0x06;
-pub const OP_WITHDRAW_REWARDS: u8 = 0x07;
-
 pub const ACK_ERR_ONLY_MAKER: &[u8] = &[0xDE, 0xAD, 0xC0, 0xDE];
 
 pub const TAG_ACK_FAILURE: U256 = U256::ZERO;
@@ -107,42 +102,6 @@ alloy_sol_types::sol! {
         bytes metadata;
     }
 
-    #[derive(Debug, PartialEq)]
-    struct Stake {
-        uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
-        bytes sender;
-        bytes beneficiary;
-        bytes validator;
-        uint256 amount;
-    }
-
-    struct Unstake {
-        uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
-        bytes sender;
-        bytes validator;
-    }
-
-    struct WithdrawStake {
-        uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
-        bytes sender;
-        bytes beneficiary;
-    }
-
-    struct WithdrawRewards {
-        uint256 token_id;
-        bytes governance_token;
-        bytes governance_token_wrapped;
-        bytes validator;
-        bytes sender;
-        bytes beneficiary;
-    }
-
     #[derive(Debug)]
     struct Ack {
         uint256 tag;
@@ -157,18 +116,6 @@ alloy_sol_types::sol! {
     struct TokenOrderAck {
         uint256 fill_type;
         bytes market_maker;
-    }
-
-    struct UnstakeAck {
-        uint256 completion_time;
-    }
-
-    struct WithdrawStakeAck {
-        uint256 amount;
-    }
-
-    struct WithdrawRewardsAck {
-        uint256 amount;
     }
 }
 
