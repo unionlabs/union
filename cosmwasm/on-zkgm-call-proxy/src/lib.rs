@@ -2,12 +2,12 @@ use std::num::NonZeroU32;
 
 use cosmwasm_std::{
     from_json, to_json_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, StdResult, WasmMsg,
+    StdError, WasmMsg,
 };
-use depolama::{Bytes, Prefix, StorageExt, Store, ValueCodec};
+use depolama::{value::ValueCodecViaEncoding, Prefix, RawAddrEncoding, StorageExt, Store};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use serde::{Deserialize, Serialize};
-use ucs03_zkgm::msg::OnZkgm;
+use ucs03_zkgmable::OnZkgm;
 
 enum Zkgm {}
 impl Store for Zkgm {
@@ -17,17 +17,8 @@ impl Store for Zkgm {
 
     type Value = Addr;
 }
-
-impl ValueCodec<Addr> for Zkgm {
-    fn encode_value(value: &Addr) -> Bytes {
-        value.as_bytes().into()
-    }
-
-    fn decode_value(raw: &Bytes) -> StdResult<Addr> {
-        String::from_utf8(raw.to_vec())
-            .map(Addr::unchecked)
-            .map_err(|e| StdError::generic_err(format!("invalid value: {e}")))
-    }
+impl ValueCodecViaEncoding for Zkgm {
+    type Encoding = RawAddrEncoding;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -193,9 +184,10 @@ pub enum Error {
 mod tests {
     use cosmwasm_std::{
         testing::{message_info, mock_dependencies, mock_env},
-        to_json_vec, Uint256,
+        to_json_vec,
     };
     use ibc_union_spec::ChannelId;
+    use unionlabs_primitives::U256;
 
     use super::*;
 
@@ -216,7 +208,7 @@ mod tests {
             info,
             ExecuteMsg::OnZkgm(OnZkgm {
                 caller: Addr::unchecked("caller"),
-                path: Uint256::zero(),
+                path: U256::ZERO,
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(1),
                 sender: b"".into(),
@@ -226,7 +218,7 @@ mod tests {
                         OnProxyOnZkgmCall {
                             on_zkgm_msg: OnZkgm {
                                 caller: Addr::unchecked("caller"),
-                                path: Uint256::zero(),
+                                path: U256::ZERO,
                                 source_channel_id: ChannelId!(1),
                                 destination_channel_id: ChannelId!(1),
                                 sender: b"".into(),

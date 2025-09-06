@@ -75,8 +75,8 @@ use crate::{
         SubmittedBatches, UnstakeRequests, UnstakeRequestsByStakerHash,
     },
     types::{
-        AccountingState, BatchExpectedAmount, BatchId, Config, PendingBatch, PendingOwner,
-        ProtocolFeeConfig, ReceivedBatch, Staker, SubmittedBatch, UnstakeRequest,
+        staker_hash, AccountingState, BatchExpectedAmount, BatchId, Config, PendingBatch,
+        PendingOwner, ProtocolFeeConfig, ReceivedBatch, SubmittedBatch, UnstakeRequest,
         UnstakeRequestKey,
     },
 };
@@ -109,8 +109,8 @@ pub fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), ContractError>
     }
 }
 
-pub fn ensure_sender(info: &MessageInfo, local_staker_address: &str) -> Result<(), ContractError> {
-    if info.sender.as_str() != local_staker_address {
+pub fn ensure_sender(info: &MessageInfo, staker: &Addr) -> Result<(), ContractError> {
+    if info.sender != staker {
         Err(ContractError::Unauthorized {
             sender: info.sender.clone(),
         })
@@ -265,17 +265,13 @@ pub fn unbond(
     env: Env,
     info: MessageInfo,
     unbond_amount: u128,
-    staker: Staker,
+    staker: Addr,
 ) -> ContractResult<Response> {
     ensure_not_stopped(deps.as_ref())?;
 
-    // if the staker is local, then we need to ensure that the address allowed to unbond for the
-    // staker
-    if let Staker::Local { address } = &staker {
-        ensure_sender(&info, address)?;
-    };
+    ensure_sender(&info, &staker)?;
 
-    let staker_hash = staker.hash();
+    let staker_hash = staker_hash(&staker);
 
     let mut current_pending_batch = deps.storage.read_item::<CurrentPendingBatch>()?;
 
@@ -305,7 +301,7 @@ pub fn unbond(
                     is_new_request = true;
                     UnstakeRequest {
                         batch_id: current_pending_batch.batch_id,
-                        staker: staker.clone(),
+                        staker: staker.to_string(),
                         amount: unbond_amount,
                     }
                 }
@@ -318,6 +314,7 @@ pub fn unbond(
         .write::<UnstakeRequestsByStakerHash>(&unstake_request_key, &updated_unstake_request);
 
     current_pending_batch.total_lst_to_burn += unbond_amount;
+
     if is_new_request {
         current_pending_batch.unstake_requests_count += 1;
     }
@@ -338,23 +335,11 @@ pub fn unbond(
             vec![],
         )?)
         .add_event(
-            match staker {
-                Staker::Local { address } => Event::new("local_unbond")
-                    .add_attribute("staker_address", address)
-                    .add_attribute("staker_hash", staker_hash.to_string()),
-                Staker::Remote {
-                    address,
-                    channel_id,
-                    path,
-                } => Event::new("remote_unbond")
-                    .add_attribute("staker_address", address.to_string())
-                    .add_attribute("staker_channel_id", channel_id.to_string())
-                    .add_attribute("staker_path", path.to_string())
-                    .add_attribute("staker_hash", staker_hash.to_string()),
-            }
-            .add_attribute("batch", current_pending_batch.batch_id.to_string())
-            .add_attribute("amount", unbond_amount.to_string())
-            .add_attribute("is_new_request", is_new_request.to_string()),
+            Event::new("unbond")
+                .add_attribute("staker", staker)
+                .add_attribute("batch", current_pending_batch.batch_id.to_string())
+                .add_attribute("amount", unbond_amount.to_string())
+                .add_attribute("is_new_request", is_new_request.to_string()),
         );
 
     Ok(response)
@@ -611,18 +596,14 @@ pub fn withdraw(
     deps: DepsMut,
     info: MessageInfo,
     batch_id: BatchId,
-    staker: Staker,
+    staker: Addr,
     withdraw_to_address: Addr,
 ) -> ContractResult<Response> {
     ensure_not_stopped(deps.as_ref())?;
 
-    let config = deps.storage.read_item::<ConfigStore>()?;
+    ensure_sender(&info, &staker)?;
 
-    // if the staker is local, then we need to ensure that the address allowed to withdraw for the
-    // staker
-    if let Staker::Local { address } = &staker {
-        ensure_sender(&info, address)?;
-    };
+    let config = deps.storage.read_item::<ConfigStore>()?;
 
     let ReceivedBatch {
         total_lst_to_burn,
@@ -635,7 +616,7 @@ pub fn withdraw(
 
     let unstake_request_key = UnstakeRequestKey {
         batch_id,
-        staker_hash: staker.hash(),
+        staker_hash: staker_hash(&staker),
     };
     let liquid_unstake_request = deps
         .storage
@@ -657,7 +638,7 @@ pub fn withdraw(
     Ok(Response::new()
         .add_event(
             Event::new("withdraw")
-                .add_attribute("staker_hash", staker.hash().to_string())
+                .add_attribute("staker", staker)
                 .add_attribute("batch_id", batch_id.to_string())
                 .add_attribute("withdraw_to_address", &withdraw_to_address)
                 .add_attribute("amount", amount.to_string()),

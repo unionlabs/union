@@ -58,10 +58,11 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+use std::ops::Bound;
+
 use cosmwasm_std::{Addr, Deps, Order, StdResult};
 use depolama::{StorageExt, Store};
 use itertools::Itertools;
-use unionlabs_primitives::H256;
 
 use crate::{
     error::ContractError,
@@ -69,10 +70,10 @@ use crate::{
     msg::{AccountingStateResponse, Batch, BatchesResponse, ConfigResponse, IdentifiedBatch},
     state::{
         AccountingStateStore, ConfigStore, CurrentPendingBatch, LstAddress, Monitors,
-        ProtocolFeeConfigStore, ReceivedBatches, Stopped, SubmittedBatches,
+        ProtocolFeeConfigStore, ReceivedBatches, Stopped, SubmittedBatches, UnstakeRequests,
         UnstakeRequestsByStakerHash,
     },
-    types::{BatchId, Config, PendingBatch, UnstakeRequest, UnstakeRequestKey},
+    types::{staker_hash, BatchId, Config, PendingBatch, UnstakeRequest, UnstakeRequestKey},
 };
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
@@ -138,7 +139,13 @@ pub fn query_batches<S: Store<Key = BatchId>>(
     Ok(BatchesResponse {
         batches: deps
             .storage
-            .iter_range::<S>(Order::Ascending, start_after.unwrap_or(BatchId::ONE)..)
+            .iter_range::<S>(
+                Order::Ascending,
+                (
+                    start_after.map_or(Bound::Unbounded, Bound::Excluded),
+                    Bound::Unbounded,
+                ),
+            )
             .take(limit.unwrap_or(usize::MAX))
             .map_ok(|(batch_id, batch)| IdentifiedBatch { batch_id, batch })
             .collect::<Result<_, _>>()?,
@@ -166,10 +173,9 @@ pub fn query_pending_batch(deps: Deps) -> StdResult<PendingBatch> {
     deps.storage.read_item::<CurrentPendingBatch>()
 }
 
-pub fn query_unstake_requests_by_staker_hash(
-    deps: Deps,
-    staker_hash: H256,
-) -> StdResult<Vec<UnstakeRequest>> {
+pub fn query_unstake_requests(deps: Deps, staker: &Addr) -> StdResult<Vec<UnstakeRequest>> {
+    let staker_hash = staker_hash(staker);
+
     deps.storage
         .iter_range::<UnstakeRequestsByStakerHash>(
             Order::Ascending,
@@ -191,15 +197,12 @@ pub fn query_all_unstake_requests(
     limit: Option<usize>,
 ) -> StdResult<Vec<UnstakeRequest>> {
     deps.storage
-        .iter_range::<UnstakeRequestsByStakerHash>(
+        .iter_range::<UnstakeRequests>(
             Order::Ascending,
-            start_after.unwrap_or(UnstakeRequestKey {
-                batch_id: BatchId::ONE,
-                staker_hash: H256::new([0x00; 32]),
-            })..UnstakeRequestKey {
-                batch_id: BatchId::from_raw(u64::MAX).unwrap(),
-                staker_hash: H256::new([0xFF; 32]),
-            },
+            (
+                start_after.map_or(Bound::Unbounded, Bound::Excluded),
+                Bound::Unbounded,
+            ),
         )
         .take(limit.unwrap_or(usize::MAX))
         .map_ok(|(_, unstake_request)| unstake_request)

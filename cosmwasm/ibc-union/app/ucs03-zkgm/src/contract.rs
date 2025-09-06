@@ -9,7 +9,7 @@ use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
     CanonicalAddr, CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, Event,
     MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, Storage, SubMsg,
-    SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg,
+    SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg, WasmQuery,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -17,12 +17,15 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{path::BatchPacketsPath, ChannelId, MustBeZero, Packet, Timestamp};
+use ucs03_solvable::Solvable;
 use ucs03_zkgm_token_minter_api::{
     new_wrapped_token_event, LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind,
     WrappedTokenMsg,
 };
+use ucs03_zkgmable::{OnIntentZkgm, OnZkgm, Zkgmable};
 use unionlabs::{
     ethereum::keccak256,
+    never::Never,
     primitives::{encoding::HexPrefixed, Bytes, H256},
 };
 
@@ -36,8 +39,8 @@ use crate::{
         TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
     },
     msg::{
-        ExecuteMsg, InitMsg, OnIntentZkgm, OnZkgm, PredictWrappedTokenResponse, QueryMsg,
-        SolverMsg, V1ToV2Migration, V1ToV2WrappedMigration, ZkgmMsg,
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, V1ToV2Migration,
+        V1ToV2WrappedMigration,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, DEPRECATED_CHANNEL_BALANCE_V1,
@@ -98,17 +101,15 @@ pub fn minter_salt() -> String {
     format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
 }
 
-pub fn cw_account_salt() -> String {
-    format!("{PROTOCOL_VERSION}/{ZKGM_CW_ACCOUNT_LABEL}")
+pub fn proxy_account_label(path: U256, channel_id: ChannelId, sender: Bytes) -> String {
+    format!("{PROTOCOL_VERSION}/{ZKGM_CW_ACCOUNT_LABEL}:{path}/{channel_id}/{sender}")
 }
 
 fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
     Ok(H256::new(
         *deps
             .querier
-            .query::<CodeInfoResponse>(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::CodeInfo {
-                code_id,
-            }))?
+            .query::<CodeInfoResponse>(&QueryRequest::Wasm(WasmQuery::CodeInfo { code_id }))?
             .checksum
             .as_ref(),
     ))
@@ -1278,6 +1279,7 @@ fn execute_internal(
                 });
             }
             let call = Call::abi_decode_params_validate(&instruction.operand)?;
+
             execute_call(
                 deps,
                 env,
@@ -1326,7 +1328,7 @@ fn predict_wrapped_token(
     let wrapped_token = deps
         .querier
         .query::<ucs03_zkgm_token_minter_api::PredictWrappedTokenResponse>(&QueryRequest::Wasm(
-            cosmwasm_std::WasmQuery::Smart {
+            WasmQuery::Smart {
                 contract_addr: minter.to_string(),
                 msg: to_json_binary(
                     &ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedToken {
@@ -1471,6 +1473,74 @@ fn execute_call(
         )
         .map_err(|_| ContractError::UnableToValidateCallTarget)?;
 
+    let predicted_address = predict_call_proxy_account(
+        deps.as_ref(),
+        &env,
+        path,
+        packet.destination_channel_id,
+        call.sender.clone().into(),
+    )?;
+
+    let mut response = Response::<cosmwasm_std::Empty>::new();
+
+    if predicted_address == contract_address
+        && deps
+            .querier
+            .query_wasm_contract_info(&contract_address)
+            // REVIEW: Is this sound? Should there be a more sophisticated check?
+            .is_err()
+    {
+        let Config {
+            dummy_code_id,
+            cw_account_code_id,
+            ..
+        } = CONFIG.load(deps.storage)?;
+
+        response = response
+            .add_message(WasmMsg::Instantiate2 {
+                admin: Some(env.contract.address.to_string()),
+                code_id: dummy_code_id,
+                label: proxy_account_label(
+                    path,
+                    packet.destination_channel_id,
+                    call.sender.clone().into(),
+                ),
+                msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                funds: vec![],
+                salt: proxy_account_salt(
+                    path,
+                    packet.destination_channel_id,
+                    call.sender.clone().into(),
+                )
+                .get()
+                .to_vec()
+                .into(),
+            })
+            .add_message(WasmMsg::Migrate {
+                contract_addr: predicted_address.to_string(),
+                new_code_id: cw_account_code_id,
+                msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
+                    cw_account::msg::InitMsg::Zkgm {
+                        zkgm: env.contract.address.clone(),
+                        path: path.into(),
+                        channel_id: packet.destination_channel_id,
+                        sender: call.sender.clone().into(),
+                    },
+                ))?,
+            })
+            .add_message(WasmMsg::UpdateAdmin {
+                contract_addr: predicted_address.to_string(),
+                admin: predicted_address.to_string(),
+            })
+            .add_event(
+                Event::new("create_proxy_event")
+                    .add_attribute("path", path.to_string())
+                    .add_attribute("channel_id", packet.destination_channel_id.to_string())
+                    .add_attribute("owner", call.sender.to_string())
+                    .add_attribute("address", predicted_address),
+            );
+    }
+
     if call.eureka {
         // Create a virtual packet with the call data, consistent with ack and timeout handling
         let call_packet = Packet {
@@ -1498,16 +1568,16 @@ fn execute_call(
                 relayer_msg,
             }
         };
-        Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+        response = response.add_submessage(SubMsg::reply_on_success(
             wasm_execute(contract_address, &msg, vec![])?,
             CALL_REPLY_ID,
-        )))
+        ));
     } else {
         // Standard mode - fire and forget
         let msg = if intent {
-            ZkgmMsg::OnIntentZkgm(OnIntentZkgm {
+            Zkgmable::OnIntentZkgm(OnIntentZkgm {
                 caller,
-                path: Uint256::from_be_bytes(path.to_be_bytes()),
+                path: path.into(),
                 source_channel_id: packet.source_channel_id,
                 destination_channel_id: packet.destination_channel_id,
                 sender: call.sender.to_vec().into(),
@@ -1516,9 +1586,9 @@ fn execute_call(
                 market_maker_msg: relayer_msg,
             })
         } else {
-            ZkgmMsg::OnZkgm(OnZkgm {
+            Zkgmable::OnZkgm(OnZkgm {
                 caller,
-                path: Uint256::from_be_bytes(path.to_be_bytes()),
+                path: path.into(),
                 source_channel_id: packet.source_channel_id,
                 destination_channel_id: packet.destination_channel_id,
                 sender: call.sender.to_vec().into(),
@@ -1527,7 +1597,7 @@ fn execute_call(
                 relayer_msg,
             })
         };
-        Ok(Response::new()
+        response = response
             .add_message(wasm_execute(contract_address, &msg, vec![])?)
             .add_message(wasm_execute(
                 env.contract.address,
@@ -1535,8 +1605,10 @@ fn execute_call(
                     ack: TAG_ACK_SUCCESS.abi_encode().into(),
                 },
                 vec![],
-            )?))
+            )?);
     }
+
+    Ok(response)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1732,10 +1804,10 @@ fn solver_market_maker_fill_v2(
     Ok(Response::new().add_submessage(SubMsg::reply_always(
         wasm_execute(
             solver,
-            &SolverMsg::DoSolve {
+            &Solvable::DoSolve {
                 packet,
                 order: order.into(),
-                path: Uint256::from_be_bytes(path.to_be_bytes()),
+                path: path.into(),
                 caller,
                 relayer,
                 relayer_msg,
@@ -2662,14 +2734,14 @@ pub fn verify_token_order_v1(
 
     // Query token metadata from the minter
     let minter = TOKEN_MINTER.load(deps.storage)?;
-    let metadata = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
-        cosmwasm_std::WasmQuery::Smart {
-            contract_addr: minter.to_string(),
-            msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::Metadata {
-                denom: base_token_str.to_string(),
-            })?,
-        },
-    ))?;
+    let metadata =
+        deps.querier
+            .query::<MetadataResponse>(&QueryRequest::Wasm(WasmQuery::Smart {
+                contract_addr: minter.to_string(),
+                msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::Metadata {
+                    denom: base_token_str.to_string(),
+                })?,
+            }))?;
 
     // Verify metadata matches
     if metadata.name != order.base_token_name {
@@ -3176,7 +3248,7 @@ fn predict_wrapped_token_from_metadata_image_v2(
     let wrapped_token = deps
         .querier
         .query::<ucs03_zkgm_token_minter_api::PredictWrappedTokenResponse>(&QueryRequest::Wasm(
-            cosmwasm_std::WasmQuery::Smart {
+            WasmQuery::Smart {
                 contract_addr: minter.to_string(),
                 msg: to_json_binary(
                     &ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedTokenV2 {
@@ -3368,4 +3440,27 @@ fn migrate_v1_to_v2(
 
 pub fn encode_call_calldata(path: U256, sender: Bytes, contract_calldata: Bytes) -> Vec<u8> {
     (path, sender, contract_calldata).abi_encode()
+}
+
+fn predict_call_proxy_account(
+    deps: Deps,
+    env: &Env,
+    path: U256,
+    channel_id: ChannelId,
+    sender: Bytes,
+) -> Result<Addr, ContractError> {
+    let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
+    let code_hash = get_code_hash(deps, dummy_code_id)?;
+    let token_addr = instantiate2_address(
+        &code_hash.into_bytes(),
+        &deps.api.addr_canonicalize(env.contract.address.as_str())?,
+        proxy_account_salt(path, channel_id, sender)
+            .get()
+            .as_slice(),
+    )?;
+    Ok(deps.api.addr_humanize(&token_addr)?)
+}
+
+fn proxy_account_salt(path: U256, channel_id: ChannelId, sender: Bytes) -> H256 {
+    keccak256((path, channel_id.raw(), sender).abi_encode())
 }

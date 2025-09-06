@@ -63,26 +63,29 @@ use std::fmt::Debug;
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env},
-    Decimal, Deps, Storage, Uint128,
+    Addr, Decimal, Deps, Uint128,
 };
 use depolama::StorageExt;
-use hex_literal::hex;
-use ibc_union_spec::ChannelId;
 use serde::de::DeserializeOwned;
-use unionlabs_primitives::{encoding::Base64, Bytes, U256};
 
 use crate::{
     contract::{init, query},
     error::ContractError,
-    msg::{AccountingStateResponse, Batch, BatchesResponse, IdentifiedBatch, QueryMsg},
+    msg::{
+        AccountingStateResponse, Batch, BatchesResponse, ConfigResponse, IdentifiedBatch, QueryMsg,
+    },
     query::query_batches_by_ids,
     state::{
-        AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequestsByStakerHash, Zkgm,
+        AccountingStateStore, ReceivedBatches, SubmittedBatches, UnstakeRequests,
+        UnstakeRequestsByStakerHash,
     },
-    tests::test_helper::{mock_init_msg, setup, UNION1, ZKGM_ADDRESS},
+    tests::test_helper::{
+        mock_init_msg, setup, FEE_RECIPIENT, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2,
+        UNION_MONITOR_1, UNION_MONITOR_2,
+    },
     types::{
-        AccountingState, BatchId, PendingBatch, ReceivedBatch, Staker, SubmittedBatch,
-        UnstakeRequest, UnstakeRequestKey,
+        staker_hash, AccountingState, BatchId, PendingBatch, ProtocolFeeConfig, ReceivedBatch,
+        SubmittedBatch, UnstakeRequest, UnstakeRequestKey,
     },
 };
 
@@ -158,7 +161,7 @@ fn batch() {
     assert_query_result(
         deps.as_ref(),
         QueryMsg::Batch {
-            batch_id: BatchId::ONE.increment(),
+            batch_id: BatchId::TWO,
         },
         &None::<Batch>,
     );
@@ -187,7 +190,7 @@ fn pending_batch() {
 }
 
 #[test]
-fn batches_by_ids() {
+fn batches() {
     let mut deps = mock_dependencies();
     let msg = mock_init_msg();
 
@@ -215,14 +218,14 @@ fn batches_by_ids() {
     );
 
     assert_eq!(
-        query_batches_by_ids(deps.as_ref(), &[BatchId::ONE, BatchId::ONE.increment()]).unwrap_err(),
+        query_batches_by_ids(deps.as_ref(), &[BatchId::ONE, BatchId::TWO]).unwrap_err(),
         ContractError::BatchNotFound {
-            batch_id: BatchId::ONE.increment()
+            batch_id: BatchId::TWO
         }
     );
 
     deps.storage.write::<SubmittedBatches>(
-        &BatchId::ONE.increment(),
+        &BatchId::TWO,
         &SubmittedBatch {
             total_lst_to_burn: 0,
             unstake_requests_count: 0,
@@ -234,7 +237,7 @@ fn batches_by_ids() {
     assert_query_result(
         deps.as_ref(),
         QueryMsg::Batch {
-            batch_id: BatchId::ONE.increment(),
+            batch_id: BatchId::TWO,
         },
         &Some(Batch::Submitted(SubmittedBatch {
             total_lst_to_burn: 0,
@@ -245,7 +248,7 @@ fn batches_by_ids() {
     );
 
     deps.storage.write::<ReceivedBatches>(
-        &BatchId::ONE.increment().increment(),
+        &BatchId::THREE,
         &ReceivedBatch {
             total_lst_to_burn: 0,
             unstake_requests_count: 0,
@@ -253,10 +256,17 @@ fn batches_by_ids() {
         },
     );
 
+    assert_eq!(
+        query_batches_by_ids(deps.as_ref(), &[BatchId::from_raw(4).unwrap()]).unwrap_err(),
+        ContractError::BatchNotFound {
+            batch_id: BatchId::from_raw(4).unwrap()
+        }
+    );
+
     assert_query_result(
         deps.as_ref(),
         QueryMsg::Batch {
-            batch_id: BatchId::ONE.increment().increment(),
+            batch_id: BatchId::THREE,
         },
         &Some(Batch::Received(ReceivedBatch {
             total_lst_to_burn: 0,
@@ -268,11 +278,7 @@ fn batches_by_ids() {
     assert_query_result(
         deps.as_ref(),
         QueryMsg::BatchesByIds {
-            batch_ids: vec![
-                BatchId::ONE,
-                BatchId::ONE.increment(),
-                BatchId::ONE.increment().increment(),
-            ],
+            batch_ids: vec![BatchId::ONE, BatchId::TWO, BatchId::THREE],
         },
         &BatchesResponse {
             batches: vec![
@@ -286,7 +292,7 @@ fn batches_by_ids() {
                     }),
                 },
                 IdentifiedBatch {
-                    batch_id: BatchId::ONE.increment(),
+                    batch_id: BatchId::TWO,
                     batch: Batch::Submitted(SubmittedBatch {
                         total_lst_to_burn: 0,
                         unstake_requests_count: 0,
@@ -295,7 +301,7 @@ fn batches_by_ids() {
                     }),
                 },
                 IdentifiedBatch {
-                    batch_id: BatchId::ONE.increment().increment(),
+                    batch_id: BatchId::THREE,
                     batch: Batch::Received(ReceivedBatch {
                         total_lst_to_burn: 0,
                         unstake_requests_count: 0,
@@ -303,6 +309,43 @@ fn batches_by_ids() {
                     }),
                 },
             ],
+        },
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        QueryMsg::SubmittedBatches {
+            start_after: None,
+            limit: None,
+        },
+        &BatchesResponse {
+            batches: vec![IdentifiedBatch {
+                batch_id: BatchId::TWO,
+                batch: SubmittedBatch {
+                    total_lst_to_burn: 0,
+                    unstake_requests_count: 0,
+                    receive_time: 0,
+                    expected_native_unstaked: 0,
+                },
+            }],
+        },
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        QueryMsg::ReceivedBatches {
+            start_after: None,
+            limit: None,
+        },
+        &BatchesResponse {
+            batches: vec![IdentifiedBatch {
+                batch_id: BatchId::THREE,
+                batch: ReceivedBatch {
+                    total_lst_to_burn: 0,
+                    unstake_requests_count: 0,
+                    received_native_unstaked: 0,
+                },
+            }],
         },
     );
 }
@@ -317,9 +360,7 @@ fn unstake_requests_by_user() {
 
     init(deps.as_mut(), env, msg.clone()).unwrap();
 
-    let staker = Staker::Local {
-        address: UNION1.to_owned(),
-    };
+    let staker = Addr::unchecked(UNION1);
 
     assert_query_result::<Vec<UnstakeRequest>>(
         deps.as_ref(),
@@ -332,23 +373,23 @@ fn unstake_requests_by_user() {
     deps.storage.write::<UnstakeRequestsByStakerHash>(
         &UnstakeRequestKey {
             batch_id: BatchId::ONE,
-            staker_hash: staker.hash(),
+            staker_hash: staker_hash(&staker),
         },
         &UnstakeRequest {
             batch_id: BatchId::ONE,
-            staker: staker.clone(),
+            staker: staker.to_string(),
             amount: 1,
         },
     );
 
     deps.storage.write::<UnstakeRequestsByStakerHash>(
         &UnstakeRequestKey {
-            batch_id: BatchId::ONE.increment(),
-            staker_hash: staker.hash(),
+            batch_id: BatchId::TWO,
+            staker_hash: staker_hash(&staker),
         },
         &UnstakeRequest {
-            batch_id: BatchId::ONE.increment(),
-            staker: staker.clone(),
+            batch_id: BatchId::TWO,
+            staker: staker.to_string(),
             amount: 2,
         },
     );
@@ -361,12 +402,12 @@ fn unstake_requests_by_user() {
         &vec![
             UnstakeRequest {
                 batch_id: BatchId::ONE,
-                staker: staker.clone(),
+                staker: staker.to_string(),
                 amount: 1,
             },
             UnstakeRequest {
-                batch_id: BatchId::ONE.increment(),
-                staker: staker.clone(),
+                batch_id: BatchId::TWO,
+                staker: staker.to_string(),
                 amount: 2,
             },
         ],
@@ -377,56 +418,113 @@ fn unstake_requests_by_user() {
 fn all_unstake_requests() {
     let mut deps = setup();
 
-    assert_eq!(
-        deps.storage.read_item::<Zkgm>().unwrap().as_str(),
-        ZKGM_ADDRESS
+    let staker_1 = Addr::unchecked(UNION1);
+    let staker_2 = Addr::unchecked(UNION2);
+
+    deps.storage.write::<UnstakeRequests>(
+        &UnstakeRequestKey {
+            batch_id: BatchId::ONE,
+            staker_hash: staker_hash(&staker_1),
+        },
+        &UnstakeRequest {
+            batch_id: BatchId::ONE,
+            staker: staker_1.to_string(),
+            amount: 1,
+        },
     );
 
-    deps.storage.set(
-        &hex!("756E7374616B655F72657175657374730000000000000000018CEC68F17FE9B07AA92127C903A61C2FFB47FE91A66CA52A1624CEC2334674E9"),
-        &"AQAAAAAAAAABAAAAFAAAAAAAAAAMbx0tRx2V8jmtcKDgl6Zc5f4AEhQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
+    deps.storage.write::<UnstakeRequests>(
+        &UnstakeRequestKey {
+            batch_id: BatchId::ONE,
+            staker_hash: staker_hash(&staker_2),
+        },
+        &UnstakeRequest {
+            batch_id: BatchId::ONE,
+            staker: staker_2.to_string(),
+            amount: 1,
+        },
     );
 
-    deps.storage.set(
-        &hex!("756E7374616B655F7265717565737473000000000000000001C193453EB2D0F78A20ACFB33EE486A3D90FCAF389048A9E2C93CA7E7110C533D"),
-        &"AQAAAAAAAAABAAAAFAAAAAAAAAAGYncU8/F6cB9wdKEsAoR6XSykhxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGYAAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
+    deps.storage.write::<UnstakeRequests>(
+        &UnstakeRequestKey {
+            batch_id: BatchId::TWO,
+            staker_hash: staker_hash(&staker_2),
+        },
+        &UnstakeRequest {
+            batch_id: BatchId::TWO,
+            staker: staker_2.to_string(),
+            amount: 2,
+        },
     );
 
-    deps.storage.set(
-        &hex!("756E7374616B655F72657175657374735F62795F7374616B65725F68617368008CEC68F17FE9B07AA92127C903A61C2FFB47FE91A66CA52A1624CEC2334674E90000000000000001"),
-        &"AQAAAAAAAAABAAAAFAAAAAAAAAAMbx0tRx2V8jmtcKDgl6Zc5f4AEhQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
-    );
+    dbg!(&deps.storage);
 
-    deps.storage.set(
-        &hex!("756E7374616B655F72657175657374735F62795F7374616B65725F6861736800C193453EB2D0F78A20ACFB33EE486A3D90FCAF389048A9E2C93CA7E7110C533D0000000000000001"),
-        &"AQAAAAAAAAABAAAAFAAAAAAAAAAGYncU8/F6cB9wdKEsAoR6XSykhxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGYAAAAAAAAAAAAAAAAAAAA=".parse::<Bytes<Base64>>().unwrap()
-    );
-
-    assert_query_result::<Vec<UnstakeRequest>>(
+    // full iter
+    assert_query_result(
         deps.as_ref(),
         QueryMsg::AllUnstakeRequests {
-            start_after: None,
             limit: None,
+            start_after: None,
         },
         &vec![
             UnstakeRequest {
                 batch_id: BatchId::ONE,
-                staker: Staker::Remote {
-                    address: hex!("0c6f1d2d471d95f239ad70a0e097a65ce5fe0012").into(),
-                    channel_id: ChannelId!(20),
-                    path: U256::ZERO,
-                },
-                amount: 30,
+                staker: staker_1.to_string(),
+                amount: 1,
             },
             UnstakeRequest {
                 batch_id: BatchId::ONE,
-                staker: Staker::Remote {
-                    address: hex!("06627714f3f17a701f7074a12c02847a5d2ca487").into(),
-                    channel_id: ChannelId!(20),
-                    path: U256::ZERO,
-                },
-                amount: 102,
+                staker: staker_2.to_string(),
+                amount: 1,
+            },
+            UnstakeRequest {
+                batch_id: BatchId::TWO,
+                staker: staker_2.to_string(),
+                amount: 2,
             },
         ],
+    );
+
+    // limit is 2, but there's only 1 unstake request after the specified key
+    assert_query_result(
+        deps.as_ref(),
+        QueryMsg::AllUnstakeRequests {
+            limit: Some(2),
+            start_after: Some(UnstakeRequestKey {
+                batch_id: BatchId::ONE,
+                staker_hash: staker_hash(&staker_2),
+            }),
+        },
+        &vec![UnstakeRequest {
+            batch_id: BatchId::TWO,
+            staker: staker_2.to_string(),
+            amount: 2,
+        }],
+    );
+}
+
+#[test]
+fn config() {
+    let deps = setup();
+
+    assert_query_result(
+        deps.as_ref(),
+        QueryMsg::Config {},
+        &ConfigResponse {
+            native_token_denom: NATIVE_TOKEN.to_owned(),
+            minimum_liquid_stake_amount: 100_u128.into(),
+            protocol_fee_config: ProtocolFeeConfig {
+                fee_rate: 10000,
+                fee_recipient: FEE_RECIPIENT.to_owned(),
+            },
+            monitors: vec![
+                Addr::unchecked(UNION_MONITOR_1),
+                Addr::unchecked(UNION_MONITOR_2),
+            ],
+            lst_address: Addr::unchecked(LST_ADDRESS),
+            batch_period_seconds: 86400,
+            unbonding_period_seconds: 1000000,
+            stopped: false,
+        },
     );
 }

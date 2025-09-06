@@ -73,8 +73,8 @@ use crate::{
         AccountingStateStore, CurrentPendingBatch, ReceivedBatches, SubmittedBatches,
         UnstakeRequests,
     },
-    tests::test_helper::{setup, LIQUID_STAKE_TOKEN_ADDRESS, UNION1, UNION2},
-    types::{BatchId, ReceivedBatch, Staker, UnstakeRequest, UnstakeRequestKey},
+    tests::test_helper::{setup, LST_ADDRESS, UNION1, UNION2},
+    types::{staker_hash, BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey},
 };
 
 #[test]
@@ -103,9 +103,7 @@ fn unbond_works() {
     )
     .unwrap();
 
-    let staker = Staker::Local {
-        address: UNION1.to_string(),
-    };
+    let staker = Addr::unchecked(UNION1);
 
     let batch_id = BatchId::ONE;
 
@@ -113,7 +111,7 @@ fn unbond_works() {
         .storage
         .read::<UnstakeRequests>(&UnstakeRequestKey {
             batch_id,
-            staker_hash: staker.hash(),
+            staker_hash: staker_hash(&staker),
         })
         .unwrap();
 
@@ -122,7 +120,7 @@ fn unbond_works() {
         unstake_req,
         UnstakeRequest {
             batch_id,
-            staker: staker.clone(),
+            staker: staker.to_string(),
             amount: union1_amount_1.u128()
         }
     );
@@ -137,7 +135,7 @@ fn unbond_works() {
     assert_eq!(
         res.messages[0].msg,
         CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: LIQUID_STAKE_TOKEN_ADDRESS.into(),
+            contract_addr: LST_ADDRESS.into(),
             msg: to_json_binary(&Cw20ExecuteMsg::TransferFrom {
                 owner: UNION1.into(),
                 recipient: mock_env().contract.address.to_string(),
@@ -153,9 +151,8 @@ fn unbond_works() {
 
     assert_eq!(
         res.events[0],
-        Event::new("local_unbond")
-            .add_attribute("staker_address", UNION1)
-            .add_attribute("staker_hash", staker.hash().to_string())
+        Event::new("unbond")
+            .add_attribute("staker", UNION1)
             .add_attribute("batch", "1")
             .add_attribute("amount", union1_amount_1)
             .add_attribute("is_new_request", "true"),
@@ -178,9 +175,8 @@ fn unbond_works() {
     // is_new_request is now false
     assert_eq!(
         res.events[0],
-        Event::new("local_unbond")
-            .add_attribute("staker_address", UNION1)
-            .add_attribute("staker_hash", staker.hash().to_string())
+        Event::new("unbond")
+            .add_attribute("staker", UNION1)
             .add_attribute("batch", "1")
             .add_attribute("amount", union1_amount_2)
             .add_attribute("is_new_request", "false"),
@@ -190,7 +186,7 @@ fn unbond_works() {
         .storage
         .read::<UnstakeRequests>(&UnstakeRequestKey {
             batch_id,
-            staker_hash: staker.hash(),
+            staker_hash: staker_hash(&staker),
         })
         .unwrap();
 
@@ -199,7 +195,7 @@ fn unbond_works() {
         unstake_req,
         UnstakeRequest {
             batch_id,
-            staker: staker.clone(),
+            staker: staker.to_string(),
             amount: (union1_amount_1 + union1_amount_2).u128()
         }
     );
@@ -227,15 +223,13 @@ fn unbond_works() {
     )
     .unwrap();
 
-    let staker = Staker::Local {
-        address: UNION2.to_string(),
-    };
+    let staker = Addr::unchecked(UNION2);
 
     let unstake_req = deps
         .storage
         .read::<UnstakeRequests>(&UnstakeRequestKey {
             batch_id,
-            staker_hash: staker.hash(),
+            staker_hash: staker_hash(&staker),
         })
         .unwrap();
 
@@ -244,7 +238,7 @@ fn unbond_works() {
         unstake_req,
         UnstakeRequest {
             batch_id,
-            staker,
+            staker: staker.to_string(),
             amount: union2_amount_1.u128()
         }
     );

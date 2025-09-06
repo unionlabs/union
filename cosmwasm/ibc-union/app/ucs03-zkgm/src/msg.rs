@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
 use unionlabs::primitives::{Bytes, H256};
 
-use crate::com::CwTokenOrderV2;
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -131,67 +129,6 @@ pub enum ExecuteMsg {
         balance_migrations: Vec<V1ToV2Migration>,
         wrapped_migrations: Vec<V1ToV2WrappedMigration>,
     },
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum ZkgmMsg {
-    OnZkgm(OnZkgm),
-    OnIntentZkgm(OnIntentZkgm),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct OnZkgm {
-    pub caller: Addr,
-    pub path: Uint256,
-    pub source_channel_id: ChannelId,
-    pub destination_channel_id: ChannelId,
-    pub sender: Bytes,
-    pub message: Bytes,
-    pub relayer: Addr,
-    pub relayer_msg: Bytes,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct OnIntentZkgm {
-    pub caller: Addr,
-    pub path: Uint256,
-    pub source_channel_id: ChannelId,
-    pub destination_channel_id: ChannelId,
-    pub sender: Bytes,
-    pub message: Bytes,
-    pub market_maker: Addr,
-    pub market_maker_msg: Bytes,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum SolverMsg {
-    DoSolve {
-        packet: Packet,
-        order: CwTokenOrderV2,
-        path: Uint256,
-        caller: Addr,
-        relayer: Addr,
-        relayer_msg: Bytes,
-        intent: bool,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum SolverQuery {
-    /// Returns unit if the contract is a solver.
-    IsSolver,
-    /// Whether the solver allows the relayer to fulfill the order on our behalf.
-    AllowMarketMakers,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

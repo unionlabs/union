@@ -11,18 +11,26 @@ repository   = { workspace = true }
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[lints]
+workspace = true
+
 [dependencies]
-cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3", "staking"] }
-cw-storage-plus = { workspace = true }
-embed-commit    = { workspace = true }
-frissitheto     = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
-thiserror       = { workspace = true }
-unionlabs       = { workspace = true, features = ["schemars"] }
+bincode              = { workspace = true, features = ["derive"] }
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_2", "staking", "stargate"] } # enable all features so that any message is dispatchable
+depolama             = { workspace = true, features = ["iterator"] }
+embed-commit         = { workspace = true }
+frissitheto          = { workspace = true }
+ibc-union-spec       = { workspace = true, features = ["bincode"] }
+schemars             = { workspace = true, optional = true, features = ["derive"] }
+serde                = { workspace = true, features = ["derive"] }
+thiserror            = { workspace = true }
+ucs03-zkgmable       = { workspace = true }
+unionlabs-encoding   = { workspace = true, features = ["bincode"] }
+unionlabs-primitives = { workspace = true, features = ["bincode"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
 
-[lints]
-workspace = true
+[features]
+default  = []
+schemars = ["dep:schemars"]

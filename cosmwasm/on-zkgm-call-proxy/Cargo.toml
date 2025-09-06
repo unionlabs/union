@@ -15,19 +15,20 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-cosmwasm-std = { workspace = true, features = ["abort"] }
-depolama     = { workspace = true }
-embed-commit = { workspace = true }
-frissitheto  = { workspace = true }
-schemars     = { workspace = true, optional = true, features = ["derive"] }
-serde        = { workspace = true, features = ["derive"] }
-thiserror    = { workspace = true }
-ucs03-zkgm   = { workspace = true, features = ["library"] }
+cosmwasm-std   = { workspace = true, features = ["abort"] }
+depolama       = { workspace = true }
+embed-commit   = { workspace = true }
+frissitheto    = { workspace = true }
+schemars       = { workspace = true, optional = true, features = ["derive"] }
+serde          = { workspace = true, features = ["derive"] }
+thiserror      = { workspace = true }
+ucs03-zkgmable = { workspace = true }
+
+[dev-dependencies]
+ibc-union-spec       = { workspace = true }
+unionlabs-primitives = { workspace = true }
 
 [features]
 default  = []
 library  = []
-schemars = ["dep:schemars", "ucs03-zkgm/schemars"]
-
-[dev-dependencies]
-ibc-union-spec.workspace = true
+schemars = ["dep:schemars", "ucs03-zkgmable/schemars"]

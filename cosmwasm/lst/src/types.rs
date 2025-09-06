@@ -61,12 +61,10 @@
 use core::fmt;
 use std::num::NonZeroU64;
 
-use cosmwasm_std::{StdError, StdResult};
-use ibc_union_spec::ChannelId;
+use cosmwasm_std::{Addr, StdError, StdResult};
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
-use unionlabs_encoding::{Bincode, EncodeAs};
-use unionlabs_primitives::{Bytes, H256, U256};
+use sha2::{Digest, Sha256};
+use unionlabs_primitives::{Bytes, H256};
 
 pub const MAX_FEE_RATE: u128 = 100_000;
 /// The maximum allowed unbonding period is 42 days,
@@ -102,6 +100,10 @@ impl fmt::Display for BatchId {
 
 impl BatchId {
     pub const ONE: Self = Self::from_raw(1).unwrap();
+    #[cfg(test)]
+    pub const TWO: Self = Self::from_raw(2).unwrap();
+    #[cfg(test)]
+    pub const THREE: Self = Self::from_raw(3).unwrap();
 
     pub const MAX: Self = Self::from_raw(u64::MAX).unwrap();
 
@@ -304,75 +306,19 @@ pub struct AccountingState {
     pub total_reward_amount: u128,
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    bincode::Encode,
-    bincode::Decode,
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum Staker {
-    /// The staking was initiated on this chain.
-    Local {
-        #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Addr"))]
-        address: String,
-    },
-    /// The staking was initiated from a different chain.
-    ///
-    /// This tuple of `(source address, destination channel id, path)` is required to uniquely
-    /// identify cross-chain liquid staking operations.
-    Remote {
-        /// The address of the staker on the *counterparty* chain.
-        address: Bytes,
-        /// The id of the channel on *this* chain.
-        channel_id: ChannelId,
-        /// The path of the packet. This will typically be `0`, but if the packet was a forward
-        /// packet, then this will contain the path to the source chain.
-        path: U256,
-    },
-}
-
-impl fmt::Display for Staker {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Staker::Local { address } => write!(f, "local:{address}"),
-            Staker::Remote {
-                address,
-                channel_id,
-                path,
-            } => write!(f, "remote:{address}/{channel_id}/{path}"),
-        }
-    }
-}
-
-impl Staker {
-    /// Calculate the hash of this staker. This is used to more concisely uniquely identify the
-    /// staker.
-    pub fn hash(&self) -> H256 {
-        sha2::Sha256::digest(self.encode_as::<Bincode>()).into()
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, bincode::Encode, bincode::Decode)]
 pub struct PendingOwner {
     pub address: String,
     pub owner_transfer_min_time_seconds: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, bincode::Encode, bincode::Decode)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct UnstakeRequestKey {
     pub batch_id: BatchId,
-    /// The staker hash for the [`Staker`] of the associated [`UnstakeRequest`].
+    /// The hash of the staker of the associated [`UnstakeRequest`].
     ///
-    /// This is `sha256(bincode(staker))` (see [`Staker::hash`]).
+    /// This is `sha256(bytes(staker))`.
     pub staker_hash: H256,
 }
 
@@ -380,23 +326,15 @@ pub struct UnstakeRequestKey {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct UnstakeRequest {
     pub batch_id: BatchId,
-    pub staker: Staker,
+    #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Addr"))]
+    pub staker: String,
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
     pub amount: u128,
-    // TODO:
-    //
-    // Withdrawing unstaked tokens aggregates over (user, recipient_channel_id).
-    //
-    // If a user stakes 400, then unstakes:
-    //
-    // 100 to channel 1
-    // 100 to channel 2
-    // 100 to channel 1
-    // 100 to no channel
-    //
-    // The user would then receive 200 on channel 1, 100 on channel 2, and 100 on the host chain.
-    // pub recipient_channel_id: Option<ChannelId>,
+}
+
+pub fn staker_hash(staker: &Addr) -> H256 {
+    Sha256::digest(staker.as_str()).into()
 }
 
 #[cfg(test)]
@@ -406,47 +344,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn staker_display() {
+    fn staker_hash_smoke_test() {
         assert_eq!(
-            Staker::Local {
-                address: "zkgm".to_owned()
-            }
-            .to_string(),
-            "local:zkgm"
-        );
-
-        assert_eq!(
-            Staker::Remote {
-                address: hex!("ba5edba5ed").into(),
-                channel_id: ChannelId!(1),
-                path: U256::ZERO
-            }
-            .to_string(),
-            "remote:0xba5edba5ed/1/0"
-        );
-    }
-
-    #[test]
-    fn staker_hash() {
-        assert_eq!(
-            Staker::Local {
-                address: "zkgm".to_owned()
-            }
-            .hash(),
+            staker_hash(&Addr::unchecked("zkgm")),
             <H256>::new(hex!(
-                "de8f27a7b306d60339114e63be92ce7bb4300fe4f1833e62b725e1cf0addc59c"
-            ))
-        );
-
-        assert_eq!(
-            Staker::Remote {
-                address: b"zkgm".into(),
-                channel_id: ChannelId!(1),
-                path: U256::ZERO
-            }
-            .hash(),
-            <H256>::new(hex!(
-                "6c122c767d81d0ed69773decb1df2acca6cd67b8b221b846f988adad98b9ff37"
+                "5c182b7072dacb88108401a7338542b8bba30d0d1a7c70963fdabfdfe2e4d4dd"
             ))
         );
     }

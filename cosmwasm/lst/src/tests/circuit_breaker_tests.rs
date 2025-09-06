@@ -60,19 +60,16 @@
 
 use cosmwasm_std::{
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Event, Uint128,
+    Addr, Event, Uint128,
 };
 use depolama::StorageExt;
-use ibc_union_spec::ChannelId;
-use on_zkgm_call_proxy::OnProxyOnZkgmCall;
-use ucs03_zkgm::msg::OnZkgm;
 
 use crate::{
     contract::execute,
     error::ContractError,
     msg::ExecuteMsg,
     state::Stopped,
-    tests::test_helper::{setup, ADMIN, ON_ZKGM_CALL_PROXY_ADDRESS, UNION1, UNION_MONITOR_1},
+    tests::test_helper::{setup, ADMIN, UNION1, UNION_MONITOR_1},
     types::BatchId,
 };
 
@@ -216,33 +213,6 @@ fn stop_prevents_execution() {
                 withdraw_to_address: Addr::unchecked(UNION1),
                 batch_id: BatchId::ONE
             }
-        )
-        .unwrap_err(),
-        ContractError::Stopped
-    );
-
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            env,
-            message_info(&Addr::unchecked(ON_ZKGM_CALL_PROXY_ADDRESS), &[]),
-            ExecuteMsg::OnProxyOnZkgmCall(OnProxyOnZkgmCall {
-                on_zkgm_msg: OnZkgm {
-                    caller: Addr::unchecked(""),
-                    path: Default::default(),
-                    source_channel_id: ChannelId!(1),
-                    destination_channel_id: ChannelId!(1),
-                    sender: Default::default(),
-                    message: Default::default(),
-                    relayer: Addr::unchecked(""),
-                    relayer_msg: Default::default()
-                },
-                msg: to_json_binary(&ExecuteMsg::Bond {
-                    mint_to_address: Addr::unchecked(UNION1),
-                    min_mint_amount: Uint128::zero()
-                })
-                .unwrap()
-            })
         )
         .unwrap_err(),
         ContractError::Stopped

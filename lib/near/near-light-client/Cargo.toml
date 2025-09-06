@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name    = "near-light-client"
-version = "0.1.0"
+version = "0.0.0"
 
 [dependencies]
 borsh                   = { workspace = true, features = ["borsh-derive"] }

@@ -1,10 +1,41 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
-use cw_storage_plus::Item;
+use depolama::{
+    key::KeyCodecViaEncoding,
+    value::{ValueCodecViaEncoding, ValueUnitEncoding},
+    Prefix, RawAddrEncoding, Store,
+};
+use unionlabs_encoding::Bincode;
 
-#[cw_serde]
-pub struct Config {
-    pub owner: Addr,
+use crate::types::Admin;
+
+/// The address of the [`ucs03-zkgm`] contract on this chain.
+///
+/// [`ucs03-zkgm`]: https://docs.union.build/ucs/03
+pub enum Zkgm {}
+
+impl Store for Zkgm {
+    const PREFIX: Prefix = Prefix::new(b"zkgm");
+    type Key = ();
+    type Value = Addr;
 }
 
-pub const CONFIG: Item<Config> = Item::new("config");
+impl ValueCodecViaEncoding for Zkgm {
+    type Encoding = RawAddrEncoding;
+}
+
+/// All configured admins for this proxy account.
+pub enum Admins {}
+
+impl Store for Admins {
+    const PREFIX: Prefix = Prefix::new(b"admins");
+    type Key = Admin;
+    type Value = ();
+}
+
+impl KeyCodecViaEncoding for Admins {
+    type Encoding = Bincode;
+}
+
+impl ValueCodecViaEncoding for Admins {
+    type Encoding = ValueUnitEncoding;
+}

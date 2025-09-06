@@ -1,16 +1,21 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
-use ibc_union_spec::{ChannelId, Packet};
-use ucs03_zkgm::com::CwTokenOrderV2;
-use unionlabs::primitives::{Bytes, H256, U256};
+use ibc_union_spec::ChannelId;
+use serde::{Deserialize, Serialize};
+use ucs03_solvable::Solvable;
+use unionlabs_primitives::{Bytes, H256, U256};
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InstantiateMsg {
     pub zkgm: Addr,
     pub admin: Addr,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)]
 pub enum ExecuteMsg {
     WhitelistIntents {
         hashes_whitelist: Vec<(H256, bool)>,
@@ -22,18 +27,13 @@ pub enum ExecuteMsg {
         counterparty_beneficiary: Bytes,
         escrowed_denom: String,
     },
-    DoSolve {
-        packet: Packet,
-        order: Box<CwTokenOrderV2>,
-        path: U256,
-        caller: Addr,
-        relayer: Addr,
-        relayer_msg: Bytes,
-        intent: bool,
-    },
+    #[serde(untagged)]
+    Solvable(Solvable),
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     IsSolver,
     AllowMarketMakers,
@@ -45,7 +45,7 @@ pub enum QueryMsg {
     GetAllFungibleCounterparties,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 pub struct FungibleLaneConfig {
     pub path: U256,
     pub channel_id: ChannelId,

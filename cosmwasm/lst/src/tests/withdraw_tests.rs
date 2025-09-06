@@ -70,7 +70,7 @@ use crate::{
     msg::ExecuteMsg,
     state::{AccountingStateStore, ReceivedBatches, UnstakeRequests},
     tests::test_helper::{setup, NATIVE_TOKEN, UNION1, UNION2, UNION3},
-    types::{BatchId, ReceivedBatch, Staker, UnstakeRequest, UnstakeRequestKey},
+    types::{staker_hash, BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey},
 };
 
 #[test]
@@ -88,34 +88,30 @@ fn withdraw() {
 
     let batch_id = BatchId::ONE;
 
-    let staker_1 = Staker::Local {
-        address: UNION1.to_string(),
-    };
+    let staker_1 = Addr::unchecked(UNION1);
 
     deps.storage.write::<UnstakeRequests>(
         &UnstakeRequestKey {
             batch_id,
-            staker_hash: staker_1.hash(),
+            staker_hash: staker_hash(&staker_1),
         },
         &UnstakeRequest {
             batch_id,
-            staker: staker_1,
+            staker: staker_1.to_string(),
             amount: 40_000,
         },
     );
 
-    let staker_2 = Staker::Local {
-        address: UNION2.to_string(),
-    };
+    let staker_2 = Addr::unchecked(UNION2);
 
     deps.storage.write::<UnstakeRequests>(
         &UnstakeRequestKey {
             batch_id,
-            staker_hash: staker_2.hash(),
+            staker_hash: staker_hash(&staker_2),
         },
         &UnstakeRequest {
             batch_id,
-            staker: staker_2,
+            staker: staker_2.to_string(),
             amount: 90_000,
         },
     );
@@ -192,18 +188,16 @@ fn must_be_staker_to_withdraw() {
 
     let batch_id = BatchId::ONE;
 
-    let staker = Staker::Local {
-        address: UNION1.to_string(),
-    };
+    let staker = Addr::unchecked(UNION1);
 
     deps.storage.write::<UnstakeRequests>(
         &UnstakeRequestKey {
             batch_id,
-            staker_hash: staker.hash(),
+            staker_hash: staker_hash(&staker),
         },
         &UnstakeRequest {
             batch_id,
-            staker,
+            staker: staker.to_string(),
             amount: 40_000,
         },
     );
@@ -248,12 +242,12 @@ fn non_existent_batch() {
             ExecuteMsg::Withdraw {
                 staker: Addr::unchecked(UNION1),
                 withdraw_to_address: Addr::unchecked(UNION1),
-                batch_id: BatchId::ONE.increment()
+                batch_id: BatchId::TWO
             }
         )
         .unwrap_err(),
         ContractError::BatchNotYetReceived {
-            batch_id: BatchId::ONE.increment()
+            batch_id: BatchId::TWO
         }
     );
 }
@@ -301,15 +295,13 @@ fn no_request_in_batch() {
             ExecuteMsg::Withdraw {
                 staker: Addr::unchecked(UNION1),
                 withdraw_to_address: Addr::unchecked(UNION1),
-                batch_id: BatchId::ONE
+                batch_id: BatchId::ONE,
             }
         )
         .unwrap_err(),
         ContractError::NoRequestInBatch {
             batch_id: BatchId::ONE,
-            staker: Staker::Local {
-                address: UNION1.to_owned()
-            }
+            staker: Addr::unchecked(UNION1),
         }
     );
 }

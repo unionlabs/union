@@ -1,18 +1,16 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    StdError, StdResult,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::{path::commit_packets, ChannelId};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
+use ucs03_solvable::Solvable;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes, U256},
-    ErrorReporter,
-};
+use unionlabs_primitives::{encoding::HexPrefixed, Bytes, U256};
 
 use crate::{
     error::Error,
@@ -101,14 +99,12 @@ pub fn execute(
     match msg {
         ExecuteMsg::Cw20(raw_msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => {
-                let msg = from_value(raw_msg)
-                    .map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?;
+                let msg = from_value(raw_msg).map_err(|e| StdError::generic_err(e.to_string()))?;
                 let res = cw20_base::contract::do_execute::<CwUCtx>(deps, env, info, msg)?;
                 Ok(res.change_custom().expect("impossible"))
             }
             Cw20ImplType::Tokenfactory => {
-                let msg = from_value(raw_msg)
-                    .map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?;
+                let msg = from_value(raw_msg).map_err(|e| StdError::generic_err(e.to_string()))?;
                 cw20_wrapped_tokenfactory::contract::do_execute::<CwUCtx>(deps, env, info, msg)
                     .map_err(Into::into)
             }
@@ -136,7 +132,7 @@ pub fn execute(
             );
             Ok(Response::new())
         }
-        ExecuteMsg::DoSolve {
+        ExecuteMsg::Solvable(Solvable::DoSolve {
             packet,
             order,
             path,
@@ -144,7 +140,7 @@ pub fn execute(
             relayer,
             relayer_msg: _,
             intent,
-        } => {
+        }) => {
             ensure_zkgm(deps.as_ref(), &info)?;
 
             if intent {
@@ -180,18 +176,23 @@ pub fn execute(
             let mint = |deps: DepsMut,
                         env: Env,
                         recipient: String,
-                        amount: Uint128|
+                        amount: u128|
              -> Result<Response<TokenFactoryMsg>, Error> {
-                if !amount.is_zero() {
+                if !amount == 0 {
                     match cw20_type {
-                        Cw20ImplType::Base => {
-                            cw20_base::contract::unchecked_internal_mint(deps, recipient, amount)
-                                .map(|x| x.change_custom().unwrap())
-                                .map_err(Into::<Error>::into)
-                        }
+                        Cw20ImplType::Base => cw20_base::contract::unchecked_internal_mint(
+                            deps,
+                            recipient,
+                            amount.into(),
+                        )
+                        .map(|x| x.change_custom().unwrap())
+                        .map_err(Into::<Error>::into),
                         Cw20ImplType::Tokenfactory => {
                             cw20_wrapped_tokenfactory::contract::unchecked_internal_mint(
-                                deps, env, recipient, amount,
+                                deps,
+                                env,
+                                recipient,
+                                amount.into(),
                             )
                             .map_err(Into::<Error>::into)
                         }
@@ -217,7 +218,7 @@ pub fn execute(
             let fee = order
                 .base_amount
                 .checked_sub(order.quote_amount)
-                .map_err(|_| Error::BaseAmountMustCoverQuoteAmount)?;
+                .ok_or_else(|| Error::BaseAmountMustCoverQuoteAmount)?;
             let mint_fee_res = mint(
                 deps,
                 env,
@@ -286,13 +287,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             Cw20ImplType::Base => cw20_base::contract::query(
                 deps,
                 env,
-                from_value(msg).map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?,
+                from_value(msg).map_err(|e| StdError::generic_err(e.to_string()))?,
             )
             .map_err(Into::into),
             Cw20ImplType::Tokenfactory => cw20_wrapped_tokenfactory::contract::query(
                 deps,
                 env,
-                from_value(msg).map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()))?,
+                from_value(msg).map_err(|e| StdError::generic_err(e.to_string()))?,
             )
             .map_err(Into::into),
         },

@@ -29,7 +29,7 @@ pub trait ValueCodec<Value> {
 ///
 /// ```rust
 /// # use depolama::{Prefix, Store, value::ValueCodecViaEncoding};
-/// # use unionlabs_encoding::{Decode, Encode ,Encoding};
+/// # use unionlabs_encoding::{Decode, Encode, Encoding};
 /// # enum EthAbi {}
 /// # impl Encoding for EthAbi {}
 /// # impl Encode<EthAbi> for &'_ Struct {
@@ -82,7 +82,7 @@ where
 /// Default unit key encoding to avoid any dependency to an encoding. We encode
 /// a single byte because `CosmWasm` has limitations and make it impossible to
 /// differentiate non existing key if the value is empty.
-pub struct ValueUnitEncoding;
+pub enum ValueUnitEncoding {}
 
 impl Encoding for ValueUnitEncoding {}
 impl Encode<ValueUnitEncoding> for &() {

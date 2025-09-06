@@ -59,13 +59,11 @@
 // TITLE.
 
 use cosmwasm_std::{Addr, Decimal, Uint128};
-use on_zkgm_call_proxy::OnProxyOnZkgmCall;
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::H256;
 
 use crate::types::{
-    BatchExpectedAmount, BatchId, PendingBatch, ProtocolFeeConfig, ReceivedBatch, Staker,
-    SubmittedBatch, UnstakeRequestKey,
+    BatchExpectedAmount, BatchId, PendingBatch, ProtocolFeeConfig, ReceivedBatch, SubmittedBatch,
+    UnstakeRequestKey,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -102,10 +100,6 @@ pub struct InitMsg {
     /// Set of addresses allowed to trigger a circuit break.
     pub monitors: Vec<Addr>,
     pub admin: Addr,
-
-    pub ucs03_zkgm_address: Addr,
-
-    pub on_zkgm_call_proxy_address: Addr,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -197,35 +191,6 @@ pub enum ExecuteMsg {
     SlashBatches {
         new_amounts: Vec<BatchExpectedAmount>,
     },
-    OnProxyOnZkgmCall(OnProxyOnZkgmCall),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum RemoteExecuteMsg {
-    /// Initiates the bonding process for a user.
-    Bond {
-        /// The address to mint the LST to.
-        mint_to_address: Addr,
-
-        /// Minimum expected amount of LST tokens to be received for the operation to be considered
-        /// valid. Any slippage will be sent to the relayer of the packet.
-        min_mint_amount: Uint128,
-    },
-
-    /// Initiates the unbonding process for a user.
-    Unbond {
-        /// The amount to unbond.
-        amount: Uint128,
-    },
-
-    /// Withdraws unstaked tokens.
-    Withdraw {
-        /// ID of the batch from which to withdraw.
-        batch_id: BatchId,
-        /// The address to withdraw the funds to on this chain.
-        withdraw_to_address: Addr,
-    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -288,14 +253,7 @@ pub enum QueryMsg {
     #[cfg_attr(feature = "schemars", returns(Vec<crate::types::UnstakeRequest>))]
     UnstakeRequestsByStaker {
         /// Address of the user whose unstake requests are to be queried.
-        staker: Staker,
-    },
-
-    /// Queries the unstake requests made by a specific staker, by the staker hash.
-    #[cfg_attr(feature = "schemars", returns(Vec<crate::types::UnstakeRequest>))]
-    UnstakeRequestsByStakerHash {
-        /// Address of the user whose unstake requests are to be queried.
-        staker_hash: H256,
+        staker: Addr,
     },
 
     /// Queries all unstake requests in the contract.

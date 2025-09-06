@@ -1,9 +1,9 @@
 use cosmwasm_std::Addr;
-use ibc_union_spec::{ChannelId, Packet};
+use ibc_union_spec::ChannelId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use ucs03_zkgm::com::CwTokenOrderV2;
-use unionlabs::primitives::{Bytes, H256, U256};
+use ucs03_solvable::Solvable;
+use unionlabs_primitives::{Bytes, H256, U256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -23,6 +23,7 @@ pub struct InitMsg {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)]
 pub enum ExecuteMsg {
     WhitelistIntents {
         hashes_whitelist: Vec<(H256, bool)>,
@@ -33,15 +34,8 @@ pub enum ExecuteMsg {
         base_token: Bytes,
         counterparty_beneficiary: Bytes,
     },
-    DoSolve {
-        packet: Packet,
-        order: Box<CwTokenOrderV2>,
-        path: U256,
-        caller: Addr,
-        relayer: Addr,
-        relayer_msg: Bytes,
-        intent: bool,
-    },
+    #[serde(untagged)]
+    Solvable(Solvable),
     #[serde(untagged)]
     Cw20(Value),
 }

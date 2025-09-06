@@ -2,7 +2,7 @@
 authors = ["Union Labs"]
 edition = "2021"
 name    = "near-ibc-tests"
-version = "0.1.0"
+version = "0.0.0"
 
 [dependencies]
 anyhow                  = { workspace = true }
