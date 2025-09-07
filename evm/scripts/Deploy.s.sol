@@ -1265,8 +1265,7 @@ contract GetDeployed is VersionedScript {
 
         string memory implProxyAccount = "implProxyAccount";
         implProxyAccount.serialize(
-            "contract",
-            string("contracts/ProxyAccount.sol:ProxyAccount")
+            "contract", string("contracts/ProxyAccount.sol:ProxyAccount")
         );
         implProxyAccount = implProxyAccount.serialize("args", bytes(hex""));
         impls.serialize(proxyAccount.toHexString(), implProxyAccount);
@@ -1415,78 +1414,35 @@ contract GetDeployed is VersionedScript {
     }
 }
 
-contract DryUpgradeUCS03 is VersionedScript {
+// Base contract for all upgrade operations (direct, safe, and dry-run)
+abstract contract BaseUpgrade is VersionedScript {
     using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-    address immutable owner;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        owner = vm.envAddress("OWNER");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
-        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
-        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
-        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
-        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
-
-        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
-        ZkgmERC20 zkgmERC20 =
-            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
-        ProxyAccount accountImpl =
-            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
-        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
-
-        console.log(
-            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
-        );
-
-        address newImplementation = address(
-            new UCS03Zkgm(
-                handler,
-                new UCS03ZkgmSendImpl(
-                    handler,
-                    weth,
-                    zkgmERC20,
-                    nativeTokenName,
-                    nativeTokenSymbol,
-                    nativeTokenDecimals
-                ),
-                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled),
-                accountImpl
-            )
-        );
-
-        vm.prank(owner);
-        ucs03.upgradeToAndCall(newImplementation, new bytes(0));
-    }
-}
-
-contract UpgradeUCS03 is VersionedScript {
-    using LibString for *;
+    using Safe for *;
 
     address immutable deployer;
     address immutable sender;
     uint256 immutable privateKey;
+    address immutable owner;
+    bool immutable useSafe;
+    bool immutable isDryRun;
 
-    constructor() {
+    Safe.Client safe;
+
+    constructor(bool _useSafe, bool _isDryRun) {
         deployer = vm.envAddress("DEPLOYER");
         sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
+        useSafe = _useSafe;
+        isDryRun = _isDryRun;
+
+        if (isDryRun) {
+            owner = vm.envAddress("OWNER");
+        } else {
+            privateKey = vm.envUint("PRIVATE_KEY");
+        }
+
+        if (useSafe) {
+            safe.initialize(SafeLib.ADDRESS);
+        }
     }
 
     function getDeployed(
@@ -1498,7 +1454,79 @@ contract UpgradeUCS03 is VersionedScript {
         );
     }
 
+    // Must be implemented by derived contracts to provide upgrade parameters
+    function upgradeParameters()
+        internal
+        virtual
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        );
+
     function run() public {
+        if (isDryRun) {
+            (
+                address targetContract,
+                address newImplementation,
+                bytes memory upgradeCall
+            ) = upgradeParameters();
+            console.log(
+                string(
+                    abi.encodePacked(
+                        "Dry run upgrade: ", targetContract.toHexString()
+                    )
+                )
+            );
+            vm.prank(owner);
+            UUPSUpgradeable(targetContract).upgradeToAndCall(
+                newImplementation, upgradeCall
+            );
+        } else {
+            vm.startBroadcast(privateKey);
+            (
+                address targetContract,
+                address newImplementation,
+                bytes memory upgradeCall
+            ) = upgradeParameters();
+            if (useSafe) {
+                safe.proposeTransaction(
+                    targetContract,
+                    abi.encodeCall(
+                        UUPSUpgradeable.upgradeToAndCall,
+                        (newImplementation, upgradeCall)
+                    ),
+                    vm.createWallet(privateKey).addr
+                );
+            } else {
+                console.log(
+                    string(
+                        abi.encodePacked(
+                            "Upgrading: ", targetContract.toHexString()
+                        )
+                    )
+                );
+                UUPSUpgradeable(targetContract).upgradeToAndCall(
+                    newImplementation, upgradeCall
+                );
+            }
+            vm.stopBroadcast();
+        }
+    }
+}
+
+contract DryUpgradeUCS03 is BaseUpgrade {
+    constructor() BaseUpgrade(false, true) {}
+
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
         string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
@@ -1510,14 +1538,9 @@ contract UpgradeUCS03 is VersionedScript {
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         ProxyAccount accountImpl =
             ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
-        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
-        console.log(
-            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
-        );
-
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(
+        targetContract = getDeployed(Protocols.UCS03);
+        newImplementation = address(
             new UCS03Zkgm(
                 handler,
                 new UCS03ZkgmSendImpl(
@@ -1532,8 +1555,51 @@ contract UpgradeUCS03 is VersionedScript {
                 accountImpl
             )
         );
-        ucs03.upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
+        upgradeCall = new bytes(0);
+    }
+}
+
+contract UpgradeUCS03 is BaseUpgrade {
+    constructor() BaseUpgrade(false, false) {}
+
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
+        ZkgmERC20 zkgmERC20 =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
+        ProxyAccount accountImpl =
+            ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
+
+        targetContract = getDeployed(Protocols.UCS03);
+        newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    zkgmERC20,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmTokenOrderImpl(weth, zkgmERC20, rateLimitEnabled),
+                accountImpl
+            )
+        );
+        upgradeCall = new bytes(0);
     }
 }
 
@@ -1721,143 +1787,76 @@ contract UpgradeUCS03FromV1ToV2 is UCS03FromV1ToV2 {
     }
 }
 
-contract UpgradeUCS00 is VersionedScript {
-    using LibString for *;
+contract UpgradeUCS00 is BaseUpgrade {
+    constructor() BaseUpgrade(false, false) {}
 
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address ucs00 = getDeployed(Protocols.UCS00);
-
-        console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
-
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(new PingPong());
-        PingPong(ucs00).upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        targetContract = getDeployed(Protocols.UCS00);
+        newImplementation = address(new PingPong());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract DryUpgradeIBCHandler is VersionedScript {
-    using LibString for *;
+contract DryUpgradeIBCHandler is BaseUpgrade {
+    constructor() BaseUpgrade(false, true) {}
 
-    address immutable deployer;
-    address immutable sender;
-    address immutable owner;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        owner = vm.envAddress("OWNER");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address handler = getDeployed(IBC_SALT.BASED);
-        console.log(
-            string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
-        );
-        address newImplementation = address(new IBCHandler());
-        vm.prank(owner);
-        IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        targetContract = getDeployed(IBC_SALT.BASED);
+        newImplementation = address(new IBCHandler());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract UpgradeIBCHandler is VersionedScript {
-    using LibString for *;
+contract UpgradeIBCHandler is BaseUpgrade {
+    constructor() BaseUpgrade(false, false) {}
 
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address handler = getDeployed(IBC_SALT.BASED);
-        console.log(
-            string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
-        );
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(new IBCHandler());
-        IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        targetContract = getDeployed(IBC_SALT.BASED);
+        newImplementation = address(new IBCHandler());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract DryUpgradeCometblsClient is VersionedScript {
-    using LibString for *;
+contract DryUpgradeCometblsClient is BaseUpgrade {
+    constructor() BaseUpgrade(false, true) {}
 
-    address immutable deployer;
-    address immutable sender;
-    address immutable owner;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        owner = vm.envAddress("OWNER");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
         address handler = getDeployed(IBC_SALT.BASED);
-        CometblsClient cometblsClient =
-            CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
-        console.log(
-            string(
-                abi.encodePacked(
-                    "CometblsClient: ", address(cometblsClient).toHexString()
-                )
-            )
-        );
-        address newImplementation = address(new CometblsClient(handler));
-        vm.prank(owner);
-        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
+        targetContract = getDeployed(LIGHT_CLIENT_SALT.COMETBLS);
+        newImplementation = address(new CometblsClient(handler));
+        upgradeCall = new bytes(0);
     }
 }
 
@@ -2041,71 +2040,39 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 }
 
-contract UpgradeU is VersionedScript {
-    using LibString for *;
+contract UpgradeU is BaseUpgrade {
+    constructor() BaseUpgrade(false, false) {}
 
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address u = getDeployed(string(INSTANCE_SALT.U));
-
-        console.log(string(abi.encodePacked("U: ", u.toHexString())));
-
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(new U());
-        U(u).upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        targetContract = getDeployed(string(INSTANCE_SALT.U));
+        newImplementation = address(new U());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract UpgradeEU is VersionedScript {
-    using LibString for *;
+contract UpgradeEU is BaseUpgrade {
+    constructor() BaseUpgrade(false, false) {}
 
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address eu = getDeployed(string(INSTANCE_SALT.EU));
-
-        console.log(string(abi.encodePacked("eU: ", eu.toHexString())));
-
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(new U());
-        U(eu).upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        targetContract = getDeployed(string(INSTANCE_SALT.EU));
+        newImplementation = address(new U());
+        upgradeCall = new bytes(0);
     }
 }
 
@@ -2598,100 +2565,72 @@ contract SimpleMerkleTree is Script {
     }
 }
 
-abstract contract AbstractSafeUpgrade is VersionedScript {
-    using LibString for *;
-    using Safe for *;
-
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    Safe.Client safe;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-
-        safe.initialize(SafeLib.ADDRESS);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
+// SafeUpgrade contracts - use the same BaseUpgrade with useSafe=true
+contract SafeUpgradeU is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
 
     function upgradeParameters()
         internal
-        virtual
-        returns (address, address, bytes memory);
-
-    function run() public {
-        vm.startBroadcast(privateKey);
-        (
+        override
+        returns (
             address targetContract,
             address newImplementation,
             bytes memory upgradeCall
-        ) = upgradeParameters();
-        vm.stopBroadcast();
-        safe.proposeTransaction(
-            targetContract,
-            abi.encodeCall(
-                UUPSUpgradeable.upgradeToAndCall,
-                (newImplementation, upgradeCall)
-            ),
-            vm.createWallet(privateKey).addr
-        );
-    }
-}
-
-contract SafeUpgradeU is AbstractSafeUpgrade {
-    function upgradeParameters()
-        internal
-        override
-        returns (address, address, bytes memory)
+        )
     {
-        return (
-            getDeployed(string(INSTANCE_SALT.U)), address(new U()), new bytes(0)
-        );
+        targetContract = getDeployed(string(INSTANCE_SALT.U));
+        newImplementation = address(new U());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract SafeUpgradeEU is AbstractSafeUpgrade {
+contract SafeUpgradeEU is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
+
     function upgradeParameters()
         internal
         override
-        returns (address, address, bytes memory)
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
     {
-        return (
-            getDeployed(string(INSTANCE_SALT.EU)),
-            address(new U()),
-            new bytes(0)
-        );
+        targetContract = getDeployed(string(INSTANCE_SALT.EU));
+        newImplementation = address(new U());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract SafeUpgradeIBCHandler is AbstractSafeUpgrade {
+contract SafeUpgradeIBCHandler is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
+
     function upgradeParameters()
         internal
         override
-        returns (address, address, bytes memory)
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
     {
-        return (
-            getDeployed(IBC_SALT.BASED), address(new IBCHandler()), new bytes(0)
-        );
+        targetContract = getDeployed(IBC_SALT.BASED);
+        newImplementation = address(new IBCHandler());
+        upgradeCall = new bytes(0);
     }
 }
 
-contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
+contract SafeUpgradeUCS03 is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
+
     function upgradeParameters()
         internal
         override
-        returns (address, address, bytes memory)
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
     {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
@@ -2703,8 +2642,9 @@ contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         ProxyAccount accountImpl =
             ProxyAccount(getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL));
-        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
-        address newImplementation = address(
+
+        targetContract = getDeployed(Protocols.UCS03);
+        newImplementation = address(
             new UCS03Zkgm(
                 handler,
                 new UCS03ZkgmSendImpl(
@@ -2719,6 +2659,6 @@ contract SafeUpgradeUCS03 is AbstractSafeUpgrade {
                 accountImpl
             )
         );
-        return (address(ucs03), newImplementation, new bytes(0));
+        upgradeCall = new bytes(0);
     }
 }
