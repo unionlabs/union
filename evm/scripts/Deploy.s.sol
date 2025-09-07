@@ -74,7 +74,7 @@ library INSTANCE_SALT {
 library LIB_SALT {
     string constant MULTICALL = "lib/multicall-v2";
     string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
-    string constant UCS03_ZKGM_ACCOUNT_IMPL = "lib/account";
+    string constant UCS03_ZKGM_ACCOUNT_IMPL = "lib/proxy-account-v1";
 }
 
 library IBC_SALT {
