@@ -33,12 +33,13 @@ import {
   Layer,
   Order,
   pipe,
-  Schema,
   Struct,
 } from "effect"
 import * as A from "effect/Array"
+import * as E from "effect/Either"
 import { constVoid, flow } from "effect/Function"
 import * as O from "effect/Option"
+import * as S from "effect/Schema"
 import { onMount } from "svelte"
 
 const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.17000")
@@ -84,8 +85,8 @@ const data = AppRuntime.runPromiseExit$(() => {
     return yield* pipe(
       Effect.all([
         staking.getBonds(Staking.GetBonds.make({ addresses: [address] })),
-        staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [] })),
-      ]),
+        staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [address] })),
+      ], { concurrency: "unbounded" }),
       Effect.map(A.getSomes),
       Effect.map(A.flatten),
       Effect.map(A.sort(pipe(
@@ -270,12 +271,12 @@ const close = (k: string) => {
       {bond.sendTimestampFormatted}
     </td>
     <td class="flex px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300 items-center gap-2">
-      {#if Schema.is(Bond)(bond)}
+      {#if S.is(Bond)(bond)}
         {@render renderChain(bond.source_chain, bond.base_token)}
         <span class="mx-1 opacity-60">→</span>
         {@render renderChain(bond.destination_chain, bond.quote_token)}
       {/if}
-      {#if Schema.is(Unbond)(bond)}
+      {#if S.is(Unbond)(bond)}
         {@render renderChain(bond.destination_chain, bond.base_token)}
       {/if}
     </td>
@@ -527,6 +528,16 @@ const close = (k: string) => {
                   O.flatMap(A.head),
                   O.map(Struct.get("decimals")),
                   O.getOrThrow,
+                )
+
+                const a = pipe(
+                  S.BigDecimal,
+                  S.filter(
+                    (x) => x.scale <= 18,
+                    {
+                      description: "can have at most 18 decimals",
+                    },
+                  ),
                 )
 
                 const validShape = /^\d*[.,]?\d*$/.test(proposed)
