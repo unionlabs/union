@@ -3462,5 +3462,19 @@ fn predict_call_proxy_account(
 }
 
 fn proxy_account_salt(path: U256, channel_id: ChannelId, sender: Bytes) -> H256 {
-    keccak256((path, channel_id.raw(), sender).abi_encode())
+    keccak256((path, channel_id.raw(), sender).abi_encode_params())
+}
+
+#[test]
+fn proxy_salt() {
+    let path = U256::ZERO;
+    let channel_id = ChannelId!(20);
+    let sender = hex_literal::hex!("2C96e52fCE14BAa13868CA8182f8A7903e4e76E0");
+
+    let salt = proxy_account_salt(path, channel_id, sender.into());
+
+    assert_eq!(
+        salt.get(),
+        &hex_literal::hex!("6122846875c88a0694bb88749a175b0409aba7377dec45ba67824daef3fed7ab")
+    );
 }
