@@ -138,7 +138,7 @@ contract UCS03Zkgm is
     function predictProxyAccount(
         uint256 path,
         uint32 channel,
-        bytes calldata token
+        bytes calldata sender
     ) external returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
