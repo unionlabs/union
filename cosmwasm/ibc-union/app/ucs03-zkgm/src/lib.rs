@@ -69,10 +69,10 @@ pub enum ContractError {
     UnableToValidateMarketMaker,
     #[error("the sender can't be validated, make sure the bech prefix matches the current chain")]
     UnableToValidateSender,
-    #[error("multiplex contract address must be a valid address")]
+    #[error("call contract address must be a valid address")]
     InvalidContractAddress,
     #[error(
-        "the multiplex target contract address can't be validated, make sure the bech prefix matches the current chain"
+        "the call target contract address can't be validated, make sure the bech prefix matches the current chain"
     )]
     UnableToValidateCallTarget,
     #[error("contract creation event not found during handling `reply`")]
@@ -96,7 +96,7 @@ pub enum ContractError {
         error: serde_json_wasm::de::Error,
         sent_packet_data: Bytes,
     },
-    #[error("asynchronous multiplexing is not supported")]
+    #[error("asynchronous calls are not supported")]
     AsyncCallUnsupported,
     #[error("an error happened while calling the destination contract: {error}")]
     CallError { error: String },
@@ -114,7 +114,7 @@ pub enum ContractError {
     InvalidBatchInstruction,
     #[error("invalid forward instruction")]
     InvalidForwardInstruction,
-    #[error("invalid multiplex sender")]
+    #[error("invalid call sender")]
     InvalidCallSender,
     #[error("async acknowledgements are not allowed in batches as they are atomic")]
     BatchMustBeSync,

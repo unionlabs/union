@@ -138,7 +138,7 @@ contract UCS03Zkgm is
     function predictProxyAccount(
         uint256 path,
         uint32 channel,
-        bytes calldata token
+        bytes calldata sender
     ) external returns (address, bytes32) {
         passthrough(address(SEND_IMPL));
     }
@@ -447,6 +447,35 @@ contract UCS03Zkgm is
         return ZkgmLib.ACK_EMPTY;
     }
 
+    function _deployProxyAccount(
+        address targetContract,
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) internal {
+        (bytes32 proxySalt, address proxyAccount) =
+            _predictProxyAccount(path, channelId, sender);
+        if (targetContract == proxyAccount && !ZkgmLib.isDeployed(proxyAccount))
+        {
+            CREATE3.deployDeterministic(
+                abi.encodePacked(
+                    type(ERC1967Proxy).creationCode,
+                    abi.encode(
+                        ACCOUNT_IMPL,
+                        abi.encodeCall(
+                            ProxyAccount.initializeRemote,
+                            (address(this), path, channelId, sender)
+                        )
+                    )
+                ),
+                proxySalt
+            );
+            emit ZkgmLib.CreateProxyAccount(
+                path, channelId, sender, proxyAccount
+            );
+        }
+    }
+
     function _executeCall(
         address caller,
         IBCPacket calldata ibcPacket,
@@ -459,37 +488,12 @@ contract UCS03Zkgm is
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(call.contractAddress));
         if (!call.eureka) {
-            (bytes32 proxySalt, address proxyAccount) = _predictProxyAccount(
-                path, ibcPacket.destinationChannelId, call.sender
+            _deployProxyAccount(
+                contractAddress,
+                path,
+                ibcPacket.destinationChannelId,
+                call.sender
             );
-            if (contractAddress == proxyAccount) {
-                if (!ZkgmLib.isDeployed(proxyAccount)) {
-                    CREATE3.deployDeterministic(
-                        abi.encodePacked(
-                            type(ERC1967Proxy).creationCode,
-                            abi.encode(
-                                ACCOUNT_IMPL,
-                                abi.encodeCall(
-                                    ProxyAccount.initializeRemote,
-                                    (
-                                        address(this),
-                                        path,
-                                        ibcPacket.destinationChannelId,
-                                        call.sender
-                                    )
-                                )
-                            )
-                        ),
-                        proxySalt
-                    );
-                    emit ZkgmLib.CreateProxyAccount(
-                        path,
-                        ibcPacket.destinationChannelId,
-                        call.sender,
-                        proxyAccount
-                    );
-                }
-            }
             if (intent) {
                 IZkgmable(contractAddress).onIntentZkgm(
                     caller,
