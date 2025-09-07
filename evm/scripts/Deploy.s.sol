@@ -1009,6 +1009,7 @@ contract GetDeployed is VersionedScript {
 
         address multicall = getDeployed(LIB_SALT.MULTICALL);
         address zkgmERC20 = getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL);
+        address proxyAccount = getDeployed(LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL);
 
         address manager = getDeployed(IBC_SALT.MANAGER);
         address handler = getDeployed(IBC_SALT.BASED);
@@ -1261,6 +1262,14 @@ contract GetDeployed is VersionedScript {
         );
         implZkgmERC20 = implZkgmERC20.serialize("args", bytes(hex""));
         impls.serialize(zkgmERC20.toHexString(), implZkgmERC20);
+
+        string memory implProxyAccount = "implProxyAccount";
+        implProxyAccount.serialize(
+            "contract",
+            string("contracts/ProxyAccount.sol:ProxyAccount")
+        );
+        implProxyAccount = implProxyAccount.serialize("args", bytes(hex""));
+        impls.serialize(proxyAccount.toHexString(), implProxyAccount);
 
         string memory implManager = "implManager";
         implManager.serialize(
