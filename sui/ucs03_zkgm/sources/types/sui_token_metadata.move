@@ -58,12 +58,12 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::sui_fungible_asset_metadata {
+module zkgm::sui_token_metadata {
     use std::string::{Self, String};
 
     use sui::bcs;
 
-    public struct SuiFungibleAssetMetadata has copy, drop {
+    public struct SuiTokenMetadata has copy, drop {
         name: String,
         symbol: String,
         decimals: u8,
@@ -79,8 +79,8 @@ module zkgm::sui_fungible_asset_metadata {
         owner: address,
         icon_url: Option<String>,
         description: String,
-    ): SuiFungibleAssetMetadata {
-        SuiFungibleAssetMetadata {
+    ): SuiTokenMetadata {
+        SuiTokenMetadata {
             name,
             symbol,
             decimals,
@@ -92,7 +92,7 @@ module zkgm::sui_fungible_asset_metadata {
 
     public(package) fun decode(
         buf: vector<u8>,
-    ): SuiFungibleAssetMetadata {
+    ): SuiTokenMetadata {
         let mut b = bcs::new(buf);
         new(
             string::utf8(b.peel_vec_u8()),
@@ -104,27 +104,27 @@ module zkgm::sui_fungible_asset_metadata {
         )
     }
 
-    public(package) fun name(m: &SuiFungibleAssetMetadata): &String {
+    public(package) fun name(m: &SuiTokenMetadata): &String {
         &m.name
     }
 
-    public(package) fun symbol(m: &SuiFungibleAssetMetadata): &String {
+    public(package) fun symbol(m: &SuiTokenMetadata): &String {
         &m.symbol
     }
 
-    public(package) fun decimals(m: &SuiFungibleAssetMetadata): u8 {
+    public(package) fun decimals(m: &SuiTokenMetadata): u8 {
         m.decimals
     }
 
-    public(package) fun owner(m: &SuiFungibleAssetMetadata): address {
+    public(package) fun owner(m: &SuiTokenMetadata): address {
         m.owner
     }
 
-    public(package) fun icon_url(m: &SuiFungibleAssetMetadata): &Option<String> {
+    public(package) fun icon_url(m: &SuiTokenMetadata): &Option<String> {
         &m.icon_url
     }
 
-    public(package) fun description(m: &SuiFungibleAssetMetadata): &String {
+    public(package) fun description(m: &SuiTokenMetadata): &String {
         &m.description
     }
 }

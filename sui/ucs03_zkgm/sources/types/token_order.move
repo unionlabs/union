@@ -58,18 +58,18 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_asset_order {
+module zkgm::token_order {
     use zkgm::zkgm_ethabi;
 
-    public struct FungibleAssetOrder has copy, drop, store {
+    public struct TokenOrderV2 has copy, drop, store {
         sender: vector<u8>,
         receiver: vector<u8>,
         base_token: vector<u8>,
         base_amount: u256,
-        metadata_type: u8,
-        metadata: vector<u8>,
         quote_token: vector<u8>,
-        quote_amount: u256
+        quote_amount: u256,
+        kind: u8,
+        metadata: vector<u8>,
     }
 
     public fun new(
@@ -77,56 +77,56 @@ module zkgm::fungible_asset_order {
         receiver: vector<u8>,
         base_token: vector<u8>,
         base_amount: u256,
-        metadata_type: u8,
-        metadata: vector<u8>,
         quote_token: vector<u8>,
-        quote_amount: u256
-    ): FungibleAssetOrder {
-        FungibleAssetOrder {
+        quote_amount: u256,
+        kind: u8,
+        metadata: vector<u8>,
+    ): TokenOrderV2 {
+        TokenOrderV2 {
             sender,
             receiver,
             base_token,
             base_amount,
-            metadata_type,
-            metadata,
             quote_token,
             quote_amount,
+            kind,
+            metadata,
         }
     }
 
-    public fun sender(order: &FungibleAssetOrder): &vector<u8> {
+    public fun sender(order: &TokenOrderV2): &vector<u8> {
         &order.sender
     }
 
-    public fun receiver(order: &FungibleAssetOrder): &vector<u8> {
+    public fun receiver(order: &TokenOrderV2): &vector<u8> {
         &order.receiver
     }
 
-    public fun base_token(order: &FungibleAssetOrder): &vector<u8> {
+    public fun base_token(order: &TokenOrderV2): &vector<u8> {
         &order.base_token
     }
 
-    public fun base_amount(order: &FungibleAssetOrder): u256 {
+    public fun base_amount(order: &TokenOrderV2): u256 {
         order.base_amount
     }
 
-    public fun metadata_type(order: &FungibleAssetOrder): u8 {
-        order.metadata_type
-    }
-
-    public fun metadata(order: &FungibleAssetOrder): &vector<u8> {
-        &order.metadata
-    }
-
-    public fun quote_token(order: &FungibleAssetOrder): &vector<u8> {
+    public fun quote_token(order: &TokenOrderV2): &vector<u8> {
         &order.quote_token
     }
 
-    public fun quote_amount(order: &FungibleAssetOrder): u256 {
+    public fun quote_amount(order: &TokenOrderV2): u256 {
         order.quote_amount
     }
 
-    public fun encode(order: &FungibleAssetOrder): vector<u8> {
+    public fun kind(order: &TokenOrderV2): u8 {
+        order.kind
+    }
+
+    public fun metadata(order: &TokenOrderV2): &vector<u8> {
+        &order.metadata
+    }
+
+    public fun encode(order: &TokenOrderV2): vector<u8> {
         let mut buf = vector::empty();
 
         let mut sender = vector::empty();
@@ -135,10 +135,10 @@ module zkgm::fungible_asset_order {
         zkgm_ethabi::encode_bytes(&mut receiver, &order.receiver);
         let mut base_token = vector::empty();
         zkgm_ethabi::encode_bytes(&mut base_token, &order.base_token);
-        let mut metadata = vector::empty();
-        zkgm_ethabi::encode_bytes(&mut metadata, &order.metadata);
          let mut quote_token = vector::empty();
         zkgm_ethabi::encode_bytes(&mut quote_token, &order.quote_token);
+        let mut metadata = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut metadata, &order.metadata);
 
         let mut dyn_offset = 0x20 * 8;
         // sender offset
@@ -151,34 +151,35 @@ module zkgm::fungible_asset_order {
         zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         zkgm_ethabi::encode_uint<u256>(&mut buf, order.base_amount);
         dyn_offset = dyn_offset + vector::length(&base_token);
-        // metadata offset
-        zkgm_ethabi::encode_uint<u8>(&mut buf, order.metadata_type);
-        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
-        dyn_offset = dyn_offset + vector::length(&metadata);
         // quote_token offset
         zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         zkgm_ethabi::encode_uint<u256>(&mut buf, order.quote_amount);
+        dyn_offset = dyn_offset + vector::length(&metadata);
+
+        zkgm_ethabi::encode_uint<u8>(&mut buf, order.kind);
+        // metadata offset
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
 
         vector::append(&mut buf, sender);
         vector::append(&mut buf, receiver);
         vector::append(&mut buf, base_token);
-        vector::append(&mut buf, metadata);
         vector::append(&mut buf, quote_token);
+        vector::append(&mut buf, metadata);
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>): FungibleAssetOrder {
+    public fun decode(buf: &vector<u8>): TokenOrderV2 {
         let mut index = 0;
-        FungibleAssetOrder {
+        TokenOrderV2 {
             sender: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
             receiver: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
             base_token: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
             base_amount: zkgm_ethabi::decode_uint(buf, &mut index),
-            metadata_type: (zkgm_ethabi::decode_uint(buf, &mut index) as u8),
-            metadata: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
             quote_token: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
-            quote_amount: zkgm_ethabi::decode_uint(buf, &mut index)
+            quote_amount: zkgm_ethabi::decode_uint(buf, &mut index),
+            kind: zkgm_ethabi::decode_uint(buf, &mut index) as u8,
+            metadata: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
         }
     }
 
@@ -186,15 +187,15 @@ module zkgm::fungible_asset_order {
     fun test_encode_decode() {
         let encoded = x"000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000fa000000000000000000000000000000000000000000000000000000000000006344444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004424242420000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044343434300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e7364660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000634444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444440000000000000000000000000000000000000000000000000000000000";
         let packet = decode(&encoded);
-        let expected_packet = FungibleAssetOrder {
+        let expected_packet = TokenOrderV2 {
             sender: b"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
             receiver: b"BBBB",
             base_token: b"CCCC",
             base_amount: 100,
-            metadata_type: 1,
-            metadata: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf",
             quote_token: b"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
-            quote_amount: 250
+            quote_amount: 250,
+            kind: 1,
+            metadata: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf",
         };
 
         assert!(packet == expected_packet, 1);

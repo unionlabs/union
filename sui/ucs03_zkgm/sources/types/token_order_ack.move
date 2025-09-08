@@ -58,27 +58,27 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_asset_order_ack {
+module zkgm::token_order_ack {
     use zkgm::zkgm_ethabi;
 
-    public struct FungibleAssetOrderAck has copy, drop, store {
+    public struct TokenOrderAck has copy, drop, store {
         fill_type: u256,
         market_maker: vector<u8>
     }
 
-    public fun new(fill_type: u256, market_maker: vector<u8>): FungibleAssetOrderAck {
-        FungibleAssetOrderAck { fill_type, market_maker }
+    public fun new(fill_type: u256, market_maker: vector<u8>): TokenOrderAck {
+        TokenOrderAck { fill_type, market_maker }
     }
 
-    public fun fill_type(order: &FungibleAssetOrderAck): u256 {
+    public fun fill_type(order: &TokenOrderAck): u256 {
         order.fill_type
     }
 
-    public fun market_maker(order: &FungibleAssetOrderAck): &vector<u8> {
+    public fun market_maker(order: &TokenOrderAck): &vector<u8> {
         &order.market_maker
     }
 
-    public fun encode(ack: &FungibleAssetOrderAck): vector<u8> {
+    public fun encode(ack: &TokenOrderAck): vector<u8> {
         let mut buf = vector::empty<u8>();
         zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
         // `market_maker` offset
@@ -91,9 +91,9 @@ module zkgm::fungible_asset_order_ack {
         buf
     }
 
-    public fun decode(buf: &vector<u8>): FungibleAssetOrderAck {
+    public fun decode(buf: &vector<u8>): TokenOrderAck {
         let mut index = 0;
-        FungibleAssetOrderAck {
+        TokenOrderAck {
             fill_type: zkgm_ethabi::decode_uint(buf, &mut index),
             market_maker: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
         }
@@ -103,7 +103,7 @@ module zkgm::fungible_asset_order_ack {
     fun test_encode_decode() {
         let output =
             x"00000000000000000000000000000000000000000000000000000000001e84800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e73646600000000000000000000000000000000000000000000000000";
-        let ack_data = FungibleAssetOrderAck {
+        let ack_data = TokenOrderAck {
             fill_type: 2000000,
             market_maker: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf"
         };

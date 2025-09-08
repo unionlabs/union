@@ -58,10 +58,10 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_asset_metadata {
+module zkgm::token_metadata {
     use zkgm::zkgm_ethabi;
 
-    public struct FungibleAssetMetadata has copy, drop, store {
+    public struct TokenMetadata has copy, drop, store {
         implementation: vector<u8>,
         initializer: vector<u8>,
     }
@@ -69,22 +69,22 @@ module zkgm::fungible_asset_metadata {
     public fun new(
         implementation: vector<u8>,
         initializer: vector<u8>,
-    ): FungibleAssetMetadata {
-        FungibleAssetMetadata {
+    ): TokenMetadata {
+        TokenMetadata {
             implementation,
             initializer
         }
     }
 
-    public fun implementation(metadata: &FungibleAssetMetadata): &vector<u8> {
+    public fun implementation(metadata: &TokenMetadata): &vector<u8> {
         &metadata.implementation
     }
 
-    public fun initializer(metadata: &FungibleAssetMetadata): &vector<u8> {
+    public fun initializer(metadata: &TokenMetadata): &vector<u8> {
         &metadata.initializer
     }
 
-    public fun encode(metadata: &FungibleAssetMetadata): vector<u8> {
+    public fun encode(metadata: &TokenMetadata): vector<u8> {
         let mut buf = vector::empty();
 
         let mut implementation = vector::empty();
@@ -109,9 +109,9 @@ module zkgm::fungible_asset_metadata {
         buf
     }
 
-    public fun decode(buf: &vector<u8>): FungibleAssetMetadata {
+    public fun decode(buf: &vector<u8>): TokenMetadata {
         let mut index = 0;
-        FungibleAssetMetadata {
+        TokenMetadata {
             implementation: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
             initializer: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
         }
@@ -120,7 +120,7 @@ module zkgm::fungible_asset_metadata {
     #[test]
     fun test_encode_decode() {
         let encoded = x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000021313233656c6e656c6e6176656c6e76626c656e61736c6765316c3265336e6c656e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e73646600000000000000000000000000000000000000000000000000";
-        let expected_metadata = FungibleAssetMetadata {
+        let expected_metadata = TokenMetadata {
             implementation: b"123elnelnavelnvblenaslge1l2e3nlen",
             initializer: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf",
         };
