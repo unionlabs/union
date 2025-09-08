@@ -35,11 +35,21 @@ import {
   U_ERC20,
   U_SOLVER_ON_UNION_METADATA,
 } from "@unionlabs/sdk/Constants"
+import { AddressCosmosZkgm } from "@unionlabs/sdk/schema/address"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
-import { HexFromJson } from "@unionlabs/sdk/schema/hex"
+import { HexFromJson, HexFromString } from "@unionlabs/sdk/schema/hex"
+import { Bech32 } from "@unionlabs/sdk/Ucs05"
 import { Effect, Logger, pipe, Schema } from "effect"
-import { http } from "viem"
+import {
+  AbiParameter,
+  bytesToHex,
+  encodeAbiParameters,
+  fromHex,
+  http,
+  keccak256,
+  toHex,
+} from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
 
@@ -88,6 +98,91 @@ const querySlippage = pipe(
   }))),
   Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
 )
+
+const bytecode_base_checksum =
+  "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
+const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
+const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
+
+const instantiate2 = Effect.gen(function*() {
+  const sender = yield* Ucs05.anyDisplayToZkgm(SENDER)
+  const abi = [
+    {
+      name: "path",
+      type: "uint256",
+      internalType: "uint256",
+    },
+    {
+      name: "channelId",
+      type: "uint32",
+      internalType: "uint32",
+    },
+    {
+      name: "sender",
+      type: "bytes",
+      internalType: "bytes",
+    },
+  ] as const
+
+  const args = [
+    0n,
+    20,
+    sender,
+  ] as const
+
+  const encode = Effect.try(() =>
+    encodeAbiParameters(
+      abi,
+      args,
+    )
+  )
+
+  const encoded = yield* encode
+
+  yield* Effect.log({ encoded })
+
+  /**
+   * n as be rep
+   */
+  const u64toBeBytes = (n: bigint) => {
+    const buffer = new ArrayBuffer(8)
+    const view = new DataView(buffer)
+    view.setBigUint64(0, n)
+    console.log(view.buffer)
+    return view.buffer
+  }
+
+  const sha256 = (data: any) => globalThis.crypto.subtle.digest("SHA-256", data)
+
+  const salt = keccak256(encoded, "bytes")
+
+  const data = Uint8Array.from([
+    fromHex(module_hash, "bytes"),
+    "wasm",
+    0, // null byte
+    u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
+    fromHex(bytecode_base_checksum, "bytes"),
+    u64toBeBytes(32n), // creator canonical addr len
+    fromHex(canonical_zkgm, "bytes"),
+    u64toBeBytes(32n), // len
+    salt,
+    u64toBeBytes(0n),
+  ])
+
+  const r = yield* Effect.tryPromise(() => sha256(data))
+
+  const rBytes = bytesToHex(new Uint8Array(r))
+
+  const transform = Ucs05.Bech32FromCanonicalBytesWithPrefix("union")
+
+  const r2 = yield* Schema.decode(transform)(rBytes)
+
+  yield* Effect.log("Salt:", bytesToHex(salt))
+  yield* Effect.log("Args:", args)
+  yield* Effect.log("Result:", r2)
+
+  // yield* Effect.log(encoded)
+})
 
 const sendBond = Effect.gen(function*() {
   const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
@@ -258,6 +353,6 @@ const sendBond = Effect.gen(function*() {
   )),
 )
 
-Effect.runPromise(sendBond)
+Effect.runPromise(instantiate2)
   .then(console.log)
   .catch(console.error)
