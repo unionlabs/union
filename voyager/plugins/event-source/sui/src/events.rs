@@ -13,7 +13,6 @@ pub struct CreateClient {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct UpdateClient {
     pub client_id: u32,
-    pub client_type: String,
     pub height: U64,
 }
 
@@ -64,7 +63,7 @@ pub struct ChannelOpenTry {
     pub counterparty_port_id: Vec<u8>,
     pub counterparty_channel_id: u32,
     pub connection_id: u32,
-    pub version: String,
+    pub counterparty_version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

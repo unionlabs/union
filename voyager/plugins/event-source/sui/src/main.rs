@@ -660,7 +660,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await?;
 
                         let event = UpdateClient {
-                            client_type: ClientType::new(raw_event.client_type),
+                            client_type: client_info.client_type.clone(),
                             client_id: raw_event.client_id.try_into().unwrap(),
                             height: raw_event.height.0,
                         }

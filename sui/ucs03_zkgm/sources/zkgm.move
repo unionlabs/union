@@ -1621,8 +1621,7 @@ module zkgm::zkgm_relay {
                 || t.decimals != sui_metadata.decimals()
                 || t.owner != sui_metadata.owner()
                 || &t.icon_url != sui_metadata.icon_url()
-                || &t.description != sui_metadata.description()
-                || bcs::new(*metadata.implementation()).peel_vec_u8() == typename_t.into_string().into_bytes()) {
+                || &t.description != sui_metadata.description()) {
                 return false
             };
             

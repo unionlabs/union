@@ -61,8 +61,6 @@ module ibc::groth16_verifier {
         let mut inputs_hash = sha2_256(inputs_hash);
         let mut first_elem = inputs_hash.borrow_mut(0);
         *first_elem = 0;
-        // let inputs_hash = vector[0, 224, 145, 40, 84, 89, 34, 39, 221, 156, 192, 245, 138, 61, 32, 127, 128, 107, 29, 247, 44, 137, 180, 35, 67, 23, 121, 0, 96, 87, 93, 110];
-        // let inputs_hash = x"00e578c5692e48ed4d5c59d82be1b73cd00192825ef2e8fe51c720e4b95f627e";
 
         let inputs_hash = scalar_from_bytes(&inputs_hash);
 

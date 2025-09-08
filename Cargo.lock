@@ -17080,6 +17080,7 @@ dependencies = [
  "anyhow",
  "arbitrum-light-client-types",
  "base64 0.21.7",
+ "bcs",
  "bech32 0.11.0",
  "berachain-light-client-types",
  "bob-light-client-types",
