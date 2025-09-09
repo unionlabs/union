@@ -32,7 +32,7 @@ jobs:
     environment: 'app2-preview'
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
@@ -77,7 +77,7 @@ jobs:
       ENVIRONMENT: 'preview'
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
@@ -105,7 +105,7 @@ jobs:
     environment: 'app2-staging'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
@@ -133,7 +133,7 @@ jobs:
     environment: 'app2-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/release/app2'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
