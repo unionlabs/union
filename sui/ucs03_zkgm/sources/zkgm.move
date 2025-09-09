@@ -58,7 +58,7 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::zkgm_relay {
+module zkgm::zkgm {
     use std::string::{Self, String};
     use std::type_name::{Self};
 
@@ -86,6 +86,7 @@ module zkgm::zkgm_relay {
     use zkgm::instruction::{Self, Instruction};
     use zkgm::sui_token_metadata;
     use zkgm::zkgm_packet;
+    use zkgm::solver_metadata;
 
     // Constants
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
@@ -149,11 +150,13 @@ module zkgm::zkgm_relay {
     const E_ONLY_ONE_SESSION_IS_ALLOWED: u64 = 36;
     const E_ALL_INSTRUCTIONS_ARE_RUN: u64 = 37;
     const E_INVALID_UNESCROW: u64 = 38;
-
-    const E_ALL_PACKETS_ARE_RECEIVED: u64 = 41;
-    const E_ACK_SIZE_MISMATCHING: u64 = 38;
-    const E_EXECUTION_NOT_COMPLETE: u64 = 39;
+    const E_INTENT_WHITELISTED_ONLY: u64 = 39;
     const E_INVALID_PACKET_HASH: u64 = 40;
+    const E_ALL_PACKETS_ARE_RECEIVED: u64 = 41;
+    const E_ACK_SIZE_MISMATCHING: u64 = 42;
+    const E_EXECUTION_NOT_COMPLETE: u64 = 43;
+    const E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT: u64 = 44;
+    const E_INVALID_SOLVER_ADDRESS: u64 = 45;
 
     public struct IbcAppWitness has drop {}
 
@@ -165,6 +168,22 @@ module zkgm::zkgm_relay {
         type_name_t_to_capability: ObjectBag,
         bag_to_coin: ObjectBag,
         wrapped_denom_to_t: Table<vector<u8>, String>,
+        // solver + channel to beneficiary
+        fungible_counterparties: Table<FungibleLane, vector<u8>>,
+
+        intent_whitelist: Table<IntentWhitelistKey, bool>,
+    }
+
+    public struct IntentWhitelistKey has copy, drop, store {
+        coin: address,
+        packet_hash: vector<u8>,
+    }
+
+    public struct FungibleLane has copy, drop, store {
+        coin: address,
+        path: u256,
+        channel: u32,
+        base_token: vector<u8>,
     }
 
     public struct ChannelBalancePair has copy, drop, store {
@@ -202,6 +221,8 @@ module zkgm::zkgm_relay {
             type_name_t_to_capability: object_bag::new(ctx),
             bag_to_coin: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
+            fungible_counterparties: table::new(ctx),
+            intent_whitelist: table::new(ctx),
         });
     }
 
@@ -703,21 +724,101 @@ module zkgm::zkgm_relay {
 
     fun market_maker_fill<T>(
         zkgm: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
         relayer_msg: vector<u8>,
-        _quote_token: vector<u8>,
+        path: u256,
         receiver: address,
-        quote_amount: u64,
+        order: TokenOrderV2,
+        intent: bool,
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
-        if (quote_amount != 0){
-            // TODO(aeryz): handle NATIVE_TOKEN_ERC_7528_ADDRESS case            
-            // TODO(aeryz): make sure that distribute here is correct
-            zkgm.distribute_coin<T>(receiver, quote_amount, ctx);
+        if (order.kind() == TOKEN_ORDER_KIND_SOLVE) {
+            return zkgm.solver_fill<T>(
+                ibc_packet,
+                order,
+                path,
+                relayer,
+                intent,
+                ctx,
+            );
+        } else {
+            let quote_amount = order.quote_amount() as u64;
+            if (quote_amount > 0){
+                // TODO(aeryz): handle NATIVE_TOKEN_ERC_7528_ADDRESS case            
+                // TODO(aeryz): make sure that distribute here is correct
+                zkgm.distribute_coin<T>(receiver, quote_amount, ctx);
+            };
         };
+
         (token_order_ack::new(
             FILL_TYPE_MARKETMAKER,
             relayer_msg
         ).encode(), 0)
+    }
+
+    fun solver_fill<T>(
+        zkgm: &mut RelayStore,
+        ibc_packet: Packet,
+        order: TokenOrderV2,
+        path: u256,
+        relayer: address,
+        intent: bool,
+        ctx: &mut TxContext,
+    ): (vector<u8>, u64) {
+        let quote_amount = (order.quote_amount() as u64);
+
+        let metadata = solver_metadata::decode(order.metadata());
+
+        let solver = bcs::new(*metadata.solver_address()).peel_address();
+
+        if (solver != @zkgm) {
+            return (vector::empty(), E_INVALID_SOLVER_ADDRESS);  
+        };
+
+        let quote_token = bcs::new(*order.quote_token()).peel_address();
+
+        if (intent) {
+            let packet_hash = commitment::commit_packet(&ibc_packet);
+            if (!zkgm.intent_whitelist.contains(IntentWhitelistKey {
+                coin: quote_token,
+                packet_hash
+            })) {
+                return (vector::empty(), E_INTENT_WHITELISTED_ONLY)
+            };
+        };
+
+        let fungibility = FungibleLane {
+            coin: quote_token,
+            path,
+            channel: ibc_packet.destination_channel_id(),
+            base_token: *order.base_token(),
+        };
+
+        if (zkgm.fungible_counterparties.contains(fungibility)) {
+            return (vector::empty(), E_ONLY_MAKER)
+        };
+
+        let counterparty_beneficiary = *zkgm.fungible_counterparties.borrow(fungibility);       
+
+        if (order.quote_amount() > order.base_amount()) {
+            return (vector::empty(), E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT)
+        };
+
+        let (base_amount, quote_amount) = (order.base_amount(), order.quote_amount());
+
+        let capability = zkgm.get_treasury_cap<T>();
+        let fee = base_amount - quote_amount;
+        if (fee > 0) {
+            coin::mint_and_transfer<T>(capability, fee as u64, relayer, ctx);
+        };
+
+        if (quote_amount > 0) {
+            let receiver = bcs::new(*order.receiver()).peel_address();
+            coin::mint_and_transfer<T>(capability, quote_amount as u64, receiver, ctx);
+        };
+
+        (counterparty_beneficiary, 0)
     }
 
     fun compute_salt(path: u256, channel: u32, base_token: vector<u8>, metadata: vector<u8>): vector<u8> {
@@ -926,10 +1027,13 @@ module zkgm::zkgm_relay {
         // the source. In other words, the market maker is unable to lie.
         if (intent || order.kind() == TOKEN_ORDER_KIND_SOLVE) {
             return zkgm.market_maker_fill<T>(
+                ibc_packet,
+                relayer,
                 relayer_msg,
-                quote_token,
+                path,
                 receiver,
-                order.quote_amount() as u64,
+                order,
+                intent,
                 ctx,
             )
         };
@@ -1002,11 +1106,14 @@ module zkgm::zkgm_relay {
             // allow orders that combines protocol and mm filling (wrapped vs
             // non wrapped assets).
             zkgm.market_maker_fill<T>(
-                relayer_msg, 
-                quote_token, 
-                receiver, 
-                order.quote_amount() as u64,
-                ctx
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                path,
+                receiver,
+                order,
+                intent,
+                ctx,
             )
         }
     }
