@@ -109,6 +109,7 @@ export class Cw20 extends S.TaggedClass<Cw20>()("Cw20", {
  * @since 2.0.0
  */
 export class CosmosBank extends S.TaggedClass<CosmosBank>()("CosmosBank", {
+  // XXX: address incorrect semantically
   address: S.String.pipe(
     S.pattern(/^[a-z][a-z0-9]{1,127}$/),
   ),

@@ -28,28 +28,18 @@ import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
   EU_ERC20,
   EU_LST,
+  EU_SOLVER_ON_ETH_METADATA,
   EU_SOLVER_ON_UNION_METADATA,
   EU_STAKING_HUB,
-  ON_ZKGM_CALL_PROXY,
   U_BANK,
   U_ERC20,
   U_SOLVER_ON_UNION_METADATA,
 } from "@unionlabs/sdk/Constants"
-import { AddressCosmosZkgm } from "@unionlabs/sdk/schema/address"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
-import { HexFromJson, HexFromString } from "@unionlabs/sdk/schema/hex"
-import { Bech32 } from "@unionlabs/sdk/Ucs05"
+import { HexFromJson } from "@unionlabs/sdk/schema/hex"
 import { Effect, Logger, pipe, Schema } from "effect"
-import {
-  AbiParameter,
-  bytesToHex,
-  encodeAbiParameters,
-  fromHex,
-  http,
-  keccak256,
-  toHex,
-} from "viem"
+import { bytesToHex, encodeAbiParameters, fromHex, http, keccak256 } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
 
@@ -61,6 +51,7 @@ const JsonFromBase64 = Schema.compose(
 const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
 const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
+const DESTINATION_CHANNEL_ID = ChannelId.make(20)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
   address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
 })
@@ -70,16 +61,43 @@ const UCS03_MINTER_ON_UNION = Ucs05.CosmosDisplay.make({
 const UCS03_ZKGM = Ucs05.CosmosDisplay.make({
   address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
 })
-const SEND_AMOUNT = (10n ** 18n) * 1_000n
-const MIN_MINT_AMOUNT = 999999999000000000000n
+const SEND_AMOUNT = (10n ** 18n) * 1n
+const MIN_MINT_AMOUNT = SEND_AMOUNT * 9n / 10n
 const VIEM_CHAIN = holesky
 const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
-const SENDER = Ucs05.EvmDisplay.make({
-  address: "0x2C96e52fCE14BAa13868CA8182f8A7903e4e76E0",
-})
-
 const VIEM_ACCOUNT = privateKeyToAccount(
   process.env.KEY as any,
+)
+const SENDER = Ucs05.EvmDisplay.make({
+  address: VIEM_ACCOUNT.address,
+})
+
+const checkAndSubmitAllowance = pipe(
+  Evm.readErc20Allowance(
+    U_ERC20.address,
+    SENDER.address,
+    UCS03_EVM.address,
+  ),
+  Effect.flatMap((amount) =>
+    Effect.if(amount < SEND_AMOUNT, {
+      onTrue: () =>
+        pipe(
+          Effect.log(`Increasing allowance by ${SEND_AMOUNT - amount} for ${U_ERC20.address}`),
+          Effect.andThen(() =>
+            pipe(
+              Evm.increaseErc20Allowance(
+                U_ERC20.address,
+                UCS03_EVM,
+                SEND_AMOUNT - amount,
+              ),
+              Effect.andThen(Evm.waitForTransactionReceipt),
+            )
+          ),
+        ),
+      onFalse: () =>
+        Effect.log(`Allowance fulfilled by ${SEND_AMOUNT - amount} for ${U_ERC20.address}`),
+    })
+  ),
 )
 
 const querySlippage = pipe(
@@ -104,95 +122,97 @@ const bytecode_base_checksum =
 const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
 const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
 
-const instantiate2 = Effect.gen(function*() {
-  const sender = yield* Ucs05.anyDisplayToZkgm(SENDER)
-  const abi = [
-    {
-      name: "path",
-      type: "uint256",
-      internalType: "uint256",
-    },
-    {
-      name: "channelId",
-      type: "uint32",
-      internalType: "uint32",
-    },
-    {
-      name: "sender",
-      type: "bytes",
-      internalType: "bytes",
-    },
-  ] as const
+const instantiate2 = Effect.fn(
+  function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.AnyDisplay }) {
+    const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
+    const abi = [
+      {
+        name: "path",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "channelId",
+        type: "uint32",
+        internalType: "uint32",
+      },
+      {
+        name: "sender",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ] as const
 
-  const args = [
-    0n,
-    20,
-    sender,
-  ] as const
+    const args = [
+      options.path,
+      options.channel,
+      sender,
+    ] as const
 
-  const encode = Effect.try(() =>
-    encodeAbiParameters(
-      abi,
-      args,
+    const encode = Effect.try(() =>
+      encodeAbiParameters(
+        abi,
+        args,
+      )
     )
-  )
 
-  const encoded = yield* encode
+    const encoded = yield* encode
 
-  yield* Effect.log({ encoded })
+    /**
+     * n as BE rep
+     */
+    const u64toBeBytes = (n: bigint) => {
+      const buffer = new ArrayBuffer(8)
+      const view = new DataView(buffer)
+      view.setBigUint64(0, n)
+      return new Uint8Array(view.buffer)
+    }
 
-  /**
-   * n as be rep
-   */
-  const u64toBeBytes = (n: bigint) => {
-    const buffer = new ArrayBuffer(8)
-    const view = new DataView(buffer)
-    view.setBigUint64(0, n)
-    console.log(view.buffer)
-    return view.buffer
-  }
+    const sha256 = (data: any) => globalThis.crypto.subtle.digest("SHA-256", data)
 
-  const sha256 = (data: any) => globalThis.crypto.subtle.digest("SHA-256", data)
+    const salt = keccak256(encoded, "bytes")
 
-  const salt = keccak256(encoded, "bytes")
+    const _args = [
+      ...fromHex(module_hash, "bytes"),
+      ...new TextEncoder().encode("wasm"),
+      0, // null byte
+      ...u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
+      ...fromHex(bytecode_base_checksum, "bytes"),
+      ...u64toBeBytes(32n), // creator canonical addr len
+      ...fromHex(canonical_zkgm, "bytes"),
+      ...u64toBeBytes(32n), // len
+      ...salt,
+      ...u64toBeBytes(0n),
+    ] as const
 
-  const data = Uint8Array.from([
-    fromHex(module_hash, "bytes"),
-    "wasm",
-    0, // null byte
-    u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
-    fromHex(bytecode_base_checksum, "bytes"),
-    u64toBeBytes(32n), // creator canonical addr len
-    fromHex(canonical_zkgm, "bytes"),
-    u64toBeBytes(32n), // len
-    salt,
-    u64toBeBytes(0n),
-  ])
+    const data = Uint8Array.from(_args)
 
-  const r = yield* Effect.tryPromise(() => sha256(data))
+    const r = yield* Effect.tryPromise(() => sha256(data))
 
-  const rBytes = bytesToHex(new Uint8Array(r))
+    const rBytes = bytesToHex(new Uint8Array(r))
 
-  const transform = Ucs05.Bech32FromCanonicalBytesWithPrefix("union")
+    const transform = Ucs05.Bech32FromCanonicalBytesWithPrefix("union")
 
-  const r2 = yield* Schema.decode(transform)(rBytes)
+    const r2 = yield* Schema.decode(transform)(rBytes)
 
-  yield* Effect.log("Salt:", bytesToHex(salt))
-  yield* Effect.log("Args:", args)
-  yield* Effect.log("Result:", r2)
-
-  // yield* Effect.log(encoded)
-})
+    return Ucs05.CosmosDisplay.make({ address: r2 })
+  },
+)
 
 const sendBond = Effect.gen(function*() {
   const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
   const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
+  const receiver = yield* instantiate2({
+    path: 0n,
+    channel: DESTINATION_CHANNEL_ID,
+    sender: SENDER,
+  })
 
   const tokenOrder = yield* TokenOrder.make({
     source: ethereumChain,
     destination: unionChain,
     sender: SENDER,
-    receiver: ON_ZKGM_CALL_PROXY,
+    receiver,
     baseToken: U_ERC20,
     baseAmount: SEND_AMOUNT,
     quoteToken: U_BANK,
@@ -205,26 +225,28 @@ const sendBond = Effect.gen(function*() {
   const bondCall = yield* pipe(
     {
       bond: {
-        mint_to_address: ON_ZKGM_CALL_PROXY.address,
+        mint_to_address: receiver.address,
         min_mint_amount: MIN_MINT_AMOUNT,
       },
     } as const,
     Schema.encode(JsonFromBase64),
-    Effect.map((msg) => ({
-      contract: EU_STAKING_HUB.address,
-      msg,
-      funds: [{
-        denom: tokenOrder.quoteToken.address,
-        amount: tokenOrder.quoteAmount,
-      }],
-      call_action: "call_on_proxy_call",
-    } as const)),
+    Effect.map((msg) => [{
+      wasm: {
+        execute: {
+          contract_addr: EU_STAKING_HUB.address,
+          msg,
+          funds: [
+            { denom: U_BANK.address, amount: SEND_AMOUNT },
+          ],
+        },
+      },
+    }]),
     Effect.flatMap(Schema.decode(HexFromJson)),
     Effect.map((contractCalldata) =>
       Call.make({
         sender: SENDER,
         eureka: false,
-        contractAddress: ON_ZKGM_CALL_PROXY,
+        contractAddress: receiver,
         contractCalldata,
       })
     ),
@@ -238,18 +260,21 @@ const sendBond = Effect.gen(function*() {
       },
     } as const,
     Schema.encode(JsonFromBase64),
-    Effect.map((msg) => ({
-      contract: EU_LST.address,
-      msg,
-      funds: [],
-      call_action: "direct",
-    } as const)),
+    Effect.map((msg) => [{
+      wasm: {
+        execute: {
+          contract_addr: EU_LST.address,
+          msg,
+          funds: [],
+        },
+      },
+    }]),
     Effect.flatMap(Schema.decode(HexFromJson)),
     Effect.map((contractCalldata) =>
       Call.make({
         sender: SENDER,
         eureka: false,
-        contractAddress: ON_ZKGM_CALL_PROXY,
+        contractAddress: receiver,
         contractCalldata,
       })
     ),
@@ -271,7 +296,7 @@ const sendBond = Effect.gen(function*() {
       quoteToken: EU_ERC20,
       quoteAmount: MIN_MINT_AMOUNT,
       kind: "solve",
-      metadata: EU_SOLVER_ON_UNION_METADATA,
+      metadata: EU_SOLVER_ON_ETH_METADATA,
       version: 2,
     }),
     Effect.flatMap(TokenOrder.encodeV2),
@@ -279,7 +304,7 @@ const sendBond = Effect.gen(function*() {
     Effect.tap((instr) => Effect.log("instruction:", instr)),
     Effect.map((instruction) => ({
       send: {
-        channel_id: 20,
+        channel_id: DESTINATION_CHANNEL_ID,
         timeout_height: 0n,
         timeout_timestamp,
         salt,
@@ -287,18 +312,21 @@ const sendBond = Effect.gen(function*() {
       },
     } as const)),
     Effect.flatMap(Schema.encode(JsonFromBase64)),
-    Effect.map((msg) => ({
-      contract: UCS03_ZKGM.address,
-      msg,
-      funds: [],
-      call_action: "direct",
-    } as const)),
+    Effect.map((msg) => [{
+      wasm: {
+        execute: {
+          contract_addr: UCS03_ZKGM.address,
+          msg,
+          funds: [],
+        },
+      },
+    }]),
     Effect.flatMap(Schema.decode(HexFromJson)),
     Effect.map((contractCalldata) =>
       Call.make({
         sender: SENDER,
         eureka: false,
-        contractAddress: ON_ZKGM_CALL_PROXY,
+        contractAddress: receiver,
         contractCalldata,
       })
     ),
@@ -331,7 +359,13 @@ const sendBond = Effect.gen(function*() {
   )
 
   yield* Effect.log("Receipt:", receipt)
-}).pipe(
+})
+
+pipe(
+  Effect.all([
+    checkAndSubmitAllowance,
+    sendBond,
+  ]),
   Effect.provide(EvmZkgmClient.layerWithoutWallet),
   Effect.provide(Evm.WalletClient.Live({
     account: VIEM_ACCOUNT,
@@ -351,8 +385,7 @@ const sendBond = Effect.gen(function*() {
       mode: "tty",
     }),
   )),
+  Effect.runPromise,
 )
-
-Effect.runPromise(instantiate2)
   .then(console.log)
   .catch(console.error)
