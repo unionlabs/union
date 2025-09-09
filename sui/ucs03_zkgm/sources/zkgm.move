@@ -320,8 +320,7 @@ module zkgm::zkgm {
         );
     }
 
-    #[allow(lint(public_entry))]
-    public entry fun send_with_coin<T>(
+    public fun send_with_coin<T>(
         zkgm: &mut RelayStore,
         ibc_store: &mut ibc::IBCStore,
         clock: &Clock,
@@ -584,8 +583,7 @@ module zkgm::zkgm {
         }
     }
 
-    #[allow(lint(public_entry))]
-    public entry fun acknowledge_packet<T>(
+    public fun acknowledge_packet<T>(
         ibc: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
         packet_source_channels: vector<u32>,
@@ -631,8 +629,7 @@ module zkgm::zkgm {
         );
     }
 
-    #[allow(lint(public_entry))]
-    public entry fun timeout_packet<T>(
+    public fun timeout_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
         packet_source_channel: u32,
@@ -692,8 +689,7 @@ module zkgm::zkgm {
         abort E_INFINITE_GAME
     }
 
-    #[allow(lint(public_entry))]
-    public entry fun register_capability<T>(
+    public fun register_capability<T>(
         zkgm: &mut RelayStore,
         mut capability: TreasuryCap<T>,
         metadata: &CoinMetadata<T>,
@@ -701,7 +697,7 @@ module zkgm::zkgm {
         ctx: &mut TxContext,
     ) {
         if (owner != @0x0) {
-            assert!(ctx.sender() == owner, E_UNAUTHORIZED);         
+            assert!(ctx.sender() == owner, E_UNAUTHORIZED);
         };
     
         let supply = coin::supply(&mut capability);
@@ -819,24 +815,6 @@ module zkgm::zkgm {
         };
 
         (counterparty_beneficiary, 0)
-    }
-
-    fun compute_salt(path: u256, channel: u32, base_token: vector<u8>, metadata: vector<u8>): vector<u8> {
-        let mut data: vector<u8> = bcs::to_bytes(&path);
-        data.append(bcs::to_bytes(&channel));
-        data.append(base_token);
-        data.append(hash::keccak256(&metadata));
-
-        hash::keccak256(&data)
-    }
-
-    fun compute_salt_from_metadata_image(path: u256, channel: u32, base_token: vector<u8>, metadata_image: vector<u8>): vector<u8> {
-        let mut data: vector<u8> = bcs::to_bytes(&path);
-        data.append(bcs::to_bytes(&channel));
-        data.append(base_token);
-        data.append(metadata_image);
-
-        hash::keccak256(&data)
     }
 
     fun distribute_coin<T>(
@@ -1064,7 +1042,7 @@ module zkgm::zkgm {
                 if (order.metadata().length() != 32) {
                     return (vector::empty(), E_UNWRAP_METADATA_INVALID)
                 };
-                let wrapped_token = compute_salt_from_metadata_image(
+                let wrapped_token = helper::compute_salt_from_metadata_image(
                     path,
                     ibc_packet.destination_channel_id(),
                     *order.base_token(),
@@ -1073,7 +1051,7 @@ module zkgm::zkgm {
                 (wrapped_token, option::none())
             },
             TOKEN_ORDER_KIND_INITIALIZE => {
-                let wrapped_token = compute_salt(
+                let wrapped_token = helper::compute_salt(
                     path,
                     ibc_packet.destination_channel_id(),
                     *order.base_token(),
@@ -1262,7 +1240,7 @@ module zkgm::zkgm {
             let is_sending_back_to_same_channel = destination_channel_id == channel_id;
 
             assert!(order.metadata().length() == 32, E_INVALID_METADATA);
-            let wrapped_token = compute_salt_from_metadata_image(
+            let wrapped_token = helper::compute_salt_from_metadata_image(
                 intermediate_channel_path,
                 channel_id,
                 *order.quote_token(),
@@ -1775,5 +1753,42 @@ module zkgm::zkgm {
         if (!zkgm.token_origin.contains(wrapped_token)) {
             zkgm.token_origin.add(wrapped_token, updated_channel_path);
         };
+    }
+
+    /// Coin admin functions
+    public fun mint<T>(
+        zkgm: &mut RelayStore,
+        value: u64,
+        ctx: &mut TxContext
+    ): Coin<T> {
+        let typename_t = type_name::get<T>();
+        let mut cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+
+        assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
+        
+        coin::mint<T>(&mut cap.cap, value, ctx)
+    }
+
+    public fun mint_and_transfer<T>(
+        zkgm: &mut RelayStore,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {
+        let typename_t = type_name::get<T>();
+        let mut cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+
+        assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
+        
+        coin::mint_and_transfer<T>(&mut cap.cap, amount, recipient, ctx);
+    }
+
+    public fun burn<T>(zkgm: &mut RelayStore, c: Coin<T>, ctx: &mut TxContext): u64 {
+        let typename_t = type_name::get<T>();
+        let mut cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+
+        assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
+        
+        coin::burn<T>(&mut cap.cap, c)
     }
 }

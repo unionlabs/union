@@ -233,4 +233,28 @@ module zkgm::helper {
 
         r
     }
+    
+    public(package) fun compute_salt(
+        path: u256,
+        channel: u32,
+        base_token: vector<u8>,
+        metadata: vector<u8>,
+    ): vector<u8> {
+        compute_salt_from_metadata_image(path, channel, base_token, hash::keccak256(&metadata))
+    }
+
+    public(package) fun compute_salt_from_metadata_image(
+        path: u256,
+        channel: u32,
+        base_token: vector<u8>,
+        metadata_image: vector<u8>,
+    ): vector<u8> {
+        let mut data: vector<u8> = bcs::to_bytes(&path);
+        data.append(bcs::to_bytes(&channel));
+        data.append(base_token);
+        data.append(metadata_image);
+
+        hash::keccak256(&data)
+    }
+
 }
