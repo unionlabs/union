@@ -29,7 +29,6 @@ import {
   EU_ERC20,
   EU_LST,
   EU_SOLVER_ON_ETH_METADATA,
-  EU_SOLVER_ON_UNION_METADATA,
   EU_STAKING_HUB,
   U_BANK,
   U_ERC20,
@@ -230,7 +229,7 @@ const sendBond = Effect.gen(function*() {
       },
     } as const,
     Schema.encode(JsonFromBase64),
-    Effect.map((msg) => [{
+    Effect.map((msg) => ({
       wasm: {
         execute: {
           contract_addr: EU_STAKING_HUB.address,
@@ -240,16 +239,7 @@ const sendBond = Effect.gen(function*() {
           ],
         },
       },
-    }]),
-    Effect.flatMap(Schema.decode(HexFromJson)),
-    Effect.map((contractCalldata) =>
-      Call.make({
-        sender: SENDER,
-        eureka: false,
-        contractAddress: receiver,
-        contractCalldata,
-      })
-    ),
+    })),
   )
 
   const increaseAllowanceCall = yield* pipe(
@@ -260,7 +250,7 @@ const sendBond = Effect.gen(function*() {
       },
     } as const,
     Schema.encode(JsonFromBase64),
-    Effect.map((msg) => [{
+    Effect.map((msg) => ({
       wasm: {
         execute: {
           contract_addr: EU_LST.address,
@@ -268,16 +258,7 @@ const sendBond = Effect.gen(function*() {
           funds: [],
         },
       },
-    }]),
-    Effect.flatMap(Schema.decode(HexFromJson)),
-    Effect.map((contractCalldata) =>
-      Call.make({
-        sender: SENDER,
-        eureka: false,
-        contractAddress: receiver,
-        contractCalldata,
-      })
-    ),
+    })),
   )
 
   const salt = yield* Utils.generateSalt("cosmos")
@@ -312,7 +293,7 @@ const sendBond = Effect.gen(function*() {
       },
     } as const)),
     Effect.flatMap(Schema.encode(JsonFromBase64)),
-    Effect.map((msg) => [{
+    Effect.map((msg) => ({
       wasm: {
         execute: {
           contract_addr: UCS03_ZKGM.address,
@@ -320,8 +301,16 @@ const sendBond = Effect.gen(function*() {
           funds: [],
         },
       },
-    }]),
-    Effect.flatMap(Schema.decode(HexFromJson)),
+    })),
+  )
+
+  const calls = yield* pipe(
+    [
+      bondCall,
+      increaseAllowanceCall,
+      sendCall,
+    ],
+    Schema.decode(HexFromJson),
     Effect.map((contractCalldata) =>
       Call.make({
         sender: SENDER,
@@ -334,9 +323,7 @@ const sendBond = Effect.gen(function*() {
 
   const batch = Batch.make([
     tokenOrder,
-    bondCall,
-    increaseAllowanceCall,
-    sendCall,
+    calls,
   ])
 
   console.log("batch", JSON.stringify(batch, null, 2))
