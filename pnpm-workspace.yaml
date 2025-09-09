@@ -1,5 +1,6 @@
 packages:
   - 'app2'
+  - 'ceremony'
   - 'docs'
   - 'sentinel2'
   - 'site'
