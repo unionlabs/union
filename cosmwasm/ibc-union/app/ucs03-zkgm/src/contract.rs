@@ -58,6 +58,7 @@ pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
 pub const CALL_REPLY_ID: u64 = 0xface;
+pub const PROXY_INSTANTIATE_ERROR_REPLY_ID: u64 = 0xAAAA;
 pub const MM_RELAYER_FILL_REPLY_ID: u64 = 0xdead;
 pub const MM_SOLVER_FILL_REPLY_ID: u64 = 0xb0cad0;
 
@@ -1497,41 +1498,50 @@ fn execute_call(
         } = CONFIG.load(deps.storage)?;
 
         response = response
-            .add_message(WasmMsg::Instantiate2 {
-                admin: Some(env.contract.address.to_string()),
-                code_id: dummy_code_id,
-                label: proxy_account_label(
-                    path,
-                    packet.destination_channel_id,
-                    call.sender.clone().into(),
-                ),
-                msg: to_json_binary(&cosmwasm_std::Empty {})?,
-                funds: vec![],
-                salt: proxy_account_salt(
-                    path,
-                    packet.destination_channel_id,
-                    call.sender.clone().into(),
-                )
-                .get()
-                .to_vec()
-                .into(),
-            })
-            .add_message(WasmMsg::Migrate {
-                contract_addr: predicted_address.to_string(),
-                new_code_id: cw_account_code_id,
-                msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
-                    cw_account::msg::InitMsg::Zkgm {
-                        zkgm: env.contract.address.clone(),
-                        path: path.into(),
-                        channel_id: packet.destination_channel_id,
-                        sender: call.sender.clone().into(),
-                    },
-                ))?,
-            })
-            .add_message(WasmMsg::UpdateAdmin {
-                contract_addr: predicted_address.to_string(),
-                admin: predicted_address.to_string(),
-            })
+            .add_submessage(SubMsg::reply_on_error(
+                WasmMsg::Instantiate2 {
+                    admin: Some(env.contract.address.to_string()),
+                    code_id: dummy_code_id,
+                    label: proxy_account_label(
+                        path,
+                        packet.destination_channel_id,
+                        call.sender.clone().into(),
+                    ),
+                    msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                    funds: vec![],
+                    salt: proxy_account_salt(
+                        path,
+                        packet.destination_channel_id,
+                        call.sender.clone().into(),
+                    )
+                    .get()
+                    .to_vec()
+                    .into(),
+                },
+                PROXY_INSTANTIATE_ERROR_REPLY_ID,
+            ))
+            .add_submessage(SubMsg::reply_on_error(
+                WasmMsg::Migrate {
+                    contract_addr: predicted_address.to_string(),
+                    new_code_id: cw_account_code_id,
+                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
+                        cw_account::msg::InitMsg::Zkgm {
+                            zkgm: env.contract.address.clone(),
+                            path: path.into(),
+                            channel_id: packet.destination_channel_id,
+                            sender: call.sender.clone().into(),
+                        },
+                    ))?,
+                },
+                PROXY_INSTANTIATE_ERROR_REPLY_ID,
+            ))
+            .add_submessage(SubMsg::reply_on_error(
+                WasmMsg::UpdateAdmin {
+                    contract_addr: predicted_address.to_string(),
+                    admin: predicted_address.to_string(),
+                },
+                PROXY_INSTANTIATE_ERROR_REPLY_ID,
+            ))
             .add_event(
                 Event::new("create_proxy_event")
                     .add_attribute("path", path.to_string())
@@ -2650,6 +2660,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                 )?)),
             }
         }
+        PROXY_INSTANTIATE_ERROR_REPLY_ID => Ok(Response::new()),
         // For any other reply ID, we don't know how to handle it, so we return an error.
         // This is a safety measure to ensure we don't silently ignore unexpected replies,
         // which could indicate a bug in the contract or an attempt to exploit it.
