@@ -33,7 +33,6 @@
     "check:circular": "dpdm -T src",
     "check:examples": "tspc -p tsconfig.examples.json",
     "codegen": "build-utils prepare-v3",
-    "prepare": "ts-patch install -s",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -64,7 +63,6 @@
     "dpdm": "^3.14.0",
     "effect": "3.16.3",
     "madge": "^8.0.0",
-    "ts-patch": "^3.3.0",
     "viem": "^2.33.3",
     "vitest": "^3.0.5"
   },

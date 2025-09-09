@@ -110,13 +110,6 @@ export * as ChainRegistry from "./ChainRegistry.js"
 export * as TokenRegistry from "./TokenRegistry.js"
 
 /**
- * This module estimates cross-chain transaction fees.
- *
- * @since 2.0.0
- */
-export * as FeeEstimator from "./FeeEstimator.js"
-
-/**
  * This module defines structured token data.
  *
  * @since 2.0.0

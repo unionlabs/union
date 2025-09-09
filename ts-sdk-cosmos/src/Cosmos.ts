@@ -319,17 +319,19 @@ export const executeContract = (
  * @category utils
  * @since 2.0.0
  */
-export function getChainHeight(
-  client: CosmWasmClient,
-) {
-  return Effect.tryPromise({
-    try: () => client.getHeight(),
-    catch: (err) => new GetHeightError({ cause: Utils.extractErrorDetails(err as Error) }),
-  }).pipe(
-    Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 }),
-  )
-}
+export const getChainHeight = pipe(
+  Client,
+  Effect.andThen(({ client }) =>
+    pipe(
+      Effect.tryPromise({
+        try: () => client.getHeight(),
+        catch: (err) => new GetHeightError({ cause: Utils.extractErrorDetails(err as Error) }),
+      }),
+      Effect.timeout("10 seconds"),
+      Effect.retry({ times: 5 }),
+    )
+  ),
+)
 
 /**
  * Wrap CosmWasmClient.getBalance() in an Effect

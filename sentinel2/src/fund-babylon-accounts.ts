@@ -2,8 +2,8 @@ import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { coins } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
-import { createSigningCosmWasmClient } from "@unionlabs/sdk/cosmos"
-import { Effect, Logger, Schedule } from "effect"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { Effect, Logger, pipe, Schedule } from "effect"
 
 import { gql, request } from "graphql-request"
 import { addFunded, isFunded } from "./db-queries.js"
@@ -83,17 +83,22 @@ export const fundBabylonAccounts = Effect.repeat(
     }
     const [senderAccount] = yield* Effect.tryPromise(() => wallet.getAccounts())
 
-    const client = yield* createSigningCosmWasmClient(
+    if (!senderAccount?.address) {
+      yield* Effect.logError("Sender account couldnt found!")
+      return
+    }
+
+    const signingClient = Cosmos.SigningClient.Live(
+      senderAccount.address,
       "https://rpc.bbn-1.babylon.chain.kitchen",
       wallet,
       options,
     )
 
-    if (!senderAccount?.address) {
-      yield* Effect.logError("Sender account couldnt found!")
-      return
-    }
-    const balance = yield* Effect.tryPromise(() => client.getBalance(senderAccount.address, "ubbn"))
+    const balance = yield* pipe(
+      Cosmos.getBalanceNow(senderAccount.address as `${string}1${string}`, "ubbn"),
+      Effect.provide(Cosmos.Client.Live("https://rpc.bbn-1.babylon.chain.kitchen")),
+    )
 
     if (Number.parseInt(balance.amount) < 1_000_000) {
       const errLog = Effect.annotateLogs({
@@ -116,19 +121,24 @@ export const fundBabylonAccounts = Effect.repeat(
     const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
     for (const acc of accs) {
       const receiver = acc.receiver_display
-      const result = yield* Effect.tryPromise({
-        try: () =>
-          client.sendTokens(
-            senderAccount.address,
-            receiver,
-            coins(10000, "ubbn"), // send 0.01 bbn
-            fee,
-          ),
-        catch: err => {
-          console.error("raw sendTokens error:", err)
-          throw err
-        },
-      })
+      const result = yield* Cosmos.SigningClient.pipe(
+        Effect.andThen(({ client }) =>
+          Effect.tryPromise({
+            try: () =>
+              client.sendTokens(
+                senderAccount.address,
+                receiver,
+                coins(10000, "ubbn"), // send 0.01 bbn
+                fee,
+              ),
+            catch: err => {
+              console.error("raw sendTokens error:", err)
+              throw err
+            },
+          })
+        ),
+        Effect.provide(signingClient),
+      )
 
       addFunded(db, result.transactionHash)
 

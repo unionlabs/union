@@ -115,7 +115,7 @@ export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
  * @category layers
  * @since 2.0.0
  */
-export const Pyth = Layer.effect(
+export const layerPyth = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
     const symbolFromId = Effect.fn("symbolFromId")(
@@ -304,7 +304,7 @@ export const Pyth = Layer.effect(
  * @category layers
  * @since 2.0.0
  */
-export const Redstone = Layer.effect(
+export const layerRedstone = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
     const DATA_SERVICE_ID = "redstone-primary-prod"
@@ -486,7 +486,7 @@ export const Redstone = Layer.effect(
  * @category layers
  * @since 2.0.0
  */
-export const Band = Layer.effect(
+export const layerBand = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
     const DEFAULT_REST = "https://laozi1.bandchain.org/api" // Laozi main‑net
@@ -641,7 +641,7 @@ export const Band = Layer.effect(
   }),
 )
 
-const TopSecret = Layer.sync(
+const layerTopSecret = Layer.sync(
   PriceOracle,
   () =>
     PriceOracle.of({
@@ -679,117 +679,119 @@ const TopSecret = Layer.sync(
  */
 export const LivePlan = ExecutionPlan.make(
   {
-    provide: Pyth,
+    provide: layerPyth,
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
   {
-    provide: Redstone,
+    provide: layerRedstone,
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
   {
-    provide: Band,
+    provide: layerBand,
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
   {
-    provide: TopSecret,
+    provide: layerTopSecret,
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
 )
 
-// TODO: rename to just "Executor" 8)
 /**
+ * @category layers
  * @since 2.0.0
  */
-export class PriceOracleExecutor
-  extends Effect.Service<PriceOracle>()("@unionlabs/sdk/PriceOracle", { // XXX: is this a sin?
-    effect: Effect.gen(function*() {
-      const ctx = PriceOracle
+export const layerExecutor = Layer.effect(
+  PriceOracle,
+  Effect.gen(function*() {
+    const ctx = PriceOracle
+    return PriceOracle.of({
+      of: (id: UniversalChainId) =>
+        pipe(
+          ctx,
+          Effect.andThen((oracle) => oracle.of(id)),
+          Effect.withExecutionPlan(LivePlan),
+        ),
+      stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "" })),
+      ratio: (from: UniversalChainId, to: UniversalChainId) =>
+        pipe(
+          ctx,
+          Effect.andThen((oracle) => oracle.ratio(from, to)),
+          Effect.withExecutionPlan(LivePlan),
+        ),
+    })
+  }),
+)
 
-      return PriceOracle.of({
-        of: (id: UniversalChainId) =>
-          pipe(
-            ctx,
-            Effect.andThen((oracle) => oracle.of(id)),
-            Effect.withExecutionPlan(LivePlan),
-          ),
-        stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "" })),
-        ratio: (from: UniversalChainId, to: UniversalChainId) =>
-          pipe(
-            ctx,
-            Effect.andThen((oracle) => oracle.ratio(from, to)),
-            Effect.withExecutionPlan(LivePlan),
-          ),
-      })
-    }),
-  })
-{
-  static Test = Layer.effect(
-    PriceOracle,
-    Effect.gen(function*() {
-      const fc = yield* Effect.tryPromise({
-        try: () => import("effect/FastCheck"),
-        catch: (cause) =>
+/**
+ * @category layers
+ * @since 2.0.0
+ */
+export const layerTest = Layer.effect(
+  PriceOracle,
+  Effect.gen(function*() {
+    const fc = yield* Effect.tryPromise({
+      try: () => import("effect/FastCheck"),
+      catch: (cause) =>
+        new PriceError({
+          message: `Could not import "effect/FastCheck"`,
+          source: "Test",
+          cause,
+        }),
+    })
+
+    const Arbitrary = yield* Effect.tryPromise({
+      try: () => import("effect/Arbitrary"),
+      catch: (cause) =>
+        new PriceError({
+          message: `Could not import "effect/Arbitrary"`,
+          source: "Test",
+          cause,
+        }),
+    })
+
+    const ArbitraryPriceResult = Arbitrary.make(PriceResult)
+
+    const of: PriceOracle.Service["of"] = () =>
+      pipe(
+        fc.sample(ArbitraryPriceResult, 1)[0],
+        Effect.succeed,
+      )
+
+    const stream: PriceOracle.Service["stream"] = () =>
+      pipe(
+        fc.infiniteStream(ArbitraryPriceResult),
+        (arb) => fc.sample(arb, 1)[0],
+        Stream.fromIterable,
+        Stream.schedule(Schedule.spaced("3 seconds")),
+      )
+
+    const ratio: PriceOracle.Service["ratio"] = Effect.fn(function*(a, b) {
+      const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
+      const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+        Effect.mapError((cause) =>
           new PriceError({
-            message: `Could not import "effect/FastCheck"`,
+            message: `Could not divide ${ofA.price} by ${ofB.price}.`,
             source: "Test",
             cause,
-          }),
-      })
+          })
+        ),
+      )
 
-      const Arbitrary = yield* Effect.tryPromise({
-        try: () => import("effect/Arbitrary"),
-        catch: (cause) =>
-          new PriceError({
-            message: `Could not import "effect/Arbitrary"`,
-            source: "Test",
-            cause,
-          }),
-      })
-
-      const ArbitraryPriceResult = Arbitrary.make(PriceResult)
-
-      const of: PriceOracle.Service["of"] = () =>
-        pipe(
-          fc.sample(ArbitraryPriceResult, 1)[0],
-          Effect.succeed,
-        )
-
-      const stream: PriceOracle.Service["stream"] = () =>
-        pipe(
-          fc.infiniteStream(ArbitraryPriceResult),
-          (arb) => fc.sample(arb, 1)[0],
-          Stream.fromIterable,
-          Stream.schedule(Schedule.spaced("3 seconds")),
-        )
-
-      const ratio: PriceOracle.Service["ratio"] = Effect.fn(function*(a, b) {
-        const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
-        const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
-          Effect.mapError((cause) =>
-            new PriceError({
-              message: `Could not divide ${ofA.price} by ${ofB.price}.`,
-              source: "Test",
-              cause,
-            })
-          ),
-        )
-
-        return {
-          ratio,
-          source: ofA.source,
-          destination: ofB.source,
-        } as const
-      })
-
-      return PriceOracle.of({
-        of,
-        stream,
+      return {
         ratio,
-      })
-    }),
-  )
-}
+        source: ofA.source,
+        destination: ofB.source,
+      } as const
+    })
+
+    return PriceOracle.of({
+      of,
+      stream,
+      ratio,
+    })
+  }),
+)

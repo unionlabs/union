@@ -3,13 +3,16 @@
   "include": [],
   "references": [
     {
+      "path": "sentinel2"
+    },
+    {
       "path": "ts-sdk"
     },
     {
-      "path": "ts-sdk-evm"
+      "path": "ts-sdk-cosmos"
     },
     {
-      "path": "ts-sdk-cosmos"
+      "path": "ts-sdk-evm"
     }
   ]
 }

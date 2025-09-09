@@ -119,21 +119,31 @@ in
         nodejs_20
         nodePackages_latest."patch-package"
       ];
-      packageJSON = lib.importJSON ./package.json;
+      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
+        inherit lib pkgs;
+      };
     in
     {
       packages = {
-        sentinel2 = pkgsUnstable.buildNpmPackage {
-          inherit (pkgs) nodejs;
-          npmDepsHash = "sha256-+z7TlnHu4KITamsr4TK5UzTzpjYbZZRfgKROuT60ueo=";
-          src = ./.;
-          sourceRoot = "sentinel2";
+        sentinel2 = buildPnpmPackage {
+          packageJsonPath = ./package.json;
+          hash = "sha256-VuF08yoOjaVK8TJec0IHLhxKROoivuPWXlWYSGP+eCg=";
+          extraSrcs = [
+            ../sentinel2
+            ../ts-sdk
+            ../ts-sdk-evm
+            ../ts-sdk-cosmos
+          ];
           npmFlags = [
             "--loglevel=verbose"
             "--enable-pre-post-scripts"
           ];
-          pname = packageJSON.name;
-          inherit (packageJSON) version;
+          pnpmWorkspaces = [
+            "sentinel2"
+            "@unionlabs/sdk"
+            "@unionlabs/sdk-cosmos"
+            "@unionlabs/sdk-evm"
+          ];
           nativeBuildInputs = with pkgs; [
             python3
             pkg-config
@@ -141,43 +151,43 @@ in
             nodejs_20
             nodePackages_latest."patch-package"
           ];
-
           buildInputs = [
             pkgs.bashInteractive
             pkgs.sqlite
           ];
+          buildPhase = ''
+            runHook preBuild
+            pnpm --filter=sentinel2 build
+            runHook postBuild
+          '';
           postBuild = ''
-            npm rebuild better-sqlite3 --build-from-source
+            # TODO(ehegnes): restore sqlite
+            # pnpm rebuild better-sqlite3 --build-from-source
           '';
           installPhase = ''
-                        echo "Current directory: $(pwd)"
-                        echo "out is $out"
+            mkdir -p $out/lib
+            cp -r ./sentinel2/build/* $out/lib
 
-                        # 1) Copy the compiled ESM .js
-                        mkdir -p $out/lib
-                        cp -r dist/* $out/lib
+            # 2) Copy node_modules (with rebuilt better-sqlite3)
+            rm -rf $out/lib/node_modules
+            cp -r node_modules $out/lib/node_modules
 
-                        # 2) Copy node_modules (with rebuilt better-sqlite3)
-                        rm -rf $out/lib/node_modules
-                        cp -r node_modules $out/lib/node_modules
+            # 3) Copy package.json
+            cp package.json $out/lib
 
-                        # 3) Copy package.json
-                        cp package.json $out/lib
+            # 4) Create a Bash wrapper in $out/bin
+            mkdir -p $out/bin
 
-                        # 4) Create a Bash wrapper in $out/bin
-                        mkdir -p $out/bin
+            # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
+            cat <<EOF > $out/bin/sentinel2
+#!${pkgs.bashInteractive}/bin/bash
+export PATH=${pkgs.nodejs_20}/bin:\$PATH
+cd "$out/lib"
+export NODE_PATH="$out/lib/node_modules"
+EOF
 
-                        # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
-                          cat <<EOF > $out/bin/sentinel2
-            #!${pkgs.bashInteractive}/bin/bash
-            export PATH=${pkgs.nodejs_20}/bin:\$PATH
-            cd "$out/lib"
-            export NODE_PATH="$out/lib/node_modules"
-            EOF
-
-                        echo 'exec '"${pkgs.nodejs_20}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
-
-                        chmod +x $out/bin/sentinel2
+            echo 'exec '"${pkgs.nodejs_20}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
+            chmod +x $out/bin/sentinel2
           '';
 
           doDist = false;
@@ -192,11 +202,11 @@ in
             name = "sentinel2-dev-server";
             runtimeInputs = deps;
             text = ''
-                ${ensureAtRepositoryRoot}
-                cd sentinel2/
+              ${ensureAtRepositoryRoot}
+              cd sentinel2/
 
-                npm install
-                npm run build
+              pnpm install
+              pnpm --filter=sentinel2 build
               node dist/src/sentinel2.js "$@"
             '';
           };

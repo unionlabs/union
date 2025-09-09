@@ -1,7 +1,8 @@
 packages:
-  - 'ts-sdk'
-  - 'ts-sdk-evm'
-  - 'ts-sdk-cosmos'
-  - 'typescript-sdk'
   - 'app2'
   - 'docs'
+  - 'sentinel2'
+  - 'ts-sdk'
+  - 'ts-sdk-cosmos'
+  - 'ts-sdk-evm'
+  - 'typescript-sdk'

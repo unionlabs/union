@@ -28,7 +28,7 @@ export class ChainFeatures extends S.Class<ChainFeatures>("ChainFeatures")({
   transfer_list: S.Boolean,
 }) {}
 
-export class ChainReference extends S.Class<Chain>("ChainReference")({
+export class ChainReference extends S.Class<ChainReference>("ChainReference")({
   universal_chain_id: UniversalChainId,
 }) {}
 
