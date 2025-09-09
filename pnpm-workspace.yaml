@@ -2,6 +2,7 @@ packages:
   - 'app2'
   - 'docs'
   - 'sentinel2'
+  - 'site'
   - 'ts-sdk'
   - 'ts-sdk-cosmos'
   - 'ts-sdk-evm'
