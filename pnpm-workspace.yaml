@@ -7,3 +7,4 @@ packages:
   - 'ts-sdk-cosmos'
   - 'ts-sdk-evm'
   - 'typescript-sdk'
+  - 'zkgm-dev'
