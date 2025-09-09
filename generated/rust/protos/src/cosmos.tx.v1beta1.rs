@@ -90,7 +90,7 @@ pub struct BroadcastTxResponse {
 }
 /// Fee includes the amount of coins paid in fees and the maximum
 /// gas to be used by the transaction. The ratio yields an effective "gasprice",
-/// which must be above some miminum to be accepted into the mempool.
+/// which must be above some minimum to be accepted into the mempool.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Fee {
