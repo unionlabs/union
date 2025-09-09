@@ -1,5 +1,5 @@
 [package]
-name    = "depolama"
+name    = "access-manager"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -13,15 +13,10 @@ workspace = true
 
 [dependencies]
 cosmwasm-std         = { workspace = true, features = ["std"] }
-num-traits           = "0.2.19"
-unionlabs-encoding   = { workspace = true }
+depolama             = { workspace = true }
 unionlabs-primitives = { workspace = true }
 
 [features]
-default = ["iterator"]
+default = []
 
-iterator = ["cosmwasm-std/iterator"]
-
-[dev-dependencies]
-unionlabs = { workspace = true }
-
+iterator = []

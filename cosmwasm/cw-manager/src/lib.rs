@@ -1,29 +1,74 @@
-use std::borrow::Cow;
+//! CosmWasm implementation of openzeppelin's [`AccessManager.sol`](am).
+//!
+//! [am]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol
 
-use cosmwasm_std::Addr;
+use std::{borrow::Cow, marker::PhantomData};
+
+use cosmwasm_std::{from_json, Addr, Deps, Env, MessageInfo, StdError, StdResult};
+use depolama::{StorageExt, Store};
 use serde::{
-    de::{Error, MapAccess, Visitor},
+    de::{DeserializeOwned, Error, MapAccess, Visitor},
     Deserialize, Deserializer,
 };
+use serde_json::value::RawValue;
 
-#[derive(Debug, PartialEq)]
-pub struct Method<'a>(Cow<'a, str>);
+use crate::msg::QueryMsg;
 
-impl<'de> Deserialize<'de> for Method<'de> {
+pub mod error;
+pub mod execute;
+pub mod msg;
+pub mod state;
+pub mod time;
+
+#[derive(Debug)]
+pub struct Managed<'a, T: DeserializeOwned> {
+    method: &'a str,
+    value: &'a RawValue,
+    __marker: PhantomData<fn() -> T>,
+}
+
+impl<'a, T: DeserializeOwned> Managed<'a, T> {
+    pub fn ensure_can_call<S: Store<Key = (), Value = Addr>>(
+        self,
+        deps: Deps,
+        env: &Env,
+        info: &MessageInfo,
+    ) -> StdResult<T> {
+        let can_call = deps.querier.query_wasm_smart::<bool>(
+            deps.storage.read_item::<S>()?,
+            &QueryMsg::CanCall {
+                method: self.method.to_owned(),
+                target: env.contract.address.clone(),
+                caller: info.sender.clone(),
+            },
+        )?;
+
+        if can_call {
+            let t = self.deserialize_inner()?;
+
+            Ok(t)
+        } else {
+            Err(StdError::generic_err("unauthorized"))
+        }
+    }
+
+    fn deserialize_inner(self) -> Result<T, StdError> {
+        from_json(format!(r#"{{"{}":{}}}"#, self.method, self.value.get()).as_bytes())
+    }
+}
+
+impl<'de, T: DeserializeOwned> Deserialize<'de> for Managed<'de, T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct MethodVisitor;
+        struct MethodVisitor<T>(PhantomData<fn() -> T>);
 
-        #[derive(Deserialize)]
-        struct Empty {}
-
-        impl<'de> Visitor<'de> for MethodVisitor {
-            type Value = Method<'de>;
+        impl<'de, T: DeserializeOwned> Visitor<'de> for MethodVisitor<T> {
+            type Value = Managed<'de, T>;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(formatter, "single top level key")
+                write!(formatter, "json object with single top level key")
             }
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -31,11 +76,15 @@ impl<'de> Deserialize<'de> for Method<'de> {
                 A: MapAccess<'de>,
             {
                 match map.next_entry()? {
-                    Some((key, Empty {})) => {
+                    Some((method, value)) => {
                         if dbg!(map.next_key::<Cow<'de, str>>())?.is_some() {
                             Err(<A::Error as Error>::custom("multiple keys found"))
                         } else {
-                            Ok(Method(key))
+                            Ok(Managed {
+                                method,
+                                value,
+                                __marker: PhantomData,
+                            })
                         }
                     }
                     None => Err(<A::Error as Error>::custom("no key found")),
@@ -43,46 +92,61 @@ impl<'de> Deserialize<'de> for Method<'de> {
             }
         }
 
-        deserializer.deserialize_map(MethodVisitor)
+        deserializer.deserialize_map(MethodVisitor(PhantomData))
     }
-}
-
-pub enum QueryMsg {
-    CanCall {
-        method: Method<'static>,
-        target: Addr,
-        caller: Addr,
-    },
 }
 
 #[cfg(test)]
 mod tests {
+    use serde::Serialize;
+
     use super::*;
 
-    #[test]
-    fn method_deser_ok() {
-        let obj = br#"{"key":{}}"#;
-        let method = serde_json::from_slice::<Method>(obj).unwrap();
-
-        assert_eq!(method, Method("key".into()));
-    }
-
-    #[test]
-    fn method_deser_escaped_ok() {
-        let obj = br#"{"key\n":{}}"#;
-        let method = serde_json::from_slice::<Method>(obj).unwrap();
-
-        assert_eq!(method, Method("key\n".into()));
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    enum ExecuteMsg {
+        Key {},
+        Key2(u32),
     }
 
     #[track_caller]
     fn deser_expect_error(json: &[u8], expect: &str) {
         assert_eq!(
-            serde_json::from_slice::<Method>(json)
+            serde_json::from_slice::<Managed<ExecuteMsg>>(json)
                 .unwrap_err()
                 .to_string(),
             expect
         )
+    }
+
+    #[test]
+    fn method_deser_ok() {
+        let obj = br#"{"key":{}}"#;
+        let managed = serde_json::from_slice::<Managed<ExecuteMsg>>(obj).unwrap();
+
+        assert_eq!(managed.method, "key");
+        assert_eq!(managed.value.get(), "{}");
+
+        assert_eq!(managed.deserialize_inner().unwrap(), ExecuteMsg::Key {});
+    }
+
+    #[test]
+    fn method_deser_value_not_object_ok() {
+        let obj = br#"{"key2":1}"#;
+        let managed = serde_json::from_slice::<Managed<ExecuteMsg>>(obj).unwrap();
+
+        assert_eq!(managed.method, "key2");
+        assert_eq!(managed.value.get(), "1");
+
+        assert_eq!(managed.deserialize_inner().unwrap(), ExecuteMsg::Key2(1));
+    }
+
+    #[test]
+    fn method_deser_escaped_fails() {
+        deser_expect_error(
+            br#"{"key\n":{}}"#,
+            r#"invalid type: string "key\n", expected a borrowed string at line 1 column 8"#,
+        );
     }
 
     #[test]
@@ -110,15 +174,7 @@ mod tests {
     fn method_deser_not_object() {
         deser_expect_error(
             b"null",
-            "invalid type: null, expected single top level key at line 1 column 4",
-        );
-    }
-
-    #[test]
-    fn method_deser_value_not_object() {
-        deser_expect_error(
-            br#"{"key":null}"#,
-            "invalid type: null, expected struct Empty at line 1 column 11",
+            "invalid type: null, expected json object with single top level key at line 1 column 4",
         );
     }
 }

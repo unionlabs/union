@@ -38,6 +38,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "access-manager"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "depolama",
+ "unionlabs-primitives",
+]
+
+[[package]]
+name = "access-manager-derive"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "ssz",
+ "syn 2.0.101",
+]
+
+[[package]]
 name = "addchain"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4697,13 +4716,17 @@ dependencies = [
 name = "cw-manager"
 version = "0.0.0"
 dependencies = [
+ "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
+ "depolama",
  "embed-commit",
  "frissitheto",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
+ "unionlabs-encoding",
 ]
 
 [[package]]

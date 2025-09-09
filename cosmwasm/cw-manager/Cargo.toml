@@ -15,10 +15,14 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+bincode         = { workspace = true, features = ["derive"] }
 cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3", "staking"] }
+depolama        = { workspace = true }
 embed-commit    = { workspace = true }
 frissitheto     = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 serde-json-wasm = "1.0.0"
-serde_json.workspace = true
+serde-utils     = { workspace = true }
+serde_json      = { workspace = true, features = ["raw_value"] }
 thiserror       = { workspace = true }
+unionlabs-encoding       = { workspace = true, features = ["bincode"] }
