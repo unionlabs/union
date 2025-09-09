@@ -10,7 +10,7 @@ which being:
   ordered channels, as a channel will be closed if a packet on it times out.
 - **Quick Startup Times.** RPCs are unreliable, and it's incredibly difficult to build around every
   possible failure case - especially when connecting to multiple different chains. Even with proper
-  error handling and retry logic, in the event of a crash, startup time should be miniscule (see:
+  error handling and retry logic, in the event of a crash, startup time should be minuscule (see:
   <https://github.com/clemensgg/xion-relayer-postmortem>)
 
 Voyager takes a novel approach to solving these problems. Internally, everything is modeled as a
