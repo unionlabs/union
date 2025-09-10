@@ -67,13 +67,13 @@ let bondInput = $state<string>("")
 const bondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   bondInput,
   BigDecimal.fromString,
-  O.map(BigDecimal.multiply(BigDecimal.make(1n, 18))),
+  O.map(BigDecimal.multiply(BigDecimal.make(1n, -18))),
 ))
 let unbondInput = $state<string>("")
 const unbondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   unbondInput,
   BigDecimal.fromString,
-  O.map(BigDecimal.multiply(BigDecimal.make(1n, 18))),
+  O.map(BigDecimal.multiply(BigDecimal.make(1n, -18))),
 ))
 
 const data = AppRuntime.runPromiseExit$(() => {
@@ -485,7 +485,7 @@ const close = (k: string) => {
                 bondInput = event.currentTarget.value
               }}
             />
-            {O.map(bondAmount, BigDecimal.format)}
+            {O.map(bondAmount, Utils.formatBigDecimal)}
           </div>
           <div>
             <Button
@@ -564,7 +564,7 @@ const close = (k: string) => {
                 unbondInput = event.currentTarget.value
               }}
             />
-            {O.map(unbondAmount, BigDecimal.format)}
+            {O.map(unbondAmount, Utils.formatBigDecimal)}
           </div>
           <div>
             <Button
