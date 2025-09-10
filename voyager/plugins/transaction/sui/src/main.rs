@@ -18,6 +18,7 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
+use move_api::SuiQuery;
 use move_core_types_sui::{
     account_address::AccountAddress,
     ident_str,
@@ -312,77 +313,29 @@ async fn process_msgs(
                 data,
             )?,
             Datagram::ChannelOpenAck(data) => {
-                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
+                let port_id = move_api::get_port_id(module, data.channel_id).await?;
 
-                let res = query
-                    .add_param(data.channel_id.raw())
-                    .call(module.ibc_handler_address.into(), "get_port_id")
-                    .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
-                }
-
-                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
-
-                let module_info = try_parse_port(&module.graphql_url, &port_id).await;
-
-                ptb.move_call(
-                    module_info.latest_address.into(),
-                    Identifier::new(module_info.module_name).unwrap(),
-                    ident_str!("channel_open_ack").into(),
-                    vec![],
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.counterparty_version).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.counterparty_channel_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                    ],
-                )
-                .unwrap();
+                move_api::channel_open_ack(
+                    ptb,
+                    module,
+                    try_parse_port(&module.graphql_url, port_id.as_str().as_bytes()).await?,
+                    port_id,
+                    data,
+                )?
             }
-            Datagram::ChannelOpenConfirm(data) => {
-                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
-
-                let res = query
-                    .add_param(data.channel_id.raw())
-                    .call(module.ibc_handler_address.into(), "get_port_id")
-                    .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
-                }
-
-                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
-
-                let module_info = try_parse_port(&module.graphql_url, &port_id).await;
-                ptb.move_call(
-                    module_info.latest_address.into(),
-                    Identifier::new(module_info.module_name).unwrap(),
-                    ident_str!("channel_open_confirm").into(),
-                    vec![],
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                    ],
+            Datagram::ChannelOpenConfirm(data) => move_api::channel_open_confirm_call(
+                ptb,
+                module,
+                try_parse_port(
+                    &module.graphql_url,
+                    &move_api::get_port_id(module, data.channel_id)
+                        .await?
+                        .as_str()
+                        .as_bytes(),
                 )
-                .unwrap();
-            }
+                .await?,
+                data,
+            )?,
             Datagram::PacketRecv(data) => {
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
 
@@ -841,78 +794,6 @@ async fn register_token_if_zkgm(
     .await?;
 
     Ok(Some(coin_t))
-}
-
-struct SuiQuery<'a> {
-    client: &'a SuiClient,
-    params: Vec<CallArg>,
-}
-
-impl<'a> SuiQuery<'a> {
-    async fn new(client: &'a SuiClient, ibc_store_id: ObjectID) -> Self {
-        let object_ref = client
-            .read_api()
-            .get_object_with_options(ibc_store_id, SuiObjectDataOptions::new())
-            .await
-            .unwrap()
-            .object_ref_if_exists()
-            .unwrap();
-        Self {
-            client,
-            params: vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(object_ref))],
-        }
-    }
-
-    fn add_param<T>(mut self, param: T) -> Self
-    where
-        T: serde::Serialize,
-    {
-        self.params
-            .push(CallArg::Pure(bcs::to_bytes(&param).unwrap()));
-        self
-    }
-
-    async fn call(
-        self,
-        package: ObjectID,
-        function: &str,
-    ) -> Result<Vec<(Vec<u8>, SuiTypeTag)>, String> {
-        let mut ptb = ProgrammableTransactionBuilder::new();
-        ptb.command(Command::move_call(
-            package,
-            Identifier::new("ibc").unwrap(),
-            Identifier::new(function).unwrap(),
-            vec![],
-            self.params
-                .iter()
-                .enumerate()
-                .map(|(i, _)| Argument::Input(i as u16))
-                .collect(),
-        ));
-
-        for arg in self.params {
-            ptb.input(arg).unwrap();
-        }
-
-        let res = self
-            .client
-            .read_api()
-            .dev_inspect_transaction_block(
-                SuiAddress::ZERO,
-                TransactionKind::ProgrammableTransaction(ptb.finish()),
-                None,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
-
-        match (res.results, res.error) {
-            (Some(res), _) => Ok(res[0].clone().return_values),
-            (_, Some(err)) => Err(err),
-            _ => panic!("invalid"),
-        }
-    }
 }
 
 pub struct ModuleInfo {
