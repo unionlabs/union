@@ -1,7 +1,8 @@
 use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
-use ibc_union_spec::Packet;
-use unionlabs::primitives::{Bytes, H256};
+use ibc_union_spec::{ChannelId, Packet};
+use serde::{Deserialize, Serialize};
+use unionlabs::primitives::{Bytes, H256, U256};
 
 use crate::{msg::Config, token_bucket::TokenBucket};
 
@@ -60,3 +61,13 @@ pub const IN_FLIGHT_PACKET: Map<Vec<u8>, Packet> = Map::new("in_flight_packet");
 pub const MARKET_MAKER: Item<Bytes> = Item::new("market_maker");
 
 pub const TOKEN_BUCKET: Map<String, TokenBucket> = Map::new("token_bucket");
+
+/// Contains the [`CallProxySalt`] of the newly created proxy account, if there was one created. This is used while handling the reply of the proxy account creation sub messages.
+pub const CREATED_PROXY_ACCOUNT: Item<CallProxySalt> = Item::new("created_proxy_account");
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CallProxySalt {
+    pub path: U256,
+    pub channel_id: ChannelId,
+    pub sender: Bytes,
+}
