@@ -122,7 +122,7 @@ const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
 const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
 
 const instantiate2 = Effect.fn(
-  function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.AnyDisplay }) {
+  function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.EvmDisplay }) {
     const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
     const abi = [
       {
@@ -142,23 +142,22 @@ const instantiate2 = Effect.fn(
       },
     ] as const
 
-    const args = [
-      options.path,
-      options.channel,
-      sender,
-    ] as const
-
-    const encode = Effect.try(() =>
-      encodeAbiParameters(
-        abi,
-        args,
-      )
+    const salt = yield* pipe(
+      Effect.try(() =>
+        encodeAbiParameters(
+          abi,
+          [
+            options.path,
+            options.channel,
+            sender,
+          ] as const,
+        )
+      ),
+      Effect.map((encoded) => keccak256(encoded, "bytes")),
     )
 
-    const encoded = yield* encode
-
     /**
-     * n as BE rep
+     * `n` from U64 to big-endian bytes
      */
     const u64toBeBytes = (n: bigint) => {
       const buffer = new ArrayBuffer(8)
@@ -167,34 +166,34 @@ const instantiate2 = Effect.fn(
       return new Uint8Array(view.buffer)
     }
 
-    const sha256 = (data: any) => globalThis.crypto.subtle.digest("SHA-256", data)
+    const sha256 = Effect.fn((data: any) =>
+      Effect.tryPromise(() => globalThis.crypto.subtle.digest("SHA-256", data))
+    )
 
-    const salt = keccak256(encoded, "bytes")
+    const address = yield* pipe(
+      Uint8Array.from(
+        [
+          ...fromHex(module_hash, "bytes"),
+          ...new TextEncoder().encode("wasm"),
+          0, // null byte
+          ...u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
+          ...fromHex(bytecode_base_checksum, "bytes"),
+          ...u64toBeBytes(32n), // creator canonical addr len
+          ...fromHex(canonical_zkgm, "bytes"),
+          ...u64toBeBytes(32n), // len
+          ...salt,
+          ...u64toBeBytes(0n),
+        ],
+      ),
+      sha256,
+      Effect.map((r) => new Uint8Array(r)),
+      Effect.map(bytesToHex),
+      Effect.flatMap(
+        Schema.decode(Ucs05.Bech32FromCanonicalBytesWithPrefix("union")),
+      ),
+    )
 
-    const _args = [
-      ...fromHex(module_hash, "bytes"),
-      ...new TextEncoder().encode("wasm"),
-      0, // null byte
-      ...u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
-      ...fromHex(bytecode_base_checksum, "bytes"),
-      ...u64toBeBytes(32n), // creator canonical addr len
-      ...fromHex(canonical_zkgm, "bytes"),
-      ...u64toBeBytes(32n), // len
-      ...salt,
-      ...u64toBeBytes(0n),
-    ] as const
-
-    const data = Uint8Array.from(_args)
-
-    const r = yield* Effect.tryPromise(() => sha256(data))
-
-    const rBytes = bytesToHex(new Uint8Array(r))
-
-    const transform = Ucs05.Bech32FromCanonicalBytesWithPrefix("union")
-
-    const r2 = yield* Schema.decode(transform)(rBytes)
-
-    return Ucs05.CosmosDisplay.make({ address: r2 })
+    return Ucs05.CosmosDisplay.make({ address })
   },
 )
 
