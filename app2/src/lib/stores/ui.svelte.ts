@@ -4,7 +4,7 @@ import { GraphQL } from "$lib/graphql/service"
 import * as AppRuntime from "$lib/runtime"
 import { themes } from "$lib/themes"
 import type { Edition, Theme } from "$lib/themes"
-import { Match, Option, pipe, Record as R, String as Str } from "effect"
+import { Effect, Match, Option, pipe, Record as R, String as Str } from "effect"
 
 const projectIds: Record<Edition, string> = {
   app: "f544d5ee6eb61962408fd456c114e9ed",
@@ -79,15 +79,21 @@ class UiStore {
   }
 
   get graphqlEndpoint(): string {
-    return AppRuntime.runSync(GraphQL.getEndpoint)
+    return AppRuntime.runSync(GraphQL.pipe(
+      Effect.andThen((client) => client.getEndpoint),
+    ))
   }
 
   set graphqlEndpoint(s: string) {
-    AppRuntime.runPromise(GraphQL.updateEndpoint(s))
+    AppRuntime.runPromise(GraphQL.pipe(
+      Effect.andThen((client) => client.updateEndpoint(s)),
+    ))
   }
 
   clearGqlCache() {
-    AppRuntime.runSync(GraphQL.resetCache)
+    AppRuntime.runSync(GraphQL.pipe(
+      Effect.andThen((client) => client.resetCache),
+    ))
   }
 
   openWalletModal() {

@@ -3,7 +3,7 @@ import { SupabaseClient } from "$lib/dashboard/client"
 import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
 import * as Datadog from "$lib/logging/datadog"
-import { PriceOracleExecutor } from "@unionlabs/sdk/PriceOracle"
+import { PriceOracle } from "@unionlabs/sdk"
 import { Layer, Logger, LogLevel, Match } from "effect"
 
 const minimumLogLevel = Logger.minimumLogLevel(
@@ -18,7 +18,7 @@ const minimumLogLevel = Logger.minimumLogLevel(
 export default Layer.mergeAll(
   GraphQL.Default,
   GasPriceMap.Default,
-  PriceOracleExecutor.Default,
+  PriceOracle.layerExecutor,
   SupabaseClient.Default({ auth: { autoRefreshToken: true } }),
   Logger.replace(
     Logger.defaultLogger,

@@ -127,7 +127,7 @@ in
       packages = {
         sentinel2 = buildPnpmPackage {
           packageJsonPath = ./package.json;
-          hash = "sha256-VuF08yoOjaVK8TJec0IHLhxKROoivuPWXlWYSGP+eCg=";
+          hash = "sha256-cYxMQ9KKwkJfbOf5YxpYk4619gCixxAsky0ZqaWU3h0=";
           extraSrcs = [
             ../sentinel2
             ../ts-sdk

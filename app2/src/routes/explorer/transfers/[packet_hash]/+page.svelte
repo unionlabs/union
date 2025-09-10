@@ -249,7 +249,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                     class="text-zinc-400"
                   />
                 {:else}
-                  <div>{transfer.source_chain.chain_id}</div>
+                  <div>{transfer.source_chain.universal_chain_id}</div>
                   <div class="font-mono text-sm text-zinc-400">
                     {transfer.sender_canonical}
                   </div>
@@ -279,7 +279,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                   class="text-zinc-400"
                 />
               {:else}
-                <div>{transfer.destination_chain.chain_id}</div>
+                <div>{transfer.destination_chain.universal_chain_id}</div>
                 <div class="font-mono text-sm text-zinc-400">
                   {transfer.receiver_canonical}
                 </div>

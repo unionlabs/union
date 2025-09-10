@@ -27,11 +27,7 @@
     "lib": ["ES2022", "DOM"],
     "paths": {
       "@unionlabs/sdk": ["../ts-sdk/src/index.js"],
-      "@unionlabs/sdk/*": ["../ts-sdk/src/*.js"],
-      "@unionlabs/sdk-evm": ["../ts-sdk-evm/src/index.js"],
-      "@unionlabs/sdk-evm/*": ["../ts-sdk-evm/src/*.js"],
-      "@unionlabs/sdk-cosmos": ["../ts-sdk-cosmos/src/index.js"],
-      "@unionlabs/sdk-cosmos/*": ["../ts-sdk-cosmos/src/*.js"]
+      "@unionlabs/sdk/*": ["../ts-sdk/src/*.js"]
     }
   }
 }

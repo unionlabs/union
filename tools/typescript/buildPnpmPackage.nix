@@ -30,10 +30,8 @@ let
           ../../tsconfig.base.json
           ../../tsconfig.base.json
           ../../tsconfig.build.json
-          ../../tsconfig.json
           ../../vitest.setup.ts
           ../../vitest.shared.ts
-          ../../vitest.workspace.ts
         ]
         ++ extraSrcs
       );

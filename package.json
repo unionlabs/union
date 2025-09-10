@@ -4,11 +4,10 @@
   "type": "module",
   "scripts": {
     "prepare": "effect-language-service patch",
-    "build": "tsc -b tsconfig.build.json && pnpm -r --parallel --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos ---filter sentinel2 run build",
+    "build": "tsc -b tsconfig.build.json && pnpm --recursive --parallel --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos --filter sentinel2 run build",
     "changeset-publish": "pnpm codemod && pnpm build && TEST_DIST= pnpm vitest && changeset publish",
     "changeset-version": "changeset version && node scripts/version.mjs",
-    "check": "tsc -b tsconfig.json",
-    "check-recursive": "pnpm --recursive --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos --filter ./sentinel2 exec tsc -b tsconfig.json",
+    "check": "pnpm --recursive --filter ./ts-sdk --filter ./ts-sdk-evm --filter ./ts-sdk-cosmos --filter ./sentinel2 exec tsc -b tsconfig.json",
     "circular": "node scripts/circular.mjs",
     "clean": "node scripts/clean.mjs",
     "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm --filter @unionlabs/sdk-cosmos exec docgen && node scripts/docs.mjs",
