@@ -9,9 +9,6 @@ import { ParseError } from "effect/ParseResult"
 import type { Pipeable } from "effect/Pipeable"
 import * as S from "effect/Schema"
 import { Covariant } from "effect/Types"
-import * as Batch from "./Batch.js"
-import { ChannelRegistry } from "./ChannelRegistry.js"
-import { FeeEstimator } from "./FeeEstimator.js"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/tokenOrder.js"
 import { Chain } from "./schema/chain.js"
@@ -235,17 +232,6 @@ export const setReceiver: {
 export declare const withAutoQuoteToken: <A extends keyof Options.Optional>(
   a: TokenOrder.Build<A | "quoteToken">,
 ) => Effect.Effect<TokenOrder.Build<Exclude<A, "quoteToken">>, never, TokenRegistry>
-
-/**
- * @since 2.0.0
- */
-export declare const withFee: (
-  options?: {
-    priority: "low" | "average" | "high"
-  } | undefined,
-) => <A extends TokenOrder.Complete>(
-  self: A,
-) => Effect.Effect<Batch.Batch, unknown, FeeEstimator | ChannelRegistry>
 
 /**
  * @since 2.0.0

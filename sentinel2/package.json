@@ -1,9 +1,10 @@
 {
   "name": "sentinel2",
+  "private": true,
   "version": "1.0.1",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b tsconfig.build.json",
     "start": "node dist/sentinel.js",
     "test": "vitest run",
     "test-watch": "vitest"
@@ -15,17 +16,18 @@
   "description": "",
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node-fetch": "3.0.2",
     "@types/yargs": "^17.0.33",
     "ts-node": "^10.9.1",
-    "typescript": "^5.8.2",
     "vitest": "^3.0.8"
   },
   "dependencies": {
-    "@unionlabs/sdk": "^1.9.9",
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
+    "@effect/platform": "0.84.6",
+    "@unionlabs/sdk-cosmos": "workspace:*",
+    "@unionlabs/sdk-evm": "workspace:*",
     "better-sqlite3": "^11.9.1",
     "consola": "^3.4.0",
-    "effect": "^3.13.2",
+    "effect": "3.16.3",
     "graphql-request": "^7.1.2",
     "viem": "^2.22.11",
     "yargs": "^17.7.2"

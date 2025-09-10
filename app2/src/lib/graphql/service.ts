@@ -156,7 +156,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
               variables,
               signal,
             }),
-          catch: (error) => GraphQLError.make(error as ClientError),
+          catch: (error) => GraphQLError.fromUnknown(error),
         }).pipe(
           Effect.withLogSpan("fetch"),
         )
@@ -260,7 +260,6 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       }),
     } as const
   }),
-  accessors: true,
   dependencies: [
     GraphQLCache.Default,
     Persistence.layerResultKeyValueStore.pipe(

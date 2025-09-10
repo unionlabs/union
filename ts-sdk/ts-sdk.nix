@@ -28,7 +28,7 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = [ ../ts-sdk ];
           pnpmWorkspaces = [ "@unionlabs/sdk" ];
-          hash = "sha256-nyE89E43rSlvYHlue6q5R/DCmfPnyjLIA0BEdx6uZww=";
+          hash = "sha256-vrjzTdwKSucWWetnL4kw2KLCS9NhXfkiM9LgoswD2QE=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -40,8 +40,8 @@ _: {
             cp -r ./ts-sdk/* $out
           '';
           checkPhase = ''
-            pnpm run --filter=@unionlabs/sdk check
-            pnpm run --filter=@unionlabs/sdk test
+            pnpm --filter=@unionlabs/sdk check
+            pnpm --filter=@unionlabs/sdk test
           '';
         };
       };

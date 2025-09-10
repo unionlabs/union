@@ -227,7 +227,6 @@
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
-        ./sentinel/sentinel.nix
         ./sentinel2/sentinel.nix
         ./lib/embed-commit
         ./networks/services/voyager.nix

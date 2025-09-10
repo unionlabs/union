@@ -1,5 +1,4 @@
 import { Effect, Logger, pipe, Schedule } from "effect"
-import fetch from "node-fetch"
 import { clearSignerIncident, getSignerIncident, markSignerIncident } from "./db-queries.js"
 import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"
@@ -71,7 +70,7 @@ export const checkBalances = Effect.repeat(
         const portKey = `${url}:${port}`
         const existingPortIncident = getSignerIncident(db, portKey)
 
-        const [probeJson, durationMs] = yield* Effect.gen(function*($) {
+        const [probeJson] = yield* Effect.gen(function*() {
           const start = Date.now()
 
           const maybeResp = yield* pipe(

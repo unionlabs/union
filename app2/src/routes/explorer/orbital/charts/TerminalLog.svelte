@@ -311,9 +311,10 @@ $effect(() => {
     const newTransfers = transfers.slice(processedCount)
 
     newTransfers.forEach((transfer) => {
-      const sourceChain = transfer.sourceDisplayName || transfer.source_chain?.display_name
+      const sourceChain = transfer.sourceDisplayName || transfer.source_chain.universal_chain_id
         || "unknown"
-      const destChain = transfer.destinationDisplayName || transfer.destination_chain?.display_name
+      const destChain = transfer.destinationDisplayName
+        || transfer.destination_chain.universal_chain_id
         || "unknown"
 
       addLog(

@@ -13,29 +13,34 @@ _: {
         pkg-config
         nodePackages_latest.nodejs
       ];
-      packageJSON = lib.importJSON ./package.json;
+      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
+        inherit lib pkgs;
+      };
     in
     {
       packages = {
-        site = mkCi false (
-          pkgsUnstable.buildNpmPackage {
-            npmDepsHash = "sha256-Oou6/4ysKAQ0UIy57ZowIHwt/x5qOgoJbv8+UPLNFXA=";
-            src = ./.;
-            sourceRoot = "site";
-            pname = packageJSON.name;
-            inherit (packageJSON) version;
-            nativeBuildInputs = deps;
-            buildInputs = deps;
-            installPhase = ''
-              mkdir -p $out
-              cp -r ./.vercel/output/* $out
-            '';
-            doDist = false;
-            PUPPETEER_SKIP_DOWNLOAD = 1;
-            ASTRO_TELEMETRY_DISABLED = 1;
-            NODE_OPTIONS = "--no-warnings";
-          }
-        );
+        site = mkCi false (buildPnpmPackage {
+          hash = "sha256-e6FKW8iLRPfVs0httjJj9mu5UiSTASbFjai5VgMwWPY=";
+          packageJsonPath = ./package.json;
+          extraSrcs = [
+            ../site
+          ];
+          nativeBuildInputs = deps;
+          buildInputs = deps;
+          buildPhase = ''
+            runHook preBuild
+            export PUPPETEER_SKIP_DOWNLOAD=1;
+            export ASTRO_TELEMETRY_DISABLED=1;
+            export NODE_OPTIONS="--no-warnings";
+            pnpm --filter=site build
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r ./site/.vercel/output/* $out
+          '';
+          doDist = false;
+        });
       };
 
       apps = {

@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": ["test"],
+  "references": [
+    { "path": "tsconfig.src.json" },
+    { "path": "../ts-sdk/tsconfig.test.json" },
+    { "path": "../ts-sdk-evm/tsconfig.test.json" },
+    { "path": "../ts-sdk-cosmos/tsconfig.test.json" }
+  ],
+  "compilerOptions": {
+    "tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
+    "rootDir": "test",
+    "outDir": "build/test"
+  }
+}

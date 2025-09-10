@@ -29,11 +29,10 @@
     "build-annotate": "babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps",
     "build-cjs": "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",
     "build-esm": "tsc -b tsconfig.build.json",
-    "check": "tspc -b tsconfig.json",
+    "check": "tsc -b tsconfig.json",
     "check:circular": "dpdm -T src",
-    "check:examples": "tspc -p tsconfig.examples.json",
+    "check:examples": "tsc -p tsconfig.examples.json",
     "codegen": "build-utils prepare-v3",
-    "prepare": "ts-patch install -s",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -63,7 +62,6 @@
     "dpdm": "^3.14.0",
     "effect": "3.16.3",
     "madge": "^8.0.0",
-    "ts-patch": "^3.3.0",
     "vitest": "^3.0.5"
   },
   "dependencies": {}

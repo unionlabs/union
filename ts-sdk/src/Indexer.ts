@@ -404,7 +404,6 @@ query GetPacketHashBySubmissionTxHash($submission_tx_hash: String!) {
       }),
     } as const
   }),
-  accessors: true,
   dependencies: [
     GraphQLCache.Default,
     Persistence.layerResultKeyValueStore.pipe(

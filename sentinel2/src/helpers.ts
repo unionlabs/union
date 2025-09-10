@@ -1,7 +1,6 @@
 import { Context, Data, Effect } from "effect"
-import fetch from "node-fetch"
-import fs from "node:fs"
-import tls from "node:tls"
+import * as Fs from "node:fs"
+import * as Tls from "node:tls"
 
 export type Hex = `0x${string}`
 
@@ -73,10 +72,10 @@ export function loadConfig(configPath: string) {
   return Effect.tryPromise({
     // biome-ignore lint/suspicious/useAwait: <explanation>
     try: async () => {
-      if (!fs.existsSync(configPath)) {
+      if (!Fs.existsSync(configPath)) {
         throw new Error("Config file not found. Ensure config.json exists.")
       }
-      const rawData = fs.readFileSync(configPath, "utf-8")
+      const rawData = Fs.readFileSync(configPath, "utf-8")
       const config: ConfigFile = JSON.parse(rawData)
 
       return config
@@ -221,7 +220,7 @@ export function getCertExpiry(endpoint: string): Promise<Date> {
   const { hostname, port } = new URL(endpoint)
   const portNum = port ? Number(port) : 443
   return new Promise((resolve, reject) => {
-    const socket = tls.connect({ host: hostname, port: portNum, servername: hostname }, () => {
+    const socket = Tls.connect({ host: hostname, port: portNum, servername: hostname }, () => {
       const cert = socket.getPeerCertificate()
       socket.end()
       if (!cert || !cert.valid_to) {

@@ -28,9 +28,10 @@ let
           ../../pnpm-lock.yaml
           ../../pnpm-workspace.yaml
           ../../tsconfig.base.json
+          ../../tsconfig.base.json
+          ../../tsconfig.build.json
           ../../vitest.setup.ts
           ../../vitest.shared.ts
-          ../../vitest.workspace.ts
         ]
         ++ extraSrcs
       );
