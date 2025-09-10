@@ -38,7 +38,7 @@ export namespace Cosmos {
    * @since 2.0.0
    */
   export interface Channel {
-    readonly ucs03address: string
+    readonly ucs03address: Ucs05.CosmosDisplay
     readonly channelId: number
   }
 }
@@ -378,13 +378,13 @@ export class HttpRequestFailed extends Data.TaggedError("@unionlabs/sdk/Cosmos/H
  */
 export function queryContractSmartAtHeight<T = unknown>(
   restEndpoint: string,
-  contractAddress: string,
+  contractAddress: Ucs05.CosmosDisplay,
   queryMsg: Record<string, unknown>,
   height: number,
 ) {
   const base = restEndpoint.replace(/\/+$/, "")
   const encoded = btoa(JSON.stringify(queryMsg))
-  const url = `${base}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${encoded}`
+  const url = `${base}/cosmwasm/wasm/v1/contract/${contractAddress.address}/smart/${encoded}`
   return pipe(
     Effect.gen(function*() {
       const request = HttpClientRequest.get(url).pipe(
@@ -407,7 +407,7 @@ export function queryContractSmartAtHeight<T = unknown>(
         ? Effect.fail(err)
         : Effect.fail(
           new QueryContractError({
-            address: contractAddress,
+            address: contractAddress.address,
             cause: err,
           }),
         )
@@ -506,8 +506,9 @@ export interface Cw20AllowanceResponse {
  * @category utils
  * @since 2.0.0
  */
-export const readCw20TokenInfo = (contractAddress: string) =>
-  queryContract<Cw20TokenInfo>(contractAddress, { token_info: {} })
+export const readCw20TokenInfo = Effect.fn("readCw20TokenInfo")((
+  contractAddress: Ucs05.CosmosDisplay,
+) => queryContract<Cw20TokenInfo>(contractAddress, { token_info: {} }))
 
 /**
  * Read CW20 token total_supply
@@ -517,13 +518,16 @@ export const readCw20TokenInfo = (contractAddress: string) =>
  * @category utils
  * @since 2.0.0
  */
-export const readCw20TotalSupply = (contractAddress: string) =>
+export const readCw20TotalSupply = Effect.fn("readCw20TotalSupply")((
+  contractAddress: Ucs05.CosmosDisplay,
+) =>
   pipe(
     queryContract<Cw20TokenInfo>(contractAddress, {
       token_info: {},
     }),
     Effect.map(x => x.total_supply),
   )
+)
 
 /**
  * Read the balance of a CW20 token for a specific address
@@ -538,7 +542,7 @@ export const readCw20TotalSupply = (contractAddress: string) =>
  */
 export const readCw20BalanceAtHeight = (
   rest: string,
-  contractAddress: string,
+  contractAddress: Ucs05.CosmosDisplay,
   address: string,
   height: number,
 ) =>
@@ -571,7 +575,7 @@ export const readCw20BalanceAtHeight = (
  */
 export const readCw20TotalSupplyAtHeight = (
   rest: string,
-  contractAddress: string,
+  contractAddress: Ucs05.CosmosDisplay,
   height: number,
 ) =>
   Effect.gen(function*() {
@@ -595,7 +599,10 @@ export const readCw20TotalSupplyAtHeight = (
  * @category utils
  * @since 2.0.0
  */
-export const readCw20Balance = (contractAddress: string, address: string) =>
+export const readCw20Balance = Effect.fn("readCw20Balance")((
+  contractAddress: Ucs05.CosmosDisplay,
+  address: string,
+) =>
   pipe(
     queryContract<Cw20BalanceResponse>(contractAddress, {
       balance: {
@@ -604,6 +611,7 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
     }),
     Effect.map(x => x.balance),
   )
+)
 
 /**
  * Read the allowance of a CW20 token for a specific addresses
@@ -615,13 +623,13 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
  * @category utils
  * @since 2.0.0
  */
-export const readCw20Allowance = (
+export const readCw20Allowance = Effect.fn("readCw20Allowance")((
   contract: Ucs05.CosmosDisplay,
   owner: Ucs05.CosmosDisplay,
   spender: Ucs05.CosmosDisplay,
 ) =>
   pipe(
-    queryContract<Cw20AllowanceResponse>(contract.address, {
+    queryContract<Cw20AllowanceResponse>(contract, {
       allowance: {
         owner: owner.address,
         spender: spender.address,
@@ -629,6 +637,7 @@ export const readCw20Allowance = (
     }),
     Effect.map(x => x.allowance),
   )
+)
 
 /**
  * Increase the allowance of a CW20 token for a specific spender.
@@ -657,29 +666,10 @@ export const writeCw20IncreaseAllowance = (
   })
 
 /**
- * Checks whether a denom is a native token or CW20.
- * @param denom The denom address to check.
- * @returns An Effect that resolves to true if native, false if CW20.
- *
  * @category utils
  * @since 2.0.0
  */
-export const isDenomNative = (denom: string) =>
-  Effect.gen(function*() {
-    const client = (yield* Client).client
-
-    return yield* readCw20TokenInfo(denom).pipe(
-      Effect.provideService(Client, { client }),
-      Effect.map(() => false),
-      Effect.catchAllCause(() => Effect.succeed(true)),
-    )
-  })
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const channelBalance = (path: bigint, token: string) =>
+export const channelBalance = Effect.fn("channelBalance")((path: bigint, token: string) =>
   pipe(
     ChannelDestination,
     Effect.andThen((config) =>
@@ -692,13 +682,14 @@ export const channelBalance = (path: bigint, token: string) =>
       })
     ),
   )
+)
 
 /**
  * @category utils
  * @since 2.0.0
  */
-export const channelBalanceAtHeight = (rest: string, path: bigint, token: string, height: number) =>
-  Effect.gen(function*() {
+export const channelBalanceAtHeight = Effect.fn("channelBalanceAtHeight")(
+  function*(rest: string, path: bigint, token: string, height: number) {
     const config = yield* ChannelDestination
     const resp = yield* queryContractSmartAtHeight<{ data: string | undefined }>(
       rest,
@@ -717,4 +708,5 @@ export const channelBalanceAtHeight = (rest: string, path: bigint, token: string
       Effect.tapErrorCause((cause) => Effect.logError("cosmos.channelBalanceAtHeight", cause)),
     )
     return yield* O.fromNullable(resp.data)
-  })
+  },
+)

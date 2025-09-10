@@ -673,6 +673,9 @@ importers:
       '@effect/platform':
         specifier: 0.84.6
         version: 0.84.6(effect@3.16.3)
+      '@unionlabs/sdk':
+        specifier: workspace:*
+        version: link:../ts-sdk
       '@unionlabs/sdk-cosmos':
         specifier: workspace:*
         version: link:../ts-sdk-cosmos
