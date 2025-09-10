@@ -1,6 +1,5 @@
 use alloy_primitives::keccak256;
 use alloy_sol_types::SolValue;
-use bytes::Bytes;
 use ibc_union_spec::{Packet, Timestamp};
 use itertools::Itertools;
 use serde_json::{Map, Value};
@@ -400,12 +399,11 @@ async fn try_get_bonds(
 
     trace!("get_bonds: packet_shape: {packet_shape:?}");
 
-    let Some((token_order, _bond, _increase_allowance, delivery)) = (match packet_shape {
+    let Some((token_order, proxy_call, Some(instructions))) = (match packet_shape {
         PacketShape::BondV2 => Some((
             InstructionDecoder::from_values_with_index(flatten, 1)?,
             InstructionDecoder::from_values_with_index(flatten, 2)?,
-            InstructionDecoder::from_values_with_index(flatten, 3)?,
-            InstructionDecoder::from_values_with_index(flatten, 4)?,
+            extract_proxy_calls(flatten, 2, BOND_FUNCTIONS)?,
         )),
         _ => None,
     }) else {
@@ -413,27 +411,29 @@ async fn try_get_bonds(
         return Ok(vec![]);
     };
 
-    trace!("get_bonds: bond with token_order: {token_order} and delivery: {delivery}");
+    trace!("get_bonds: bond with token_order: {token_order}, proxy_call: {proxy_call} (with instructions: {instructions:?})");
+
+    let [Value::Object(bond), Value::Object(increase_allowance), Value::Object(send)] =
+        instructions.as_slice()
+    else {
+        trace!("get_bonds: not a bond (cannot deconstruct)");
+        return Ok(vec![]);
+    };
+
+    trace!("get_bonds: calls: bond: {bond:?}, increase_allowance: {increase_allowance:?}, send: {send:?}");
 
     // -------------------------------------------------
     // fetch details from call that will deliver the lst
     // -------------------------------------------------
 
-    let delivery_contract_calldata = delivery.get_call_message("contractCalldata")?;
-    trace!("get_bonds: delivery calldata: {delivery_contract_calldata}");
+    let call_contract_address_0x = proxy_call.get_string("contractAddress")?;
+    trace!("get_bonds: call contract address: {call_contract_address_0x}");
 
-    let Value::Object(send) = delivery_contract_calldata.get("send").ok_or_else(|| {
-        IndexerError::ZkgmExpectingInstructionField(
-            "missing 'send' in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
-        )
-    })?
-    else {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            "expecting 'send' as Object in contractCalldata".to_string(),
-            delivery_contract_calldata.to_string(),
-        ));
-    };
+    let call_contract_address = string_0x_to_bytes(call_contract_address_0x, "contract-address")?;
+    trace!(
+        "get_bonds: call contract address: {}",
+        hex::encode(&call_contract_address)
+    );
 
     // delivery channel_id
     let Value::Number(delivery_channel_id) = send.get("channel_id").ok_or_else(|| {
@@ -521,7 +521,8 @@ async fn try_get_bonds(
 
     trace!("get_bonds: delivery salt: 0x{}", hex::encode(delivery_salt));
 
-    let hash_salt_preimage = (ON_ZKGM_CALL_PROXY_BECH32, delivery_salt).abi_encode();
+    // TODO: can we still use this?
+    let hash_salt_preimage = (call_contract_address.to_vec(), delivery_salt).abi_encode();
 
     trace!(
         "get_bonds: delivery hash_salt_preimage: 0x{}",
@@ -784,11 +785,10 @@ async fn try_get_unbonds(
 
     trace!("get_unbonds: packet_shape: {packet_shape:?}");
 
-    let Some((token_order, _increase_allowance, _unbond)) = (match packet_shape {
+    let Some((token_order, Some(instructions))) = (match packet_shape {
         PacketShape::UnbondV2 => Some((
             InstructionDecoder::from_values_with_index(flatten, 1)?,
-            InstructionDecoder::from_values_with_index(flatten, 2)?,
-            InstructionDecoder::from_values_with_index(flatten, 3)?,
+            extract_proxy_calls(flatten, 2, UNBOND_FUNCTIONS)?,
         )),
         _ => {
             trace!("get_unbonds: not an unbond");
@@ -799,7 +799,16 @@ async fn try_get_unbonds(
         return Ok(vec![]);
     };
 
-    trace!("get_unbonds: unbond with token_order: {token_order}");
+    trace!(
+        "get_unbonds: unbond with token_order: {token_order} and instructions: {instructions:?}"
+    );
+
+    let [Value::Object(increase_allowance), Value::Object(unbond)] = instructions.as_slice() else {
+        trace!("get_unbonds: not an unbond (cannot deconstruct)");
+        return Ok(vec![]);
+    };
+
+    trace!("get_unbonds: calls: increase_allowance: {increase_allowance:?}, unbond: {unbond:?}");
 
     let sender_zkgm =
         &AddressZkgm::from_string_0x(token_order.get_string("sender")?, channel.rpc_type)?;
@@ -993,10 +1002,6 @@ impl<'a> InstructionDecoder<'a> {
         Self::get_u8_opt_from(self.operand, key)
     }
 
-    fn get_call_message(&'a self, key: &str) -> Result<Value, IndexerError> {
-        Self::get_call_message_from(self.operand, key)
-    }
-
     fn get_string_from(
         from: &'a Map<String, Value>,
         key: &str,
@@ -1134,51 +1139,6 @@ impl<'a> InstructionDecoder<'a> {
             }
         })
     }
-
-    // decoded contract call data:
-    // - fetch key string attribute from map
-    // - convert 0x-string to bytes
-    // - convert bytes to json
-    // - fetch the 'msg' string attribute from json
-    // - decode base58-string to bytes
-    // - convert bytes to json
-    // - return json
-    fn get_call_message_from(
-        from: &'a Map<String, Value>,
-        key: &str,
-    ) -> Result<Value, IndexerError> {
-        match from.get(key) {
-            Some(Value::String(call_envelope_0x)) => {
-                let call_envelope_json = string_0x_to_bytes(call_envelope_0x, key)?;
-                let call_envelope_json = bytes_to_value(&call_envelope_json, key)?;
-
-                match call_envelope_json.get("msg") {
-                    Some(Value::String(msg_base_64)) => {
-                        let msg_json = string_base64_to_bytes(msg_base_64, key)?;
-                        let msg_json = bytes_to_value(&msg_json, key)?;
-
-                        Ok(msg_json)
-                    }
-                    Some(unsupported) => Err(IndexerError::ZkgmExpectingInstructionField(
-                        format!("{key}.msg field in instruction is string ({unsupported})"),
-                        Value::Object(from.clone()).to_string(),
-                    )),
-                    None => Err(IndexerError::ZkgmExpectingInstructionField(
-                        format!("{key}.msg field in instruction"),
-                        Value::Object(from.clone()).to_string(),
-                    )),
-                }
-            }
-            Some(unsupported) => Err(IndexerError::ZkgmExpectingInstructionField(
-                format!("{key} field in instruction is string ({unsupported})"),
-                Value::Object(from.clone()).to_string(),
-            )),
-            None => Err(IndexerError::ZkgmExpectingInstructionField(
-                format!("{key} field in instruction"),
-                Value::Object(from.clone()).to_string(),
-            )),
-        }
-    }
 }
 
 fn packet_shape(
@@ -1218,18 +1178,20 @@ fn packet_shape(
             // one transfer (v2)
             Some(PacketShape::TransferV2)
         }
-        ":2/0,0:3/2,1:1/0,2:1/0,3:1/0" if is_bond(flatten)? => {
+        ":2/0,0:3/2,1:1/0" if is_bond(flatten)? => {
             // batch with
             // - token-order to transfer token
-            // - call to bond and create lst
-            // - call to ensure allowance
-            // - call to deliver lst
+            // - call to proxy, with
+            //   - call to bond (to create lst)
+            //   - call to increase_allowance
+            //   - call to send (to send lst back)
             Some(PacketShape::BondV2)
         }
-        ":2/0,0:3/2,1:1/0,2:1/0" if is_unbond(flatten)? => {
+        ":2/0,0:3/2,1:1/0" if is_unbond(flatten)? => {
             // batch with:
             // - token-order to transfer lst
-            // - call to unbond lst
+            //   - call to increase_allowance
+            //   - call to unbond
             Some(PacketShape::UnbondV2)
         }
         unsupported => {
@@ -1268,78 +1230,22 @@ fn has_fee(flatten: &[Value]) -> Result<bool, IndexerError> {
     Ok(is_zero)
 }
 
-const ON_ZKGM_CALL_PROXY_BECH32: &str =
-    "union1mtxk8tjz85ry2a8a6k58uwrztmwslaxzsurh5l0dlxh7wrnvmxkshqkuwd";
+const BOND_FUNCTIONS: &[&str] = &["bond", "increase_allowance", "send"];
+const UNBOND_FUNCTIONS: &[&str] = &["increase_allowance", "unbond"];
 
 fn is_bond(flatten: &[Value]) -> Result<bool, IndexerError> {
-    Ok(is_transfer_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 3, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 4, ON_ZKGM_CALL_PROXY_BECH32)?)
+    is_proxy_call_with(flatten, 2, BOND_FUNCTIONS)
 }
 
 fn is_unbond(flatten: &[Value]) -> Result<bool, IndexerError> {
-    Ok(is_transfer_to(flatten, 1, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 2, ON_ZKGM_CALL_PROXY_BECH32)?
-        && is_call_to(flatten, 3, ON_ZKGM_CALL_PROXY_BECH32)?)
+    is_proxy_call_with(flatten, 2, UNBOND_FUNCTIONS)
 }
 
-// check if the instruction at index is a transfer to the specified address
-fn is_transfer_to(
+fn extract_proxy_calls(
     flatten: &[Value],
     index: usize,
-    expected_receiver_address_bech32: &str,
-) -> Result<bool, IndexerError> {
-    let Some(Value::Object(instruction)) = flatten.get(index) else {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            format!("instruction with index {index}"),
-            Value::Array(flatten.to_vec()).to_string(),
-        ));
-    };
-
-    let Some(Value::Object(operand)) = instruction.get("operand").cloned() else {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            format!("operand in instruction with index {index}"),
-            Value::Array(flatten.to_vec()).to_string(),
-        ));
-    };
-
-    if Some(Value::String("TokenOrder".to_string())) != operand.get("_type").cloned() {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            format!("token-order instruction with index {index}"),
-            Value::Array(flatten.to_vec()).to_string(),
-        ));
-    }
-
-    let Some(Value::String(receiver_address_0x)) = operand.get("receiver") else {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            format!("receiver in token-order instruction with index {index}"),
-            Value::Array(flatten.to_vec()).to_string(),
-        ));
-    };
-
-    let actual_receiver_address = string_0x_to_bytes(
-        receiver_address_0x,
-        format!("receiver is 0x hex in token-order instruction with index {index}").as_str(),
-    )?;
-
-    let expected_receiver_address = Bytes::from(expected_receiver_address_bech32.to_string());
-
-    trace!(
-        "is_transfer_to: expected: {}, actual: {}",
-        hex::encode(&expected_receiver_address),
-        hex::encode(&actual_receiver_address)
-    );
-
-    Ok(actual_receiver_address == expected_receiver_address)
-}
-
-// check if the instruction at index is a call to the specified address
-fn is_call_to(
-    flatten: &[Value],
-    index: usize,
-    expected_contract_address_bech32: &str,
-) -> Result<bool, IndexerError> {
+    expected_functions: &[&str],
+) -> Result<Option<Vec<Value>>, IndexerError> {
     let Some(Value::Object(instruction)) = flatten.get(index) else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             format!("instruction with index {index}"),
@@ -1361,27 +1267,112 @@ fn is_call_to(
         ));
     }
 
-    let Some(Value::String(contract_address_0x)) = operand.get("contractAddress") else {
+    let Some(Value::String(call_envelope_0x)) = operand.get("contractCalldata") else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
-            format!("contract address in call instruction with index {index}"),
-            Value::Array(flatten.to_vec()).to_string(),
+            "contractCalldata field in instruction".to_string(),
+            Value::Object(operand.clone()).to_string(),
         ));
     };
 
-    let actual_contract_address = string_0x_to_bytes(
-        contract_address_0x,
-        format!("contract address is 0x hex in call instruction with index {index}").as_str(),
-    )?;
+    let Ok(call_envelope_json) = string_0x_to_bytes(call_envelope_0x, "contractCalldata") else {
+        trace!("extract_proxy_calls: does not have a 0x 'contractCalldata' field => None ({operand:?})");
 
-    let expected_contract_address = Bytes::from(expected_contract_address_bech32.to_string());
+        return Ok(None);
+    };
+
+    let Ok(Value::Array(proxy_calls)) = bytes_to_value(&call_envelope_json, "contractCalldata")
+    else {
+        trace!("extract_proxy_calls: does not have a json array 'contractCalldata' field => None ({operand:?})");
+
+        return Ok(None);
+    };
+
+    // Check if we have the right number of calls first
+    if proxy_calls.len() != expected_functions.len() {
+        trace!(
+            "extract_proxy_calls: expected {} calls, found {} => None",
+            expected_functions.len(),
+            proxy_calls.len()
+        );
+        return Ok(None);
+    }
+
+    let mut extracted_values = Vec::new();
+
+    for (i, call) in proxy_calls.iter().enumerate() {
+        let Value::Object(call_obj) = call else {
+            trace!("extract_proxy_calls: call at index {i} is not an object => None");
+            return Ok(None);
+        };
+
+        let Some(Value::Object(wasm)) = call_obj.get("wasm") else {
+            trace!("extract_proxy_calls: call at index {i} missing 'wasm' object => None");
+            return Ok(None);
+        };
+
+        let Some(Value::Object(execute)) = wasm.get("execute") else {
+            trace!("extract_proxy_calls: call at index {i} missing 'execute' object => None");
+            return Ok(None);
+        };
+
+        let Some(Value::String(msg_base64)) = execute.get("msg") else {
+            trace!("extract_proxy_calls: call at index {i} missing 'msg' string => None");
+            return Ok(None);
+        };
+
+        let Ok(msg_bytes) = string_base64_to_bytes(msg_base64, "msg") else {
+            trace!("extract_proxy_calls: call at index {i} msg is not valid base64 => None");
+            return Ok(None);
+        };
+
+        let Ok(msg_json) = bytes_to_value(&msg_bytes, "msg") else {
+            trace!("extract_proxy_calls: call at index {i} msg bytes are not valid json => None");
+            return Ok(None);
+        };
+
+        let Value::Object(msg_obj) = msg_json else {
+            trace!("extract_proxy_calls: call at index {i} msg is not a json object => None");
+            return Ok(None);
+        };
+
+        if msg_obj.len() != 1 {
+            trace!("extract_proxy_calls: call at index {i} msg object should have exactly one key, has {} => None", msg_obj.len());
+            return Ok(None);
+        }
+
+        let Some((function_name, function_value)) = msg_obj.into_iter().next() else {
+            trace!("extract_proxy_calls: call at index {i} msg object has no entries despite len check => None");
+            return Ok(None);
+        };
+
+        // Check function matches expected order immediately
+        let expected_function = expected_functions[i];
+        if function_name != expected_function {
+            trace!(
+                "extract_proxy_calls: function at index {i} expected '{}', found '{}' => None",
+                expected_function,
+                function_name
+            );
+            return Ok(None);
+        }
+
+        extracted_values.push(function_value.clone());
+    }
 
     trace!(
-        "is_call_to: expected: {}, actual: {}",
-        hex::encode(&expected_contract_address),
-        hex::encode(&actual_contract_address)
+        "extract_proxy_calls: successfully extracted {} function values => Some",
+        extracted_values.len()
     );
+    Ok(Some(extracted_values))
+}
 
-    Ok(actual_contract_address == expected_contract_address)
+// check if the instruction at index is a proxy call with specified functions
+fn is_proxy_call_with(
+    flatten: &[Value],
+    index: usize,
+    expected_functions: &[&str],
+) -> Result<bool, IndexerError> {
+    Ok(extract_proxy_calls(flatten, index, expected_functions)?.is_some())
 }
 
 fn packet_structure(flatten: &[Value]) -> Result<String, IndexerError> {
