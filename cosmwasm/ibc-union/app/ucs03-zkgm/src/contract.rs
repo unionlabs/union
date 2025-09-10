@@ -43,10 +43,10 @@ use crate::{
         V1ToV2WrappedMigration,
     },
     state::{
-        BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, DEPRECATED_CHANNEL_BALANCE_V1,
-        EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
-        IN_FLIGHT_PACKET, MARKET_MAKER, METADATA_IMAGE_OF, TOKEN_BUCKET, TOKEN_MINTER,
-        TOKEN_ORIGIN,
+        CallProxySalt, BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT,
+        DEPRECATED_CHANNEL_BALANCE_V1, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH, EXECUTION_ACK,
+        HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, METADATA_IMAGE_OF, TOKEN_BUCKET,
+        TOKEN_MINTER, TOKEN_ORIGIN,
     },
     token_bucket::TokenBucket,
     ContractError,
@@ -101,7 +101,13 @@ pub fn minter_salt() -> String {
     format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
 }
 
-pub fn proxy_account_label(path: U256, channel_id: ChannelId, sender: Bytes) -> String {
+pub fn proxy_account_label(
+    CallProxySalt {
+        path,
+        channel_id,
+        sender,
+    }: &CallProxySalt,
+) -> String {
     format!("{PROTOCOL_VERSION}/{ZKGM_CW_ACCOUNT_LABEL}:{path}/{channel_id}/{sender}")
 }
 
@@ -1173,7 +1179,7 @@ fn execute_packet(
 ) -> Result<Response, ContractError> {
     let mut funds = Coins::try_from(info.funds.clone()).expect("impossible");
     let zkgm_packet = ZkgmPacket::abi_decode_params_validate(&packet.data)?;
-    execute_internal(
+    let res = execute_internal(
         deps.branch(),
         env,
         info,
@@ -1186,7 +1192,12 @@ fn execute_packet(
         zkgm_packet.path,
         zkgm_packet.instruction,
         intent,
-    )
+    )?;
+
+    // remove this temporary storage in case a proxy account was created while executing this packet
+    CREATED_PROXY_ACCOUNT.remove(deps.storage);
+
+    Ok(res)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1473,22 +1484,37 @@ fn execute_call(
         )
         .map_err(|_| ContractError::UnableToValidateCallTarget)?;
 
-    let predicted_address = predict_call_proxy_account(
-        deps.as_ref(),
-        &env,
-        path,
-        packet.destination_channel_id,
-        call.sender.clone().into(),
-    )?;
+    let call_proxy_salt = CallProxySalt {
+        path: path.into(),
+        channel_id: packet.destination_channel_id,
+        sender: call.sender.clone().into(),
+    };
+
+    let predicted_address = predict_call_proxy_account(deps.as_ref(), &env, &call_proxy_salt)?;
 
     let mut response = Response::<cosmwasm_std::Empty>::new();
 
+    // In the case where there are multiple calls to a proxy account that doesnt exist yet in a single batch, the calls to check if the proxy exists yet will return an error. See the following example:
+    //
+    // Batch [
+    //   Call(proxy) (0)
+    //   Call(proxy) (1)
+    // ]
+    //
+    // When handling (0), we first check if the proxy account exists yet, which will return with an error if it does not, and then queue the necessary sub messages to set up the proxy account (instantiate2, migrate, update admin). These messages are not executed right away, but rather appended to a queue of messages that *will* be executed after all messages in the batch have been processed. This means that when (1) is handled, it will do the same check for the proxy account, and queue the *same* sub messages. In this case, the instantiation will return with ErrDuplicate (codespace wasm, code 15), and the migration and admin update sub messages will also fail. To prevent this, we also store the created proxy information when the sub messages are queued, and then also check if that item exists before appending the aforementioned sub messages.
+    //
+    // Alternatively, it we could handle the reply of the sub messages (likely only the final admin update call)n and emit the event there, however this still requires us to store the value in a storage item to thread the CallProxySalt through to the reply (we could use the sub message payload, however that is a coxmwasm 2.0+ feature, and we don't want to lock ourselves out of chains that may be running an older versionof cosmwasm). Also, storing one item in storage (that will be deleted at the end of the transaction) is a bit more elegant than ignoring failing sub messages, and has less room for cosmwasm upgrades to change behaviour that we may accidentally rely on when doing so.
+    //
+    // if the predicted proxy is the address to be called...
     if predicted_address == contract_address
+        // ...and the contract doesn't exist yet...
         && deps
             .querier
             .query_wasm_contract_info(&contract_address)
             // REVIEW: Is this sound? Should there be a more sophisticated check?
             .is_err()
+        // ...AND we haven't created the proxy yet
+        && !CREATED_PROXY_ACCOUNT.exists(deps.storage)
     {
         let Config {
             dummy_code_id,
@@ -1496,47 +1522,42 @@ fn execute_call(
             ..
         } = CONFIG.load(deps.storage)?;
 
+        // save the newly created proxy account information so that it can be read while handling the reply of the sub messages below
+        // this also acts as a marker that this proxy account has already been created in this batch (if this is executing in a batch)
+        CREATED_PROXY_ACCOUNT.save(deps.storage, &call_proxy_salt)?;
+
         response = response
-            .add_message(WasmMsg::Instantiate2 {
-                admin: Some(env.contract.address.to_string()),
-                code_id: dummy_code_id,
-                label: proxy_account_label(
-                    path,
-                    packet.destination_channel_id,
-                    call.sender.clone().into(),
-                ),
-                msg: to_json_binary(&cosmwasm_std::Empty {})?,
-                funds: vec![],
-                salt: proxy_account_salt(
-                    path,
-                    packet.destination_channel_id,
-                    call.sender.clone().into(),
-                )
-                .get()
-                .to_vec()
-                .into(),
-            })
-            .add_message(WasmMsg::Migrate {
-                contract_addr: predicted_address.to_string(),
-                new_code_id: cw_account_code_id,
-                msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
-                    cw_account::msg::InitMsg::Zkgm {
-                        zkgm: env.contract.address.clone(),
-                        path: path.into(),
-                        channel_id: packet.destination_channel_id,
-                        sender: call.sender.clone().into(),
-                    },
-                ))?,
-            })
-            .add_message(WasmMsg::UpdateAdmin {
-                contract_addr: predicted_address.to_string(),
-                admin: predicted_address.to_string(),
-            })
+            .add_messages([
+                WasmMsg::Instantiate2 {
+                    admin: Some(env.contract.address.to_string()),
+                    code_id: dummy_code_id,
+                    label: proxy_account_label(&call_proxy_salt),
+                    msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                    funds: vec![],
+                    salt: proxy_account_salt(&call_proxy_salt).get().to_vec().into(),
+                },
+                WasmMsg::Migrate {
+                    contract_addr: predicted_address.to_string(),
+                    new_code_id: cw_account_code_id,
+                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
+                        cw_account::msg::InitMsg::Zkgm {
+                            zkgm: env.contract.address.clone(),
+                            path: path.into(),
+                            channel_id: packet.destination_channel_id,
+                            sender: call.sender.clone().into(),
+                        },
+                    ))?,
+                },
+                WasmMsg::UpdateAdmin {
+                    contract_addr: predicted_address.to_string(),
+                    admin: predicted_address.to_string(),
+                },
+            ])
             .add_event(
                 Event::new("create_proxy_event")
-                    .add_attribute("path", path.to_string())
-                    .add_attribute("channel_id", packet.destination_channel_id.to_string())
-                    .add_attribute("owner", call.sender.to_string())
+                    .add_attribute("path", call_proxy_salt.path.to_string())
+                    .add_attribute("channel_id", call_proxy_salt.channel_id.to_string())
+                    .add_attribute("owner", call_proxy_salt.sender.to_string())
                     .add_attribute("address", predicted_address),
             );
     }
@@ -3445,24 +3466,33 @@ pub fn encode_call_calldata(path: U256, sender: Bytes, contract_calldata: Bytes)
 fn predict_call_proxy_account(
     deps: Deps,
     env: &Env,
-    path: U256,
-    channel_id: ChannelId,
-    sender: Bytes,
+    call_proxy_salt: &CallProxySalt,
 ) -> Result<Addr, ContractError> {
     let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
     let code_hash = get_code_hash(deps, dummy_code_id)?;
     let token_addr = instantiate2_address(
         &code_hash.into_bytes(),
         &deps.api.addr_canonicalize(env.contract.address.as_str())?,
-        proxy_account_salt(path, channel_id, sender)
-            .get()
-            .as_slice(),
+        proxy_account_salt(call_proxy_salt).get().as_slice(),
     )?;
     Ok(deps.api.addr_humanize(&token_addr)?)
 }
 
-fn proxy_account_salt(path: U256, channel_id: ChannelId, sender: Bytes) -> H256 {
-    keccak256((path, channel_id.raw(), sender).abi_encode_params())
+fn proxy_account_salt(
+    CallProxySalt {
+        path,
+        channel_id,
+        sender,
+    }: &CallProxySalt,
+) -> H256 {
+    keccak256(
+        (
+            Into::<alloy_primitives::U256>::into(*path),
+            channel_id.raw(),
+            sender,
+        )
+            .abi_encode_params(),
+    )
 }
 
 #[test]
@@ -3471,7 +3501,11 @@ fn proxy_salt() {
     let channel_id = ChannelId!(20);
     let sender = hex_literal::hex!("2C96e52fCE14BAa13868CA8182f8A7903e4e76E0");
 
-    let salt = proxy_account_salt(path, channel_id, sender.into());
+    let salt = proxy_account_salt(&CallProxySalt {
+        path: path.into(),
+        channel_id,
+        sender: sender.into(),
+    });
 
     assert_eq!(
         salt.get(),
