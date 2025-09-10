@@ -2,7 +2,7 @@ import { isTokenBlacklisted } from "$lib/constants/tokens"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
 import type { UniversalChainId } from "@unionlabs/sdk/schema"
-import { TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
+import { Token, TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
 import { Effect, Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 
@@ -61,10 +61,10 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
             Option.map(d => {
               const tokensWithWhitelist = d.v2_tokens.map(token => {
                 const isWhitelisted = d.whitelist?.some(w => w.denom === token.denom) ?? false
-                return {
+                return new Token({
                   ...token,
                   whitelisted: isWhitelisted,
-                }
+                })
               })
               return tokensWithWhitelist.filter(token => !isTokenBlacklisted(token.denom))
             }),
