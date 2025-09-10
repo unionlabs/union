@@ -19,30 +19,28 @@ _: {
     in
     {
       packages = {
-        site = mkCi false (
-          buildPnpmPackage {
-            hash = "sha256-e6FKW8iLRPfVs0httjJj9mu5UiSTASbFjai5VgMwWPY=";
-            packageJsonPath = ./package.json;
-            extraSrcs = [
-              ../site
-            ];
-            nativeBuildInputs = deps;
-            buildInputs = deps;
-            buildPhase = ''
-              runHook preBuild
-              export PUPPETEER_SKIP_DOWNLOAD=1;
-              export ASTRO_TELEMETRY_DISABLED=1;
-              export NODE_OPTIONS="--no-warnings";
-              pnpm --filter=site build
-              runHook postBuild
-            '';
-            installPhase = ''
-              mkdir -p $out
-              cp -r ./site/.vercel/output/* $out
-            '';
-            doDist = false;
-          }
-        );
+        site = mkCi false (buildPnpmPackage {
+          hash = "sha256-e6FKW8iLRPfVs0httjJj9mu5UiSTASbFjai5VgMwWPY=";
+          packageJsonPath = ./package.json;
+          extraSrcs = [
+            ../site
+          ];
+          nativeBuildInputs = deps;
+          buildInputs = deps;
+          buildPhase = ''
+            runHook preBuild
+            export PUPPETEER_SKIP_DOWNLOAD=1;
+            export ASTRO_TELEMETRY_DISABLED=1;
+            export NODE_OPTIONS="--no-warnings";
+            pnpm --filter=site build
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r ./site/.vercel/output/* $out
+          '';
+          doDist = false;
+        });
       };
 
       apps = {

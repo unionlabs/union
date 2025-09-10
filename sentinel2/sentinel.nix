@@ -165,29 +165,29 @@ in
             # pnpm rebuild better-sqlite3 --build-from-source
           '';
           installPhase = ''
-            mkdir -p $out/lib
-            cp -r ./sentinel2/build/* $out/lib
+                        mkdir -p $out/lib
+                        cp -r ./sentinel2/build/* $out/lib
 
-            # 2) Copy node_modules (with rebuilt better-sqlite3)
-            rm -rf $out/lib/node_modules
-            cp -r node_modules $out/lib/node_modules
+                        # 2) Copy node_modules (with rebuilt better-sqlite3)
+                        rm -rf $out/lib/node_modules
+                        cp -r node_modules $out/lib/node_modules
 
-            # 3) Copy package.json
-            cp package.json $out/lib
+                        # 3) Copy package.json
+                        cp package.json $out/lib
 
-            # 4) Create a Bash wrapper in $out/bin
-            mkdir -p $out/bin
+                        # 4) Create a Bash wrapper in $out/bin
+                        mkdir -p $out/bin
 
-            # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
-            cat <<EOF > $out/bin/sentinel2
-#!${pkgs.bashInteractive}/bin/bash
-export PATH=${pkgs.nodejs_20}/bin:\$PATH
-cd "$out/lib"
-export NODE_PATH="$out/lib/node_modules"
-EOF
+                        # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
+                        cat <<EOF > $out/bin/sentinel2
+            #!${pkgs.bashInteractive}/bin/bash
+            export PATH=${pkgs.nodejs_20}/bin:\$PATH
+            cd "$out/lib"
+            export NODE_PATH="$out/lib/node_modules"
+            EOF
 
-            echo 'exec '"${pkgs.nodejs_20}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
-            chmod +x $out/bin/sentinel2
+                        echo 'exec '"${pkgs.nodejs_20}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
+                        chmod +x $out/bin/sentinel2
           '';
 
           doDist = false;
