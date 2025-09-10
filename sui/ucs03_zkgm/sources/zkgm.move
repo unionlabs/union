@@ -66,11 +66,9 @@ module zkgm::zkgm {
     use sui::bcs;
     use sui::clock::Clock; 
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-    use sui::hash;
     use sui::object_bag::{Self, ObjectBag};
     use sui::table::{Self, Table};
 
-    use ibc::ethabi;
     use ibc::commitment;
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
@@ -98,7 +96,7 @@ module zkgm::zkgm {
     const INSTR_VERSION_2: u8 = 0x02;
 
     const OP_FORWARD: u8 = 0x00;
-    const OP_MULTIPLEX: u8 = 0x01;
+    const OP_CALL : u8 = 0x01;
     const OP_BATCH: u8 = 0x02;
     const OP_TOKEN_ORDER: u8 = 0x03;
 
@@ -111,17 +109,6 @@ module zkgm::zkgm {
     const TOKEN_ORDER_KIND_UNESCROW: u8 = 0x02;
     const TOKEN_ORDER_KIND_SOLVE: u8 = 0x03;
 
-    public struct TreasuryCapWithMetadata<phantom T> has key, store {
-        id: UID,
-        cap: TreasuryCap<T>,
-        name: String,
-        symbol: String,
-        decimals: u8,
-        icon_url: Option<String>,
-        description: String,
-        owner: address
-    }
-
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
     const E_INVALID_IBC_VERSION: u64 = 3;
@@ -131,15 +118,13 @@ module zkgm::zkgm {
     const E_INVALID_AMOUNT: u64 = 10;
     const E_INVALID_FILL_TYPE: u64 = 12;
     const E_ONLY_MAKER: u64 = 15;
-    const E_NO_MULTIPLEX_OPERATION: u64 = 17;
+    const E_NO_CALL_OPERATION: u64 = 17;
     const E_INVALID_FORWARD_INSTRUCTION: u64 = 18;
     const E_NO_TREASURY_CAPABILITY: u64 = 20;
-    const E_INVALID_BASE_AMOUNT: u64 = 22;
     const E_NO_COIN_IN_BAG: u64 = 23;
     const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
     const E_ANOTHER_TOKEN_IS_REGISTERED: u64 = 26;
     const E_INVALID_BATCH_INSTRUCTION: u64 = 27;
-    const E_BATCH_MUST_BE_SYNC: u64 = 28;
     const E_ACK_AND_PACKET_LENGTH_MISMATCH: u64 = 29;
     const E_INVALID_FORWARD_DESTINATION_CHANNEL_ID: u64 = 30;
     const E_INVALID_TOKEN_ORDER_KIND: u64 = 31;
@@ -147,12 +132,8 @@ module zkgm::zkgm {
     const E_UNWRAP_METADATA_INVALID: u64 = 33;
     const E_UNAUTHORIZED: u64 = 34;
     const E_INVALID_METADATA: u64 = 35;
-    const E_ONLY_ONE_SESSION_IS_ALLOWED: u64 = 36;
-    const E_ALL_INSTRUCTIONS_ARE_RUN: u64 = 37;
     const E_INVALID_UNESCROW: u64 = 38;
     const E_INTENT_WHITELISTED_ONLY: u64 = 39;
-    const E_INVALID_PACKET_HASH: u64 = 40;
-    const E_ALL_PACKETS_ARE_RECEIVED: u64 = 41;
     const E_ACK_SIZE_MISMATCHING: u64 = 42;
     const E_EXECUTION_NOT_COMPLETE: u64 = 43;
     const E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT: u64 = 44;
@@ -172,6 +153,17 @@ module zkgm::zkgm {
         fungible_counterparties: Table<FungibleLane, vector<u8>>,
 
         intent_whitelist: Table<IntentWhitelistKey, bool>,
+    }
+
+    public struct TreasuryCapWithMetadata<phantom T> has key, store {
+        id: UID,
+        cap: TreasuryCap<T>,
+        name: String,
+        symbol: String,
+        decimals: u8,
+        icon_url: Option<String>,
+        description: String,
+        owner: address
     }
 
     public struct IntentWhitelistKey has copy, drop, store {
@@ -289,7 +281,6 @@ module zkgm::zkgm {
         proof_try: vector<u8>,
         proof_height: u64
     ) {
-        // Store the channel_id
         ibc::channel_open_ack(
             ibc_store,
             port_id,
@@ -363,7 +354,6 @@ module zkgm::zkgm {
     /// When receiving a packet, the relayers **must** call this to begin
     /// a receiving session. Receiving is done in multi-steps.
     public fun begin_recv(
-        zkgm: &mut RelayStore,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_data: vector<vector<u8>>,
@@ -437,7 +427,7 @@ module zkgm::zkgm {
         // aborts if there is not a session
         let packet_cursor = exec_ctx.cursor;
         let packet = exec_ctx.packets[exec_ctx.cursor];
-        let mut zkgm_packet = exec_ctx.packet_ctxs.borrow_mut(packet_cursor);
+        let zkgm_packet = exec_ctx.packet_ctxs.borrow_mut(packet_cursor);
 
         let instr_len = zkgm_packet.instruction_set.length();
         let mut type_is_exhausted = false;
@@ -448,7 +438,7 @@ module zkgm::zkgm {
             // return exec_ctx and expect to be called with the appropriate type again.
             if (instruction.opcode() == OP_TOKEN_ORDER) {
                 if (type_is_exhausted) {
-                    return exec_ctx;   
+                    return exec_ctx
                 } else {
                     type_is_exhausted = true;
                 };
@@ -482,7 +472,6 @@ module zkgm::zkgm {
     }
 
     public fun end_recv(
-        zkgm: &mut RelayStore,
         ibc: &mut ibc::IBCStore,
         clock: &Clock,
         proof: vector<u8>,
@@ -578,7 +567,7 @@ module zkgm::zkgm {
                     ctx,
                 )
             },
-            OP_MULTIPLEX => (vector::empty(), E_NO_MULTIPLEX_OPERATION),
+            OP_CALL => (vector::empty(), E_NO_CALL_OPERATION),
             _ => (vector::empty(), E_UNKNOWN_SYSCALL)
         }
     }
@@ -737,7 +726,7 @@ module zkgm::zkgm {
                 relayer,
                 intent,
                 ctx,
-            );
+            )
         } else {
             let quote_amount = order.quote_amount() as u64;
             if (quote_amount > 0){
@@ -762,14 +751,12 @@ module zkgm::zkgm {
         intent: bool,
         ctx: &mut TxContext,
     ): (vector<u8>, u64) {
-        let quote_amount = (order.quote_amount() as u64);
-
         let metadata = solver_metadata::decode(order.metadata());
 
         let solver = bcs::new(*metadata.solver_address()).peel_address();
 
         if (solver != @zkgm) {
-            return (vector::empty(), E_INVALID_SOLVER_ADDRESS);  
+            return (vector::empty(), E_INVALID_SOLVER_ADDRESS)
         };
 
         let quote_token = bcs::new(*order.quote_token()).peel_address();
@@ -1213,7 +1200,7 @@ module zkgm::zkgm {
                     ctx,
                 )
             },
-            OP_MULTIPLEX => abort E_NO_MULTIPLEX_OPERATION,
+            OP_CALL => abort E_NO_CALL_OPERATION,
             _ => abort E_UNKNOWN_SYSCALL,
         }
     }
@@ -1255,7 +1242,7 @@ module zkgm::zkgm {
                         && is_sending_back_to_same_channel
                 )
             ) {
-                abort E_INVALID_UNESCROW;
+                abort E_INVALID_UNESCROW
             };
             
             // We don't have to verify that metadataImage matches the stored one
@@ -1424,8 +1411,8 @@ module zkgm::zkgm {
                     ctx,
                 );
             },
-            OP_MULTIPLEX => {
-                abort E_NO_MULTIPLEX_OPERATION
+            OP_CALL => {
+                abort E_NO_CALL_OPERATION
             },            
             _ => abort E_UNKNOWN_SYSCALL
         };
@@ -1592,8 +1579,8 @@ module zkgm::zkgm {
                     ctx
                 );
             },
-            OP_MULTIPLEX => {
-                abort E_NO_MULTIPLEX_OPERATION
+            OP_CALL => {
+                abort E_NO_CALL_OPERATION
             },
             _ => abort E_UNKNOWN_SYSCALL
         };
@@ -1762,7 +1749,7 @@ module zkgm::zkgm {
         ctx: &mut TxContext
     ): Coin<T> {
         let typename_t = type_name::get<T>();
-        let mut cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+        let cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
 
         assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
         
@@ -1776,7 +1763,7 @@ module zkgm::zkgm {
         ctx: &mut TxContext
     ) {
         let typename_t = type_name::get<T>();
-        let mut cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+        let cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
 
         assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
         
@@ -1785,7 +1772,7 @@ module zkgm::zkgm {
 
     public fun burn<T>(zkgm: &mut RelayStore, c: Coin<T>, ctx: &mut TxContext): u64 {
         let typename_t = type_name::get<T>();
-        let mut cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+        let cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
 
         assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
         
