@@ -62,17 +62,24 @@ where
                     .take(count)
                     .collect::<Vec<_>>()
                     .into_iter()
-                    .map(|addr| {
+                    .flat_map(|addr| {
                         let addr = addr.unwrap();
                         let amount = BALANCES.load(deps.storage, &addr).unwrap();
 
                         BALANCES.remove(deps.storage, &addr);
 
-                        CosmosMsg::Custom(TokenFactoryMsg::MintTokens(MintTokensMsg {
-                            denom: denom.clone(),
-                            amount,
-                            mint_to_address: addr,
-                        }))
+                        // we can't a balance of zero
+                        if amount.is_zero() {
+                            None
+                        } else {
+                            Some(CosmosMsg::Custom(TokenFactoryMsg::MintTokens(
+                                MintTokensMsg {
+                                    denom: denom.clone(),
+                                    amount,
+                                    mint_to_address: addr,
+                                },
+                            )))
+                        }
                     }),
             ))
         }
