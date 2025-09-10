@@ -23,6 +23,7 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@effect/platform": "0.84.6",
+    "@unionlabs/sdk": "workspace:*",
     "@unionlabs/sdk-cosmos": "workspace:*",
     "@unionlabs/sdk-evm": "workspace:*",
     "better-sqlite3": "^11.9.1",

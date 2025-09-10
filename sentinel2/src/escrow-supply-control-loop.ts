@@ -1,4 +1,5 @@
 import { FetchHttpClient } from "@effect/platform"
+import { Ucs05 } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm } from "@unionlabs/sdk-evm"
 import { Effect, Logger, Schedule } from "effect"
@@ -38,7 +39,9 @@ interface ChannelInfo {
  * @returns An Effect that resolves to true if native, false if CW20.
  */
 export const isDenomNative = Effect.fn((denom: string) =>
-  Cosmos.readCw20TokenInfo(denom).pipe(
+  Cosmos.readCw20TokenInfo(
+    Ucs05.CosmosDisplay.make({ address: denom as unknown as any }, { disableValidation: true }),
+  ).pipe(
     Effect.map(() => false), // If query succeeds => CW20 => false
     Effect.catchAllCause(() => Effect.succeed(true)), // If fails => native => true
   )
@@ -252,7 +255,9 @@ export const escrowSupplyControlLoop = Effect.repeat(
             Number(cosmosHeight),
           ).pipe(
             Effect.provide(Cosmos.ChannelDestination.Live({
-              ucs03address: srcCfg.zkgmAddress,
+              ucs03address: Ucs05.CosmosDisplay.make({
+                address: srcCfg.zkgmAddress as unknown as any,
+              }, { disableValidation: true }),
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
               channelId: sourceChannelId!,
             })),
@@ -331,7 +336,9 @@ export const escrowSupplyControlLoop = Effect.repeat(
 
           const totalSupplyHere = yield* Cosmos.readCw20TotalSupplyAtHeight(
             dstCfg.restUrl,
-            hexToUtf8(token.denom),
+            Ucs05.CosmosDisplay.make({ address: hexToUtf8(token.denom) as unknown as any }, {
+              disableValidation: true,
+            }),
             Number(cosmosHeight),
           ).pipe(
             Effect.catchAllCause((cause) => {
@@ -592,7 +599,9 @@ export const escrowSupplyControlLoop = Effect.repeat(
             } else {
               const balance = yield* Cosmos.readCw20BalanceAtHeight(
                 restUrl,
-                denom,
+                Ucs05.CosmosDisplay.make({ address: denom as unknown as any }, {
+                  disableValidation: true,
+                }),
                 minter,
                 Number(cosmosHeight),
               ).pipe(
