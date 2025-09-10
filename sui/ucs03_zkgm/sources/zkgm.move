@@ -138,6 +138,7 @@ module zkgm::zkgm {
     const E_EXECUTION_NOT_COMPLETE: u64 = 43;
     const E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT: u64 = 44;
     const E_INVALID_SOLVER_ADDRESS: u64 = 45;
+    const E_INVALID_QUOTE_TOKEN: u64 = 46;
 
     public struct IbcAppWitness has drop {}
 
@@ -167,12 +168,12 @@ module zkgm::zkgm {
     }
 
     public struct IntentWhitelistKey has copy, drop, store {
-        coin: address,
+        coin: vector<u8>,
         packet_hash: vector<u8>,
     }
 
     public struct FungibleLane has copy, drop, store {
-        coin: address,
+        coin: vector<u8>,
         path: u256,
         channel: u32,
         base_token: vector<u8>,
@@ -759,7 +760,11 @@ module zkgm::zkgm {
             return (vector::empty(), E_INVALID_SOLVER_ADDRESS)
         };
 
-        let quote_token = bcs::new(*order.quote_token()).peel_address();
+        let quote_token = *order.quote_token();
+
+        if (type_name::get<T>().into_string().into_bytes() != quote_token) {
+            return (vector::empty(), E_INVALID_QUOTE_TOKEN)
+        };
 
         if (intent) {
             let packet_hash = commitment::commit_packet(&ibc_packet);

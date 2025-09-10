@@ -2,22 +2,23 @@ use ibc_union_spec::{
     datagram::{
         MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgUpdateClient,
+        MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv, MsgUpdateClient,
     },
     ChannelId,
 };
 use move_core_types_sui::{ident_str, identifier::IdentStr};
+use serde::Serialize;
 use sui_sdk::{
     rpc_types::{SuiObjectDataOptions, SuiTypeTag},
     types::{
-        base_types::{ObjectID, SequenceNumber, SuiAddress},
+        base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         transaction::{Argument, CallArg, Command, ObjectArg, TransactionKind},
-        Identifier,
+        Identifier, TypeTag,
     },
     SuiClient,
 };
-use unionlabs::primitives::{encoding::HexPrefixed, H256};
+use unionlabs::primitives::{encoding::HexPrefixed, Bytes, H256};
 use voyager_sdk::anyhow;
 
 use crate::{Module, ModuleInfo};
@@ -349,6 +350,170 @@ pub fn channel_open_confirm_call(
     )
 }
 
+pub mod zkgm {
+    use super::*;
+
+    pub fn begin_recv_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module_info: &ModuleInfo,
+        store_initial_seq: SequenceNumber,
+        data: MsgPacketRecv,
+    ) -> Argument {
+        let (source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps) =
+            data.packets
+                .iter()
+                .map(|p| {
+                    (
+                        p.source_channel_id,
+                        p.destination_channel_id,
+                        p.data.clone(),
+                        0 as u64,
+                        p.timeout_timestamp,
+                    )
+                })
+                .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
+
+        let arguments = vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].into(),
+                initial_shared_version: store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
+        ]
+        .into_iter()
+        .map(|a| ptb.input(a))
+        .collect::<Result<_, _>>()
+        .unwrap();
+
+        ptb.command(Command::move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("begin_recv").into(),
+            vec![],
+            arguments,
+        ))
+    }
+
+    pub fn recv_packet_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module: &Module,
+        module_info: &ModuleInfo,
+        store_initial_seq: SequenceNumber,
+        coin_t: TypeTag,
+        fee_recipient: SuiAddress,
+        relayer_msgs: Vec<Bytes>,
+    ) -> anyhow::Result<()> {
+        ptb.move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("recv_packet").into(),
+            vec![coin_t],
+            vec![
+                CallArg::Object(ObjectArg::SharedObject {
+                    id: module.ibc_store.into(),
+                    initial_shared_version: module.ibc_store_initial_seq,
+                    mutable: true,
+                }),
+                CallArg::Object(ObjectArg::SharedObject {
+                    id: module_info.stores[0].into(),
+                    initial_shared_version: store_initial_seq,
+                    mutable: true,
+                }),
+                SUI_CALL_ARG_CLOCK,
+                CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                CallArg::Pure(bcs::to_bytes(&relayer_msgs).unwrap()),
+            ],
+        )
+    }
+
+    pub fn end_recv_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module: &Module,
+        module_info: &ModuleInfo,
+        store_initial_seq: SequenceNumber,
+        fee_recipient: SuiAddress,
+        session: Argument,
+        data: MsgPacketRecv,
+    ) -> anyhow::Result<()> {
+        let arguments = vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].into(),
+                initial_shared_version: store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module.ibc_store.into(),
+                initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            SUI_CALL_ARG_CLOCK,
+            (&data.proof.into_vec()).into(),
+            data.proof_height.into(),
+            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
+        ]
+        .into_iter()
+        .map(|a| ptb.input(a).unwrap())
+        .chain(vec![session])
+        .collect();
+
+        let _ = ptb.command(Command::move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("end_recv").into(),
+            vec![],
+            arguments,
+        ));
+
+        Ok(())
+    }
+
+    pub fn register_capability_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module_info: &ModuleInfo,
+        initial_seq: SequenceNumber,
+        treasury_ref: ObjectRef,
+        metadata_ref: ObjectRef,
+        coin_t: TypeTag,
+    ) -> anyhow::Result<()> {
+        let arguments = [
+            ptb.input(CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].into(),
+                initial_shared_version: initial_seq,
+                mutable: true,
+            }))
+            .unwrap(),
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+                .unwrap(),
+            ptb.input(CallArg::Object(ObjectArg::SharedObject {
+                id: metadata_ref.0,
+                initial_shared_version: metadata_ref.1,
+                mutable: true,
+            }))
+            .unwrap(),
+            // owner is 0x0
+            ptb.input(CallArg::Pure(
+                H256::<HexPrefixed>::default().into_bytes().to_vec(),
+            ))
+            .unwrap(),
+        ];
+        ptb.command(Command::move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("register_capability").into(),
+            vec![coin_t.clone()],
+            arguments.to_vec(),
+        ));
+
+        Ok(())
+    }
+}
+
 pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Result<String> {
     let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
 
@@ -365,4 +530,108 @@ pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Resu
     let port_id = bcs::from_bytes::<String>(&res[0].0)?;
 
     Ok(port_id)
+}
+
+pub async fn coin_update_name(
+    ptb: &mut ProgrammableTransactionBuilder,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+    name: String,
+) -> anyhow::Result<()> {
+    call_coin_setter(
+        ptb,
+        "update_name",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        name,
+    )
+    .await
+}
+
+pub async fn coin_update_description(
+    ptb: &mut ProgrammableTransactionBuilder,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+    description: String,
+) -> anyhow::Result<()> {
+    call_coin_setter(
+        ptb,
+        "update_description",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        description,
+    )
+    .await
+}
+
+pub async fn coin_update_symbol(
+    ptb: &mut ProgrammableTransactionBuilder,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+    symbol: String,
+) -> anyhow::Result<()> {
+    call_coin_setter(
+        ptb,
+        "update_symbol",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        symbol,
+    )
+    .await
+}
+
+pub async fn coin_update_icon_url(
+    ptb: &mut ProgrammableTransactionBuilder,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+    icon_url: String,
+) -> anyhow::Result<()> {
+    call_coin_setter(
+        ptb,
+        "update_icon_url",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        icon_url,
+    )
+    .await
+}
+
+async fn call_coin_setter<T: Serialize>(
+    ptb: &mut ProgrammableTransactionBuilder,
+    function: &'static str,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+    data: T,
+) -> anyhow::Result<()> {
+    let arguments: Vec<Argument> = [
+        CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }),
+        CallArg::Pure(bcs::to_bytes(&data).unwrap()),
+    ]
+    .into_iter()
+    .map(|arg| ptb.input(arg).unwrap())
+    .collect();
+
+    let _ = ptb.command(Command::move_call(
+        ObjectID::from_single_byte(2),
+        ident_str!("coin").into(),
+        ident_str!(function).into(),
+        vec![coin_t],
+        arguments.to_vec(),
+    ));
+
+    Ok(())
 }
