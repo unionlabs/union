@@ -333,6 +333,7 @@ pub enum RecordKind {
     PacketSendUnbond,
     CreateWrappedToken,
     CreateWrappedTokenRelation,
+    CreateProxyAccount,
 }
 
 /// Trait for types that can be associated with a specific `RecordKind`.

@@ -531,6 +531,24 @@ impl From<bytes::Bytes> for Denom {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Owner(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for Owner {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProxyAccount(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for ProxyAccount {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Capacity(pub U256);
 
 impl From<U256> for Capacity {

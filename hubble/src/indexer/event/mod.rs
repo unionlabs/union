@@ -8,6 +8,7 @@ pub(crate) mod connection_open_init_event;
 pub(crate) mod connection_open_try_event;
 pub(crate) mod create_client_event;
 pub(crate) mod create_lens_client_event;
+pub(crate) mod create_proxy_account_event;
 pub(crate) mod create_wrapped_token;
 pub(crate) mod header;
 pub(crate) mod hubble;

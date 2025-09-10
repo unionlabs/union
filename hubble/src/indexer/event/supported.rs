@@ -10,12 +10,13 @@ use crate::indexer::event::{
     connection_open_confirm_event::ConnectionOpenConfirmEvent,
     connection_open_init_event::ConnectionOpenInitEvent,
     connection_open_try_event::ConnectionOpenTryEvent, create_client_event::CreateClientEvent,
-    create_lens_client_event::CreateLensClientEvent, create_wrapped_token::CreateWrappedTokenEvent,
-    packet_ack_event::PacketAckEvent, packet_recv_event::PacketRecvEvent,
-    packet_send_event::PacketSendEvent, packet_timeout_event::PacketTimeoutEvent,
-    token_bucket_update_event::TokenBucketUpdateEvent, types::BlockHeight,
-    update_client_event::UpdateClientEvent, wallet_mutation_entry_event::WalletMutationEntryEvent,
-    write_ack_event::WriteAckEvent,
+    create_lens_client_event::CreateLensClientEvent,
+    create_proxy_account_event::CreateProxyAccountEvent,
+    create_wrapped_token::CreateWrappedTokenEvent, packet_ack_event::PacketAckEvent,
+    packet_recv_event::PacketRecvEvent, packet_send_event::PacketSendEvent,
+    packet_timeout_event::PacketTimeoutEvent, token_bucket_update_event::TokenBucketUpdateEvent,
+    types::BlockHeight, update_client_event::UpdateClientEvent,
+    wallet_mutation_entry_event::WalletMutationEntryEvent, write_ack_event::WriteAckEvent,
 };
 
 #[warn(clippy::enum_variant_names)]
@@ -174,6 +175,11 @@ pub enum SupportedBlockEvent {
         #[serde(flatten)]
         inner: CreateWrappedTokenEvent,
     },
+    #[serde(rename = "create-proxy-account")]
+    CreateProxyAccount {
+        #[serde(flatten)]
+        inner: CreateProxyAccountEvent,
+    },
 }
 
 impl SupportedBlockEvent {
@@ -203,6 +209,7 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::TokenBucketUpdate { inner, .. } => inner.header.height,
             SupportedBlockEvent::WalletMutationEntry { inner, .. } => inner.header.height,
             SupportedBlockEvent::CreateWrappedToken { inner, .. } => inner.header.height,
+            SupportedBlockEvent::CreateProxyAccount { inner, .. } => inner.header.height,
         }
     }
 }

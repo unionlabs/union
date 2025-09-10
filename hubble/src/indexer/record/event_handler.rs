@@ -16,6 +16,7 @@ use crate::indexer::{
         connection_open_try_record::ConnectionOpenTryRecord,
         create_client_record::CreateClientRecord,
         create_lens_client_record::CreateLensClientRecord,
+        create_proxy_account_record::CreateProxyAccountRecord,
         create_wrapped_token_record::CreateWrappedTokenRecord,
         create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_ack_record::PacketAckRecord,
@@ -142,6 +143,9 @@ pub async fn delete_event_data_at_height(
             height,
         )
         .await?;
+        changes +=
+            CreateProxyAccountRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
     } else {
         debug!("delete_event_data_at_height: {internal_chain_id}@{height} => nothing to delete");
     };
@@ -355,6 +359,9 @@ async fn handle_block_event(
             chain_context.with_event(inner).handle(tx).await?
         },
         SupportedBlockEvent::CreateWrappedToken { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::CreateProxyAccount { inner } => {
             chain_context.with_event(inner).handle(tx).await?
         },
     })

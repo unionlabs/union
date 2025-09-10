@@ -9,9 +9,9 @@ use crate::indexer::{
         Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
         ChannelId, ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom,
         EventIndex, Maker, MakerMsg, MessageHash, MessageIndex, MessageSequence, MutationAmount,
-        MutationDirection, NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash, Path,
-        PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash,
-        TransactionIndex, UniversalChainId, WalletAddress,
+        MutationDirection, NatsConsumerSequence, NatsStreamSequence, Owner, PacketData, PacketHash,
+        Path, PortId, ProxyAccount, RefillRate, TimeoutTimestamp, TransactionEventIndex,
+        TransactionHash, TransactionIndex, UniversalChainId, WalletAddress,
     },
     handler::{
         types::{
@@ -37,6 +37,7 @@ pub(crate) mod connection_open_init_record;
 pub(crate) mod connection_open_try_record;
 pub(crate) mod create_client_record;
 pub(crate) mod create_lens_client_record;
+pub(crate) mod create_proxy_account_record;
 pub(crate) mod create_wrapped_token_record;
 pub(crate) mod create_wrapped_token_relation_record;
 pub(crate) mod event_handler;
@@ -557,6 +558,18 @@ impl PgValue<BigDecimal> for TimeoutTimestamp {
 }
 
 impl PgValue<Vec<u8>> for Denom {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+
+impl PgValue<Vec<u8>> for Owner {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+
+impl PgValue<Vec<u8>> for ProxyAccount {
     fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
