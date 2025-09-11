@@ -140,7 +140,32 @@ abstract contract UnionBase is Script {
 }
 
 abstract contract UnionScript is UnionBase {
-    function getDeployer() internal virtual returns (Deployer);
+    using LibString for address;
+
+    address private immutable deployer;
+    address private immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view virtual returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function getSender() internal view returns (address) {
+        return sender;
+    }
 
     function deploy(
         string memory salt,
@@ -151,16 +176,61 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function isContractDeployed(
+        address contractAddress
+    ) internal view returns (bool) {
+        return contractAddress.code.length > 0;
+    }
+
+    function deployIfNotExists(
+        string memory salt,
+        bytes memory args,
+        string memory contractName
+    ) internal returns (address) {
+        address predicted = getDeployed(salt);
+
+        if (isContractDeployed(predicted)) {
+            console.log(
+                string(abi.encodePacked(contractName, " already deployed at:")),
+                predicted
+            );
+            return predicted;
+        }
+
+        return getDeployer().deploy(
+            salt, abi.encodePacked(type(ERC1967Proxy).creationCode, args), 0
+        );
+    }
+
+    function deployDirectIfNotExists(
+        string memory salt,
+        bytes memory creationCode,
+        string memory contractName
+    ) internal returns (address) {
+        address predicted = getDeployed(salt);
+
+        if (isContractDeployed(predicted)) {
+            console.log(
+                string(abi.encodePacked(contractName, " already deployed at:")),
+                predicted
+            );
+            return predicted;
+        }
+
+        return getDeployer().deploy(salt, creationCode, 0);
+    }
+
     function deployMulticall(
         Manager manager
     ) internal returns (Multicall) {
         return Multicall(
-            deploy(
+            deployIfNotExists(
                 LIB_SALT.MULTICALL,
                 abi.encode(
                     address(new Multicall()),
                     abi.encodeCall(Multicall.initialize, (address(manager)))
-                )
+                ),
+                "Multicall"
             )
         );
     }
@@ -169,32 +239,33 @@ abstract contract UnionScript is UnionBase {
         address owner
     ) internal returns (Manager) {
         return Manager(
-            deploy(
+            deployIfNotExists(
                 IBC_SALT.MANAGER,
                 abi.encode(
                     address(new Manager()),
                     abi.encodeCall(Manager.initialize, (owner))
-                )
+                ),
+                "Manager"
             )
         );
     }
 
     function deployZkgmERC20() internal returns (ZkgmERC20) {
         return ZkgmERC20(
-            getDeployer().deploy(
+            deployDirectIfNotExists(
                 LIB_SALT.UCS03_ZKGM_ERC20_IMPL,
                 abi.encodePacked(type(ZkgmERC20).creationCode),
-                0
+                "ZkgmERC20"
             )
         );
     }
 
     function deployProxyAccount() internal returns (ProxyAccount) {
         return ProxyAccount(
-            getDeployer().deploy(
+            deployDirectIfNotExists(
                 LIB_SALT.UCS03_ZKGM_ACCOUNT_IMPL,
                 abi.encodePacked(type(ProxyAccount).creationCode),
-                0
+                "ProxyAccount"
             )
         );
     }
@@ -207,7 +278,7 @@ abstract contract UnionScript is UnionBase {
         uint8 decimals
     ) internal returns (U) {
         return U(
-            deploy(
+            deployIfNotExists(
                 string(INSTANCE_SALT.U),
                 abi.encode(
                     address(new U()),
@@ -222,7 +293,8 @@ abstract contract UnionScript is UnionBase {
                             hex""
                         )
                     )
-                )
+                ),
+                "U token"
             )
         );
     }
@@ -235,7 +307,7 @@ abstract contract UnionScript is UnionBase {
         uint8 decimals
     ) internal returns (U) {
         return U(
-            deploy(
+            deployIfNotExists(
                 string(INSTANCE_SALT.EU),
                 abi.encode(
                     address(new U()),
@@ -250,7 +322,8 @@ abstract contract UnionScript is UnionBase {
                             hex""
                         )
                     )
-                )
+                ),
+                "EU token"
             )
         );
     }
@@ -262,14 +335,15 @@ abstract contract UnionScript is UnionBase {
         bool active
     ) internal returns (UDrop) {
         return UDrop(
-            deploy(
+            deployIfNotExists(
                 string(INSTANCE_SALT.UDROP),
                 abi.encode(
                     address(new UDrop(root, token)),
                     abi.encodeCall(
                         UDrop.initialize, (address(authority), active)
                     )
-                )
+                ),
+                "UDrop"
             )
         );
     }
@@ -278,12 +352,13 @@ abstract contract UnionScript is UnionBase {
         Manager manager
     ) internal returns (IBCHandler) {
         return IBCHandler(
-            deploy(
+            deployIfNotExists(
                 IBC_SALT.BASED,
                 abi.encode(
                     address(new IBCHandler()),
                     abi.encodeCall(IBCHandler.initialize, (address(manager)))
-                )
+                ),
+                "IBCHandler"
             )
         );
     }
@@ -293,14 +368,15 @@ abstract contract UnionScript is UnionBase {
         Manager manager
     ) internal returns (StateLensIcs23MptClient) {
         return StateLensIcs23MptClient(
-            deploy(
+            deployIfNotExists(
                 LIGHT_CLIENT_SALT.STATE_LENS_ICS23_MPT,
                 abi.encode(
                     address(new StateLensIcs23MptClient(address(handler))),
                     abi.encodeCall(
                         StateLensIcs23MptClient.initialize, (address(manager))
                     )
-                )
+                ),
+                "StateLensIcs23MptClient"
             )
         );
     }
@@ -310,14 +386,15 @@ abstract contract UnionScript is UnionBase {
         Manager manager
     ) internal returns (StateLensIcs23Ics23Client) {
         return StateLensIcs23Ics23Client(
-            deploy(
+            deployIfNotExists(
                 LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23,
                 abi.encode(
                     address(new StateLensIcs23Ics23Client(address(handler))),
                     abi.encodeCall(
                         StateLensIcs23Ics23Client.initialize, (address(manager))
                     )
-                )
+                ),
+                "StateLensIcs23Ics23Client"
             )
         );
     }
@@ -327,14 +404,15 @@ abstract contract UnionScript is UnionBase {
         Manager manager
     ) internal returns (StateLensIcs23SmtClient) {
         return StateLensIcs23SmtClient(
-            deploy(
+            deployIfNotExists(
                 LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT,
                 abi.encode(
                     address(new StateLensIcs23SmtClient(address(handler))),
                     abi.encodeCall(
                         StateLensIcs23SmtClient.initialize, (address(manager))
                     )
-                )
+                ),
+                "StateLensIcs23SmtClient"
             )
         );
     }
@@ -344,14 +422,15 @@ abstract contract UnionScript is UnionBase {
         Manager manager
     ) internal returns (CometblsClient) {
         return CometblsClient(
-            deploy(
+            deployIfNotExists(
                 LIGHT_CLIENT_SALT.COMETBLS,
                 abi.encode(
                     address(new CometblsClient(address(handler))),
                     abi.encodeCall(
                         CometblsClient.initialize, (address(manager))
                     )
-                )
+                ),
+                "CometblsClient"
             )
         );
     }
@@ -362,7 +441,7 @@ abstract contract UnionScript is UnionBase {
         uint64 timeout
     ) internal returns (PingPong) {
         return PingPong(
-            deploy(
+            deployIfNotExists(
                 Protocols.UCS00,
                 abi.encode(
                     address(new PingPong()),
@@ -370,7 +449,8 @@ abstract contract UnionScript is UnionBase {
                         PingPong.initialize,
                         (handler, address(manager), timeout)
                     )
-                )
+                ),
+                "UCS00 PingPong"
             )
         );
     }
@@ -384,7 +464,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (UCS03Zkgm) {
         UCS03Zkgm zkgm = UCS03Zkgm(
             payable(
-                deploy(
+                deployIfNotExists(
                     Protocols.UCS03,
                     abi.encode(
                         address(
@@ -407,7 +487,8 @@ abstract contract UnionScript is UnionBase {
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
-                    )
+                    ),
+                    "UCS03 Zkgm"
                 )
             )
         );
@@ -419,14 +500,15 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (UCS06FundedDispatch) {
         UCS06FundedDispatch fundedDispatch = UCS06FundedDispatch(
             payable(
-                deploy(
+                deployIfNotExists(
                     Protocols.UCS06,
                     abi.encode(
                         address(new UCS06FundedDispatch()),
                         abi.encodeCall(
                             UCS06FundedDispatch.initialize, (address(manager))
                         )
-                    )
+                    ),
+                    "UCS06 FundedDispatch"
                 )
             )
         );
@@ -549,27 +631,6 @@ contract DeployDeployer is UnionBase, VersionedScript {
 contract DeployMulticall is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -583,27 +644,6 @@ contract DeployMulticall is UnionScript, VersionedScript {
 
 contract DeployManager is UnionScript, VersionedScript {
     using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
@@ -622,27 +662,6 @@ contract DeployManager is UnionScript, VersionedScript {
 
 contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript {
     using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
@@ -664,27 +683,6 @@ contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript {
 contract DeployZkgmERC20 is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -699,27 +697,6 @@ contract DeployZkgmERC20 is UnionScript, VersionedScript {
 contract DeployProxyAccount is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -733,27 +710,6 @@ contract DeployProxyAccount is UnionScript, VersionedScript {
 
 contract DeployUCS03 is UnionScript, VersionedScript {
     using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
@@ -778,27 +734,6 @@ contract DeployUCS03 is UnionScript, VersionedScript {
 contract DeployStateLensIcs23Ics23Client is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -819,27 +754,6 @@ contract DeployStateLensIcs23Ics23Client is UnionScript, VersionedScript {
 contract DeployStateLensIcs23SmtClient is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -858,16 +772,6 @@ contract DeployStateLensIcs23SmtClient is UnionScript, VersionedScript {
 }
 
 contract DeployIBC is UnionScript, VersionedScript {
-    Deployer immutable deployer;
-
-    constructor() {
-        deployer = Deployer(vm.envAddress("DEPLOYER"));
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return deployer;
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -891,7 +795,7 @@ contract DeployIBC is UnionScript, VersionedScript {
         vm.stopBroadcast();
 
         console.log("Manager: ", address(contracts.manager));
-        console.log("Deployer: ", address(deployer));
+        console.log("Deployer: ", address(getDeployer()));
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(contracts.handler));
         console.log("CometblsClient: ", address(contracts.cometblsClient));
@@ -946,7 +850,7 @@ contract DeployDeployerAndIBC is UnionScript, VersionedScript {
         vm.stopBroadcast();
 
         console.log("Manager: ", address(contracts.manager));
-        console.log("Deployer: ", address(deployer));
+        console.log("Deployer: ", address(getDeployer()));
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(contracts.handler));
         console.log("CometblsClient: ", address(contracts.cometblsClient));
@@ -2079,27 +1983,6 @@ contract UpgradeEU is BaseUpgrade {
 contract DeployRoles is UnionScript {
     using LibString for *;
 
-    Deployer immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = Deployer(vm.envAddress("DEPLOYER"));
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return deployer;
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            address(deployer)
-        );
-    }
-
     function getContracts() internal returns (Contracts memory) {
         Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
         IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
@@ -2152,27 +2035,6 @@ contract DeployRoles is UnionScript {
 
 contract DeployRegisterClients is UnionScript {
     using LibString for *;
-
-    Deployer immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = Deployer(vm.envAddress("DEPLOYER"));
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return deployer;
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            address(deployer)
-        );
-    }
 
     function getContracts() internal returns (Contracts memory) {
         Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
@@ -2262,27 +2124,6 @@ contract DeployRegisterClients is UnionScript {
 contract DeployU is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -2300,32 +2141,11 @@ contract DeployU is UnionScript, VersionedScript {
 contract DryDeployU is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
-        vm.startPrank(sender);
+        vm.startPrank(getSender());
         U u = deployU(manager, ucs03, "Union", "U", 18);
         vm.stopPrank();
 
@@ -2335,27 +2155,6 @@ contract DryDeployU is UnionScript, VersionedScript {
 
 contract DeployEU is UnionScript, VersionedScript {
     using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
@@ -2374,32 +2173,11 @@ contract DeployEU is UnionScript, VersionedScript {
 contract DryDeployEU is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
     function run() public {
         Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
-        vm.startPrank(sender);
+        vm.startPrank(getSender());
         U eu = deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
         vm.stopPrank();
 
@@ -2410,29 +2188,12 @@ contract DryDeployEU is UnionScript, VersionedScript {
 contract DeployUDrop is UnionScript, VersionedScript {
     using LibString for *;
 
-    address immutable deployer;
-    address immutable sender;
     bytes32 immutable root;
     bool immutable active;
 
     constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
         root = vm.envBytes32("MERKLE_ROOT");
         active = vm.envBool("ACTIVE");
-    }
-
-    function getDeployer() internal view override returns (Deployer) {
-        return Deployer(deployer);
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
     }
 
     function run() public {
