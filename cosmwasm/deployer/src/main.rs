@@ -672,14 +672,12 @@ async fn do_main() -> Result<()> {
                     .unwrap();
 
                     let minter_init_params = match ucs03_config.token_minter_config {
-                        TokenMinterConfig::Cw20 {
-                            cw20_impl: cw20_base,
-                        } => {
+                        TokenMinterConfig::Cw20 { cw20_impl } => {
                             let (tx_hash, response) = ctx
                                 .tx(
                                     MsgStoreCode {
                                         sender: ctx.wallet().address().map_data(Into::into),
-                                        wasm_byte_code: std::fs::read(cw20_base)?.into(),
+                                        wasm_byte_code: std::fs::read(cw20_impl)?.into(),
                                         instantiate_permission: None,
                                     },
                                     "",
