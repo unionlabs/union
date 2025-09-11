@@ -8,6 +8,7 @@ import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { getWalletClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import { cn } from "$lib/utils"
 import { matchOption } from "$lib/utils/snippets.svelte"
 import {
@@ -23,7 +24,7 @@ import {
   ZkgmIncomingMessage,
 } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
-import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
+import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
   EU_ERC20,
@@ -239,27 +240,34 @@ const instantiate2 = Effect.fn(
 )
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
-  pipe(
-    Evm.readErc20Allowance(
+  Effect.gen(function*() {
+    bondState = BondState.CheckingAllowance()
+    
+    const currentAllowance = yield* Evm.readErc20Allowance(
       U_ERC20.address,
       sender.address,
       UCS03_EVM.address,
-    ),
-    Effect.flatMap((amount) =>
-      Effect.if(amount < sendAmount, {
-        onTrue: () =>
-          pipe(
-            Evm.increaseErc20Allowance(
-              U_ERC20.address,
-              UCS03_EVM,
-              sendAmount,
-            ),
-            Effect.andThen(Evm.waitForTransactionReceipt),
-          ),
-        onFalse: () => Effect.void,
-      })
-    ),
-  )
+    )
+
+    if (currentAllowance < sendAmount) {
+      bondState = BondState.ApprovingAllowance()
+      
+      const approveTxHash = yield* Evm.increaseErc20Allowance(
+        U_ERC20.address,
+        UCS03_EVM,
+        sendAmount,
+      )
+
+      bondState = BondState.AllowanceSubmitted({ txHash: approveTxHash })
+      yield* Effect.sleep("500 millis")
+
+      bondState = BondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
+      yield* Evm.waitForTransactionReceipt(approveTxHash)
+    }
+
+    bondState = BondState.AllowanceApproved()
+    yield* Effect.sleep("500 millis")
+  })
 
 const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, slippagePercent: number) =>
   Effect.gen(function*() {
@@ -431,7 +439,11 @@ runPromiseExit$(() =>
 
       const connectorClient = yield* getWagmiConnectorClient
 
-      yield* switchChain(VIEM_CHAIN)
+      const isSafeWallet = getLastConnectedWalletId() === "safe"
+
+      if (!isSafeWallet) {
+        yield* switchChain(VIEM_CHAIN)
+      }
 
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
@@ -444,33 +456,11 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
-      bondState = BondState.CheckingAllowance()
-      // Check current allowance
-      const currentAllowance = yield* Evm.readErc20Allowance(
-        U_ERC20.address,
-        sender.address,
-        UCS03_EVM.address,
-      ).pipe(Effect.provide(publicClient))
-
-      if (currentAllowance < sendAmount) {
-        bondState = BondState.ApprovingAllowance()
-        const approveTxHash = yield* Evm.increaseErc20Allowance(
-          U_ERC20.address,
-          UCS03_EVM,
-          sendAmount,
-        ).pipe(Effect.provide(walletClient))
-
-        bondState = BondState.AllowanceSubmitted({ txHash: approveTxHash })
-        yield* Effect.sleep("500 millis")
-
-        bondState = BondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
-        yield* Evm.waitForTransactionReceipt(approveTxHash).pipe(
-          Effect.provide(publicClient),
-        )
-      }
-
-      bondState = BondState.AllowanceApproved()
-      yield* Effect.sleep("500 millis")
+      // Use the dedicated allowance function with proper state management
+      yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+      )
 
       bondState = BondState.CreatingTokenOrder()
       yield* Effect.sleep("300 millis")
@@ -479,18 +469,39 @@ runPromiseExit$(() =>
       yield* Effect.sleep("300 millis")
 
       bondState = BondState.ConfirmingBond()
-      const { response, txHash } = yield* executeBond(sender, sendAmount, slippage).pipe(
-        Effect.provide(EvmZkgmClient.layerWithoutWallet),
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(ChainRegistry.Default),
-      )
+      
+      const executeBondWithProviders = isSafeWallet
+        ? executeBond(sender, sendAmount, slippage).pipe(
+            Effect.provide(EvmZkgmClient.layerWithoutWallet),
+            Effect.provide(walletClient),
+            Effect.provide(publicClient),
+            Effect.provide(ChainRegistry.Default),
+            Effect.provide(Safe.Safe.Default({
+              allowedDomains: [
+                /gnosis-safe.io$/,
+                /app.safe.global$/,
+                /staging.btc.union.build$/,
+                /staging.app.union.build$/,
+                /btc.union.build$/,
+              ],
+              debug: false,
+            })),
+          )
+        : executeBond(sender, sendAmount, slippage).pipe(
+            Effect.provide(EvmZkgmClient.layerWithoutWallet),
+            Effect.provide(walletClient),
+            Effect.provide(publicClient),
+            Effect.provide(ChainRegistry.Default),
+          )
+
+      const { response, txHash } = yield* executeBondWithProviders
 
       bondState = BondState.BondSubmitted({ txHash })
       yield* Effect.sleep("500 millis")
 
       bondState = BondState.WaitingForConfirmation({ txHash })
-      // Wait for actual transaction confirmation
+      // Always wait for transaction confirmation manually to ensure it's confirmed
+      // The SDK's lifecycle events may not be reliable for this step
       yield* Evm.waitForTransactionReceipt(txHash).pipe(
         Effect.provide(publicClient),
       )
@@ -504,6 +515,7 @@ runPromiseExit$(() =>
         {
           schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
           while: (error) => {
+            console.log("Indexer not ready yet, retrying in 5 seconds...")
             return true
           },
         },
@@ -738,7 +750,10 @@ function handleRetry() {
           <div class="text-sm font-medium text-white">
             {
               Match.value(bondState).pipe(
-                Match.when(BondState.$is("SwitchingChain"), () => "Switching to Holesky"),
+                Match.when(BondState.$is("SwitchingChain"), () => {
+                  const isSafeWallet = getLastConnectedWalletId() === "safe"
+                  return isSafeWallet ? "Preparing Safe Transaction" : "Switching to Holesky"
+                }),
                 Match.when(BondState.$is("CheckingAllowance"), () =>
                   "Checking Token Allowance"),
                 Match.when(BondState.$is("ApprovingAllowance"), () =>
@@ -774,8 +789,12 @@ function handleRetry() {
           <div class="text-xs {isError ? 'text-red-400' : isSuccess ? 'text-emerald-400' : 'text-blue-400'} mt-1">
             {
               Match.value(bondState).pipe(
-                Match.when(BondState.$is("SwitchingChain"), () =>
-                  "Please switch to Holesky network in your wallet"),
+                Match.when(BondState.$is("SwitchingChain"), () => {
+                  const isSafeWallet = getLastConnectedWalletId() === "safe"
+                  return isSafeWallet 
+                    ? "Preparing transaction for Safe wallet..."
+                    : "Please switch to Holesky network in your wallet"
+                }),
                 Match.when(BondState.$is("CheckingAllowance"), () =>
                   "Reading current token allowance from blockchain..."),
                 Match.when(BondState.$is("ApprovingAllowance"), () =>
