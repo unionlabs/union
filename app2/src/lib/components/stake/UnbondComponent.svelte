@@ -69,12 +69,15 @@ type UnbondState = Data.TaggedEnum<{
   SwitchingChain: {}
   CheckingAllowance: {}
   ApprovingAllowance: {}
+  AllowanceSubmitted: { txHash: string }
+  WaitingForAllowanceConfirmation: { txHash: string }
   AllowanceApproved: {}
   CreatingTokenOrder: {}
   PreparingUnbondTransaction: {}
-  ExecutingUnbond: {}
-  WaitingForTxConfirmation: {}
-  WaitingForIndexer: {}
+  ConfirmingUnbond: {}
+  UnbondSubmitted: { txHash: string }
+  WaitingForConfirmation: { txHash: string }
+  WaitingForIndexer: { txHash: string }
   Success: { txHash: string }
   Error: { message: string }
 }>
@@ -90,29 +93,15 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   BigDecimal.fromString,
 ))
 
-// au amount for blockchain - properly convert BigDecimal to au 
-const unbondAmount = $derived<O.Option<bigint>>(pipe(
+const unbondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   inputAmount,
-  O.map(flow(
-    (bd) => {
-      const multiplier = BigDecimal.make(10n ** 18n, 0)
-      const result = BigDecimal.multiply(bd, multiplier)
-      console.log("Unbond conversion - Input:", unbondInput, "Result value:", result.value)
-      return result.value
-    }
-  )),
+  O.map(bd => BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0)))
 ))
 
 const isUnbonding = $derived(
-  UnbondState.$is("SwitchingChain")(unbondState) ||
-  UnbondState.$is("CheckingAllowance")(unbondState) ||
-  UnbondState.$is("ApprovingAllowance")(unbondState) ||
-  UnbondState.$is("AllowanceApproved")(unbondState) ||
-  UnbondState.$is("CreatingTokenOrder")(unbondState) ||
-  UnbondState.$is("PreparingUnbondTransaction")(unbondState) ||
-  UnbondState.$is("ExecutingUnbond")(unbondState) ||
-  UnbondState.$is("WaitingForTxConfirmation")(unbondState) ||
-  UnbondState.$is("WaitingForIndexer")(unbondState)
+  !UnbondState.$is("Ready")(unbondState) &&
+  !UnbondState.$is("Success")(unbondState) &&
+  !UnbondState.$is("Error")(unbondState)
 )
 const isSuccess = $derived(UnbondState.$is("Success")(unbondState))
 const isError = $derived(UnbondState.$is("Error")(unbondState))
@@ -323,7 +312,7 @@ runPromiseExit$(() =>
       }
 
       const sender = senderOpt.value
-      const sendAmount = unbondAmount.value
+      const sendAmount = O.getOrThrow(unbondAmount).value
       const chain = evmChain.value
 
       unbondState = UnbondState.SwitchingChain()
@@ -354,7 +343,7 @@ runPromiseExit$(() =>
         Effect.tap(() => Effect.sync(() => { unbondState = UnbondState.ApprovingAllowance() }))
       )
       
-      unbondState = UnbondState.ExecutingUnbond()
+      unbondState = UnbondState.ConfirmingUnbond()
       const { response, txHash } = yield* executeUnbond(sender, sendAmount).pipe(
         Effect.provide(EvmZkgmClient.layerWithoutWallet),
         Effect.provide(walletClient),
@@ -363,7 +352,16 @@ runPromiseExit$(() =>
       )
       
       console.log("Unbond transaction submitted with hash:", txHash)
-      unbondState = UnbondState.WaitingForIndexer()
+      unbondState = UnbondState.UnbondSubmitted({ txHash })
+      yield* Effect.sleep("500 millis")
+      
+      unbondState = UnbondState.WaitingForConfirmation({ txHash })
+      // Wait for actual transaction confirmation
+      yield* Evm.waitForTransactionReceipt(txHash).pipe(
+        Effect.provide(publicClient)
+      )
+      
+      unbondState = UnbondState.WaitingForIndexer({ txHash })
       
       const receipt = yield* Effect.retry(
         response.waitFor(
@@ -468,8 +466,8 @@ function handleRetry() {
         )
 
         const a = pipe(
-          S.BigDecimal,
-          S.filter(
+          Schema.BigDecimal,
+          Schema.filter(
             (x) => x.scale <= 18,
             {
               description: "can have at most 18 decimals",
@@ -501,7 +499,7 @@ function handleRetry() {
         unbondInput = event.currentTarget.value
       }}
     />
-    {O.map(unbondAmount, (wei) => wei.toString())}
+      {unbondAmount}
   </div>
 
   <!-- Status Display -->
@@ -528,11 +526,14 @@ function handleRetry() {
                 Match.when(UnbondState.$is("SwitchingChain"), () => "Switching to Holesky"),
                 Match.when(UnbondState.$is("CheckingAllowance"), () => "Checking Token Allowance"),
                 Match.when(UnbondState.$is("ApprovingAllowance"), () => "Approving Token Spending"),
+                Match.when(UnbondState.$is("AllowanceSubmitted"), () => "Allowance Submitted"),
+                Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), () => "Allowance Confirming"),
                 Match.when(UnbondState.$is("AllowanceApproved"), () => "Allowance Approved"),
                 Match.when(UnbondState.$is("CreatingTokenOrder"), () => "Creating Token Order"),
                 Match.when(UnbondState.$is("PreparingUnbondTransaction"), () => "Preparing Unbond Transaction"),
-                Match.when(UnbondState.$is("ExecutingUnbond"), () => "Executing Unbond"),
-                Match.when(UnbondState.$is("WaitingForTxConfirmation"), () => "Transaction Confirming"),
+                Match.when(UnbondState.$is("ConfirmingUnbond"), () => "Confirming Unbond"),
+                Match.when(UnbondState.$is("UnbondSubmitted"), () => "Unbond Submitted"),
+                Match.when(UnbondState.$is("WaitingForConfirmation"), () => "Transaction Confirming"),
                 Match.when(UnbondState.$is("WaitingForIndexer"), () => "Indexing Transaction"),
                 Match.when(UnbondState.$is("Success"), () => "Unbond Successful"),
                 Match.when(UnbondState.$is("Error"), () => "Unbond Failed"),
@@ -547,12 +548,15 @@ function handleRetry() {
                 Match.when(UnbondState.$is("SwitchingChain"), () => "Please switch to Holesky network in your wallet"),
                 Match.when(UnbondState.$is("CheckingAllowance"), () => "Reading current token allowance from blockchain..."),
                 Match.when(UnbondState.$is("ApprovingAllowance"), () => "Confirm token approval transaction in your wallet"),
+                Match.when(UnbondState.$is("AllowanceSubmitted"), ({ txHash }) => `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
+                Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), ({ txHash }) => `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`),
                 Match.when(UnbondState.$is("AllowanceApproved"), () => "Token spending approved, proceeding..."),
                 Match.when(UnbondState.$is("CreatingTokenOrder"), () => "Building cross-chain token order..."),
                 Match.when(UnbondState.$is("PreparingUnbondTransaction"), () => "Preparing unbond transaction with contracts..."),
-                Match.when(UnbondState.$is("ExecutingUnbond"), () => "Confirm unbond transaction in your wallet"),
-                Match.when(UnbondState.$is("WaitingForTxConfirmation"), () => "Transaction submitted, waiting for confirmation..."),
-                Match.when(UnbondState.$is("WaitingForIndexer"), () => "Transaction confirmed, indexing data..."),
+                Match.when(UnbondState.$is("ConfirmingUnbond"), () => "Confirm unbond transaction in your wallet"),
+                Match.when(UnbondState.$is("UnbondSubmitted"), ({ txHash }) => `Transaction submitted: ${txHash.slice(0, 10)}...`),
+                Match.when(UnbondState.$is("WaitingForConfirmation"), ({ txHash }) => `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
+                Match.when(UnbondState.$is("WaitingForIndexer"), ({ txHash }) => `Transaction confirmed, indexing data...`),
                 Match.when(UnbondState.$is("Success"), ({ txHash }) => `Success! TX: ${txHash.slice(0, 10)}...`),
                 Match.when(UnbondState.$is("Error"), ({ message }) => message),
                 Match.when(UnbondState.$is("Ready"), () => ""),
@@ -588,12 +592,15 @@ function handleRetry() {
           ),
           Match.when(UnbondState.$is("SwitchingChain"), () => "Switching..."),
           Match.when(UnbondState.$is("CheckingAllowance"), () => "Checking..."),
-          Match.when(UnbondState.$is("ApprovingAllowance"), () => "Approving..."),
+          Match.when(UnbondState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
+          Match.when(UnbondState.$is("AllowanceSubmitted"), () => "Submitted"),
+          Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), () => "Confirming..."),
           Match.when(UnbondState.$is("AllowanceApproved"), () => "Approved ✓"),
           Match.when(UnbondState.$is("CreatingTokenOrder"), () => "Creating Order..."),
           Match.when(UnbondState.$is("PreparingUnbondTransaction"), () => "Preparing..."),
-          Match.when(UnbondState.$is("ExecutingUnbond"), () => "Executing..."),
-          Match.when(UnbondState.$is("WaitingForTxConfirmation"), () => "Confirming..."),
+          Match.when(UnbondState.$is("ConfirmingUnbond"), () => "Confirm in Wallet"),
+          Match.when(UnbondState.$is("UnbondSubmitted"), () => "Submitted"),
+          Match.when(UnbondState.$is("WaitingForConfirmation"), () => "Confirming..."),
           Match.when(UnbondState.$is("WaitingForIndexer"), () => "Indexing..."),
           Match.when(UnbondState.$is("Success"), () => "Success!"),
           Match.when(UnbondState.$is("Error"), () => "Try Again"),
