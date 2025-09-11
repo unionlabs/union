@@ -8,9 +8,10 @@ import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { getWalletClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
-import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
+import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { cn } from "$lib/utils"
 import { matchOption } from "$lib/utils/snippets.svelte"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import {
   Batch,
   Call,
@@ -242,7 +243,7 @@ const instantiate2 = Effect.fn(
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   Effect.gen(function*() {
     bondState = BondState.CheckingAllowance()
-    
+
     const currentAllowance = yield* Evm.readErc20Allowance(
       U_ERC20.address,
       sender.address,
@@ -251,7 +252,7 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
 
     if (currentAllowance < sendAmount) {
       bondState = BondState.ApprovingAllowance()
-      
+
       const approveTxHash = yield* Evm.increaseErc20Allowance(
         U_ERC20.address,
         UCS03_EVM,
@@ -408,12 +409,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, slippagePerce
     })
 
     const client = yield* ZkgmClient.ZkgmClient
-    const response = yield* client.execute(request)
-
-    yield* Effect.log("Submission TX Hash:", response.txHash)
-
-    // Return both response and txHash for separate indexer handling
-    return { response, txHash: response.txHash }
+    return yield* client.execute(request)
   })
 
 runPromiseExit$(() =>
@@ -469,65 +465,59 @@ runPromiseExit$(() =>
       yield* Effect.sleep("300 millis")
 
       bondState = BondState.ConfirmingBond()
-      
+
       const executeBondWithProviders = isSafeWallet
         ? executeBond(sender, sendAmount, slippage).pipe(
-            Effect.provide(EvmZkgmClient.layerWithoutWallet),
-            Effect.provide(walletClient),
-            Effect.provide(publicClient),
-            Effect.provide(ChainRegistry.Default),
-            Effect.provide(Safe.Safe.Default({
-              allowedDomains: [
-                /gnosis-safe.io$/,
-                /app.safe.global$/,
-                /staging.btc.union.build$/,
-                /staging.app.union.build$/,
-                /btc.union.build$/,
-              ],
-              debug: false,
-            })),
-          )
+          Effect.provide(EvmZkgmClient.layerWithoutWallet),
+          Effect.provide(walletClient),
+          Effect.provide(publicClient),
+          Effect.provide(ChainRegistry.Default),
+          Effect.provide(Safe.Safe.Default({
+            ...safeOpts,
+            debug: true,
+          })),
+        )
         : executeBond(sender, sendAmount, slippage).pipe(
-            Effect.provide(EvmZkgmClient.layerWithoutWallet),
-            Effect.provide(walletClient),
-            Effect.provide(publicClient),
-            Effect.provide(ChainRegistry.Default),
-          )
+          Effect.provide(EvmZkgmClient.layerWithoutWallet),
+          Effect.provide(walletClient),
+          Effect.provide(publicClient),
+          Effect.provide(ChainRegistry.Default),
+        )
 
-      const { response, txHash } = yield* executeBondWithProviders
+      const response = yield* executeBondWithProviders
+      const txHash = response.txHash
 
       bondState = BondState.BondSubmitted({ txHash })
       yield* Effect.sleep("500 millis")
 
       bondState = BondState.WaitingForConfirmation({ txHash })
-      // Always wait for transaction confirmation manually to ensure it's confirmed
-      // The SDK's lifecycle events may not be reliable for this step
-      yield* Evm.waitForTransactionReceipt(txHash).pipe(
-        Effect.provide(publicClient),
-      )
 
-      bondState = BondState.WaitingForIndexer({ txHash })
+      const finalHash = yield* Effect.if(isSafeWallet, {
+        onTrue: () =>
+          pipe(
+            response.waitFor(
+              ZkgmIncomingMessage.LifecycleEvent.$is("WaitForSafeWalletHash"),
+            ),
+            Effect.flatMap(O.map(x => x.hash)),
+          ),
+        onFalse: () =>
+          pipe(
+            response.waitFor(
+              ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+            ),
+            Effect.flatMap(O.map(x => x.transactionHash)),
+          ),
+      })
 
-      const receipt = yield* Effect.retry(
-        response.waitFor(
-          ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
-        ),
-        {
-          schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
-          while: (error) => {
-            console.log("Indexer not ready yet, retrying in 5 seconds...")
-            return true
-          },
-        },
-      )
+      bondState = BondState.WaitingForIndexer({ txHash: finalHash })
+
+      // TODO: transferHashStore.startPolling(transactionHash)
 
       bondState = BondState.Success({ txHash })
 
       bondInput = ""
       shouldBond = false
       onBondSuccess?.()
-
-      return receipt
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
@@ -752,7 +742,9 @@ function handleRetry() {
               Match.value(bondState).pipe(
                 Match.when(BondState.$is("SwitchingChain"), () => {
                   const isSafeWallet = getLastConnectedWalletId() === "safe"
-                  return isSafeWallet ? "Preparing Safe Transaction" : "Switching to Holesky"
+                  return isSafeWallet
+                    ? "Preparing Safe Transaction"
+                    : "Switching to Holesky"
                 }),
                 Match.when(BondState.$is("CheckingAllowance"), () =>
                   "Checking Token Allowance"),
@@ -791,7 +783,7 @@ function handleRetry() {
               Match.value(bondState).pipe(
                 Match.when(BondState.$is("SwitchingChain"), () => {
                   const isSafeWallet = getLastConnectedWalletId() === "safe"
-                  return isSafeWallet 
+                  return isSafeWallet
                     ? "Preparing transaction for Safe wallet..."
                     : "Please switch to Holesky network in your wallet"
                 }),
