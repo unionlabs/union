@@ -169,6 +169,7 @@ _: {
             "ethereum"
             "trusted-mpt"
             "ethermint"
+            "base"
             "tendermint-bls"
             # "movement"
             "state-lens-ics23-mpt"

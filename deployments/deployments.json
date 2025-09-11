@@ -764,6 +764,12 @@
         "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f",
         "code_id": 20
       },
+      "base": {
+        "address": "union1xll86ajefrwsjn0msw89xhnmyd85fyzc6203j8p5uc6t7kyuvusqkutpsu",
+        "height": 2869093,
+        "commit": "a685dd3ef28affaef37071e75c1db385a469de97",
+        "code_id": 56
+      },
       "berachain": {
         "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",
         "height": 461753,
