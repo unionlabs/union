@@ -3,15 +3,12 @@ import ChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
-import Button from "$lib/components/ui/Button.svelte"
+import BondComponent from "$lib/components/stake/BondComponent.svelte"
+import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
-import Input from "$lib/components/ui/Input.svelte"
 import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
-import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import * as AppRuntime from "$lib/runtime"
-import * as DoBond from "$lib/stake/bond.js"
 import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
 import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
@@ -25,7 +22,6 @@ import { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
 import * as Utils from "@unionlabs/sdk/Utils"
 import {
-  BigDecimal,
   Brand,
   ConfigProvider,
   DateTime,
@@ -33,7 +29,6 @@ import {
   Layer,
   Order,
   pipe,
-  Struct,
 } from "effect"
 import * as A from "effect/Array"
 import * as E from "effect/Either"
@@ -41,6 +36,9 @@ import { constVoid, flow } from "effect/Function"
 import * as O from "effect/Option"
 import * as S from "effect/Schema"
 import { onMount } from "svelte"
+
+type StakeTab = "bond" | "unbond"
+type TableFilter = "all" | "bond" | "unbond"
 
 const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.17000")
 
@@ -63,21 +61,27 @@ const eUOnEvmToken = $derived(pipe(
   O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === EU_ERC20.address.toLowerCase())),
 ))
 
-let bondInput = $state<string>("")
-const bondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
-  bondInput,
-  BigDecimal.fromString,
-  O.map(BigDecimal.multiply(BigDecimal.make(1n, -18))),
-))
-let unbondInput = $state<string>("")
-const unbondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
-  unbondInput,
-  BigDecimal.fromString,
-  O.map(BigDecimal.multiply(BigDecimal.make(1n, -18))),
-))
+let selectedTab = $state<StakeTab>("bond")
+let tableFilter = $state<TableFilter>("all")
+let currentPage = $state<number>(1)
+let refreshTrigger = $state<number>(0)
+
+const itemsPerPage = 10
+
+const refreshBondData = () => {
+  refreshTrigger = Date.now()
+  currentPage = 1 // Reset to first page when data refreshes
+}
+
+// Reset page when filter changes
+$effect(() => {
+  void tableFilter // Track dependency
+  currentPage = 1
+})
 
 const data = AppRuntime.runPromiseExit$(() => {
   void WalletStore.evmAddress
+  void refreshTrigger // React to refresh trigger
 
   return Effect.gen(function*() {
     const staking = yield* Staking.Staking
@@ -106,19 +110,6 @@ const data = AppRuntime.runPromiseExit$(() => {
   )
 })
 
-const submitBond = $derived(pipe(
-  O.all({
-    sender: WalletStore.evmAddress,
-    baseAmount: O.map(bondAmount, flow(BigDecimal.normalize, x => x.value)),
-  }),
-  O.map(({ sender, baseAmount }) =>
-    DoBond.sendBond({
-      sender,
-      baseAmount,
-      quoteAmount: baseAmount,
-    })
-  ),
-))
 
 const evmChain = $derived(pipe(
   ChainStore.data,
@@ -312,10 +303,95 @@ const close = (k: string) => {
 {#snippet maybeRenderBonds(maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>)}
   {#snippet noBonds()}
     <div class="flex items-center justify-center rounded-lg border border-dashed border-zinc-700/80 bg-zinc-950/40 text-zinc-400 text-sm h-28">
-      No bonds yet
+      No {tableFilter === "all" ? "bonds" : tableFilter === "bond" ? "stake transactions" : "unstake transactions"} yet
     </div>
   {/snippet}
   {#snippet hasBonds(bonds: A.NonEmptyReadonlyArray<Bond | Unbond>)}
+    {@const filteredBonds = bonds.filter(bond => 
+      tableFilter === "all" || 
+      (tableFilter === "bond" && bond._tag === "Bond") ||
+      (tableFilter === "unbond" && bond._tag === "Unbond")
+    )}
+    {@const totalItems = filteredBonds.length}
+    {@const totalPages = Math.ceil(totalItems / itemsPerPage)}
+    {@const startIndex = (currentPage - 1) * itemsPerPage}
+    {@const endIndex = startIndex + itemsPerPage}
+    {@const paginatedBonds = filteredBonds.slice(startIndex, endIndex)}
+    
+    <!-- Table Filter Controls -->
+    <div class="pt-3 px-3">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-0.5">
+          <button
+            class={cn(
+              "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+              tableFilter === "all"
+                ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+            )}
+            onclick={() => tableFilter = "all"}
+          >
+            all
+          </button>
+          <button
+            class={cn(
+              "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+              tableFilter === "bond"
+                ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+            )}
+            onclick={() => tableFilter = "bond"}
+          >
+            stakes
+          </button>
+          <button
+            class={cn(
+              "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+              tableFilter === "unbond"
+                ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+            )}
+            onclick={() => tableFilter = "unbond"}
+          >
+            unstakes
+          </button>
+        </div>
+        
+        <!-- Pagination Controls -->
+        {#if totalPages > 1}
+          <div class="flex items-center gap-0.5">
+            <button
+              class={cn(
+                "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+                currentPage <= 1
+                  ? "border-zinc-700 bg-zinc-900 text-zinc-600 cursor-not-allowed"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+              )}
+              disabled={currentPage <= 1}
+              onclick={() => currentPage = Math.max(1, currentPage - 1)}
+            >
+              ←
+            </button>
+            <span class="px-2 py-1 text-xs font-mono border border-zinc-500 bg-zinc-800 text-zinc-200 min-h-[32px] flex items-center">
+              {currentPage}/{totalPages}
+            </span>
+            <button
+              class={cn(
+                "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+                currentPage >= totalPages
+                  ? "border-zinc-700 bg-zinc-900 text-zinc-600 cursor-not-allowed"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+              )}
+              disabled={currentPage >= totalPages}
+              onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+            >
+              →
+            </button>
+          </div>
+        {/if}
+      </div>
+    </div>
+
     <div class="relative overflow-auto max-h-screen rounded-lg ring-1 ring-zinc-800/80">
       <table class="w-full text-sm">
         <thead class="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
@@ -339,12 +415,13 @@ const close = (k: string) => {
           </tr>
         </thead>
         <tbody>
-          {#each bonds as bond}
+          {#each paginatedBonds as bond}
             {@render renderBond(bond)}
           {/each}
         </tbody>
       </table>
     </div>
+    
   {/snippet}
 
   {@render matchOption(maybeBonds, hasBonds, noBonds)}
@@ -366,7 +443,7 @@ const close = (k: string) => {
         </tr>
       </thead>
       <tbody>
-        {#each Array(5) as _}
+        {#each Array(10) as _}
           <tr class="even:bg-zinc-900/30 odd:bg-zinc-900/10">
             <td class="px-3 py-2"><div class="h-4 w-24 bg-zinc-700/50 rounded"></div></td>
             <td class="px-3 py-2"><div class="h-4 w-32 bg-zinc-700/50 rounded"></div></td>
@@ -390,9 +467,6 @@ const close = (k: string) => {
     <!-- Bond / Unbond Tables -->
     <div class="grid grid-cols-1 gap-6">
       <section class="flex flex-col gap-2">
-        <div class="flex items-center justify-between">
-          <Label>Staking Log</Label>
-        </div>
         {@render matchRuntimeResult(data.current, {
           onSuccess: maybeRenderBonds,
           onFailure: renderError,
@@ -407,179 +481,83 @@ const close = (k: string) => {
   <NoWalletConnected title="No EVM Wallet Connected" />
 {/snippet}
 
-{#snippet renderBalanceSkeleton()}
-  <Skeleton class="w-full h-6 ml-auto" />
-{/snippet}
-
-{#snippet renderBalance(amount: bigint)}
-  <div class="font-mono">
-    {
-      pipe(
-        BigDecimal.fromBigInt(amount),
-        // XXX: check decimals
-        BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
-        Utils.formatBigDecimal,
-      )
-    }
-  </div>
-{/snippet}
 
 <Sections>
-  <Card>
-    {#if O.isSome(WalletStore.evmAddress)}
-      <!-- Do Bond UI -->
-      <div class="grid grid-cols-2 gap-8 mb-8">
-        <div class="flex grow flex-col gap-4">
-          <div>
-            <Label caseSensitive>U BALANCE</Label>
-            {@render matchOption(uOnEvmBalance, renderBalance, renderBalanceSkeleton)}
-          </div>
-
-          <div>
-            <Input
-              id="bondInput"
-              type="text"
-              required
-              disabled={O.isNone(uOnEvmBalance)}
-              label="Bond Amount"
-              autocorrect="off"
-              placeholder="Enter amount"
-              spellcheck="false"
-              autocomplete="off"
-              inputmode="decimal"
-              data-field="amount"
-              onbeforeinput={(event) => {
-                const { inputType, data, currentTarget } = event
-                const { value } = currentTarget
-                const proposed = value + (data ?? "")
-
-                const maxDecimals = pipe(
-                  uOnEvmToken,
-                  O.map(Struct.get("representations")),
-                  O.flatMap(A.head),
-                  O.map(Struct.get("decimals")),
-                  O.getOrThrow,
-                )
-
-                const validShape = /^\d*[.,]?\d*$/.test(proposed)
-                const validDecimalsDot = !proposed.includes(".")
-                  || proposed.split(".")[1].length <= maxDecimals
-                const validDecimalsComma = !proposed.includes(",")
-                  || proposed.split(",")[1].length <= maxDecimals
-                const isDelete = inputType.startsWith("delete")
-                const validDecimals = validDecimalsComma && validDecimalsDot
-                const noDuplicateLeadingZeroes = !proposed.startsWith("00")
-
-                const allow = isDelete
-                  || (validDecimals && validShape && noDuplicateLeadingZeroes)
-
-                if (!allow) {
-                  event.preventDefault()
-                }
-              }}
-              autocapitalize="none"
-              pattern="^[0-9]*[.,]?[0-9]*$"
-              value={bondInput}
-              class="h-14 text-center text-lg"
-              oninput={(event) => {
-                bondInput = event.currentTarget.value
-              }}
-            />
-            {O.map(bondAmount, Utils.formatBigDecimal)}
-          </div>
-          <div>
-            <Button
-              class="w-full"
-              disabled={true}
-            >
-              Stake
-            </Button>
-          </div>
-        </div>
-
-        <!-- Do Unbond UI -->
-        <div class="flex grow flex-col gap-4">
-          <div>
-            <Label caseSensitive>eU BALANCE</Label>
-            {@render matchOption(eUOnEvmBalance, renderBalance, renderBalanceSkeleton)}
-          </div>
-
-          <div>
-            <Input
-              id="unbondInput"
-              type="text"
-              required
-              disabled={false}
-              label="Unbond Amount"
-              autocorrect="off"
-              placeholder="Enter amount"
-              spellcheck="false"
-              autocomplete="off"
-              inputmode="decimal"
-              data-field="amount"
-              onbeforeinput={(event) => {
-                const { inputType, data, currentTarget } = event
-                const { value } = currentTarget
-                const proposed = value + (data ?? "")
-
-                const maxDecimals = pipe(
-                  uOnEvmToken,
-                  O.map(Struct.get("representations")),
-                  O.flatMap(A.head),
-                  O.map(Struct.get("decimals")),
-                  O.getOrThrow,
-                )
-
-                const a = pipe(
-                  S.BigDecimal,
-                  S.filter(
-                    (x) => x.scale <= 18,
-                    {
-                      description: "can have at most 18 decimals",
-                    },
-                  ),
-                )
-
-                const validShape = /^\d*[.,]?\d*$/.test(proposed)
-                const validDecimalsDot = !proposed.includes(".")
-                  || proposed.split(".")[1].length <= maxDecimals
-                const validDecimalsComma = !proposed.includes(",")
-                  || proposed.split(",")[1].length <= maxDecimals
-                const isDelete = inputType.startsWith("delete")
-                const validDecimals = validDecimalsComma && validDecimalsDot
-                const noDuplicateLeadingZeroes = !proposed.startsWith("00")
-
-                const allow = isDelete
-                  || (validDecimals && validShape && noDuplicateLeadingZeroes)
-
-                if (!allow) {
-                  event.preventDefault()
-                }
-              }}
-              autocapitalize="none"
-              pattern="^[0-9]*[.,]?[0-9]*$"
-              value={unbondInput}
-              class="h-14 text-center text-lg"
-              oninput={(event) => {
-                unbondInput = event.currentTarget.value
-              }}
-            />
-            {O.map(unbondAmount, Utils.formatBigDecimal)}
-          </div>
-          <div>
-            <Button
-              class="w-full"
-              disabled={true}
-            >
-              Unstake
-            </Button>
-          </div>
-        </div>
+  <Card class="p-0 font-mono">
+    <!-- Terminal Header -->
+    <header class="flex items-center justify-between p-3 border-b border-zinc-800">
+      <div class="flex items-center space-x-2">
+        <span class="text-zinc-500 text-xs">$</span>
+        <h3 class="text-xs text-zinc-300 font-semibold">liquid-stake</h3>
+        <span class="text-zinc-600 text-xs">--mode={selectedTab}</span>
       </div>
-      <!-- Bond/Unbond Table -->
+    </header>
+
+    <!-- Controls -->
+    <div class="pt-3 px-3">
+      <div class="flex items-center gap-0.5 mb-4">
+        <button
+          class={cn(
+            "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+            selectedTab === "bond"
+              ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
+              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+          )}
+          onclick={() => selectedTab = "bond"}
+        >
+          stake
+        </button>
+        <button
+          class={cn(
+            "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+            selectedTab === "unbond"
+              ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
+              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+          )}
+          onclick={() => selectedTab = "unbond"}
+        >
+          unstake
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="px-3 pb-3">
+      {#if selectedTab === "bond"}
+        <BondComponent 
+          {evmChain}
+          {uOnEvmToken}
+          {uOnEvmBalance}
+          onBondSuccess={refreshBondData}
+        />
+      {:else if selectedTab === "unbond"}
+        <UnbondComponent 
+          {evmChain}
+          {uOnEvmToken}
+          {eUOnEvmBalance}
+          onUnbondSuccess={refreshBondData}
+        />
+      {/if}
+    </div>
+  </Card>
+  
+  <!-- Staking History Card -->
+  <Card class="p-0 font-mono">
+    <!-- Terminal Header -->
+    <header class="flex items-center justify-between p-3 border-b border-zinc-800">
+      <div class="flex items-center space-x-2">
+        <span class="text-zinc-500 text-xs">$</span>
+        <h3 class="text-xs text-zinc-300 font-semibold">history</h3>
+        <span class="text-zinc-600 text-xs">--filter={tableFilter}</span>
+      </div>
+    </header>
+
+    {#if O.isSome(WalletStore.evmAddress)}
       {@render whenWallet()}
     {:else}
-      {@render noWallet()}
+      <div class="flex items-center justify-center text-zinc-400 text-xs font-mono h-32">
+        wallet disconnected - connect to view history
+      </div>
     {/if}
   </Card>
 </Sections>
