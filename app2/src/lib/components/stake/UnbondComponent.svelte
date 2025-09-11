@@ -31,11 +31,11 @@ import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
-import { BigDecimal, Data, Effect, Exit, Schedule, Match, pipe, Schema, Struct } from "effect"
+import { BigDecimal, Data, Effect, Exit, Match, pipe, Schedule, Schema, Struct } from "effect"
 import * as A from "effect/Array"
 import { flow } from "effect/Function"
 import * as O from "effect/Option"
-import { bytesToHex, encodeAbiParameters, fromHex, keccak256, custom, http } from "viem"
+import { bytesToHex, custom, encodeAbiParameters, fromHex, http, keccak256 } from "viem"
 import { holesky } from "viem/chains"
 
 // Constants from unbond.ts
@@ -95,13 +95,13 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
 
 const unbondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   inputAmount,
-  O.map(bd => BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0)))
+  O.map(bd => BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))),
 ))
 
 const isUnbonding = $derived(
-  !UnbondState.$is("Ready")(unbondState) &&
-  !UnbondState.$is("Success")(unbondState) &&
-  !UnbondState.$is("Error")(unbondState)
+  !UnbondState.$is("Ready")(unbondState)
+    && !UnbondState.$is("Success")(unbondState)
+    && !UnbondState.$is("Error")(unbondState),
 )
 const isSuccess = $derived(UnbondState.$is("Success")(unbondState))
 const isError = $derived(UnbondState.$is("Error")(unbondState))
@@ -138,9 +138,7 @@ const instantiate2 = Effect.fn(
       sender,
     ] as const
 
-    const encoded = yield* Effect.try(() =>
-      encodeAbiParameters(abi, args)
-    )
+    const encoded = yield* Effect.try(() => encodeAbiParameters(abi, args))
 
     const u64toBeBytes = (n: bigint) => {
       const buffer = new ArrayBuffer(8)
@@ -175,138 +173,141 @@ const instantiate2 = Effect.fn(
   },
 )
 
-const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => pipe(
-  Evm.readErc20Allowance(
-    EU_ERC20.address,
-    sender.address,
-    UCS03_EVM.address,
-  ),
-  Effect.flatMap((amount) =>
-    Effect.if(amount < sendAmount, {
-      onTrue: () =>
-        pipe(
-          Effect.log(`Increasing allowance by ${sendAmount - amount} for ${EU_ERC20.address}`),
-          Effect.andThen(() =>
-            pipe(
-              Evm.increaseErc20Allowance(
-                EU_ERC20.address,
-                UCS03_EVM,
-                sendAmount - amount,
-              ),
-              Effect.andThen(Evm.waitForTransactionReceipt),
-            )
+const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
+  pipe(
+    Evm.readErc20Allowance(
+      EU_ERC20.address,
+      sender.address,
+      UCS03_EVM.address,
+    ),
+    Effect.flatMap((amount) =>
+      Effect.if(amount < sendAmount, {
+        onTrue: () =>
+          pipe(
+            Effect.log(`Increasing allowance by ${sendAmount - amount} for ${EU_ERC20.address}`),
+            Effect.andThen(() =>
+              pipe(
+                Evm.increaseErc20Allowance(
+                  EU_ERC20.address,
+                  UCS03_EVM,
+                  sendAmount - amount,
+                ),
+                Effect.andThen(Evm.waitForTransactionReceipt),
+              )
+            ),
           ),
-        ),
-      onFalse: () =>
-        Effect.log(`Allowance fulfilled for ${EU_ERC20.address}`),
-    })
-  ),
-)
-
-const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => Effect.gen(function*() {
-  const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
-  const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
-  const receiver = yield* instantiate2({
-    path: 0n,
-    channel: DESTINATION_CHANNEL_ID,
-    sender,
-  })
-
-  const tokenOrder = yield* TokenOrder.make({
-    source: ethereumChain,
-    destination: unionChain,
-    sender,
-    receiver,
-    baseToken: EU_ERC20,
-    baseAmount: sendAmount,
-    quoteToken: Token.Cw20.make({ address: EU_LST.address }),
-    quoteAmount: sendAmount,
-    kind: "solve",
-    metadata: EU_SOLVER_ON_UNION_METADATA,
-    version: 2,
-  })
-
-  const increaseAllowanceCall = yield* pipe(
-    {
-      increase_allowance: {
-        spender: EU_STAKING_HUB.address,
-        amount: sendAmount,
-      },
-    } as const,
-    Schema.encode(JsonFromBase64),
-    Effect.map((msg) => ({
-      wasm: {
-        execute: {
-          contract_addr: EU_LST.address,
-          msg,
-          funds: [],
-        },
-      },
-    } as const)),
-  )
-
-  const unbondCall = yield* pipe(
-    {
-      unbond: {
-        staker: receiver.address,
-        amount: tokenOrder.quoteAmount,
-      },
-    } as const,
-    Schema.encode(JsonFromBase64),
-    Effect.map((msg) => ({
-      wasm: {
-        execute: {
-          contract_addr: EU_STAKING_HUB.address,
-          msg,
-          funds: [],
-        },
-      },
-    } as const)),
-  )
-
-  const calls = yield* pipe(
-    [
-      increaseAllowanceCall,
-      unbondCall,
-    ],
-    Schema.decode(HexFromJson),
-    Effect.map((contractCalldata) =>
-      Call.make({
-        sender,
-        eureka: false,
-        contractAddress: receiver,
-        contractCalldata,
+        onFalse: () => Effect.log(`Allowance fulfilled for ${EU_ERC20.address}`),
       })
     ),
   )
 
-  const batch = Batch.make([
-    tokenOrder,
-    calls,
-  ])
+const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
+  Effect.gen(function*() {
+    const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
+    const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
+    const receiver = yield* instantiate2({
+      path: 0n,
+      channel: DESTINATION_CHANNEL_ID,
+      sender,
+    })
 
-  const request = ZkgmClientRequest.make({
-    source: ethereumChain,
-    destination: unionChain,
-    channelId: SOURCE_CHANNEL_ID,
-    ucs03Address: UCS03_EVM.address,
-    instruction: batch,
+    const tokenOrder = yield* TokenOrder.make({
+      source: ethereumChain,
+      destination: unionChain,
+      sender,
+      receiver,
+      baseToken: EU_ERC20,
+      baseAmount: sendAmount,
+      quoteToken: Token.Cw20.make({ address: EU_LST.address }),
+      quoteAmount: sendAmount,
+      kind: "solve",
+      metadata: EU_SOLVER_ON_UNION_METADATA,
+      version: 2,
+    })
+
+    const increaseAllowanceCall = yield* pipe(
+      {
+        increase_allowance: {
+          spender: EU_STAKING_HUB.address,
+          amount: sendAmount,
+        },
+      } as const,
+      Schema.encode(JsonFromBase64),
+      Effect.map((msg) => ({
+        wasm: {
+          execute: {
+            contract_addr: EU_LST.address,
+            msg,
+            funds: [],
+          },
+        },
+      } as const)),
+    )
+
+    const unbondCall = yield* pipe(
+      {
+        unbond: {
+          staker: receiver.address,
+          amount: tokenOrder.quoteAmount,
+        },
+      } as const,
+      Schema.encode(JsonFromBase64),
+      Effect.map((msg) => ({
+        wasm: {
+          execute: {
+            contract_addr: EU_STAKING_HUB.address,
+            msg,
+            funds: [],
+          },
+        },
+      } as const)),
+    )
+
+    const calls = yield* pipe(
+      [
+        increaseAllowanceCall,
+        unbondCall,
+      ],
+      Schema.decode(HexFromJson),
+      Effect.map((contractCalldata) =>
+        Call.make({
+          sender,
+          eureka: false,
+          contractAddress: receiver,
+          contractCalldata,
+        })
+      ),
+    )
+
+    const batch = Batch.make([
+      tokenOrder,
+      calls,
+    ])
+
+    const request = ZkgmClientRequest.make({
+      source: ethereumChain,
+      destination: unionChain,
+      channelId: SOURCE_CHANNEL_ID,
+      ucs03Address: UCS03_EVM.address,
+      instruction: batch,
+    })
+
+    const client = yield* ZkgmClient.ZkgmClient
+    const response = yield* client.execute(request)
+
+    yield* Effect.log("Submission TX Hash:", response.txHash)
+
+    return { response, txHash: response.txHash }
   })
-
-  const client = yield* ZkgmClient.ZkgmClient
-  const response = yield* client.execute(request)
-  
-  yield* Effect.log("Submission TX Hash:", response.txHash)
-
-  return { response, txHash: response.txHash }
-})
 
 runPromiseExit$(() =>
   shouldUnbond
     ? Effect.gen(function*() {
       const senderOpt = WalletStore.evmAddress
       if (O.isNone(senderOpt) || O.isNone(unbondAmount) || O.isNone(evmChain)) {
-        unbondState = UnbondState.Error({ message: "Missing required data: wallet address, unbond amount, or chain" })
+        unbondState = UnbondState.Error({
+          message: "Missing required data: wallet address, unbond amount, or chain",
+        })
         shouldUnbond = false
         return yield* Effect.fail(new Error("Missing required data"))
       }
@@ -317,14 +318,14 @@ runPromiseExit$(() =>
 
       unbondState = UnbondState.SwitchingChain()
       yield* Effect.log("Starting unbond execution", { sender: sender.address, sendAmount })
-      
+
       const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
       const VIEM_CHAIN = holesky
-      
+
       const connectorClient = yield* getWagmiConnectorClient
-      
+
       yield* switchChain(VIEM_CHAIN)
-      
+
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
         transport: custom(connectorClient),
@@ -335,14 +336,18 @@ runPromiseExit$(() =>
         chain: VIEM_CHAIN,
         transport: custom(connectorClient),
       })
-      
+
       unbondState = UnbondState.CheckingAllowance()
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
         Effect.provide(walletClient),
         Effect.provide(publicClient),
-        Effect.tap(() => Effect.sync(() => { unbondState = UnbondState.ApprovingAllowance() }))
+        Effect.tap(() =>
+          Effect.sync(() => {
+            unbondState = UnbondState.ApprovingAllowance()
+          })
+        ),
       )
-      
+
       unbondState = UnbondState.ConfirmingUnbond()
       const { response, txHash } = yield* executeUnbond(sender, sendAmount).pipe(
         Effect.provide(EvmZkgmClient.layerWithoutWallet),
@@ -350,19 +355,19 @@ runPromiseExit$(() =>
         Effect.provide(publicClient),
         Effect.provide(ChainRegistry.Default),
       )
-      
+
       console.log("Unbond transaction submitted with hash:", txHash)
       unbondState = UnbondState.UnbondSubmitted({ txHash })
       yield* Effect.sleep("500 millis")
-      
+
       unbondState = UnbondState.WaitingForConfirmation({ txHash })
       // Wait for actual transaction confirmation
       yield* Evm.waitForTransactionReceipt(txHash).pipe(
-        Effect.provide(publicClient)
+        Effect.provide(publicClient),
       )
-      
+
       unbondState = UnbondState.WaitingForIndexer({ txHash })
-      
+
       const receipt = yield* Effect.retry(
         response.waitFor(
           ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
@@ -372,16 +377,16 @@ runPromiseExit$(() =>
           while: (error) => {
             console.log("Indexer not ready yet, retrying in 5 seconds...")
             return true
-          }
-        }
+          },
+        },
       )
-      
+
       unbondState = UnbondState.Success({ txHash })
-      
+
       unbondInput = ""
       shouldUnbond = false
       onUnbondSuccess?.()
-      
+
       return receipt
     }).pipe(
       Effect.catchAll(error =>
@@ -392,7 +397,7 @@ runPromiseExit$(() =>
             || errorObj?.message
             || JSON.stringify(error)
           const shortMessage = String(fullError).split(".")[0]
-          
+
           unbondState = UnbondState.Error({ message: shortMessage })
           shouldUnbond = false
           return yield* Effect.succeed(false)
@@ -413,7 +418,6 @@ function handleUnbondSubmit() {
 function handleRetry() {
   unbondState = UnbondState.Ready()
 }
-
 </script>
 
 {#snippet renderBalanceSkeleton()}
@@ -499,7 +503,7 @@ function handleRetry() {
         unbondInput = event.currentTarget.value
       }}
     />
-      {unbondAmount}
+    {unbondAmount}
   </div>
 
   <!-- Status Display -->
@@ -508,14 +512,35 @@ function handleRetry() {
       <div class="flex items-center gap-3">
         <div class="size-8 rounded-lg {isError ? 'bg-red-500/20 border-red-500/40' : isSuccess ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} flex items-center justify-center flex-shrink-0">
           {#if isUnbonding}
-            <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin">
+            </div>
           {:else if isSuccess}
-            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            <svg
+              class="w-4 h-4 text-emerald-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           {:else if isError}
-            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/>
+            <svg
+              class="w-4 h-4 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01"
+              />
             </svg>
           {/if}
         </div>
@@ -523,18 +548,51 @@ function handleRetry() {
           <div class="text-sm font-medium text-white">
             {
               Match.value(unbondState).pipe(
-                Match.when(UnbondState.$is("SwitchingChain"), () => "Switching to Holesky"),
-                Match.when(UnbondState.$is("CheckingAllowance"), () => "Checking Token Allowance"),
-                Match.when(UnbondState.$is("ApprovingAllowance"), () => "Approving Token Spending"),
-                Match.when(UnbondState.$is("AllowanceSubmitted"), () => "Allowance Submitted"),
-                Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), () => "Allowance Confirming"),
-                Match.when(UnbondState.$is("AllowanceApproved"), () => "Allowance Approved"),
-                Match.when(UnbondState.$is("CreatingTokenOrder"), () => "Creating Token Order"),
-                Match.when(UnbondState.$is("PreparingUnbondTransaction"), () => "Preparing Unbond Transaction"),
-                Match.when(UnbondState.$is("ConfirmingUnbond"), () => "Confirming Unbond"),
+                Match.when(
+                  UnbondState.$is("SwitchingChain"),
+                  () => "Switching to Holesky",
+                ),
+                Match.when(
+                  UnbondState.$is("CheckingAllowance"),
+                  () => "Checking Token Allowance",
+                ),
+                Match.when(
+                  UnbondState.$is("ApprovingAllowance"),
+                  () => "Approving Token Spending",
+                ),
+                Match.when(
+                  UnbondState.$is("AllowanceSubmitted"),
+                  () => "Allowance Submitted",
+                ),
+                Match.when(
+                  UnbondState.$is("WaitingForAllowanceConfirmation"),
+                  () => "Allowance Confirming",
+                ),
+                Match.when(
+                  UnbondState.$is("AllowanceApproved"),
+                  () => "Allowance Approved",
+                ),
+                Match.when(
+                  UnbondState.$is("CreatingTokenOrder"),
+                  () => "Creating Token Order",
+                ),
+                Match.when(
+                  UnbondState.$is("PreparingUnbondTransaction"),
+                  () => "Preparing Unbond Transaction",
+                ),
+                Match.when(
+                  UnbondState.$is("ConfirmingUnbond"),
+                  () => "Confirming Unbond",
+                ),
                 Match.when(UnbondState.$is("UnbondSubmitted"), () => "Unbond Submitted"),
-                Match.when(UnbondState.$is("WaitingForConfirmation"), () => "Transaction Confirming"),
-                Match.when(UnbondState.$is("WaitingForIndexer"), () => "Indexing Transaction"),
+                Match.when(
+                  UnbondState.$is("WaitingForConfirmation"),
+                  () => "Transaction Confirming",
+                ),
+                Match.when(
+                  UnbondState.$is("WaitingForIndexer"),
+                  () => "Indexing Transaction",
+                ),
                 Match.when(UnbondState.$is("Success"), () => "Unbond Successful"),
                 Match.when(UnbondState.$is("Error"), () => "Unbond Failed"),
                 Match.when(UnbondState.$is("Ready"), () => "Ready"),
@@ -545,21 +603,39 @@ function handleRetry() {
           <div class="text-xs {isError ? 'text-red-400' : isSuccess ? 'text-emerald-400' : 'text-blue-400'} mt-1">
             {
               Match.value(unbondState).pipe(
-                Match.when(UnbondState.$is("SwitchingChain"), () => "Please switch to Holesky network in your wallet"),
-                Match.when(UnbondState.$is("CheckingAllowance"), () => "Reading current token allowance from blockchain..."),
-                Match.when(UnbondState.$is("ApprovingAllowance"), () => "Confirm token approval transaction in your wallet"),
-                Match.when(UnbondState.$is("AllowanceSubmitted"), ({ txHash }) => `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), ({ txHash }) => `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("AllowanceApproved"), () => "Token spending approved, proceeding..."),
-                Match.when(UnbondState.$is("CreatingTokenOrder"), () => "Building cross-chain token order..."),
-                Match.when(UnbondState.$is("PreparingUnbondTransaction"), () => "Preparing unbond transaction with contracts..."),
-                Match.when(UnbondState.$is("ConfirmingUnbond"), () => "Confirm unbond transaction in your wallet"),
-                Match.when(UnbondState.$is("UnbondSubmitted"), ({ txHash }) => `Transaction submitted: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("WaitingForConfirmation"), ({ txHash }) => `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("WaitingForIndexer"), ({ txHash }) => `Transaction confirmed, indexing data...`),
-                Match.when(UnbondState.$is("Success"), ({ txHash }) => `Success! TX: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("Error"), ({ message }) => message),
-                Match.when(UnbondState.$is("Ready"), () => ""),
+                Match.when(UnbondState.$is("SwitchingChain"), () =>
+                  "Please switch to Holesky network in your wallet"),
+                Match.when(UnbondState.$is("CheckingAllowance"), () =>
+                  "Reading current token allowance from blockchain..."),
+                Match.when(UnbondState.$is("ApprovingAllowance"), () =>
+                  "Confirm token approval transaction in your wallet"),
+                Match.when(UnbondState.$is("AllowanceSubmitted"), ({ txHash }) =>
+                  `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
+                Match.when(
+                  UnbondState.$is("WaitingForAllowanceConfirmation"),
+                  ({ txHash }) =>
+                    `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`,
+                ),
+                Match.when(UnbondState.$is("AllowanceApproved"), () =>
+                  "Token spending approved, proceeding..."),
+                Match.when(UnbondState.$is("CreatingTokenOrder"), () =>
+                  "Building cross-chain token order..."),
+                Match.when(UnbondState.$is("PreparingUnbondTransaction"), () =>
+                  "Preparing unbond transaction with contracts..."),
+                Match.when(UnbondState.$is("ConfirmingUnbond"), () =>
+                  "Confirm unbond transaction in your wallet"),
+                Match.when(UnbondState.$is("UnbondSubmitted"), ({ txHash }) =>
+                  `Transaction submitted: ${txHash.slice(0, 10)}...`),
+                Match.when(UnbondState.$is("WaitingForConfirmation"), ({ txHash }) =>
+                  `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
+                Match.when(UnbondState.$is("WaitingForIndexer"), ({ txHash }) =>
+                  `Transaction confirmed, indexing data...`),
+                Match.when(UnbondState.$is("Success"), ({ txHash }) =>
+                  `Success! TX: ${txHash.slice(0, 10)}...`),
+                Match.when(UnbondState.$is("Error"), ({ message }) =>
+                  message),
+                Match.when(UnbondState.$is("Ready"), () =>
+                  ""),
                 Match.exhaustive,
               )
             }
@@ -577,25 +653,37 @@ function handleRetry() {
       onclick={isError ? handleRetry : handleUnbondSubmit}
     >
       {#if isUnbonding}
-        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
+        </div>
       {:else if isSuccess}
-        <svg class="w-4 h-4 text-current mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        <svg
+          class="w-4 h-4 text-current mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
         </svg>
       {/if}
       {
         Match.value(unbondState).pipe(
-          Match.when(UnbondState.$is("Ready"), () => 
-            O.isNone(WalletStore.evmAddress) 
-              ? "Connect Wallet" 
-              : `Unstake ${unbondInput || "0"} eU`
-          ),
+          Match.when(UnbondState.$is("Ready"), () =>
+            O.isNone(WalletStore.evmAddress)
+              ? "Connect Wallet"
+              : `Unstake ${unbondInput || "0"} eU`),
           Match.when(UnbondState.$is("SwitchingChain"), () => "Switching..."),
           Match.when(UnbondState.$is("CheckingAllowance"), () => "Checking..."),
           Match.when(UnbondState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
           Match.when(UnbondState.$is("AllowanceSubmitted"), () => "Submitted"),
-          Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), () => "Confirming..."),
-          Match.when(UnbondState.$is("AllowanceApproved"), () => "Approved ✓"),
+          Match.when(UnbondState.$is("WaitingForAllowanceConfirmation"), () =>
+            "Confirming..."),
+          Match.when(UnbondState.$is("AllowanceApproved"), () =>
+            "Approved ✓"),
           Match.when(UnbondState.$is("CreatingTokenOrder"), () => "Creating Order..."),
           Match.when(UnbondState.$is("PreparingUnbondTransaction"), () => "Preparing..."),
           Match.when(UnbondState.$is("ConfirmingUnbond"), () => "Confirm in Wallet"),

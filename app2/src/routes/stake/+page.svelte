@@ -21,15 +21,7 @@ import { Indexer } from "@unionlabs/sdk/Indexer"
 import { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
 import * as Utils from "@unionlabs/sdk/Utils"
-import {
-  Brand,
-  ConfigProvider,
-  DateTime,
-  Effect,
-  Layer,
-  Order,
-  pipe,
-} from "effect"
+import { Brand, ConfigProvider, DateTime, Effect, Layer, Order, pipe } from "effect"
 import * as A from "effect/Array"
 import * as E from "effect/Either"
 import { constVoid, flow } from "effect/Function"
@@ -108,7 +100,6 @@ const data = AppRuntime.runPromiseExit$(() => {
     Effect.provide(QlpConfigProvider),
   )
 })
-
 
 const evmChain = $derived(pipe(
   ChainStore.data,
@@ -300,21 +291,27 @@ const close = (k: string) => {
 {#snippet maybeRenderBonds(maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>)}
   {#snippet noBonds()}
     <div class="flex items-center justify-center rounded-lg border border-dashed border-zinc-700/80 bg-zinc-950/40 text-zinc-400 text-sm h-28">
-      No {tableFilter === "all" ? "bonds" : tableFilter === "bond" ? "stake transactions" : "unstake transactions"} yet
+      No {
+        tableFilter === "all"
+        ? "bonds"
+        : tableFilter === "bond"
+        ? "stake transactions"
+        : "unstake transactions"
+      } yet
     </div>
   {/snippet}
   {#snippet hasBonds(bonds: A.NonEmptyReadonlyArray<Bond | Unbond>)}
-    {@const filteredBonds = bonds.filter(bond => 
-      tableFilter === "all" || 
-      (tableFilter === "bond" && bond._tag === "Bond") ||
-      (tableFilter === "unbond" && bond._tag === "Unbond")
-    )}
+    {@const filteredBonds = bonds.filter(bond =>
+    tableFilter === "all"
+    || (tableFilter === "bond" && bond._tag === "Bond")
+    || (tableFilter === "unbond" && bond._tag === "Unbond")
+  )}
     {@const totalItems = filteredBonds.length}
     {@const totalPages = Math.ceil(totalItems / itemsPerPage)}
     {@const startIndex = (currentPage - 1) * itemsPerPage}
     {@const endIndex = startIndex + itemsPerPage}
     {@const paginatedBonds = filteredBonds.slice(startIndex, endIndex)}
-    
+
     <!-- Table Filter Controls -->
     <div class="pt-3 px-3">
       <div class="flex items-center justify-between mb-4">
@@ -324,7 +321,7 @@ const close = (k: string) => {
               "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
               tableFilter === "all"
                 ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
             )}
             onclick={() => tableFilter = "all"}
           >
@@ -335,7 +332,7 @@ const close = (k: string) => {
               "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
               tableFilter === "bond"
                 ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
             )}
             onclick={() => tableFilter = "bond"}
           >
@@ -346,14 +343,14 @@ const close = (k: string) => {
               "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
               tableFilter === "unbond"
                 ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
             )}
             onclick={() => tableFilter = "unbond"}
           >
             unstakes
           </button>
         </div>
-        
+
         <!-- Pagination Controls -->
         {#if totalPages > 1}
           <div class="flex items-center gap-0.5">
@@ -362,14 +359,16 @@ const close = (k: string) => {
                 "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
                 currentPage <= 1
                   ? "border-zinc-700 bg-zinc-900 text-zinc-600 cursor-not-allowed"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
               )}
               disabled={currentPage <= 1}
               onclick={() => currentPage = Math.max(1, currentPage - 1)}
             >
               ←
             </button>
-            <span class="px-2 py-1 text-xs font-mono border border-zinc-500 bg-zinc-800 text-zinc-200 min-h-[32px] flex items-center">
+            <span
+              class="px-2 py-1 text-xs font-mono border border-zinc-500 bg-zinc-800 text-zinc-200 min-h-[32px] flex items-center"
+            >
               {currentPage}/{totalPages}
             </span>
             <button
@@ -377,7 +376,7 @@ const close = (k: string) => {
                 "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
                 currentPage >= totalPages
                   ? "border-zinc-700 bg-zinc-900 text-zinc-600 cursor-not-allowed"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
               )}
               disabled={currentPage >= totalPages}
               onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
@@ -418,7 +417,6 @@ const close = (k: string) => {
         </tbody>
       </table>
     </div>
-    
   {/snippet}
 
   {@render matchOption(maybeBonds, hasBonds, noBonds)}
@@ -478,7 +476,6 @@ const close = (k: string) => {
   <NoWalletConnected title="No EVM Wallet Connected" />
 {/snippet}
 
-
 <Sections>
   <Card class="p-0 font-mono">
     <!-- Terminal Header -->
@@ -498,7 +495,7 @@ const close = (k: string) => {
             "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
             selectedTab === "bond"
               ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
           )}
           onclick={() => selectedTab = "bond"}
         >
@@ -509,7 +506,7 @@ const close = (k: string) => {
             "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
             selectedTab === "unbond"
               ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
           )}
           onclick={() => selectedTab = "unbond"}
         >
@@ -520,7 +517,7 @@ const close = (k: string) => {
             "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
             selectedTab === "withdraw"
               ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
           )}
           onclick={() => selectedTab = "withdraw"}
         >
@@ -532,14 +529,14 @@ const close = (k: string) => {
     <!-- Content -->
     <div class="px-3 pb-3">
       {#if selectedTab === "bond"}
-        <BondComponent 
+        <BondComponent
           {evmChain}
           {uOnEvmToken}
           {uOnEvmBalance}
           onBondSuccess={refreshBondData}
         />
       {:else if selectedTab === "unbond"}
-        <UnbondComponent 
+        <UnbondComponent
           {evmChain}
           {uOnEvmToken}
           {eUOnEvmBalance}
@@ -548,12 +545,14 @@ const close = (k: string) => {
       {:else if selectedTab === "withdraw"}
         <div class="flex flex-col gap-4 text-center py-8">
           <div class="text-zinc-400 text-sm">Withdrawal functionality</div>
-          <div class="text-zinc-500 text-xs">Query withdrawable balance and implement withdrawal logic</div>
+          <div class="text-zinc-500 text-xs">
+            Query withdrawable balance and implement withdrawal logic
+          </div>
         </div>
       {/if}
     </div>
   </Card>
-  
+
   <!-- Staking History Card -->
   <Card class="p-0 font-mono">
     <!-- Terminal Header -->
