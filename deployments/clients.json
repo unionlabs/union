@@ -83,6 +83,13 @@
       "refresh_rate": "5000"
     }
   },
+  "base.8453": {
+    "1": {
+      "client_type": "cometbls",
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    }
+  },
   "base.84532": {
     "1": {
       "client_type": "cometbls",
@@ -133,13 +140,6 @@
     "3": {
       "client_type": "state-lens/ics23/mpt",
       "counterparty": "ethereum.1",
-      "refresh_rate": "500"
-    }
-  },
-  "base.8453": {
-    "1": {
-      "client_type": "cometbls",
-      "counterparty": "union.union-1",
       "refresh_rate": "500"
     }
   },

@@ -316,7 +316,12 @@ contract CrosschainVaultSolveTest is CrosschainVaultTestBase {
             BASE_AMOUNT,
             "Invalid debt amount"
         );
-        assertEq(vault.deployedCapital(), 990000, "Invalid deployed capital");
+        uint256 expectedDeployed = 990000 + 10000; // deployed to users + vault fee
+        assertEq(
+            vault.deployedCapital(),
+            expectedDeployed,
+            "Invalid deployed capital"
+        );
     }
 
     function testSolveWithExcessFee() public {
@@ -507,7 +512,7 @@ contract CrosschainVaultDebtTest is CrosschainVaultTestBase {
             ).debt,
             1000000
         );
-        assertEq(vault.deployedCapital(), 990000);
+        assertEq(vault.deployedCapital(), 1000000); // 990000 deployed + 10000 vault fee
 
         uint256 repayAmount = 500000;
         quoteToken.mint(REPAYER, repayAmount);
@@ -524,9 +529,12 @@ contract CrosschainVaultDebtTest is CrosschainVaultTestBase {
             500000,
             "Debt not properly reduced"
         );
+        // After partial repayment, deployedCapital should be reduced by repayment amount
+        // Original: 990000 (deployed) + 10000 (vault fee) = 1000000
+        // After repaying 500000: 1000000 - 500000 = 500000
         assertEq(
             vault.deployedCapital(),
-            490000,
+            500000,
             "Deployed capital not properly reduced"
         );
     }
@@ -575,10 +583,15 @@ contract CrosschainVaultERC4626Test is CrosschainVaultTestBase {
 
         assertEq(
             vault.totalAssets(),
-            1000000,
-            "Total assets should include deployed capital"
+            1001000, // includes 1000 vault fee
+            "Total assets should include deployed capital and fees"
         );
-        assertEq(vault.deployedCapital(), 99000, "Invalid deployed capital");
+        uint256 expectedDeployed = 99000 + 1000; // deployed + vault fee (1% of 100k)
+        assertEq(
+            vault.deployedCapital(),
+            expectedDeployed,
+            "Invalid deployed capital"
+        );
         assertEq(
             quoteToken.balanceOf(address(vault)),
             901000,
@@ -606,7 +619,9 @@ contract CrosschainVaultERC4626Test is CrosschainVaultTestBase {
         vault.solve(packet, order, DEFAULT_PATH, address(0), RELAYER, "", false);
 
         assertEq(
-            vault.totalAssets(), 1000000, "Total assets should remain constant"
+            vault.totalAssets(),
+            1001000,
+            "Total assets should include vault fee"
         );
         assertEq(
             quoteToken.balanceOf(address(vault)),
@@ -614,12 +629,15 @@ contract CrosschainVaultERC4626Test is CrosschainVaultTestBase {
             "Invalid liquid balance"
         );
 
-        uint256 partialShares = (shares * 901000) / 1000000;
+        // Calculate shares to redeem based on liquid balance vs total assets
+        // Total assets = 1001000, liquid balance = 901000
+        uint256 partialShares = (shares * 901000) / 1001000;
 
         vm.prank(DEPOSITOR);
         uint256 assetsOut = vault.redeem(partialShares, DEPOSITOR, DEPOSITOR);
 
-        assertEq(assetsOut, 901000, "Invalid redemption amount");
+        // Due to rounding in ERC4626 conversion, we expect approximately 901000
+        assertApproxEqAbs(assetsOut, 901000, 1, "Invalid redemption amount");
     }
 
     function testMaxWithdraw() public {
@@ -642,8 +660,8 @@ contract CrosschainVaultERC4626Test is CrosschainVaultTestBase {
 
         assertEq(
             maxWithdrawAmount,
-            1000000,
-            "Max withdraw should be based on share value"
+            1000999, // Share value increased due to vault fees
+            "Max withdraw should be based on share value including fees"
         );
         assertEq(
             liquidBalance,
