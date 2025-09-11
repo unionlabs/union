@@ -57,7 +57,7 @@ contract CrosschainVault is
         mapping(bytes32 => bool) intentWhitelist;
         address zkgm;
         address quoteToken;
-        uint256 deployedCapital;
+        uint256 deployedCapital; // Includes both principal deployed and accrued fees
     }
 
     function _getCrosschainVaultStorage()
@@ -163,6 +163,8 @@ contract CrosschainVault is
     }
 
     function totalAssets() public view override returns (uint256) {
+        // deployedCapital includes both deployed principal AND accrued fees
+        // This prevents dilution attacks by immediately reflecting profits in share price
         return IERC20(asset()).balanceOf(address(this))
             + _getCrosschainVaultStorage().deployedCapital;
     }
@@ -170,8 +172,14 @@ contract CrosschainVault is
     function _deployCapital(address beneficiary, uint256 amount) internal {
         if (amount > 0) {
             IERC20(asset()).transfer(beneficiary, amount);
-            _getCrosschainVaultStorage().deployedCapital += amount;
+            _increaseDeployedCapital(amount);
         }
+    }
+
+    function _increaseDeployedCapital(
+        uint256 amount
+    ) internal {
+        _getCrosschainVaultStorage().deployedCapital += amount;
     }
 
     function _accountDebt(
@@ -180,8 +188,8 @@ contract CrosschainVault is
         bytes calldata baseToken,
         uint256 amount
     ) internal {
-        _getCrosschainVaultStorage().fungibleCounterparties[path][channelId][baseToken]
-            .debt += amount;
+        CrosschainVaultStorage storage $ = _getCrosschainVaultStorage();
+        $.fungibleCounterparties[path][channelId][baseToken].debt += amount;
     }
 
     function repay(
@@ -251,7 +259,8 @@ contract CrosschainVault is
         // Pay protocol.
         _deployCapital(counterparty.protocolFeeBeneficiary, expectedProtocolFee);
 
-        // Pay vault by not deploying any capital for the expectedVaultFee.
+        // Pay vault by counting unrealized profits (prevents dillution attacks).
+        _increaseDeployedCapital(expectedVaultFee);
 
         // Incentive relayer if anything is left.
         uint256 relayerFee = actualFee - expectedMinimumFee;
