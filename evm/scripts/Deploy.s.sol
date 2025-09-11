@@ -70,6 +70,8 @@ library INSTANCE_SALT {
         hex"96de8fc8c256fa1e1556d41af431cace7dca68707c78dd88c3acab8b17177504";
     bytes constant EU =
         hex"0dec0db7b56214f189bc3d33052145c6d7558c6a7ee0da79e34bdd8a29d569c2";
+    bytes constant VAULT_USDC =
+        hex"769fe43c19f4b9e6d4bcb6b805b46943e8071c51e8a88ce94ea3ea6d0b8480e8";
 }
 
 library LIB_SALT {
@@ -325,6 +327,26 @@ abstract contract UnionScript is UnionBase {
                     )
                 ),
                 "EU token"
+            )
+        );
+    }
+
+    function deployVaultUSDC(
+        Manager authority,
+        UCS03Zkgm zkgm,
+        address usdc
+    ) internal returns (CrosschainVault) {
+        return CrosschainVault(
+            deployIfNotExists(
+                string(INSTANCE_SALT.VAULT_USDC),
+                abi.encode(
+                    address(new CrosschainVault()),
+                    abi.encodeCall(
+                        CrosschainVault.initialize,
+                        (address(authority), address(zkgm), usdc)
+                    )
+                ),
+                "USDC Crosschain solver vault"
             )
         );
     }
@@ -2183,6 +2205,24 @@ contract DryDeployEU is UnionScript, VersionedScript {
         vm.stopPrank();
 
         console.log("eU: ", address(eu));
+    }
+}
+
+contract DeployVaultUSDC is UnionScript, VersionedScript {
+    using LibString for *;
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        address usdcAddress = vm.envAddress("USDC_ADDRESS");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
+        vm.startBroadcast(privateKey);
+        CrosschainVault usdcVault = deployVaultUSDC(manager, ucs03, usdcAddress);
+        vm.stopBroadcast();
+
+        console.log("USDC Vault: ", address(usdcVault));
     }
 }
 

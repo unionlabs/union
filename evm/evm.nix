@@ -277,6 +277,7 @@ _: {
           rpc-url = "https://eth-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
+          usdc = "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238";
           rate-limit-enabled = "false";
 
           native-token-name = "Ether";
@@ -643,6 +644,7 @@ _: {
           rpc-url,
           private-key,
           weth,
+          usdc ? "",
           rate-limit-enabled ? "true",
           native-token-name ? "Ether",
           native-token-symbol ? "ETH",
@@ -685,6 +687,7 @@ _: {
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
+              USDC_ADDRESS=${usdc} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
@@ -792,6 +795,7 @@ _: {
           rpc-url,
           private-key,
           weth,
+          usdc ? "",
           rate-limit-enabled ? "true",
           native-token-name ? "Ether",
           native-token-symbol ? "ETH",
@@ -822,6 +826,7 @@ _: {
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
+              USDC_ADDRESS=${usdc} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
@@ -892,6 +897,7 @@ _: {
           rpc-url,
           private-key,
           weth,
+          usdc ? "",
           rate-limit-enabled ? "true",
           native-token-name ? "Ether",
           native-token-symbol ? "ETH",
@@ -916,6 +922,7 @@ _: {
               }}
 
               WETH_ADDRESS=${weth} \
+              USDC_ADDRESS=${usdc} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
@@ -971,6 +978,7 @@ _: {
           private-key,
           rpc-url,
           weth,
+          usdc ? "",
           rate-limit-enabled ? "true",
           native-token-name ? "Ether",
           native-token-symbol ? "ETH",
@@ -1013,6 +1021,7 @@ _: {
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
+              USDC_ADDRESS=${usdc} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
@@ -1314,6 +1323,7 @@ _: {
                     u = "U";
                     eu = "EU";
                     udrop = "UDrop";
+                    vault-usdc = "VaultUSDC";
                   }
                 )
                 # other various deployment scripts
