@@ -48,7 +48,7 @@ correct execution.
 This begins with defining a struct with no capabilities such that it cannot be stored, saved as an object or dropped:
 
 ```move
-public struct ExecutionCtx {
+public struct RecvCtx {
     packet_ctxs: vector<ZkgmPacketCtx>,
     packets: vector<Packet>,
     cursor: u64,
@@ -64,11 +64,11 @@ public fun begin_recv(
     packet_data: vector<vector<u8>>,
     packet_timeout_heights: vector<u64>,
     packet_timeout_timestamps: vector<u64>,
-): ExecutionCtx
+): RecvCtx
 ```
 
 This function parses the zkgm instructions and return the context where the instructions, ibc packets and the pointer to the instruction to be run are stored.
-The fact that `ExecutionCtx` is not implementing drop and it cannot be stored or turned into an object guarantees that the whole PTB will fail unless the `ExecutionCtx`
+The fact that `RecvCtx` is not implementing drop and it cannot be stored or turned into an object guarantees that the whole PTB will fail unless the `RecvCtx`
 is destructed. We will see in a moment how this happens.
 
 Then the returned context will be used to call `recv_packet<T>` as much as needed:
@@ -80,9 +80,9 @@ public fun recv_packet<T>(
     clock: &Clock,
     relayer: address,
     relayer_msg: vector<u8>,
-    mut exec_ctx: ExecutionCtx,
+    mut exec_ctx: RecvCtx,
     ctx: &mut TxContext
-): ExecutionCtx
+): RecvCtx
 ```
 
 Here, the `recv_packet<T>` function will stop executing the instructions if it already consumed a `T` and it is now needed to be called with a new
@@ -97,7 +97,7 @@ Batch [
 ```
 
 In the case above, `recv_packet` would have to be called twice. At the first iteration, it will run the `TokenOrder<T1>` and `Forward` instructions
-and when it hits the `TokenOrder<T2>`, it will properly set the pointer and return the `ExecutionCtx`. Then it will run the `TokenOrder<T2>` in the next
+and when it hits the `TokenOrder<T2>`, it will properly set the pointer and return the `RecvCtx`. Then it will run the `TokenOrder<T2>` in the next
 call.
 
 We have the `end_recv` entrypoint to finalize the receiving process:
@@ -110,12 +110,12 @@ public fun end_recv(
     proof_height: u64,
     relayer: address,
     relayer_msg: vector<u8>,
-    exec_ctx: ExecutionCtx,
+    exec_ctx: RecvCtx,
 )
 ```
 
 This function checks whether all the instructions are run within the `exec_ctx` and if not, it aborts. But they are already run, then it consumes
-the `ExecutionCtx` and calls the `ibc::recv_packet` to commit the packet. Note again that the Sui's type-system enforces `ExecutionCtx` to be passed
+the `RecvCtx` and calls the `ibc::recv_packet` to commit the packet. Note again that the Sui's type-system enforces `RecvCtx` to be passed
 to this function within the same PTB. Otherwise, it will not be possible to consume the type and the whole PTB will be reverted.
 
 Most of the work here is done by voyager because now it cannot simply forward the packets but it needs to check whether the packet is a zkgm packet.

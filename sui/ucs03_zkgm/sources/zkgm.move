@@ -125,7 +125,6 @@ module zkgm::zkgm {
     const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
     const E_ANOTHER_TOKEN_IS_REGISTERED: u64 = 26;
     const E_INVALID_BATCH_INSTRUCTION: u64 = 27;
-    const E_ACK_AND_PACKET_LENGTH_MISMATCH: u64 = 29;
     const E_INVALID_FORWARD_DESTINATION_CHANNEL_ID: u64 = 30;
     const E_INVALID_TOKEN_ORDER_KIND: u64 = 31;
     const E_UNWRAP_BASE_AMOUNT_SMALLER_THAN_QUOTE_AMOUNT: u64 = 32;
@@ -197,10 +196,25 @@ module zkgm::zkgm {
         salt: vector<u8>,
     }
 
-    public struct ExecutionCtx {
+    public struct RecvCtx {
         packet_ctxs: vector<ZkgmPacketCtx>,
         packets: vector<Packet>,
         cursor: u64,
+    }
+
+    public struct ZkgmPacketAckCtx has drop {
+        instruction_set: vector<Instruction>,
+        // not by instruction but by set
+        cursor: u64,
+        path: u256,
+        salt: vector<u8>,        
+    }
+
+    public struct AckCtx {
+        packet_ctxs: vector<ZkgmPacketAckCtx>,
+        packets: vector<Packet>,
+        cursor: u64,
+        acks: vector<vector<u8>>,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -360,7 +374,7 @@ module zkgm::zkgm {
         packet_data: vector<vector<u8>>,
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
-    ): ExecutionCtx {
+    ): RecvCtx {
         let mut packet_ctxs = vector::empty();
         let packet_len = packet_source_channels.length();
         let mut i = 0;
@@ -387,7 +401,7 @@ module zkgm::zkgm {
             i = i + 1;
         };
 
-        ExecutionCtx {
+        RecvCtx {
             packet_ctxs,
             packets,
             cursor: 0
@@ -422,9 +436,9 @@ module zkgm::zkgm {
         clock: &Clock,
         relayer: address,
         relayer_msg: vector<u8>,
-        mut exec_ctx: ExecutionCtx,
+        mut exec_ctx: RecvCtx,
         ctx: &mut TxContext
-    ): ExecutionCtx {
+    ): RecvCtx {
         // aborts if there is not a session
         let packet_cursor = exec_ctx.cursor;
         let packet = exec_ctx.packets[exec_ctx.cursor];
@@ -479,7 +493,7 @@ module zkgm::zkgm {
         proof_height: u64,
         relayer: address,
         relayer_msg: vector<u8>,
-        exec_ctx: ExecutionCtx,
+        exec_ctx: RecvCtx,
     ) {
         // make sure all packets are run
         assert!(exec_ctx.cursor == exec_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
@@ -517,7 +531,7 @@ module zkgm::zkgm {
         );
 
         // dropping the execution ctx by decontstructing it
-        let ExecutionCtx { .. } = exec_ctx;
+        let RecvCtx { .. } = exec_ctx;
     }
 
     fun execute_internal<T>(
@@ -573,51 +587,164 @@ module zkgm::zkgm {
         }
     }
 
-    public fun acknowledge_packet<T>(
-        ibc: &mut ibc::IBCStore,
-        zkgm: &mut RelayStore,
+    public fun begin_ack(
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_data: vector<vector<u8>>,
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
         acknowledgements: vector<vector<u8>>,
-        relayer: address,
-        proof: vector<u8>,
-        proof_height: u64,
-        ctx: &mut TxContext
-    ) {
-        assert!(acknowledgements.length() == packet_source_channels.length(), E_ACK_AND_PACKET_LENGTH_MISMATCH);
-
-        let mut packets: vector<Packet> = vector::empty();
+    ): AckCtx {
+        let mut packet_ctxs = vector::empty();
+        let packet_len = packet_source_channels.length();
         let mut i = 0;
-        while (i < packet_source_channels.length()) {
-            packets.push_back(packet::new(
+        let mut packets = vector::empty();
+        while (i < packet_len) {
+            let ibc_packet = packet::new(
                 packet_source_channels[i],
                 packet_destination_channels[i],
                 packet_data[i],
                 packet_timeout_heights[i],
-                packet_timeout_timestamps[i],
-            ));
+                packet_timeout_timestamps[i]
+            );
+            let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+            packet_ctxs.push_back(
+                ZkgmPacketAckCtx {
+                    instruction_set: extract_batch(zkgm_packet.instruction()),
+                    cursor: 0,
+                    path: zkgm_packet.path(),
+                    salt: zkgm_packet.salt(),
+                }
+            );
+            packets.push_back(ibc_packet);
+            i = i + 1;
+        };
+
+        AckCtx {
+            packet_ctxs,
+            packets,
+            acks: acknowledgements,
+            cursor: 0
+        }
+    }
+
+    public fun acknowledge_packet<T>(
+        ibc: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
+        relayer: address,
+        mut ack_ctx: AckCtx,
+        ctx: &mut TxContext
+    ): AckCtx {
+        // aborts if there is not a session
+        let packet_cursor = ack_ctx.cursor;
+        let packet = ack_ctx.packets[packet_cursor];
+        let ack = ack_ctx.acks[packet_cursor];
+        let zkgm_packet = ack_ctx.packet_ctxs.borrow_mut(packet_cursor);
+
+        let instr_len = zkgm_packet.instruction_set.length();
+        let mut type_is_exhausted = false;
+        while (zkgm_packet.cursor < instr_len) {
+            let instruction = zkgm_packet.instruction_set[zkgm_packet.cursor];
+
+            // if we previously run an instruction where type type `T` is used, we should
+            // return ack_ctx and expect to be called with the appropriate type again.
+            if (instruction.opcode() == OP_TOKEN_ORDER) {
+                if (type_is_exhausted) {
+                    return ack_ctx
+                } else {
+                    type_is_exhausted = true;
+                };
+            };
+            
             zkgm.on_acknowledge_packet<T>(
                 ibc,
-                packets[i],
-                acknowledgements[i],
+                packet,
+                ack,
                 relayer,
                 ctx
             );
-            i = i + 1;
+
+            zkgm_packet.cursor = zkgm_packet.cursor + 1;
         };
-        
+
+        if (zkgm_packet.cursor == zkgm_packet.instruction_set.length()) {
+            ack_ctx.cursor = ack_ctx.cursor + 1;  
+        };
+
+        ack_ctx
+    }
+    
+    public fun end_ack(
+        ibc: &mut ibc::IBCStore,
+        proof: vector<u8>,
+        proof_height: u64,
+        relayer: address,
+        ack_ctx: AckCtx,
+    ) {
+        // make sure all packets are run
+        assert!(ack_ctx.cursor == ack_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
+        // make sure all instructions in the final packet are run
+        let final_packet = ack_ctx.packet_ctxs.borrow(ack_ctx.packet_ctxs.length() - 1);
+        assert!(final_packet.cursor == final_packet.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+
         ibc.acknowledge_packet(
-            packets,
-            acknowledgements,
+            ack_ctx.packets,
+            ack_ctx.acks,
             proof,
             proof_height,
             relayer,
             IbcAppWitness {}
         );
+
+        // dropping the ctx by decontstructing it
+        let AckCtx { .. } = ack_ctx;
     }
+
+    // public fun acknowledge_packet<T>(
+    //     ibc: &mut ibc::IBCStore,
+    //     zkgm: &mut RelayStore,
+    //     packet_source_channels: vector<u32>,
+    //     packet_destination_channels: vector<u32>,
+    //     packet_data: vector<vector<u8>>,
+    //     packet_timeout_heights: vector<u64>,
+    //     packet_timeout_timestamps: vector<u64>,
+    //     acknowledgements: vector<vector<u8>>,
+    //     relayer: address,
+    //     proof: vector<u8>,
+    //     proof_height: u64,
+    //     ctx: &mut TxContext
+    // ) {
+    //     assert!(acknowledgements.length() == packet_source_channels.length(), E_ACK_AND_PACKET_LENGTH_MISMATCH);
+
+    //     let mut packets: vector<Packet> = vector::empty();
+    //     let mut i = 0;
+    //     while (i < packet_source_channels.length()) {
+    //         packets.push_back(packet::new(
+    //             packet_source_channels[i],
+    //             packet_destination_channels[i],
+    //             packet_data[i],
+    //             packet_timeout_heights[i],
+    //             packet_timeout_timestamps[i],
+    //         ));
+    //         zkgm.on_acknowledge_packet<T>(
+    //             ibc,
+    //             packets[i],
+    //             acknowledgements[i],
+    //             relayer,
+    //             ctx
+    //         );
+    //         i = i + 1;
+    //     };
+        
+    //     ibc.acknowledge_packet(
+    //         packets,
+    //         acknowledgements,
+    //         proof,
+    //         proof_height,
+    //         relayer,
+    //         IbcAppWitness {}
+    //     );
+    // }
 
     public fun timeout_packet<T>(
         ibc_store: &mut ibc::IBCStore,
