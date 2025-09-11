@@ -19,6 +19,7 @@ let tempMainnetOnly = $state(settingsStore.mainnetOnly)
 let tempShowZeroBalances = $state(uiStore.showZeroBalances)
 let tempShowDeveloperPages = $state(uiStore.showDeveloperPages)
 let tempGraphqlEndpoint = $state(uiStore.graphqlEndpoint)
+let tempFilterWhitelist = $state(uiStore.filterWhitelist)
 
 function handleSave() {
   settingsStore.pageLimit = tempPageLimit
@@ -28,6 +29,7 @@ function handleSave() {
   uiStore.showZeroBalances = tempShowZeroBalances
   uiStore.showDeveloperPages = tempShowDeveloperPages
   uiStore.graphqlEndpoint = tempGraphqlEndpoint
+  uiStore.filterWhitelist = tempFilterWhitelist
   onClose()
 }
 </script>
@@ -118,6 +120,14 @@ function handleSave() {
         checked={tempShowDeveloperPages}
         label="Show developer pages"
         change={(value) => tempShowDeveloperPages = value}
+      />
+    </div>
+
+    <div class="space-y-2">
+      <Switch
+        checked={tempFilterWhitelist}
+        label="Filter whitelist"
+        change={(value) => tempFilterWhitelist = value}
       />
     </div>
 
