@@ -94,8 +94,8 @@
       "ucs03": {
         "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
         "height": 714737,
-        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-        "code_id": 877,
+        "commit": "b14e18b675640de5546caf4e7594262e0728d45d",
+        "code_id": 1021,
         "minter": {
           "type": "cw20",
           "address": "bbn1sakazthycqgzer50nqgr5ta4vy3gwz8wxla3s8rd8pql4ctmz5qssg39sf",

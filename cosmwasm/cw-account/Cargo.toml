@@ -16,7 +16,7 @@ workspace = true
 
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
-cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_2", "staking", "stargate"] } # enable all features so that any message is dispatchable
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0", "staking", "stargate"] } # enable all features so that any message is dispatchable
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }
