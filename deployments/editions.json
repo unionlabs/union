@@ -4,6 +4,9 @@
       "babylon.bbn-test-5": {
         "environment": "production"
       },
+      "base.8453": {
+        "environment": "staging"
+      },
       "bob.808813": {
         "environment": "staging"
       },
@@ -27,6 +30,9 @@
       },
       "sei.1328": {
         "environment": "production"
+      },
+      "sei.1329": {
+        "environment": "staging"
       },
       "union.union-1": {
         "environment": "production"
