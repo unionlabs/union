@@ -955,6 +955,8 @@ contract GetDeployed is VersionedScript {
         address u = getDeployed(string(INSTANCE_SALT.U));
         address udrop = getDeployed(string(INSTANCE_SALT.UDROP));
 
+        address vaultUSDC = getDeployed(string(INSTANCE_SALT.VAULT_USDC));
+
         console.log(
             string(abi.encodePacked("Manager: ", manager.toHexString()))
         );
@@ -1053,6 +1055,28 @@ contract GetDeployed is VersionedScript {
                 )
             );
             impls.serialize(udrop.toHexString(), proxyUDrop);
+        }
+
+        if (vaultUSDC.code.length > 0) {
+            address usdc = vm.envAddress("USDC_ADDRESS");
+
+            string memory proxyVaultUSDC = "proxyVaultUSDC";
+            proxyVaultUSDC.serialize(
+                "contract",
+                string(
+                    "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                )
+            );
+            proxyVaultUSDC = proxyVaultUSDC.serialize(
+                "args",
+                abi.encode(
+                    implOf(vaultUSDC),
+                    abi.encodeCall(
+                        CrosschainVault.initialize, (manager, ucs03, usdc)
+                    )
+                )
+            );
+            impls.serialize(vaultUSDC.toHexString(), proxyVaultUSDC);
         }
 
         string memory proxyMulticall = "proxyMulticall";
@@ -1218,6 +1242,16 @@ contract GetDeployed is VersionedScript {
                 "args", abi.encode(UDrop(udrop).ROOT(), UDrop(udrop).TOKEN())
             );
             impls.serialize(implOf(udrop).toHexString(), implUDrop);
+        }
+
+        if (vaultUSDC.code.length > 0) {
+            string memory implVaultUSDC = "implVaultUSDC";
+            implVaultUSDC.serialize(
+                "contract",
+                string("contracts/CrosschainVault.sol:CrosschainVault")
+            );
+            implVaultUSDC = implVaultUSDC.serialize("args", bytes(hex""));
+            impls.serialize(implOf(vaultUSDC).toHexString(), implVaultUSDC);
         }
 
         string memory implHandler = "implHandler";
@@ -2219,10 +2253,10 @@ contract DeployVaultUSDC is UnionScript, VersionedScript {
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         vm.startBroadcast(privateKey);
-        CrosschainVault usdcVault = deployVaultUSDC(manager, ucs03, usdcAddress);
+        CrosschainVault vaultUSDC = deployVaultUSDC(manager, ucs03, usdcAddress);
         vm.stopBroadcast();
 
-        console.log("USDC Vault: ", address(usdcVault));
+        console.log("USDC Vault: ", address(vaultUSDC));
     }
 }
 
