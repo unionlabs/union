@@ -183,7 +183,6 @@ abstract contract CrosschainVaultTestBase is Test {
 contract CrosschainVaultInitializationTest is CrosschainVaultTestBase {
     function testInitialization() public view {
         assertEq(vault.zkgm(), address(zkgm), "Invalid zkgm address");
-        assertEq(vault.quoteToken(), address(quoteToken), "Invalid quote token");
         assertEq(vault.deployedCapital(), 0, "Deployed capital should be zero");
         assertEq(vault.asset(), address(quoteToken), "Invalid ERC4626 asset");
     }

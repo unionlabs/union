@@ -56,7 +56,6 @@ contract CrosschainVault is
         ) fungibleCounterparties;
         mapping(bytes32 => bool) intentWhitelist;
         address zkgm;
-        address quoteToken;
         uint256 deployedCapital; // Includes both principal deployed and accrued fees
     }
 
@@ -93,16 +92,11 @@ contract CrosschainVault is
         __ERC4626_init(IERC20(_quoteToken));
         CrosschainVaultStorage storage $ = _getCrosschainVaultStorage();
         $.zkgm = _zkgm;
-        $.quoteToken = _quoteToken;
         $.deployedCapital = 0;
     }
 
     function zkgm() public view returns (address) {
         return _getCrosschainVaultStorage().zkgm;
-    }
-
-    function quoteToken() public view returns (address) {
-        return _getCrosschainVaultStorage().quoteToken;
     }
 
     function deployedCapital() public view returns (uint256) {
@@ -235,7 +229,7 @@ contract CrosschainVault is
             revert CrosschainVault_CounterpartyIsNotFungible();
         }
 
-        if (!order.quoteToken.eq(abi.encodePacked($.quoteToken))) {
+        if (!order.quoteToken.eq(abi.encodePacked(asset()))) {
             revert CrosschainVault_Fool();
         }
 
