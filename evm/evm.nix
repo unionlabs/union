@@ -612,7 +612,7 @@ _: {
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
                ${pkgs.lib.optionalString (u != null) "--u ${u}"} \
                ${pkgs.lib.optionalString (eu != null) "--eu ${eu}"} \
-              --ucs03 "$@" 
+              --ucs03 "$@"
           '';
         };
 
