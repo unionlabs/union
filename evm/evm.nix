@@ -498,7 +498,6 @@ _: {
 
           u = ba5ed;
         }
-
         rec {
           chain-id = "8453";
           ucs04-chain-id = "base.8453";
@@ -516,6 +515,26 @@ _: {
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
 
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+
+          u = ba5ed;
+        }
+        rec {
+          chain-id = "1329";
+          ucs04-chain-id = "sei.1329";
+
+          name = "sei";
+          rpc-url = "https://sei-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xe30fedd158a2e3b13e9badaeabafc5516e95e8c7";
+          rate-limit-enabled = "false";
+
+          native-token-name = "Sei";
+          native-token-symbol = "SEI";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
 
           u = ba5ed;
