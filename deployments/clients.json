@@ -119,6 +119,23 @@
       "refresh_rate": "500"
     }
   },
+  "bsc.56": {
+    "1": {
+      "client_type": "cometbls",
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "client_type": "state-lens/ics23/ics23",
+      "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "ethereum.1",
+      "refresh_rate": "500"
+    }
+  },
   "bsc.97": {
     "1": {
       "client_type": "cometbls",
@@ -394,23 +411,6 @@
     "7": {
       "client_type": "tendermint",
       "counterparty": "osmosis.osmo-test-5",
-      "refresh_rate": "500"
-    }
-  },
-  "bsc.56": {
-    "1": {
-      "client_type": "cometbls",
-      "counterparty": "union.union-1",
-      "refresh_rate": "500"
-    },
-    "2": {
-      "client_type": "state-lens/ics23/ics23",
-      "counterparty": "babylon.bbn-1",
-      "refresh_rate": "500"
-    },
-    "3": {
-      "client_type": "state-lens/ics23/mpt",
-      "counterparty": "ethereum.1",
       "refresh_rate": "500"
     }
   }
