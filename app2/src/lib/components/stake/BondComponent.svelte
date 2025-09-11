@@ -1,0 +1,788 @@
+<script lang="ts">
+import Button from "$lib/components/ui/Button.svelte"
+import Input from "$lib/components/ui/Input.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { runPromiseExit$ } from "$lib/runtime"
+import { getWagmiConnectorClient } from "$lib/services/evm/clients"
+import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
+import { matchOption } from "$lib/utils/snippets.svelte"
+import {
+  Batch,
+  Call,
+  Token,
+  TokenOrder,
+  Ucs03,
+  Ucs05,
+  Utils,
+  ZkgmClient,
+  ZkgmClientRequest,
+  ZkgmIncomingMessage,
+} from "@unionlabs/sdk"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
+import { getWalletClient } from "$lib/services/evm/clients"
+import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
+import { custom, http } from "viem"
+import { holesky } from "viem/chains"
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import {
+  EU_ERC20,
+  EU_LST,
+  EU_SOLVER_ON_ETH_METADATA,
+  EU_STAKING_HUB,
+  U_BANK,
+  U_ERC20,
+  U_SOLVER_ON_UNION_METADATA,
+} from "@unionlabs/sdk/Constants"
+import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
+import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import { HexFromJson } from "@unionlabs/sdk/schema/hex"
+import { BigDecimal, Data, Effect, Exit, Schedule, Match, pipe, Schema, Struct } from "effect"
+import * as A from "effect/Array"
+import { flow } from "effect/Function"
+import * as O from "effect/Option"
+import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
+  import { cn } from "$lib/utils";
+
+// Constants from bond.ts
+const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
+const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
+const SOURCE_CHANNEL_ID = ChannelId.make(6)
+const DESTINATION_CHANNEL_ID = ChannelId.make(20)
+const UCS03_EVM = Ucs05.EvmDisplay.make({
+  address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+})
+const UCS03_MINTER_ON_UNION = Ucs05.CosmosDisplay.make({
+  address: "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0",
+})
+const UCS03_ZKGM = Ucs05.CosmosDisplay.make({
+  address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+})
+
+const JsonFromBase64 = Schema.compose(
+  Schema.StringFromBase64,
+  Schema.parseJson(),
+)
+
+interface Props {
+  evmChain: O.Option<Chain>
+  uOnEvmToken: O.Option<TokenType>
+  uOnEvmBalance: O.Option<bigint>
+  onBondSuccess?: () => void
+}
+
+let { evmChain, uOnEvmToken, uOnEvmBalance, onBondSuccess }: Props = $props()
+
+type BondState = Data.TaggedEnum<{
+  Ready: {}
+  SwitchingChain: {}
+  CheckingAllowance: {}
+  ApprovingAllowance: {}
+  AllowanceApproved: {}
+  CreatingTokenOrder: {}
+  PreparingBondTransaction: {}
+  ExecutingBond: {}
+  WaitingForTxConfirmation: {}
+  WaitingForIndexer: {}
+  Success: { txHash: string }
+  Error: { message: string }
+}>
+
+const BondState = Data.taggedEnum<BondState>()
+
+let bondInput = $state<string>("")
+let bondState = $state<BondState>(BondState.Ready())
+let shouldBond = $state<boolean>(false)
+let slippage = $state<number>(1) // Default 1% slippage protection
+
+// Query real-time rates from staking hub
+const stakingRates = runPromiseExit$(() => 
+  Effect.gen(function*() {
+    return yield* pipe(
+      Cosmos.queryContract(
+        EU_STAKING_HUB,
+        {
+          accounting_state: {},
+        },
+      ),
+      Effect.flatMap(Schema.decodeUnknown(Schema.Struct({
+        total_bonded_native_tokens: Schema.BigInt,
+        total_issued_lst: Schema.BigInt,
+        total_reward_amount: Schema.BigInt,
+        redemption_rate: Schema.BigDecimal,
+        purchase_rate: Schema.BigDecimal,
+      }))),
+      Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
+    )
+  })
+)
+
+const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  bondInput,
+  BigDecimal.fromString,
+))
+
+const bondAmount = $derived<O.Option<bigint>>(pipe(
+  inputAmount,
+  O.map(flow(
+    (bd) => {
+      const multiplier = BigDecimal.make(10n ** 18n, 0)
+      const result = BigDecimal.multiply(bd, multiplier)
+      // Adjust for the remaining scale to get the actual wei value
+      const scale = result.scale
+      const adjustedValue = scale >= 0 
+        ? result.value / (10n ** BigInt(scale))
+        : result.value * (10n ** BigInt(-scale))
+      console.log("Conversion - Input:", bondInput, "Scale:", scale, "Wei:", adjustedValue)
+      return adjustedValue
+    }
+  )),
+))
+
+const isBonding = $derived(
+  BondState.$is("SwitchingChain")(bondState) ||
+  BondState.$is("CheckingAllowance")(bondState) ||
+  BondState.$is("ApprovingAllowance")(bondState) ||
+  BondState.$is("AllowanceApproved")(bondState) ||
+  BondState.$is("CreatingTokenOrder")(bondState) ||
+  BondState.$is("PreparingBondTransaction")(bondState) ||
+  BondState.$is("ExecutingBond")(bondState) ||
+  BondState.$is("WaitingForTxConfirmation")(bondState) ||
+  BondState.$is("WaitingForIndexer")(bondState)
+)
+const isSuccess = $derived(BondState.$is("Success")(bondState))
+const isError = $derived(BondState.$is("Error")(bondState))
+
+// Calculate expected receive amount using real purchase rate
+const expectedReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  O.all({ amount: bondAmount, rates: stakingRates.current }),
+  O.flatMap(({ amount, rates }) => 
+    rates._tag === "Success" 
+      ? O.some(pipe(
+          BigDecimal.fromBigInt(amount),
+          BigDecimal.unsafeDivide(BigDecimal.make(10n ** 18n, 0)), 
+          BigDecimal.multiply(rates.value.purchase_rate),
+        ))
+      : O.none()
+  )
+))
+
+// Calculate minimum receive amount (expected - slippage protection)  
+const minimumReceiveAmount = $derived<O.Option<string>>(pipe(
+  bondInput,
+  O.fromNullable,
+  O.filter(s => s.trim() !== ""),
+  O.map(input => {
+    const inputNum = parseFloat(input) || 0
+    const minNum = inputNum * (100 - slippage) / 100
+    return minNum.toFixed(18) // Show all 18 decimals
+  })
+))
+
+const bytecode_base_checksum =
+  "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
+const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
+const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
+
+const instantiate2 = Effect.fn(
+  function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.EvmDisplay }) {
+    const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
+    const abi = [
+      {
+        name: "path",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "channelId",
+        type: "uint32",
+        internalType: "uint32",
+      },
+      {
+        name: "sender",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ] as const
+
+    const salt = yield* pipe(
+      Effect.try(() =>
+        encodeAbiParameters(
+          abi,
+          [
+            options.path,
+            options.channel,
+            sender,
+          ] as const,
+        )
+      ),
+      Effect.map((encoded) => keccak256(encoded, "bytes")),
+    )
+
+    const u64toBeBytes = (n: bigint) => {
+      const buffer = new ArrayBuffer(8)
+      const view = new DataView(buffer)
+      view.setBigUint64(0, n)
+      return new Uint8Array(view.buffer)
+    }
+
+    const sha256 = Effect.fn((data: any) =>
+      Effect.tryPromise(() => globalThis.crypto.subtle.digest("SHA-256", data))
+    )
+
+    const address = yield* pipe(
+      Uint8Array.from(
+        [
+          ...fromHex(module_hash, "bytes"),
+          ...new TextEncoder().encode("wasm"),
+          0, // null byte
+          ...u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
+          ...fromHex(bytecode_base_checksum, "bytes"),
+          ...u64toBeBytes(32n), // creator canonical addr len
+          ...fromHex(canonical_zkgm, "bytes"),
+          ...u64toBeBytes(32n), // len
+          ...salt,
+          ...u64toBeBytes(0n),
+        ],
+      ),
+      sha256,
+      Effect.map((r) => new Uint8Array(r)),
+      Effect.map(bytesToHex),
+      Effect.flatMap(
+        Schema.decode(Ucs05.Bech32FromCanonicalBytesWithPrefix("union")),
+      ),
+    )
+
+    return Ucs05.CosmosDisplay.make({ address })
+  },
+)
+
+const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => pipe(
+  Evm.readErc20Allowance(
+    U_ERC20.address,
+    sender.address,
+    UCS03_EVM.address,
+  ),
+  Effect.flatMap((amount) =>
+    Effect.if(amount < sendAmount, {
+      onTrue: () =>
+        pipe(
+          Effect.log(`Increasing allowance by ${sendAmount - amount} for ${U_ERC20.address}`),
+          Effect.andThen(() =>
+            pipe(
+              Evm.increaseErc20Allowance(
+                U_ERC20.address,
+                UCS03_EVM,
+                sendAmount - amount,
+              ),
+              Effect.andThen(Evm.waitForTransactionReceipt),
+            )
+          ),
+        ),
+      onFalse: () =>
+        Effect.log(`Allowance fulfilled by ${sendAmount - amount} for ${U_ERC20.address}`),
+    })
+  ),
+)
+
+const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => Effect.gen(function*() {
+  const minMintAmount = sendAmount * BigInt(100 - slippage) / 100n
+  
+  const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
+  const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
+  const receiver = yield* instantiate2({
+    path: 0n,
+    channel: DESTINATION_CHANNEL_ID,
+    sender,
+  })
+
+  const tokenOrder = yield* TokenOrder.make({
+    source: ethereumChain,
+    destination: unionChain,
+    sender,
+    receiver,
+    baseToken: U_ERC20,
+    baseAmount: sendAmount,
+    quoteToken: U_BANK,
+    quoteAmount: sendAmount,
+    kind: "solve",
+    metadata: U_SOLVER_ON_UNION_METADATA,
+    version: 2,
+  })
+
+  const bondCall = yield* pipe(
+    {
+      bond: {
+        mint_to_address: receiver.address,
+        min_mint_amount: minMintAmount,
+      },
+    } as const,
+    Schema.encode(JsonFromBase64),
+    Effect.map((msg) => ({
+      wasm: {
+        execute: {
+          contract_addr: EU_STAKING_HUB.address,
+          msg,
+          funds: [
+            { denom: U_BANK.address, amount: sendAmount },
+          ],
+        },
+      },
+    })),
+  )
+
+  const increaseAllowanceCall = yield* pipe(
+    {
+      increase_allowance: {
+        spender: UCS03_MINTER_ON_UNION.address,
+        amount: minMintAmount,
+      },
+    } as const,
+    Schema.encode(JsonFromBase64),
+    Effect.map((msg) => ({
+      wasm: {
+        execute: {
+          contract_addr: EU_LST.address,
+          msg,
+          funds: [],
+        },
+      },
+    })),
+  )
+
+  const salt = yield* Utils.generateSalt("cosmos")
+  const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+
+  const sendCall = yield* pipe(
+    TokenOrder.make({
+      source: unionChain,
+      destination: ethereumChain,
+      sender: Ucs05.CosmosDisplay.make({
+        address: "union1ylfrhs2y5zdj2394m6fxgpzrjav7le3z07jffq",
+      }),
+      receiver: sender,
+      baseToken: Token.Cw20.make({ address: EU_LST.address }),
+      baseAmount: minMintAmount,
+      quoteToken: EU_ERC20,
+      quoteAmount: minMintAmount,
+      kind: "solve",
+      metadata: EU_SOLVER_ON_ETH_METADATA,
+      version: 2,
+    }),
+    Effect.flatMap(TokenOrder.encodeV2),
+    Effect.flatMap(Schema.encode(Ucs03.Ucs03WithInstructionFromHex)),
+    Effect.map((instruction) => ({
+      send: {
+        channel_id: DESTINATION_CHANNEL_ID,
+        timeout_height: 0n,
+        timeout_timestamp,
+        salt,
+        instruction,
+      },
+    } as const)),
+    Effect.flatMap(Schema.encode(JsonFromBase64)),
+    Effect.map((msg) => ({
+      wasm: {
+        execute: {
+          contract_addr: UCS03_ZKGM.address,
+          msg,
+          funds: [],
+        },
+      },
+    })),
+  )
+
+  const calls = yield* pipe(
+    [
+      bondCall,
+      increaseAllowanceCall,
+      sendCall,
+    ],
+    Schema.decode(HexFromJson),
+    Effect.map((contractCalldata) =>
+      Call.make({
+        sender,
+        eureka: false,
+        contractAddress: receiver,
+        contractCalldata,
+      })
+    ),
+  )
+
+  const batch = Batch.make([
+    tokenOrder,
+    calls,
+  ])
+
+  const request = ZkgmClientRequest.make({
+    source: ethereumChain,
+    destination: unionChain,
+    channelId: SOURCE_CHANNEL_ID,
+    ucs03Address: UCS03_EVM.address,
+    instruction: batch,
+  })
+
+  const client = yield* ZkgmClient.ZkgmClient
+  const response = yield* client.execute(request)
+  
+  yield* Effect.log("Submission TX Hash:", response.txHash)
+
+  // Return both response and txHash for separate indexer handling
+  return { response, txHash: response.txHash }
+})
+
+runPromiseExit$(() =>
+  shouldBond
+    ? Effect.gen(function*() {
+      const senderOpt = WalletStore.evmAddress
+      if (O.isNone(senderOpt) || O.isNone(bondAmount) || O.isNone(evmChain)) {
+        bondState = BondState.Error({ message: "Missing required data: wallet address, bond amount, or chain" })
+        shouldBond = false
+        return yield* Effect.fail(new Error("Missing required data"))
+      }
+
+      const sender = senderOpt.value
+      const sendAmount = bondAmount.value
+      const chain = evmChain.value
+
+      bondState = BondState.SwitchingChain()
+      yield* Effect.log("Starting bond execution", { sender: sender.address, sendAmount })
+      
+      const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
+      const VIEM_CHAIN = holesky
+      
+      // Get wagmi connector client
+      const connectorClient = yield* getWagmiConnectorClient
+      
+      // Switch to the correct chain
+      yield* switchChain(VIEM_CHAIN)
+      
+      // Create clients using connector
+      const publicClient = Evm.PublicClient.Live({
+        chain: VIEM_CHAIN,
+        transport: custom(connectorClient),
+      })
+
+      const walletClient = Evm.WalletClient.Live({
+        account: connectorClient.account,
+        chain: VIEM_CHAIN,
+        transport: custom(connectorClient),
+      })
+      
+      bondState = BondState.CheckingAllowance()
+      yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.tap(() => Effect.sync(() => { bondState = BondState.ApprovingAllowance() }))
+      )
+      
+      bondState = BondState.AllowanceApproved()
+      yield* Effect.sleep("500 millis") // Brief pause to show approval success
+      
+      bondState = BondState.CreatingTokenOrder()
+      yield* Effect.sleep("300 millis") // Show token order creation
+      
+      bondState = BondState.PreparingBondTransaction()
+      yield* Effect.sleep("300 millis") // Show transaction preparation
+      
+      bondState = BondState.ExecutingBond()
+      const { response, txHash } = yield* executeBond(sender, sendAmount).pipe(
+        Effect.provide(EvmZkgmClient.layerWithoutWallet),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(ChainRegistry.Default),
+      )
+      
+      bondState = BondState.WaitingForTxConfirmation()
+      yield* Effect.sleep("1 second") // Show tx confirmation step
+      
+      // Bond transaction completed, now wait for indexer
+      console.log("Bond transaction submitted with hash:", txHash)
+      bondState = BondState.WaitingForIndexer()
+      
+      // Wait for indexer with aggressive retry - the data WILL eventually be there
+      const receipt = yield* Effect.retry(
+        response.waitFor(
+          ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+        ),
+        {
+          schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
+          while: (error) => {
+            console.log("Indexer not ready yet, retrying in 5 seconds...")
+            return true // Always retry - indexer will eventually have the data
+          }
+        }
+      )
+      
+      bondState = BondState.Success({ txHash })
+      
+      // Reset form and refresh data on success
+      bondInput = ""
+      shouldBond = false
+      onBondSuccess?.()
+      
+      return receipt
+    }).pipe(
+      Effect.catchAll(error =>
+        Effect.gen(function*() {
+          const errorObj = error as any
+          const fullError = errorObj?.cause?.cause?.shortMessage
+            || errorObj?.cause?.message
+            || errorObj?.message
+            || JSON.stringify(error)
+          const shortMessage = String(fullError).split(".")[0]
+          
+          bondState = BondState.Error({ message: shortMessage })
+          shouldBond = false
+          return yield* Effect.succeed(false)
+        })
+      ),
+    )
+    : Effect.void
+)
+
+function handleBondSubmit() {
+  if (isBonding) {
+    return
+  }
+  bondState = BondState.Ready()
+  shouldBond = true
+}
+
+function handleRetry() {
+  bondState = BondState.Ready()
+}
+
+</script>
+
+{#snippet renderBalanceSkeleton()}
+  <Skeleton class="w-full h-6 ml-auto" />
+{/snippet}
+
+{#snippet renderBalance(amount: bigint)}
+  <div class="font-mono">
+    {
+      pipe(
+        BigDecimal.fromBigInt(amount),
+        // XXX: check decimals
+        BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
+        Utils.formatBigDecimal,
+      )
+    }
+  </div>
+{/snippet}
+
+<div class="flex grow flex-col gap-4">
+  <div>
+    <Label caseSensitive>U BALANCE</Label>
+    {@render matchOption(uOnEvmBalance, renderBalance, renderBalanceSkeleton)}
+  </div>
+
+  <div>
+    <Input
+      id="bondInput"
+      type="text"
+      required
+      disabled={O.isNone(uOnEvmBalance)}
+      label="Bond Amount"
+      autocorrect="off"
+      placeholder="Enter amount"
+      spellcheck="false"
+      autocomplete="off"
+      inputmode="decimal"
+      data-field="amount"
+      onbeforeinput={(event) => {
+        const { inputType, data, currentTarget } = event
+        const { value } = currentTarget
+        const proposed = value + (data ?? "")
+
+        const maxDecimals = pipe(
+          uOnEvmToken,
+          O.map(Struct.get("representations")),
+          O.flatMap(A.head),
+          O.map(Struct.get("decimals")),
+          O.getOrElse(() => 18),
+        )
+
+        const validShape = /^\d*[.,]?\d*$/.test(proposed)
+        const validDecimalsDot = !proposed.includes(".")
+          || proposed.split(".")[1].length <= maxDecimals
+        const validDecimalsComma = !proposed.includes(",")
+          || proposed.split(",")[1].length <= maxDecimals
+        const isDelete = inputType.startsWith("delete")
+        const validDecimals = validDecimalsComma && validDecimalsDot
+        const noDuplicateLeadingZeroes = !proposed.startsWith("00")
+
+        const allow = isDelete
+          || (validDecimals && validShape && noDuplicateLeadingZeroes)
+
+        if (!allow) {
+          event.preventDefault()
+        }
+      }}
+      autocapitalize="none"
+      pattern="^[0-9]*[.,]?[0-9]*$"
+      value={bondInput}
+      class="h-14 text-center text-lg"
+      oninput={(event) => {
+        bondInput = event.currentTarget.value
+      }}
+    />
+    {O.map(bondAmount, (wei) => wei.toString())}
+  </div>
+
+  <!-- Real-time Staking Rates -->
+  <div class="flex flex-col gap-2 text-xs">
+    {#if O.isSome(stakingRates.current) && stakingRates.current.value._tag === "Success"}
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Purchase rate:</span>
+        <span class="font-mono text-zinc-300">
+          {pipe(
+            stakingRates.current.value.value.purchase_rate,
+            Utils.formatBigDecimal
+          )}
+        </span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Expected receive:</span>
+        <span class="font-mono text-zinc-300">
+          {pipe(
+            expectedReceiveAmount,
+            O.map(bd => {
+              const formatted = Utils.formatBigDecimal(bd)
+              const num = parseFloat(formatted)
+              return num === 0 ? "0" : formatted
+            }),
+            O.getOrElse(() => "0")
+          )} eU
+        </span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="text-zinc-400">Slippage tolerance:</span>
+        <div class="flex items-center gap-1">
+          <input
+            type="number"
+            min="0.1"
+            max="5"
+            step="0.1"
+            bind:value={slippage}
+            class="w-12 px-1 py-0.5 text-xs bg-zinc-900 border border-zinc-700 rounded text-zinc-300 text-center"
+          />
+          <span class="text-xs text-zinc-500">%</span>
+        </div>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Minimum receive:</span>
+        <span class="font-mono text-zinc-300">
+          {O.getOrElse(minimumReceiveAmount, () => "0")} eU
+        </span>
+      </div>
+    {:else}
+      <div class="flex justify-between">
+        <span class="text-zinc-400">Loading rates...</span>
+        <div class="w-16 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Status Display -->
+  {#if !BondState.$is("Ready")(bondState)}
+    <div class="bg-zinc-950/50 rounded-lg p-4 border border-zinc-800">
+      <div class="flex items-center gap-3">
+        <div class="size-8 rounded-lg {isError ? 'bg-red-500/20 border-red-500/40' : isSuccess ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} flex items-center justify-center flex-shrink-0">
+          {#if isBonding}
+            <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          {:else if isSuccess}
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          {:else if isError}
+            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/>
+            </svg>
+          {/if}
+        </div>
+        <div class="flex-1">
+          <div class="text-sm font-medium text-white">
+            {
+              Match.value(bondState).pipe(
+                Match.when(BondState.$is("SwitchingChain"), () => "Switching to Holesky"),
+                Match.when(BondState.$is("CheckingAllowance"), () => "Checking Token Allowance"),
+                Match.when(BondState.$is("ApprovingAllowance"), () => "Approving Token Spending"),
+                Match.when(BondState.$is("AllowanceApproved"), () => "Allowance Approved"),
+                Match.when(BondState.$is("CreatingTokenOrder"), () => "Creating Token Order"),
+                Match.when(BondState.$is("PreparingBondTransaction"), () => "Preparing Bond Transaction"),
+                Match.when(BondState.$is("ExecutingBond"), () => "Executing Bond"),
+                Match.when(BondState.$is("WaitingForTxConfirmation"), () => "Transaction Confirming"),
+                Match.when(BondState.$is("WaitingForIndexer"), () => "Indexing Transaction"),
+                Match.when(BondState.$is("Success"), () => "Bond Successful"),
+                Match.when(BondState.$is("Error"), () => "Bond Failed"),
+                Match.when(BondState.$is("Ready"), () => "Ready"),
+                Match.exhaustive,
+              )
+            }
+          </div>
+          <div class="text-xs {isError ? 'text-red-400' : isSuccess ? 'text-emerald-400' : 'text-blue-400'} mt-1">
+            {
+              Match.value(bondState).pipe(
+                Match.when(BondState.$is("SwitchingChain"), () => "Please switch to Holesky network in your wallet"),
+                Match.when(BondState.$is("CheckingAllowance"), () => "Reading current token allowance from blockchain..."),
+                Match.when(BondState.$is("ApprovingAllowance"), () => "Confirm token approval transaction in your wallet"),
+                Match.when(BondState.$is("AllowanceApproved"), () => "Token spending approved, proceeding..."),
+                Match.when(BondState.$is("CreatingTokenOrder"), () => "Building cross-chain token order..."),
+                Match.when(BondState.$is("PreparingBondTransaction"), () => "Preparing bond transaction with contracts..."),
+                Match.when(BondState.$is("ExecutingBond"), () => "Confirm bond transaction in your wallet"),
+                Match.when(BondState.$is("WaitingForTxConfirmation"), () => "Transaction submitted, waiting for confirmation..."),
+                Match.when(BondState.$is("WaitingForIndexer"), () => "Transaction confirmed, indexing data..."),
+                Match.when(BondState.$is("Success"), ({ txHash }) => `Success! TX: ${txHash.slice(0, 10)}...`),
+                Match.when(BondState.$is("Error"), ({ message }) => message),
+                Match.when(BondState.$is("Ready"), () => ""),
+                Match.exhaustive,
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <div>
+    <Button
+      class="w-full"
+      variant={isError ? "secondary" : "primary"}
+      disabled={isBonding || isSuccess || O.isNone(bondAmount) || O.isNone(WalletStore.evmAddress)}
+      onclick={isError ? handleRetry : handleBondSubmit}
+    >
+      {#if isBonding}
+        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+      {:else if isSuccess}
+        <svg class="w-4 h-4 text-current mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      {/if}
+      {
+        Match.value(bondState).pipe(
+          Match.when(BondState.$is("Ready"), () => 
+            O.isNone(WalletStore.evmAddress) 
+              ? "Connect Wallet" 
+              : `Stake ${bondInput || "0"} U`
+          ),
+          Match.when(BondState.$is("SwitchingChain"), () => "Switching..."),
+          Match.when(BondState.$is("CheckingAllowance"), () => "Checking..."),
+          Match.when(BondState.$is("ApprovingAllowance"), () => "Approving..."),
+          Match.when(BondState.$is("AllowanceApproved"), () => "Approved ✓"),
+          Match.when(BondState.$is("CreatingTokenOrder"), () => "Creating Order..."),
+          Match.when(BondState.$is("PreparingBondTransaction"), () => "Preparing..."),
+          Match.when(BondState.$is("ExecutingBond"), () => "Executing..."),
+          Match.when(BondState.$is("WaitingForTxConfirmation"), () => "Confirming..."),
+          Match.when(BondState.$is("WaitingForIndexer"), () => "Indexing..."),
+          Match.when(BondState.$is("Success"), () => "Success!"),
+          Match.when(BondState.$is("Error"), () => "Try Again"),
+          Match.exhaustive,
+        )
+      }
+    </Button>
+  </div>
+</div>
