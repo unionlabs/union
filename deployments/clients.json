@@ -306,6 +306,13 @@
       "refresh_rate": "5000"
     }
   },
+  "sei.pacific-1": {
+    "1": {
+      "client_type": "cometbls",
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    }
+  },
   "union.union-1": {
     "1": {
       "client_type": "ethereum",
@@ -335,6 +342,11 @@
     "10": {
       "client_type": "base",
       "counterparty": "base.8453",
+      "refresh_rate": "5000"
+    },
+    "11": {
+      "client_type": "ethermint",
+      "counterparty": "sei.pacific-1",
       "refresh_rate": "5000"
     }
   },

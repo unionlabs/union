@@ -309,6 +309,22 @@
       "tags": ["canonical"]
     }
   },
+  "sei.1329": {
+    "1": {
+      "comments": "union.union-1 channel 2",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "938092",
+          "PACKET_SEND_LC_UPDATE_L0": "321174"
+        },
+        "reverse": {
+          "PACKET_RECV": "1463397",
+          "PACKET_SEND_LC_UPDATE_L0": "321174"
+        }
+      },
+      "tags": ["canonical", "tokenorder-v2"]
+    }
+  },
   "union.union-1": {
     "1": {
       "comments": "ethereum.1 channel 2",
