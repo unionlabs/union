@@ -5,7 +5,6 @@ import Label from "$lib/components/ui/Label.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
-import { getWalletClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
@@ -15,6 +14,7 @@ import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import {
   Batch,
   Call,
+  Indexer,
   Token,
   TokenOrder,
   Ucs03,
@@ -40,15 +40,25 @@ import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
-import { BigDecimal, Data, Effect, Exit, Match, pipe, Schedule, Schema, Struct } from "effect"
+import {
+  BigDecimal,
+  ConfigProvider,
+  Data,
+  Effect,
+  Layer,
+  Match,
+  pipe,
+  Schedule,
+  Schema,
+  Struct,
+} from "effect"
 import * as A from "effect/Array"
-import { flow } from "effect/Function"
 import * as O from "effect/Option"
-import { custom, http } from "viem"
-import { bytesToHex, encodeAbiParameters, formatUnits, fromHex, keccak256, parseUnits } from "viem"
+import { graphql } from "gql.tada"
+import { custom } from "viem"
+import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
 import { holesky } from "viem/chains"
 
-// Constants from bond.ts
 const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
 const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
@@ -100,7 +110,7 @@ const BondState = Data.taggedEnum<BondState>()
 let bondInput = $state<string>("")
 let bondState = $state<BondState>(BondState.Ready())
 let shouldBond = $state<boolean>(false)
-let slippage = $state<number>(1) // Default 1%
+let slippage = $state<number>(1)
 
 const stakingRates = runPromiseExit$(() =>
   Effect.gen(function*() {
@@ -136,6 +146,15 @@ const bytecode_base_checksum =
 const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
 const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
 
+const QlpConfigProvider = pipe(
+  ConfigProvider.fromMap(
+    new Map([
+      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
+    ]),
+  ),
+  Layer.setConfigProvider,
+)
+
 const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   bondInput,
   BigDecimal.fromString,
@@ -160,7 +179,6 @@ const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
     const inputNorm = BigDecimal.normalize(input)
     const rateNorm = BigDecimal.normalize(rates.purchase_rate)
 
-    // Simple multiplication: input * rate * slippage
     const expectedScaled = inputNorm.value * rateNorm.value
     const minScaled = expectedScaled * BigInt(100 - slippage) / 100n
     return BigDecimal.make(minScaled, inputNorm.scale + rateNorm.scale)
@@ -218,12 +236,12 @@ const instantiate2 = Effect.fn(
         [
           ...fromHex(module_hash, "bytes"),
           ...new TextEncoder().encode("wasm"),
-          0, // null byte
-          ...u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
+          0,
+          ...u64toBeBytes(32n),
           ...fromHex(bytecode_base_checksum, "bytes"),
-          ...u64toBeBytes(32n), // creator canonical addr len
+          ...u64toBeBytes(32n),
           ...fromHex(canonical_zkgm, "bytes"),
-          ...u64toBeBytes(32n), // len
+          ...u64toBeBytes(32n),
           ...salt,
           ...u64toBeBytes(0n),
         ],
@@ -430,7 +448,6 @@ runPromiseExit$(() =>
 
       bondState = BondState.SwitchingChain()
 
-      const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
       const VIEM_CHAIN = holesky
 
       const connectorClient = yield* getWagmiConnectorClient
@@ -452,7 +469,6 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
-      // Use the dedicated allowance function with proper state management
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
         Effect.provide(walletClient),
         Effect.provide(publicClient),
@@ -511,9 +527,35 @@ runPromiseExit$(() =>
 
       bondState = BondState.WaitingForIndexer({ txHash: finalHash })
 
-      // TODO: transferHashStore.startPolling(transactionHash)
+      yield* pipe(
+        Effect.gen(function*() {
+          const indexer = yield* Indexer.Indexer
+          return yield* indexer.fetch({
+            document: graphql(`
+               query GetBondByTxHash($tx_hash: String!) @cached(ttl: 10) {
+                 v2_bonds(args: { p_transaction_hash: $tx_hash }) {
+                   packet_hash
+                 }
+               }
+             `),
+            variables: { tx_hash: finalHash },
+          })
+        }),
+        Effect.flatMap(Schema.decodeUnknown(
+          Schema.Struct({
+            v2_bonds: Schema.NonEmptyArray(Schema.Struct({ packet_hash: Schema.String })),
+          }),
+        )),
+        Effect.retry({
+          schedule: Schedule.fixed("2 seconds"),
+          times: 30,
+          while: (error) => String(error.message || "").includes("is missing"),
+        }),
+        Effect.provide(Indexer.Indexer.Default),
+        Effect.provide(QlpConfigProvider),
+      )
 
-      bondState = BondState.Success({ txHash })
+      bondState = BondState.Success({ txHash: finalHash })
 
       bondInput = ""
       shouldBond = false
@@ -559,7 +601,6 @@ function handleRetry() {
     {
       pipe(
         BigDecimal.fromBigInt(amount),
-        // XXX: check decimals
         BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
         Utils.formatBigDecimal,
       )
