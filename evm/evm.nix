@@ -524,7 +524,7 @@ _: {
           ucs04-chain-id = "sei.1329";
 
           name = "sei";
-          rpc-url = "https://sei-mainnet.g.alchemy.com/v2/S4qS6OxcyKV2SfJ5N4C-F";
+          rpc-url = "https://sei-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xe30fedd158a2e3b13e9badaeabafc5516e95e8c7";
           rate-limit-enabled = "false";
