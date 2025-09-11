@@ -110,7 +110,7 @@ _: {
           lightclients = [
             # "sui"
             # "trusted-mpt"
-            "parlia"
+            # "parlia"
             "sui"
             # "trusted-mpt"
           ];

@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, str::FromStr};
+use std::collections::VecDeque;
 
 use call::FetchUpdate;
 use jsonrpsee::{

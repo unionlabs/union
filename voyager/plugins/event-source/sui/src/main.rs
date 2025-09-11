@@ -933,11 +933,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         chain_event(
                             counterparty_chain_id,
                             PacketRecv {
-                                packet_data: packet.data.into(),
+                                packet_data: packet.packet.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,
-                                    timeout_timestamp: packet.timeout_timestamp,
+                                    timeout_timestamp: packet.packet.timeout_timestamp,
                                 },
                                 maker_msg: event.maker_msg.into(),
                             }
@@ -996,12 +996,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         chain_event(
                             counterparty_chain_id,
                             WriteAck {
-                                packet_data: packet.data.to_vec().into(),
+                                packet_data: packet.packet.data.to_vec().into(),
                                 acknowledgement: event.acknowledgement.to_vec().into(),
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,
-                                    timeout_timestamp: packet.timeout_timestamp,
+                                    timeout_timestamp: packet.packet.timeout_timestamp,
                                 },
                             }
                             .into(),
@@ -1038,9 +1038,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,
-                                    timeout_timestamp: packet.timeout_timestamp,
+                                    timeout_timestamp: packet.packet.timeout_timestamp,
                                 },
-                                packet_data: packet.data,
+                                packet_data: packet.packet.data,
                                 acknowledgement: event.acknowledgement.into(),
                             }
                             .into(),

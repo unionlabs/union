@@ -356,7 +356,6 @@ pub mod zkgm {
     pub fn begin_recv_call(
         ptb: &mut ProgrammableTransactionBuilder,
         module_info: &ModuleInfo,
-        store_initial_seq: SequenceNumber,
         data: MsgPacketRecv,
     ) -> Argument {
         let (source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps) =
@@ -374,11 +373,6 @@ pub mod zkgm {
                 .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
 
         let arguments = vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module_info.stores[0].into(),
-                initial_shared_version: store_initial_seq,
-                mutable: true,
-            }),
             CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
             CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
             CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
@@ -407,45 +401,46 @@ pub mod zkgm {
         coin_t: TypeTag,
         fee_recipient: SuiAddress,
         relayer_msgs: Vec<Bytes>,
-    ) -> anyhow::Result<()> {
-        ptb.move_call(
+        session: Argument,
+    ) -> Argument {
+        let arguments = vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module.ibc_store.into(),
+                initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].into(),
+                initial_shared_version: store_initial_seq,
+                mutable: true,
+            }),
+            SUI_CALL_ARG_CLOCK,
+            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&relayer_msgs).unwrap()),
+        ]
+        .into_iter()
+        .map(|a| ptb.input(a).unwrap())
+        .chain(vec![session])
+        .collect();
+
+        ptb.command(Command::move_call(
             module_info.latest_address.into(),
             module_info.module_name.clone(),
             ident_str!("recv_packet").into(),
             vec![coin_t],
-            vec![
-                CallArg::Object(ObjectArg::SharedObject {
-                    id: module.ibc_store.into(),
-                    initial_shared_version: module.ibc_store_initial_seq,
-                    mutable: true,
-                }),
-                CallArg::Object(ObjectArg::SharedObject {
-                    id: module_info.stores[0].into(),
-                    initial_shared_version: store_initial_seq,
-                    mutable: true,
-                }),
-                SUI_CALL_ARG_CLOCK,
-                CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-                CallArg::Pure(bcs::to_bytes(&relayer_msgs).unwrap()),
-            ],
-        )
+            arguments,
+        ))
     }
 
     pub fn end_recv_call(
         ptb: &mut ProgrammableTransactionBuilder,
         module: &Module,
         module_info: &ModuleInfo,
-        store_initial_seq: SequenceNumber,
         fee_recipient: SuiAddress,
         session: Argument,
         data: MsgPacketRecv,
     ) -> anyhow::Result<()> {
         let arguments = vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module_info.stores[0].into(),
-                initial_shared_version: store_initial_seq,
-                mutable: true,
-            }),
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,

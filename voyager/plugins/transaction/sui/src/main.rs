@@ -33,6 +33,7 @@ use sui_sdk::{
     types::{
         base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
+        digests::ObjectDigest,
         dynamic_field::DynamicFieldName,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
@@ -51,7 +52,11 @@ use ucs03_zkgm::com::{
     TOKEN_ORDER_KIND_UNESCROW,
 };
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes, H256},
+    encoding::Decode,
+    primitives::{
+        encoding::{Base64, HexPrefixed},
+        Bytes, H256,
+    },
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -379,18 +384,13 @@ async fn process_msgs(
 
                 // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
                 // which means, we have to consume it within the same PTB via `end_recv`.
-                let session = move_api::zkgm::begin_recv_call(
-                    ptb,
-                    &module_info,
-                    store_initial_seq,
-                    data.clone(),
-                );
+                let mut session = move_api::zkgm::begin_recv_call(ptb, &module_info, data.clone());
 
                 // // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
                 // // endpoint must be called as many times as the partitions. Since the number of coins will be the
                 // // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
                 for coin_t in coin_ts {
-                    move_api::zkgm::recv_packet_call(
+                    session = move_api::zkgm::recv_packet_call(
                         ptb,
                         module,
                         &module_info,
@@ -398,7 +398,8 @@ async fn process_msgs(
                         coin_t,
                         fee_recipient,
                         data.relayer_msgs.clone(),
-                    )?;
+                        session,
+                    );
                 }
 
                 // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
@@ -408,7 +409,6 @@ async fn process_msgs(
                     ptb,
                     module,
                     &module_info,
-                    store_initial_seq,
                     fee_recipient,
                     session,
                     data,
@@ -629,6 +629,35 @@ async fn register_token_if_zkgm(
     };
     let (treasury_ref, metadata_ref, coin_t) =
         publish_new_coin(module, pk, coin_metadata.decimals).await?;
+
+    // let treasury_ref = module.sui_client
+    //     .read_api()
+    //     .get_object_with_options(
+    //         ObjectID::from_str("0xca5366bca6f671b348be40c1ecabae26ddbb85b15487739f8541edc257ee1ed2").unwrap(),
+    //         SuiObjectDataOptions::default().with_owner(),
+    //     )
+    //     .await
+    //     .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+    //     .data
+    //     .expect("ibc store object exists on chain").object_ref();
+
+    // let metadata_ref= module.sui_client
+    //     .read_api()
+    //     .get_object_with_options(
+    //         ObjectID::from_str(
+    //             "0xe937ecb9e589f24408de40d8ba43c7ff9b96a7d0180f5447576f02dc06155103",
+    //         )
+    //         .unwrap(),
+    //         SuiObjectDataOptions::default().with_owner(),
+    //     )
+    //     .await
+    //     .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+    //     .data
+    //     .expect("ibc store object exists on chain")
+    //     .object_ref();
+
+    // let coin_t =
+    //         TypeTag::from_str("0xd722567ac2efe67cd6ab3f56a382a473b2c156208d0c5675de06e23ae16e4ee6::fungible_token::FUNGIBLE_TOKEN").unwrap();
 
     // updating name, symbol, icon_url and the description since we don't have these in the published binary right now
     // TODO(aeryz): we should generate the move binary to contain the necessary data and don't do these calls
