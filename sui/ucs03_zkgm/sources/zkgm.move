@@ -73,7 +73,7 @@ module zkgm::zkgm {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
 
-    use zkgm::ack;
+    use zkgm::ack::{Self, Ack};
     use zkgm::batch::{Self, Batch};
     use zkgm::batch_ack;
     use zkgm::forward::{Self, Forward};
@@ -214,7 +214,8 @@ module zkgm::zkgm {
         packet_ctxs: vector<ZkgmPacketAckCtx>,
         packets: vector<Packet>,
         cursor: u64,
-        acks: vector<vector<u8>>,
+        acks: vector<Ack>,
+        raw_acks: vector<vector<u8>>,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -599,6 +600,7 @@ module zkgm::zkgm {
         let packet_len = packet_source_channels.length();
         let mut i = 0;
         let mut packets = vector::empty();
+        let mut acks = vector::empty();
         while (i < packet_len) {
             let ibc_packet = packet::new(
                 packet_source_channels[i],
@@ -617,13 +619,15 @@ module zkgm::zkgm {
                 }
             );
             packets.push_back(ibc_packet);
+            acks.push_back(ack::decode(&acknowledgements[i]));
             i = i + 1;
         };
 
         AckCtx {
             packet_ctxs,
             packets,
-            acks: acknowledgements,
+            acks,
+            raw_acks: acknowledgements,
             cursor: 0
         }
     }
@@ -639,10 +643,18 @@ module zkgm::zkgm {
         let packet_cursor = ack_ctx.cursor;
         let packet = ack_ctx.packets[packet_cursor];
         let ack = ack_ctx.acks[packet_cursor];
+        let raw_ack = ack_ctx.raw_acks[packet_cursor];
         let zkgm_packet = ack_ctx.packet_ctxs.borrow_mut(packet_cursor);
 
         let instr_len = zkgm_packet.instruction_set.length();
         let mut type_is_exhausted = false;
+
+        let batch_ack = if (instr_len > 1) {
+            batch_ack::decode(ack.inner_ack()).acknowledgements()
+        } else {
+            vector::empty()
+        };
+
         while (zkgm_packet.cursor < instr_len) {
             let instruction = zkgm_packet.instruction_set[zkgm_packet.cursor];
 
@@ -655,15 +667,37 @@ module zkgm::zkgm {
                     type_is_exhausted = true;
                 };
             };
-            
-            zkgm.on_acknowledge_packet<T>(
-                ibc,
+
+            if (helper::is_forwarded_packet(zkgm_packet.salt)) {
+                let packet_hash = commitment::commit_packet(&packet);
+
+                if (zkgm.in_flight_packet.contains(packet_hash)) {
+                    let parent = zkgm.in_flight_packet.remove(packet_hash);
+                    ibc.write_acknowledgement(parent, raw_ack, IbcAppWitness {});
+                    zkgm_packet.cursor = zkgm_packet.cursor + 1;
+                    continue
+                };
+            };
+
+            zkgm.acknowledge_internal<T>(
                 packet,
-                ack,
                 relayer,
+                zkgm_packet.path,
+                if (instr_len > 1) {
+                    helper::derive_batch_salt(zkgm_packet.cursor, zkgm_packet.salt)
+                } else {
+                    zkgm_packet.salt
+                },
+                instruction,
+                ack.tag() == ACK_SUCCESS,
+                if (instr_len > 1 && ack.tag() == ACK_SUCCESS) {
+                    batch_ack[zkgm_packet.cursor]
+                } else {
+                    *ack.inner_ack()
+                },
                 ctx
             );
-
+            
             zkgm_packet.cursor = zkgm_packet.cursor + 1;
         };
 
@@ -689,7 +723,7 @@ module zkgm::zkgm {
 
         ibc.acknowledge_packet(
             ack_ctx.packets,
-            ack_ctx.acks,
+            ack_ctx.raw_acks,
             proof,
             proof_height,
             relayer,
@@ -1454,38 +1488,6 @@ module zkgm::zkgm {
         coin
     }
 
-    fun on_acknowledge_packet<T>(
-        zkgm: &mut RelayStore,
-        ibc: &mut ibc::IBCStore,
-        ibc_packet: Packet,
-        ack: vector<u8>,
-        relayer: address,
-        ctx: &mut TxContext,
-    ) {
-        let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
-        if (helper::is_forwarded_packet(zkgm_packet.salt())) {
-            let packet_hash = commitment::commit_packet(&ibc_packet);
-
-            if (zkgm.in_flight_packet.contains(packet_hash)) {
-                let parent = zkgm.in_flight_packet.remove(packet_hash);
-                ibc.write_acknowledgement(parent, ack, IbcAppWitness {});
-                return
-            };
-        };
-
-        let zkgm_ack = ack::decode(&ack);
-        zkgm.acknowledge_internal<T>(
-            ibc_packet,
-            relayer,
-            zkgm_packet.path(),
-            zkgm_packet.salt(),
-            zkgm_packet.instruction(),
-            zkgm_ack.tag() == ACK_SUCCESS,
-            *zkgm_ack.inner_ack(),
-            ctx
-        );
-    }
-
     fun acknowledge_internal<T>(
         zkgm: &mut RelayStore,
         ibc_packet: Packet,
@@ -1518,19 +1520,6 @@ module zkgm::zkgm {
                     abort E_UNSUPPORTED_VERSION
                 };
             },
-            OP_BATCH => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION)  ;
-                zkgm.acknowledge_batch<T>(
-                    ibc_packet,
-                    relayer,
-                    path,
-                    salt,
-                    batch::decode(instruction.operand()),
-                    success,
-                    inner_ack,
-                    ctx
-                )
-            },
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
                 zkgm.acknowledge_forward<T>(
@@ -1547,42 +1536,6 @@ module zkgm::zkgm {
                 abort E_NO_CALL_OPERATION
             },            
             _ => abort E_UNKNOWN_SYSCALL
-        };
-    }
-
-    fun acknowledge_batch<T>(
-        zkgm: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        path: u256,
-        salt: vector<u8>,
-        batch: Batch,
-        success: bool,
-        ack: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        let l = batch.instructions().length();
-        let batch_ack = batch_ack::decode(&ack);
-
-        let mut i = 0;
-        while (i < l) {
-            let mut syscall_ack = ack;
-            if (success) {
-                syscall_ack = batch_ack.acknowledgements()[i];
-            };
-
-            zkgm.acknowledge_internal<T>(
-                ibc_packet,
-                relayer,
-                path,
-                helper::derive_batch_salt(i, salt),
-                batch.instructions()[i],
-                success,
-                syscall_ack,
-                ctx
-            );
-
-            i = i + 1;
         };
     }
 
