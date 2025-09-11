@@ -17,6 +17,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
 import "@safe-utils/Safe.sol";
 
+import "../contracts/CrosschainVault.sol";
 import "../contracts/U.sol";
 import "../contracts/ProxyAccount.sol";
 import "../contracts/Manager.sol";
