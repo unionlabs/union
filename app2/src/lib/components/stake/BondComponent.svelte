@@ -43,7 +43,7 @@ import { BigDecimal, Data, Effect, Exit, Schedule, Match, pipe, Schema, Struct }
 import * as A from "effect/Array"
 import { flow } from "effect/Function"
 import * as O from "effect/Option"
-import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
+import { bytesToHex, encodeAbiParameters, formatUnits, fromHex, keccak256, parseUnits } from "viem"
   import { cn } from "$lib/utils";
 
 // Constants from bond.ts
@@ -80,12 +80,15 @@ type BondState = Data.TaggedEnum<{
   SwitchingChain: {}
   CheckingAllowance: {}
   ApprovingAllowance: {}
+  AllowanceSubmitted: { txHash: string }
+  WaitingForAllowanceConfirmation: { txHash: string }
   AllowanceApproved: {}
   CreatingTokenOrder: {}
   PreparingBondTransaction: {}
-  ExecutingBond: {}
-  WaitingForTxConfirmation: {}
-  WaitingForIndexer: {}
+  ConfirmingBond: {}
+  BondSubmitted: { txHash: string }
+  WaitingForConfirmation: { txHash: string }
+  WaitingForIndexer: { txHash: string }
   Success: { txHash: string }
   Error: { message: string }
 }>
@@ -95,7 +98,7 @@ const BondState = Data.taggedEnum<BondState>()
 let bondInput = $state<string>("")
 let bondState = $state<BondState>(BondState.Ready())
 let shouldBond = $state<boolean>(false)
-let slippage = $state<number>(1)
+let slippage = $state<number>(1) // Default 1%
 
 const stakingRates = runPromiseExit$(() => 
   Effect.gen(function*() {
@@ -118,71 +121,48 @@ const stakingRates = runPromiseExit$(() =>
   })
 )
 
-const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
-  bondInput,
-  BigDecimal.fromString,
-))
-
-const bondAmount = $derived<O.Option<bigint>>(pipe(
-  inputAmount,
-  O.map(flow(
-    (bd) => {
-      const multiplier = BigDecimal.make(10n ** 18n, 0)
-      const result = BigDecimal.multiply(bd, multiplier)
-      // Adjust for the remaining scale to get the actual au value
-      const scale = result.scale
-      const adjustedValue = scale >= 0 
-        ? result.value / (10n ** BigInt(scale))
-        : result.value * (10n ** BigInt(-scale))
-      console.log("Conversion - Input:", bondInput, "Scale:", scale, "Wei:", adjustedValue)
-      return adjustedValue
-    }
-  )),
-))
 
 const isBonding = $derived(
-  BondState.$is("SwitchingChain")(bondState) ||
-  BondState.$is("CheckingAllowance")(bondState) ||
-  BondState.$is("ApprovingAllowance")(bondState) ||
-  BondState.$is("AllowanceApproved")(bondState) ||
-  BondState.$is("CreatingTokenOrder")(bondState) ||
-  BondState.$is("PreparingBondTransaction")(bondState) ||
-  BondState.$is("ExecutingBond")(bondState) ||
-  BondState.$is("WaitingForTxConfirmation")(bondState) ||
-  BondState.$is("WaitingForIndexer")(bondState)
+  !BondState.$is("Ready")(bondState) &&
+  !BondState.$is("Success")(bondState) &&
+  !BondState.$is("Error")(bondState)
 )
 const isSuccess = $derived(BondState.$is("Success")(bondState))
 const isError = $derived(BondState.$is("Error")(bondState))
 
-const expectedReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
-  O.all({ amount: bondAmount, rates: stakingRates.current }),
-  O.flatMap(({ amount, rates }) => 
-    rates._tag === "Success" 
-      ? O.some(pipe(
-          BigDecimal.fromBigInt(amount),
-          BigDecimal.unsafeDivide(BigDecimal.make(10n ** 18n, 0)), 
-          BigDecimal.multiply(rates.value.purchase_rate),
-        ))
-      : O.none()
-  )
-))
 
-// Calculate minimum receive amount (expected - slippage protection)  
-const minimumReceiveAmount = $derived<O.Option<string>>(pipe(
-  bondInput,
-  O.fromNullable,
-  O.filter(s => s.trim() !== ""),
-  O.map(input => {
-    const inputNum = parseFloat(input) || 0
-    const minNum = inputNum * (100 - slippage) / 100
-    return minNum.toFixed(18) // Show all 18 decimals
-  })
-))
 
 const bytecode_base_checksum =
   "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
 const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
 const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
+
+const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  bondInput,
+  BigDecimal.fromString,
+))
+
+const bondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  inputAmount,
+  O.map(bd => BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0)))
+))
+
+const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  O.Do,
+  O.bind("input", () => inputAmount),
+  O.bind("rates", () => O.isSome(stakingRates.current) && stakingRates.current.value._tag === "Success" 
+    ? O.some(stakingRates.current.value.value) 
+    : O.none()),
+  O.map(({ input, rates }) => {
+    const inputNorm = BigDecimal.normalize(input)
+    const rateNorm = BigDecimal.normalize(rates.purchase_rate)
+    
+    // Simple multiplication: input * rate * slippage
+    const expectedScaled = inputNorm.value * rateNorm.value
+    const minScaled = expectedScaled * BigInt(100 - slippage) / 100n
+    return BigDecimal.make(minScaled, inputNorm.scale + rateNorm.scale)
+  })
+))
 
 const instantiate2 = Effect.fn(
   function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.EvmDisplay }) {
@@ -267,26 +247,20 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
     Effect.if(amount < sendAmount, {
       onTrue: () =>
         pipe(
-          Effect.log(`Increasing allowance by ${sendAmount - amount} for ${U_ERC20.address}`),
-          Effect.andThen(() =>
-            pipe(
-              Evm.increaseErc20Allowance(
-                U_ERC20.address,
-                UCS03_EVM,
-                sendAmount - amount,
-              ),
-              Effect.andThen(Evm.waitForTransactionReceipt),
-            )
+          Evm.increaseErc20Allowance(
+            U_ERC20.address,
+            UCS03_EVM,
+            sendAmount,
           ),
+          Effect.andThen(Evm.waitForTransactionReceipt),
         ),
-      onFalse: () =>
-        Effect.log(`Allowance fulfilled by ${sendAmount - amount} for ${U_ERC20.address}`),
+      onFalse: () => Effect.void
     })
   ),
 )
 
-const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => Effect.gen(function*() {
-  const minMintAmount = sendAmount * BigInt(100 - slippage) / 100n
+const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, slippagePercent: number) => Effect.gen(function*() {
+  const minMintAmount = sendAmount * BigInt(100 - slippagePercent) / 100n
   
   const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
   const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
@@ -314,7 +288,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => Effect.gen
     {
       bond: {
         mint_to_address: receiver.address,
-        min_mint_amount: minMintAmount,
+        min_mint_amount: minMintAmount, 
       },
     } as const,
     Schema.encode(JsonFromBase64),
@@ -442,11 +416,10 @@ runPromiseExit$(() =>
       }
 
       const sender = senderOpt.value
-      const sendAmount = bondAmount.value
+      const sendAmount = O.getOrThrow(bondAmount).value
       const chain = evmChain.value
 
       bondState = BondState.SwitchingChain()
-      yield* Effect.log("Starting bond execution", { sender: sender.address, sendAmount })
       
       const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
       const VIEM_CHAIN = holesky
@@ -467,11 +440,29 @@ runPromiseExit$(() =>
       })
       
       bondState = BondState.CheckingAllowance()
-      yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.tap(() => Effect.sync(() => { bondState = BondState.ApprovingAllowance() }))
-      )
+         // Check current allowance
+      const currentAllowance = yield* Evm.readErc20Allowance(
+        U_ERC20.address,
+        sender.address,
+        UCS03_EVM.address,
+      ).pipe(Effect.provide(publicClient))
+      
+      if (currentAllowance < sendAmount) {
+        bondState = BondState.ApprovingAllowance()
+        const approveTxHash = yield* Evm.increaseErc20Allowance(
+          U_ERC20.address,
+          UCS03_EVM,
+          sendAmount,
+        ).pipe(Effect.provide(walletClient))
+        
+        bondState = BondState.AllowanceSubmitted({ txHash: approveTxHash })
+        yield* Effect.sleep("500 millis")
+        
+        bondState = BondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
+        yield* Evm.waitForTransactionReceipt(approveTxHash).pipe(
+          Effect.provide(publicClient)
+        )
+      }
       
       bondState = BondState.AllowanceApproved()
       yield* Effect.sleep("500 millis")
@@ -482,19 +473,24 @@ runPromiseExit$(() =>
       bondState = BondState.PreparingBondTransaction()
       yield* Effect.sleep("300 millis")
       
-      bondState = BondState.ExecutingBond()
-      const { response, txHash } = yield* executeBond(sender, sendAmount).pipe(
+      bondState = BondState.ConfirmingBond()
+      const { response, txHash } = yield* executeBond(sender, sendAmount, slippage).pipe(
         Effect.provide(EvmZkgmClient.layerWithoutWallet),
         Effect.provide(walletClient),
         Effect.provide(publicClient),
         Effect.provide(ChainRegistry.Default),
       )
       
-      bondState = BondState.WaitingForTxConfirmation()
-      yield* Effect.sleep("1 second")
+      bondState = BondState.BondSubmitted({ txHash })
+      yield* Effect.sleep("500 millis")
       
-      console.log("Bond transaction submitted with hash:", txHash)
-      bondState = BondState.WaitingForIndexer()
+      bondState = BondState.WaitingForConfirmation({ txHash })
+      // Wait for actual transaction confirmation
+      yield* Evm.waitForTransactionReceipt(txHash).pipe(
+        Effect.provide(publicClient)
+      )
+      
+      bondState = BondState.WaitingForIndexer({ txHash })
       
       const receipt = yield* Effect.retry(
         response.waitFor(
@@ -503,7 +499,6 @@ runPromiseExit$(() =>
         {
           schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
           while: (error) => {
-            console.log("Indexer not ready yet, retrying in 5 seconds...")
             return true
           }
         }
@@ -623,7 +618,7 @@ function handleRetry() {
         bondInput = event.currentTarget.value
       }}
     />
-    {O.map(bondAmount, (wei) => wei.toString())}
+    {bondAmount}
   </div>
 
   <!-- Real-time Staking Rates -->
@@ -638,38 +633,52 @@ function handleRetry() {
           )}
         </span>
       </div>
-      <div class="flex justify-between">
-        <span class="text-zinc-400">Expected receive:</span>
-        <span class="font-mono text-zinc-300">
-          {pipe(
-            expectedReceiveAmount,
-            O.map(bd => {
-              const formatted = Utils.formatBigDecimal(bd)
-              const num = parseFloat(formatted)
-              return num === 0 ? "0" : formatted
-            }),
-            O.getOrElse(() => "0")
-          )} eU
-        </span>
-      </div>
       <div class="flex justify-between items-center">
-        <span class="text-zinc-400">Slippage tolerance:</span>
+        <span class="text-zinc-400">Mint amount:</span>
         <div class="flex items-center gap-1">
-          <input
-            type="number"
-            min="0.1"
-            max="5"
-            step="0.1"
-            bind:value={slippage}
-            class="w-12 px-1 py-0.5 text-xs bg-zinc-900 border border-zinc-700 rounded text-zinc-300 text-center"
-          />
-          <span class="text-xs text-zinc-500">%</span>
+          <button
+            class={cn(
+              "px-2 py-1 text-xs border rounded transition-colors",
+              slippage === 1 
+                ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
+            )}
+            onclick={() => slippage = 1}
+          >
+            1%
+          </button>
+          <button
+            class={cn(
+              "px-2 py-1 text-xs border rounded transition-colors",
+              slippage === 2 
+                ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
+            )}
+            onclick={() => slippage = 2}
+          >
+            2%
+          </button>
+          <button
+            class={cn(
+              "px-2 py-1 text-xs border rounded transition-colors",
+              slippage === 3 
+                ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600"
+            )}
+            onclick={() => slippage = 3}
+          >
+            3%
+          </button>
         </div>
       </div>
       <div class="flex justify-between">
-        <span class="text-zinc-400">Minimum receive:</span>
+        <span class="text-zinc-400">Min you'll receive:</span>
         <span class="font-mono text-zinc-300">
-          {O.getOrElse(minimumReceiveAmount, () => "0")} eU
+          {pipe(
+            minimumReceiveAmount,
+            O.map(bd => Utils.formatBigDecimal(bd)),
+            O.getOrElse(() => "0")
+          )} eU
         </span>
       </div>
     {:else}
@@ -704,11 +713,14 @@ function handleRetry() {
                 Match.when(BondState.$is("SwitchingChain"), () => "Switching to Holesky"),
                 Match.when(BondState.$is("CheckingAllowance"), () => "Checking Token Allowance"),
                 Match.when(BondState.$is("ApprovingAllowance"), () => "Approving Token Spending"),
+                Match.when(BondState.$is("AllowanceSubmitted"), () => "Allowance Submitted"),
+                Match.when(BondState.$is("WaitingForAllowanceConfirmation"), () => "Allowance Confirming"),
                 Match.when(BondState.$is("AllowanceApproved"), () => "Allowance Approved"),
                 Match.when(BondState.$is("CreatingTokenOrder"), () => "Creating Token Order"),
                 Match.when(BondState.$is("PreparingBondTransaction"), () => "Preparing Bond Transaction"),
-                Match.when(BondState.$is("ExecutingBond"), () => "Executing Bond"),
-                Match.when(BondState.$is("WaitingForTxConfirmation"), () => "Transaction Confirming"),
+                Match.when(BondState.$is("ConfirmingBond"), () => "Confirming Bond"),
+                Match.when(BondState.$is("BondSubmitted"), () => "Bond Submitted"),
+                Match.when(BondState.$is("WaitingForConfirmation"), () => "Transaction Confirming"),
                 Match.when(BondState.$is("WaitingForIndexer"), () => "Indexing Transaction"),
                 Match.when(BondState.$is("Success"), () => "Bond Successful"),
                 Match.when(BondState.$is("Error"), () => "Bond Failed"),
@@ -723,12 +735,15 @@ function handleRetry() {
                 Match.when(BondState.$is("SwitchingChain"), () => "Please switch to Holesky network in your wallet"),
                 Match.when(BondState.$is("CheckingAllowance"), () => "Reading current token allowance from blockchain..."),
                 Match.when(BondState.$is("ApprovingAllowance"), () => "Confirm token approval transaction in your wallet"),
+                Match.when(BondState.$is("AllowanceSubmitted"), ({ txHash }) => `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
+                Match.when(BondState.$is("WaitingForAllowanceConfirmation"), ({ txHash }) => `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`),
                 Match.when(BondState.$is("AllowanceApproved"), () => "Token spending approved, proceeding..."),
                 Match.when(BondState.$is("CreatingTokenOrder"), () => "Building cross-chain token order..."),
                 Match.when(BondState.$is("PreparingBondTransaction"), () => "Preparing bond transaction with contracts..."),
-                Match.when(BondState.$is("ExecutingBond"), () => "Confirm bond transaction in your wallet"),
-                Match.when(BondState.$is("WaitingForTxConfirmation"), () => "Transaction submitted, waiting for confirmation..."),
-                Match.when(BondState.$is("WaitingForIndexer"), () => "Transaction confirmed, indexing data..."),
+                Match.when(BondState.$is("ConfirmingBond"), () => "Confirm bond transaction in your wallet"),
+                Match.when(BondState.$is("BondSubmitted"), ({ txHash }) => `Transaction submitted: ${txHash.slice(0, 10)}...`),
+                Match.when(BondState.$is("WaitingForConfirmation"), ({ txHash }) => `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
+                Match.when(BondState.$is("WaitingForIndexer"), ({ txHash }) => `Transaction confirmed, indexing data...`),
                 Match.when(BondState.$is("Success"), ({ txHash }) => `Success! TX: ${txHash.slice(0, 10)}...`),
                 Match.when(BondState.$is("Error"), ({ message }) => message),
                 Match.when(BondState.$is("Ready"), () => ""),
@@ -764,12 +779,15 @@ function handleRetry() {
           ),
           Match.when(BondState.$is("SwitchingChain"), () => "Switching..."),
           Match.when(BondState.$is("CheckingAllowance"), () => "Checking..."),
-          Match.when(BondState.$is("ApprovingAllowance"), () => "Approving..."),
+          Match.when(BondState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
+          Match.when(BondState.$is("AllowanceSubmitted"), () => "Submitted"),
+          Match.when(BondState.$is("WaitingForAllowanceConfirmation"), () => "Confirming..."),
           Match.when(BondState.$is("AllowanceApproved"), () => "Approved ✓"),
           Match.when(BondState.$is("CreatingTokenOrder"), () => "Creating Order..."),
           Match.when(BondState.$is("PreparingBondTransaction"), () => "Preparing..."),
-          Match.when(BondState.$is("ExecutingBond"), () => "Executing..."),
-          Match.when(BondState.$is("WaitingForTxConfirmation"), () => "Confirming..."),
+          Match.when(BondState.$is("ConfirmingBond"), () => "Confirm in Wallet"),
+          Match.when(BondState.$is("BondSubmitted"), () => "Submitted"),
+          Match.when(BondState.$is("WaitingForConfirmation"), () => "Confirming..."),
           Match.when(BondState.$is("WaitingForIndexer"), () => "Indexing..."),
           Match.when(BondState.$is("Success"), () => "Success!"),
           Match.when(BondState.$is("Error"), () => "Try Again"),

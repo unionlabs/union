@@ -37,7 +37,7 @@ import * as O from "effect/Option"
 import * as S from "effect/Schema"
 import { onMount } from "svelte"
 
-type StakeTab = "bond" | "unbond"
+type StakeTab = "bond" | "unbond" | "withdraw"
 type TableFilter = "all" | "bond" | "unbond"
 
 const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.17000")
@@ -70,18 +70,17 @@ const itemsPerPage = 10
 
 const refreshBondData = () => {
   refreshTrigger = Date.now()
-  currentPage = 1 // Reset to first page when data refreshes
+  currentPage = 1
 }
 
-// Reset page when filter changes
 $effect(() => {
-  void tableFilter // Track dependency
+  void tableFilter
   currentPage = 1
 })
 
 const data = AppRuntime.runPromiseExit$(() => {
   void WalletStore.evmAddress
-  void refreshTrigger // React to refresh trigger
+  void refreshTrigger
 
   return Effect.gen(function*() {
     const staking = yield* Staking.Staking
@@ -122,7 +121,6 @@ onMount(() => {
 })
 
 $effect(() => {
-  // Fetch U Balance on EVM
   O.match(O.all([evmChain, WalletStore.evmAddress, uOnEvmToken]), {
     onSome: ([chain, address, { denom }]) =>
       BalanceStore.fetchBalances(
@@ -134,7 +132,6 @@ $effect(() => {
     onNone: constVoid,
   })
 
-  // Fetch eU Balance on EVM
   O.match(O.all([evmChain, WalletStore.evmAddress, eUOnEvmToken]), {
     onSome: ([chain, address, { denom }]) =>
       BalanceStore.fetchBalances(
@@ -518,6 +515,17 @@ const close = (k: string) => {
         >
           unstake
         </button>
+        <button
+          class={cn(
+            "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
+            selectedTab === "withdraw"
+              ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
+              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+          )}
+          onclick={() => selectedTab = "withdraw"}
+        >
+          withdraw
+        </button>
       </div>
     </div>
 
@@ -537,6 +545,11 @@ const close = (k: string) => {
           {eUOnEvmBalance}
           onUnbondSuccess={refreshBondData}
         />
+      {:else if selectedTab === "withdraw"}
+        <div class="flex flex-col gap-4 text-center py-8">
+          <div class="text-zinc-400 text-sm">Withdrawal functionality</div>
+          <div class="text-zinc-500 text-xs">Query withdrawable balance and implement withdrawal logic</div>
+        </div>
       {/if}
     </div>
   </Card>
