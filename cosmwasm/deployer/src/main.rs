@@ -92,6 +92,31 @@ enum App {
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
+    DeployFungibleToken {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        contract: PathBuf,
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+        )]
+        init_msg: Value,
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long)]
+        salt: String,
+        /// Marks this chain as permissioned.
+        ///
+        /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
+        #[arg(long)]
+        permissioned: bool,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
     Instantiate2Address {
         #[arg(long)]
         deployer: Bech32<Bytes>,
@@ -832,6 +857,85 @@ async fn do_main() -> Result<()> {
             }
 
             write_output(output, contract_addresses)?;
+        }
+        App::DeployFungibleToken {
+            rpc_url,
+            private_key,
+            contract,
+            init_msg,
+            output: _,
+            permissioned: _,
+            salt,
+            gas_config,
+        } => {
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+
+            let bytecode_base_address = ctx
+                .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), &BYTECODE_BASE)
+                .await?;
+
+            let bytecode_base_contract = ctx.contract_info(&bytecode_base_address).await?;
+
+            let bytecode_base_code_id = match bytecode_base_contract {
+                Some(_) => ctx
+                    .instantiate_code_id_of_contract(bytecode_base_address)
+                    .await?
+                    .unwrap(),
+                // contract does not exist on chain
+                None => {
+                    info!("bytecode-base has not yet been stored");
+
+                    let (tx_hash, store_code_response) = ctx
+                        .tx(
+                            MsgStoreCode {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                wasm_byte_code: BYTECODE_BASE_BYTECODE.into(),
+                                instantiate_permission: Some(AccessConfig::Everybody),
+                            },
+                            "",
+                            gas_config.simulate,
+                        )
+                        .await
+                        .context("store code")?;
+
+                    info!(%tx_hash, code_id = store_code_response.code_id, "stored bytecode-base");
+
+                    let (tx_hash, instantiate_response) = ctx
+                        .tx(
+                            MsgInstantiateContract2 {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                admin: ctx.wallet().address().map_data(Into::into),
+                                code_id: store_code_response.code_id,
+                                label: BYTECODE_BASE.to_string(),
+                                msg: b"{}".into(),
+                                salt: BYTECODE_BASE.as_bytes().into(),
+                                funds: vec![],
+                                fix_msg: false,
+                            },
+                            "",
+                            gas_config.simulate,
+                        )
+                        .await
+                        .context("instantiate2")?;
+
+                    info!(%tx_hash, address = %instantiate_response.address, "instantiated bytecode-base");
+
+                    store_code_response.code_id
+                }
+            };
+
+            info!("bytecode-base code_id is {bytecode_base_code_id}");
+
+            let address = ctx
+                .deploy_and_initiate(
+                    std::fs::read(contract)?,
+                    bytecode_base_code_id,
+                    init_msg,
+                    &Salt::Utf8(salt),
+                )
+                .await?;
+
+            info!("deployed at {address}");
         }
         App::Instantiate2Address {
             deployer,
