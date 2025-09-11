@@ -1,4 +1,4 @@
-import { Indexer, ZkgmIncomingMessage } from "@unionlabs/sdk"
+import { ZkgmIncomingMessage } from "@unionlabs/sdk"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
 import * as Token from "@unionlabs/sdk/Token"
@@ -208,20 +208,20 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
 
   get stream(): Stream.Stream<ZkgmIncomingMessage.LifecycleEvent, any> {
     return Stream.async<ZkgmIncomingMessage.LifecycleEvent, any>((emit) => {
-      const self = this
-
-      const waitForReceipt = (hash: `0x${string}`) =>
-        pipe(
-          Evm.waitForTransactionReceipt(this.txHash),
-          Effect.map((a) =>
-            ZkgmIncomingMessage.LifecycleEvent.EvmTransactionReceiptComplete({
-              transactionHash: a.transactionHash as `0x${string}` & Brand.Brand<"Hash">,
-              blockHash: a.blockHash as `0x${string}` & Brand.Brand<"Hash">,
-              gasUsed: a.gasUsed,
-            })
-          ),
-          Effect.provideService(Evm.PublicClient, this.client),
-        )
+      // TODO(ehegnes): maybe parameterize this for Safe compatibility?
+      const waitForReceipt = pipe(
+        Evm.waitForTransactionReceipt(this.txHash),
+        Effect.tap((x) => Effect.log("GOT RECEIPT", x)),
+        Effect.tapError((x) => Effect.logError("FAILED RECEIPT", x)),
+        Effect.map((a) =>
+          ZkgmIncomingMessage.LifecycleEvent.EvmTransactionReceiptComplete({
+            transactionHash: a.transactionHash as `0x${string}` & Brand.Brand<"Hash">,
+            blockHash: a.blockHash as `0x${string}` & Brand.Brand<"Hash">,
+            gasUsed: a.gasUsed,
+          })
+        ),
+        Effect.provideService(Evm.PublicClient, this.client),
+      )
 
       const maybeWaitForReceipt = pipe(
         Effect.serviceOption(Safe.Safe),
@@ -229,7 +229,7 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
           O.match({
             onNone: () =>
               pipe(
-                waitForReceipt(this.txHash),
+                waitForReceipt,
                 Effect.map(Chunk.of),
                 Effect.mapError(O.some),
               ),
@@ -260,31 +260,32 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
         ),
       )
 
-      const maybeIndex = pipe(
-        Effect.serviceOption(Indexer.Indexer),
-        Effect.flatMap(
-          O.match({
-            onNone: () => Effect.succeed(Chunk.empty<ZkgmIncomingMessage.LifecycleEvent>()),
-            onSome: (indexer) =>
-              pipe(
-                indexer.getPacketHashBySubmissionTxHash(
-                  new Indexer.GetPacketHashBySubmissionTxHash({
-                    submissionTxHash: self.txHash,
-                  }),
-                ),
-                Effect.map((packetHash) =>
-                  ZkgmIncomingMessage.LifecycleEvent.Indexed({ packetHash })
-                ),
-                Effect.map(Chunk.of),
-                Effect.mapError(O.some),
-              ),
-          }),
-        ),
-      )
+      // TODO(ehegnes): restore Indexer based lifecycle events
+      // const maybeIndex = pipe(
+      //   Effect.serviceOption(Indexer.Indexer),
+      //   Effect.flatMap(
+      //     O.match({
+      //       onNone: () => Effect.succeed(Chunk.empty<ZkgmIncomingMessage.LifecycleEvent>()),
+      //       onSome: (indexer) =>
+      //         pipe(
+      //           indexer.getPacketHashBySubmissionTxHash(
+      //             new Indexer.GetPacketHashBySubmissionTxHash({
+      //               submissionTxHash: self.txHash,
+      //             }),
+      //           ),
+      //           Effect.map((packetHash) =>
+      //             ZkgmIncomingMessage.LifecycleEvent.Indexed({ packetHash })
+      //           ),
+      //           Effect.map(Chunk.of),
+      //           Effect.mapError(O.some),
+      //         ),
+      //     }),
+      //   ),
+      // )
 
       emit(maybeWaitForSafe)
       emit(maybeWaitForReceipt)
-      emit(maybeIndex)
+      // emit(maybeIndex)
     })
   }
 
