@@ -5,6 +5,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{supported::SupportedBlockEvent, types::BlockHeight},
     record::{
+        bond_record::BondRecord,
         change_counter::{Changes, LegacyRecord},
         channel_open_ack_record::ChannelOpenAckRecord,
         channel_open_confirm_record::ChannelOpenConfirmRecord,
@@ -29,6 +30,7 @@ use crate::indexer::{
         packet_send_unbond_record::PacketSendUnbondRecord,
         packet_timeout_record::PacketTimeoutRecord,
         token_bucket_update_record::TokenBucketUpdateRecord,
+        unbond_record::UnbondRecord,
         update_client_record::UpdateClientRecord,
         wallet_mutation_entry_record::WalletMutationEntryRecord,
         write_ack_record::WriteAckRecord,
@@ -146,6 +148,8 @@ pub async fn delete_event_data_at_height(
         changes +=
             CreateProxyAccountRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
                 .await?;
+        changes += BondRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes += UnbondRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
     } else {
         debug!("delete_event_data_at_height: {internal_chain_id}@{height} => nothing to delete");
     };
@@ -362,6 +366,12 @@ async fn handle_block_event(
             chain_context.with_event(inner).handle(tx).await?
         },
         SupportedBlockEvent::CreateProxyAccount { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::Bond { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::Unbond { inner } => {
             chain_context.with_event(inner).handle(tx).await?
         },
     })

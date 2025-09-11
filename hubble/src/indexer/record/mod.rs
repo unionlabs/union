@@ -6,12 +6,14 @@ use time::OffsetDateTime;
 use crate::indexer::{
     api::IndexerError,
     event::types::{
-        Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
+        Acknowledgement, Batch, BlockHash, BlockHeight, BlockTimestamp, BondInAmount,
+        BondMintAmount, BondMintToAddress, BondSenderAddress, CanonicalChainId, Capacity,
         ChannelId, ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom,
         EventIndex, Maker, MakerMsg, MessageHash, MessageIndex, MessageSequence, MutationAmount,
         MutationDirection, NatsConsumerSequence, NatsStreamSequence, Owner, PacketData, PacketHash,
         Path, PortId, ProxyAccount, RefillRate, TimeoutTimestamp, TransactionEventIndex,
-        TransactionHash, TransactionIndex, UniversalChainId, WalletAddress,
+        TransactionHash, TransactionIndex, UnbondAmount, UnbondIsNewRequest, UnbondStakerAddress,
+        UniversalChainId, WalletAddress,
     },
     handler::{
         types::{
@@ -25,6 +27,7 @@ use crate::indexer::{
     },
 };
 
+pub(crate) mod bond_record;
 pub(crate) mod change_counter;
 pub(crate) mod channel_meta_data;
 pub(crate) mod channel_open_ack_record;
@@ -51,6 +54,7 @@ pub(crate) mod packet_send_transfers_record;
 pub(crate) mod packet_send_unbond_record;
 pub(crate) mod packet_timeout_record;
 pub(crate) mod token_bucket_update_record;
+pub(crate) mod unbond_record;
 pub(crate) mod update_client_record;
 pub(crate) mod wallet_mutation_entry_record;
 pub(crate) mod write_ack_record;
@@ -612,6 +616,51 @@ impl PgValue<Vec<u8>> for WalletAddress {
 impl PgValue<BigDecimal> for MutationAmount {
     fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
         Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+impl PgValue<BigDecimal> for BondInAmount {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+impl PgValue<BigDecimal> for BondMintAmount {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+impl PgValue<Vec<u8>> for BondMintToAddress {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<Vec<u8>> for BondSenderAddress {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<BigDecimal> for UnbondAmount {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+impl PgValue<i64> for Batch {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
+        i64::try_from(self.0).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "batch-i64".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+impl PgValue<bool> for UnbondIsNewRequest {
+    fn pg_value(&self) -> Result<bool, IndexerError> {
+        Ok(self.0)
+    }
+}
+impl PgValue<Vec<u8>> for UnbondStakerAddress {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
     }
 }
 impl PgValue<String> for MutationDirection {

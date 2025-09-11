@@ -1,5 +1,6 @@
 use std::fmt::{self, Display, Formatter};
 
+pub(crate) mod bond_event_handler;
 pub(crate) mod channel_open_ack_event_handler;
 pub(crate) mod channel_open_confirm_event_handler;
 pub(crate) mod channel_open_init_event_handler;
@@ -18,6 +19,7 @@ pub(crate) mod packet_send_event_handler;
 pub(crate) mod packet_timeout_event_handler;
 pub(crate) mod token_bucket_update_handler;
 pub(crate) mod types;
+pub(crate) mod unbond_event_handler;
 pub(crate) mod update_client_handler;
 pub(crate) mod wallet_mutation_entry_event_handler;
 pub(crate) mod write_ack_event_handler;

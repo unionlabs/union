@@ -3,7 +3,7 @@ use serde_json::Value;
 use time::OffsetDateTime;
 
 use crate::indexer::event::{
-    channel_open_ack_event::ChannelOpenAckEvent,
+    bond_event::BondEvent, channel_open_ack_event::ChannelOpenAckEvent,
     channel_open_confirm_event::ChannelOpenConfirmEvent,
     channel_open_init_event::ChannelOpenInitEvent, channel_open_try_event::ChannelOpenTryEvent,
     connection_open_ack_event::ConnectionOpenAckEvent,
@@ -15,7 +15,7 @@ use crate::indexer::event::{
     create_wrapped_token::CreateWrappedTokenEvent, packet_ack_event::PacketAckEvent,
     packet_recv_event::PacketRecvEvent, packet_send_event::PacketSendEvent,
     packet_timeout_event::PacketTimeoutEvent, token_bucket_update_event::TokenBucketUpdateEvent,
-    types::BlockHeight, update_client_event::UpdateClientEvent,
+    types::BlockHeight, unbond_event::UnbondEvent, update_client_event::UpdateClientEvent,
     wallet_mutation_entry_event::WalletMutationEntryEvent, write_ack_event::WriteAckEvent,
 };
 
@@ -180,6 +180,16 @@ pub enum SupportedBlockEvent {
         #[serde(flatten)]
         inner: CreateProxyAccountEvent,
     },
+    #[serde(rename = "bond")]
+    Bond {
+        #[serde(flatten)]
+        inner: BondEvent,
+    },
+    #[serde(rename = "unbond")]
+    Unbond {
+        #[serde(flatten)]
+        inner: UnbondEvent,
+    },
 }
 
 impl SupportedBlockEvent {
@@ -210,6 +220,8 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::WalletMutationEntry { inner, .. } => inner.header.height,
             SupportedBlockEvent::CreateWrappedToken { inner, .. } => inner.header.height,
             SupportedBlockEvent::CreateProxyAccount { inner, .. } => inner.header.height,
+            SupportedBlockEvent::Bond { inner, .. } => inner.header.height,
+            SupportedBlockEvent::Unbond { inner, .. } => inner.header.height,
         }
     }
 }

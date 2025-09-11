@@ -7,11 +7,13 @@ pub mod test_helpers {
     use crate::indexer::event::{
         header::Header,
         types::{
-            Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
+            Acknowledgement, Batch, BlockHash, BlockHeight, BlockTimestamp, BondInAmount,
+            BondMintAmount, BondMintToAddress, BondSenderAddress, CanonicalChainId, Capacity,
             ChannelId, ClientId, ClientType, ConnectionId, ContractAddress, Denom, EventIndex,
             Maker, MakerMsg, MessageIndex, MutationAmount, MutationDirection, PacketData,
             PacketHash, PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex,
-            TransactionHash, TransactionIndex, UniversalChainId, WalletAddress,
+            TransactionHash, TransactionIndex, UnbondAmount, UnbondIsNewRequest,
+            UnbondStakerAddress, UniversalChainId, WalletAddress,
         },
     };
 
@@ -234,6 +236,35 @@ pub mod test_helpers {
             WalletAddress(Bytes::from(format!("wallet-{}", suffix))),
             MutationAmount(suffix as u128 + 500),
             MutationDirection::In,
+        )
+    }
+
+    /// Creates test values for bond events
+    pub fn create_bond_test_values(
+        suffix: u32,
+    ) -> (
+        BondInAmount,
+        BondMintAmount,
+        BondMintToAddress,
+        BondSenderAddress,
+    ) {
+        (
+            BondInAmount(suffix as u128 + 500),
+            BondMintAmount(suffix as u128 + 1000),
+            BondMintToAddress(Bytes::from(format!("bond-mint-to-{suffix}"))),
+            BondSenderAddress(Bytes::from(format!("bond-sender-{suffix}"))),
+        )
+    }
+
+    /// Creates test values for unbond events
+    pub fn create_unbond_test_values(
+        suffix: u32,
+    ) -> (UnbondAmount, Batch, UnbondIsNewRequest, UnbondStakerAddress) {
+        (
+            UnbondAmount(suffix as u128 + 500),
+            Batch(suffix as u64 + 1000),
+            UnbondIsNewRequest(true),
+            UnbondStakerAddress(Bytes::from(format!("unbond-staker-{suffix}"))),
         )
     }
 }

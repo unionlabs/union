@@ -334,6 +334,8 @@ pub enum RecordKind {
     CreateWrappedToken,
     CreateWrappedTokenRelation,
     CreateProxyAccount,
+    Bond,
+    Unbond,
 }
 
 /// Trait for types that can be associated with a specific `RecordKind`.

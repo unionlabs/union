@@ -1,3 +1,4 @@
+pub(crate) mod bond_event;
 pub(crate) mod channel_open_ack_event;
 pub(crate) mod channel_open_confirm_event;
 pub(crate) mod channel_open_init_event;
@@ -21,6 +22,7 @@ pub(crate) mod supported;
 pub(crate) mod test_utils;
 pub(crate) mod token_bucket_update_event;
 pub(crate) mod types;
+pub(crate) mod unbond_event;
 pub(crate) mod update_client_event;
 pub(crate) mod wallet_mutation_entry_event;
 pub(crate) mod write_ack_event;
