@@ -7,10 +7,13 @@ import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
+import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { matchOption } from "$lib/utils/snippets.svelte"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import {
   Batch,
   Call,
+  Indexer,
   Token,
   TokenOrder,
   Ucs05,
@@ -19,7 +22,7 @@ import {
   ZkgmClientRequest,
   ZkgmIncomingMessage,
 } from "@unionlabs/sdk"
-import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
+import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
   EU_ERC20,
@@ -31,14 +34,24 @@ import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
-import { BigDecimal, Data, Effect, Exit, Match, pipe, Schedule, Schema, Struct } from "effect"
+import {
+  BigDecimal,
+  ConfigProvider,
+  Data,
+  Effect,
+  Layer,
+  Match,
+  pipe,
+  Schedule,
+  Schema,
+  Struct,
+} from "effect"
 import * as A from "effect/Array"
-import { flow } from "effect/Function"
 import * as O from "effect/Option"
+import { graphql } from "gql.tada"
 import { bytesToHex, custom, encodeAbiParameters, fromHex, http, keccak256 } from "viem"
 import { holesky } from "viem/chains"
 
-// Constants from unbond.ts
 const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
 const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
@@ -111,6 +124,15 @@ const bytecode_base_checksum =
 const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
 const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
 
+const QlpConfigProvider = pipe(
+  ConfigProvider.fromMap(
+    new Map([
+      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
+    ]),
+  ),
+  Layer.setConfigProvider,
+)
+
 const instantiate2 = Effect.fn(
   function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.AnyDisplay }) {
     const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
@@ -154,12 +176,12 @@ const instantiate2 = Effect.fn(
     const _args = [
       ...fromHex(module_hash, "bytes"),
       ...new TextEncoder().encode("wasm"),
-      0, // null byte
-      ...u64toBeBytes(32n), // checksum len as 64-bit big endian bytes of int
+      0,
+      ...u64toBeBytes(32n),
       ...fromHex(bytecode_base_checksum, "bytes"),
-      ...u64toBeBytes(32n), // creator canonical addr len
+      ...u64toBeBytes(32n),
       ...fromHex(canonical_zkgm, "bytes"),
-      ...u64toBeBytes(32n), // len
+      ...u64toBeBytes(32n),
       ...salt,
       ...u64toBeBytes(0n),
     ] as const
@@ -317,14 +339,16 @@ runPromiseExit$(() =>
       const chain = evmChain.value
 
       unbondState = UnbondState.SwitchingChain()
-      yield* Effect.log("Starting unbond execution", { sender: sender.address, sendAmount })
 
-      const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
       const VIEM_CHAIN = holesky
 
       const connectorClient = yield* getWagmiConnectorClient
 
-      yield* switchChain(VIEM_CHAIN)
+      const isSafeWallet = getLastConnectedWalletId() === "safe"
+
+      if (!isSafeWallet) {
+        yield* switchChain(VIEM_CHAIN)
+      }
 
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
@@ -349,45 +373,86 @@ runPromiseExit$(() =>
       )
 
       unbondState = UnbondState.ConfirmingUnbond()
-      const { response, txHash } = yield* executeUnbond(sender, sendAmount).pipe(
-        Effect.provide(EvmZkgmClient.layerWithoutWallet),
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(ChainRegistry.Default),
-      )
 
-      console.log("Unbond transaction submitted with hash:", txHash)
+      const executeBondWithProviders = isSafeWallet
+        ? executeUnbond(sender, sendAmount).pipe(
+          Effect.provide(EvmZkgmClient.layerWithoutWallet),
+          Effect.provide(walletClient),
+          Effect.provide(publicClient),
+          Effect.provide(ChainRegistry.Default),
+          Effect.provide(Safe.Safe.Default({
+            ...safeOpts,
+            debug: true,
+          })),
+        )
+        : executeUnbond(sender, sendAmount).pipe(
+          Effect.provide(EvmZkgmClient.layerWithoutWallet),
+          Effect.provide(walletClient),
+          Effect.provide(publicClient),
+          Effect.provide(ChainRegistry.Default),
+        )
+
+      const { response, txHash } = yield* executeBondWithProviders
+
       unbondState = UnbondState.UnbondSubmitted({ txHash })
       yield* Effect.sleep("500 millis")
 
       unbondState = UnbondState.WaitingForConfirmation({ txHash })
-      // Wait for actual transaction confirmation
-      yield* Evm.waitForTransactionReceipt(txHash).pipe(
-        Effect.provide(publicClient),
+
+      const finalHash = yield* Effect.if(isSafeWallet, {
+        onTrue: () =>
+          pipe(
+            response.waitFor(
+              ZkgmIncomingMessage.LifecycleEvent.$is("WaitForSafeWalletHash"),
+            ),
+            Effect.flatMap(O.map(x => x.hash)),
+          ),
+        onFalse: () =>
+          pipe(
+            response.waitFor(
+              ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+            ),
+            Effect.flatMap(O.map(x => x.transactionHash)),
+          ),
+      })
+
+      unbondState = UnbondState.WaitingForIndexer({ txHash: finalHash })
+
+      yield* pipe(
+        Effect.gen(function*() {
+          const indexer = yield* Indexer.Indexer
+          return yield* indexer.fetch({
+            document: graphql(`
+              query GetUnbondByTxHash($tx_hash: String!) @cached(ttl: 10) {
+                v2_unbonds(args: { p_transaction_hash: $tx_hash }) {
+                  packet_hash
+                }
+              }
+            `),
+            variables: { tx_hash: finalHash },
+          })
+        }),
+        Effect.flatMap(Schema.decodeUnknown(
+          Schema.Struct({
+            v2_unbonds: Schema.NonEmptyArray(Schema.Struct({ packet_hash: Schema.String })),
+          }),
+        )),
+        Effect.retry({
+          schedule: Schedule.fixed("2 seconds"),
+          times: 30,
+          while: (error) => String(error.message || "").includes("is missing"),
+        }),
+        Effect.provide(Indexer.Indexer.Default),
+        Effect.provide(QlpConfigProvider),
       )
 
-      unbondState = UnbondState.WaitingForIndexer({ txHash })
-
-      const receipt = yield* Effect.retry(
-        response.waitFor(
-          ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
-        ),
-        {
-          schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
-          while: (error) => {
-            console.log("Indexer not ready yet, retrying in 5 seconds...")
-            return true
-          },
-        },
-      )
-
-      unbondState = UnbondState.Success({ txHash })
+      unbondState = UnbondState.Success({ txHash: finalHash })
 
       unbondInput = ""
       shouldUnbond = false
       onUnbondSuccess?.()
 
-      return receipt
+      return finalHash
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
@@ -429,7 +494,6 @@ function handleRetry() {
     {
       pipe(
         BigDecimal.fromBigInt(amount),
-        // XXX: check decimals
         BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
         Utils.formatBigDecimal,
       )
@@ -548,10 +612,12 @@ function handleRetry() {
           <div class="text-sm font-medium text-white">
             {
               Match.value(unbondState).pipe(
-                Match.when(
-                  UnbondState.$is("SwitchingChain"),
-                  () => "Switching to Holesky",
-                ),
+                Match.when(UnbondState.$is("SwitchingChain"), () => {
+                  const isSafeWallet = getLastConnectedWalletId() === "safe"
+                  return isSafeWallet
+                    ? "Preparing Safe Transaction"
+                    : "Switching to Holesky"
+                }),
                 Match.when(
                   UnbondState.$is("CheckingAllowance"),
                   () => "Checking Token Allowance",
@@ -603,8 +669,12 @@ function handleRetry() {
           <div class="text-xs {isError ? 'text-red-400' : isSuccess ? 'text-emerald-400' : 'text-blue-400'} mt-1">
             {
               Match.value(unbondState).pipe(
-                Match.when(UnbondState.$is("SwitchingChain"), () =>
-                  "Please switch to Holesky network in your wallet"),
+                Match.when(UnbondState.$is("SwitchingChain"), () => {
+                  const isSafeWallet = getLastConnectedWalletId() === "safe"
+                  return isSafeWallet
+                    ? "Preparing transaction for Safe wallet..."
+                    : "Please switch to Holesky network in your wallet"
+                }),
                 Match.when(UnbondState.$is("CheckingAllowance"), () =>
                   "Reading current token allowance from blockchain..."),
                 Match.when(UnbondState.$is("ApprovingAllowance"), () =>
