@@ -85,13 +85,12 @@ let unbondInput = $state<string>("")
 let unbondState = $state<UnbondState>(UnbondState.Ready())
 let shouldUnbond = $state<boolean>(false)
 
-// Human readable amount as BigDecimal (maintains precision)
 const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   unbondInput,
   BigDecimal.fromString,
 ))
 
-// Wei amount for blockchain - properly convert BigDecimal to wei
+// au amount for blockchain - properly convert BigDecimal to au 
 const unbondAmount = $derived<O.Option<bigint>>(pipe(
   inputAmount,
   O.map(flow(
@@ -99,7 +98,7 @@ const unbondAmount = $derived<O.Option<bigint>>(pipe(
       const multiplier = BigDecimal.make(10n ** 18n, 0)
       const result = BigDecimal.multiply(bd, multiplier)
       console.log("Unbond conversion - Input:", unbondInput, "Result value:", result.value)
-      return result.value // Don't normalize - we want the raw value
+      return result.value
     }
   )),
 ))
@@ -118,7 +117,6 @@ const isUnbonding = $derived(
 const isSuccess = $derived(UnbondState.$is("Success")(unbondState))
 const isError = $derived(UnbondState.$is("Error")(unbondState))
 
-// Helper functions from unbond.ts
 const bytecode_base_checksum =
   "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
 const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
@@ -311,7 +309,6 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) => Effect.g
   
   yield* Effect.log("Submission TX Hash:", response.txHash)
 
-  // Return both response and txHash for separate indexer handling
   return { response, txHash: response.txHash }
 })
 
@@ -335,13 +332,10 @@ runPromiseExit$(() =>
       const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
       const VIEM_CHAIN = holesky
       
-      // Get wagmi connector client
       const connectorClient = yield* getWagmiConnectorClient
       
-      // Switch to the correct chain
       yield* switchChain(VIEM_CHAIN)
       
-      // Create clients using connector
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
         transport: custom(connectorClient),
@@ -368,11 +362,9 @@ runPromiseExit$(() =>
         Effect.provide(ChainRegistry.Default),
       )
       
-      // Unbond transaction completed, now wait for indexer
       console.log("Unbond transaction submitted with hash:", txHash)
       unbondState = UnbondState.WaitingForIndexer()
       
-      // Wait for indexer with aggressive retry - the data WILL eventually be there
       const receipt = yield* Effect.retry(
         response.waitFor(
           ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
@@ -381,14 +373,13 @@ runPromiseExit$(() =>
           schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
           while: (error) => {
             console.log("Indexer not ready yet, retrying in 5 seconds...")
-            return true // Always retry - indexer will eventually have the data
+            return true
           }
         }
       )
       
       unbondState = UnbondState.Success({ txHash })
       
-      // Reset form and refresh data on success
       unbondInput = ""
       shouldUnbond = false
       onUnbondSuccess?.()

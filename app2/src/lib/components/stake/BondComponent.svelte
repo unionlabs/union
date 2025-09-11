@@ -95,9 +95,8 @@ const BondState = Data.taggedEnum<BondState>()
 let bondInput = $state<string>("")
 let bondState = $state<BondState>(BondState.Ready())
 let shouldBond = $state<boolean>(false)
-let slippage = $state<number>(1) // Default 1% slippage protection
+let slippage = $state<number>(1)
 
-// Query real-time rates from staking hub
 const stakingRates = runPromiseExit$(() => 
   Effect.gen(function*() {
     return yield* pipe(
@@ -130,7 +129,7 @@ const bondAmount = $derived<O.Option<bigint>>(pipe(
     (bd) => {
       const multiplier = BigDecimal.make(10n ** 18n, 0)
       const result = BigDecimal.multiply(bd, multiplier)
-      // Adjust for the remaining scale to get the actual wei value
+      // Adjust for the remaining scale to get the actual au value
       const scale = result.scale
       const adjustedValue = scale >= 0 
         ? result.value / (10n ** BigInt(scale))
@@ -155,7 +154,6 @@ const isBonding = $derived(
 const isSuccess = $derived(BondState.$is("Success")(bondState))
 const isError = $derived(BondState.$is("Error")(bondState))
 
-// Calculate expected receive amount using real purchase rate
 const expectedReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   O.all({ amount: bondAmount, rates: stakingRates.current }),
   O.flatMap(({ amount, rates }) => 
@@ -453,13 +451,10 @@ runPromiseExit$(() =>
       const RPC_URL = "https://rpc.17000.ethereum.chain.kitchen"
       const VIEM_CHAIN = holesky
       
-      // Get wagmi connector client
       const connectorClient = yield* getWagmiConnectorClient
       
-      // Switch to the correct chain
       yield* switchChain(VIEM_CHAIN)
       
-      // Create clients using connector
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
         transport: custom(connectorClient),
@@ -479,13 +474,13 @@ runPromiseExit$(() =>
       )
       
       bondState = BondState.AllowanceApproved()
-      yield* Effect.sleep("500 millis") // Brief pause to show approval success
+      yield* Effect.sleep("500 millis")
       
       bondState = BondState.CreatingTokenOrder()
-      yield* Effect.sleep("300 millis") // Show token order creation
+      yield* Effect.sleep("300 millis")
       
       bondState = BondState.PreparingBondTransaction()
-      yield* Effect.sleep("300 millis") // Show transaction preparation
+      yield* Effect.sleep("300 millis")
       
       bondState = BondState.ExecutingBond()
       const { response, txHash } = yield* executeBond(sender, sendAmount).pipe(
@@ -496,13 +491,11 @@ runPromiseExit$(() =>
       )
       
       bondState = BondState.WaitingForTxConfirmation()
-      yield* Effect.sleep("1 second") // Show tx confirmation step
+      yield* Effect.sleep("1 second")
       
-      // Bond transaction completed, now wait for indexer
       console.log("Bond transaction submitted with hash:", txHash)
       bondState = BondState.WaitingForIndexer()
       
-      // Wait for indexer with aggressive retry - the data WILL eventually be there
       const receipt = yield* Effect.retry(
         response.waitFor(
           ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
@@ -511,14 +504,14 @@ runPromiseExit$(() =>
           schedule: pipe(Schedule.fixed("5 seconds"), Schedule.intersect(Schedule.recurs(30))),
           while: (error) => {
             console.log("Indexer not ready yet, retrying in 5 seconds...")
-            return true // Always retry - indexer will eventually have the data
+            return true
           }
         }
       )
       
       bondState = BondState.Success({ txHash })
       
-      // Reset form and refresh data on success
+
       bondInput = ""
       shouldBond = false
       onBondSuccess?.()
