@@ -499,6 +499,28 @@ _: {
           u = ba5ed;
         }
 
+        rec {
+          chain-id = "8453";
+          ucs04-chain-id = "base.8453";
+
+          name = "base";
+          rpc-url = "https://base-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x4200000000000000000000000000000000000006";
+          rate-limit-enabled = "true";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+
+          u = ba5ed;
+        }
+
         # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
         # {
         #   network = "scroll-testnet";
@@ -590,7 +612,7 @@ _: {
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
                ${pkgs.lib.optionalString (u != null) "--u ${u}"} \
                ${pkgs.lib.optionalString (eu != null) "--eu ${eu}"} \
-              --ucs03 "$@" 
+              --ucs03 "$@"
           '';
         };
 
@@ -614,9 +636,21 @@ _: {
           ...
         }:
         mkCi false (
-          pkgs.writeShellApplication {
+          pkgs.writeShellApplicationWithArgs {
             name = "eth-deploy-${name}";
             runtimeInputs = [ self'.packages.forge ];
+            arguments = [
+              {
+                arg = "deployer_pk";
+                required = true;
+                help = "The deployer contract address.";
+              }
+              {
+                arg = "sender_pk";
+                required = true;
+                help = "The sender address that created the contract through the deployer.";
+              }
+            ];
             text = ''
               ${ensureAtRepositoryRoot}
 
@@ -637,7 +671,8 @@ _: {
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
               NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
               PRIVATE_KEY=${private-key} \
-              DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
+              DEPLOYER="$argc_deployer_pk" \
+              SENDER="$argc_sender_pk" \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
