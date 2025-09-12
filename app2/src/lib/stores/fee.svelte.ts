@@ -4,15 +4,15 @@ import { AtomicGasPrice, BaseGasPrice, GasPrice } from "$lib/gasprice/service"
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { Intent } from "$lib/transfer/shared/services/filling/create-context"
-import * as Writer from "$lib/typeclass/Writer.js"
 import * as ArrayInstances from "@effect/typeclass/data/Array"
 import * as FlatMap from "@effect/typeclass/FlatMap"
 import { Token } from "@unionlabs/sdk"
 import { GAS_DENOMS } from "@unionlabs/sdk/Constants"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { PriceError, PriceOracle, PriceResult } from "@unionlabs/sdk/PriceOracle"
-import { Chain, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { type Fees, GasFee } from "@unionlabs/sdk/schema/fee"
+import { Chain, TokenRawAmount } from "@unionlabs/sdk/schema/index"
+import * as Writer from "@unionlabs/sdk/typeclass/Writer"
 import {
   Array as A,
   BigDecimal,

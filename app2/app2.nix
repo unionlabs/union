@@ -32,19 +32,21 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../app2
+            ../effect-svelte
             ../ts-sdk
-            ../ts-sdk-evm
             ../ts-sdk-cosmos
+            ../ts-sdk-evm
             ../ts-sdk-sui
           ];
-          hash = "sha256-VkzzXZr7WNTSE8pBOcLLd9vZThjFqsSJaEKwb7bi4PY=";
+          hash = "sha256-SQZGMqbhiWyJdWluVYCpdTjMvZ9duKZQXJtCxMPO6Cg=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
             "app2"
+            "@unionlabs/effect-svelte"
             "@unionlabs/sdk"
-            "@unionlabs/sdk-evm"
             "@unionlabs/sdk-cosmos"
+            "@unionlabs/sdk-evm"
             "@unionlabs/sdk-sui"
           ];
           buildPhase = ''
@@ -55,7 +57,7 @@ _: {
             export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
             export PUBLIC_SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
             export PUBLIC_SUPABASE_ANON_KEY="${PUBLIC_SUPABASE_ANON_KEY}"
-            pnpm --filter=app2 prepare
+            pnpm --filter=app2 --filter=effect-svelte prepare
             pnpm --filter=app2 build
             runHook postBuild
           '';

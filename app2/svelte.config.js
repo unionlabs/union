@@ -20,6 +20,12 @@ const config = {
     alias: {
       "@unionlabs/sdk": "../ts-sdk/src/index.js",
       "@unionlabs/sdk/*": "../ts-sdk/src/*",
+      "@unionlabs/sdk-evm": "../ts-sdk-evm/src/index.js",
+      "@unionlabs/sdk-evm/*": "../ts-sdk-evm/src/*",
+      "@unionlabs/sdk-cosmos": "../ts-sdk-cosmos/src/index.js",
+      "@unionlabs/sdk-cosmos/*": "../ts-sdk-cosmos/src/*",
+      "@unionlabs/effect-svelte": "../effect-svelte/src/lib/index.js",
+      "@unionlabs/effect-svelte/*": "../ts-sdk-cosmos/src/lib/*",
     },
   },
 }

@@ -122,3 +122,9 @@ docs/src/content/docs/reference/@unionlabs/sdk-evm
 docs/src/content/docs/reference/@unionlabs/sdk-cosmos
 docs/src/content/docs/integrations/typescript/examples/*
 !docs/src/content/docs/integrations/typescript/examples/index.mdx
+
+# effect-svelte
+effect-svelte/build
+
+# vitest
+coverage/
