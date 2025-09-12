@@ -4,19 +4,17 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import * as AppRuntime from "$lib/runtime"
-import { chains } from "$lib/stores/chains.svelte"
 import { Indexer } from "@unionlabs/sdk"
-import { getChain, PacketHash } from "@unionlabs/sdk/schema"
-import { ConfigProvider, Effect, Layer, Option, pipe, Schema } from "effect"
+import { PacketHash, TokenRawAmount } from "@unionlabs/sdk/schema"
+import { ConfigProvider, Effect, Layer, pipe } from "effect"
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 
-const packetHash = PacketHash.make(page.params.packet_hash)
+const packetHash = $derived(PacketHash.make(page.params.packet_hash))
 
 const QlpConfigProvider = Layer.setConfigProvider(
   ConfigProvider.fromMap(
@@ -26,81 +24,113 @@ const QlpConfigProvider = Layer.setConfigProvider(
   ),
 )
 
-const bondData = AppRuntime.runPromiseExit$(() => {
-  void page.params.packet_hash
-
-  return Effect.gen(function*() {
-    const currentPacketHash = PacketHash.make(page.params.packet_hash)
-    const indexer = yield* Indexer.Indexer
-    const result = yield* indexer.fetch({
-      document: graphql(`
-        query GetBondByPacketHash($packet_hash: String!) @cached(ttl: 10) {
-          v2_bonds(args: { p_packet_hash: $packet_hash }) {
-            packet_hash
-            bond_success
-            delivery_success
-            source_universal_chain_id
-            destination_universal_chain_id
-            sender_display
-            receiver_display
-            base_token
-            base_amount
-            quote_token
-            quote_amount
-            bond_send_timestamp
-            bond_send_transaction_hash
-            sort_order
+const bondData = $derived(pipe(
+    Effect.gen(function*() {
+      const indexer = yield* Indexer.Indexer
+      const result = yield* indexer.fetch({
+        document: graphql(`
+          query GetBondByPacketHash($packet_hash: String!) @cached(ttl: 10) {
+            v2_bonds(args: { p_packet_hash: $packet_hash }) {
+              packet_hash
+              delivery_packet_hash
+              bond_success
+              delivery_success
+              packet_shape
+              source_universal_chain_id
+              remote_universal_chain_id
+              destination_universal_chain_id
+              sender_canonical
+              sender_display
+              sender_zkgm
+              receiver_canonical
+              receiver_display
+              receiver_zkgm
+              base_token
+              base_amount
+              quote_token
+              quote_amount
+              remote_base_token
+              remote_base_amount
+              remote_quote_token
+              remote_quote_amount
+              bond_send_timestamp
+              bond_send_transaction_hash
+              bond_recv_timestamp
+              bond_recv_transaction_hash
+              bond_timeout_timestamp
+              bond_timeout_transaction_hash
+              delivery_send_timestamp
+              delivery_send_transaction_hash
+              delivery_recv_timestamp
+              delivery_recv_transaction_hash
+              delivery_timeout_timestamp
+              delivery_timeout_transaction_hash
+              sort_order
+              source_chain {
+                chain_id
+                universal_chain_id
+                display_name
+                rpc_type
+              }
+              destination_chain {
+                chain_id
+                universal_chain_id
+                display_name
+                rpc_type
+              }
+            }
           }
-        }
-      `),
-      variables: { packet_hash: packetHash }
-    })
-    
-    const bonds = result.v2_bonds as Array<any>
-    
-    if (bonds.length === 0) {
-      return yield* Effect.fail(new Error("Bond not found"))
-    }
-    
-    return bonds[0]
-  }).pipe(
+        `),
+        variables: { packet_hash: packetHash }
+      })
+      
+      const bonds = result.v2_bonds as Array<any>
+      
+      if (bonds.length === 0) {
+        return yield* Effect.fail(new Error("Bond not found"))
+      }
+      
+      return bonds[0]
+    }),
     Effect.provide(Indexer.Indexer.Default),
     Effect.provide(QlpConfigProvider),
-  )
-})
-
-const sourceChain = $derived(
-  pipe(
-    O.all([chains.data, bondData.current]),
-    O.flatMap(([chainsData, bond]) => 
-      bond._tag === "Success" 
-        ? getChain(chainsData, bond.value.source_universal_chain_id)
-        : O.none()
-    )
+    Effect.runPromise
   )
 )
 
-const destinationChain = $derived(
-  pipe(
-    O.all([chains.data, bondData.current]),
-    O.flatMap(([chainsData, bond]) => 
-      bond._tag === "Success" 
-        ? getChain(chainsData, bond.value.destination_universal_chain_id)
-        : O.none()
-    )
-  )
-)
 </script>
 
 <Sections>
   <Card divided>
-    {#if O.isSome(bondData.current)}
-      {#if bondData.current.value._tag === "Success"}
-        {@const bond = bondData.current.value.value}
-        {@const status = bond.bond_success === true ? "success" : bond.bond_success === false ? "failure" : "pending"}
+    {#await bondData}
+      <div class="p-6">
+        <div class="animate-pulse space-y-4">
+          <div class="h-8 bg-zinc-700 rounded w-1/3"></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              {#each Array(4) as _}
+                <div>
+                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
+                  <div class="h-6 bg-zinc-800 rounded"></div>
+                </div>
+              {/each}
+            </div>
+            <div class="space-y-4">
+              {#each Array(4) as _}
+                <div>
+                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
+                  <div class="h-6 bg-zinc-800 rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      </div>
+    {:then bond}
+      {@const status = bond.bond_success === true ? "success" : bond.bond_success === false ? "failure" : "pending"}
         
         <div class="p-6">
-          <h1 class="text-2xl font-bold mb-4">Bond Transaction</h1>
+          <h1 class="text-2xl font-bold mb-4">Bond</h1>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Bond Details -->
@@ -114,11 +144,12 @@ const destinationChain = $derived(
               
               <div>
                 <Label>Amount</Label>
-                {#if O.isSome(sourceChain)}
+                <!--TODO, check amount type-->
+                {#if bond.source_chain}
                   <TokenComponent
-                    chain={sourceChain.value}
+                    chain={bond.source_chain}
                     denom={bond.base_token}
-                    amount={BigInt(bond.base_amount)}
+                    amount={BigInt(bond.base_amount) as TokenRawAmount}
                     showIcon={true}
                   />
                 {:else}
@@ -166,8 +197,8 @@ const destinationChain = $derived(
             <div class="space-y-4">
               <div>
                 <Label>Source Chain</Label>
-                {#if O.isSome(sourceChain)}
-                  <ChainComponent chain={sourceChain.value} withToken={bond.base_token} />
+                {#if bond.source_chain}
+                  <ChainComponent chain={bond.source_chain} withToken={bond.base_token} />
                 {:else}
                   <div class="text-sm text-zinc-500">{bond.source_universal_chain_id}</div>
                 {/if}
@@ -175,8 +206,8 @@ const destinationChain = $derived(
               
               <div>
                 <Label>Destination Chain</Label>
-                {#if O.isSome(destinationChain)}
-                  <ChainComponent chain={destinationChain.value} withToken={bond.quote_token} />
+                {#if bond.destination_chain}
+                  <ChainComponent chain={bond.destination_chain} withToken={bond.quote_token} />
                 {:else}
                   <div class="text-sm text-zinc-500">{bond.destination_universal_chain_id}</div>
                 {/if}
@@ -209,36 +240,10 @@ const destinationChain = $derived(
             <JsonPreview value={bond} />
           </div>
         </details>
-        
-      {:else if bondData.current.value._tag === "Failure"}
-        <div class="p-6">
-          <ErrorComponent error={bondData.current.value.error} />
-        </div>
-      {/if}
-    {:else}
+    {:catch error}
       <div class="p-6">
-        <div class="animate-pulse space-y-4">
-          <div class="h-8 bg-zinc-700 rounded w-1/3"></div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4">
-              {#each Array(4) as _}
-                <div>
-                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
-                  <div class="h-6 bg-zinc-800 rounded"></div>
-                </div>
-              {/each}
-            </div>
-            <div class="space-y-4">
-              {#each Array(4) as _}
-                <div>
-                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
-                  <div class="h-6 bg-zinc-800 rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </div>
-        </div>
+        <ErrorComponent {error} />
       </div>
-    {/if}
+    {/await}
   </Card>
 </Sections>

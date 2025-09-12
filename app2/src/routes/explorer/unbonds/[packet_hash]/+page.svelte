@@ -11,12 +11,12 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
 import { Indexer } from "@unionlabs/sdk"
-import { getChain, PacketHash } from "@unionlabs/sdk/schema"
+import { PacketHash, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { ConfigProvider, Effect, Layer, Option, pipe } from "effect"
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 
-const packetHash = PacketHash.make(page.params.packet_hash)
+const packetHash = $derived(PacketHash.make(page.params.packet_hash))
 
 // GraphQL config for development endpoint
 const QlpConfigProvider = Layer.setConfigProvider(
@@ -27,11 +27,8 @@ const QlpConfigProvider = Layer.setConfigProvider(
   ),
 )
 
-const unbondData = AppRuntime.runPromiseExit$(() => {
-  void page.params.packet_hash
-
-  return Effect.gen(function*() {
-    const currentPacketHash = PacketHash.make(page.params.packet_hash)
+const unbondData = $derived(pipe(
+  Effect.gen(function*() {
     const indexer = yield* Indexer.Indexer
     const result = yield* indexer.fetch({
       document: graphql(`
@@ -39,18 +36,37 @@ const unbondData = AppRuntime.runPromiseExit$(() => {
           v2_unbonds(args: { p_packet_hash: $packet_hash }) {
             packet_hash
             success
+            packet_shape
             source_universal_chain_id
             destination_universal_chain_id
+            sender_canonical
             sender_display
+            sender_zkgm
             base_token
             base_amount
             unbond_send_timestamp
             unbond_send_transaction_hash
+            unbond_recv_timestamp
+            unbond_recv_transaction_hash
+            unbond_timeout_timestamp
+            unbond_timeout_transaction_hash
             sort_order
+            source_chain {
+              chain_id
+              universal_chain_id
+              display_name
+              rpc_type
+            }
+            destination_chain {
+              chain_id
+              universal_chain_id
+              display_name
+              rpc_type
+            }
           }
         }
       `),
-      variables: { packet_hash: currentPacketHash }
+      variables: { packet_hash: packetHash }
     })
     
     const unbonds = result.v2_unbonds as Array<any>
@@ -60,44 +76,45 @@ const unbondData = AppRuntime.runPromiseExit$(() => {
     }
     
     return unbonds[0]
-  }).pipe(
-    Effect.provide(Indexer.Indexer.Default),
-    Effect.provide(QlpConfigProvider),
-  )
-})
+  }),
+  Effect.provide(Indexer.Indexer.Default),
+  Effect.provide(QlpConfigProvider),
+  Effect.runPromise
+))
 
-const sourceChain = $derived(
-  pipe(
-    O.all([chains.data, unbondData.current]),
-    O.flatMap(([chainsData, unbond]) => 
-      unbond._tag === "Success" 
-        ? getChain(chainsData, unbond.value.source_universal_chain_id)
-        : O.none()
-    )
-  )
-)
-
-const destinationChain = $derived(
-  pipe(
-    O.all([chains.data, unbondData.current]),
-    O.flatMap(([chainsData, unbond]) => 
-      unbond._tag === "Success" 
-        ? getChain(chainsData, unbond.value.destination_universal_chain_id)
-        : O.none()
-    )
-  )
-)
 </script>
 
 <Sections>
   <Card divided>
-    {#if O.isSome(unbondData.current)}
-      {#if unbondData.current.value._tag === "Success"}
-        {@const unbond = unbondData.current.value.value}
-        {@const status = unbond.success === true ? "success" : unbond.success === false ? "failure" : "pending"}
+    {#await unbondData}
+      <div class="p-6">
+        <div class="animate-pulse space-y-4">
+          <div class="h-8 bg-zinc-700 rounded w-1/3"></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              {#each Array(4) as _}
+                <div>
+                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
+                  <div class="h-6 bg-zinc-800 rounded"></div>
+                </div>
+              {/each}
+            </div>
+            <div class="space-y-4">
+              {#each Array(4) as _}
+                <div>
+                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
+                  <div class="h-6 bg-zinc-800 rounded"></div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      </div>
+    {:then unbond}
+      {@const status = unbond.success === true ? "success" : unbond.success === false ? "failure" : "pending"}
         
         <div class="p-6">
-          <h1 class="text-2xl font-bold mb-4">Unbond Transaction</h1>
+          <h1 class="text-2xl font-bold mb-4">Unbond</h1>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Unbond Details -->
@@ -111,11 +128,12 @@ const destinationChain = $derived(
               
               <div>
                 <Label>Amount</Label>
-                {#if O.isSome(sourceChain)}
+                <!--TODO, check amount type-->
+                {#if unbond.source_chain}
                   <TokenComponent
-                    chain={sourceChain.value}
+                    chain={unbond.source_chain}
                     denom={unbond.base_token}
-                    amount={BigInt(unbond.base_amount)}
+                    amount={BigInt(unbond.base_amount) as TokenRawAmount}
                     showIcon={true}
                   />
                 {:else}
@@ -163,8 +181,8 @@ const destinationChain = $derived(
             <div class="space-y-4">
               <div>
                 <Label>Source Chain</Label>
-                {#if O.isSome(sourceChain)}
-                  <ChainComponent chain={sourceChain.value} withToken={unbond.base_token} />
+                {#if unbond.source_chain}
+                  <ChainComponent chain={unbond.source_chain} withToken={unbond.base_token} />
                 {:else}
                   <div class="text-sm text-zinc-500">{unbond.source_universal_chain_id}</div>
                 {/if}
@@ -172,8 +190,8 @@ const destinationChain = $derived(
               
               <div>
                 <Label>Destination Chain</Label>
-                {#if O.isSome(destinationChain)}
-                  <ChainComponent chain={destinationChain.value} />
+                {#if unbond.destination_chain}
+                  <ChainComponent chain={unbond.destination_chain} withToken={unbond.base_token} />
                 {:else}
                   <div class="text-sm text-zinc-500">{unbond.destination_universal_chain_id}</div>
                 {/if}
@@ -200,35 +218,10 @@ const destinationChain = $derived(
           </div>
         </details>
         
-      {:else if unbondData.current.value._tag === "Failure"}
-        <div class="p-6">
-          <ErrorComponent error={unbondData.current.value.error} />
-        </div>
-      {/if}
-    {:else}
+    {:catch error}
       <div class="p-6">
-        <div class="animate-pulse space-y-4">
-          <div class="h-8 bg-zinc-700 rounded w-1/3"></div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4">
-              {#each Array(4) as _}
-                <div>
-                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
-                  <div class="h-6 bg-zinc-800 rounded"></div>
-                </div>
-              {/each}
-            </div>
-            <div class="space-y-4">
-              {#each Array(4) as _}
-                <div>
-                  <div class="h-4 bg-zinc-700 rounded w-1/4 mb-2"></div>
-                  <div class="h-6 bg-zinc-800 rounded"></div>
-                </div>
-              {/each}
-            </div>
-          </div>
-        </div>
+        <ErrorComponent {error} />
       </div>
-    {/if}
+    {/await}
   </Card>
 </Sections>
