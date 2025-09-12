@@ -105,7 +105,7 @@ export const navigation: Array<NavSection> = [
   },
   {
     items: [{
-      path: "/liquid-staking",
+      path: "/stake",
       title: "Liquid Staking",
       icon: EscherLogo,
     }],
