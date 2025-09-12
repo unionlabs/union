@@ -164,6 +164,10 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
 
   // BSC
   [UniversalChainId.make("bsc.97")]: BNB_METADATA,
+
+  // Base
+  [UniversalChainId.make("base.8452")]: ETH_METADATA,
+  [UniversalChainId.make("base.8453")]: ETH_METADATA,
 }
 
 /**
