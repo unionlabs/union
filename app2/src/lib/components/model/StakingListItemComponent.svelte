@@ -30,7 +30,8 @@ const destinationChain = $derived(
 )
 
 const handleClick = () => {
-  goto(`/explorer/transfers/${item.packet_hash}`)
+  const route = item._tag === "Bond" ? "bonds" : "unbonds"
+  goto(`/explorer/${route}/${item.packet_hash}`)
 }
 
 const status = $derived(
