@@ -93,6 +93,7 @@ const statusConfig = $derived(
           <ChainComponent
             class="font-normal"
             chain={destinationChain.value}
+            withToken={item._tag === "Bond" ? item.quote_token : item.base_token}
           />
         {/if}
       </div>
