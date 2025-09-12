@@ -1,4 +1,4 @@
-use sui_light_client_types::{digest::Digest, ObjectID};
+use sui_light_client_types::{Digest, ObjectID};
 use unionlabs_primitives::Bytes;
 
 #[derive(Debug, thiserror::Error)]
@@ -6,8 +6,15 @@ pub enum Error {
     #[error(transparent)]
     Client(Box<dyn core::error::Error>),
 
-    #[error("proven object ({proven}) does not match the given ({given})")]
-    ObjectMismatch { given: ObjectID, proven: ObjectID },
+    #[error(
+        "proven object ({proven}) does not match the given ({given}) ({commitments_object}, {key})"
+    )]
+    ObjectMismatch {
+        given: ObjectID,
+        proven: ObjectID,
+        commitments_object: Bytes,
+        key: Bytes,
+    },
 
     #[error("proven key ({proven}) does not match the given ({given})")]
     KeyMismatch { given: Bytes, proven: Bytes },

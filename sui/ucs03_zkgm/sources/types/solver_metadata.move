@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,25 +58,38 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-// module zkgm::fungible_token {
-//     use sui::coin::{Self};
+module zkgm::solver_metadata {
+    use zkgm::zkgm_ethabi;
 
-//     // one time witness
-//     public struct FUNGIBLE_TOKEN has drop {}
+    public struct SolverMetadata has copy, drop, store {
+        solver_address: vector<u8>,
+        metadata: vector<u8>,
+    }
 
-//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-//         let (treasury_cap, metadata) =
-//             coin::create_currency<FUNGIBLE_TOKEN>(
-//                 witness,
-//                 (@decimals.to_u256()) as u8,
-//                 b"muno",
-//                 b"muno",
-//                 b"zkgm token created by voyager",
-//                 option::none(),
-//                 ctx
-//             );
+    public fun new(
+        solver_address: vector<u8>,
+        metadata: vector<u8>,
+    ): SolverMetadata {
+        SolverMetadata {
+            solver_address,
+            metadata
+        }
+    }
 
-//         transfer::public_share_object(metadata);
-//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-//     }
-// }
+    public fun solver_address(metadata: &SolverMetadata): &vector<u8> {
+        &metadata.solver_address
+    }
+
+    public fun metadata(metadata: &SolverMetadata): &vector<u8> {
+        &metadata.metadata
+    }
+    
+    public fun decode(buf: &vector<u8>): SolverMetadata {
+        let mut index = 0;
+        SolverMetadata {
+            solver_address: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            metadata: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+        }
+    }
+
+}

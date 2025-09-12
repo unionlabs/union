@@ -197,7 +197,7 @@ where
                             chain_id: client_state_meta.counterparty_chain_id,
                             client_id: RawClientId::new(self.client_id.clone()),
                             update_from: client_state_meta.counterparty_height,
-                            update_to: latest_height,
+                            update_to: target_height,
                         })],
                         [],
                         PluginMessage::new(

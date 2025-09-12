@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,25 +58,54 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-// module zkgm::fungible_token {
-//     use sui::coin::{Self};
+module zkgm::batch_ack {
+    use zkgm::zkgm_ethabi;
 
-//     // one time witness
-//     public struct FUNGIBLE_TOKEN has drop {}
+    public struct BatchAck has copy, drop, store {
+        acknowledgements: vector<vector<u8>>
+    }
 
-//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-//         let (treasury_cap, metadata) =
-//             coin::create_currency<FUNGIBLE_TOKEN>(
-//                 witness,
-//                 (@decimals.to_u256()) as u8,
-//                 b"muno",
-//                 b"muno",
-//                 b"zkgm token created by voyager",
-//                 option::none(),
-//                 ctx
-//             );
+    public fun new(acknowledgements: vector<vector<u8>>): BatchAck {
+        BatchAck { acknowledgements }
+    }
 
-//         transfer::public_share_object(metadata);
-//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-//     }
-// }
+    public fun acknowledgements(batch_ack: &BatchAck): vector<vector<u8>> {
+        batch_ack.acknowledgements
+    }
+
+    public fun encode(ack: &BatchAck): vector<u8> {
+        let mut buf = vector::empty();
+        zkgm_ethabi::encode_uint(&mut buf, 0x20);
+        zkgm_ethabi::encode_dyn_array!(
+            &mut buf,
+            &ack.acknowledgements,
+            |b, elem| zkgm_ethabi::encode_bytes(b, elem)
+        );
+
+        buf
+    }
+
+    public fun decode(buf: &vector<u8>): BatchAck {
+        let (acks, _) = zkgm_ethabi::decode_dyn_array!(buf, 0x20, |b| zkgm_ethabi::decode_bytes(&b, &mut 0));
+        BatchAck {
+            acknowledgements: acks,
+        }
+    }
+
+    #[test]
+    fun test_encode_decode() {
+        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002686900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046865686500000000000000000000000000000000000000000000000000000000";
+
+        let expected_ack = BatchAck {
+            acknowledgements: vector[
+                b"hello",
+                b"hi",
+                b"hehe",
+            ],
+        };
+
+        let ack = decode(&output);
+        assert!(ack == expected_ack, 1);
+        assert!(encode(&ack) == output, 1);
+    }
+}

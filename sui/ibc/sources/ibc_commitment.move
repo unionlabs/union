@@ -60,171 +60,108 @@
 #[allow(implicit_const_copy)]
 module ibc::commitment {
     use sui::hash;
+    use sui::address;
     use std::bcs;
-    use ibc::packet::{Self, Packet};
+    use ibc::packet::{Self, Packet, PacketBcs};
     use ibc::ethabi::{encode_dyn_array, encode_bytes};
     use sui::hash::keccak256;
 
     const COMMITMENT_MAGIC: u8 = 0x01;
 
-    const CLIENT_STATE: u256 = 0x00;
-    const CONSENSUS_STATE: u256 = 0x01;
-    const CONNECTIONS: u256 = 0x02;
-    const CHANNELS: u256 = 0x03;
-    const PACKETS: u256 = 0x04;
-    const PACKET_ACKS: u256 = 0x05;
-    const NEXT_SEQ_SEND: u256 = 0x06;
-    const NEXT_SEQ_RECV: u256 = 0x07;
-    const NEXT_SEQ_ACK: u256 = 0x08;
+    const CLIENT_STATE: address = @0x00;
+    const CONSENSUS_STATE: address = @0x01;
+    const CONNECTIONS: address = @0x02;
+    const CHANNELS: address = @0x03;
+    const PACKETS: address = @0x04;
+    const PACKET_ACKS: address = @0x05;
+    const NEXT_SEQ_SEND: address = @0x06;
+    const NEXT_SEQ_RECV: address = @0x07;
+    const NEXT_SEQ_ACK: address = @0x08;
+
+    public struct ClientStateCommitmentBcs has drop {
+        prefix: address,
+        client_id: address,
+    }
 
     // Generate the path for client state
     public fun client_state_path(client_id: u32): vector<u8> {
-        let mut state_path = vector::empty();
-        let mut client_State = bcs::to_bytes<u256>(&CLIENT_STATE);
-        vector::reverse(&mut client_State);
-        vector::append(&mut state_path, client_State);
-        let mut client_id_bytes = bcs::to_bytes<u256>(&(client_id as u256));
-        vector::reverse(&mut client_id_bytes);
-        vector::append(&mut state_path, client_id_bytes);
-        state_path
+        bcs::to_bytes(&ClientStateCommitmentBcs {
+            prefix: CLIENT_STATE,
+            client_id: address::from_u256(
+                client_id as u256
+            )
+        })
+    }
+
+    public struct ConsensusStateCommitmentBcs has drop {
+        prefix: address,
+        client_id: address,
+        height: address
     }
 
     // Updated function: consensus_state_path
-    public fun consensus_state_path(client_id: u32, revision_height: u64): vector<u8> {
-        let mut state_path = vector::empty<u8>();
+    public fun consensus_state_path(client_id: u32, height: u64): vector<u8> {
+        bcs::to_bytes(&ConsensusStateCommitmentBcs {
+            prefix: CONSENSUS_STATE,
+            client_id: address::from_u256(client_id as u256),
+            height: address::from_u256(height as u256)
+        })
+    }
 
-        let mut consensus_state_bytes = bcs::to_bytes<u256>(&CONSENSUS_STATE);
-        vector::reverse(&mut consensus_state_bytes);
-        vector::append(&mut state_path, consensus_state_bytes);
-
-        let mut client_id_bytes = bcs::to_bytes<u256>(&(client_id as u256));
-        vector::reverse(&mut client_id_bytes);
-        vector::append(&mut state_path, client_id_bytes);
-
-        let mut revision_height_bytes = bcs::to_bytes<u256>(&(revision_height as u256));
-        vector::reverse(&mut revision_height_bytes);
-        vector::append(&mut state_path, revision_height_bytes);
-
-        state_path
+    public struct ConnectionCommitmentBcs has drop {
+        prefix: address,
+        connection_id: address
     }
 
     // Generate the path for connection
     public fun connection_path(connection_id: u32): vector<u8> {
-        let mut connection_path = vector::empty<u8>();
+        bcs::to_bytes(&ConnectionCommitmentBcs {
+            prefix: CONNECTIONS,
+            connection_id: address::from_u256(connection_id as u256)
+        })
+    }
 
-        let mut connections_bytes = bcs::to_bytes<u256>(&CONNECTIONS);
-        vector::reverse(&mut connections_bytes);
-        vector::append(&mut connection_path, connections_bytes);
-
-        let mut connection_id_bytes = bcs::to_bytes<u256>(&(connection_id as u256));
-        vector::reverse(&mut connection_id_bytes);
-        vector::append(&mut connection_path, connection_id_bytes);
-        connection_path
+    public struct ChannelCommitmentBcs has drop {
+        prefix: address,
+        channel_id: address,
     }
 
     // Generate the path for channel
     public fun channel_path(channel_id: u32): vector<u8> {
-        let mut channel_path = vector::empty<u8>();
-
-        let mut channels_bytes = bcs::to_bytes<u256>(&CHANNELS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut channel_path, channels_bytes);
-
-        let mut channel_id_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut channel_id_bytes);
-        vector::append(&mut channel_path, channel_id_bytes);
-        channel_path
+        bcs::to_bytes(&ChannelCommitmentBcs {
+            prefix: CHANNELS,
+            channel_id: address::from_u256(channel_id as u256)
+        })
     }
 
-    // Generate the path for channel
-    public fun packet_commitment_path(channel_id: u32, sequence: u64): vector<u8> {
-        let mut path_vec = vector::empty<u8>();
-
-        let mut channels_bytes = bcs::to_bytes<u256>(&PACKETS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let mut param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        let mut param_bytes2 = bcs::to_bytes<u256>(&(sequence as u256));
-        vector::reverse(&mut param_bytes2);
-        vector::append(&mut path_vec, param_bytes2);
-        path_vec
+    public struct BatchPacketsCommitmentBcs has drop {
+        prefix: address,
+        batch_hash: address,
     }
 
     // Generate the path for channel
     public fun batch_packets_commitment_path(
         batch_hash: vector<u8>
     ): vector<u8> {
-        let mut path_vec = vector::empty<u8>();
+        bcs::to_bytes(&BatchPacketsCommitmentBcs {
+            prefix: PACKETS,
+            batch_hash: address::from_bytes(batch_hash)
+        })
+    }
 
-        let mut channels_bytes = bcs::to_bytes<u256>(&PACKETS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        vector::append(&mut path_vec, batch_hash);
-        path_vec
+    public struct BatchReceiptsCommitmentBcs has drop {
+        prefix: address,
+        batch_hash: address,
     }
 
     // Generate the path for channel
     public fun batch_receipts_commitment_path(
         batch_hash: vector<u8>
     ): vector<u8> {
-        let mut path_vec = vector::empty<u8>();
-
-        let mut channels_bytes = bcs::to_bytes<u256>(&PACKET_ACKS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        vector::append(&mut path_vec, batch_hash);
-        path_vec
-    }
-
-    // Generate the path for channel
-    public fun next_sequence_send_commitment_path(channel_id: u32): vector<u8> {
-        let mut path_vec = vector::empty<u8>();
-
-        let mut channels_bytes = bcs::to_bytes<u256>(&NEXT_SEQ_SEND);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let mut param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        path_vec
-    }
-
-    // Generate the path for channel
-    public fun next_sequence_recv_commitment_path(channel_id: u32): vector<u8> {
-        let mut path_vec = vector::empty<u8>();
-
-        let mut channels_bytes = bcs::to_bytes<u256>(&NEXT_SEQ_RECV);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let mut param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        path_vec
-    }
-
-    // Generate the path for channel
-    public fun next_sequence_ack_commitment_path(channel_id: u32): vector<u8> {
-        let mut path_vec = vector::empty<u8>();
-
-        let mut channels_bytes = bcs::to_bytes<u256>(&NEXT_SEQ_ACK);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let mut param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        path_vec
+        bcs::to_bytes(&BatchReceiptsCommitmentBcs {
+            prefix: PACKET_ACKS,
+            batch_hash: address::from_bytes(batch_hash)
+        })
     }
 
     public fun client_state_commitment_key(channel_id: u32): vector<u8> {
@@ -245,10 +182,6 @@ module ibc::commitment {
         keccak256(&channel_path(channel_id))
     }
 
-    public fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
-        keccak256(&packet_commitment_path(channel_id, sequence))
-    }
-
     public fun batch_packets_commitment_key(
         batch_hash: vector<u8>
     ): vector<u8> {
@@ -261,34 +194,93 @@ module ibc::commitment {
         keccak256(&batch_receipts_commitment_path(batch_hash))
     }
 
-    public fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
-        next_sequence_send_commitment_path(channel_id)
+    public struct SinglePacketCommitmentBcs has drop {
+        offset_0x20_1: address,
+        len_1: address,
+        offset_0x20_2: address,
+        packet: PacketBcs
     }
 
-    public fun next_sequence_recv_commitment_key(channel_id: u32): vector<u8> {
-        next_sequence_recv_commitment_path(channel_id)
-    }
-
-    public fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
-        next_sequence_ack_commitment_path(channel_id)
-    }
-
+    // not calling `commit_packets` here because this function is optimized for a single packet
     public fun commit_packet(packet: &Packet): vector<u8> {
-        commit_packets(&vector[*packet])        
+        let mut encoded = bcs::to_bytes(&SinglePacketCommitmentBcs {
+            offset_0x20_1: address::from_u256(0x20),
+            len_1: address::from_u256(1),
+            offset_0x20_2: address::from_u256(0x20),
+            packet: packet.to_bcs_repr()
+        });
+        packet::apply_post_encoding_adjustments(&mut encoded, packet.data().length(), 0x20 * 3);
+
+        keccak256(&encoded)
+    }
+
+    public struct PacketCommitmentBcs has drop {
+        offset_0x20: address,
+        len: vector<u8>,
+        offsets: vector<address>,
+        packet_len: vector<u8>,
+        packets: vector<PacketBcs>
     }
 
     public fun commit_packets(packets: &vector<Packet>): vector<u8> {
-        let mut buf = vector::empty();
+        // slightly optimizes the gas cost
+        if (packets.length() == 1) {
+            return commit_packet(&packets[0])
+        };
 
-        encode_dyn_array!(
-            &mut buf,
-            packets,
-            |buf, item| {
-                vector::append(buf, packet::encode(item));
-            }
-        );
+        let len = packets.length();
 
-        keccak256(&buf)
+        let mut offsets = vector::empty();
+        let mut p = vector::empty();
+        let mut i = 0;
+        let mut current_offset = 0;
+        while (i < len) {
+            let repr = packets[i].to_bcs_repr();
+            offsets.push_back(address::from_u256((len * 32 + current_offset) as u256));
+            current_offset = current_offset + repr.encoded_length();
+            p.push_back(repr);
+            i = i + 1;
+        };
+
+        // this will be overwritten by the size of the `packets`, so we will rewrite it later
+        let final_offset = offsets.pop_back();
+        let final_offset_bytes = bcs::to_bytes(&final_offset);
+
+        let mut comm_bcs = PacketCommitmentBcs {
+            offset_0x20: address::from_u256(0x20),
+            // 30 bytes
+            len: x"000000000000000000000000000000000000000000000000000000000000",
+            offsets,
+            // 30 bytes
+            packet_len: x"000000000000000000000000000000000000000000000000000000000000",
+            packets: p
+        };
+        let mut encoded = bcs::to_bytes(&comm_bcs);
+
+        // zero out the 0 prefix
+        *encoded.borrow_mut(0x20) = 0;
+        // // overwrite the actual length of the packets (this clears the length of the offsets)
+        // *encoded.borrow_mut(0x3f) = len as u8; 
+
+        // rewriting the final offset to the intended position
+        let mut i = 0x20 * (1 + len);
+        let end = i + 32; 
+        while (i < end) {
+            *encoded.borrow_mut(i) = *final_offset_bytes.borrow(32 - (end - i));
+            i = i + 1;
+        };
+
+        // zero out the 0 prefix
+        *encoded.borrow_mut(0x60) = 0;
+
+        let mut i = 0;
+        while (i < len - 1) {
+            packet::apply_post_encoding_adjustments(&mut encoded, packets[i].data().length(), (offsets[i].to_u256() as u64 + 0x40));
+            i = i + 1;  
+        };
+        packet::apply_post_encoding_adjustments(&mut encoded, packets.borrow(len - 1).data().length(), (final_offset.to_u256() as u64 + 0x40));
+
+        encoded
     }
 
     public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
@@ -312,145 +304,83 @@ module ibc::commitment {
     public fun commit_ack(ack: vector<u8>): vector<u8> {
         commit_acks(vector[ack])
     }
-    
-    // #[test]
-    // fun test_commit_packets() {
-    //     let buf =
-    //         x"000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000026000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000003010203000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000003010203000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000000030102030000000000000000000000000000000000000000000000000000000000";
 
-    //     let packet = packet::new(1, 2, 3, x"010203", 100, 200);
-    //     let mut packets = vector::empty();
-    //     vector::push_back(&mut packets, packet);
-    //     vector::push_back(&mut packets, packet);
-    //     vector::push_back(&mut packets, packet);
+// /*
+// 0000000000000000000000000000000000000000000000000000000000000020
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 0000000000000000000000000000000000000000000000000000000000000040
+// 0000000000000000000000000000000000000000000000000000000000000120
+// 0000000000000000000000000000000000000000000000000000000000000001
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 00000000000000000000000000000000000000000000000000000000000000a0
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 000000000000000000000000000000000000000000000000000000000000000a
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 1234000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000004
+// 0000000000000000000000000000000000000000000000000000000000000005
+// 00000000000000000000000000000000000000000000000000000000000000a0
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000014
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 5678000000000000000000000000000000000000000000000000000000000000
+// /*
 
-    //     assert!(commit_packets(&packets) == buf, 1);
-    // }
 
-    // // Generate the path for packet commitment
-    // public fun packet_path(
-    //     port_id: String, channel_id: String, sequence: u64
-    // ): String {
-    //     let path = string::utf8(b"commitments/ports/");
-    //     string::append(&mut path, port_id);
-    //     string::append_utf8(&mut path, b"/channels/");
-    //     string::append(&mut path, channel_id);
-    //     string::append_utf8(&mut path, b"/sequences/");
-    //     string::append(&mut path, string_utils::to_string(&sequence));
-    //     path
-    // }
+// /*
+// 0000000000000000000000000000000000000000000000000000000000000020
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 0000000000000000000000000000000000000000000000000000000000000040
+// 0000000000000000000000000000000000000000000000000000000000000120
+// 0000000000000000000000000000000200000000000000000000000000000001
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 00000000000000000000000000000000000000000000000000000000000000a0
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 000000000000000000000000000000000000000000000000000000000000000a
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 1234000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000004
+// 0000000000000000000000000000000000000000000000000000000000000005
+// 00000000000000000000000000000000000000000000000000000000000000a0
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000014
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 6789000000000000000000000000000000000000000000000000000000000000
+//
+// 0000000000000000000000000000000000000000000000000000000000000020
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 0000000000000000000000000000000000000000000000000000000000000040
+// 0000000000000000000000000000000000000000000000000000000000000120
+// 0000000000000000000000000000000200000000000000000000000000000001
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 0000000000000000000000000000000000000000000000000000000000000004
+// 0000000000000000000000000000000000000000000000000000000000000034
+// 000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000020123412341234123412341234123412341234123412341234123412341234120000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000026789000000000000000000000000000000000000000000000000000000000000
+//
+//
+// 0000000000000000000000000000000000000000000000000000000000000020
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 0000000000000000000000000000000000000000000000000000000000000040
+// 0000000000000000000000000000000000000000000000000000000000000120
+// 0000000000000000000000000000000200000000000000000000000000000001
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 00000000000000000000000000000000000000000000000000000000000000a0
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 000000000000000000000000000000000000000000000000000000000000000a
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 12341d0000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000004
+// 0000000000000000000000000000000000000000000000000000000000000005
+// 00000000000000000000000000000000000000000000000000000000000000a0
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000014
+// 0000000000000000000000000000000000000000000000000000000000000002
+// 6789000000000000000000000000000000000000000000000000000000000000
+// */
 
-    // // Generate the path for packet acknowledgment commitment
-    // public fun packet_acknowledgement_path(
-    //     port_id: String, channel_id: String, sequence: u64
-    // ): String {
-    //     let path = string::utf8(b"acks/ports/");
-    //     string::append(&mut path, port_id);
-    //     string::append_utf8(&mut path, b"/channels/");
-    //     string::append(&mut path, channel_id);
-    //     string::append_utf8(&mut path, b"/sequences/");
-    //     string::append(&mut path, string_utils::to_string(&sequence));
-    //     path
-    // }
-
-    // // Generate the path for packet receipt commitment
-    // public fun packet_receipt_path(
-    //     port_id: String, channel_id: String, sequence: u64
-    // ): String {
-    //     let path = string::utf8(b"receipts/ports/");
-    //     string::append(&mut path, port_id);
-    //     string::append_utf8(&mut path, b"/channels/");
-    //     string::append(&mut path, channel_id);
-    //     string::append_utf8(&mut path, b"/sequences/");
-    //     string::append(&mut path, string_utils::to_string(&sequence));
-    //     path
-    // }
-
-    // // Generate the path for next sequence send commitment
-    // public fun next_sequence_send_path(
-    //     port_id: String, channel_id: String
-    // ): String {
-    //     let path = string::utf8(b"nextSequenceSend/ports/");
-    //     string::append(&mut path, port_id);
-    //     string::append_utf8(&mut path, b"/channels/");
-    //     string::append(&mut path, channel_id);
-    //     path
-    // }
-
-    // // Generate the path for next sequence receive commitment
-    // public fun next_sequence_recv_path(
-    //     port_id: String, channel_id: String
-    // ): String {
-    //     let path = string::utf8(b"nextSequenceRecv/ports/");
-    //     string::append(&mut path, port_id);
-    //     string::append_utf8(&mut path, b"/channels/");
-    //     string::append(&mut path, channel_id);
-    //     path
-    // }
-
-    // // Generate the path for next sequence acknowledge commitment
-    // public fun next_sequence_ack_path(port_id: String, channel_id: String): String {
-    //     let path = string::utf8(b"nextSequenceAck/ports/");
-    //     string::append(&mut path, port_id);
-    //     string::append_utf8(&mut path, b"/channels/");
-    //     string::append(&mut path, channel_id);
-    //     path
-    // }
-
-    // // Key generation functions
-    // public fun client_state_key(client_id: u32): vector<u8> {
-    //     client_state_path(client_id)
-    // }
-
-    // public fun consensus_state_key(client_id: u32, height: Height): vector<u8> {
-    //     consensus_state_path(
-    //         client_id,
-    //         height::get_revision_height(&height)
-    //     )
-    // }
-
-    // public fun connection_key(connection_id: u32): vector<u8> {
-    //     connection_path(connection_id)
-    // }
-
-    // public fun channel_key(port_id: String, channel_id: String): vector<u8> {
-    //     *string::bytes(&channel_path(port_id, channel_id))
-    // }
-
-    // public fun packet_key(
-    //     port_id: String, channel_id: String, sequence: u64
-    // ): vector<u8> {
-    //     *string::bytes(&packet_path(port_id, channel_id, sequence))
-    // }
-
-    // public fun packet_acknowledgement_key(
-    //     port_id: String, channel_id: String, sequence: u64
-    // ): vector<u8> {
-    //     *string::bytes(&packet_acknowledgement_path(port_id, channel_id, sequence))
-    // }
-
-    // public fun packet_receipt_key(
-    //     port_id: String, channel_id: String, sequence: u64
-    // ): vector<u8> {
-    //     *string::bytes(&packet_receipt_path(port_id, channel_id, sequence))
-    // }
-
-    // public fun next_sequence_send_key(port_id: String, channel_id: String): vector<u8> {
-    //     *string::bytes(&next_sequence_send_path(port_id, channel_id))
-    // }
-
-    // public fun next_sequence_recv_key(port_id: String, channel_id: String): vector<u8> {
-    //     *string::bytes(&next_sequence_recv_path(port_id, channel_id))
-    // }
-
-    // public fun next_sequence_ack_key(port_id: String, channel_id: String): vector<u8> {
-    //     *string::bytes(&next_sequence_ack_path(port_id, channel_id))
-    // }
-
-    // #[test]
-    // public fun test_client_state_path(){
-    //     let test = client_state_path(54);
-    //     std::debug::print(&test);
-    //     assert!(test == x"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1000);
-    // }
+    #[test]
+    public fun test_brotha() {
+        let packets = commit_packets(&vector[packet::new(1, 2, x"1234123412341234123412341234123412341234123412341234123412341234", 0, 10), packet::new(4, 5, x"6789", 0, 20)]);        
+        std::debug::print(&packets);
+    }
 }

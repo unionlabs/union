@@ -42,6 +42,7 @@ ucs03-zkgm         = { workspace = true }
 ucs04              = { workspace = true, features = ["serde"] }
 unionlabs          = { workspace = true, features = ["bcs", "bincode", "ethabi", "proto", "ssz"] }
 voyager-primitives = { workspace = true, features = ["serde"] }
+bcs = { workspace = true }
 
 arbitrum-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 berachain-light-client-types              = { workspace = true, features = ["serde", "bincode", "ethabi"] }

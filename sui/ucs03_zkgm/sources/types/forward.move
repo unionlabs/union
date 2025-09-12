@@ -58,74 +58,86 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_asset_order_ack {
+module zkgm::forward {
     use zkgm::zkgm_ethabi;
+    use zkgm::instruction::{Self, Instruction};
 
-    public struct FungibleAssetOrderAck has copy, drop, store {
-        fill_type: u256,
-        market_maker: vector<u8>
+    public struct Forward has copy, drop, store {
+        path: u256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        instruction: Instruction
     }
 
-    public fun new(fill_type: u256, market_maker: vector<u8>): FungibleAssetOrderAck {
-        FungibleAssetOrderAck { fill_type, market_maker }
+    public fun new(
+        path: u256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        instruction: Instruction
+    ): Forward {
+        Forward {
+            path,
+            timeout_height,
+            timeout_timestamp,
+            instruction,
+        }
     }
 
-    public fun fill_type(order: &FungibleAssetOrderAck): u256 {
-        order.fill_type
+    public fun path(forward: &Forward): u256 {
+        forward.path
     }
 
-    public fun market_maker(order: &FungibleAssetOrderAck): &vector<u8> {
-        &order.market_maker
+    public fun timeout_height(forward: &Forward): u64 {
+        forward.timeout_height
     }
 
-    public fun encode(ack: &FungibleAssetOrderAck): vector<u8> {
+    public fun timeout_timestamp(forward: &Forward): u64 {
+        forward.timeout_timestamp
+    }
+
+    public fun instruction(forward: &Forward): &Instruction {
+        &forward.instruction
+    }
+
+    public fun encode(forward: &Forward): vector<u8> {
         let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
-        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
-
-        let version_offset = 0x40;
-        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
-
-        zkgm_ethabi::encode_vector!<u8>(
-            &mut buf,
-            &ack.market_maker,
-            |some_variable, data| {
-                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
+        zkgm_ethabi::encode_uint<u256>(&mut buf, forward.path);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_height);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_timestamp);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x80);
+        let ins_buf = instruction::encode(&forward.instruction);
+        vector::append(&mut buf, ins_buf);
         buf
     }
 
-    public fun decode(buf: &vector<u8>): FungibleAssetOrderAck {
-        let mut index = 0x20;
-        let fill_type = zkgm_ethabi::decode_uint(buf, &mut index);
-        index = index + 0x20;
-        let market_maker =
-            zkgm_ethabi::decode_vector!<u8>(
-                buf,
-                &mut index,
-                |buf, index| {
-                    (zkgm_ethabi::decode_uint(buf, index) as u8)
-                }
-            );
-
-        FungibleAssetOrderAck { fill_type: fill_type, market_maker: market_maker }
+    public fun decode(buf: &vector<u8>): Forward {
+        let mut index = 0;
+        Forward {
+            path: zkgm_ethabi::decode_uint(buf, &mut index),
+            timeout_height: zkgm_ethabi::decode_uint(buf, &mut index) as u64,
+            timeout_timestamp: zkgm_ethabi::decode_uint(buf, &mut index) as u64,
+            instruction: instruction::decode(buf, &mut (index + 0x20))
+        }
     }
 
     #[test]
-    fun test_encode_decode_asset_transfer_ack() {
+    fun test_encode_decode_forward_packet() {
         let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        let ack_data = FungibleAssetOrderAck {
-            fill_type: 7788909223344,
-            market_maker: b"hellloo"
+            x"0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000186a00000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000084141414141414141000000000000000000000000000000000000000000000000";
+
+        let forward = Forward {
+            path: 100,
+            timeout_height: 0,
+            timeout_timestamp: 100000,
+            instruction: instruction::new(
+                10,
+                20,
+                b"AAAAAAAA"
+            )
         };
 
-        let ack_bytes = encode(&ack_data);
-        assert!(ack_bytes == output, 0);
-
-        let ack_data_decoded = decode(&ack_bytes);
-        assert!(ack_data_decoded.fill_type == 7788909223344, 1);
-        assert!(ack_data_decoded.market_maker == b"hellloo", 3);
+        let encoded = encode(&forward);
+        assert!(encoded == output, 1);
+        assert!(decode(&encoded) == forward, 1);
     }
 }

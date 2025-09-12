@@ -345,6 +345,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 update_from,
                 update_to,
             }) => {
+                println!("\nupdate from to to {update_from} {update_to}\n");
                 if update_from.height() == update_to.height() {
                     info!("update from {update_from} to {update_to} is a noop");
                     return Ok(noop());
