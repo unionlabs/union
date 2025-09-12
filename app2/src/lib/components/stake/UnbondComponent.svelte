@@ -50,9 +50,9 @@ import * as A from "effect/Array"
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { bytesToHex, custom, encodeAbiParameters, fromHex, http, keccak256 } from "viem"
-import { holesky } from "viem/chains"
+import { sepolia } from "viem/chains"
 
-const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
+const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
 const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
 const DESTINATION_CHANNEL_ID = ChannelId.make(20)
@@ -340,7 +340,7 @@ runPromiseExit$(() =>
 
       unbondState = UnbondState.SwitchingChain()
 
-      const VIEM_CHAIN = holesky
+      const VIEM_CHAIN = sepolia
 
       const connectorClient = yield* getWagmiConnectorClient
 
@@ -616,7 +616,7 @@ function handleRetry() {
                   const isSafeWallet = getLastConnectedWalletId() === "safe"
                   return isSafeWallet
                     ? "Preparing Safe Transaction"
-                    : "Switching to Holesky"
+                    : "Switching to Sepolia"
                 }),
                 Match.when(
                   UnbondState.$is("CheckingAllowance"),
@@ -673,7 +673,7 @@ function handleRetry() {
                   const isSafeWallet = getLastConnectedWalletId() === "safe"
                   return isSafeWallet
                     ? "Preparing transaction for Safe wallet..."
-                    : "Please switch to Holesky network in your wallet"
+                    : "Please switch to Sepolia network in your wallet"
                 }),
                 Match.when(UnbondState.$is("CheckingAllowance"), () =>
                   "Reading current token allowance from blockchain..."),
