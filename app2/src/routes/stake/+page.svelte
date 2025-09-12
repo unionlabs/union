@@ -1,13 +1,12 @@
 <script lang="ts">
-import ChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
-import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import BondComponent from "$lib/components/stake/BondComponent.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
-import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
+import Tabs from "$lib/components/ui/Tabs.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
@@ -93,6 +92,13 @@ const data = AppRuntime.runPromiseExit$(() => {
       ))),
       Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
       Effect.map(x => x as O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>),
+      Effect.tap(result =>
+        Effect.sync(() => {
+          setTimeout(() => {
+            refreshTrigger = Date.now()
+          }, 10000)
+        })
+      ),
     )
   }).pipe(
     Effect.provide(Staking.Staking.DefaultWithoutDependencies),
@@ -158,27 +164,6 @@ const eUOnEvmBalance = $derived(pipe(
 ))
 
 $inspect(data)
-
-/**
- * Expand/collapse state per bond row
- */
-let expanded = $state<Set<string>>(new Set())
-const keyForBond = (b: Bond | Unbond): string => Brand.unbranded(b.packet_hash)
-const isOpen = (k: string) => expanded.has(k)
-const toggle = (k: string) => {
-  // Recreate Set to trigger reactivity
-  const next = new Set(expanded)
-  next.has(k) ? next.delete(k) : next.add(k)
-  expanded = next
-}
-const close = (k: string) => {
-  if (!expanded.has(k)) {
-    return
-  }
-  const next = new Set(expanded)
-  next.delete(k)
-  expanded = next
-}
 </script>
 
 {#snippet renderChain(chain: Chain, denom: TokenRawDenom)}
@@ -212,82 +197,6 @@ const close = (k: string) => {
   {/if}
 {/snippet}
 
-{#snippet renderBond(bond: Bond | Unbond)}
-  {@const k = keyForBond(bond)}
-  <tr
-    class="even:bg-zinc-900/30 odd:bg-zinc-900/10 hover:bg-zinc-800/30 cursor-pointer select-none"
-    data-open={isOpen(k)}
-    role="button"
-    tabindex="0"
-    aria-expanded={isOpen(k)}
-    onclick={() => toggle(k)}
-    onkeydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault()
-        toggle(k)
-      }
-      if (e.key === "Escape") {
-        close(k)
-      }
-    }}
-  >
-    <td class="pl-2 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
-      <ChevronDownIcon
-        class={cn(
-          "size-4 transition-transform rotate-270 duration-200",
-          isOpen(k) && "rotate-360",
-        )}
-      />
-    </td>
-    <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
-      {#if bond._tag === "Bond"}
-        BOND
-      {:else}
-        UNBOND
-      {/if}
-    </td>
-    <td class="px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300">
-      {bond.sendTimestampFormatted}
-    </td>
-    <td class="flex px-3 py-2 whitespace-nowrap font-mono text-xs text-zinc-300 items-center gap-2">
-      {#if S.is(Bond)(bond)}
-        {@render renderChain(bond.source_chain, bond.base_token)}
-        <span class="mx-1 opacity-60">→</span>
-        {@render renderChain(bond.destination_chain, bond.quote_token)}
-      {/if}
-      {#if S.is(Unbond)(bond)}
-        {@render renderChain(bond.destination_chain, bond.base_token)}
-      {/if}
-    </td>
-    <td class="px-3 py-2 text-right tabular-nums font-medium">
-      {bond.amountFormatted}
-    </td>
-    <td class="px-3 py-2">
-      {@render renderStatus(bond)}
-    </td>
-  </tr>
-  {#if isOpen(k)}
-    <tr class="bg-zinc-950/60">
-      <td
-        colspan="5"
-        class="px-3 pb-3 pt-0"
-      >
-        <div class="overflow-hidden rounded-b-md border border-zinc-800/70 bg-zinc-900/50">
-          <div class="">
-            <div class="m-3">TODO</div>
-          </div>
-          <details class="group border-t border-zinc-800/70">
-            <summary class="flex cursor-pointer items-center justify-between px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200">
-              <span class="text-xs uppercase">RAW DATA</span>
-            </summary>
-            <JsonPreview value={bond} />
-          </details>
-        </div>
-      </td>
-    </tr>
-  {/if}
-{/snippet}
-
 {#snippet maybeRenderBonds(maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>)}
   {#snippet noBonds()}
     <div class="flex items-center justify-center rounded-lg border border-dashed border-zinc-700/80 bg-zinc-950/40 text-zinc-400 text-sm h-28">
@@ -313,73 +222,35 @@ const close = (k: string) => {
     {@const paginatedBonds = filteredBonds.slice(startIndex, endIndex)}
 
     <!-- Table Filter Controls -->
-    <div class="pt-3 px-3">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-0.5">
-          <button
-            class={cn(
-              "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-              tableFilter === "all"
-                ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-            )}
-            onclick={() => tableFilter = "all"}
-          >
-            all
-          </button>
-          <button
-            class={cn(
-              "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-              tableFilter === "bond"
-                ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-            )}
-            onclick={() => tableFilter = "bond"}
-          >
-            stakes
-          </button>
-          <button
-            class={cn(
-              "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-              tableFilter === "unbond"
-                ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-            )}
-            onclick={() => tableFilter = "unbond"}
-          >
-            unstakes
-          </button>
-        </div>
+    <div class="pt-2 px-2 pb-2 border-b border-zinc-800">
+      <div class="flex items-center justify-between gap-1 sm:gap-2">
+        <Tabs
+          items={[
+            { id: "all", label: "All" },
+            { id: "bond", label: "Stakes" },
+            { id: "unbond", label: "Unstakes" },
+          ]}
+          activeId={tableFilter}
+          onTabChange={(id) => tableFilter = id as TableFilter}
+        />
 
         <!-- Pagination Controls -->
         {#if totalPages > 1}
-          <div class="flex items-center gap-0.5">
+          <div class="flex gap-0.5 sm:gap-1">
             <button
-              class={cn(
-                "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-                currentPage <= 1
-                  ? "border-zinc-700 bg-zinc-900 text-zinc-600 cursor-not-allowed"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-              )}
-              disabled={currentPage <= 1}
               onclick={() => currentPage = Math.max(1, currentPage - 1)}
+              disabled={currentPage <= 1}
+              class="px-1 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-zinc-500 hover:text-zinc-300 w-5 sm:w-8 bg-zinc-900 hover:bg-zinc-800"
             >
               ←
             </button>
-            <span
-              class="px-2 py-1 text-xs font-mono border border-zinc-500 bg-zinc-800 text-zinc-200 min-h-[32px] flex items-center"
-            >
+            <div class="px-1.5 sm:px-3 py-1 text-xs sm:text-sm font-medium rounded text-white bg-zinc-800 min-w-[1.5rem] sm:min-w-[3rem] text-center">
               {currentPage}/{totalPages}
-            </span>
+            </div>
             <button
-              class={cn(
-                "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-                currentPage >= totalPages
-                  ? "border-zinc-700 bg-zinc-900 text-zinc-600 cursor-not-allowed"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-              )}
-              disabled={currentPage >= totalPages}
               onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              class="px-1 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-zinc-500 hover:text-zinc-300 w-5 sm:w-8 bg-zinc-900 hover:bg-zinc-800"
             >
               →
             </button>
@@ -388,34 +259,12 @@ const close = (k: string) => {
       </div>
     </div>
 
-    <div class="relative overflow-auto max-h-screen rounded-lg ring-1 ring-zinc-800/80">
-      <table class="w-full text-sm">
-        <thead class="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
-          <tr class="text-zinc-400 border-b border-zinc-800/80">
-            <th class="pl-2"></th>
-            <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
-              Type
-            </th>
-            <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
-              Timestamp
-            </th>
-            <th class="px-2 py-2 text-left font-semibold tracking-wide text-xs uppercase">
-              Chain
-            </th>
-            <th class="px-3 py-2 text-right font-semibold tracking-wide text-xs uppercase">
-              Amount
-            </th>
-            <th class="px-3 py-2 text-left font-semibold tracking-wide text-xs uppercase">
-              Status
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each paginatedBonds as bond}
-            {@render renderBond(bond)}
-          {/each}
-        </tbody>
-      </table>
+    <div class="overflow-auto">
+      {#each paginatedBonds as item}
+        <StakingListItemComponent {item} />
+      {:else}
+        <div class="p-4 text-center text-zinc-500">No transactions found</div>
+      {/each}
     </div>
   {/snippet}
 
@@ -461,7 +310,7 @@ const close = (k: string) => {
   <div class="flex flex-col gap-6">
     <!-- Bond / Unbond Tables -->
     <div class="grid grid-cols-1 gap-6">
-      <section class="flex flex-col gap-2">
+      <section class="flex flex-col">
         {@render matchRuntimeResult(data.current, {
           onSuccess: maybeRenderBonds,
           onFailure: renderError,
@@ -477,53 +326,21 @@ const close = (k: string) => {
 {/snippet}
 
 <Sections>
-  <Card class="p-0 font-mono">
-    <!-- Terminal Header -->
-    <header class="flex items-center justify-between p-3 border-b border-zinc-800">
-      <div class="flex items-center space-x-2">
-        <span class="text-zinc-500 text-xs">$</span>
-        <h3 class="text-xs text-zinc-300 font-semibold">liquid-stake</h3>
-        <span class="text-zinc-600 text-xs">--mode={selectedTab}</span>
-      </div>
-    </header>
-
+  <Card
+    class="p-0 font-mono"
+    divided
+  >
     <!-- Controls -->
-    <div class="pt-3 px-3">
-      <div class="flex items-center gap-0.5 mb-4">
-        <button
-          class={cn(
-            "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-            selectedTab === "bond"
-              ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-          )}
-          onclick={() => selectedTab = "bond"}
-        >
-          stake
-        </button>
-        <button
-          class={cn(
-            "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-            selectedTab === "unbond"
-              ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-          )}
-          onclick={() => selectedTab = "unbond"}
-        >
-          unstake
-        </button>
-        <button
-          class={cn(
-            "px-2 py-1 text-xs font-mono border transition-colors min-h-[32px]",
-            selectedTab === "withdraw"
-              ? "border-zinc-500 bg-zinc-800 text-zinc-200 font-medium"
-              : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300",
-          )}
-          onclick={() => selectedTab = "withdraw"}
-        >
-          withdraw
-        </button>
-      </div>
+    <div class="pt-2 px-2 pb-2 border-b border-zinc-800">
+      <Tabs
+        items={[
+          { id: "bond", label: "Stake" },
+          { id: "unbond", label: "Unstake" },
+          { id: "withdraw", label: "Withdraw" },
+        ]}
+        activeId={selectedTab}
+        onTabChange={(id) => selectedTab = id as StakeTab}
+      />
     </div>
 
     <!-- Content -->
@@ -554,16 +371,10 @@ const close = (k: string) => {
   </Card>
 
   <!-- Staking History Card -->
-  <Card class="p-0 font-mono">
-    <!-- Terminal Header -->
-    <header class="flex items-center justify-between p-3 border-b border-zinc-800">
-      <div class="flex items-center space-x-2">
-        <span class="text-zinc-500 text-xs">$</span>
-        <h3 class="text-xs text-zinc-300 font-semibold">history</h3>
-        <span class="text-zinc-600 text-xs">--filter={tableFilter}</span>
-      </div>
-    </header>
-
+  <Card
+    class="p-0 font-mono"
+    divided
+  >
     {#if O.isSome(WalletStore.evmAddress)}
       {@render whenWallet()}
     {:else}
