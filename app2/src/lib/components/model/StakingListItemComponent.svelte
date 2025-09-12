@@ -2,8 +2,8 @@
 import { goto } from "$app/navigation"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
-import type { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
 import { getChain } from "@unionlabs/sdk/schema"
+import type { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
 import { Option, pipe } from "effect"
 import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
@@ -15,17 +15,22 @@ interface Props {
 const { item }: Props = $props()
 
 const sourceChain = $derived(
-  Option.flatMap(chains.data, chainsData => getChain(chainsData, item.source_chain.universal_chain_id)),
+  Option.flatMap(
+    chains.data,
+    chainsData => getChain(chainsData, item.source_chain.universal_chain_id),
+  ),
 )
 
 const destinationChain = $derived(
   Option.flatMap(
     chains.data,
-    chainsData => getChain(chainsData, 
-      item._tag === "Bond" 
-        ? item.destination_chain.universal_chain_id 
-        : item.destination_chain.universal_chain_id
-    ),
+    chainsData =>
+      getChain(
+        chainsData,
+        item._tag === "Bond"
+          ? item.destination_chain.universal_chain_id
+          : item.destination_chain.universal_chain_id,
+      ),
   ),
 )
 
@@ -35,21 +40,21 @@ const handleClick = () => {
 }
 
 const status = $derived(
-  item._tag === "Bond" 
+  item._tag === "Bond"
     ? item.status
     : pipe(
-        item.success,
-        Option.map(success => success ? "success" : "failure"),
-        Option.getOrElse(() => "pending"),
-      )
+      item.success,
+      Option.map(success => success ? "success" : "failure"),
+      Option.getOrElse(() => "pending"),
+    ),
 )
 
 const statusConfig = $derived(
-  status === "success" 
+  status === "success"
     ? { bg: "bg-emerald-500/20 border-emerald-500/40", icon: "text-emerald-400", type: "checkmark" }
-    : status === "failure" 
-      ? { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
-      : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" }
+    : status === "failure"
+    ? { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
+    : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" },
 )
 </script>
 
@@ -100,7 +105,8 @@ const statusConfig = $derived(
       />
       <div class="size-6 rounded border {statusConfig.bg} flex items-center justify-center flex-shrink-0">
         {#if statusConfig.type === "spinner"}
-          <div class="w-3 h-3 border border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+          <div class="w-3 h-3 border border-orange-400 border-t-transparent rounded-full animate-spin">
+          </div>
         {:else if statusConfig.type === "checkmark"}
           <svg
             class="w-3 h-3 {statusConfig.icon}"

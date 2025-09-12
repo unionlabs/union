@@ -22,7 +22,7 @@ let activeTabStyle = $state({ width: 0, height: 0, left: 0, top: 0 })
 const updateActiveStyle = () => {
   const activeIndex = items.findIndex(item => item.id === activeId)
   const activeElement = itemRefs[activeIndex]
-  
+
   if (activeElement) {
     activeTabStyle = {
       width: activeElement.offsetWidth,
@@ -48,7 +48,7 @@ $effect(() => {
 })
 </script>
 
-<div 
+<div
   bind:this={wrapperRef}
   class={cn("flex gap-1 relative", className)}
 >
@@ -59,8 +59,9 @@ $effect(() => {
     style:height="{activeTabStyle.height}px"
     style:left="{activeTabStyle.left}px"
     style:top="{activeTabStyle.top}px"
-  ></div>
-  
+  >
+  </div>
+
   <!-- Tab buttons -->
   {#each items as item, index (item.id)}
     <button
@@ -70,7 +71,7 @@ $effect(() => {
         "px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors relative cursor-pointer z-10",
         activeId === item.id
           ? "text-white"
-          : "text-zinc-500 hover:text-zinc-300"
+          : "text-zinc-500 hover:text-zinc-300",
       )}
     >
       {item.label}
