@@ -111,7 +111,7 @@ const unbondAmount = $derived<O.Option<bigint>>(pipe(
   O.map(bd => {
     const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
     const normalized = BigDecimal.normalize(result)
-    return normalized.scale >= 0 
+    return normalized.scale >= 0
       ? normalized.value / (10n ** BigInt(normalized.scale))
       : normalized.value * (10n ** BigInt(-normalized.scale))
   }),
@@ -211,7 +211,9 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
       UCS03_EVM.address,
     )
 
-    yield* Effect.log(`UnbondComponent: Current eU allowance: ${currentAllowance}, Send amount: ${sendAmount}`)
+    yield* Effect.log(
+      `UnbondComponent: Current eU allowance: ${currentAllowance}, Send amount: ${sendAmount}`,
+    )
 
     if (currentAllowance < sendAmount) {
       unbondState = UnbondState.ApprovingAllowance()
