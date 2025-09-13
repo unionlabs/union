@@ -59,8 +59,8 @@
 // TITLE.
 
 use cosmwasm_std::{
-    attr, ensure, wasm_execute, Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo,
-    Response, Uint128,
+    ensure, wasm_execute, Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    Uint128,
 };
 use cw20::Cw20ExecuteMsg;
 use cw_utils::must_pay;
@@ -128,8 +128,6 @@ pub fn bond(
     deps: DepsMut,
     info: MessageInfo,
     mint_to_address: Addr,
-    // if set, this address will be sent the slippage (if any)
-    relayer: Option<Addr>,
     min_mint_amount: u128,
 ) -> ContractResult<Response> {
     ensure_not_stopped(deps.as_ref())?;
@@ -157,9 +155,7 @@ pub fn bond(
 
     // config.minimum_liquid_stake_amount *should* prevent this branch from being hit, however if
     // the ratio becomes very unbalanced then this may be hit
-    if mint_amount == 0 {
-        return Err(ContractError::ComputedMintAmountIsZero);
-    }
+    ensure!(mint_amount > 0, ContractError::ComputedMintAmountIsZero);
 
     // update the accounting state first
     accounting_state.total_bonded_native_tokens += bond_amount;
@@ -168,26 +164,14 @@ pub fn bond(
     deps.storage
         .write_item::<AccountingStateStore>(&accounting_state);
 
-    // shadow mint_amount such that we don't use the *total* mint amount by accident
-    let (mint_amount, slippage_and_relayer) =
-        match (mint_amount.checked_sub(min_mint_amount), relayer) {
-            (Some(0), _) | (Some(_), None) => {
-                // either no slippage, (i.e. the exact amount was met) or there is no relayer to
-                // send the slippage to
-                (mint_amount, None)
-            }
-            (Some(slippage), Some(relayer)) => {
-                // mint slippage to the relayer as a fee
-                (min_mint_amount, Some((slippage, relayer)))
-            }
-            (None, _) => {
-                // slippage not met
-                return Err(ContractError::SlippageNotMet {
-                    min_mint_amount,
-                    actual: mint_amount,
-                });
-            }
-        };
+    ensure!(
+        mint_amount >= min_mint_amount,
+        // slippage not met
+        ContractError::SlippageNotMet {
+            min_mint_amount,
+            actual: mint_amount,
+        }
+    );
 
     let lst_address = deps.storage.read_item::<LstAddress>()?;
 
@@ -208,23 +192,6 @@ pub fn bond(
             },
             vec![],
         )?)
-        // mint the slippage (if any), into the relayer (if any)
-        .add_messages(
-            slippage_and_relayer
-                .clone()
-                .map(|(slippage, relayer)| {
-                    wasm_execute(
-                        // eU address
-                        lst_address,
-                        &Cw20ExecuteMsg::Mint {
-                            amount: slippage.into(),
-                            recipient: relayer.to_string(),
-                        },
-                        vec![],
-                    )
-                })
-                .transpose()?,
-        )
         .add_event(
             Event::new("bond")
                 .add_attribute("mint_to_address", mint_to_address.to_string())
@@ -234,13 +201,7 @@ pub fn bond(
                 .add_attribute("sender", info.sender.to_string())
                 .add_attribute("in_amount", bond_amount.to_string())
                 .add_attribute("mint_amount", mint_amount.to_string()),
-        )
-        .add_events(slippage_and_relayer.map(|(slippage, relayer)| {
-            Event::new("bond_slippage_paid").add_attributes([
-                attr("slippage", slippage.to_string()),
-                attr("relayer", relayer),
-            ])
-        }));
+        );
 
     Ok(response)
 }
@@ -265,13 +226,10 @@ pub fn unbond(
     env: Env,
     info: MessageInfo,
     unbond_amount: u128,
-    staker: Addr,
 ) -> ContractResult<Response> {
     ensure_not_stopped(deps.as_ref())?;
 
-    ensure_sender(&info, &staker)?;
-
-    let staker_hash = staker_hash(&staker);
+    let staker_hash = staker_hash(&info.sender);
 
     let mut current_pending_batch = deps.storage.read_item::<CurrentPendingBatch>()?;
 
@@ -287,6 +245,7 @@ pub fn unbond(
             Ok(match maybe_unstake_request {
                 Some(r) => {
                     assert_eq!(r.batch_id, current_pending_batch.batch_id);
+                    assert_eq!(r.staker, info.sender.as_str());
 
                     UnstakeRequest {
                         batch_id: r.batch_id,
@@ -301,7 +260,7 @@ pub fn unbond(
                     is_new_request = true;
                     UnstakeRequest {
                         batch_id: current_pending_batch.batch_id,
-                        staker: staker.to_string(),
+                        staker: info.sender.to_string(),
                         amount: unbond_amount,
                     }
                 }
@@ -336,7 +295,7 @@ pub fn unbond(
         )?)
         .add_event(
             Event::new("unbond")
-                .add_attribute("staker", staker)
+                .add_attribute("staker", info.sender)
                 .add_attribute("batch", current_pending_batch.batch_id.to_string())
                 .add_attribute("amount", unbond_amount.to_string())
                 .add_attribute("is_new_request", is_new_request.to_string()),

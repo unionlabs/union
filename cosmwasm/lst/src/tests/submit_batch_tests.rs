@@ -134,7 +134,6 @@ fn submit_batch_works() {
         mock_env(),
         message_info(&Addr::unchecked(UNION3), &[]),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION3),
             amount: union3_unbond_amount,
         },
     )

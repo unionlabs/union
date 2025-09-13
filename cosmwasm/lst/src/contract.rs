@@ -185,8 +185,8 @@ pub fn execute(
         ExecuteMsg::Bond {
             mint_to_address,
             min_mint_amount,
-        } => bond(deps, info, mint_to_address, None, min_mint_amount.u128()),
-        ExecuteMsg::Unbond { amount, staker } => unbond(deps, env, info, amount.u128(), staker),
+        } => bond(deps, info, mint_to_address, min_mint_amount.u128()),
+        ExecuteMsg::Unbond { amount } => unbond(deps, env, info, amount.u128()),
         ExecuteMsg::SubmitBatch {} => submit_batch(deps, env),
         ExecuteMsg::Withdraw {
             batch_id,

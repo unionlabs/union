@@ -97,7 +97,6 @@ fn unbond_works() {
         mock_env(),
         info.clone(),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION1),
             amount: union1_amount_1,
         },
     )
@@ -166,7 +165,6 @@ fn unbond_works() {
         mock_env(),
         info.clone(),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION1),
             amount: union1_amount_2,
         },
     )
@@ -217,7 +215,6 @@ fn unbond_works() {
         mock_env(),
         message_info(&Addr::unchecked(UNION2), &[]),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION2),
             amount: union2_amount_1,
         },
     )
@@ -273,7 +270,6 @@ fn receive_unstaked_tokens_works() {
         mock_env(),
         message_info(&Addr::unchecked(UNION1), &[]),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION1),
             amount: union1_unbond_amount,
         },
     )
@@ -286,7 +282,6 @@ fn receive_unstaked_tokens_works() {
         mock_env(),
         message_info(&Addr::unchecked(UNION2), &[]),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION2),
             amount: union2_unbond_amount,
         },
     )
@@ -299,7 +294,6 @@ fn receive_unstaked_tokens_works() {
         mock_env(),
         message_info(&Addr::unchecked(UNION3), &[]),
         ExecuteMsg::Unbond {
-            staker: Addr::unchecked(UNION3),
             amount: union3_unbond_amount,
         },
     )

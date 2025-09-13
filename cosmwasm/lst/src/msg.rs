@@ -119,9 +119,6 @@ pub enum ExecuteMsg {
 
     /// Initiates the unbonding process for a user.
     Unbond {
-        /// The address that will receive the native tokens on.
-        staker: Addr,
-
         /// The amount to unstake.
         amount: Uint128,
     },

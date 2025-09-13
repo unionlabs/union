@@ -195,7 +195,6 @@ fn stop_prevents_execution() {
             env.clone(),
             info.clone(),
             ExecuteMsg::Unbond {
-                staker: Addr::unchecked(UNION1),
                 amount: Uint128::zero()
             }
         )
