@@ -498,7 +498,7 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
                 )
                 .add_attribute("protocol_fee", protocol_fee.to_string()),
         )
-        // send amount after fees to the staker
+        // send amount after fees to the staker (we restake the received staking rewards)
         .add_message(BankMsg::Send {
             to_address: deps.storage.read_item::<StakerAddress>()?.to_string(),
             amount: vec![Coin::new(
