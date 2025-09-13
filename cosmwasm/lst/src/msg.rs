@@ -70,7 +70,6 @@ use crate::types::{
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
-    #[cfg_attr(feature = "schemars", schemars(with = "Addr"))]
     pub native_token_denom: String,
 
     #[serde(with = "::serde_utils::string")]
