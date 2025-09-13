@@ -432,7 +432,15 @@ runPromiseExit$(() =>
         response.waitFor(
           ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
         ),
+        Effect.tap((event) => Effect.log("UNBOND: Got EvmTransactionReceiptComplete", event)),
         Effect.flatMap(O.map(x => x.transactionHash)),
+        Effect.tap((hash) =>
+          Effect.log("UNBOND: Using finalHash for indexing", {
+            originalTxHash: txHash,
+            finalHash: hash,
+            areEqual: txHash === hash,
+          })
+        ),
       )
 
       unbondState = UnbondState.WaitingForIndexer({ txHash: finalHash })

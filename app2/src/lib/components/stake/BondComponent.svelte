@@ -544,7 +544,15 @@ runPromiseExit$(() =>
         response.waitFor(
           ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
         ),
+        Effect.tap((event) => Effect.log("BOND: Got EvmTransactionReceiptComplete", event)),
         Effect.flatMap(O.map(x => x.transactionHash)),
+        Effect.tap((hash) =>
+          Effect.log("BOND: Using finalHash for indexing", {
+            originalTxHash: txHash,
+            finalHash: hash,
+            areEqual: txHash === hash,
+          })
+        ),
       )
 
       bondState = BondState.WaitingForIndexer({ txHash: finalHash })

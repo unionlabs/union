@@ -240,8 +240,14 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
                 ),
                 Effect.flatMap((resolvedHash) =>
                   pipe(
-                    Evm.waitForTransactionReceipt(resolvedHash as `0x${string}`),
-                    Effect.tap((x) => Effect.log("GOT SAFE RECEIPT", x)),
+                    Effect.log("SAFE: Waiting for receipt with resolvedHash", resolvedHash),
+                    Effect.andThen(() => Evm.waitForTransactionReceipt(resolvedHash as `0x${string}`)),
+                    Effect.tap((a) => Effect.log("SAFE: Got receipt", { 
+                      resolvedHash, 
+                      receiptTransactionHash: a.transactionHash,
+                      match: resolvedHash === a.transactionHash,
+                      originalSafeHash: this.txHash
+                    })),
                     Effect.tapError((x) => Effect.logError("FAILED SAFE RECEIPT", x)),
                     Effect.map((a) =>
                       ZkgmIncomingMessage.LifecycleEvent.EvmTransactionReceiptComplete({
