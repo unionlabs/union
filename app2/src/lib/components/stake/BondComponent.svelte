@@ -489,6 +489,16 @@ runPromiseExit$(() =>
         yield* switchChain(VIEM_CHAIN)
       }
 
+      const maybeSafe = Match.value(isSafeWallet).pipe(
+        Match.when(true, () =>
+          Safe.Safe.Default({
+            ...safeOpts,
+            debug: true,
+          })),
+        Match.when(false, () => Layer.empty),
+        Match.exhaustive,
+      )
+
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
         transport: custom(connectorClient),
@@ -503,6 +513,7 @@ runPromiseExit$(() =>
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
         Effect.provide(walletClient),
         Effect.provide(publicClient),
+        Effect.provide(maybeSafe),
       )
 
       bondState = BondState.CreatingTokenOrder()
@@ -513,23 +524,13 @@ runPromiseExit$(() =>
 
       bondState = BondState.ConfirmingBond()
 
-      const executeBondWithProviders = isSafeWallet
-        ? executeBond(sender, sendAmount, slippage).pipe(
-          Effect.provide(EvmZkgmClient.layerWithoutWallet),
-          Effect.provide(walletClient),
-          Effect.provide(publicClient),
-          Effect.provide(ChainRegistry.Default),
-          Effect.provide(Safe.Safe.Default({
-            ...safeOpts,
-            debug: true,
-          })),
-        )
-        : executeBond(sender, sendAmount, slippage).pipe(
-          Effect.provide(EvmZkgmClient.layerWithoutWallet),
-          Effect.provide(walletClient),
-          Effect.provide(publicClient),
-          Effect.provide(ChainRegistry.Default),
-        )
+      const executeBondWithProviders = executeBond(sender, sendAmount, slippage).pipe(
+        Effect.provide(EvmZkgmClient.layerWithoutWallet),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(ChainRegistry.Default),
+        Effect.provide(maybeSafe),
+      )
 
       const response = yield* executeBondWithProviders
       const txHash = response.txHash
