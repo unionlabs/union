@@ -489,12 +489,11 @@ runPromiseExit$(() =>
         yield* switchChain(VIEM_CHAIN)
       }
 
-      // Always provide Safe service - let zkgm client decide whether to use it
-      const maybeSafe = Safe.Safe.Default({
-        ...safeOpts,
-        debug: true,
-      })
-      console.log("[SAFE DEBUG] BOND: Always providing Safe service, isSafeWallet:", isSafeWallet)
+      const maybeSafe = Match.value(isSafeWallet).pipe(
+        Match.when(true, () => Safe.Safe.Default(safeOpts)),
+        Match.when(false, () => Layer.empty),
+        Match.exhaustive,
+      )
 
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
@@ -529,8 +528,7 @@ runPromiseExit$(() =>
         Effect.provide(ChainRegistry.Default),
       )
 
-      const response = yield* executeBondWithProviders
-      const txHash = response.txHash
+      const { txHash } = yield* executeBondWithProviders
 
       bondState = BondState.BondSubmitted({ txHash })
       yield* Effect.sleep("500 millis")
@@ -540,7 +538,6 @@ runPromiseExit$(() =>
       yield* pipe(
         Evm.waitForTransactionReceipt(txHash),
         Effect.provide(publicClient),
-        Effect.tap(() => Effect.log("[SAFE DEBUG] BOND: Transaction receipt confirmed")),
       )
 
       bondState = BondState.WaitingForIndexer({ txHash })
