@@ -537,16 +537,13 @@ runPromiseExit$(() =>
 
       bondState = BondState.WaitingForConfirmation({ txHash })
 
-      // response.txHash is now always the on-chain hash
-      const finalHash = response.txHash
+      yield* pipe(
+        Evm.waitForTransactionReceipt(txHash),
+        Effect.provide(publicClient),
+        Effect.tap(() => Effect.log("[SAFE DEBUG] BOND: Transaction receipt confirmed")),
+      )
 
-      yield* Effect.log("[SAFE DEBUG] BOND: Using response.txHash for indexing", {
-        onChainHash: finalHash,
-        safeHash: response.safeHash,
-        isSafeTransaction: O.isSome(response.safeHash),
-      })
-
-      bondState = BondState.WaitingForIndexer({ txHash: finalHash })
+      bondState = BondState.WaitingForIndexer({ txHash })
 
       yield* pipe(
         Effect.gen(function*() {
@@ -559,7 +556,7 @@ runPromiseExit$(() =>
                  }
                }
              `),
-            variables: { tx_hash: finalHash },
+            variables: { tx_hash: txHash },
           })
         }),
         Effect.flatMap(Schema.decodeUnknown(
@@ -576,7 +573,7 @@ runPromiseExit$(() =>
         Effect.provide(QlpConfigProvider),
       )
 
-      bondState = BondState.Success({ txHash: finalHash })
+      bondState = BondState.Success({ txHash: txHash })
 
       bondInput = ""
       shouldBond = false
