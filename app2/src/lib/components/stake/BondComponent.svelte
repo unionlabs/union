@@ -160,9 +160,15 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   BigDecimal.fromString,
 ))
 
-const bondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+const bondAmount = $derived<O.Option<bigint>>(pipe(
   inputAmount,
-  O.map(bd => BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))),
+  O.map(bd => {
+    const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
+    const normalized = BigDecimal.normalize(result)
+    return normalized.scale >= 0 
+      ? normalized.value / (10n ** BigInt(normalized.scale))
+      : normalized.value * (10n ** BigInt(-normalized.scale))
+  }),
 ))
 
 const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
@@ -443,7 +449,7 @@ runPromiseExit$(() =>
       }
 
       const sender = senderOpt.value
-      const sendAmount = O.getOrThrow(bondAmount).value
+      const sendAmount = O.getOrThrow(bondAmount)
       const chain = evmChain.value
 
       bondState = BondState.SwitchingChain()
