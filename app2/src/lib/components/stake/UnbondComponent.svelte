@@ -451,6 +451,11 @@ runPromiseExit$(() =>
               ZkgmIncomingMessage.LifecycleEvent.$is("WaitForSafeWalletHash"),
             ),
             Effect.flatMap(O.map(x => x.hash)),
+            Effect.tap((resolvedHash) =>
+              Effect.sync(() => {
+                unbondState = UnbondState.WaitingForConfirmation({ txHash: resolvedHash })
+              })
+            ),
           ),
         onFalse: () =>
           pipe(
