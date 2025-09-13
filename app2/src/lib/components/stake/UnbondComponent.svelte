@@ -54,8 +54,8 @@ import { sepolia } from "viem/chains"
 
 const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
 const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
-const SOURCE_CHANNEL_ID = ChannelId.make(6)
-const DESTINATION_CHANNEL_ID = ChannelId.make(20)
+const SOURCE_CHANNEL_ID = ChannelId.make(3)
+const DESTINATION_CHANNEL_ID = ChannelId.make(3)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
   address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
 })
