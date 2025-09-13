@@ -490,12 +490,17 @@ runPromiseExit$(() =>
       }
 
       const maybeSafe = Match.value(isSafeWallet).pipe(
-        Match.when(true, () =>
-          Safe.Safe.Default({
+        Match.when(true, () => {
+          console.log("[SAFE DEBUG] BOND: Providing Safe service for wallet", isSafeWallet)
+          return Safe.Safe.Default({
             ...safeOpts,
             debug: true,
-          })),
-        Match.when(false, () => Layer.empty),
+          })
+        }),
+        Match.when(false, () => {
+          console.log("[SAFE DEBUG] BOND: Not providing Safe service for wallet", isSafeWallet)
+          return Layer.empty
+        }),
         Match.exhaustive,
       )
 
@@ -544,10 +549,12 @@ runPromiseExit$(() =>
         response.waitFor(
           ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
         ),
-        Effect.tap((event) => Effect.log("BOND: Got EvmTransactionReceiptComplete", event)),
+        Effect.tap((event) =>
+          Effect.log("[SAFE DEBUG] BOND: Got EvmTransactionReceiptComplete", event)
+        ),
         Effect.flatMap(O.map(x => x.transactionHash)),
         Effect.tap((hash) =>
-          Effect.log("BOND: Using finalHash for indexing", {
+          Effect.log("[SAFE DEBUG] BOND: Using finalHash for indexing", {
             originalTxHash: txHash,
             finalHash: hash,
             areEqual: txHash === hash,
