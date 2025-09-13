@@ -1,17 +1,17 @@
 /**
  * Incentive Service (WORK IN PROGRESS)
- * 
+ *
  * Calculates staking incentives using:
  * - Total supply from cosmos bank module
  * - Inflation rate from cosmos mint module
  * - Bonded token supply from staking pool
  * - Community tax from distribution params
- * 
+ *
  * Formula: Incentive = ((1 + [(inflation × total_supply ÷ bonded) × (1 − tax)] ÷ 365) ^ 365) − 1
  */
 
-import { Data, Effect, Schema, pipe } from "effect"
 import { HttpClient, HttpClientResponse } from "@effect/platform"
+import { Data, Effect, pipe, Schema } from "effect"
 
 const REST_BASE_URL = import.meta.env.DEV ? "/api/union" : "https://rest.union.build"
 
@@ -66,46 +66,59 @@ export type IncentiveResult = Schema.Schema.Type<typeof IncentiveResult>
 const getInflation = pipe(
   HttpClient.get(`${REST_BASE_URL}/cosmos/mint/v1beta1/inflation`),
   Effect.flatMap(HttpClientResponse.schemaBodyJson(InflationResponse)),
-  Effect.mapError((cause) => new IncentiveError({
-    message: "Failed to fetch inflation rate",
-    cause,
-  })),
+  Effect.mapError((cause) =>
+    new IncentiveError({
+      message: "Failed to fetch inflation rate",
+      cause,
+    })
+  ),
 )
 
 const getStakingPool = pipe(
   HttpClient.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/pool`),
   Effect.flatMap(HttpClientResponse.schemaBodyJson(StakingPoolResponse)),
-  Effect.mapError((cause) => new IncentiveError({
-    message: "Failed to fetch staking pool",
-    cause,
-  })),
+  Effect.mapError((cause) =>
+    new IncentiveError({
+      message: "Failed to fetch staking pool",
+      cause,
+    })
+  ),
 )
 
 const getDistributionParams = pipe(
   HttpClient.get(`${REST_BASE_URL}/cosmos/distribution/v1beta1/params`),
   Effect.flatMap(HttpClientResponse.schemaBodyJson(DistributionParamsResponse)),
-  Effect.mapError((cause) => new IncentiveError({
-    message: "Failed to fetch distribution params",
-    cause,
-  })),
+  Effect.mapError((cause) =>
+    new IncentiveError({
+      message: "Failed to fetch distribution params",
+      cause,
+    })
+  ),
 )
 
 const getCirculatingSupply = pipe(
   HttpClient.get(`${REST_BASE_URL}/cosmos/bank/v1beta1/supply/by_denom?denom=au`),
   Effect.flatMap(HttpClientResponse.schemaBodyJson(CirculatingSupplyResponse)),
-  Effect.mapError((cause) => new IncentiveError({
-    message: "Failed to fetch circulating supply",
-    cause,
-  })),
+  Effect.mapError((cause) =>
+    new IncentiveError({
+      message: "Failed to fetch circulating supply",
+      cause,
+    })
+  ),
 )
 
-export const calculateIncentive: Effect.Effect<IncentiveResult, IncentiveError, HttpClient.HttpClient> = Effect.gen(function*() {
-  const [inflationData, stakingPoolData, distributionData, circulatingSupplyData] = yield* Effect.all([
-    getInflation,
-    getStakingPool,
-    getDistributionParams,
-    getCirculatingSupply,
-  ], { concurrency: "unbounded" })
+export const calculateIncentive: Effect.Effect<
+  IncentiveResult,
+  IncentiveError,
+  HttpClient.HttpClient
+> = Effect.gen(function*() {
+  const [inflationData, stakingPoolData, distributionData, circulatingSupplyData] = yield* Effect
+    .all([
+      getInflation,
+      getStakingPool,
+      getDistributionParams,
+      getCirculatingSupply,
+    ], { concurrency: "unbounded" })
 
   const inflation = parseFloat(inflationData.inflation)
   const bondedTokensRaw = parseFloat(stakingPoolData.pool.bonded_tokens)
@@ -116,21 +129,27 @@ export const calculateIncentive: Effect.Effect<IncentiveResult, IncentiveError, 
   const totalSupply = circulatingSupplyRaw / 1_000_000_000_000_000_000
 
   if (isNaN(inflation) || isNaN(bondedTokens) || isNaN(totalSupply) || isNaN(communityTax)) {
-    return yield* Effect.fail(new IncentiveError({
-      message: "Invalid numeric values in API responses",
-    }))
+    return yield* Effect.fail(
+      new IncentiveError({
+        message: "Invalid numeric values in API responses",
+      }),
+    )
   }
 
   if (totalSupply === 0) {
-    return yield* Effect.fail(new IncentiveError({
-      message: "Invalid total supply",
-    }))
+    return yield* Effect.fail(
+      new IncentiveError({
+        message: "Invalid total supply",
+      }),
+    )
   }
 
   if (bondedTokens === 0) {
-    return yield* Effect.fail(new IncentiveError({
-      message: "No bonded tokens found",
-    }))
+    return yield* Effect.fail(
+      new IncentiveError({
+        message: "No bonded tokens found",
+      }),
+    )
   }
 
   // Step 1: Calculate nominal incentive rate
@@ -141,7 +160,7 @@ export const calculateIncentive: Effect.Effect<IncentiveResult, IncentiveError, 
 
   return {
     rates: {
-        yearly: incentiveAfterTax,
+      yearly: incentiveAfterTax,
     },
 
     incentiveNominal,
