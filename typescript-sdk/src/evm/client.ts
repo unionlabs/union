@@ -183,10 +183,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           if (approveResponse.isErr()) {
             return approveResponse
           }
-          console.log("approval", approveResponse.value)
         }
-
-        console.log({ sourceChannel, ucs03address, baseToken, quoteToken, amount }) // useful for debugging app
 
         return await transferAssetFromEvm(client, {
           baseToken,
