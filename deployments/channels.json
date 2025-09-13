@@ -99,6 +99,24 @@
         }
       },
       "tags": ["canonical"]
+    },
+    "2": {
+      "comments": "ethereum.1 channel 3",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "938092",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "721546"
+        },
+        "reverse": {
+          "PACKET_RECV": "637233",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "bsc.97": {
