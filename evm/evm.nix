@@ -288,6 +288,7 @@ _: {
           verifier-url = mkTenderlyVerifierUrl chain-id;
 
           u = ba5ed;
+          inherit eu;
         }
         rec {
           chain-id = "17000";

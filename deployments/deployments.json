@@ -523,6 +523,11 @@
       "address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
       "height": 0,
       "commit": "7fd98b4dfff42963cf9437de604b35743bc2f597"
+    },
+    "eu": {
+      "address": "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1",
+      "height": 0,
+      "commit": "c6926eefe9c4b85c81d5428d3a4829ea3d70f728"
     }
   },
   "ethereum.17000": {
