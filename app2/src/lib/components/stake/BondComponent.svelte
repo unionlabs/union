@@ -165,7 +165,7 @@ const bondAmount = $derived<O.Option<bigint>>(pipe(
   O.map(bd => {
     const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
     const normalized = BigDecimal.normalize(result)
-    return normalized.scale >= 0 
+    return normalized.scale >= 0
       ? normalized.value / (10n ** BigInt(normalized.scale))
       : normalized.value * (10n ** BigInt(-normalized.scale))
   }),
