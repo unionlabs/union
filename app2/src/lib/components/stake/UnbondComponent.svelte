@@ -239,8 +239,8 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
                           O.match({
                             onNone: () => Effect.succeed(safeTxHash),
                             onSome: (safe) => safe.resolveTxHash(safeTxHash),
-                          }),
-                        ),
+                          })
+                        )
                       ),
                     onFalse: () => Effect.succeed(safeTxHash),
                   })
@@ -253,14 +253,10 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
                 Effect.tap(() => Effect.sleep("500 millis")),
                 Effect.tap((sepoliaHash) =>
                   Effect.sync(() => {
-                    unbondState = UnbondState.WaitingForAllowanceConfirmation({
-                      txHash: sepoliaHash,
-                    })
+                    unbondState = UnbondState.WaitingForAllowanceConfirmation({ txHash: sepoliaHash })
                   })
                 ),
-                Effect.andThen((sepoliaHash) =>
-                  Evm.waitForTransactionReceipt(sepoliaHash as `0x${string}`)
-                ),
+                Effect.andThen((sepoliaHash) => Evm.waitForTransactionReceipt(sepoliaHash as `0x${string}`)),
               )
             ),
           ),
@@ -451,11 +447,6 @@ runPromiseExit$(() =>
               ZkgmIncomingMessage.LifecycleEvent.$is("WaitForSafeWalletHash"),
             ),
             Effect.flatMap(O.map(x => x.hash)),
-            Effect.tap((resolvedHash) =>
-              Effect.sync(() => {
-                unbondState = UnbondState.WaitingForConfirmation({ txHash: resolvedHash })
-              })
-            ),
           ),
         onFalse: () =>
           pipe(
@@ -582,6 +573,7 @@ function handleRetry() {
           O.map(Struct.get("decimals")),
           O.getOrElse(() => 18),
         )
+
 
         const validShape = /^\d*[.,]?\d*$/.test(proposed)
         const validDecimalsDot = !proposed.includes(".")
