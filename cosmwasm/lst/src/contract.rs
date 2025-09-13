@@ -147,7 +147,11 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
     deps.storage
         .write_item::<CurrentPendingBatch>(&PendingBatch::new(
             BatchId::ONE,
-            env.block.time.seconds() + batch_period_seconds,
+            env.block
+                .time
+                .seconds()
+                .checked_add(batch_period_seconds)
+                .expect("overflow"),
         ));
 
     deps.storage.write_item::<Stopped>(&false);
@@ -190,9 +194,8 @@ pub fn execute(
         ExecuteMsg::SubmitBatch {} => submit_batch(deps, env),
         ExecuteMsg::Withdraw {
             batch_id,
-            staker,
             withdraw_to_address,
-        } => withdraw(deps, info, batch_id, staker, withdraw_to_address),
+        } => withdraw(deps, info, batch_id, withdraw_to_address),
         ExecuteMsg::TransferOwnership { new_owner } => {
             transfer_ownership(deps, env, info, new_owner)
         }

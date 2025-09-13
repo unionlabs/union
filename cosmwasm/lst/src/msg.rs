@@ -124,9 +124,7 @@ pub enum ExecuteMsg {
 
     /// Withdraws unstaked tokens.
     Withdraw {
-        /// The address that will receive the funds.
-        staker: Addr,
-        /// The address to withdraw the funds to on this chain.
+        /// The address to withdraw the funds to.
         withdraw_to_address: Addr,
         /// ID of the batch from which to withdraw.
         batch_id: BatchId,

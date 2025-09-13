@@ -158,8 +158,14 @@ pub fn bond(
     ensure!(mint_amount > 0, ContractError::ComputedMintAmountIsZero);
 
     // update the accounting state first
-    accounting_state.total_bonded_native_tokens += bond_amount;
-    accounting_state.total_issued_lst += mint_amount;
+    accounting_state.total_bonded_native_tokens = accounting_state
+        .total_bonded_native_tokens
+        .checked_add(bond_amount)
+        .expect("overflow");
+    accounting_state.total_issued_lst = accounting_state
+        .total_issued_lst
+        .checked_add(mint_amount)
+        .expect("overflow");
 
     deps.storage
         .write_item::<AccountingStateStore>(&accounting_state);
@@ -195,9 +201,6 @@ pub fn bond(
         .add_event(
             Event::new("bond")
                 .add_attribute("mint_to_address", mint_to_address.to_string())
-                // NOTE: In practice, this will always be the funded-dispatch contract. This may
-                // need to be changed to emit the original sender from the source chain (if it
-                // exists).
                 .add_attribute("sender", info.sender.to_string())
                 .add_attribute("in_amount", bond_amount.to_string())
                 .add_attribute("mint_amount", mint_amount.to_string()),
@@ -250,7 +253,7 @@ pub fn unbond(
                     UnstakeRequest {
                         batch_id: r.batch_id,
                         staker: r.staker,
-                        amount: r.amount + unbond_amount,
+                        amount: r.amount.checked_add(unbond_amount).expect("overflow"),
                     }
                 }
                 None => {
@@ -272,10 +275,16 @@ pub fn unbond(
     deps.storage
         .write::<UnstakeRequestsByStakerHash>(&unstake_request_key, &updated_unstake_request);
 
-    current_pending_batch.total_lst_to_burn += unbond_amount;
+    current_pending_batch.total_lst_to_burn = current_pending_batch
+        .total_lst_to_burn
+        .checked_add(unbond_amount)
+        .expect("overflow");
 
     if is_new_request {
-        current_pending_batch.unstake_requests_count += 1;
+        current_pending_batch.unstake_requests_count = current_pending_batch
+            .unstake_requests_count
+            .checked_add(1)
+            .expect("overflow");
     }
 
     // 2.
@@ -383,7 +392,12 @@ pub fn submit_batch(deps: DepsMut, env: Env) -> ContractResult<Response> {
         &SubmittedBatch {
             total_lst_to_burn,
             unstake_requests_count,
-            receive_time: env.block.time.seconds() + config.unbonding_period_seconds,
+            receive_time: env
+                .block
+                .time
+                .seconds()
+                .checked_add(config.unbonding_period_seconds)
+                .expect("overflow"),
             expected_native_unstaked: unbond_amount,
         },
     );
@@ -392,7 +406,11 @@ pub fn submit_batch(deps: DepsMut, env: Env) -> ContractResult<Response> {
     deps.storage
         .write_item::<CurrentPendingBatch>(&PendingBatch::new(
             batch_id.increment(),
-            env.block.time.seconds() + config.batch_period_seconds,
+            env.block
+                .time
+                .seconds()
+                .checked_add(config.batch_period_seconds)
+                .expect("overflow"),
         ));
 
     Ok(Response::new()
@@ -452,15 +470,20 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
 
     deps.storage
         .upsert_item::<AccountingStateStore, ContractError>(|accounting_state| {
-            let mut accounting_state = accounting_state.unwrap();
+            let mut accounting_state = accounting_state.expect("should exist");
             if accounting_state.total_issued_lst == 0 {
                 return Err(ContractError::NoLiquidStake);
             }
 
             // update the accounting of tokens
-            // TODO: Checked arithmetic
-            accounting_state.total_bonded_native_tokens += amount_after_protocol_fee;
-            accounting_state.total_reward_amount += received_rewards;
+            accounting_state.total_bonded_native_tokens = accounting_state
+                .total_bonded_native_tokens
+                .checked_add(amount_after_protocol_fee)
+                .expect("overflow");
+            accounting_state.total_reward_amount = accounting_state
+                .total_reward_amount
+                .checked_add(received_rewards)
+                .expect("overflow");
 
             Ok(accounting_state)
         })?;
@@ -555,12 +578,9 @@ pub fn withdraw(
     deps: DepsMut,
     info: MessageInfo,
     batch_id: BatchId,
-    staker: Addr,
     withdraw_to_address: Addr,
 ) -> ContractResult<Response> {
     ensure_not_stopped(deps.as_ref())?;
-
-    ensure_sender(&info, &staker)?;
 
     let config = deps.storage.read_item::<ConfigStore>()?;
 
@@ -575,14 +595,14 @@ pub fn withdraw(
 
     let unstake_request_key = UnstakeRequestKey {
         batch_id,
-        staker_hash: staker_hash(&staker),
+        staker_hash: staker_hash(&info.sender),
     };
     let liquid_unstake_request = deps
         .storage
         .maybe_read::<UnstakeRequests>(&unstake_request_key)?
         .ok_or_else(|| ContractError::NoRequestInBatch {
             batch_id,
-            staker: staker.clone(),
+            staker: info.sender.clone(),
         })?;
 
     let amount = Uint128::new(received_native_unstaked)
@@ -597,7 +617,7 @@ pub fn withdraw(
     Ok(Response::new()
         .add_event(
             Event::new("withdraw")
-                .add_attribute("staker", staker)
+                .add_attribute("staker", info.sender)
                 .add_attribute("batch_id", batch_id.to_string())
                 .add_attribute("withdraw_to_address", &withdraw_to_address)
                 .add_attribute("amount", amount.to_string()),
@@ -626,8 +646,12 @@ pub fn transfer_ownership(
 
     deps.storage.write_item::<PendingOwnerStore>(&PendingOwner {
         address: new_owner.clone(),
-        owner_transfer_min_time_seconds: env.block.time.seconds()
-            + OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS,
+        owner_transfer_min_time_seconds: env
+            .block
+            .time
+            .seconds()
+            .checked_add(OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS)
+            .expect("overflow"),
     });
 
     Ok(Response::new().add_event(
@@ -716,7 +740,7 @@ pub fn update_config(
             .upsert_item::<ConfigStore, ContractError>(|config| {
                 Ok(Config {
                     batch_period_seconds,
-                    ..config.unwrap()
+                    ..config.expect("should exist")
                 })
             })?;
 
@@ -729,7 +753,7 @@ pub fn update_config(
             .upsert_item::<ConfigStore, ContractError>(|config| {
                 Ok(Config {
                     unbonding_period_seconds,
-                    ..config.unwrap()
+                    ..config.expect("should exist")
                 })
             })?;
 

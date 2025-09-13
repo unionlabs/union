@@ -208,7 +208,6 @@ fn stop_prevents_execution() {
             env.clone(),
             info,
             ExecuteMsg::Withdraw {
-                staker: Addr::unchecked(UNION1),
                 withdraw_to_address: Addr::unchecked(UNION1),
                 batch_id: BatchId::ONE
             }
