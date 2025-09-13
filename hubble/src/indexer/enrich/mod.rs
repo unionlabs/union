@@ -1,7 +1,10 @@
+use alloy_primitives::keccak256;
+use alloy_sol_types::SolValue;
+use ibc_union_spec::{Packet, Timestamp};
 use itertools::Itertools;
 use serde_json::{Map, Value};
 use time::{macros::format_description, UtcOffset};
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 pub(crate) mod ucs03_zkgm_0;
 mod wrapping;
@@ -13,24 +16,31 @@ use super::{
 use crate::indexer::{
     api::IndexerError,
     enrich::{
-        ucs03_zkgm_0::{packet_ack::decode, PacketHash},
+        ucs03_zkgm_0::{
+            packet::ZkgmPacket,
+            packet_ack::{decode, format_flatten},
+            PacketHash,
+        },
         wrapping::{wrap_direction_chains, IntermediateChannelIds},
     },
-    event::types::{BlockHeight, ChannelId, UniversalChainId},
+    event::types::{BlockHeight, ChannelId, TimeoutTimestamp, UniversalChainId},
     handler::types::{
-        string_0x_to_bytes, AddressCanonical, AddressZkgm, Amount, ChannelMetaData, Fee,
-        Instruction, InstructionHash, InstructionOpcode, InstructionPath, InstructionRootPath,
-        InstructionRootSalt, InstructionVersion, Metadata, PacketShape, TokenOrderKind, Transfer,
+        bytes_to_value, string_0x_to_bytes, string_base64_to_bytes, AddressCanonical, AddressZkgm,
+        Amount, Bond, ChannelMetaData, Fee, Instruction, InstructionHash, InstructionOpcode,
+        InstructionPath, InstructionRootPath, InstructionRootSalt, InstructionVersion, Metadata,
+        PacketShape, TokenOrderKind, Transfer, Unbond,
     },
     postgres::chain_context::fetch_chain_context_for_universal_chain_id,
     record::{
         change_counter::Changes, channel_meta_data::get_channel_meta_data,
         create_wrapped_token_record::CreateWrappedTokenRecord,
         create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
+        packet_send_bond_record::PacketSendBondRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
-        packet_send_transfers_record::PacketSendTransfersRecord, InternalChainId,
+        packet_send_transfers_record::PacketSendTransfersRecord,
+        packet_send_unbond_record::PacketSendUnbondRecord, InternalChainId,
     },
 };
 
@@ -49,6 +59,18 @@ pub async fn delete_enriched_data_for_block(
     )
     .await?;
     changes += PacketSendTransfersRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendBondRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendUnbondRecord::delete_by_chain_and_height(
         tx,
         chain_context.internal_chain_id,
         *height,
@@ -176,6 +198,18 @@ pub async fn enrich_packet_send_record(
         changes += packet_send_transfers_record.insert(tx).await?;
     }
 
+    for bond in get_bonds(tx, &channel, &packet_structure, flatten).await? {
+        let packet_send_bond_record: PacketSendBondRecord =
+            (&record, &bond, &sort_order).try_into()?;
+        changes += packet_send_bond_record.insert(tx).await?;
+    }
+
+    for unbond in get_unbonds(&channel, &packet_structure, flatten).await? {
+        let packet_send_unbond_record: PacketSendUnbondRecord =
+            (&record, &unbond, &channel, &sort_order).try_into()?;
+        changes += packet_send_unbond_record.insert(tx).await?;
+    }
+
     // insert packet send transaction
     let instructions = get_instructions(flatten)?
         .into_iter()
@@ -235,16 +269,18 @@ async fn get_transfers(
             InstructionDecoder::from_values_with_index(flatten, 0)?,
             None,
         ),
+        _ => {
+            // not a transfer
+            return Ok(vec![]);
+        }
     };
 
     let transfer_index = 0;
-    let sender_zkgm = &AddressZkgm::from_string_0x(
-        transfer_data.get_string("sender")?,
-        channel.rpc_type.clone(),
-    )?;
+    let sender_zkgm =
+        &AddressZkgm::from_string_0x(transfer_data.get_string("sender")?, channel.rpc_type)?;
     let receiver_zkgm = &AddressZkgm::from_string_0x(
         transfer_data.get_string("receiver")?,
-        channel.counterparty_rpc_type.clone(),
+        channel.counterparty_rpc_type,
     )?;
     let base_token = transfer_data.get_string("baseToken")?.try_into()?;
     let base_amount: Amount = transfer_data.get_string("baseAmount")?.try_into()?;
@@ -322,6 +358,471 @@ async fn get_transfers(
         metadata,
         fee,
         wrap_direction,
+        packet_shape,
+    }])
+}
+
+// ignore bonds that fail to parse until we have robust packet-shape detection
+async fn get_bonds(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    channel: &ChannelMetaData,
+    packet_structure: &str,
+    flatten: &[Value],
+) -> Result<Vec<Bond>, IndexerError> {
+    Ok(
+        match try_get_bonds(tx, channel, packet_structure, flatten).await {
+            Ok(bonds) => {
+                trace!("get_bonds: found {bonds:?}");
+                bonds
+            }
+            Err(error) => {
+                let packet = Value::Array(flatten.to_vec());
+                warn!("get_bonds: error reading instructions: {error} => {packet}");
+                vec![]
+            }
+        },
+    )
+}
+
+async fn try_get_bonds(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    channel: &ChannelMetaData,
+    packet_structure: &str,
+    flatten: &[Value],
+) -> Result<Vec<Bond>, IndexerError> {
+    trace!("get_bonds: channel: {channel}, packet_structure: {packet_structure}");
+
+    let Some(packet_shape) = packet_shape(packet_structure, flatten)? else {
+        trace!("get_bonds: cannot determine packet_shape");
+        return Ok(vec![]);
+    };
+
+    trace!("get_bonds: packet_shape: {packet_shape:?}");
+
+    let Some((token_order, proxy_call, Some(instructions))) = (match packet_shape {
+        PacketShape::BondV2 => Some((
+            InstructionDecoder::from_values_with_index(flatten, 1)?,
+            InstructionDecoder::from_values_with_index(flatten, 2)?,
+            extract_proxy_calls(flatten, 2, BOND_FUNCTIONS)?,
+        )),
+        _ => None,
+    }) else {
+        trace!("get_bonds: not a bond");
+        return Ok(vec![]);
+    };
+
+    trace!("get_bonds: bond with token_order: {token_order}, proxy_call: {proxy_call} (with instructions: {instructions:?})");
+
+    let [Value::Object(bond), Value::Object(increase_allowance), Value::Object(send)] =
+        instructions.as_slice()
+    else {
+        trace!("get_bonds: not a bond (cannot deconstruct)");
+        return Ok(vec![]);
+    };
+
+    trace!("get_bonds: calls: bond: {bond:?}, increase_allowance: {increase_allowance:?}, send: {send:?}");
+
+    // -------------------------------------------------
+    // fetch details from call that will deliver the lst
+    // -------------------------------------------------
+
+    let call_contract_address_0x = proxy_call.get_string("contractAddress")?;
+    trace!("get_bonds: call contract address: {call_contract_address_0x}");
+
+    let call_contract_address = string_0x_to_bytes(call_contract_address_0x, "contract-address")?;
+    trace!(
+        "get_bonds: call contract address: {}",
+        hex::encode(&call_contract_address)
+    );
+
+    // delivery channel_id
+    let Value::Number(delivery_channel_id) = send.get("channel_id").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'channel_id' in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?
+    else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting 'channel_id' as Number in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        ));
+    };
+
+    let Some(delivery_channel_id) = delivery_channel_id.as_u64() else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting 'channel_id' as integer in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        ));
+    };
+
+    let delivery_channel_id: ChannelId = u32::try_from(delivery_channel_id)
+        .map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "expecting 'channel_id' as u32 in contractCalldata".to_string(),
+                Value::Object(send.clone()).to_string(),
+            )
+        })?
+        .into();
+
+    trace!("get_bonds: delivery channel_id: {delivery_channel_id}");
+
+    // delivery timeout_timestamp
+    let Value::String(delivery_timeout_timestamp) =
+        send.get("timeout_timestamp").ok_or_else(|| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "missing 'timeout_timestamp' in contractCalldata".to_string(),
+                Value::Object(send.clone()).to_string(),
+            )
+        })?
+    else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting 'timeout_timestamp' as String in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        ));
+    };
+
+    let delivery_timeout_timestamp =
+        TimeoutTimestamp(delivery_timeout_timestamp.parse().map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "expecting 'timeout_timestamp' as u64 in contractCalldata".to_string(),
+                Value::Object(send.clone()).to_string(),
+            )
+        })?);
+
+    trace!(
+        "get_bonds: delivery timeout_timestamp: {}",
+        delivery_timeout_timestamp.0
+    );
+
+    // delivery salt
+    let Value::String(delivery_salt_string) = send.get("salt").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'salt' in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?
+    else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting 'salt' as String in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        ));
+    };
+
+    let delivery_salt: [u8; 32] = string_0x_to_bytes(delivery_salt_string, "delivery-salt")?
+        .as_ref()
+        .try_into()
+        .map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "salt must be exactly 32 bytes".to_string(),
+                delivery_salt_string.to_string(),
+            )
+        })?;
+
+    trace!("get_bonds: delivery salt: 0x{}", hex::encode(delivery_salt));
+
+    // TODO: can we still use this?
+    let hash_salt_preimage = (call_contract_address.to_vec(), delivery_salt).abi_encode();
+
+    trace!(
+        "get_bonds: delivery hash_salt_preimage: 0x{}",
+        hex::encode(hash_salt_preimage.clone())
+    );
+
+    let hashed_salt = keccak256(&hash_salt_preimage);
+
+    trace!(
+        "get_bonds: delivery hashed_salt: 0x{}",
+        hex::encode(hashed_salt)
+    );
+
+    // delivery path (we need to figure out where to read the path from)
+    // let Value::String(delivery_path) = send.get("path").ok_or_else(|| {
+    //     IndexerError::ZkgmExpectingInstructionField(
+    //         "missing 'path' in contractCalldata".to_string(),
+    //         Value::Object(send.clone()).to_string(),
+    //     )
+    // })?
+    // else {
+    //     return Err(IndexerError::ZkgmExpectingInstructionField(
+    //         "expecting 'path' as String in contractCalldata".to_string(),
+    //         Value::Object(send.clone()).to_string(),
+    //     ));
+    // };
+
+    // let delivery_path: alloy_sol_types::private::U256 = delivery_path.parse().map_err(|_| {
+    //     IndexerError::ZkgmExpectingInstructionField(
+    //         "expecting 'instruction' as U256 string in contractCalldata".to_string(),
+    //         Value::Object(send.clone()).to_string(),
+    //     )
+    // })?;
+
+    // trace!("get_bonds: delivery path: {delivery_path}");
+
+    // delivery instruction
+    let Value::String(delivery_instruction) = send.get("instruction").ok_or_else(|| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "missing 'instruction' in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?
+    else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting 'instruction' as String in contractCalldata".to_string(),
+            Value::Object(send.clone()).to_string(),
+        ));
+    };
+    let delivery_instruction = string_0x_to_bytes(delivery_instruction, "contractCalldata")?;
+
+    let delivery_instruction =
+        <crate::indexer::enrich::ucs03_zkgm_0::packet::Instruction>::abi_decode_sequence(
+            &delivery_instruction,
+        )
+        .map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "cannot parse delivery instruction".to_string(),
+                Value::Object(send.clone()).to_string(),
+            )
+        })?;
+
+    trace!("get_bonds: delivery instruction: {delivery_instruction:?}");
+
+    // delivery channel details
+    let delivery_internal_chain_id = channel.internal_counterparty_chain_id;
+
+    let Some(delivery_channel) =
+        get_channel_meta_data(tx, &delivery_internal_chain_id, &delivery_channel_id).await?
+    else {
+        debug!(
+            "no delivery channel details for chain {delivery_internal_chain_id} and channel {delivery_channel_id}"
+        );
+        return Ok(vec![]);
+    };
+
+    trace!("get_bonds: delivery channel: {delivery_channel}");
+
+    // ------------------------------------------------------
+    // construct delivery packet to calculate the packet-hash
+    // ------------------------------------------------------
+    let delivery_zkgm_packet = ZkgmPacket {
+        salt: hashed_salt,
+        path: alloy_sol_types::private::U256::from(0u64),
+        instruction: delivery_instruction,
+    };
+
+    let delivery_packet = Packet {
+        source_channel_id: ibc_union_spec::ChannelId::try_from(delivery_channel.channel_id.0)
+            .map_err(|_| {
+                IndexerError::ZkgmExpectingInstructionField(
+                    "cannot format source_channel_id".to_string(),
+                    delivery_channel.channel_id.to_string(),
+                )
+            })?,
+        destination_channel_id: ibc_union_spec::ChannelId::try_from(
+            delivery_channel.counterparty_channel_id.0,
+        )
+        .map_err(|_| {
+            IndexerError::ZkgmExpectingInstructionField(
+                "cannot format source_channel_id".to_string(),
+                delivery_channel.channel_id.to_string(),
+            )
+        })?,
+        data: <ZkgmPacket>::abi_encode_params(&delivery_zkgm_packet).into(),
+        timeout_height: ibc_union_spec::MustBeZero, //delivery_timeout_height.into(),
+        timeout_timestamp: Timestamp::from_nanos(delivery_timeout_timestamp.0),
+    };
+
+    trace!("get_bonds: delivery packet: {delivery_packet:?}");
+
+    let delivery_packet_hash = crate::indexer::event::types::PacketHash(
+        delivery_packet.hash().into_bytes().to_vec().into(),
+    );
+
+    trace!("get_bonds: delivery packet_hash: {delivery_packet_hash}");
+
+    // use existing logic to transform zkgm packet to json (originates from postgres plugin)
+    // so we can extract the token-order details
+    let delivery_zkgm_packet_json = serde_json::to_value(delivery_zkgm_packet).map_err(|_| {
+        IndexerError::ZkgmExpectingInstructionField(
+            "cannot format instruction".to_string(),
+            Value::Object(send.clone()).to_string(),
+        )
+    })?;
+
+    trace!("get_bonds: delivery zkgm_packet (json): {delivery_zkgm_packet_json}");
+
+    let Value::Array(mut delivery_zkgm_packet_flattened) =
+        format_flatten(&delivery_zkgm_packet_json)
+    else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "cannot convert delivery instruction".to_string(),
+            delivery_zkgm_packet_json.to_string(),
+        ));
+    };
+
+    if delivery_zkgm_packet_flattened.len() != 1 {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "expecting one instruction in flattened delivery zkgm_packet".to_string(),
+            delivery_zkgm_packet_json.to_string(),
+        ));
+    }
+
+    // add fields that are added when calling flatten InstructionDecoder::from_values_with_index expects it
+    if let Value::Object(ref mut map) = delivery_zkgm_packet_flattened[0] {
+        map.insert("_index".to_string(), Value::String("".to_string()));
+        map.insert(
+            "_instruction_hash".to_string(),
+            Value::String("0x00".to_string()),
+        );
+    }
+
+    let delivery_zkgm_packet_flattened_value = Value::Array(delivery_zkgm_packet_flattened.clone());
+
+    trace!(
+        "get_bonds: delivery zkgm_packet (json-flattened): {delivery_zkgm_packet_flattened_value}"
+    );
+
+    let delivery_token_order =
+        InstructionDecoder::from_values_with_index(&delivery_zkgm_packet_flattened, 0)?;
+
+    trace!("get_bonds: delivery token-order: {delivery_token_order}");
+
+    // sender is sender of token-order in the batch
+    let sender_zkgm =
+        &AddressZkgm::from_string_0x(token_order.get_string("sender")?, channel.rpc_type)?;
+    // receiver is receiver of deliver token-order from the call in the batch
+    let receiver_zkgm = &AddressZkgm::from_string_0x(
+        delivery_token_order.get_string("receiver")?,
+        delivery_channel.counterparty_rpc_type,
+    )?;
+    let base_token = token_order.get_string("baseToken")?.try_into()?;
+    let base_amount: Amount = token_order.get_string("baseAmount")?.try_into()?;
+    let quote_token = delivery_token_order.get_string("quoteToken")?.try_into()?;
+    let quote_amount: Amount = delivery_token_order.get_string("quoteAmount")?.try_into()?;
+    let remote_base_token = token_order.get_string("quoteToken")?.try_into()?;
+    let remote_base_amount: Amount = token_order.get_string("quoteAmount")?.try_into()?;
+    let remote_quote_token = delivery_token_order.get_string("baseToken")?.try_into()?;
+    let remote_quote_amount: Amount = delivery_token_order.get_string("baseAmount")?.try_into()?;
+
+    Ok(vec![Bond {
+        universal_chain_id: channel.universal_chain_id.clone(),
+        source_channel_id: channel.channel_id,
+        remote_source_channel_id: channel.counterparty_channel_id,
+        remote_destination_channel_id: delivery_channel.channel_id,
+        destination_channel_id: delivery_channel.counterparty_channel_id,
+        source_client_id: channel.client_id,
+        remote_source_client_id: channel.counterparty_client_id,
+        remote_destination_client_id: delivery_channel.client_id,
+        destination_client_id: delivery_channel.counterparty_client_id,
+        source_connection_id: channel.connection_id,
+        remote_source_connection_id: channel.counterparty_connection_id,
+        remote_destination_connection_id: delivery_channel.connection_id,
+        destination_connection_id: delivery_channel.counterparty_connection_id,
+        source_port_id: channel.port_id.clone(),
+        remote_source_port_id: channel.counterparty_port_id.clone(),
+        remote_destination_port_id: delivery_channel.port_id,
+        destination_port_id: delivery_channel.counterparty_port_id,
+        internal_remote_chain_id: channel.internal_counterparty_chain_id,
+        internal_destination_chain_id: delivery_channel.internal_counterparty_chain_id,
+        remote_universal_chain_id: channel.universal_counterparty_chain_id.clone(),
+        destination_universal_chain_id: delivery_channel.universal_counterparty_chain_id,
+        source_network: channel.network,
+        remote_network: channel.counterparty_network,
+        destination_network: delivery_channel.counterparty_network,
+
+        sender_zkgm: sender_zkgm.clone(),
+        sender_canonical: sender_zkgm.try_into()?,
+        sender_display: sender_zkgm.try_into()?,
+        receiver_zkgm: receiver_zkgm.clone(),
+        receiver_canonical: receiver_zkgm.try_into()?,
+        receiver_display: receiver_zkgm.try_into()?,
+        base_token,
+        base_amount,
+        quote_token,
+        quote_amount,
+        remote_base_token,
+        remote_base_amount,
+        remote_quote_token,
+        remote_quote_amount,
+        delivery_packet_hash,
+        packet_shape,
+    }])
+}
+
+// ignore unbonds that fail to parse until we have robust packet-shape detection
+async fn get_unbonds(
+    channel: &ChannelMetaData,
+    packet_structure: &str,
+    flatten: &[Value],
+) -> Result<Vec<Unbond>, IndexerError> {
+    Ok(
+        match try_get_unbonds(channel, packet_structure, flatten).await {
+            Ok(unbonds) => {
+                trace!("get_unbonds: found {unbonds:?}");
+
+                unbonds
+            }
+            Err(error) => {
+                let packet = Value::Array(flatten.to_vec());
+                warn!("get_unbonds: error reading instructions: {error} => {packet}");
+                vec![]
+            }
+        },
+    )
+}
+
+async fn try_get_unbonds(
+    channel: &ChannelMetaData,
+    packet_structure: &str,
+    flatten: &[Value],
+) -> Result<Vec<Unbond>, IndexerError> {
+    trace!("get_unbonds: channel: {channel}, packet_structure: {packet_structure}");
+
+    let Some(packet_shape) = packet_shape(packet_structure, flatten)? else {
+        trace!("get_unbonds: cannot determine packet_shape");
+        return Ok(vec![]);
+    };
+
+    trace!("get_unbonds: packet_shape: {packet_shape:?}");
+
+    let Some((token_order, Some(instructions))) = (match packet_shape {
+        PacketShape::UnbondV2 => Some((
+            InstructionDecoder::from_values_with_index(flatten, 1)?,
+            extract_proxy_calls(flatten, 2, UNBOND_FUNCTIONS)?,
+        )),
+        _ => {
+            trace!("get_unbonds: not an unbond");
+            None
+        }
+    }) else {
+        // not an unbond
+        return Ok(vec![]);
+    };
+
+    trace!(
+        "get_unbonds: unbond with token_order: {token_order} and instructions: {instructions:?}"
+    );
+
+    let [Value::Object(increase_allowance), Value::Object(unbond)] = instructions.as_slice() else {
+        trace!("get_unbonds: not an unbond (cannot deconstruct)");
+        return Ok(vec![]);
+    };
+
+    trace!("get_unbonds: calls: increase_allowance: {increase_allowance:?}, unbond: {unbond:?}");
+
+    let sender_zkgm =
+        &AddressZkgm::from_string_0x(token_order.get_string("sender")?, channel.rpc_type)?;
+    let base_token = token_order.get_string("baseToken")?.try_into()?;
+    let base_amount: Amount = token_order.get_string("baseAmount")?.try_into()?;
+    let unbond_amount: Amount = token_order.get_string("quoteAmount")?.try_into()?;
+
+    Ok(vec![Unbond {
+        sender_zkgm: sender_zkgm.clone(),
+        sender_canonical: sender_zkgm.try_into()?,
+        sender_display: sender_zkgm.try_into()?,
+        base_token,
+        base_amount,
+        unbond_amount,
         packet_shape,
     }])
 }
@@ -406,6 +907,22 @@ struct InstructionDecoder<'a> {
     version: InstructionVersion,
     instruction_hash: InstructionHash,
     operand: &'a Map<String, Value>,
+}
+
+impl<'a> std::fmt::Display for InstructionDecoder<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "InstructionDecoder {{ root_path: 0x{}, root_salt: 0x{}, instruction_path: {}, opcode: {}, version: {}, instruction_hash: 0x{}, operand: {} }}",
+            hex::encode(&self.root_path.0),
+            hex::encode(&self.root_salt.0),
+            self.instruction_path.0,
+            self.opcode.0,
+            self.version.0,
+            hex::encode(&self.instruction_hash.0),
+            Value::Object(self.operand.clone())
+        )
+    }
 }
 
 impl<'a> InstructionDecoder<'a> {
@@ -661,6 +1178,22 @@ fn packet_shape(
             // one transfer (v2)
             Some(PacketShape::TransferV2)
         }
+        ":2/0,0:3/2,1:1/0" if is_bond(flatten)? => {
+            // batch with
+            // - token-order to transfer token
+            // - call to proxy, with
+            //   - call to bond (to create lst)
+            //   - call to increase_allowance
+            //   - call to send (to send lst back)
+            Some(PacketShape::BondV2)
+        }
+        ":2/0,0:3/2,1:1/0" if is_unbond(flatten)? => {
+            // batch with:
+            // - token-order to transfer lst
+            //   - call to increase_allowance
+            //   - call to unbond
+            Some(PacketShape::UnbondV2)
+        }
         unsupported => {
             debug!("unsupported packet shape: {unsupported}");
 
@@ -695,6 +1228,151 @@ fn has_fee(flatten: &[Value]) -> Result<bool, IndexerError> {
     let is_zero = quote_amount.iter().all(|&b| b == 0);
 
     Ok(is_zero)
+}
+
+const BOND_FUNCTIONS: &[&str] = &["bond", "increase_allowance", "send"];
+const UNBOND_FUNCTIONS: &[&str] = &["increase_allowance", "unbond"];
+
+fn is_bond(flatten: &[Value]) -> Result<bool, IndexerError> {
+    is_proxy_call_with(flatten, 2, BOND_FUNCTIONS)
+}
+
+fn is_unbond(flatten: &[Value]) -> Result<bool, IndexerError> {
+    is_proxy_call_with(flatten, 2, UNBOND_FUNCTIONS)
+}
+
+fn extract_proxy_calls(
+    flatten: &[Value],
+    index: usize,
+    expected_functions: &[&str],
+) -> Result<Option<Vec<Value>>, IndexerError> {
+    let Some(Value::Object(instruction)) = flatten.get(index) else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            format!("instruction with index {index}"),
+            Value::Array(flatten.to_vec()).to_string(),
+        ));
+    };
+
+    let Some(Value::Object(operand)) = instruction.get("operand").cloned() else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            format!("operand in instruction with index {index}"),
+            Value::Array(flatten.to_vec()).to_string(),
+        ));
+    };
+
+    if Some(Value::String("Call".to_string())) != operand.get("_type").cloned() {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            format!("call instruction with index {index}"),
+            Value::Array(flatten.to_vec()).to_string(),
+        ));
+    }
+
+    let Some(Value::String(call_envelope_0x)) = operand.get("contractCalldata") else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "contractCalldata field in instruction".to_string(),
+            Value::Object(operand.clone()).to_string(),
+        ));
+    };
+
+    let Ok(call_envelope_json) = string_0x_to_bytes(call_envelope_0x, "contractCalldata") else {
+        trace!("extract_proxy_calls: does not have a 0x 'contractCalldata' field => None ({operand:?})");
+
+        return Ok(None);
+    };
+
+    let Ok(Value::Array(proxy_calls)) = bytes_to_value(&call_envelope_json, "contractCalldata")
+    else {
+        trace!("extract_proxy_calls: does not have a json array 'contractCalldata' field => None ({operand:?})");
+
+        return Ok(None);
+    };
+
+    // Check if we have the right number of calls first
+    if proxy_calls.len() != expected_functions.len() {
+        trace!(
+            "extract_proxy_calls: expected {} calls, found {} => None",
+            expected_functions.len(),
+            proxy_calls.len()
+        );
+        return Ok(None);
+    }
+
+    let mut extracted_values = Vec::new();
+
+    for (i, call) in proxy_calls.iter().enumerate() {
+        let Value::Object(call_obj) = call else {
+            trace!("extract_proxy_calls: call at index {i} is not an object => None");
+            return Ok(None);
+        };
+
+        let Some(Value::Object(wasm)) = call_obj.get("wasm") else {
+            trace!("extract_proxy_calls: call at index {i} missing 'wasm' object => None");
+            return Ok(None);
+        };
+
+        let Some(Value::Object(execute)) = wasm.get("execute") else {
+            trace!("extract_proxy_calls: call at index {i} missing 'execute' object => None");
+            return Ok(None);
+        };
+
+        let Some(Value::String(msg_base64)) = execute.get("msg") else {
+            trace!("extract_proxy_calls: call at index {i} missing 'msg' string => None");
+            return Ok(None);
+        };
+
+        let Ok(msg_bytes) = string_base64_to_bytes(msg_base64, "msg") else {
+            trace!("extract_proxy_calls: call at index {i} msg is not valid base64 => None");
+            return Ok(None);
+        };
+
+        let Ok(msg_json) = bytes_to_value(&msg_bytes, "msg") else {
+            trace!("extract_proxy_calls: call at index {i} msg bytes are not valid json => None");
+            return Ok(None);
+        };
+
+        let Value::Object(msg_obj) = msg_json else {
+            trace!("extract_proxy_calls: call at index {i} msg is not a json object => None");
+            return Ok(None);
+        };
+
+        if msg_obj.len() != 1 {
+            trace!("extract_proxy_calls: call at index {i} msg object should have exactly one key, has {} => None", msg_obj.len());
+            return Ok(None);
+        }
+
+        let Some((function_name, function_value)) = msg_obj.into_iter().next() else {
+            trace!("extract_proxy_calls: call at index {i} msg object has no entries despite len check => None");
+            return Ok(None);
+        };
+
+        // Check function matches expected order immediately
+        let expected_function = expected_functions[i];
+        if function_name != expected_function {
+            trace!(
+                "extract_proxy_calls: function at index {i} expected '{}', found '{}' => None",
+                expected_function,
+                function_name
+            );
+            return Ok(None);
+        }
+
+        extracted_values.push(function_value.clone());
+    }
+
+    trace!(
+        "extract_proxy_calls: successfully extracted {} function values => Some",
+        extracted_values.len()
+    );
+    Ok(Some(extracted_values))
+}
+
+// check if the instruction at index is a proxy call with specified functions
+fn is_proxy_call_with(
+    flatten: &[Value],
+    index: usize,
+    expected_functions: &[&str],
+) -> Result<bool, IndexerError> {
+    Ok(extract_proxy_calls(flatten, index, expected_functions)?.is_some())
 }
 
 fn packet_structure(flatten: &[Value]) -> Result<String, IndexerError> {

@@ -68,6 +68,7 @@ mod tests {
   "destination_channel_id": 3042,
   "event_index": "42",
   "height": "10042",
+  "message_index": "542",
   "packet_hash": "0x7061636b65742d686173682d3432",
   "source_channel_id": 2042,
   "timeout_height": "10042",

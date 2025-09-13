@@ -21,6 +21,7 @@ pub struct PacketTimeoutRecord {
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
     pub transaction_event_index: Option<i64>,
+    pub message_index: Option<i64>,
     pub channel_id: i32,
     pub packet_hash: Vec<u8>,
     pub maker: Vec<u8>,
@@ -47,6 +48,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, PacketTimeoutEvent>> for Pac
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
             transaction_event_index: value.event.header.transaction_event_index.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             channel_id: value.event.channel_id.pg_value()?,
             packet_hash: value.event.packet_hash.pg_value()?,
             maker: value.event.maker.pg_value()?,
@@ -73,11 +75,12 @@ impl PacketTimeoutRecord {
                 transaction_hash,
                 transaction_index,
                 transaction_event_index,
+                message_index,
                 channel_id,
                 packet_hash,
                 maker,
                 network
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             "#,
             self.internal_chain_id,
             &self.block_hash[..],
@@ -87,6 +90,7 @@ impl PacketTimeoutRecord {
             &self.transaction_hash[..],
             self.transaction_index,
             self.transaction_event_index,
+            self.message_index,
             self.channel_id,
             &self.packet_hash[..],
             &self.maker[..],

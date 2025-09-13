@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                internal_chain_id,\n                block_hash,\n                height,\n                event_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_event_index,\n                channel_id,\n                path,\n                base_token,\n                quote_token,\n                metadata,\n                kind\n            FROM v2_sync.create_wrapped_token_sync\n            WHERE internal_chain_id = (SELECT id FROM config.chains WHERE family || '.' || chain_id = $1) AND height = $2\n            ",
+  "query": "\n            SELECT\n                internal_chain_id,\n                block_hash,\n                height,\n                event_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_event_index,\n                message_index,\n                channel_id,\n                path,\n                base_token,\n                quote_token,\n                metadata,\n                kind\n            FROM v2_sync.create_wrapped_token_sync\n            WHERE internal_chain_id = (SELECT id FROM config.chains WHERE family || '.' || chain_id = $1) AND height = $2\n            ",
   "describe": {
     "columns": [
       {
@@ -45,31 +45,36 @@
       },
       {
         "ordinal": 8,
+        "name": "message_index",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
         "name": "channel_id",
         "type_info": "Int4"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "path",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "base_token",
         "type_info": "Bytea"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "quote_token",
         "type_info": "Bytea"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "metadata",
         "type_info": "Bytea"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "kind",
         "type_info": "Int4"
       }
@@ -94,8 +99,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "7e0c5e8ab4709acc75be5eec66cf80bcdd3e721781381df86bab9070eda996b4"
+  "hash": "b067d694d367b306c8d62af5431d0c581aadd3dced7301aebf36b7d5da28be13"
 }

@@ -8,7 +8,7 @@ use crate::indexer::{
     handler::EventContext,
     record::{
         change_counter::{Changes, HasKind, RecordKind},
-        ChainContext, InternalChainId, PgValue,
+        ChainContext, InternalChainId, PgValue, PgValueExt,
     },
 };
 
@@ -17,6 +17,7 @@ pub struct UpdateClientRecord {
     pub block_hash: Vec<u8>,
     pub height: i64,
     pub transaction_hash: Vec<u8>,
+    pub message_index: Option<i64>,
     pub client_id: i32,
     pub timestamp: OffsetDateTime,
     pub counterparty_height: i64,
@@ -38,6 +39,7 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, UpdateClientEvent>> for Upda
             block_hash: value.event.header.block_hash.pg_value()?,
             height: value.event.header.height.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
+            message_index: value.event.header.message_index.pg_value()?,
             client_id: value.event.client_id.pg_value()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             counterparty_height: value.event.counterparty_height.pg_value()?,
@@ -59,15 +61,17 @@ impl UpdateClientRecord {
                 block_hash,
                 height,
                 transaction_hash,
+                message_index,
                 client_id,
                 timestamp,
                 counterparty_height
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             "#,
             self.internal_chain_id,
             &self.block_hash[..],
             self.height,
             &self.transaction_hash[..],
+            self.message_index,
             self.client_id,
             self.timestamp,
             self.counterparty_height,

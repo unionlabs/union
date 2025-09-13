@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v2_sync.channel_open_init_sync (\n                internal_chain_id,\n                block_hash,\n                height,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                message_index,\n                port_id,\n                channel_id,\n                connection_id,\n                counterparty_port_id,\n                version\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Bytea",
+        "Int8",
+        "Timestamptz",
+        "Bytea",
+        "Int8",
+        "Int8",
+        "Bytea",
+        "Int4",
+        "Int4",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "29b1f2a22af43063da8738859d3f60c8967100c7c91295bfb41577d3de51471a"
+}

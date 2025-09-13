@@ -149,6 +149,8 @@ pub enum IndexerError {
     HexDecodeErrorExpecting0x(String, String),
     #[error("hex decoding: expecting hex decoding {0}: {1}")]
     HexDecodeErrorInvalidHex(String, String),
+    #[error("base64 decoding: expecting base64 decoding {0}: {1}")]
+    Base64DecodeErrorInvalidBase64(String, String),
     #[error("bech32 decoding: expecting bech32 {0}: {1}")]
     Bech32DecodeErrorInvalidBech32(String, String),
     #[error("wrapper prediction error in {0}: {1}")]

@@ -5,6 +5,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{supported::SupportedBlockEvent, types::BlockHeight},
     record::{
+        bond_record::BondRecord,
         change_counter::{Changes, LegacyRecord},
         channel_open_ack_record::ChannelOpenAckRecord,
         channel_open_confirm_record::ChannelOpenConfirmRecord,
@@ -16,16 +17,20 @@ use crate::indexer::{
         connection_open_try_record::ConnectionOpenTryRecord,
         create_client_record::CreateClientRecord,
         create_lens_client_record::CreateLensClientRecord,
+        create_proxy_account_record::CreateProxyAccountRecord,
         create_wrapped_token_record::CreateWrappedTokenRecord,
         create_wrapped_token_relation_record::CreateWrappedTokenRelationRecord,
         packet_ack_record::PacketAckRecord,
         packet_recv_record::PacketRecvRecord,
+        packet_send_bond_record::PacketSendBondRecord,
         packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
         packet_send_transfers_record::PacketSendTransfersRecord,
+        packet_send_unbond_record::PacketSendUnbondRecord,
         packet_timeout_record::PacketTimeoutRecord,
         token_bucket_update_record::TokenBucketUpdateRecord,
+        unbond_record::UnbondRecord,
         update_client_record::UpdateClientRecord,
         wallet_mutation_entry_record::WalletMutationEntryRecord,
         write_ack_record::WriteAckRecord,
@@ -127,6 +132,11 @@ pub async fn delete_event_data_at_height(
         )
         .await?;
         changes +=
+            PacketSendBondRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            PacketSendUnbondRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
             CreateWrappedTokenRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
                 .await?;
         changes += CreateWrappedTokenRelationRecord::delete_by_chain_and_height(
@@ -135,6 +145,11 @@ pub async fn delete_event_data_at_height(
             height,
         )
         .await?;
+        changes +=
+            CreateProxyAccountRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes += BondRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes += UnbondRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
     } else {
         debug!("delete_event_data_at_height: {internal_chain_id}@{height} => nothing to delete");
     };
@@ -348,6 +363,15 @@ async fn handle_block_event(
             chain_context.with_event(inner).handle(tx).await?
         },
         SupportedBlockEvent::CreateWrappedToken { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::CreateProxyAccount { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::Bond { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::Unbond { inner } => {
             chain_context.with_event(inner).handle(tx).await?
         },
     })

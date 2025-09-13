@@ -49,6 +49,7 @@ mod tests {
   "universal_chain_id": "test-chain-42",
   "block_hash": "0x424c4f434b5f484153485f3432",
   "height": "10042",
+  "message_index": "542",
   "event_index": "42",
   "timestamp": "2020-09-13T12:27:22Z",
   "transaction_hash": "0x54585f484153485f3432",

@@ -98,6 +98,7 @@ impl<'a> Decoder<'a> {
                 })?
                 .into(),
             transaction_event_index: Some(self.transaction_log_index.try_into()?),
+            message_index: None, // this code is not used anymore; replaced by spitzer
         })
     }
 }

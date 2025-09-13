@@ -308,7 +308,7 @@ impl Display for NatsConsumerSequence {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConnectionId(pub u32);
 
 impl From<u32> for ConnectionId {
@@ -317,7 +317,7 @@ impl From<u32> for ConnectionId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientId(pub u32);
 
 impl From<u32> for ClientId {
@@ -326,7 +326,7 @@ impl From<u32> for ClientId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelId(pub u32);
 
 impl From<u32> for ChannelId {
@@ -487,6 +487,33 @@ impl TryFrom<usize> for TransactionIndex {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MessageIndex(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u64> for MessageIndex {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Batch(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u64> for Batch {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnbondIsNewRequest(#[serde(with = "flexible_bool")] pub bool);
+
+impl From<bool> for UnbondIsNewRequest {
+    fn from(value: bool) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionEventIndex(#[serde(with = "flexible_u64")] pub u64);
 
@@ -516,6 +543,24 @@ impl From<OffsetDateTime> for BlockTimestamp {
 pub struct Denom(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for Denom {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Owner(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for Owner {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProxyAccount(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for ProxyAccount {
     fn from(value: bytes::Bytes) -> Self {
         Self(value)
     }
@@ -564,6 +609,33 @@ impl From<bytes::Bytes> for WalletAddress {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BondMintToAddress(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for BondMintToAddress {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct UnbondStakerAddress(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for UnbondStakerAddress {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BondSenderAddress(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
+
+impl From<bytes::Bytes> for BondSenderAddress {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MutationAmount(#[serde(with = "flexible_u128")] pub u128);
 
@@ -582,11 +654,61 @@ pub enum MutationDirection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BondInAmount(#[serde(with = "flexible_u128")] pub u128);
+
+impl From<u128> for BondInAmount {
+    fn from(value: u128) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BondMintAmount(#[serde(with = "flexible_u128")] pub u128);
+
+impl From<u128> for BondMintAmount {
+    fn from(value: u128) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnbondAmount(#[serde(with = "flexible_u128")] pub u128);
+
+impl From<u128> for UnbondAmount {
+    fn from(value: u128) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Path(pub U256);
 
 impl From<U256> for Path {
     fn from(value: U256) -> Self {
         Self(value)
+    }
+}
+
+mod flexible_bool {
+    use super::*;
+
+    pub fn serialize<S>(value: &bool, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bool(*value)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<bool, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+        match value {
+            Value::Bool(b) => Ok(b),
+            Value::String(s) => s.parse().map_err(serde::de::Error::custom),
+            _ => Err(serde::de::Error::custom("expected bool or string")),
+        }
     }
 }
 
