@@ -288,6 +288,7 @@ _: {
           verifier-url = mkTenderlyVerifierUrl chain-id;
 
           u = ba5ed;
+          inherit eu;
         }
         rec {
           chain-id = "17000";
@@ -906,7 +907,10 @@ _: {
         mkCi false (
           pkgs.writeShellApplication {
             name = "eth-verify";
-            runtimeInputs = [ wrappedForgeOnline ];
+            runtimeInputs = [
+              wrappedForgeOnline
+              pkgs.jq
+            ];
             text = ''
               ${ensureAtRepositoryRoot}
 
