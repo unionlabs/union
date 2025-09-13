@@ -204,38 +204,6 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
                 Effect.map(Chunk.of),
                 Effect.mapError(O.some),
               ),
-            onSome: () => Effect.succeed(Chunk.empty<ZkgmIncomingMessage.LifecycleEvent>()),
-          }),
-        ),
-      )
-
-      // const maybeWaitForSafe = pipe(
-      //   Effect.serviceOption(Safe.Safe),
-      //   Effect.flatMap(
-      //     O.match({
-      //       onNone: () => Effect.succeed(Chunk.empty<ZkgmIncomingMessage.LifecycleEvent>()),
-      //       onSome: (safe) =>
-      //         pipe(
-      //           safe.resolveTxHash(
-      //             this.txHash,
-      //           ),
-      //           Effect.map((hash) =>
-      //             ZkgmIncomingMessage.LifecycleEvent.WaitForSafeWalletHash({
-      //               hash: hash as Hex & Brand.Brand<"Hash">,
-      //             })
-      //           ),
-      //           Effect.map(Chunk.of),
-      //           Effect.mapError(O.some),
-      //         ),
-      //     }),
-      //   ),
-      // )
-
-      const maybeWaitForSafeReceipt = pipe(
-        Effect.serviceOption(Safe.Safe),
-        Effect.flatMap(
-          O.match({
-            onNone: () => Effect.succeed(Chunk.empty<ZkgmIncomingMessage.LifecycleEvent>()),
             onSome: (safe) =>
               pipe(
                 safe.resolveTxHash(
@@ -243,7 +211,7 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
                 ),
                 Effect.flatMap((resolvedHash) =>
                   pipe(
-                    Evm.waitForTransactionReceipt(resolvedHash as `0x${string}` ),
+                    Evm.waitForTransactionReceipt(resolvedHash as `0x${string}`),
                     Effect.tap((x) => Effect.log("GOT SAFE RECEIPT", x)),
                     Effect.tapError((x) => Effect.logError("FAILED SAFE RECEIPT", x)),
                     Effect.map((a) =>
@@ -286,8 +254,6 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
       //   ),
       // )
 
-      // emit(maybeWaitForSafe)
-      emit(maybeWaitForSafeReceipt)
       emit(maybeWaitForReceipt)
       // emit(maybeIndex)
     })
