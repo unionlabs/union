@@ -238,7 +238,29 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
         ),
       )
 
-      const maybeWaitForSafe = pipe(
+      // const maybeWaitForSafe = pipe(
+      //   Effect.serviceOption(Safe.Safe),
+      //   Effect.flatMap(
+      //     O.match({
+      //       onNone: () => Effect.succeed(Chunk.empty<ZkgmIncomingMessage.LifecycleEvent>()),
+      //       onSome: (safe) =>
+      //         pipe(
+      //           safe.resolveTxHash(
+      //             this.txHash,
+      //           ),
+      //           Effect.map((hash) =>
+      //             ZkgmIncomingMessage.LifecycleEvent.WaitForSafeWalletHash({
+      //               hash: hash as Hex & Brand.Brand<"Hash">,
+      //             })
+      //           ),
+      //           Effect.map(Chunk.of),
+      //           Effect.mapError(O.some),
+      //         ),
+      //     }),
+      //   ),
+      // )
+
+      const maybeWaitForSafeReceipt = pipe(
         Effect.serviceOption(Safe.Safe),
         Effect.flatMap(
           O.match({
@@ -248,10 +270,20 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
                 safe.resolveTxHash(
                   this.txHash,
                 ),
-                Effect.map((hash) =>
-                  ZkgmIncomingMessage.LifecycleEvent.WaitForSafeWalletHash({
-                    hash: hash as Hex & Brand.Brand<"Hash">,
-                  })
+                Effect.flatMap((resolvedHash) =>
+                  pipe(
+                    Evm.waitForTransactionReceipt(resolvedHash as `0x${string}` ),
+                    Effect.tap((x) => Effect.log("GOT SAFE RECEIPT", x)),
+                    Effect.tapError((x) => Effect.logError("FAILED SAFE RECEIPT", x)),
+                    Effect.map((a) =>
+                      ZkgmIncomingMessage.LifecycleEvent.EvmTransactionReceiptComplete({
+                        transactionHash: a.transactionHash as `0x${string}` & Brand.Brand<"Hash">,
+                        blockHash: a.blockHash as `0x${string}` & Brand.Brand<"Hash">,
+                        gasUsed: a.gasUsed,
+                      })
+                    ),
+                    Effect.provideService(Evm.PublicClient, this.client),
+                  )
                 ),
                 Effect.map(Chunk.of),
                 Effect.mapError(O.some),
@@ -283,7 +315,8 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
       //   ),
       // )
 
-      emit(maybeWaitForSafe)
+      // emit(maybeWaitForSafe)
+      emit(maybeWaitForSafeReceipt)
       emit(maybeWaitForReceipt)
       // emit(maybeIndex)
     })
