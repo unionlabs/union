@@ -106,9 +106,15 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   BigDecimal.fromString,
 ))
 
-const unbondAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+const unbondAmount = $derived<O.Option<bigint>>(pipe(
   inputAmount,
-  O.map(bd => BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))),
+  O.map(bd => {
+    const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
+    const normalized = BigDecimal.normalize(result)
+    return normalized.scale >= 0 
+      ? normalized.value / (10n ** BigInt(normalized.scale))
+      : normalized.value * (10n ** BigInt(-normalized.scale))
+  }),
 ))
 
 const isUnbonding = $derived(
@@ -205,6 +211,8 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
       UCS03_EVM.address,
     )
 
+    yield* Effect.log(`UnbondComponent: Current eU allowance: ${currentAllowance}, Send amount: ${sendAmount}`)
+
     if (currentAllowance < sendAmount) {
       unbondState = UnbondState.ApprovingAllowance()
 
@@ -219,6 +227,8 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
 
       unbondState = UnbondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
       yield* Evm.waitForTransactionReceipt(approveTxHash)
+    } else {
+      yield* Effect.log(`UnbondComponent: Allowance sufficient, skipping approval`)
     }
 
     unbondState = UnbondState.AllowanceApproved()
@@ -336,7 +346,7 @@ runPromiseExit$(() =>
       }
 
       const sender = senderOpt.value
-      const sendAmount = O.getOrThrow(unbondAmount).value
+      const sendAmount = O.getOrThrow(unbondAmount)
       const chain = evmChain.value
 
       unbondState = UnbondState.SwitchingChain()
