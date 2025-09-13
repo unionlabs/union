@@ -130,7 +130,6 @@ fn withdraw() {
         mock_env(),
         message_info(&Addr::unchecked(UNION1), &[]),
         ExecuteMsg::Withdraw {
-            staker: Addr::unchecked(UNION1),
             // withdraw to a different address
             withdraw_to_address: Addr::unchecked(UNION3),
             batch_id,
@@ -154,7 +153,6 @@ fn withdraw() {
         mock_env(),
         message_info(&Addr::unchecked(UNION2), &[]),
         ExecuteMsg::Withdraw {
-            staker: Addr::unchecked(UNION2),
             withdraw_to_address: Addr::unchecked(UNION2),
             batch_id,
         },
@@ -174,63 +172,6 @@ fn withdraw() {
 }
 
 #[test]
-fn must_be_staker_to_withdraw() {
-    let mut deps = setup();
-
-    deps.storage
-        .upsert_item::<AccountingStateStore, StdError>(|s| {
-            let mut s = s.unwrap();
-            s.total_bonded_native_tokens = 300_000;
-            s.total_issued_lst = 130_000;
-            Ok(s)
-        })
-        .unwrap();
-
-    let batch_id = BatchId::ONE;
-
-    let staker = Addr::unchecked(UNION1);
-
-    deps.storage.write::<UnstakeRequests>(
-        &UnstakeRequestKey {
-            batch_id,
-            staker_hash: staker_hash(&staker),
-        },
-        &UnstakeRequest {
-            batch_id,
-            staker: staker.to_string(),
-            amount: 40_000,
-        },
-    );
-
-    deps.storage.write::<ReceivedBatches>(
-        &batch_id,
-        &ReceivedBatch {
-            total_lst_to_burn: 40_000,
-            unstake_requests_count: 1,
-            received_native_unstaked: 40_000,
-        },
-    );
-
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            mock_env(),
-            // cannot withdraw another staker's funds
-            message_info(&Addr::unchecked(UNION2), &[]),
-            ExecuteMsg::Withdraw {
-                staker: Addr::unchecked(UNION1),
-                withdraw_to_address: Addr::unchecked(UNION1),
-                batch_id,
-            },
-        )
-        .unwrap_err(),
-        ContractError::Unauthorized {
-            sender: Addr::unchecked(UNION2)
-        }
-    );
-}
-
-#[test]
 fn non_existent_batch() {
     let mut deps = setup();
 
@@ -240,7 +181,6 @@ fn non_existent_batch() {
             mock_env(),
             message_info(&Addr::unchecked(UNION1), &[]),
             ExecuteMsg::Withdraw {
-                staker: Addr::unchecked(UNION1),
                 withdraw_to_address: Addr::unchecked(UNION1),
                 batch_id: BatchId::TWO
             }
@@ -262,7 +202,6 @@ fn batch_not_yet_received() {
             mock_env(),
             message_info(&Addr::unchecked(UNION1), &[]),
             ExecuteMsg::Withdraw {
-                staker: Addr::unchecked(UNION1),
                 withdraw_to_address: Addr::unchecked(UNION1),
                 batch_id: BatchId::ONE
             }
@@ -293,7 +232,6 @@ fn no_request_in_batch() {
             mock_env(),
             message_info(&Addr::unchecked(UNION1), &[]),
             ExecuteMsg::Withdraw {
-                staker: Addr::unchecked(UNION1),
                 withdraw_to_address: Addr::unchecked(UNION1),
                 batch_id: BatchId::ONE,
             }

@@ -70,7 +70,6 @@ use crate::types::{
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
-    #[cfg_attr(feature = "schemars", schemars(with = "Addr"))]
     pub native_token_denom: String,
 
     #[serde(with = "::serde_utils::string")]
@@ -119,18 +118,13 @@ pub enum ExecuteMsg {
 
     /// Initiates the unbonding process for a user.
     Unbond {
-        /// The address that will receive the native tokens on.
-        staker: Addr,
-
         /// The amount to unstake.
         amount: Uint128,
     },
 
     /// Withdraws unstaked tokens.
     Withdraw {
-        /// The address that will receive the funds.
-        staker: Addr,
-        /// The address to withdraw the funds to on this chain.
+        /// The address to withdraw the funds to.
         withdraw_to_address: Addr,
         /// ID of the batch from which to withdraw.
         batch_id: BatchId,

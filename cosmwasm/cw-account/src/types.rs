@@ -84,7 +84,7 @@ impl fmt::Display for Admin {
                 address,
                 channel_id,
                 path,
-            }) => write!(f, "remote:{address}/{channel_id}/{path}"),
+            }) => write!(f, "remote:{path}/{channel_id}/{address}"),
         }
     }
 }

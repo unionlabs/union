@@ -58,6 +58,8 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+#![cfg_attr(not(test), warn(clippy::arithmetic_side_effects, clippy::unwrap_used))]
+
 pub mod contract;
 pub mod error;
 pub mod execute;
