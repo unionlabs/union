@@ -269,7 +269,6 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
     const unbondCall = yield* pipe(
       {
         unbond: {
-          staker: receiver.address,
           amount: tokenOrder.quoteAmount,
         },
       } as const,
