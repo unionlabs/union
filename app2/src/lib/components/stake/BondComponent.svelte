@@ -57,10 +57,10 @@ import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { custom } from "viem"
 import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
-import { holesky } from "viem/chains"
+import { mainnet } from "viem/chains"
 
-const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.17000")
-const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
+const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.1")
+const UNION_CHAIN_ID = UniversalChainId.make("union.union-1")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
 const DESTINATION_CHANNEL_ID = ChannelId.make(20)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
@@ -448,7 +448,7 @@ runPromiseExit$(() =>
 
       bondState = BondState.SwitchingChain()
 
-      const VIEM_CHAIN = holesky
+      const VIEM_CHAIN = mainnet
 
       const connectorClient = yield* getWagmiConnectorClient
 
@@ -785,7 +785,7 @@ function handleRetry() {
                   const isSafeWallet = getLastConnectedWalletId() === "safe"
                   return isSafeWallet
                     ? "Preparing Safe Transaction"
-                    : "Switching to Holesky"
+                    : "Switching to Sepolia"
                 }),
                 Match.when(BondState.$is("CheckingAllowance"), () =>
                   "Checking Token Allowance"),
@@ -826,7 +826,7 @@ function handleRetry() {
                   const isSafeWallet = getLastConnectedWalletId() === "safe"
                   return isSafeWallet
                     ? "Preparing transaction for Safe wallet..."
-                    : "Please switch to Holesky network in your wallet"
+                    : "Please switch to Sepolia network in your wallet"
                 }),
                 Match.when(BondState.$is("CheckingAllowance"), () =>
                   "Reading current token allowance from blockchain..."),
