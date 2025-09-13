@@ -419,11 +419,11 @@ runPromiseExit$(() =>
       unbondState = UnbondState.ConfirmingUnbond()
 
       const executeBondWithProviders = executeUnbond(sender, sendAmount).pipe(
+        Effect.provide(maybeSafe),
         Effect.provide(EvmZkgmClient.layerWithoutWallet),
         Effect.provide(walletClient),
         Effect.provide(publicClient),
         Effect.provide(ChainRegistry.Default),
-        Effect.provide(maybeSafe),
       )
 
       const { response, txHash } = yield* executeBondWithProviders
