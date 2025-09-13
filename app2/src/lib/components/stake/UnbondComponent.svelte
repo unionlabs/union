@@ -202,40 +202,59 @@ const instantiate2 = Effect.fn(
 )
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
-  Effect.gen(function*() {
-    unbondState = UnbondState.CheckingAllowance()
-
-    const currentAllowance = yield* Evm.readErc20Allowance(
+  pipe(
+    Evm.readErc20Allowance(
       EU_ERC20.address,
       sender.address,
       UCS03_EVM.address,
-    )
-
-    yield* Effect.log(
-      `UnbondComponent: Current eU allowance: ${currentAllowance}, Send amount: ${sendAmount}`,
-    )
-
-    if (currentAllowance < sendAmount) {
-      unbondState = UnbondState.ApprovingAllowance()
-
-      const approveTxHash = yield* Evm.increaseErc20Allowance(
-        EU_ERC20.address,
-        UCS03_EVM,
-        sendAmount,
-      )
-
-      unbondState = UnbondState.AllowanceSubmitted({ txHash: approveTxHash })
-      yield* Effect.sleep("500 millis")
-
-      unbondState = UnbondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
-      yield* Evm.waitForTransactionReceipt(approveTxHash)
-    } else {
-      yield* Effect.log(`UnbondComponent: Allowance sufficient, skipping approval`)
-    }
-
-    unbondState = UnbondState.AllowanceApproved()
-    yield* Effect.sleep("500 millis")
-  })
+    ),
+    Effect.tap(() =>
+      Effect.sync(() => {
+        unbondState = UnbondState.CheckingAllowance()
+      })
+    ),
+    Effect.flatMap((amount) =>
+      Effect.if(amount < sendAmount, {
+        onTrue: () =>
+          pipe(
+            Effect.log(`Approving allowance ${sendAmount} for ${EU_ERC20.address}`),
+            Effect.andThen(() =>
+              Effect.sync(() => {
+                unbondState = UnbondState.ApprovingAllowance()
+              })
+            ),
+            Effect.andThen(() =>
+              pipe(
+                Evm.increaseErc20Allowance(
+                  EU_ERC20.address,
+                  UCS03_EVM,
+                  sendAmount,
+                ),
+                Effect.tap((txHash) =>
+                  Effect.sync(() => {
+                    unbondState = UnbondState.AllowanceSubmitted({ txHash })
+                  })
+                ),
+                Effect.tap(() => Effect.sleep("500 millis")),
+                Effect.tap((txHash) =>
+                  Effect.sync(() => {
+                    unbondState = UnbondState.WaitingForAllowanceConfirmation({ txHash })
+                  })
+                ),
+                Effect.andThen(Evm.waitForTransactionReceipt),
+              )
+            ),
+          ),
+        onFalse: () => Effect.log(`Allowance fulfilled for ${EU_ERC20.address}`),
+      })
+    ),
+    Effect.tap(() =>
+      Effect.sync(() => {
+        unbondState = UnbondState.AllowanceApproved()
+      })
+    ),
+    Effect.tap(() => Effect.sleep("500 millis")),
+  )
 
 const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   Effect.gen(function*() {

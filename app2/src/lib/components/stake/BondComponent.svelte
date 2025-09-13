@@ -265,34 +265,59 @@ const instantiate2 = Effect.fn(
 )
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
-  Effect.gen(function*() {
-    bondState = BondState.CheckingAllowance()
-
-    const currentAllowance = yield* Evm.readErc20Allowance(
+  pipe(
+    Evm.readErc20Allowance(
       U_ERC20.address,
       sender.address,
       UCS03_EVM.address,
-    )
-
-    if (currentAllowance < sendAmount) {
-      bondState = BondState.ApprovingAllowance()
-
-      const approveTxHash = yield* Evm.increaseErc20Allowance(
-        U_ERC20.address,
-        UCS03_EVM,
-        sendAmount,
-      )
-
-      bondState = BondState.AllowanceSubmitted({ txHash: approveTxHash })
-      yield* Effect.sleep("500 millis")
-
-      bondState = BondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
-      yield* Evm.waitForTransactionReceipt(approveTxHash)
-    }
-
-    bondState = BondState.AllowanceApproved()
-    yield* Effect.sleep("500 millis")
-  })
+    ),
+    Effect.tap(() =>
+      Effect.sync(() => {
+        bondState = BondState.CheckingAllowance()
+      })
+    ),
+    Effect.flatMap((amount) =>
+      Effect.if(amount < sendAmount, {
+        onTrue: () =>
+          pipe(
+            Effect.log(`Increasing allowance ${sendAmount} for ${U_ERC20.address}`),
+            Effect.andThen(() =>
+              Effect.sync(() => {
+                bondState = BondState.ApprovingAllowance()
+              })
+            ),
+            Effect.andThen(() =>
+              pipe(
+                Evm.increaseErc20Allowance(
+                  U_ERC20.address,
+                  UCS03_EVM,
+                  sendAmount,
+                ),
+                Effect.tap((txHash) =>
+                  Effect.sync(() => {
+                    bondState = BondState.AllowanceSubmitted({ txHash })
+                  })
+                ),
+                Effect.tap(() => Effect.sleep("500 millis")),
+                Effect.tap((txHash) =>
+                  Effect.sync(() => {
+                    bondState = BondState.WaitingForAllowanceConfirmation({ txHash })
+                  })
+                ),
+                Effect.andThen(Evm.waitForTransactionReceipt),
+              )
+            ),
+          ),
+        onFalse: () => Effect.log(`Allowance fulfilled for ${U_ERC20.address}`),
+      })
+    ),
+    Effect.tap(() =>
+      Effect.sync(() => {
+        bondState = BondState.AllowanceApproved()
+      })
+    ),
+    Effect.tap(() => Effect.sleep("500 millis")),
+  )
 
 const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, slippagePercent: number) =>
   Effect.gen(function*() {
