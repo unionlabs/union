@@ -556,22 +556,12 @@ runPromiseExit$(() =>
 
       bondState = BondState.WaitingForConfirmation({ txHash })
 
-      const finalHash = yield* Effect.if(isSafeWallet, {
-        onTrue: () =>
-          pipe(
-            response.waitFor(
-              ZkgmIncomingMessage.LifecycleEvent.$is("WaitForSafeWalletHash"),
-            ),
-            Effect.flatMap(O.map(x => x.hash)),
-          ),
-        onFalse: () =>
-          pipe(
-            response.waitFor(
-              ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
-            ),
-            Effect.flatMap(O.map(x => x.transactionHash)),
-          ),
-      })
+      const finalHash = yield* pipe(
+        response.waitFor(
+          ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+        ),
+        Effect.flatMap(O.map(x => x.transactionHash)),
+      )
 
       bondState = BondState.WaitingForIndexer({ txHash: finalHash })
 
