@@ -225,24 +225,32 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
 
       const maybeWaitForReceipt = pipe(
         Effect.serviceOption(Safe.Safe),
+        Effect.tap((safeOption) => 
+          Effect.log("[SAFE DEBUG] ZKGM CLIENT: Safe service detection", { 
+            hasSafe: O.isSome(safeOption), 
+            txHash: this.txHash 
+          })
+        ),
         Effect.flatMap(
           O.match({
             onNone: () =>
               pipe(
-                waitForReceipt,
+                Effect.log("[SAFE DEBUG] ZKGM CLIENT: Taking normal wallet path for", this.txHash),
+                Effect.andThen(() => waitForReceipt),
                 Effect.map(Chunk.of),
                 Effect.mapError(O.some),
               ),
             onSome: (safe) =>
               pipe(
-                safe.resolveTxHash(
+                Effect.log("[SAFE DEBUG] ZKGM CLIENT: Taking Safe wallet path for", this.txHash),
+                Effect.andThen(() => safe.resolveTxHash(
                   this.txHash,
-                ),
+                )),
                 Effect.flatMap((resolvedHash) =>
                   pipe(
-                    Effect.log("SAFE: Waiting for receipt with resolvedHash", resolvedHash),
+                    Effect.log("[SAFE DEBUG] SAFE: Waiting for receipt with resolvedHash", resolvedHash),
                     Effect.andThen(() => Evm.waitForTransactionReceipt(resolvedHash as `0x${string}`)),
-                    Effect.tap((a) => Effect.log("SAFE: Got receipt", { 
+                    Effect.tap((a) => Effect.log("[SAFE DEBUG] SAFE: Got receipt", { 
                       resolvedHash, 
                       receiptTransactionHash: a.transactionHash,
                       match: resolvedHash === a.transactionHash,
