@@ -3,17 +3,20 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import BondComponent from "$lib/components/stake/BondComponent.svelte"
+import IncentiveCard from "$lib/components/stake/IncentiveCard.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import * as AppRuntime from "$lib/runtime"
+import { calculateIncentive, formatIncentive } from "$lib/services/incentive"
 import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
 import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { cn } from "$lib/utils"
 import { matchOption, matchRuntimeResult } from "$lib/utils/snippets.svelte"
+import { FetchHttpClient } from "@effect/platform"
 import { Staking, Ucs05 } from "@unionlabs/sdk"
 import { EU_ERC20, EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
@@ -31,7 +34,7 @@ import { onMount } from "svelte"
 type StakeTab = "bond" | "unbond" | "withdraw"
 type TableFilter = "all" | "bond" | "unbond"
 
-const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
+const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.1")
 
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
@@ -107,6 +110,20 @@ const data = AppRuntime.runPromiseExit$(() => {
   )
 })
 
+const incentives = AppRuntime.runPromiseExit$(() => {
+  return Effect.gen(function*() {
+    const incentive = yield* calculateIncentive
+    console.log("Incentive data loaded:", incentive)
+    return incentive
+  }).pipe(
+    Effect.provide(FetchHttpClient.layer),
+    Effect.catchAll((error) => {
+      console.error("Failed to load incentive data:", error)
+      return Effect.fail(error)
+    }),
+  )
+})
+
 const evmChain = $derived(pipe(
   ChainStore.data,
   O.flatMap(A.findFirst(x => x.universal_chain_id === EVM_UNIVERSAL_CHAIN_ID)),
@@ -165,37 +182,6 @@ const eUOnEvmBalance = $derived(pipe(
 
 $inspect(data)
 </script>
-
-{#snippet renderChain(chain: Chain, denom: TokenRawDenom)}
-  <ChainComponent
-    chain={chain}
-    withToken={denom}
-  />
-{/snippet}
-
-{#snippet renderStatus(bond: Bond | Unbond)}
-  {#if bond.status === "success"}
-    <span
-      class="px-1.5 py-0.5 text-xs font-mono font-medium rounded-sm bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30"
-    >
-      success
-    </span>
-  {/if}
-  {#if bond.status === "failure"}
-    <span
-      class="px-1.5 py-0.5 text-xs font-mono font-medium rounded-sm bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30"
-    >
-      failure
-    </span>
-  {/if}
-  {#if bond.status === "pending"}
-    <span
-      class="px-1.5 py-0.5 text-xs font-mono font-medium rounded-sm bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/30"
-    >
-      pending
-    </span>
-  {/if}
-{/snippet}
 
 {#snippet maybeRenderBonds(maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>)}
   {#snippet noBonds()}
@@ -321,54 +307,57 @@ $inspect(data)
   </div>
 {/snippet}
 
-{#snippet noWallet()}
-  <NoWalletConnected title="No EVM Wallet Connected" />
-{/snippet}
-
 <Sections>
-  <Card
-    class="p-0 font-mono"
-    divided
-  >
-    <!-- Controls -->
-    <div class="pt-2 px-2 pb-2 border-b border-zinc-800">
-      <Tabs
-        items={[
-          { id: "bond", label: "Stake" },
-          { id: "unbond", label: "Unstake" },
-          { id: "withdraw", label: "Withdraw" },
-        ]}
-        activeId={selectedTab}
-        onTabChange={(id) => selectedTab = id as StakeTab}
-      />
-    </div>
+  <!-- Top Row: Incentive Card and Bond/Unbond Card -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Bond/Unbond Card -->
+    <Card
+      class="p-0 font-mono"
+      divided
+    >
+      <!-- Controls -->
+      <div class="pt-2 px-2 pb-2 border-b border-zinc-800">
+        <Tabs
+          items={[
+            { id: "bond", label: "Stake" },
+            { id: "unbond", label: "Unstake" },
+            { id: "withdraw", label: "Withdraw" },
+          ]}
+          activeId={selectedTab}
+          onTabChange={(id) => selectedTab = id as StakeTab}
+        />
+      </div>
 
-    <!-- Content -->
-    <div class="px-3 pb-3">
-      {#if selectedTab === "bond"}
-        <BondComponent
-          {evmChain}
-          {uOnEvmToken}
-          {uOnEvmBalance}
-          onBondSuccess={refreshBondData}
-        />
-      {:else if selectedTab === "unbond"}
-        <UnbondComponent
-          {evmChain}
-          {uOnEvmToken}
-          {eUOnEvmBalance}
-          onUnbondSuccess={refreshBondData}
-        />
-      {:else if selectedTab === "withdraw"}
-        <div class="flex flex-col gap-4 text-center py-8">
-          <div class="text-zinc-400 text-sm">Withdrawal functionality</div>
-          <div class="text-zinc-500 text-xs">
-            Query withdrawable balance and implement withdrawal logic
+      <!-- Content -->
+      <div class="p-2">
+        {#if selectedTab === "bond"}
+          <BondComponent
+            {evmChain}
+            {uOnEvmToken}
+            {uOnEvmBalance}
+            onBondSuccess={refreshBondData}
+          />
+        {:else if selectedTab === "unbond"}
+          <UnbondComponent
+            {evmChain}
+            {uOnEvmToken}
+            {eUOnEvmBalance}
+            onUnbondSuccess={refreshBondData}
+          />
+        {:else if selectedTab === "withdraw"}
+          <div class="flex flex-col gap-4 text-center py-8">
+            <div class="text-zinc-400 text-sm">Withdrawal functionality</div>
+            <div class="text-zinc-500 text-xs">
+              Query withdrawable balance and implement withdrawal logic
+            </div>
           </div>
-        </div>
-      {/if}
-    </div>
-  </Card>
+        {/if}
+      </div>
+    </Card>
+
+    <!-- Incentive Information Card -->
+    <IncentiveCard incentives={incentives.current} />
+  </div>
 
   <!-- Staking History Card -->
   <Card
