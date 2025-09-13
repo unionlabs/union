@@ -196,32 +196,34 @@ const instantiate2 = Effect.fn(
 )
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
-  pipe(
-    Evm.readErc20Allowance(
+  Effect.gen(function*() {
+    unbondState = UnbondState.CheckingAllowance()
+
+    const currentAllowance = yield* Evm.readErc20Allowance(
       EU_ERC20.address,
       sender.address,
       UCS03_EVM.address,
-    ),
-    Effect.flatMap((amount) =>
-      Effect.if(amount < sendAmount, {
-        onTrue: () =>
-          pipe(
-            Effect.log(`Increasing allowance by ${sendAmount - amount} for ${EU_ERC20.address}`),
-            Effect.andThen(() =>
-              pipe(
-                Evm.increaseErc20Allowance(
-                  EU_ERC20.address,
-                  UCS03_EVM,
-                  sendAmount - amount,
-                ),
-                Effect.andThen(Evm.waitForTransactionReceipt),
-              )
-            ),
-          ),
-        onFalse: () => Effect.log(`Allowance fulfilled for ${EU_ERC20.address}`),
-      })
-    ),
-  )
+    )
+
+    if (currentAllowance < sendAmount) {
+      unbondState = UnbondState.ApprovingAllowance()
+
+      const approveTxHash = yield* Evm.increaseErc20Allowance(
+        EU_ERC20.address,
+        UCS03_EVM,
+        sendAmount,
+      )
+
+      unbondState = UnbondState.AllowanceSubmitted({ txHash: approveTxHash })
+      yield* Effect.sleep("500 millis")
+
+      unbondState = UnbondState.WaitingForAllowanceConfirmation({ txHash: approveTxHash })
+      yield* Evm.waitForTransactionReceipt(approveTxHash)
+    }
+
+    unbondState = UnbondState.AllowanceApproved()
+    yield* Effect.sleep("500 millis")
+  })
 
 const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   Effect.gen(function*() {
@@ -360,15 +362,9 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
-      unbondState = UnbondState.CheckingAllowance()
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
         Effect.provide(walletClient),
         Effect.provide(publicClient),
-        Effect.tap(() =>
-          Effect.sync(() => {
-            unbondState = UnbondState.ApprovingAllowance()
-          })
-        ),
       )
 
       unbondState = UnbondState.ConfirmingUnbond()
