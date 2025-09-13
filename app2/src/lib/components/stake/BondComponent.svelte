@@ -280,7 +280,7 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
       Effect.if(amount < sendAmount, {
         onTrue: () =>
           pipe(
-            Effect.log(`Increasing allowance ${sendAmount} for ${U_ERC20.address}`),
+            Effect.log(`Approving allowance ${sendAmount} for ${U_ERC20.address}`),
             Effect.andThen(() =>
               Effect.sync(() => {
                 bondState = BondState.ApprovingAllowance()
@@ -293,18 +293,35 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
                   UCS03_EVM,
                   sendAmount,
                 ),
-                Effect.tap((txHash) =>
+                Effect.flatMap((safeTxHash) =>
+                  Effect.if(getLastConnectedWalletId() === "safe", {
+                    onTrue: () =>
+                      pipe(
+                        Effect.serviceOption(Safe.Safe),
+                        Effect.flatMap(
+                          O.match({
+                            onNone: () => Effect.succeed(safeTxHash),
+                            onSome: (safe) => safe.resolveTxHash(safeTxHash),
+                          }),
+                        ),
+                      ),
+                    onFalse: () => Effect.succeed(safeTxHash),
+                  })
+                ),
+                Effect.tap((sepoliaHash) =>
                   Effect.sync(() => {
-                    bondState = BondState.AllowanceSubmitted({ txHash })
+                    bondState = BondState.AllowanceSubmitted({ txHash: sepoliaHash })
                   })
                 ),
                 Effect.tap(() => Effect.sleep("500 millis")),
-                Effect.tap((txHash) =>
+                Effect.tap((sepoliaHash) =>
                   Effect.sync(() => {
-                    bondState = BondState.WaitingForAllowanceConfirmation({ txHash })
+                    bondState = BondState.WaitingForAllowanceConfirmation({ txHash: sepoliaHash })
                   })
                 ),
-                Effect.andThen(Evm.waitForTransactionReceipt),
+                Effect.andThen((sepoliaHash) =>
+                  Evm.waitForTransactionReceipt(sepoliaHash as `0x${string}`)
+                ),
               )
             ),
           ),
