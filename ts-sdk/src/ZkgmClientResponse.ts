@@ -8,6 +8,7 @@ import { Hex } from "./schema/hex.js"
 import type * as ClientError from "./ZkgmClientError.js"
 import type * as ClientRequest from "./ZkgmClientRequest.js"
 import * as IncomingMessage from "./ZkgmIncomingMessage.js"
+import * as O from "effect/Option"
 
 /**
  * @category type ids
@@ -31,4 +32,5 @@ export interface ZkgmClientResponse
   readonly [TypeId]: TypeId
   readonly request: ClientRequest.ZkgmClientRequest
   readonly txHash: Hex
+  readonly safeHash: O.Option<Hex>
 }
