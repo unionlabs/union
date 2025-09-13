@@ -931,6 +931,7 @@ contract GetDeployed is VersionedScript {
         address ucs03 = getDeployed(Protocols.UCS03);
 
         address u = getDeployed(string(INSTANCE_SALT.U));
+        address eu = getDeployed(string(INSTANCE_SALT.EU));
         address udrop = getDeployed(string(INSTANCE_SALT.UDROP));
 
         console.log(
@@ -1012,6 +1013,34 @@ contract GetDeployed is VersionedScript {
             )
         );
         impls.serialize(u.toHexString(), proxyU);
+
+        if (eu.code.length > 0) {
+            string memory proxyEU = "proxyEU";
+            proxyEU.serialize(
+                "contract",
+                string(
+                    "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                )
+            );
+            proxyEU = proxyEU.serialize(
+                "args",
+                abi.encode(
+                    implOf(eu),
+                    abi.encodeCall(
+                        U.initialize,
+                        (
+                            manager,
+                            ucs03,
+                            "Escher Staked U",
+                            "eU",
+                            18,
+                            bytes(hex"")
+                        )
+                    )
+                )
+            );
+            impls.serialize(eu.toHexString(), proxyEU);
+        }
 
         if (udrop.code.length > 0) {
             string memory proxyUDrop = "proxyUDrop";
@@ -1186,6 +1215,13 @@ contract GetDeployed is VersionedScript {
         implU.serialize("contract", string("contracts/U.sol:U"));
         implU = implU.serialize("args", bytes(hex""));
         impls.serialize(implOf(u).toHexString(), implU);
+
+        if (eu.code.length > 0) {
+            string memory implEU = "implEU";
+            implEU.serialize("contract", string("contracts/U.sol:U"));
+            implEU = implEU.serialize("args", bytes(hex""));
+            impls.serialize(implOf(eu).toHexString(), implEU);
+        }
 
         if (udrop.code.length > 0) {
             string memory implUDrop = "implUDrop";
