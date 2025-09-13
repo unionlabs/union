@@ -349,11 +349,7 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
     })
 
     const client = yield* ZkgmClient.ZkgmClient
-    const response = yield* client.execute(request)
-
-    yield* Effect.log("Submission TX Hash:", response.txHash)
-
-    return { response, txHash: response.txHash }
+    return yield* client.execute(request)
   })
 
 runPromiseExit$(() =>
@@ -418,23 +414,20 @@ runPromiseExit$(() =>
         Effect.provide(ChainRegistry.Default),
       )
 
-      const { response, txHash } = yield* executeBondWithProviders
+      const { txHash, safeHash } = yield* executeBondWithProviders
 
       unbondState = UnbondState.UnbondSubmitted({ txHash })
       yield* Effect.sleep("500 millis")
 
       unbondState = UnbondState.WaitingForConfirmation({ txHash })
 
-      // response.txHash is now always the on-chain hash
-      const finalHash = response.txHash
+      yield* pipe(
+        Evm.waitForTransactionReceipt(txHash),
+        Effect.provide(publicClient),
+        Effect.tap(() => Effect.log("[SAFE DEBUG] UNBOND: Transaction receipt confirmed")),
+      )
 
-      yield* Effect.log("[SAFE DEBUG] UNBOND: Using response.txHash for indexing", {
-        onChainHash: finalHash,
-        safeHash: response.safeHash,
-        isSafeTransaction: O.isSome(response.safeHash),
-      })
-
-      unbondState = UnbondState.WaitingForIndexer({ txHash: finalHash })
+      unbondState = UnbondState.WaitingForIndexer({ txHash })
 
       yield* pipe(
         Effect.gen(function*() {
@@ -447,7 +440,7 @@ runPromiseExit$(() =>
                 }
               }
             `),
-            variables: { tx_hash: finalHash },
+            variables: { tx_hash: txHash },
           })
         }),
         Effect.flatMap(Schema.decodeUnknown(
@@ -464,13 +457,13 @@ runPromiseExit$(() =>
         Effect.provide(QlpConfigProvider),
       )
 
-      unbondState = UnbondState.Success({ txHash: finalHash })
+      unbondState = UnbondState.Success({ txHash: txHash })
 
       unbondInput = ""
       shouldUnbond = false
       onUnbondSuccess?.()
 
-      return finalHash
+      return txHash
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
