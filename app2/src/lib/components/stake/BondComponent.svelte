@@ -57,10 +57,10 @@ import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { custom } from "viem"
 import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
-import { mainnet } from "viem/chains"
+import { sepolia } from "viem/chains"
 
-const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.1")
-const UNION_CHAIN_ID = UniversalChainId.make("union.union-1")
+const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
+const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 const SOURCE_CHANNEL_ID = ChannelId.make(6)
 const DESTINATION_CHANNEL_ID = ChannelId.make(20)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
@@ -448,7 +448,7 @@ runPromiseExit$(() =>
 
       bondState = BondState.SwitchingChain()
 
-      const VIEM_CHAIN = mainnet
+      const VIEM_CHAIN = sepolia
 
       const connectorClient = yield* getWagmiConnectorClient
 
