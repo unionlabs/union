@@ -9,7 +9,9 @@ import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Ucs05 from "@unionlabs/sdk/Ucs05"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
+import * as O from "effect/Option"
 import { type Address, erc20Abi } from "viem"
+import * as Safe from "./Safe.js"
 import {
   type Abi,
   type Account as ViemAccount,
@@ -574,7 +576,7 @@ export const readErc20Allowance = Effect.fn("readErc20Allowance")((
  * @param tokenAddress The address of the ERC20 token
  * @param spenderAddress The address of the spender
  * @param amount The amount to increase the allowance by
- * @returns An Effect that resolves to the transaction hash
+ * @returns An Effect that resolves to the transaction hash (on-chain hash for Safe wallets)
  *
  * @category utils
  * @since 0.0.0
@@ -595,6 +597,17 @@ export const increaseErc20Allowance = Effect.fn("increaseErc20Allowance")((
         functionName: "approve",
         args: [spenderAddress.address, amount],
       })
+    ),
+    Effect.flatMap((txHash) =>
+      pipe(
+        Effect.serviceOption(Safe.Safe),
+        Effect.flatMap(
+          O.match({
+            onNone: () => Effect.succeed(txHash),
+            onSome: (safe) => safe.resolveTxHash(txHash),
+          }),
+        ),
+      )
     ),
   )
 )
