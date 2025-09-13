@@ -1,10 +1,10 @@
 <script lang="ts">
-//WORK IN PROGRESS
-import { formatIncentive } from "$lib/services/incentive"
+// WORK IN PROGRESS
 import Card from "$lib/components/ui/Card.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
+import { formatIncentive } from "$lib/services/incentive"
 import { matchRuntimeResult } from "$lib/utils/snippets.svelte"
-import type { Option, Exit } from "effect"
+import type { Exit, Option } from "effect"
 
 interface Props {
   incentives: Option.Option<Exit.Exit<any, any>>
@@ -15,7 +15,7 @@ let { incentives }: Props = $props()
 let selectedTab: "incentive" | "rewards" = $state("incentive")
 
 $effect(() => {
-  console.log('IncentiveCard received incentives:', incentives)
+  console.log("IncentiveCard received incentives:", incentives)
 })
 
 function formatPercentage(value: number): string {
@@ -40,7 +40,7 @@ function formatLargeNumber(value: number): string {
     <div class="p-2 border-b border-zinc-800">
       <Tabs
         items={[
-          { id: "incentive", label: "Incentive" }
+          { id: "incentive", label: "Incentive" },
         ]}
         activeId={selectedTab}
         onTabChange={(id) => selectedTab = id as "incentive" | "rewards"}
@@ -130,7 +130,7 @@ function formatLargeNumber(value: number): string {
     <div class="text-center">
       <div class="text-red-400 text-sm mb-2">Failed to load incentive data</div>
       <div class="text-xs text-zinc-500">
-        {error?.message || 'Unknown error occurred'}
+        {error?.message || "Unknown error occurred"}
       </div>
     </div>
   </div>
@@ -138,8 +138,8 @@ function formatLargeNumber(value: number): string {
 
 <Card class="p-0">
   {@render matchRuntimeResult(incentives, {
-    onSuccess: renderIncentiveData,
-    onFailure: renderError,
-    onNone: renderLoading,
-  })}
+      onSuccess: renderIncentiveData,
+      onFailure: renderError,
+      onNone: renderLoading,
+    })}
 </Card>
