@@ -186,7 +186,39 @@ export const fromWallet = (
             Effect.provideService(Evm.WalletClient, wallet),
           )),
         Match.exhaustive,
-        Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
+        Effect.flatMap((originalTxHash) =>
+          pipe(
+            Effect.serviceOption(Safe.Safe),
+            Effect.flatMap(
+              O.match({
+                onNone: () => 
+                  // Normal wallet: txHash is on-chain hash, no safe hash
+                  Effect.succeed(new ClientResponseImpl(request, client, originalTxHash, O.none())),
+                onSome: (safe) =>
+                  pipe(
+                    // Safe wallet: resolve to get on-chain hash
+                    safe.resolveTxHash(originalTxHash),
+                    Effect.map((resolvedHash) => 
+                      new ClientResponseImpl(
+                        request, 
+                        client, 
+                        resolvedHash as Hex, // txHash = on-chain hash
+                        O.some(originalTxHash) // safeHash = original Safe hash
+                      )
+                    ),
+                    Effect.mapError((safeError) =>
+                      new ClientError.RequestError({
+                        request,
+                        reason: "Transport",
+                        cause: safeError,
+                        description: "Safe hash resolution failed",
+                      })
+                    )
+                  )
+              })
+            )
+          )
+        ),
       )
     })
   )
@@ -235,22 +267,22 @@ export abstract class IncomingMessageImpl<E> extends Inspectable.Class
           O.match({
             onNone: () =>
               pipe(
-                Effect.log("[SAFE DEBUG] ZKGM CLIENT: Taking normal wallet path for", this.txHash),
+                Effect.log("ZKGM CLIENT: Taking normal wallet path for", this.txHash),
                 Effect.andThen(() => waitForReceipt),
                 Effect.map(Chunk.of),
                 Effect.mapError(O.some),
               ),
             onSome: (safe) =>
               pipe(
-                Effect.log("[SAFE DEBUG] ZKGM CLIENT: Taking Safe wallet path for", this.txHash),
+                Effect.log("ZKGM CLIENT: Taking Safe wallet path for", this.txHash),
                 Effect.andThen(() => safe.resolveTxHash(
                   this.txHash,
                 )),
                 Effect.flatMap((resolvedHash) =>
                   pipe(
-                    Effect.log("[SAFE DEBUG] SAFE: Waiting for receipt with resolvedHash", resolvedHash),
+                    Effect.log("SAFE: Waiting for receipt with resolvedHash", resolvedHash),
                     Effect.andThen(() => Evm.waitForTransactionReceipt(resolvedHash as `0x${string}`)),
-                    Effect.tap((a) => Effect.log("[SAFE DEBUG] SAFE: Got receipt", { 
+                    Effect.tap((a) => Effect.log("SAFE: Got receipt", { 
                       resolvedHash, 
                       receiptTransactionHash: a.transactionHash,
                       match: resolvedHash === a.transactionHash,
@@ -322,6 +354,7 @@ export class ClientResponseImpl extends IncomingMessageImpl<ClientError.Response
     readonly request: ClientRequest.ZkgmClientRequest,
     readonly client: Evm.Evm.PublicClient,
     readonly txHash: Hex,
+    readonly safeHash: O.Option<Hex>,
   ) {
     super(client, txHash, (error) =>
       new ClientError.ResponseError({

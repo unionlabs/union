@@ -489,20 +489,12 @@ runPromiseExit$(() =>
         yield* switchChain(VIEM_CHAIN)
       }
 
-      const maybeSafe = Match.value(isSafeWallet).pipe(
-        Match.when(true, () => {
-          console.log("[SAFE DEBUG] BOND: Providing Safe service for wallet", isSafeWallet)
-          return Safe.Safe.Default({
-            ...safeOpts,
-            debug: true,
-          })
-        }),
-        Match.when(false, () => {
-          console.log("[SAFE DEBUG] BOND: Not providing Safe service for wallet", isSafeWallet)
-          return Layer.empty
-        }),
-        Match.exhaustive,
-      )
+      // Always provide Safe service - let zkgm client decide whether to use it
+      const maybeSafe = Safe.Safe.Default({
+        ...safeOpts,
+        debug: true,
+      })
+      console.log("[SAFE DEBUG] BOND: Always providing Safe service, isSafeWallet:", isSafeWallet)
 
       const publicClient = Evm.PublicClient.Live({
         chain: VIEM_CHAIN,
@@ -545,22 +537,14 @@ runPromiseExit$(() =>
 
       bondState = BondState.WaitingForConfirmation({ txHash })
 
-      const finalHash = yield* pipe(
-        response.waitFor(
-          ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
-        ),
-        Effect.tap((event) =>
-          Effect.log("[SAFE DEBUG] BOND: Got EvmTransactionReceiptComplete", event)
-        ),
-        Effect.flatMap(O.map(x => x.transactionHash)),
-        Effect.tap((hash) =>
-          Effect.log("[SAFE DEBUG] BOND: Using finalHash for indexing", {
-            originalTxHash: txHash,
-            finalHash: hash,
-            areEqual: txHash === hash,
-          })
-        ),
-      )
+      // response.txHash is now always the on-chain hash
+      const finalHash = response.txHash
+
+      yield* Effect.log("[SAFE DEBUG] BOND: Using response.txHash for indexing", {
+        onChainHash: finalHash,
+        safeHash: response.safeHash,
+        isSafeTransaction: O.isSome(response.safeHash),
+      })
 
       bondState = BondState.WaitingForIndexer({ txHash: finalHash })
 
