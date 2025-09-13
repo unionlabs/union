@@ -907,7 +907,10 @@ _: {
         mkCi false (
           pkgs.writeShellApplication {
             name = "eth-verify";
-            runtimeInputs = [ wrappedForgeOnline ];
+            runtimeInputs = [
+              wrappedForgeOnline
+              pkgs.jq
+            ];
             text = ''
               ${ensureAtRepositoryRoot}
 
