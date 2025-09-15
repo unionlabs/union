@@ -68,15 +68,15 @@ pub fn reencode_evm_zkp_for_sui(zkp: &[u8]) -> Result<Vec<u8>, SerializationErro
 
     let mut cursor = 0;
     // zkp.proof.a
-    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    serialize_g1(&mut cursor, &mut buf, zkp).unwrap();
     // zkp.proof.b
-    serialize_g2(&mut cursor, &mut buf, &zkp).unwrap();
+    serialize_g2(&mut cursor, &mut buf, zkp).unwrap();
     // zkp.proof.c
-    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    serialize_g1(&mut cursor, &mut buf, zkp).unwrap();
     // zkp.poc
-    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    serialize_g1(&mut cursor, &mut buf, zkp).unwrap();
     // zkp.pok
-    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    serialize_g1(&mut cursor, &mut buf, zkp).unwrap();
 
     buf.extend_from_slice(&zkp[cursor..]);
 
