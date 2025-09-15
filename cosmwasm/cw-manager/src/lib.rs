@@ -19,6 +19,7 @@ pub mod execute;
 pub mod msg;
 pub mod state;
 pub mod time;
+pub mod types;
 
 #[derive(Debug)]
 pub struct Managed<'a, T: DeserializeOwned> {

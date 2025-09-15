@@ -4725,8 +4725,10 @@ dependencies = [
  "serde-json-wasm 1.0.1",
  "serde-utils",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.12",
  "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
