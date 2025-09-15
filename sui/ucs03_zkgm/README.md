@@ -1,7 +1,6 @@
-
 This document only explains the sui zkgm implementation details which might be useful to the relayer devs, operators and zkgm devs.
 
-## Sui ZKGM's receive process 
+## Sui ZKGM's receive process
 
 Traditionally, all implementations have a single entrypoint to receive an ibc packet, where the relevant function is called by the ibc protocol.
 And the receiving of multiple packets and instructions happen within a single function. But with Sui, this is simply not possible because of how
@@ -27,7 +26,7 @@ similar to:
 fun recv_packet<T..>() {}
 ```
 
-This makes it impossible to recieve a zkgm packet that makes a token operation with different tokens multiple times like this:
+This makes it impossible to receive a zkgm packet that makes a token operation with different tokens multiple times like this:
 
 ```move
 
@@ -121,13 +120,12 @@ to this function within the same PTB. Otherwise, it will not be possible to cons
 Most of the work here is done by voyager because now it cannot simply forward the packets but it needs to check whether the packet is a zkgm packet.
 And if so, it needs to parse the instructions and decide on how many times it needs to call the `recv_packet` function and with what types.
 
-
 ## Receiving a `TokenOrder`
 
 You might be confused about how voyager knows what's the type `T`. We defined several entrypoints to manage coins of arbitrary types.
 
 The first one here is `register_capability<T>` where, the ownership of the `TreasuryCap` of a coin is transferred into ZKGM. Note that in SUI,
-owning the `TreasuryCap` means you have priviledged rights to the coin (mint, burn, etc).
+owning the `TreasuryCap` means you have privileged rights to the coin (mint, burn, etc).
 
 Then when the first `TokenOrderV2` happens without the solver api, the token `T` is claimed for the used channel, path and metadata.
 This guarantees that only this token will be used furthermore for this combination. When doing the claim, we also check whether the metadata of

@@ -207,7 +207,7 @@ module ibc::packet {
         // before the actual data length prefix.
         *encoded.borrow_mut(offset + 0x20 * 5) = 0;     
 
-        // Write the appopriate length in place and clear the extra byte that might be coming from the ULEB representation
+        // Write the appropriate length in place and clear the extra byte that might be coming from the ULEB representation
         if (data_len <= 0xFF) {
             *encoded.borrow_mut(offset + 0xc0 - 1) = data_len as u8;
             if (data_len >= 0x7F) {

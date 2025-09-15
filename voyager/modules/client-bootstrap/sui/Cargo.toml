@@ -15,6 +15,7 @@ workspace = true
 bcs                    = { workspace = true }
 cosmwasm-std           = { workspace = true }
 embed-commit           = { workspace = true }
+hex-literal            = { workspace = true }
 jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
 reqwest                = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
@@ -26,4 +27,3 @@ tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }
 voyager-sdk            = { workspace = true }
-hex-literal            = { workspace = true }

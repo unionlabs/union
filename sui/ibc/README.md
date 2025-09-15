@@ -1,9 +1,9 @@
-
 # TODO
 
 SUI LC:
-  - Verify supermajority in sui lc.
-  - Check when an update should be untrusted. (when a lc will be expired)
+
+- Verify supermajority in sui lc.
+- Check when an update should be untrusted. (when a lc will be expired)
 
 # Introduction
 
@@ -17,10 +17,11 @@ how the SUI light client works, this document will go through the unique parts o
 ## States
 
 SUI - similar to Ethereum - is divided into epochs and select a set of validators called "Committee" per epoch.
-Committees are pre-determined and is accessable at the latest checkpoint of an epoch. The light client can verify this
+Committees are pre-determined and is accessible at the latest checkpoint of an epoch. The light client can verify this
 checkpoint and hence, get the committee belonging to the next epoch.
 
 Hence, we get
+
 ```rust
 pub struct ClientStateV1 {
     pub chain_id: String,
@@ -35,7 +36,6 @@ pub struct ClientStateV1 {
 Apart from all the regular fields, we have the initial committee which the light client will trust. And then it will continue
 to get updates to get the next and next committees. Similar to the optimization we did for the Ethereum client, we save the committee
 once per epoch thanks to the storage api of our implementation.
-
 
 ```rust
 pub struct ConsensusState {
@@ -66,12 +66,14 @@ will contain all the object mutations, creations and etc. such that if you for e
 to check whether that commitment is created at that transaction by verifying the block header. We will see how all those work in a second.
 
 Note that although this sounds fast and cool (or weird), this comes with a problem where:
+
 1. You don't have non-membership proofs.
 2. You have to have the exact transaction and the block to verify a commitment. You can't verify a commitment using the latest height.
 
 The second part however is a non-issue for us since the commitments are unique.
 
 Let's see how we go from transaction effects to verifying it against the `contents_digest` that we save in the consensus state:
+
 ```rust
 fn verify_membership(
     commitments_object: ObjectID,
@@ -85,21 +87,21 @@ fn verify_membership(
 ```
 
 1. The IBC implementation on SUI contains a table called `commitments`. And as I said before, this table itself is an object and has an object ID.
-The `commitments_object` refers to that and the first step for the verification is to calculate the object ID of the commitment using the `commitments_object`
-and the `key`.
+   The `commitments_object` refers to that and the first step for the verification is to calculate the object ID of the commitment using the `commitments_object`
+   and the `key`.
 
 2. The `effects` don't contain the full objects but rather their ids and hashes. Hence, we need the full `object`. In this step, we do some sanity checks to the
-full `object` where we check if the given `key` and `value` matches the object.
+   full `object` where we check if the given `key` and `value` matches the object.
 
 3. The `effects` contains several actions but we only care about the `ObjectWrite` action. So we find the effect with `ObjectWrite` action with the commitment
-object that we previously calculated. This will give us the hash of that object.
+   object that we previously calculated. This will give us the hash of that object.
 
 4. We calculate and check whether the full `object` matches the hash that we get from the `effects`.
 
 5. Since the relayer can provide any `effects`, we check whether the `effects` hash exists in the `checkpoint_contents`.
 
 6. And since the relayer can provide any `checkpoint_contents`, we check whether its hash is the `contents_digest` which we previously verified in the header
-verification step.
+   verification step.
 
 There it is. Cool huh?
 
@@ -126,7 +128,4 @@ for CometBLS (two client types).
 Other than that, we will continue to host this circuit in another entrypoint. Like how we do
 previously.
 
-
 # SUI Implementation details
-
-

@@ -11,10 +11,9 @@ ibc = { local = "../ibc" }
 # ibc      = "0x25763a037769c4783ee2414110302b69b52060c87cf763a4fae56337b296c4f3"
 # zkgm     = "0x0"
 #
-ibc = "_"
+ibc  = "_"
 zkgm = "_"
 
 [dev-addresses]
-ibc      = "0x22222"
-zkgm     = "0x4444444444444"
-
+ibc  = "0x22222"
+zkgm = "0x4444444444444"

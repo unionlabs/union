@@ -414,11 +414,6 @@ async fn process_msgs(
                 )?;
             }
             Datagram::PacketAcknowledgement(data) => {
-                // pub packets: Vec<Packet>,
-                // pub acknowledgements: Vec<Bytes>,
-                // pub proof: Bytes,
-                // pub proof_height: u64,
-
                 // using the source channel id since the send happened on sui
                 let port_id =
                     move_api::get_port_id(module, data.packets[0].source_channel_id).await?;
@@ -441,13 +436,6 @@ async fn process_msgs(
                     .start_version()
                     .expect("object is shared, hence it has a start version");
 
-                // let commands = voyager_client
-                //     .plugin_client("plugin-name")
-                //     .on_packet_recv(data.packets[0].clone())
-                //     .await
-                //     .map_err(json_rpc_error_to_queue_error)
-                //     .unwrap();
-
                 // If the module is ZKGM, then we register the tokens if needed. Otherwise,
                 // the registered tokens are returned.
                 let coin_ts =
@@ -457,9 +445,6 @@ async fn process_msgs(
                 // which means, we have to consume it within the same PTB via `end_recv`.
                 let mut session = move_api::zkgm::begin_ack_call(ptb, &module_info, data.clone());
 
-                // // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
-                // // endpoint must be called as many times as the partitions. Since the number of coins will be the
-                // // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
                 for coin_t in coin_ts {
                     session = move_api::zkgm::acknowledge_packet_call(
                         ptb,
@@ -472,9 +457,6 @@ async fn process_msgs(
                     );
                 }
 
-                // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
-                // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
-                // // it, this PTB will fail and no partial state will be persisted.
                 move_api::zkgm::end_ack_call(
                     ptb,
                     module,

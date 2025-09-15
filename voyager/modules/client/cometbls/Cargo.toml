@@ -15,6 +15,7 @@ workspace = true
 alloy-sol-types             = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }
 embed-commit                = { workspace = true }
+gnark-key-parser            = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
@@ -25,7 +26,6 @@ tokio                       = { workspace = true }
 tracing                     = { workspace = true }
 unionlabs                   = { workspace = true, features = ["bincode", "bcs"] }
 voyager-sdk                 = { workspace = true }
-gnark-key-parser            = { workspace = true }
 
 
 [dev-dependencies]

@@ -15,6 +15,7 @@ workspace = true
 alloy              = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 anyhow             = { workspace = true }
 base64             = { workspace = true }
+bcs                = { workspace = true }
 bech32             = "0.11.0"
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc       = { workspace = true }
@@ -42,7 +43,6 @@ ucs03-zkgm         = { workspace = true }
 ucs04              = { workspace = true, features = ["serde"] }
 unionlabs          = { workspace = true, features = ["bcs", "bincode", "ethabi", "proto", "ssz"] }
 voyager-primitives = { workspace = true, features = ["serde"] }
-bcs = { workspace = true }
 
 arbitrum-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 berachain-light-client-types              = { workspace = true, features = ["serde", "bincode", "ethabi"] }
