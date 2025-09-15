@@ -22,7 +22,6 @@ import {
   Utils,
   ZkgmClient,
   ZkgmClientRequest,
-  ZkgmIncomingMessage,
 } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
@@ -57,12 +56,12 @@ import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { custom } from "viem"
 import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
-import { sepolia } from "viem/chains"
+import { mainnet } from "viem/chains"
 
-const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
-const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
-const SOURCE_CHANNEL_ID = ChannelId.make(3)
-const DESTINATION_CHANNEL_ID = ChannelId.make(3)
+const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.1")
+const UNION_CHAIN_ID = UniversalChainId.make("union.union-1")
+const SOURCE_CHANNEL_ID = ChannelId.make(2)
+const DESTINATION_CHANNEL_ID = ChannelId.make(1)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
   address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
 })
@@ -479,7 +478,7 @@ runPromiseExit$(() =>
 
       bondState = BondState.SwitchingChain()
 
-      const VIEM_CHAIN = sepolia
+      const VIEM_CHAIN = mainnet
 
       const connectorClient = yield* getWagmiConnectorClient
 
