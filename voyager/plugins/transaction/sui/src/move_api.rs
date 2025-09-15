@@ -351,6 +351,8 @@ pub fn channel_open_confirm_call(
 }
 
 pub mod zkgm {
+    use ibc_union_spec::datagram::MsgPacketAcknowledgement;
+
     use super::*;
 
     pub fn begin_recv_call(
@@ -461,6 +463,117 @@ pub mod zkgm {
             module_info.latest_address.into(),
             module_info.module_name.clone(),
             ident_str!("end_recv").into(),
+            vec![],
+            arguments,
+        ));
+
+        Ok(())
+    }
+
+    pub fn begin_ack_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module_info: &ModuleInfo,
+        data: MsgPacketAcknowledgement,
+    ) -> Argument {
+        let (source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps) =
+            data.packets
+                .iter()
+                .map(|p| {
+                    (
+                        p.source_channel_id,
+                        p.destination_channel_id,
+                        p.data.clone(),
+                        0 as u64,
+                        p.timeout_timestamp,
+                    )
+                })
+                .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
+
+        let arguments = vec![
+            CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&data.acknowledgements).unwrap()),
+        ]
+        .into_iter()
+        .map(|a| ptb.input(a))
+        .collect::<Result<_, _>>()
+        .unwrap();
+
+        ptb.command(Command::move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("begin_ack").into(),
+            vec![],
+            arguments,
+        ))
+    }
+
+    pub fn acknowledge_packet_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module: &Module,
+        module_info: &ModuleInfo,
+        store_initial_seq: SequenceNumber,
+        coin_t: TypeTag,
+        fee_recipient: SuiAddress,
+        session: Argument,
+    ) -> Argument {
+        let arguments = vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module.ibc_store.into(),
+                initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].into(),
+                initial_shared_version: store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+        ]
+        .into_iter()
+        .map(|a| ptb.input(a).unwrap())
+        .chain(vec![session])
+        .collect();
+
+        ptb.command(Command::move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("acknowledge_packet").into(),
+            vec![coin_t],
+            arguments,
+        ))
+    }
+
+    pub fn end_ack_call(
+        ptb: &mut ProgrammableTransactionBuilder,
+        module: &Module,
+        module_info: &ModuleInfo,
+        fee_recipient: SuiAddress,
+        session: Argument,
+        data: MsgPacketAcknowledgement,
+    ) -> anyhow::Result<()> {
+        let arguments = vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module.ibc_store.into(),
+                initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            (&data.proof.into_vec()).into(),
+            data.proof_height.into(),
+            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+        ]
+        .into_iter()
+        .map(|a| ptb.input(a).unwrap())
+        .chain(vec![session])
+        .collect();
+
+        let _ = ptb.command(Command::move_call(
+            module_info.latest_address.into(),
+            module_info.module_name.clone(),
+            ident_str!("end_ack").into(),
             vec![],
             arguments,
         ));

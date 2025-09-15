@@ -33,7 +33,6 @@ use sui_sdk::{
     types::{
         base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
-        digests::ObjectDigest,
         dynamic_field::DynamicFieldName,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
@@ -52,11 +51,7 @@ use ucs03_zkgm::com::{
     TOKEN_ORDER_KIND_UNESCROW,
 };
 use unionlabs::{
-    encoding::Decode,
-    primitives::{
-        encoding::{Base64, HexPrefixed},
-        Bytes, H256,
-    },
+    primitives::{encoding::HexPrefixed, Bytes, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -371,16 +366,20 @@ async fn process_msgs(
 
                 // If the module is ZKGM, then we register the tokens if needed. Otherwise,
                 // the registered tokens are returned.
-                let coin_ts = register_tokens_if_zkgm(
-                    module,
-                    ptb,
-                    pk,
-                    &data.packets[0],
-                    &module_info,
-                    store_initial_seq,
-                )
-                .await
-                .unwrap();
+                let mut coin_ts = vec![];
+                for p in &data.packets {
+                    coin_ts.extend_from_slice(
+                        &register_tokens_if_zkgm(
+                            module,
+                            ptb,
+                            pk,
+                            p,
+                            &module_info,
+                            store_initial_seq,
+                        )
+                        .await?,
+                    );
+                }
 
                 // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
                 // which means, we have to consume it within the same PTB via `end_recv`.
@@ -406,6 +405,77 @@ async fn process_msgs(
                 // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
                 // // it, this PTB will fail and no partial state will be persisted.
                 move_api::zkgm::end_recv_call(
+                    ptb,
+                    module,
+                    &module_info,
+                    fee_recipient,
+                    session,
+                    data,
+                )?;
+            }
+            Datagram::PacketAcknowledgement(data) => {
+                // pub packets: Vec<Packet>,
+                // pub acknowledgements: Vec<Bytes>,
+                // pub proof: Bytes,
+                // pub proof_height: u64,
+
+                // using the source channel id since the send happened on sui
+                let port_id =
+                    move_api::get_port_id(module, data.packets[0].source_channel_id).await?;
+
+                let module_info = try_parse_port(&module.graphql_url, &port_id.as_bytes()).await?;
+
+                let store_initial_seq = module
+                    .sui_client
+                    .read_api()
+                    .get_object_with_options(
+                        module_info.stores[0].into(),
+                        SuiObjectDataOptions::new().with_owner(),
+                    )
+                    .await
+                    .unwrap()
+                    .data
+                    .expect("object exists on chain")
+                    .owner
+                    .expect("owner will be present")
+                    .start_version()
+                    .expect("object is shared, hence it has a start version");
+
+                // let commands = voyager_client
+                //     .plugin_client("plugin-name")
+                //     .on_packet_recv(data.packets[0].clone())
+                //     .await
+                //     .map_err(json_rpc_error_to_queue_error)
+                //     .unwrap();
+
+                // If the module is ZKGM, then we register the tokens if needed. Otherwise,
+                // the registered tokens are returned.
+                let coin_ts =
+                    parse_coin_ts(data.packets.iter().map(|p| p.data.clone()).collect()).unwrap();
+
+                // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
+                // which means, we have to consume it within the same PTB via `end_recv`.
+                let mut session = move_api::zkgm::begin_ack_call(ptb, &module_info, data.clone());
+
+                // // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
+                // // endpoint must be called as many times as the partitions. Since the number of coins will be the
+                // // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
+                for coin_t in coin_ts {
+                    session = move_api::zkgm::acknowledge_packet_call(
+                        ptb,
+                        module,
+                        &module_info,
+                        store_initial_seq,
+                        coin_t,
+                        fee_recipient,
+                        session,
+                    );
+                }
+
+                // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
+                // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
+                // // it, this PTB will fail and no partial state will be persisted.
+                move_api::zkgm::end_ack_call(
                     ptb,
                     module,
                     &module_info,
@@ -444,6 +514,63 @@ struct SuiFungibleAssetMetadata {
     owner: H256,
     icon_url: Option<String>,
     description: String,
+}
+
+fn parse_coin_ts(packet_data: Vec<Bytes>) -> anyhow::Result<Vec<TypeTag>> {
+    let parse_type_tag = |base_token: Vec<u8>| -> anyhow::Result<TypeTag> {
+        let quote_token = String::from_utf8(base_token)
+            .map_err(|_| anyhow!("in the unwrap case, the quote token must be a utf8 string"))?;
+        let fields: Vec<&str> = quote_token.split("::").collect();
+        if fields.len() != 3 {
+            panic!("a registered token must be always in `address::module_name::name` form");
+        }
+
+        Ok(StructTag {
+            address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+            module: Identifier::new(fields[1]).expect("module name is valid"),
+            name: Identifier::new(fields[2]).expect("name is valid"),
+            type_params: vec![],
+        }
+        .into())
+    };
+
+    Ok(packet_data
+        .into_iter()
+        .map(|d| {
+            let zkgm_packet = ZkgmPacket::abi_decode_params(&d)?;
+            let mut coin_ts = vec![];
+            match zkgm_packet.instruction.opcode {
+                OP_BATCH => {
+                    let Ok(batch) = Batch::abi_decode_params(&zkgm_packet.instruction.operand)
+                    else {
+                        panic!("impossible");
+                    };
+
+                    for instr in batch.instructions {
+                        let Ok(fao) = TokenOrderV2::abi_decode_params(&instr.operand) else {
+                            continue;
+                        };
+
+                        coin_ts.push(parse_type_tag(fao.base_token.clone().into())?);
+                    }
+                }
+                OP_TOKEN_ORDER => {
+                    let Ok(fao) = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
+                    else {
+                        panic!("impossible");
+                    };
+
+                    coin_ts.push(parse_type_tag(fao.base_token.clone().into())?);
+                }
+                _ => {}
+            }
+
+            Ok::<_, anyhow::Error>(coin_ts)
+        })
+        .collect::<Result<Vec<Vec<_>>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect())
 }
 
 async fn register_tokens_if_zkgm(
