@@ -34,7 +34,7 @@ import { onMount } from "svelte"
 type StakeTab = "bond" | "unbond" | "withdraw"
 type TableFilter = "all" | "bond" | "unbond"
 
-const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
+const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.1")
 
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
