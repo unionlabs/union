@@ -48,6 +48,8 @@ pub struct TokenOrderV2Base {
 
 #[derive(Debug, Args)]
 pub struct TokenOrderV2ArgsSui {
+    #[arg(long)]
+    channel: u32,
     #[clap(flatten)]
     base: TokenOrderV2Base,
     #[clap(flatten)]
@@ -120,7 +122,7 @@ impl Cmd {
                         h.update(&metadata);
                         predict_wrapped_token_sui(
                             U256::ZERO,
-                            1,
+                            fao.channel,
                             fao.base.base_token.clone().into(),
                             h.finalize().to_vec(),
                         )

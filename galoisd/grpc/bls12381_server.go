@@ -145,8 +145,6 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			InnerInputsHash: innerProof.InputsHash,
 		}
 
-		fmt.Println("inputs hash ", innerProof.InputsHash)
-
 		privateWitness, err := frontend.NewWitness(bls12381Witness, ecc.BLS12_381.ScalarField())
 		if err != nil {
 			return nil, fmt.Errorf("Witness err %s", err)

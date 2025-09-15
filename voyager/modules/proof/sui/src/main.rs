@@ -144,8 +144,6 @@ impl ProofModuleServer<IbcUnion> for Module {
             .get_transaction_with_options(previous_tx, SuiTransactionBlockResponseOptions::new())
             .await
             .map_err(|e| err(e, "error fetching the tx"))?;
-        // .checkpoint
-        // .expect("checkpoint is fetched");
 
         let checkpoint_number = checkpoint_number.checkpoint.unwrap();
 
@@ -168,7 +166,6 @@ impl ProofModuleServer<IbcUnion> for Module {
             .await
             .map_err(|e| err(e, "error fetching the tx"))?;
 
-        println!("\n\nLENNNN: {}\n\n", res.len());
         let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res)
             .map_err(|e| err(e, "invalid checkpoint data"))?;
 
