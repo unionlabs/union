@@ -65,8 +65,14 @@ const DESTINATION_CHANNEL_ID = ChannelId.make(1)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
   address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
 })
+
+// MAINNET
+// union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy
+
+// TESTNET
+// union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0
 const UCS03_MINTER_ON_UNION = Ucs05.CosmosDisplay.make({
-  address: "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0",
+  address: "union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy",
 })
 const UCS03_ZKGM = Ucs05.CosmosDisplay.make({
   address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
