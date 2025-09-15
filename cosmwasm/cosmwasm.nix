@@ -177,7 +177,8 @@ _: {
             "parlia"
           ];
           u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
-          lst = false;
+          eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
+          lst = true;
           on-zkgm-call-proxy = false;
         }
         {
