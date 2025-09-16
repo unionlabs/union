@@ -25,7 +25,7 @@ import {
 } from "effect"
 import { SvelteMap } from "svelte/reactivity"
 
-const MAX_FETCH_DELAY_MS = 500
+const MAX_FETCH_DELAY_MS = 2_000
 
 // Composite key type for the maps
 export type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`

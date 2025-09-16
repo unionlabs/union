@@ -132,8 +132,21 @@ export const ownedFallbacks: Transports = {
   ]),
   [base.id]: fallback([
     http(base.rpcUrls.default.http.at(0), { name: "default Base RPC" }),
+    http("https://base.llamarpc.com", {
+      name: "https://base.llamarpc.com",
+      retryDelay: 1_000,
+    }),
+    http("https://base.drpc.org", {
+      name: "https://base.drpc.org",
+      retryDelay: 1_000,
+    }),
+    http("https://base-rpc.publicnode.com", {
+      name: "https://base-rpc.publicnode.com",
+      retryDelay: 1_000,
+    }),
     http(`https://rpc.8453.base.chain.kitchen`, {
       name: "Chain Kitchen - Base",
+      retryDelay: 1_000,
     }),
   ]),
 }
