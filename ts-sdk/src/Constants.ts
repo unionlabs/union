@@ -89,11 +89,11 @@ export const OSMOSIS_METADATA: GasDenomMetadata = {
  * @since 2.0.0
  */
 const UNION_METADATA: GasDenomMetadata = {
-  address: TokenRawDenom.make("0x6d756e6f"),
+  address: TokenRawDenom.make("0x6175"),
   name: "Union",
-  symbol: "UNO",
-  tickerSymbol: "UNO",
-  decimals: 6,
+  symbol: "U",
+  tickerSymbol: "U",
+  decimals: 18,
 } as const
 
 /**

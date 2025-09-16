@@ -30,7 +30,7 @@ import {
   Struct,
 } from "effect"
 import { absurd, constTrue, flow, pipe } from "effect/Function"
-import { GAS_DENOMS } from "./constants/gas-denoms.js"
+import { GAS_DENOMS } from "./Constants.js"
 import { UniversalChainId } from "./schema/chain.js"
 
 /**
