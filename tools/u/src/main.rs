@@ -7,7 +7,7 @@ use std::{
 use anyhow::Result;
 use clap::{
     builder::styling::{AnsiColor, Effects, Styles},
-    Parser, Subcommand,
+    Parser, Subcommand, ValueEnum,
 };
 use serde::Serialize;
 use tracing_subscriber::EnvFilter;
@@ -182,4 +182,16 @@ fn print_json<T: Serialize>(t: &T) {
         "{}",
         serde_json::to_string(&t).expect("serialization is infallible; qed;")
     );
+}
+
+#[derive(Debug, Clone, Copy, Default, ValueEnum)]
+pub enum Format {
+    #[default]
+    Hex,
+    #[value(alias = "b64")]
+    Base64,
+    #[value(alias = "string")]
+    Utf8,
+    #[value(alias = "bytes", alias = "bz")]
+    Raw,
 }
