@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { type Address, erc20Abi } from "viem"
-import { GAS_DENOMS } from "../constants/gas-denoms.js"
+import { GAS_DENOMS } from "../Constants.js"
 import { UniversalChainId } from "../schema/index.js"
 import { ViemPublicClient, ViemWalletClient } from "./client.js"
 import { readContract } from "./contract.js"

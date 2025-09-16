@@ -13,6 +13,7 @@ import {
 } from "@wagmi/core"
 import {
   arbitrumSepolia,
+  base,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
@@ -127,6 +128,25 @@ export const ownedFallbacks: Transports = {
     http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
     http(`https://rpc.97.bsc.chain.kitchen`, {
       name: "Chain Kitchen - BNB Chain Testnet",
+    }),
+  ]),
+  [base.id]: fallback([
+    http(base.rpcUrls.default.http.at(0), { name: "default Base RPC" }),
+    http("https://base.llamarpc.com", {
+      name: "https://base.llamarpc.com",
+      retryDelay: 1_000,
+    }),
+    http("https://base.drpc.org", {
+      name: "https://base.drpc.org",
+      retryDelay: 1_000,
+    }),
+    http("https://base-rpc.publicnode.com", {
+      name: "https://base-rpc.publicnode.com",
+      retryDelay: 1_000,
+    }),
+    http(`https://rpc.8453.base.chain.kitchen`, {
+      name: "Chain Kitchen - Base",
+      retryDelay: 1_000,
     }),
   ]),
 }
@@ -261,6 +281,15 @@ const transports: Transports = {
       name: "unstable_connector-injected-bsc-testnet",
     }),
     ownedFallbacks[bscTestnet.id],
+  ]),
+  [base.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-base",
+      name: "unstable_connector-injected-bsc",
+    }),
+    ownedFallbacks[base.id],
   ]),
 }
 

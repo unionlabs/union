@@ -1,5 +1,6 @@
 import {
   arbitrumSepolia,
+  base,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
@@ -17,15 +18,17 @@ import {
 
 export const VIEM_CHAINS = [
   arbitrumSepolia,
+  base,
+  base,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
+  bsc,
+  bscTestnet,
   corn,
   cornTestnet,
   holesky,
   mainnet,
-  bsc,
-  bscTestnet,
   scrollSepolia,
   sei,
   seiTestnet,

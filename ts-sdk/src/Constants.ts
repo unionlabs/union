@@ -89,11 +89,11 @@ export const OSMOSIS_METADATA: GasDenomMetadata = {
  * @since 2.0.0
  */
 const UNION_METADATA: GasDenomMetadata = {
-  address: TokenRawDenom.make("0x6d756e6f"),
+  address: TokenRawDenom.make("0x6175"),
   name: "Union",
-  symbol: "UNO",
-  tickerSymbol: "UNO",
-  decimals: 6,
+  symbol: "U",
+  tickerSymbol: "U",
+  decimals: 18,
 } as const
 
 /**
@@ -163,7 +163,12 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   [UniversalChainId.make("corn.21000001")]: CORN_METADATA,
 
   // BSC
+  [UniversalChainId.make("bsc.56")]: BNB_METADATA,
   [UniversalChainId.make("bsc.97")]: BNB_METADATA,
+
+  // Base
+  [UniversalChainId.make("base.8453")]: ETH_METADATA,
+  [UniversalChainId.make("base.84532")]: ETH_METADATA,
 }
 
 /**

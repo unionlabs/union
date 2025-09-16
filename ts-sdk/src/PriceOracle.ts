@@ -30,7 +30,7 @@ import {
   Struct,
 } from "effect"
 import { absurd, constTrue, flow, pipe } from "effect/Function"
-import { GAS_DENOMS } from "./constants/gas-denoms.js"
+import { GAS_DENOMS } from "./Constants.js"
 import { UniversalChainId } from "./schema/chain.js"
 
 /**
@@ -662,7 +662,7 @@ const layerTopSecret = Layer.sync(
           Match.orElse(() =>
             Effect.fail(
               new PriceError({
-                message: "uwu",
+                message: "Exhausted all price oracles.",
                 source: "TopSecret",
               }),
             )
