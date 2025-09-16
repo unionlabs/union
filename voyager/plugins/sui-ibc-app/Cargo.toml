@@ -1,0 +1,28 @@
+[package]
+name    = "voyager-sui-ibc-app-plugin"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+embed-commit        = { workspace = true }
+ibc-union-spec      = { workspace = true, features = ["serde"] }
+jsonrpsee           = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
+move-core-types-sui = { workspace = true }
+serde               = { workspace = true, features = ["derive"] }
+sui_sdk             = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+ucs03-zkgm          = { workspace = true, features = ["library"] }
+unionlabs           = { workspace = true }
+voyager-sdk         = { workspace = true }
+bcs                 = { workspace = true }
+hex-literal                    = { workspace = true }
+voyager-transaction-plugin-sui = { workspace = true }
+concurrent-keyring  = { workspace = true }
+tokio = { workspace = true }

@@ -226,6 +226,7 @@ members = [
   "voyager/plugins/transaction-batch",
   "voyager/plugins/packet-timeout",
   "voyager/plugins/zkgm-filter",
+  "voyager/plugins/sui-ibc-app",
 
   "drip",
 
@@ -449,6 +450,9 @@ voyager-rpc             = { path = "lib/voyager-rpc", default-features = false }
 voyager-sdk             = { path = "lib/voyager-sdk", default-features = false }
 voyager-types           = { path = "lib/voyager-types", default-features = false }
 voyager-vm              = { path = "lib/voyager-vm", default-features = false }
+
+voyager-sui-ibc-app-plugin     = { path = "voyager/plugins/sui-ibc-app", default-features = false }
+voyager-transaction-plugin-sui = { path = "voyager/plugins/transaction/sui", default-features = false }
 
 embed-commit          = { path = "lib/embed-commit", default-features = false }
 embed-commit-verifier = { path = "lib/embed-commit/verifier", default-features = false }
