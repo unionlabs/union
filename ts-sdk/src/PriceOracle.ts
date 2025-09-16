@@ -662,7 +662,7 @@ const layerTopSecret = Layer.sync(
           Match.orElse(() =>
             Effect.fail(
               new PriceError({
-                message: "uwu",
+                message: "Exhausted all price oracles.",
                 source: "TopSecret",
               }),
             )
