@@ -1,9 +1,11 @@
+use std::num::NonZeroU32;
+
 use cosmwasm_std::{
-    entry_point, from_json, Addr, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdError, StdResult,
+    entry_point, from_json, Addr, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Order,
+    Response, StdError,
 };
 use depolama::{self, StorageExt};
-use frissitheto::{UpgradeError, UpgradeMsg};
+use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 use ucs03_zkgmable::Zkgmable;
 
 use crate::{
@@ -16,9 +18,17 @@ pub mod msg;
 pub mod state;
 pub mod types;
 
+#[cfg(test)]
+mod tests;
+
 fn ensure_remote_admin(deps: Deps, info: &MessageInfo, admin: &RemoteAdmin) -> Result<(), Error> {
     // for remote admins, first ensure that info.sender is zkgm
-    if info.sender != deps.storage.read_item::<Zkgm>()? {
+    if info.sender
+        != deps
+            .storage
+            .maybe_read_item::<Zkgm>()?
+            .ok_or(Error::ZkgmNotConfigured)?
+    {
         return Err(Error::OnlyZkgm {
             sender: info.sender.clone(),
         });
@@ -27,7 +37,7 @@ fn ensure_remote_admin(deps: Deps, info: &MessageInfo, admin: &RemoteAdmin) -> R
     deps.storage
         .maybe_read::<Admins>(&Admin::Remote(admin.clone()))?
         .ok_or_else(|| Error::OnlyAdmin {
-            sender: info.sender.clone(),
+            sender: Admin::Remote(admin.clone()),
         })
 }
 
@@ -41,7 +51,9 @@ fn ensure_local_admin_or_self(deps: Deps, env: &Env, info: &MessageInfo) -> Resu
         deps.storage
             .maybe_read::<Admins>(&local_admin)?
             .ok_or_else(|| Error::OnlyAdmin {
-                sender: info.sender.clone(),
+                sender: Admin::Local(LocalAdmin {
+                    address: info.sender.to_string(),
+                }),
             })?;
 
         Ok(local_admin.to_string())
@@ -50,7 +62,7 @@ fn ensure_local_admin_or_self(deps: Deps, env: &Env, info: &MessageInfo) -> Resu
     }
 }
 
-fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, Error> {
+fn init(deps: DepsMut, msg: InitMsg) -> Response {
     match msg {
         InitMsg::Zkgm {
             zkgm,
@@ -78,12 +90,19 @@ fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, Error> {
         }
     }
 
-    Ok(Response::default())
+    Response::default()
 }
 
 #[entry_point]
-pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+pub fn instantiate(
+    mut deps: DepsMut,
+    _: Env,
+    _: MessageInfo,
+    msg: InitMsg,
+) -> Result<Response, Error> {
+    frissitheto::init_state_version(&mut deps, const { NonZeroU32::new(1).unwrap() })?;
+
+    Ok(init(deps, msg))
 }
 
 #[entry_point]
@@ -128,7 +147,18 @@ pub fn execute(
                         .add_attribute("admin", actor)
                 });
 
-            Ok(Response::new().add_events(maybe_event))
+            deps.storage.delete::<Admins>(&removed_admin);
+
+            if deps
+                .storage
+                .iter::<Admins>(Order::Ascending)
+                .collect::<Result<Vec<_>, _>>()?
+                .is_empty()
+            {
+                Err(Error::OneAdminRequired)
+            } else {
+                Ok(Response::new().add_events(maybe_event))
+            }
         }
         ExecuteMsg::Dispatch(messages) => {
             let actor = ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
@@ -167,27 +197,36 @@ pub fn migrate(
     msg.run(
         deps,
         |deps, init_msg| {
-            let res = init(deps, init_msg)?;
+            let res = init(deps, init_msg);
             Ok((res, None))
         },
         |_, _, _| Ok((Response::default(), None)),
     )
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    StdError(#[from] StdError),
+    Std(#[from] StdError),
 
     #[error("migration error: {0}")]
     Migrate(#[from] UpgradeError),
 
+    #[error("init state version error: {0}")]
+    InitStateVersion(#[from] InitStateVersionError),
+
     #[error("sender {sender} is a configured admin")]
-    OnlyAdmin { sender: Addr },
+    OnlyAdmin { sender: Admin },
 
     #[error("sender {sender} is not zkgm")]
     OnlyZkgm { sender: Addr },
 
     #[error("intents are not supported")]
     IntentsNotSupported,
+
+    #[error("at least one remote or local admin must be configured")]
+    OneAdminRequired,
+
+    #[error("no zkgm address configured")]
+    ZkgmNotConfigured,
 }

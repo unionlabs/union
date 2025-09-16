@@ -7,7 +7,7 @@ use unionlabs_primitives::U256;
 
 use crate::types::Admin;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum InitMsg {
     Zkgm {
