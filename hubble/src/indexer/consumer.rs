@@ -308,10 +308,15 @@ fn should_trigger_enrich_reset(kind: RecordKind) -> bool {
         WalletMutationEntry => false,
         CreateWrappedToken => false,
         CreateWrappedTokenRelation => false,
+        CreateProxyAccount => false,
+        Bond => false,
+        Unbond => false,
         // ignore enriched records
         PacketSendDecoded => false,
         PacketSendTransfers => false,
         PacketSendInstructionsSearch => false,
+        PacketSendBond => false,
+        PacketSendUnbond => false,
     }
 }
 

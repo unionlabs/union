@@ -37,6 +37,7 @@ embed-commit       = { workspace = true }
 futures            = { workspace = true, features = ["async-await"] }
 hex                = { workspace = true }
 hex-literal        = { workspace = true }
+ibc-union-spec     = { workspace = true, features = ["serde", "ethabi"] }
 itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }

@@ -54,6 +54,7 @@ mod tests {
   "channel_id": 1042,
   "event_index": "42",
   "height": "10042",
+  "message_index": "542",
   "maker": "0x6d616b65722d3432",
   "packet_hash": "0x7061636b65742d686173682d3432",
   "timestamp": "2020-09-13T12:27:22Z",

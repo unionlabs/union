@@ -25,6 +25,7 @@ pub async fn get_channel_meta_data(
             connection.counterparty_connection_id,
             channel.port_id,
             channel.counterparty_port_id,
+            channel.counterparty_channel_id,
             channel.version             AS channel_version,
             client.client_type,
             chain.id                    AS internal_chain_id,
@@ -37,14 +38,19 @@ pub async fn get_channel_meta_data(
                 JOIN (SELECT channel_open_init.internal_chain_id,
                             channel_open_init.port_id,
                             channel_open_init.channel_id,
+                            channel_open_ack.counterparty_channel_id,
                             channel_open_init.connection_id,
                             channel_open_init.counterparty_port_id,
                             channel_open_init.version
                     FROM v2_sync.channel_open_init_sync channel_open_init
+                    JOIN v2_sync.channel_open_ack_sync channel_open_ack 
+                        ON channel_open_init.internal_chain_id = channel_open_ack.internal_chain_id 
+                        AND channel_open_init.channel_id = channel_open_ack.channel_id 
                     UNION ALL
                     SELECT channel_open_try.internal_chain_id,
                             channel_open_try.port_id,
                             channel_open_try.channel_id,
+                            channel_open_try.counterparty_channel_id,
                             channel_open_try.connection_id,
                             channel_open_try.counterparty_port_id,
                             channel_open_try.counterparty_version
@@ -95,9 +101,10 @@ pub async fn get_channel_meta_data(
         counterparty_client_id: record.counterparty_client_id.try_into()?,
         connection_id: record.connection_id.try_into()?,
         counterparty_connection_id: record.counterparty_connection_id.try_into()?,
-        channel_id: channel_id.clone(),
+        channel_id: *channel_id,
         port_id: record.port_id.try_into()?,
         counterparty_port_id: record.counterparty_port_id.try_into()?,
+        counterparty_channel_id: record.counterparty_channel_id.try_into()?,
         channel_version: record.channel_version.try_into()?,
     }))
     .transpose()

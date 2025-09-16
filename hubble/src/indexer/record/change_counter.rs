@@ -326,11 +326,16 @@ pub enum RecordKind {
     PacketTimeout,
     TokenBucketUpdate,
     WalletMutationEntry,
+    PacketSendBond,
     PacketSendDecoded,
     PacketSendTransfers,
     PacketSendInstructionsSearch,
+    PacketSendUnbond,
     CreateWrappedToken,
     CreateWrappedTokenRelation,
+    CreateProxyAccount,
+    Bond,
+    Unbond,
 }
 
 /// Trait for types that can be associated with a specific `RecordKind`.
