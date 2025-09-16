@@ -12,30 +12,25 @@ use crate::types::Admin;
 ///
 /// [`ucs03-zkgm`]: https://docs.union.build/ucs/03
 pub enum Zkgm {}
-
 impl Store for Zkgm {
     const PREFIX: Prefix = Prefix::new(b"zkgm");
     type Key = ();
     type Value = Addr;
 }
-
 impl ValueCodecViaEncoding for Zkgm {
     type Encoding = RawAddrEncoding;
 }
 
 /// All configured admins for this proxy account.
 pub enum Admins {}
-
 impl Store for Admins {
     const PREFIX: Prefix = Prefix::new(b"admins");
     type Key = Admin;
     type Value = ();
 }
-
 impl KeyCodecViaEncoding for Admins {
     type Encoding = Bincode;
 }
-
 impl ValueCodecViaEncoding for Admins {
     type Encoding = ValueUnitEncoding;
 }
