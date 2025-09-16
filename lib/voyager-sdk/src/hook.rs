@@ -8,6 +8,8 @@ use voyager_message::{
 use voyager_primitives::{ChainId, ClientType};
 use voyager_vm::Visit;
 
+pub const NEVER_FILTER: &str = "null";
+
 /// A hook for a plugin that handles [`FetchUpdateHeaders`] messages.
 pub struct UpdateHook<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> {
     chain_id: &'a ChainId,
