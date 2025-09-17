@@ -1,10 +1,7 @@
 use core::fmt::Display;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound};
-use unionlabs_primitives::{
-    encoding::{Base58, Encoding},
-    Bytes, FixedBytes,
-};
+use unionlabs_primitives::{encoding::Encoding, Bytes, FixedBytes};
 
 #[derive(DebugNoBound, EqNoBound, PartialEqNoBound, CloneNoBound)]
 pub struct SuiFixedBytes<const N: usize, E: Encoding>(pub FixedBytes<N, E>);
@@ -21,7 +18,7 @@ impl<const N: usize, E: Encoding> serde::Serialize for SuiFixedBytes<N, E> {
     where
         S: serde::Serializer,
     {
-        let bytes = Bytes::<Base58>::new(self.0.into_bytes());
+        let bytes = Bytes::<E>::new(self.0.into_bytes());
 
         bytes.serialize(serializer)
     }
@@ -33,7 +30,7 @@ impl<'de, const N: usize, E: Encoding> serde::Deserialize<'de> for SuiFixedBytes
     where
         D: serde::Deserializer<'de>,
     {
-        let bytes = Bytes::<Base58>::deserialize(deserializer)?;
+        let bytes = Bytes::<E>::deserialize(deserializer)?;
 
         Ok(Self(FixedBytes::new(bytes.as_ref().try_into().unwrap())))
     }

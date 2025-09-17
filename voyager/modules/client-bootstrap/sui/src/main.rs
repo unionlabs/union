@@ -142,7 +142,6 @@ impl ClientBootstrapModuleServer for Module {
         // TODO(aeryz): imma fix it bro chill
         let client = reqwest::Client::new();
         let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, height.height());
-        println!("req: {}", req);
         let res = client
             .get(req)
             .send()
