@@ -141,7 +141,7 @@ pub fn execute(
 
             let mut messages = Vec::<CosmosMsg>::with_capacity(2);
             let mut push_transfer = |to, amount: u128| -> StdResult<()> {
-                if !amount == 0 {
+                if amount != 0 {
                     if fungible_lane.is_cw20 {
                         messages.push(
                             wasm_execute(
@@ -235,5 +235,426 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
             })
             .collect::<Result<Vec<_>, _>>()
             .and_then(|data| to_json_binary(&data)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{message_info, mock_dependencies, mock_env, MOCK_CONTRACT_ADDR},
+        Addr, ContractInfoResponse, ContractResult, QuerierResult, SystemResult, WasmMsg,
+        WasmQuery,
+    };
+    use ibc_union_spec::{ChannelId, Packet, Timestamp};
+
+    use super::*;
+
+    const ZKGM_ADDR: &str = "zkgm";
+    const ADMIN_ADDR: &str = "admin";
+    const CALLER_ADDR: &str = "caller";
+
+    pub const DESTINATION_CHANNEL_ID: ChannelId = ChannelId!(2);
+
+    fn init(deps: DepsMut) {
+        let zkgm = Addr::unchecked(ZKGM_ADDR);
+        migrate(
+            deps,
+            mock_env(),
+            UpgradeMsg::Init(InstantiateMsg {
+                zkgm: zkgm.clone(),
+                admin: Addr::unchecked(ADMIN_ADDR),
+            }),
+        )
+        .unwrap();
+    }
+
+    fn mock_packet() -> Packet {
+        Packet {
+            source_channel_id: ChannelId!(1),
+            destination_channel_id: DESTINATION_CHANNEL_ID,
+            data: Default::default(),
+            timeout_height: ibc_union_spec::MustBeZero,
+            timeout_timestamp: Timestamp::from_secs(10),
+        }
+    }
+
+    fn mock_solve(base_amount: u128, quote_amount: u128, intent: bool) -> Solvable {
+        Solvable::DoSolve {
+            packet: mock_packet(),
+            order: ucs03_solvable::CwTokenOrderV2 {
+                sender: Default::default(),
+                receiver: MOCK_CONTRACT_ADDR.as_bytes().into(),
+                base_token: b"base_token".into(),
+                base_amount: base_amount.into(),
+                quote_token: b"muno".into(),
+                quote_amount: quote_amount.into(),
+                kind: 1,
+                metadata: Default::default(),
+            },
+            path: 0u64.into(),
+            caller: Addr::unchecked(CALLER_ADDR),
+            relayer: Addr::unchecked(ZKGM_ADDR),
+            relayer_msg: Default::default(),
+            intent,
+        }
+    }
+
+    fn solve(
+        deps: DepsMut,
+        base_amount: u128,
+        quote_amount: u128,
+        intent: bool,
+    ) -> Result<Response, Error> {
+        execute(
+            deps,
+            mock_env(),
+            message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
+            ExecuteMsg::Solvable(mock_solve(base_amount, quote_amount, intent)),
+        )
+    }
+
+    #[test]
+    fn solve_successful() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::LaneIsNotFungible {
+                channel_id: DESTINATION_CHANNEL_ID
+            }),
+            solve(deps.as_mut(), 150, 150, false)
+        );
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let res = solve(deps.as_mut(), 150, 150, false).unwrap();
+
+        assert_eq!(
+            res.events,
+            vec![Event::new(SOLVER_EVENT).add_attribute(
+                SOLVER_EVENT_MARKET_MAKER_ATTR,
+                Bytes::<HexPrefixed>::from(vec![0; 32]).to_string(),
+            )]
+        );
+
+        assert_eq!(
+            res.messages[0].msg,
+            BankMsg::Send {
+                to_address: MOCK_CONTRACT_ADDR.into(),
+                amount: vec![Coin::new(150u128, "muno")],
+            }
+            .into()
+        );
+
+        let res = solve(deps.as_mut(), 0, 0, false).unwrap();
+
+        assert!(res.messages.is_empty());
+    }
+
+    #[test]
+    fn solve_successful_with_cw20_fungible_lane() {
+        let mut deps = mock_dependencies();
+
+        let wasm_handler = |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { .. } => SystemResult::Ok(ContractResult::Ok(
+                    to_json_binary(&ContractInfoResponse::new(
+                        0,
+                        Addr::unchecked(""),
+                        None,
+                        false,
+                        None,
+                    ))
+                    .unwrap(),
+                )),
+                _ => todo!(),
+            }
+        };
+
+        deps.querier.update_wasm(wasm_handler);
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::LaneIsNotFungible {
+                channel_id: DESTINATION_CHANNEL_ID
+            }),
+            solve(deps.as_mut(), 150, 150, false)
+        );
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let res = solve(deps.as_mut(), 150, 150, false).unwrap();
+
+        assert_eq!(
+            res.messages[0].msg,
+            WasmMsg::Execute {
+                contract_addr: "muno".into(),
+                msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: MOCK_CONTRACT_ADDR.into(),
+                    amount: 150u128.into()
+                })
+                .unwrap(),
+                funds: vec![],
+            }
+            .into()
+        );
+    }
+
+    #[test]
+    fn solve_with_excess_fee() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let res = solve(deps.as_mut(), 150, 100, false).unwrap();
+
+        assert_eq!(
+            res.messages[0].msg,
+            BankMsg::Send {
+                to_address: ZKGM_ADDR.into(),
+                amount: vec![Coin::new(50u128, "muno")],
+            }
+            .into()
+        );
+
+        assert_eq!(
+            res.messages[1].msg,
+            BankMsg::Send {
+                to_address: MOCK_CONTRACT_ADDR.into(),
+                amount: vec![Coin::new(100u128, "muno")],
+            }
+            .into()
+        );
+    }
+
+    #[test]
+    fn solve_with_intent() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let commitment = commit_packets(&[mock_packet()]);
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::WhitelistIntents {
+                hashes_whitelist: vec![(commitment, true)],
+            },
+        )
+        .unwrap();
+
+        solve(deps.as_mut(), 150, 150, true).unwrap();
+    }
+
+    #[test]
+    fn solve_fails_when_intent_not_whitelisted() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::IntentMustBeWhitelisted),
+            solve(deps.as_mut(), 150, 150, true)
+        );
+    }
+
+    #[test]
+    fn solve_fails_when_fungible_lane_not_set() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::LaneIsNotFungible {
+                channel_id: DESTINATION_CHANNEL_ID
+            }),
+            solve(deps.as_mut(), 150, 150, false)
+        );
+    }
+
+    #[test]
+    fn solve_fails_when_quote_token_is_wrong() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "not_muno".into(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            Err(Error::InvalidFill {
+                quote_token: "muno".into(),
+                escrowed_denom: "not_muno".into()
+            }),
+            solve(deps.as_mut(), 150, 150, false)
+        );
+    }
+
+    #[test]
+    fn solve_fails_when_base_amount_doesnt_cover_quote_amount() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            Err(Error::BaseAmountMustCoverQuoteAmount),
+            solve(deps.as_mut(), 100, 150, false)
+        );
+    }
+
+    #[test]
+    fn solve_fails_when_caller_is_not_zkgm() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let solve_msg = mock_solve(150, 150, false);
+
+        assert_eq!(
+            Err(Error::OnlyZkgm),
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+                ExecuteMsg::Solvable(solve_msg),
+            )
+        );
+    }
+
+    #[test]
+    fn set_fungible_counterparty_fails_when_not_admin() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::OnlyAdmin),
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
+                ExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )
+        );
+    }
+
+    #[test]
+    fn whitelist_admin_fails_when_not_admin() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::OnlyAdmin),
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
+                ExecuteMsg::WhitelistIntents {
+                    hashes_whitelist: vec![(Default::default(), true)],
+                },
+            )
+        );
     }
 }

@@ -2,7 +2,7 @@ use cosmwasm_std::StdError;
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     StdError(#[from] StdError),
