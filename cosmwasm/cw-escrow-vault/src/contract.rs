@@ -242,7 +242,8 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
 mod tests {
     use cosmwasm_std::{
         testing::{message_info, mock_dependencies, mock_env, MOCK_CONTRACT_ADDR},
-        Addr,
+        Addr, ContractInfoResponse, ContractResult, QuerierResult, SystemResult, WasmMsg,
+        WasmQuery,
     };
     use ibc_union_spec::{ChannelId, Packet, Timestamp};
 
@@ -313,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn solve_successfull() {
+    fn solve_successful() {
         let mut deps = mock_dependencies();
 
         init(deps.as_mut());
@@ -361,6 +362,68 @@ mod tests {
         let res = solve(deps.as_mut(), 0, 0, false).unwrap();
 
         assert!(res.messages.is_empty());
+    }
+
+    #[test]
+    fn solve_successful_with_cw20_fungible_lane() {
+        let mut deps = mock_dependencies();
+
+        let wasm_handler = |q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { .. } => SystemResult::Ok(ContractResult::Ok(
+                    to_json_binary(&ContractInfoResponse::new(
+                        0,
+                        Addr::unchecked(""),
+                        None,
+                        false,
+                        None,
+                    ))
+                    .unwrap(),
+                )),
+                _ => todo!(),
+            }
+        };
+
+        deps.querier.update_wasm(wasm_handler);
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::LaneIsNotFungible {
+                channel_id: DESTINATION_CHANNEL_ID
+            }),
+            solve(deps.as_mut(), 150, 150, false)
+        );
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let res = solve(deps.as_mut(), 150, 150, false).unwrap();
+
+        assert_eq!(
+            res.messages[0].msg,
+            WasmMsg::Execute {
+                contract_addr: "muno".into(),
+                msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: MOCK_CONTRACT_ADDR.into(),
+                    amount: 150u128.into()
+                })
+                .unwrap(),
+                funds: vec![],
+            }
+            .into()
+        );
     }
 
     #[test]
