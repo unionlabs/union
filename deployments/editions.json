@@ -32,7 +32,7 @@
         "environment": "production"
       },
       "sei.1329": {
-        "environment": "staging"
+        "environment": "production"
       },
       "union.union-1": {
         "environment": "production"
