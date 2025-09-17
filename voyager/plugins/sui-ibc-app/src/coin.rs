@@ -6,7 +6,6 @@ use sui_sdk::types::{
     transaction::{Argument, CallArg, Command, ObjectArg},
     TypeTag,
 };
-use voyager_sdk::anyhow;
 
 pub async fn update_name(
     ptb: &mut ProgrammableTransactionBuilder,
@@ -14,7 +13,7 @@ pub async fn update_name(
     metadata_ref: ObjectRef,
     coin_t: TypeTag,
     name: String,
-) -> anyhow::Result<()> {
+) {
     call_coin_setter(
         ptb,
         "update_name",
@@ -23,7 +22,7 @@ pub async fn update_name(
         coin_t.clone(),
         name,
     )
-    .await
+    .await;
 }
 pub async fn update_symbol(
     ptb: &mut ProgrammableTransactionBuilder,
@@ -31,7 +30,7 @@ pub async fn update_symbol(
     metadata_ref: ObjectRef,
     coin_t: TypeTag,
     symbol: String,
-) -> anyhow::Result<()> {
+) {
     call_coin_setter(
         ptb,
         "update_symbol",
@@ -40,7 +39,7 @@ pub async fn update_symbol(
         coin_t.clone(),
         symbol,
     )
-    .await
+    .await;
 }
 pub async fn update_icon_url(
     ptb: &mut ProgrammableTransactionBuilder,
@@ -48,7 +47,7 @@ pub async fn update_icon_url(
     metadata_ref: ObjectRef,
     coin_t: TypeTag,
     icon_url: String,
-) -> anyhow::Result<()> {
+) {
     call_coin_setter(
         ptb,
         "update_icon_url",
@@ -57,7 +56,7 @@ pub async fn update_icon_url(
         coin_t.clone(),
         icon_url,
     )
-    .await
+    .await;
 }
 pub async fn update_description(
     ptb: &mut ProgrammableTransactionBuilder,
@@ -65,7 +64,7 @@ pub async fn update_description(
     metadata_ref: ObjectRef,
     coin_t: TypeTag,
     description: String,
-) -> anyhow::Result<()> {
+) {
     call_coin_setter(
         ptb,
         "update_description",
@@ -74,7 +73,7 @@ pub async fn update_description(
         coin_t.clone(),
         description,
     )
-    .await
+    .await;
 }
 async fn call_coin_setter<T: Serialize>(
     ptb: &mut ProgrammableTransactionBuilder,
@@ -83,7 +82,7 @@ async fn call_coin_setter<T: Serialize>(
     metadata_ref: ObjectRef,
     coin_t: TypeTag,
     data: T,
-) -> anyhow::Result<()> {
+) {
     let arguments: Vec<Argument> = [
         CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)),
         CallArg::Object(ObjectArg::SharedObject {
@@ -104,6 +103,4 @@ async fn call_coin_setter<T: Serialize>(
         vec![coin_t],
         arguments.to_vec(),
     ));
-
-    Ok(())
 }

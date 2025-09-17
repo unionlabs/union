@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use fastcrypto::hash::HashFunction;
+use fastcrypto::{hash::HashFunction, traits::Signer};
 use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
 use serde::{Deserialize, Serialize};
@@ -9,15 +7,16 @@ use sui_sdk::{
     rpc_types::{SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions},
     types::{
         base_types::SuiAddress,
-        crypto::{DefaultHash, SignatureScheme, SuiKeyPair},
+        crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         signature::GenericSignature,
-        transaction::{ProgrammableTransaction, Transaction, TransactionData},
+        transaction::{ProgrammableTransaction, Transaction, TransactionData, TransactionKind},
         Identifier,
     },
     SuiClient,
 };
 use tracing::info;
 use unionlabs::ErrorReporter;
+use voyager_sdk::serde_json;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleInfo {
@@ -32,6 +31,7 @@ trait TransactionPlugin {
     #[method(name = "onRecvPacket")]
     async fn on_recv_packet(
         &self,
+        pk: SuiKeyPair,
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketRecv,
@@ -40,6 +40,7 @@ trait TransactionPlugin {
     #[method(name = "onAcknowledgePacket")]
     async fn on_acknowledge_packet(
         &self,
+        pk: SuiKeyPair,
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketAcknowledgement,
@@ -48,7 +49,7 @@ trait TransactionPlugin {
 
 pub async fn send_transactions(
     sui_client: &SuiClient,
-    pk: &Arc<SuiKeyPair>,
+    pk: &SuiKeyPair,
     ptb: ProgrammableTransaction,
 ) -> RpcResult<SuiTransactionBlockResponse> {
     let sender = SuiAddress::from(&pk.public());
