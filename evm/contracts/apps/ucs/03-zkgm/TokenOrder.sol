@@ -565,15 +565,20 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                         order.quoteToken,
                         order.baseAmount
                     );
-                    // Check if the counterparty minted and wants us to burn to net.
-                    if (marketMaker == address(0)) {
-                        IZkgmERC20(baseToken).burn(
-                            address(this), order.baseAmount
-                        );
+                    if (baseToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+                        WETH.withdraw(order.baseAmount);
+                        payable(marketMaker).sendValue(order.baseAmount);
                     } else {
-                        IERC20(baseToken).safeTransfer(
-                            marketMaker, order.baseAmount
-                        );
+                        // Check if the counterparty minted and wants us to burn to net.
+                        if (marketMaker == address(0)) {
+                            IZkgmERC20(baseToken).burn(
+                                address(this), order.baseAmount
+                            );
+                        } else {
+                            IERC20(baseToken).safeTransfer(
+                                marketMaker, order.baseAmount
+                            );
+                        }
                     }
                 }
             } else {
@@ -630,15 +635,20 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                         order.quoteToken,
                         order.baseAmount
                     );
-                    // Check if the counterparty minted and wants us to burn to net.
-                    if (marketMaker == address(0)) {
-                        IZkgmERC20(baseToken).burn(
-                            address(this), order.baseAmount
-                        );
+                    if (baseToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+                        WETH.withdraw(order.baseAmount);
+                        payable(marketMaker).sendValue(order.baseAmount);
                     } else {
-                        IERC20(baseToken).safeTransfer(
-                            marketMaker, order.baseAmount
-                        );
+                        // Check if the counterparty minted and wants us to burn to net.
+                        if (marketMaker == address(0)) {
+                            IZkgmERC20(baseToken).burn(
+                                address(this), order.baseAmount
+                            );
+                        } else {
+                            IERC20(baseToken).safeTransfer(
+                                marketMaker, order.baseAmount
+                            );
+                        }
                     }
                 }
             } else {
@@ -682,7 +692,12 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 order.quoteToken,
                 order.baseAmount
             );
-            IERC20(baseToken).safeTransfer(sender, order.baseAmount);
+            if (baseToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+                WETH.withdraw(order.baseAmount);
+                payable(sender).sendValue(order.baseAmount);
+            } else {
+                IERC20(baseToken).safeTransfer(sender, order.baseAmount);
+            }
         }
     }
 
@@ -703,7 +718,12 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
                 order.quoteToken,
                 order.baseAmount
             );
-            IERC20(baseToken).safeTransfer(sender, order.baseAmount);
+            if (baseToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+                WETH.withdraw(order.baseAmount);
+                payable(sender).sendValue(order.baseAmount);
+            } else {
+                IERC20(baseToken).safeTransfer(sender, order.baseAmount);
+            }
         }
     }
 }

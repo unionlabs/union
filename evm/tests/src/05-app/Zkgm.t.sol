@@ -4139,6 +4139,81 @@ contract ZkgmTests is Test {
         }
     }
 
+    function test_onAckPacket_v2_transferNative_escrow_successAck_marketMakerFill_payNative(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        {
+            assumeUnusedAddress(relayer);
+            vm.deal(relayer, 0);
+            vm.assume(path > 0);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+            vm.assume(quoteAmount > 0);
+        }
+
+        // Setup: Native token is stored as WETH in the contract
+        vm.deal(address(this), baseAmount);
+        weth.deposit{value: baseAmount}();
+        weth.transfer(address(zkgm), baseAmount);
+
+        zkgm.doIncreaseOutstandingV2(
+            sourceChannelId,
+            path,
+            ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS,
+            quoteToken,
+            baseAmount
+        );
+
+        // Expect native ETH transfer to market maker
+        vm.expectCall(
+            address(weth), abi.encodeCall(IWETH.withdraw, (baseAmount))
+        );
+
+        internalOnAckOrderV2(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            TokenOrderV2({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
+                baseAmount: baseAmount,
+                kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+                metadata: hex"",
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: ZkgmLib.encodeTokenOrderAck(
+                        TokenOrderAck({
+                            fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                            marketMaker: abi.encodePacked(relayer)
+                        })
+                    )
+                })
+            )
+        );
+
+        // Verify the market maker received native ETH
+        assertEq(relayer.balance, baseAmount);
+    }
+
     function test_onAckPacket_v2_transfer_failureAck_unescrowRefund(
         address caller,
         uint32 sourceChannelId,
@@ -4251,6 +4326,78 @@ contract ZkgmTests is Test {
                 )
             );
         }
+    }
+
+    function test_onAckPacket_v2_transferNative_escrow_failureAck_refundNative(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        address sender,
+        bytes memory receiver,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        {
+            assumeUnusedAddress(sender);
+            assumeUnusedAddress(relayer);
+            vm.deal(sender, 0);
+            vm.assume(path > 0);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+            vm.assume(quoteAmount > 0);
+        }
+
+        // Setup: Native token is stored as WETH in the contract
+        vm.deal(address(this), baseAmount);
+        weth.deposit{value: baseAmount}();
+        weth.transfer(address(zkgm), baseAmount);
+
+        zkgm.doIncreaseOutstandingV2(
+            sourceChannelId,
+            path,
+            ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS,
+            quoteToken,
+            baseAmount
+        );
+
+        // Expect WETH withdrawal for native token refund
+        vm.expectCall(
+            address(weth), abi.encodeCall(IWETH.withdraw, (baseAmount))
+        );
+
+        {
+            TokenOrderV2 memory order = TokenOrderV2({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
+                baseAmount: baseAmount,
+                kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+                metadata: hex"",
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            });
+            internalOnAckOrderV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                salt,
+                relayer,
+                order,
+                ZkgmLib.encodeAck(
+                    Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
+                )
+            );
+        }
+
+        // Verify the sender received native ETH refund
+        assertEq(sender.balance, baseAmount);
     }
 
     function test_onTimeout_onlyIBC(
