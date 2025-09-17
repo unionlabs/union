@@ -141,7 +141,7 @@ pub fn execute(
 
             let mut messages = Vec::<CosmosMsg>::with_capacity(2);
             let mut push_transfer = |to, amount: u128| -> StdResult<()> {
-                if !amount == 0 {
+                if amount != 0 {
                     if fungible_lane.is_cw20 {
                         messages.push(
                             wasm_execute(

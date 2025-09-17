@@ -178,7 +178,7 @@ pub fn execute(
                         recipient: String,
                         amount: u128|
              -> Result<Response<TokenFactoryMsg>, Error> {
-                if !amount == 0 {
+                if amount != 0 {
                     match cw20_type {
                         Cw20ImplType::Base => cw20_base::contract::unchecked_internal_mint(
                             deps,
