@@ -4,7 +4,6 @@ use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv};
 use jsonrpsee::{
     core::{async_trait, JsonValue as Value, RpcResult},
-    proc_macros::rpc,
     types::ErrorObject,
     Extensions, MethodsError,
 };
@@ -20,7 +19,7 @@ use sui_sdk::{
     SuiClientBuilder,
 };
 use ucs03_zkgm::com::{
-    ZkgmPacket, OP_BATCH, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
+    OP_BATCH, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
     TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
 };
 use unionlabs::{never::Never, ErrorReporter};
@@ -35,6 +34,7 @@ use voyager_sdk::{
     DefaultCmd,
 };
 use voyager_transaction_plugin_sui::{ModuleInfo, TransactionPluginServer};
+use zkgm::register_tokens_if_zkgm;
 
 mod coin;
 mod zkgm;
@@ -92,14 +92,12 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> voyager_sdk::anyhow::Result<Self> {
-        Module::new(config)
+        Module::new(config).await
     }
 
-    fn info(config: Self::Config) -> voyager_sdk::rpc::types::PluginInfo {
-        let module = Module::new(config);
-
+    fn info(_: Self::Config) -> voyager_sdk::rpc::types::PluginInfo {
         PluginInfo {
-            name: module.plugin_name(),
+            name: Module::plugin_name(),
             interest_filter: NEVER_FILTER.into(),
         }
     }
@@ -113,6 +111,7 @@ impl Plugin for Module {
 impl TransactionPluginServer for Module {
     async fn on_recv_packet(
         &self,
+        pk: SuiKeyPair,
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketRecv,
@@ -140,8 +139,11 @@ impl TransactionPluginServer for Module {
         let mut coin_ts = vec![];
         for p in &data.packets {
             coin_ts.extend_from_slice(
-                &register_tokens_if_zkgm(self, &mut ptb, pk, p, &module_info, store_initial_seq)
-                    .await?,
+                &register_tokens_if_zkgm(self, &mut ptb, &pk, p, &module_info, store_initial_seq)
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, e.to_string(), None::<()>)
+                    })?,
             );
         }
 
@@ -155,7 +157,7 @@ impl TransactionPluginServer for Module {
         for coin_t in coin_ts {
             session = zkgm::recv_packet_call(
                 &mut ptb,
-                module,
+                self,
                 &module_info,
                 store_initial_seq,
                 coin_t,
@@ -168,13 +170,14 @@ impl TransactionPluginServer for Module {
         // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
         // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
         // // it, this PTB will fail and no partial state will be persisted.
-        zkgm::end_recv_call(&mut ptb, module, &module_info, fee_recipient, session, data)?;
+        zkgm::end_recv_call(&mut ptb, self, &module_info, fee_recipient, session, data);
 
         Ok(Some(ptb.finish()))
     }
 
     async fn on_acknowledge_packet(
         &self,
+        _: SuiKeyPair,
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketAcknowledgement,
@@ -218,14 +221,14 @@ impl TransactionPluginServer for Module {
             );
         }
 
-        zkgm::end_ack_call(&mut ptb, self, &module_info, fee_recipient, session, data)?;
+        zkgm::end_ack_call(&mut ptb, self, &module_info, fee_recipient, session, data);
 
         Ok(Some(ptb.finish()))
     }
 }
 
 impl Module {
-    fn plugin_name(&self) -> String {
+    fn plugin_name() -> String {
         pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
         PLUGIN_NAME.to_owned()

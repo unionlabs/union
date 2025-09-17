@@ -18595,6 +18595,7 @@ dependencies = [
 name = "voyager-sui-ibc-app-plugin"
 version = "0.0.0"
 dependencies = [
+ "alloy",
  "bcs",
  "concurrent-keyring",
  "embed-commit",
@@ -18603,6 +18604,7 @@ dependencies = [
  "jsonrpsee 0.25.1",
  "move-core-types",
  "serde",
+ "sha3",
  "sui-sdk",
  "tokio",
  "ucs03-zkgm",

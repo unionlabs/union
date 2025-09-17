@@ -4,18 +4,21 @@ use std::{
     time::Duration,
 };
 
+use alloy::sol_types::SolValue;
+use hex_literal::hex;
 use ibc_union_spec::{datagram::MsgPacketAcknowledgement, ChannelId};
 use jsonrpsee::tracing::debug;
 use move_core_types_sui::{
     account_address::AccountAddress, ident_str, language_storage::StructTag,
 };
+use sha3::{Digest, Keccak256};
 use sui_sdk::{
     rpc_types::{ObjectChange, SuiMoveValue, SuiParsedData, SuiTransactionBlockResponseOptions},
     types::{
         base_types::ObjectRef,
         crypto::SuiKeyPair,
         dynamic_field::DynamicFieldName,
-        transaction::{CallArg, Command, ObjectArg},
+        transaction::{Argument, CallArg, Command, ObjectArg},
         Identifier, TypeTag,
     },
 };
@@ -27,6 +30,12 @@ use voyager_sdk::{
 };
 
 use super::*;
+
+pub const SUI_CALL_ARG_CLOCK: CallArg = CallArg::Object(ObjectArg::SharedObject {
+    id: ObjectID::from_single_byte(6),
+    initial_shared_version: SequenceNumber::from_u64(1),
+    mutable: false,
+});
 
 const TOKEN_BYTECODE: [&[u8]; 2] = [
     hex!("a11ceb0b060000000a01000e020e1e032c27045308055b5607b101d1010882036006e2034b0aad04050cb2042b000a010d020602070212021302140001020001020701000003000c01000103030c0100010504020006050700000b000100010c010601000211030400030808090102040e0b01010c040f0e01010c05100c030001050307040a050d02080007080400020b020108000b030108000105010f010805010b01010900010800070900020a020a020a020b01010805070804020b030109000b02010900010b0201080001090001060804010b03010800020900050c436f696e4d657461646174610e46554e4749424c455f544f4b454e064f7074696f6e0b5472656173757279436170095478436f6e746578740355726c076164647265737304636f696e0f6372656174655f63757272656e63790b64756d6d795f6669656c640e66756e6769626c655f746f6b656e04696e6974046e6f6e65066f7074696f6e137075626c69635f73686172655f6f626a6563740f7075626c69635f7472616e736665720673656e64657207746f5f75323536087472616e736665720a74785f636f6e746578740375726c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020520").as_slice(),
@@ -119,7 +128,7 @@ pub fn end_recv_call(
     fee_recipient: SuiAddress,
     session: Argument,
     data: MsgPacketRecv,
-) -> anyhow::Result<()> {
+) {
     let arguments = vec![
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
@@ -144,8 +153,6 @@ pub fn end_recv_call(
         vec![],
         arguments,
     ));
-
-    Ok(())
 }
 
 pub fn begin_ack_call(
@@ -232,7 +239,7 @@ pub fn end_ack_call(
     fee_recipient: SuiAddress,
     session: Argument,
     data: MsgPacketAcknowledgement,
-) -> anyhow::Result<()> {
+) {
     let arguments = vec![
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
@@ -255,8 +262,6 @@ pub fn end_ack_call(
         vec![],
         arguments,
     ));
-
-    Ok(())
 }
 
 pub fn register_capability_call(
@@ -266,7 +271,7 @@ pub fn register_capability_call(
     treasury_ref: ObjectRef,
     metadata_ref: ObjectRef,
     coin_t: TypeTag,
-) -> anyhow::Result<()> {
+) {
     let arguments = [
         ptb.input(CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].into(),
@@ -295,13 +300,11 @@ pub fn register_capability_call(
         vec![coin_t.clone()],
         arguments.to_vec(),
     ));
-
-    Ok(())
 }
 
 pub async fn publish_new_coin(
     module: &Module,
-    pk: &Arc<SuiKeyPair>,
+    pk: &SuiKeyPair,
     decimals: u8,
 ) -> anyhow::Result<(ObjectRef, ObjectRef, TypeTag)> {
     // There is no wrapped token
@@ -509,7 +512,7 @@ struct SuiFungibleAssetMetadata {
 pub async fn register_token_if_zkgm(
     module: &Module,
     ptb: &mut ProgrammableTransactionBuilder,
-    pk: &Arc<SuiKeyPair>,
+    pk: &SuiKeyPair,
     packet: &ibc_union_spec::Packet,
     zkgm_packet: &ZkgmPacket,
     fao: TokenOrderV2,
@@ -649,7 +652,7 @@ pub async fn register_token_if_zkgm(
         coin_t.clone(),
         coin_metadata.name,
     )
-    .await?;
+    .await;
 
     coin::update_symbol(
         ptb,
@@ -658,7 +661,7 @@ pub async fn register_token_if_zkgm(
         coin_t.clone(),
         coin_metadata.symbol,
     )
-    .await?;
+    .await;
 
     coin::update_description(
         ptb,
@@ -667,10 +670,10 @@ pub async fn register_token_if_zkgm(
         coin_t.clone(),
         coin_metadata.description,
     )
-    .await?;
+    .await;
 
     if let Some(icon_url) = coin_metadata.icon_url {
-        coin::update_icon_url(ptb, treasury_ref, metadata_ref, coin_t.clone(), icon_url).await?;
+        coin::update_icon_url(ptb, treasury_ref, metadata_ref, coin_t.clone(), icon_url).await;
     }
 
     // We are finally registering the token before calling the recv
@@ -681,7 +684,7 @@ pub async fn register_token_if_zkgm(
         treasury_ref,
         metadata_ref,
         coin_t.clone(),
-    )?;
+    );
 
     Ok(Some(coin_t))
 }
@@ -689,7 +692,7 @@ pub async fn register_token_if_zkgm(
 pub async fn register_tokens_if_zkgm(
     module: &Module,
     ptb: &mut ProgrammableTransactionBuilder,
-    pk: &Arc<SuiKeyPair>,
+    pk: &SuiKeyPair,
     packet: &ibc_union_spec::Packet,
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
