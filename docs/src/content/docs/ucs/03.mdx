@@ -998,6 +998,132 @@ sequenceDiagram
     end
 `}/>
 
+## EVM Token Order Examples
+
+Below are practical EVM examples for each TokenOrderV2 operation type, extracted from the canonical test suite.
+
+### Initialize Operation (TOKEN_ORDER_KIND_INITIALIZE)
+
+The initialize operation creates a new wrapped token with custom metadata on the destination chain.
+
+#### Basic Token Initialization
+
+```solidity
+
+// Default ZkgmERC20 address, don't change this unless you know what you are doing.
+bytes memory implementation = abi.encodePacked(0xAf739F34ddF951cBC24fdbBa4f76213688E13627);
+
+// Default ZkgmERC20.initialize (could be your implementation.initialize)
+// If you don't need any customization, you'll just update the token name, symbol and decimals.
+bytes memory initializer =
+    abi.encodeCall(
+            ZkgmERC20.initialize,
+            (   // Default authority address, don't change this unless you know what you are doing.
+                0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4,
+                // Default zkgm address, don't change this unless you know what you are doing.
+                0x5fbe74a283f7954f10aa04c2edf55578811aeb03,
+                // Token name
+                "My Token",
+                // Token symbol
+                "MTK",
+                // Decimals
+                18
+            )
+        );
+
+// Create metadata for the new wrapped token
+TokenMetadata memory metadata = TokenMetadata({
+    implementation: abi.encodePacked(0xAf739F34ddF951cBC24fdbBa4f76213688E13627),
+    initializer: initialize
+});
+
+// Predict the wrapped token address using the metadata
+// Use cast to call the counterparty zkgm instance:
+// cast call <COUNTERPARTY_ZKGM_ADDRESS> "predictWrappedTokenV2(uint256,uint32,bytes,tuple(bytes,bytes))" \
+//   0 <DESTINATION_CHANNEL_ID> <BASE_TOKEN> "(<IMPLEMENTATION>,<INITIALIZER>)" \
+//   --rpc-url <COUNTERPARTY_RPC_URL>
+
+// Create the token order
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: baseToken,
+    baseAmount: 1000e18,
+    kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
+    metadata: ZkgmLib.encodeTokenMetadata(metadata),
+    // This is the predicted address we got
+    quoteToken: abi.encodePacked(predictedWrappedTokenAddress),
+    quoteAmount: 1000e18
+});
+
+// Create instruction
+Instruction memory instruction = Instruction({
+    version: ZkgmLib.INSTR_VERSION_2,
+    opcode: ZkgmLib.OP_TOKEN_ORDER,
+    operand: ZkgmLib.encodeTokenOrderV2(order)
+});
+```
+
+### Escrow Operation (TOKEN_ORDER_KIND_ESCROW)
+
+The escrow operation uses an existing wrapped token (created via initialize) to lock tokens on the source chain.
+
+```solidity
+// Send more of the same token using the already initialized wrapped token
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(recipient),
+    baseToken: baseToken, // Same base token as before
+    baseAmount: 500e18,
+    kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
+    metadata: hex"", // Empty for escrow
+    quoteToken: abi.encodePacked(predictedWrappedTokenAddress), // Same wrapped token from initialize
+    quoteAmount: 500e18
+});
+```
+
+### Unescrow Operation (TOKEN_ORDER_KIND_UNESCROW)
+
+The unescrow operation unwraps tokens back to their original form, returning them through their origin path.
+
+```solidity
+// Unwrap the token back to its original form
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(msg.sender),
+    receiver: abi.encodePacked(originalRecipient),
+    baseToken: abi.encodePacked(predictedWrappedTokenAddress), // The wrapped token
+    baseAmount: 300e18,
+    kind: ZkgmLib.TOKEN_ORDER_KIND_UNESCROW,
+    metadata: hex"", // Empty for unescrow
+    quoteToken: baseToken, // Back to original token
+    quoteAmount: 300e18
+});
+```
+
+
+### Solve Operation (TOKEN_ORDER_KIND_SOLVE)
+
+The solve operation routes orders to smart contracts that implement custom fulfillment logic.
+
+```solidity
+// Create solver metadata
+SolverMetadata memory solverMeta = SolverMetadata({
+    solverAddress: abi.encodePacked(solverContractAddress),
+    metadata: hex"" // No additional parameters
+});
+
+TokenOrderV2 memory order = TokenOrderV2({
+    sender: abi.encodePacked(0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2),
+    receiver: abi.encodePacked(0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2),
+    baseToken: abi.encodePacked(tokenSent),
+    baseAmount: 10,
+    kind: ZkgmLib.TOKEN_ORDER_KIND_SOLVE,
+    metadata: ZkgmLib.encodeSolverMetadata(solverMeta),
+    quoteToken: abi.encodePacked(tokenToReceive),
+    quoteAmount: 10
+});
+```
+
 :::tip
 
 A user can split a big order over multiple packets to have a partial-filling like behavior.
