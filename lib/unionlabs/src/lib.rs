@@ -10,7 +10,6 @@
     clippy::module_name_repetitions,
     clippy::too_long_first_doc_paragraph
 )]
-#![feature(trait_alias)]
 
 extern crate alloc;
 
@@ -69,8 +68,6 @@ pub mod never;
 pub mod id;
 
 pub mod signer;
-
-pub mod traits;
 
 pub(crate) mod macros;
 

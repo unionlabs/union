@@ -43,7 +43,6 @@ use unionlabs::{
     google::protobuf::any::RawAny,
     never::Never,
     primitives::{Bech32, ByteArrayExt, Bytes, H160, H32},
-    traits::Member,
     ErrorReporter,
 };
 use voyager_plugin_transaction_batch::data::{BatchableEvent, EventBatch};

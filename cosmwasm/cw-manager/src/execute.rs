@@ -1,227 +1,103 @@
-use core::fmt;
-
 use cosmwasm_std::{Addr, Deps, Env};
 use depolama::StorageExt;
-use serde::{Deserialize, Serialize};
-use sha2::Digest;
-use unionlabs_primitives::H256;
 
 use crate::{
-    error::ContractError,
-    state::{ExecutionId, RoleMembers, Roles, TargetAllowedRoles, Targets},
-    time::UnpackedDelay,
+    state::RoleMembers,
     types::{Access, RoleId},
 };
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L139>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L225>
 ///
 /// ```solidity
-/// function canCall(
-///     address caller,
-///     address target,
-///     bytes4 selector
-/// ) public view virtual returns (bool immediate, uint32 delay)
+/// function labelRole(uint64 roleId, string calldata label) public virtual onlyAuthorized
 /// ```
-pub fn can_call(
-    deps: Deps,
-    env: &Env,
-    caller: &Addr,
-    target: &Addr,
-    method: Method,
-) -> Result<CanCall, ContractError> {
-    if is_target_closed(deps, target)? {
-        Ok(CanCall {
-            immediate: false,
-            delay: 0,
-        })
-    } else if caller = env.contract.address {
-        Ok(CanCall {
-            immediate: is_executing(deps, target, &method)?,
-            delay: 0,
-        })
-    } else {
-        let role_id = get_target_function_role(deps, target, &method)?;
-        let HasRole {
-            is_member,
-            execution_delay,
-        } = has_role(deps, role_id, caller)?;
-        if is_member {
-            Ok(CanCall {
-                immediate: execution_delay == 0,
-                delay: execution_delay,
-            })
-        } else {
-            Ok(CanCall {
-                immediate: false,
-                delay: 0,
-            })
-        }
-    }
+pub(crate) fn label_role(role_id: RoleId, label: String) {
+    todo!("figure out how we want to label roles; events like the original solidity implementation or in storage?")
 }
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L158>
-pub fn expiration() -> u32 {
-    // 1 week
-    7 * 24 * 60 * 60
-}
-
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L163>
-pub fn min_setback() -> u32 {
-    // 5 days
-    5 * 24 * 60 * 60
-}
-
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L168>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L233>
 ///
 /// ```solidity
-/// function isTargetClosed(address target) public view virtual returns (bool)
+/// function grantRole(uint64 roleId, address account, uint32 executionDelay) public virtual onlyAuthorized
 /// ```
-pub fn is_target_closed(deps: Deps, target: &Addr) -> Result<bool, ContractError> {
-    Ok(deps.storage.read::<Targets>(target)?.closed)
-}
+fn grant_role(role_id: RoleId, account: &Addr, execution_delay: u32) {}
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L173>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L238>
 ///
 /// ```solidity
-/// function getTargetFunctionRole(address target, bytes4 selector) public view virtual returns (uint64)
+/// function revokeRole(uint64 roleId, address account) public virtual onlyAuthorized
 /// ```
-pub fn get_target_function_role(
-    deps: Deps,
-    target: &Addr,
-    method: &Method,
-) -> Result<RoleId, ContractError> {
-    Ok(deps
-        .storage
-        .read::<TargetAllowedRoles>(&(target.clone(), method.clone()))?)
-}
+pub(crate) fn revoke_role(role_id: RoleId, account: &Addr) {}
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L178>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L243>
 ///
 /// ```solidity
-/// function getTargetAdminDelay(address target) public view virtual returns (uint32)
+/// function renounceRole(uint64 roleId, address callerConfirmation) public virtual
 /// ```
-pub fn get_target_admin_delay(deps: Deps, env: &Env, target: &Addr) -> Result<u32, ContractError> {
-    Ok(deps.storage.read::<Targets>(target)?.admin_delay.get(env))
-}
+pub(crate) fn renounce_role(role_id: RoleId, caller_confirmation: &Addr) {}
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L183>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L251>
 ///
 /// ```solidity
-/// function getRoleAdmin(uint64 roleId) public view virtual returns (uint64)
+/// function setRoleAdmin(uint64 roleId, uint64 admin) public virtual onlyAuthorized
 /// ```
-pub fn get_role_admin(deps: Deps, role_id: RoleId) -> Result<RoleId, ContractError> {
-    Ok(deps.storage.read::<Roles>(&role_id)?.admin)
-}
+pub(crate) fn set_role_admin(role_id: RoleId, admin: RoleId) {}
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L188>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L256>
 ///
 /// ```solidity
-/// function getRoleGuardian(uint64 roleId) public view virtual returns (uint64)
+/// function setRoleGuardian(uint64 roleId, uint64 guardian) public virtual onlyAuthorized
 /// ```
-pub fn get_role_guardian(deps: Deps, role_id: RoleId) -> Result<RoleId, ContractError> {
-    Ok(deps.storage.read::<Roles>(&role_id)?.guardian)
-}
+pub(crate) fn set_role_guardian(role_id: RoleId, guardian: RoleId) {}
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L193>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L261>
 ///
 /// ```solidity
-/// function getRoleGrantDelay(uint64 roleId) public view virtual returns (uint32)
+/// function setGrantDelay(uint64 roleId, uint32 newDelay) public virtual onlyAuthorized
 /// ```
-pub fn get_role_grant_delay(deps: Deps, env: &Env, role_id: RoleId) -> Result<u32, ContractError> {
-    Ok(deps.storage.read::<Roles>(&role_id)?.grant_delay.get(env))
-}
+pub(crate) fn set_grant_delay(role_id: RoleId, new_delay: u32) {}
 
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L198>
+/// Internal version of [`grant_role`] without access control. Returns true if the role was newly granted.
 ///
 /// ```solidity
-/// function getAccess(
+/// function _grantRole(
 ///     uint64 roleId,
-///     address account
-/// ) public view virtual returns (uint48 since, uint32 currentDelay, uint32 pendingDelay, uint48 effect)
+///     address account,
+///     uint32 grantDelay,
+///     uint32 executionDelay
+/// ) internal virtual returns (bool)
 /// ```
-pub fn get_access(
+///
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L270-L275>
+fn _grant_role(
     deps: Deps,
     env: &Env,
     role_id: RoleId,
     account: &Addr,
-) -> Result<(u64, UnpackedDelay), ContractError> {
-    let access = deps
-        .storage
-        .read::<RoleMembers>(&(role_id, account.clone()))?;
-
-    Ok((access.since, access.delay.get_full(env)))
-}
-
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L211>
-///
-/// ```solidity
-/// function hasRole(
-///     uint64 roleId,
-///     address account
-/// ) public view virtual returns (bool isMember, uint32 executionDelay)
-/// ```
-pub fn has_role(
-    deps: Deps,
-    env: &Env,
-    role_id: RoleId,
-    account: &Addr,
-) -> Result<HasRole, ContractError> {
+    grant_delay: u32,
+    execution_delay: u32,
+) {
     if role_id == RoleId::PUBLIC_ROLE {
-        Ok(HasRole {
-            is_member: true,
-            execution_delay: 0,
-        })
-    } else {
-        let Access { since, delay } = get_access(deps, env, role_id, account)?;
-        Ok(HasRole {
-            is_member: since != 0 && since <= env.block.time.seconds(),
-            execution_delay: delay.value_before,
-        })
+        return Err(Error::AccessManagerLockedRole(role_id));
     }
-}
 
-/// Returns true if a call with `target` and `selector` is being executed via [`executed`].
-///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L716>
-///
-/// ```solidity
-/// function _isExecuting(address target, bytes4 selector) private view returns (bool)
-/// ```
-fn is_executing(deps: Deps, target: &Addr, method: &Method) -> Result<bool, ContractError> {
-    Ok(deps
+    let new_member = deps
         .storage
-        .maybe_read_item::<ExecutionId>()?
-        .is_some_and(|id| id == hash_execution_id(target, method)))
-}
+        .read::<RoleMembers>(&(role_id, account.clone()))?
+        .since
+        == 9;
+    let since;
 
-/// Hashing function for execute protection.
-///
-/// ```solidity
-/// function _hashExecutionId(address target, bytes4 selector) private pure returns (bytes32)
-/// ```
-///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L737>
-fn hash_execution_id(target: &Addr, method: &Method) -> H256 {
-    sha2::Sha256::digest(format!("{target}:{method}")).into()
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CanCall {
-    pub immediate: bool,
-    pub delay: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct HasRole {
-    pub is_member: bool,
-    pub execution_delay: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
-pub struct Method(String);
-
-impl fmt::Display for Method {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
+    if new_member {
+        since = env.block.time.seconds() + grant_delay;
+        deps.storage
+            .write::<RoleMembers>(
+                &(role_id, account.clone()),
+                &Access {
+                    since: todo!(),
+                    delay: todo!(),
+                },
+            )?
+            .since;
     }
 }

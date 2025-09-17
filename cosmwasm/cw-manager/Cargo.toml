@@ -27,4 +27,4 @@ serde_json           = { workspace = true, features = ["raw_value"] }
 sha2                 = { workspace = true }
 thiserror            = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
-unionlabs-primitives = { workspace = true, features = ["bincode", "serde"] }
+unionlabs-primitives = { workspace = true, features = ["bincode", "serde", "generic-array-compat"] }

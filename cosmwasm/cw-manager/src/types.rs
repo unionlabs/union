@@ -1,3 +1,5 @@
+use core::fmt;
+
 use cosmwasm_std::{StdError, StdResult};
 use depolama::Bytes;
 use serde::{Deserialize, Serialize};
@@ -82,6 +84,12 @@ pub struct Schedule {
 )]
 pub struct RoleId(#[serde(with = "::serde_utils::string")] u64);
 
+impl fmt::Display for RoleId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
 impl RoleId {
     /// The identifier of the admin role. Required to perform most configuration operations including other roles' management and target restrictions.
     ///
@@ -114,5 +122,14 @@ impl RoleId {
                 ))
             })
             .and_then(RoleId::from_be_bytes)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+pub struct Method(String);
+
+impl fmt::Display for Method {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
     }
 }

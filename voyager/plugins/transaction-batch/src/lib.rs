@@ -17,7 +17,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace, warn};
-use unionlabs::{ibc::core::client::height::Height, id::ClientId, traits::Member, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, id::ClientId, ErrorReporter};
 use voyager_sdk::{
     anyhow,
     hook::simple_take_filter,
