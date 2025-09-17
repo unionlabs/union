@@ -277,13 +277,8 @@ mod tests {
         }
     }
 
-    fn solve(
-        deps: DepsMut,
-        base_amount: u128,
-        quote_amount: u128,
-        intent: bool,
-    ) -> Result<Response, Error> {
-        let solve_msg = Solvable::DoSolve {
+    fn mock_solve(base_amount: u128, quote_amount: u128, intent: bool) -> Solvable {
+        Solvable::DoSolve {
             packet: mock_packet(),
             order: ucs03_solvable::CwTokenOrderV2 {
                 sender: Default::default(),
@@ -300,13 +295,20 @@ mod tests {
             relayer: Addr::unchecked(ZKGM_ADDR),
             relayer_msg: Default::default(),
             intent,
-        };
+        }
+    }
 
+    fn solve(
+        deps: DepsMut,
+        base_amount: u128,
+        quote_amount: u128,
+        intent: bool,
+    ) -> Result<Response, Error> {
         execute(
             deps,
             mock_env(),
             message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
-            ExecuteMsg::Solvable(solve_msg.clone()),
+            ExecuteMsg::Solvable(mock_solve(base_amount, quote_amount, intent)),
         )
     }
 
@@ -515,6 +517,81 @@ mod tests {
         assert_eq!(
             Err(Error::BaseAmountMustCoverQuoteAmount),
             solve(deps.as_mut(), 100, 150, false)
+        );
+    }
+
+    #[test]
+    fn solve_fails_when_caller_is_not_zkgm() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+            ExecuteMsg::SetFungibleCounterparty {
+                path: 0u64.into(),
+                channel_id: DESTINATION_CHANNEL_ID,
+                base_token: b"base_token".into(),
+                counterparty_beneficiary: (&[0; 32]).into(),
+                escrowed_denom: "muno".into(),
+            },
+        )
+        .unwrap();
+
+        let solve_msg = mock_solve(150, 150, false);
+
+        assert_eq!(
+            Err(Error::OnlyZkgm),
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
+                ExecuteMsg::Solvable(solve_msg),
+            )
+        );
+    }
+
+    #[test]
+    fn set_fungible_counterparty_fails_when_not_admin() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::OnlyAdmin),
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
+                ExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )
+        );
+    }
+
+    #[test]
+    fn whitelist_admin_fails_when_not_admin() {
+        let mut deps = mock_dependencies();
+
+        init(deps.as_mut());
+
+        assert_eq!(
+            Err(Error::OnlyAdmin),
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
+                ExecuteMsg::WhitelistIntents {
+                    hashes_whitelist: vec![(Default::default(), true)],
+                },
+            )
         );
     }
 }
