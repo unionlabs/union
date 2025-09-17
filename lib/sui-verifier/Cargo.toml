@@ -18,7 +18,6 @@ unionlabs-primitives   = { workspace = true }
 
 [dev-dependencies]
 hex-literal       = { workspace = true }
-wasm-bindgen-test = "0.3.0"
 
 [lints]
 workspace = true
