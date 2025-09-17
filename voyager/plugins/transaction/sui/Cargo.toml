@@ -27,6 +27,7 @@ serde               = { workspace = true, features = ["derive"] }
 sha3                = { workspace = true }
 shared-crypto       = { git = "https://github.com/MystenLabs/sui" }
 # sui_json_rpc_api    = { git = "https://github.com/mystenlabs/sui", package = "sui-json-rpc-api" }
+reqwest     = { workspace = true, features = ["rustls-tls"] }
 sui_sdk     = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
 tokio       = { workspace = true }
 tracing     = { workspace = true }

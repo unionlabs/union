@@ -10,7 +10,7 @@ use sui_light_client_types::{
     client_state::{ClientState, ClientStateV1},
     committee::Committee,
     consensus_state::ConsensusState,
-    crypto::CryptoBytes,
+    fixed_bytes::SuiFixedBytes,
     CertifiedCheckpointSummary, U64,
 };
 use sui_sdk::{
@@ -98,22 +98,15 @@ impl ClientBootstrapModuleServer for Module {
     async fn self_client_state(
         &self,
         _: &Extensions,
-        _: Height,
+        height: Height,
         config: Value,
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
-        let latest_checkpoint_number = self
-            .sui_client
-            .read_api()
-            .get_latest_checkpoint_sequence_number()
-            .await
-            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
-
         let latest_checkpoint = self
             .sui_client
             .read_api()
-            .get_checkpoint(CheckpointId::SequenceNumber(latest_checkpoint_number))
+            .get_checkpoint(CheckpointId::SequenceNumber(height.height()))
             .await
             .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
 
@@ -126,7 +119,7 @@ impl ClientBootstrapModuleServer for Module {
 
         Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
             chain_id: self.chain_id.to_string(),
-            latest_checkpoint: latest_checkpoint_number,
+            latest_checkpoint: height.height(),
             frozen_height: 0,
             initial_committee: Some(convert_committee(committee)),
             ibc_commitments_object_id: sui_light_client_types::ObjectID::new(
@@ -187,7 +180,7 @@ fn convert_committee(committee: SuiCommittee) -> Committee {
         voting_rights: committee
             .validators
             .into_iter()
-            .map(|(pubkey, power)| (CryptoBytes(pubkey.0.into()), U64(power)))
+            .map(|(pubkey, power)| (SuiFixedBytes(pubkey.0.into()), U64(power)))
             .collect(),
     }
 }

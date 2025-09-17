@@ -1,6 +1,7 @@
 use enumorph::Enumorph;
 use macros::model;
 use sui_light_client_types::U64;
+use sui_sdk::types::base_types::SuiAddress;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CreateClient {
@@ -12,7 +13,6 @@ pub struct CreateClient {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct UpdateClient {
     pub client_id: u32,
-    pub client_type: String,
     pub height: U64,
 }
 
@@ -63,7 +63,7 @@ pub struct ChannelOpenTry {
     pub counterparty_port_id: Vec<u8>,
     pub counterparty_channel_id: u32,
     pub connection_id: u32,
-    pub version: String,
+    pub counterparty_version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -100,6 +100,34 @@ pub struct PacketSend {
     pub packet: Packet,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PacketRecv {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub maker: SuiAddress,
+    pub maker_msg: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct WriteAck {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub acknowledgement: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PacketAck {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub acknowledgement: Vec<u8>,
+    pub maker: SuiAddress,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct TimeoutPacket {
+    pub packet: Packet,
+}
+
 #[model]
 #[derive(Enumorph)]
 pub enum IbcEvent {
@@ -113,8 +141,9 @@ pub enum IbcEvent {
     ChannelOpenTry(ChannelOpenTry),
     ChannelOpenAck(ChannelOpenAck),
     ChannelOpenConfirm(ChannelOpenConfirm),
-    // WriteAcknowledgement(ibc::WriteAck),
-    // RecvPacket(ibc::PacketRecv),
-    PacketSend(PacketSend), // AcknowledgePacket(ibc::PacketAck),
-                            // TimeoutPacket(ibc::TimeoutPacket),
+    WriteAck(WriteAck),
+    PacketSend(PacketSend),
+    PacketRecv(PacketRecv),
+    PacketAck(PacketAck),
+    TimeoutPacket(TimeoutPacket),
 }

@@ -58,66 +58,66 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::acknowledgement {
+module zkgm::zkgm_packet {
     use zkgm::zkgm_ethabi;
+    use zkgm::instruction::{Self, Instruction};
 
-    public struct Acknowledgement has copy, drop, store {
-        tag: u256,
-        inner_ack: vector<u8>
+    public struct ZkgmPacket has copy, drop, store {
+        salt: vector<u8>,
+        path: u256,
+        instruction: Instruction
     }
 
-    public fun new(tag: u256, inner_ack: vector<u8>): Acknowledgement {
-        Acknowledgement { tag, inner_ack }
+    public fun salt(zkgm_pack: &ZkgmPacket): vector<u8> {
+        zkgm_pack.salt
     }
 
-    public fun tag(ack: &Acknowledgement): u256 {
-        ack.tag
+    public fun path(zkgm_pack: &ZkgmPacket): u256 {
+        zkgm_pack.path
     }
 
-    public fun inner_ack(ack: &Acknowledgement): &vector<u8> {
-        &ack.inner_ack
+    public fun instruction(zkgm_pack: &ZkgmPacket): Instruction {
+        zkgm_pack.instruction
     }
 
-    public fun encode(ack: &Acknowledgement): vector<u8> {
+    public fun new(salt: vector<u8>, path: u256, instruction: Instruction): ZkgmPacket {
+        ZkgmPacket { salt, path, instruction }
+    }
+
+    public fun encode(packet: &ZkgmPacket): vector<u8> {
         let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.tag);
+        zkgm_ethabi::encode_bytes32(&mut buf, &packet.salt);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.path);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
 
-        let version_offset = 0x40;
-        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
-        zkgm_ethabi::encode_bytes(&mut buf, &ack.inner_ack);
-
+        vector::append(&mut buf, instruction::encode(&packet.instruction));
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>): Acknowledgement {
-        let mut index = 0x0;
-        let tag = zkgm_ethabi::decode_uint(buf, &mut index);
-        index = index + 0x20;
-        let inner_ack = zkgm_ethabi::decode_bytes(buf, &mut index);
-        Acknowledgement { tag: tag, inner_ack: inner_ack }
+    public fun decode(buf: &vector<u8>): ZkgmPacket {
+        let mut index = 0;
+
+        ZkgmPacket {
+            salt: zkgm_ethabi::decode_bytes32(buf, &mut index),
+            path: zkgm_ethabi::decode_uint(buf, &mut index),
+            instruction: instruction::decode(buf, &mut (index + 0x20)),
+        }
     }
 
     #[test]
-    fun test_encode_decode_ack() {
-        let output =
-            x"000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000768656c6c6c6f6f00000000000000000000000000000000000000000000000000";
-        let ack_data = Acknowledgement { tag: 7788909223344, inner_ack: b"hellloo" };
+    fun test_encode_decode() {
+        let encoded =
+            x"414141414141414141414141414141414141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000084141414141414141000000000000000000000000000000000000000000000000";
+        let packet = decode(&encoded);
+        let expected_packet =
+            new(
+                b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                100,
+                instruction::new(10, 20, b"AAAAAAAA")
+            );
 
-        let ack_bytes = encode(&ack_data);
-        std::debug::print(&ack_bytes);
-        assert!(ack_bytes == output, 0);
-
-        let ack_data_decoded = decode(&ack_bytes);
-        assert!(ack_data_decoded.tag == 7788909223344, 1);
-        assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
-    }
-
-    #[test]
-    fun test_decode_ack(){
-        let output = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
-
-        let ack_data_decoded = decode(&output);
-        std::debug::print(&ack_data_decoded);
+        assert!(packet == expected_packet, 1);
+        assert!(encode(&packet) == encoded, 1);
     }
 }

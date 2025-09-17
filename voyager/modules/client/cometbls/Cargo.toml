@@ -13,10 +13,9 @@ workspace = true
 
 [dependencies]
 alloy-sol-types             = { workspace = true }
-ark-bn254                   = { version = "0.4", default-features = false, features = ["curve"] }
-ark-serialize               = "0.4.2"
 cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }
 embed-commit                = { workspace = true }
+gnark-key-parser            = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }

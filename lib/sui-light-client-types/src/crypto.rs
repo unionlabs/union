@@ -2,15 +2,18 @@ use core::fmt::{Debug, Display};
 use std::io;
 
 use roaring::RoaringBitmap;
-use unionlabs_primitives::{encoding::Base64, FixedBytes};
+use unionlabs_primitives::{
+    encoding::{Base58, Base64},
+    FixedBytes,
+};
 
-use crate::checkpoint_summary::EpochId;
+use crate::{checkpoint_summary::EpochId, fixed_bytes::SuiFixedBytes};
 
 pub const BLS_G1_SIZE: usize = 48;
 pub const BLS_G2_SIZE: usize = 96;
 pub const BLS_DST: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 
-pub type AuthorityPublicKeyBytes = CryptoBytes<BLS_G2_SIZE>;
+pub type AuthorityPublicKeyBytes = SuiFixedBytes<BLS_G2_SIZE, Base58>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

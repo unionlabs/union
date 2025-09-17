@@ -33,6 +33,9 @@ circuit.zip
 r1cs.bin
 vk.bin
 pk.bin
+r1cs-bls12381.bin
+vk-bls12381.bin
+pk-bls12381.bin
 
 out
 !./.vscode

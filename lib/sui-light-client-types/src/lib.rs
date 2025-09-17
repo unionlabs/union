@@ -1,14 +1,17 @@
 use checkpoint_summary::CheckpointSummary;
 use crypto::AuthorityStrongQuorumSignInfo;
-use digest::Digest;
-use unionlabs_primitives::{encoding::HexPrefixed, FixedBytes};
+use fixed_bytes::SuiFixedBytes;
+use unionlabs_primitives::{
+    encoding::{Base58, HexPrefixed},
+    FixedBytes,
+};
 
 pub mod checkpoint_summary;
 pub mod client_state;
 pub mod committee;
 pub mod consensus_state;
 pub mod crypto;
-pub mod digest;
+pub mod fixed_bytes;
 pub mod header;
 pub mod object;
 pub mod storage_proof;
@@ -22,6 +25,8 @@ pub type AccountAddress = FixedBytes<32, HexPrefixed>;
 pub type SuiAddress = FixedBytes<32, HexPrefixed>;
 
 pub type ObjectRef = (ObjectID, u64, Digest);
+
+pub type Digest = SuiFixedBytes<32, Base58>;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

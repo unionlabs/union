@@ -272,15 +272,55 @@ module zkgm::zkgm_ethabi {
         result
     }
 
+    /// decode array of dynamic-sized data (string[], SomeDynStruct[])
+    #[allow(unused_mut_ref)]
+    public macro fun decode_dyn_array<$T>(
+        $buf: &vector<u8>,
+        $index: u64,
+        $decode_fn: |vector<u8>| -> $T
+    ): (vector<$T>, u64) {
+        let original_index = $index;
+
+        let mut index = $index;
+
+        let vec_len = (decode_uint($buf, &mut index) as u64);
+
+        let mut result = vector::empty();
+        let mut i = 0;
+
+        let mut item_indices = vector::empty();
+        
+        while (i < vec_len) {
+            let item_index = (decode_uint($buf, &mut index) as u64);
+            item_indices.push_back(item_index);
+            i = i + 1;
+        };
+
+        let offset = original_index + 0x20;
+
+        let mut i = 0;
+        while (i < vec_len) {            
+            let end = if (i == vec_len - 1) {
+                vector::length($buf) - offset
+            } else {
+                item_indices[i + 1]
+            };
+            result.push_back($decode_fn(vector_slice($buf, item_indices[i] + offset, end + offset)));
+            i = i + 1;
+        };
+
+        (result, index)
+    }
+
     /// encode array of dynamic-sized data (string[], SomeDynStruct[])
     public macro fun encode_dyn_array<$T: copy>(
         $buf: &mut vector<u8>,
         $vec: &vector<$T>,
         $encode_fn: |&mut vector<u8>, &$T|
     ) {
-        let rest_buf = vector::empty();
+        let mut rest_buf = vector::empty();
 
-        let i = 0;
+        let mut i = 0;
         let len = vector::length($vec);
         encode_uint($buf, len);
 
@@ -295,24 +335,6 @@ module zkgm::zkgm_ethabi {
 
     public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
         string::utf8(decode_bytes(buf, index))
-        // // Read the first 32 bytes to get the length of the string
-        // let mut len_bytes = vector_slice(buf, *index, *index + 32);
-
-        // vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
-        // let str_len: u256 = bcs::new(len_bytes).peel_u256();
-
-        // *index = *index + 32; // Move the index forward after reading the length
-
-        // // // Read the actual string bytes
-        // let str_bytes = vector_slice(buf, *index, *index + (str_len as u64));
-        // *index = *index + (str_len as u64); // Move the index forward after reading the string
-
-        // // Calculate padding to skip (align to 32-byte boundary)
-        // let padding_len = (32 - ((str_len as u64) % 32)) % 32;
-        // *index = *index + padding_len; // Skip the padding bytes
-
-        // // Convert the string bytes back to a String
-        // string::utf8(str_bytes)
     }
 
     // Decoding an Ethereum address (20 bytes)

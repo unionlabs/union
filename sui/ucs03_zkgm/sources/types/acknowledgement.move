@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,25 +58,79 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-// module zkgm::fungible_token {
-//     use sui::coin::{Self};
+module zkgm::ack {
+    use zkgm::zkgm_ethabi;
 
-//     // one time witness
-//     public struct FUNGIBLE_TOKEN has drop {}
+    public struct Ack has copy, drop, store {
+        tag: u256,
+        inner_ack: vector<u8>
+    }
 
-//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-//         let (treasury_cap, metadata) =
-//             coin::create_currency<FUNGIBLE_TOKEN>(
-//                 witness,
-//                 (@decimals.to_u256()) as u8,
-//                 b"muno",
-//                 b"muno",
-//                 b"zkgm token created by voyager",
-//                 option::none(),
-//                 ctx
-//             );
+    const ACK_FAILURE: u256 = 0x0;
+    const ACK_SUCCESS: u256 = 0x1;
 
-//         transfer::public_share_object(metadata);
-//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-//     }
-// }
+    public fun success(inner_ack: vector<u8>): Ack {
+        Ack {
+            tag: ACK_SUCCESS,
+            inner_ack
+        }
+    }
+
+    public fun failure(inner_ack: vector<u8>): Ack {
+        Ack {
+            tag: ACK_FAILURE,
+            inner_ack
+        }
+    }
+
+    public fun tag(ack: &Ack): u256 {
+        ack.tag
+    }
+
+    public fun inner_ack(ack: &Ack): &vector<u8> {
+        &ack.inner_ack
+    }
+
+    public fun encode(ack: &Ack): vector<u8> {
+        let mut buf = vector::empty<u8>();
+        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.tag);
+
+        let version_offset = 0x40;
+        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_bytes(&mut buf, &ack.inner_ack);
+
+
+        buf
+    }
+
+    public fun decode(buf: &vector<u8>): Ack {
+        let mut index = 0x0;
+        let tag = zkgm_ethabi::decode_uint(buf, &mut index);
+        index = index + 0x20;
+        let inner_ack = zkgm_ethabi::decode_bytes(buf, &mut index);
+        Ack { tag: tag, inner_ack: inner_ack }
+    }
+
+    #[test]
+    fun test_encode_decode_ack() {
+        let output =
+            x"000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000768656c6c6c6f6f00000000000000000000000000000000000000000000000000";
+        let ack_data = Ack { tag: 7788909223344, inner_ack: b"hellloo" };
+
+        let ack_bytes = encode(&ack_data);
+        std::debug::print(&ack_bytes);
+        assert!(ack_bytes == output, 0);
+
+        let ack_data_decoded = decode(&ack_bytes);
+        assert!(ack_data_decoded.tag == 7788909223344, 1);
+        assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
+    }
+
+    #[test]
+    fun test_decode_ack(){
+        let output = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+
+        let ack_data_decoded = decode(&output);
+        std::debug::print(&ack_data_decoded);
+    }
+}

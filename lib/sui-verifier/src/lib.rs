@@ -6,10 +6,9 @@ use sui_light_client_types::{
         AggregateAuthoritySignature, AuthorityPublicKeyBytes, AuthorityStrongQuorumSignInfo,
         BLS_DST,
     },
-    digest::Digest,
     object::{Data, ObjectInner, TypeTag},
     transaction_effects::{ObjectOut, TransactionEffects},
-    AppId, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
+    AppId, Digest, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
 };
 
 mod error;
@@ -102,6 +101,8 @@ pub fn verify_membership(
         return Err(Error::ObjectMismatch {
             given: commitment_object,
             proven: proven_object,
+            commitments_object: commitments_object.into_bytes(),
+            key,
         });
     }
 
@@ -162,7 +163,7 @@ fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<D
         TransactionEffects::V2(effects) => effects.changed_objects.iter().find_map(|eff| {
             if eff.0 == object {
                 match &eff.1.output_state {
-                    ObjectOut::ObjectWrite(write) => Some(write.0),
+                    ObjectOut::ObjectWrite(write) => Some(write.0.clone()),
                     _ => None,
                 }
             } else {
@@ -183,8 +184,10 @@ pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> 
     let mut hasher = Blake2b::<typenum::U32>::default();
     hasher.update([HashingIntentScope::ChildObjectId as u8]);
     hasher.update(parent);
+
     // +1 since `key_bytes` should be prefixed with its length (bcs encoding)
-    hasher.update((key_bytes.len() + 1).to_le_bytes());
+    // NOTE(aeryz): casting to u64 is very important, otherwise usize will become u32 in wasm32 and this will result in incorrect hash
+    hasher.update(((key_bytes.len() + 1) as u64).to_le_bytes());
     // instead of calling bcs::serialize, we just prefix the bytes with the its length
     // since the table we are verifying uses `vector<u8>` keys
     hasher.update([key_bytes.len() as u8]);

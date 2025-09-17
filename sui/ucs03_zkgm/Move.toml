@@ -6,36 +6,14 @@ name    = "zkgm"
 
 [dependencies]
 ibc = { local = "../ibc" }
-# For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
-# Revision can be a branch, a tag, and a commit hash.
-# MyRemotePackage = { git = "https://some.remote/host.git", subdir = "remote/path", rev = "main" }
-
-# For local dependencies use `local = path`. Path is relative to the package root
-# Local = { local = "../path/to" }
-
-# To resolve a version conflict and force a specific version for dependency
-# override use `override = true`
-# Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-decimals = "_"
-ibc      = "_"
-zkgm     = "_"
-
-# Named addresses will be accessible in Move as `@name`. They're also exported:
-# for example, `std = "0x1"` is exported by the Standard Library.
-# alice = "0xA11CE"
-
-[dev-dependencies]
-# The dev-dependencies section allows overriding dependencies for `--test` and
-# `--dev` modes. You can introduce test-only dependencies here.
-# Local = { local = "../path/to/dev-build" }
+# ibc      = "0x25763a037769c4783ee2414110302b69b52060c87cf763a4fae56337b296c4f3"
+# zkgm     = "0x0"
+#
+ibc  = "_"
+zkgm = "_"
 
 [dev-addresses]
-decimals = "0x20"
-ibc      = "0x22222"
-zkgm     = "0x4444444444444"
-
-# The dev-addresses section allows overwriting named addresses for the `--test`
-# and `--dev` modes.
-# alice = "0xB0B"
+ibc  = "0x22222"
+zkgm = "0x4444444444444"

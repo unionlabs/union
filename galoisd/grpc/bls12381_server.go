@@ -150,7 +150,7 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			return nil, fmt.Errorf("Witness err %s", err)
 		}
 
-		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
+		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&bls12381HashToField{}))
 		if err != nil {
 			return nil, fmt.Errorf("Could not prove %s", err)
 		}

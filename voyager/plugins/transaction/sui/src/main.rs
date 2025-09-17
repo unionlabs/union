@@ -1,5 +1,9 @@
 use std::{
-    collections::VecDeque, fmt::Debug, panic::AssertUnwindSafe, str::FromStr, sync::Arc,
+    collections::{hash_map::Entry, HashMap, VecDeque},
+    fmt::Debug,
+    panic::AssertUnwindSafe,
+    str::FromStr,
+    sync::Arc,
     time::Duration,
 };
 
@@ -16,7 +20,6 @@ use jsonrpsee::{
 use move_core_types_sui::{
     account_address::AccountAddress,
     ident_str,
-    identifier::Identifier as MoveIdentifier,
     language_storage::{StructTag, TypeTag},
 };
 use serde::{Deserialize, Serialize};
@@ -24,37 +27,43 @@ use sha3::{Digest, Keccak256};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
     rpc_types::{
-        ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse,
-        SuiTransactionBlockResponseOptions, SuiTypeTag,
+        ObjectChange, SuiMoveValue, SuiObjectDataOptions, SuiParsedData,
+        SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions,
     },
     types::{
-        base_types::{ObjectID, SequenceNumber, SuiAddress},
+        base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
+        dynamic_field::DynamicFieldName,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
         transaction::{
-            Argument, CallArg, Command, ObjectArg, ProgrammableTransaction, Transaction,
-            TransactionData, TransactionKind,
+            CallArg, Command, ProgrammableTransaction, Transaction, TransactionData,
+            TransactionKind,
         },
         Identifier,
     },
-    SuiClient, SuiClientBuilder,
+    SuiClientBuilder,
 };
-use tracing::{info, instrument};
-use ucs03_zkgm::com::{TokenOrderV1, ZkgmPacket};
+use tracing::{debug, info, instrument};
+use ucs03_zkgm::com::{
+    Batch, TokenMetadata, TokenOrderV2, ZkgmPacket, OP_BATCH, OP_TOKEN_ORDER,
+    TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
+    TOKEN_ORDER_KIND_UNESCROW,
+};
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes, U256},
+    primitives::{encoding::HexPrefixed, Bytes, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow,
+    anyhow::{self, anyhow},
     hook::SubmitTxHook,
     message::{data::Data, PluginMessage, VoyagerMessage},
     plugin::Plugin,
     primitives::ChainId,
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    serde_json::{self, json},
     vm::{call, noop, pass::PassResult, Op, Visit},
-    DefaultCmd,
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
@@ -62,6 +71,7 @@ use crate::{call::ModuleCall, callback::ModuleCallback};
 pub mod call;
 pub mod callback;
 pub mod data;
+pub mod move_api;
 
 const TOKEN_BYTECODE: [&[u8]; 2] = [
     hex!("a11ceb0b060000000a01000e020e1e032c27045308055b5607b101d1010882036006e2034b0aad04050cb2042b000a010d020602070212021302140001020001020701000003000c01000103030c0100010504020006050700000b000100010c010601000211030400030808090102040e0b01010c040f0e01010c05100c030001050307040a050d02080007080400020b020108000b030108000105010f010805010b01010900010800070900020a020a020a020b01010805070804020b030109000b02010900010b0201080001090001060804010b03010800020900050c436f696e4d657461646174610e46554e4749424c455f544f4b454e064f7074696f6e0b5472656173757279436170095478436f6e746578740355726c076164647265737304636f696e0f6372656174655f63757272656e63790b64756d6d795f6669656c640e66756e6769626c655f746f6b656e04696e6974046e6f6e65066f7074696f6e137075626c69635f73686172655f6f626a6563740f7075626c69635f7472616e736665720673656e64657207746f5f75323536087472616e736665720a74785f636f6e746578740375726c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020520").as_slice(),
@@ -73,6 +83,12 @@ async fn main() {
     Module::run().await
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ZkgmConfig {
+    /// ID of the `wrapped_token_to_t` mapping
+    wrapped_token_to_t: ObjectID,
+}
+
 #[derive(Clone)]
 pub struct Module {
     pub chain_id: ChainId,
@@ -81,11 +97,15 @@ pub struct Module {
 
     pub ibc_store: SuiAddress,
 
+    pub graphql_url: String,
+
     pub sui_client: sui_sdk::SuiClient,
 
     pub keyring: ConcurrentKeyring<SuiAddress, Arc<SuiKeyPair>>,
 
     pub ibc_store_initial_seq: SequenceNumber,
+
+    pub zkgm_config: ZkgmConfig,
 }
 
 impl Plugin for Module {
@@ -117,8 +137,9 @@ impl Plugin for Module {
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
-            ibc_handler_address: config.ibc_handler_address,
+            ibc_handler_address: config.ibc_contract,
             sui_client,
+            graphql_url: config.graphql_url,
             ibc_store_initial_seq,
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
@@ -138,6 +159,7 @@ impl Plugin for Module {
                 }),
             ),
             ibc_store: config.ibc_store,
+            zkgm_config: config.zkgm_config,
         })
     }
 
@@ -158,10 +180,13 @@ impl Plugin for Module {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
-    pub ibc_handler_address: SuiAddress,
+    pub graphql_url: String,
+    pub ibc_contract: SuiAddress,
     pub ibc_store: SuiAddress,
 
     pub keyring: KeyringConfig,
+
+    pub zkgm_config: ZkgmConfig,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -213,7 +238,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => self
                 .keyring
@@ -221,25 +246,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     let sender = SuiAddress::from(&pk.public());
                     let msgs = msgs.clone();
                     AssertUnwindSafe(async move {
-                        let msgs = process_msgs(self, pk, msgs, sender).await;
-
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
-                        for (contract_addr, _, module, entry_fn, arguments, type_args) in
-                            msgs.into_iter()
-                        {
-                            let arguments = arguments
-                                .into_iter()
-                                .map(|arg| ptb.input(arg).expect("input works"))
-                                .collect();
-                            ptb.command(Command::move_call(
-                                contract_addr.into(),
-                                module,
-                                entry_fn,
-                                type_args,
-                                arguments,
-                            ));
-                        }
+                        process_msgs(self, e.voyager_client()?, &mut ptb, pk, msgs, sender)
+                            .await
+                            .unwrap();
 
                         let builder = ptb.finish();
                         let _ = send_transactions(self, pk, builder).await?;
@@ -267,273 +278,67 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
-// module: Identifier,
-// function: Identifier,
-// type_arguments: Vec<TypeTag>,
-
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
     module: &Module,
+    _voyager_client: &VoyagerClient,
+    ptb: &mut ProgrammableTransactionBuilder,
     pk: &Arc<SuiKeyPair>,
     msgs: Vec<Datagram>,
     fee_recipient: SuiAddress,
-) -> Vec<(
-    SuiAddress,
-    Datagram,
-    Identifier,
-    Identifier,
-    Vec<CallArg>,
-    Vec<TypeTag>,
-)> {
-    let mut data = vec![];
+) -> anyhow::Result<()> {
     for msg in msgs {
-        let item = match msg.clone() {
-            Datagram::CreateClient(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("create_client").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.client_state_bytes).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.consensus_state_bytes).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::UpdateClient(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("update_client").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenInit(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_init").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenTry(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_try").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenAck(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_ack").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ConnectionOpenConfirm(data) => (
-                module.ibc_handler_address,
-                msg,
-                Identifier::new("ibc").unwrap(),
-                Identifier::new("connection_open_confirm").unwrap(),
-                vec![
-                    CallArg::Object(ObjectArg::SharedObject {
-                        id: module.ibc_store.into(),
-                        initial_shared_version: module.ibc_store_initial_seq,
-                        mutable: true,
-                    }),
-                    CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                ],
-                vec![],
-            ),
-            Datagram::ChannelOpenInit(data) => {
-                let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
-
-                let module_info = parse_port(&module.sui_client, &port_id).await;
-
-                (
-                    module_info.latest_address,
-                    msg,
-                    Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_init").unwrap(),
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.counterparty_port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.version).unwrap()),
-                    ],
-                    vec![],
-                )
+        match msg {
+            Datagram::CreateClient(data) => move_api::create_client(ptb, module, data)?,
+            Datagram::UpdateClient(data) => move_api::update_client(ptb, module, data)?,
+            Datagram::ConnectionOpenInit(data) => {
+                move_api::connection_open_init(ptb, module, data)?
             }
-            Datagram::ChannelOpenTry(data) => {
-                let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
-
-                let module_info = parse_port(&module.sui_client, &port_id).await;
-
-                (
-                    module_info.latest_address,
-                    msg,
-                    Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_try").unwrap(),
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.channel.connection_id).unwrap()),
-                        CallArg::Pure(
-                            bcs::to_bytes(&data.channel.counterparty_channel_id).unwrap(),
-                        ),
-                        CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.channel.version).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.counterparty_version).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                    ],
-                    vec![],
-                )
+            Datagram::ConnectionOpenTry(data) => move_api::connection_open_try(ptb, module, data)?,
+            Datagram::ConnectionOpenAck(data) => move_api::connection_open_ack(ptb, module, data)?,
+            Datagram::ConnectionOpenConfirm(data) => {
+                move_api::connection_open_confirm(ptb, module, data)?
             }
+            Datagram::ChannelOpenInit(data) => move_api::channel_open_init(
+                ptb,
+                module,
+                try_parse_port(&module.graphql_url, &data.port_id).await?,
+                data,
+            )?,
+            Datagram::ChannelOpenTry(data) => move_api::channel_open_try(
+                ptb,
+                module,
+                try_parse_port(&module.graphql_url, &data.port_id).await?,
+                data,
+            )?,
             Datagram::ChannelOpenAck(data) => {
-                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
+                let port_id = move_api::get_port_id(module, data.channel_id).await?;
 
-                let res = query
-                    .add_param(data.channel_id.raw())
-                    .call(module.ibc_handler_address.into(), "get_port_id")
-                    .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
-                }
-
-                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
-
-                let module_info = parse_port(&module.sui_client, &port_id).await;
-
-                (
-                    module_info.latest_address,
-                    msg,
-                    Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_ack").unwrap(),
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.counterparty_version).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.counterparty_channel_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                    ],
-                    vec![],
-                )
+                move_api::channel_open_ack(
+                    ptb,
+                    module,
+                    try_parse_port(&module.graphql_url, port_id.as_bytes()).await?,
+                    port_id,
+                    data,
+                )?
             }
-            Datagram::ChannelOpenConfirm(data) => {
-                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
-
-                let res = query
-                    .add_param(data.channel_id.raw())
-                    .call(module.ibc_handler_address.into(), "get_port_id")
-                    .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
-                }
-
-                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
-
-                let module_info = parse_port(&module.sui_client, &port_id).await;
-                (
-                    module_info.latest_address,
-                    msg,
-                    Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("channel_open_confirm").unwrap(),
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                    ],
-                    vec![],
+            Datagram::ChannelOpenConfirm(data) => move_api::channel_open_confirm_call(
+                ptb,
+                module,
+                try_parse_port(
+                    &module.graphql_url,
+                    move_api::get_port_id(module, data.channel_id)
+                        .await?
+                        .as_bytes(),
                 )
-            }
+                .await?,
+                data,
+            )?,
             Datagram::PacketRecv(data) => {
-                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
+                let port_id =
+                    move_api::get_port_id(module, data.packets[0].destination_channel_id).await?;
 
-                let res = query
-                    .add_param(data.packets[0].destination_channel_id.raw())
-                    .call(module.ibc_handler_address.into(), "get_port_id")
-                    .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
-                }
-
-                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
-
-                let module_info: ModuleInfo = parse_port(&module.sui_client, &port_id).await;
+                let module_info = try_parse_port(&module.graphql_url, port_id.as_bytes()).await?;
 
                 let store_initial_seq = module
                     .sui_client
@@ -551,331 +356,547 @@ async fn process_msgs(
                     .start_version()
                     .expect("object is shared, hence it has a start version");
 
-                register_token_if_zkgm(
+                // let commands = voyager_client
+                //     .plugin_client("plugin-name")
+                //     .on_packet_recv(data.packets[0].clone())
+                //     .await
+                //     .map_err(json_rpc_error_to_queue_error)
+                //     .unwrap();
+
+                // If the module is ZKGM, then we register the tokens if needed. Otherwise,
+                // the registered tokens are returned.
+                let mut coin_ts = vec![];
+                for p in &data.packets {
+                    coin_ts.extend_from_slice(
+                        &register_tokens_if_zkgm(
+                            module,
+                            ptb,
+                            pk,
+                            p,
+                            &module_info,
+                            store_initial_seq,
+                        )
+                        .await?,
+                    );
+                }
+
+                // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
+                // which means, we have to consume it within the same PTB via `end_recv`.
+                let mut session = move_api::zkgm::begin_recv_call(ptb, &module_info, data.clone());
+
+                // // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
+                // // endpoint must be called as many times as the partitions. Since the number of coins will be the
+                // // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
+                for coin_t in coin_ts {
+                    session = move_api::zkgm::recv_packet_call(
+                        ptb,
+                        module,
+                        &module_info,
+                        store_initial_seq,
+                        coin_t,
+                        fee_recipient,
+                        data.relayer_msgs.clone(),
+                        session,
+                    );
+                }
+
+                // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
+                // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
+                // // it, this PTB will fail and no partial state will be persisted.
+                move_api::zkgm::end_recv_call(
+                    ptb,
                     module,
-                    pk,
-                    &data.packets[0],
                     &module_info,
-                    store_initial_seq,
-                )
-                .await;
+                    fee_recipient,
+                    session,
+                    data,
+                )?;
+            }
+            Datagram::PacketAcknowledgement(data) => {
+                // using the source channel id since the send happened on sui
+                let port_id =
+                    move_api::get_port_id(module, data.packets[0].source_channel_id).await?;
 
-                let (
-                    source_channels,
-                    dest_channels,
-                    packet_data,
-                    timeout_heights,
-                    timeout_timestamps,
-                ) = data
-                    .packets
-                    .iter()
-                    .map(|p| {
-                        (
-                            p.source_channel_id,
-                            p.destination_channel_id,
-                            p.data.clone(),
-                            0,
-                            p.timeout_timestamp,
-                        )
-                    })
-                    .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
+                let module_info = try_parse_port(&module.graphql_url, port_id.as_bytes()).await?;
 
-                println!(
-                    "{:?}, {:?}, {:?}, {:?}, {:?}",
-                    source_channels,
-                    dest_channels,
-                    packet_data,
-                    timeout_heights,
-                    timeout_timestamps
-                );
+                let store_initial_seq = module
+                    .sui_client
+                    .read_api()
+                    .get_object_with_options(
+                        module_info.stores[0].into(),
+                        SuiObjectDataOptions::new().with_owner(),
+                    )
+                    .await
+                    .unwrap()
+                    .data
+                    .expect("object exists on chain")
+                    .owner
+                    .expect("owner will be present")
+                    .start_version()
+                    .expect("object is shared, hence it has a start version");
 
-                (
-                    module_info.latest_address,
-                    msg,
-                    Identifier::new(module_info.module_name).unwrap(),
-                    Identifier::new("recv_packet").unwrap(),
-                    vec![
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module.ibc_store.into(),
-                            initial_shared_version: module.ibc_store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: module_info.stores[0].into(),
-                            initial_shared_version: store_initial_seq,
-                            mutable: true,
-                        }),
-                        CallArg::Object(ObjectArg::SharedObject {
-                            id: ObjectID::from_str("0x6").unwrap(),
-                            initial_shared_version: 1.into(),
-                            mutable: false,
-                        }),
-                        CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
-                    ],
-                    vec![TypeTag::Struct(Box::new(StructTag {
-                        address: AccountAddress::from_str(
-                            "0xacc51178ffc547cdfa36a8ab4a6ae3823edaa8f07ff9177d9d520aad080b28fd",
-                        )
-                        .unwrap(),
-                        module: MoveIdentifier::new("fungible_token").unwrap(),
-                        name: MoveIdentifier::new("FUNGIBLE_TOKEN").unwrap(),
-                        type_params: vec![],
-                    }))],
-                )
+                // If the module is ZKGM, then we register the tokens if needed. Otherwise,
+                // the registered tokens are returned.
+                let coin_ts =
+                    parse_coin_ts(data.packets.iter().map(|p| p.data.clone()).collect()).unwrap();
+
+                // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
+                // which means, we have to consume it within the same PTB via `end_recv`.
+                let mut session = move_api::zkgm::begin_ack_call(ptb, &module_info, data.clone());
+
+                for coin_t in coin_ts {
+                    session = move_api::zkgm::acknowledge_packet_call(
+                        ptb,
+                        module,
+                        &module_info,
+                        store_initial_seq,
+                        coin_t,
+                        fee_recipient,
+                        session,
+                    );
+                }
+
+                move_api::zkgm::end_ack_call(
+                    ptb,
+                    module,
+                    &module_info,
+                    fee_recipient,
+                    session,
+                    data,
+                )?;
             }
             _ => todo!(),
-        };
-        data.push(item);
+        }
     }
 
-    data
+    Ok(())
 }
 
-fn predict_wrapped_denom(path: U256, channel: ChannelId, base_token: Vec<u8>) -> Vec<u8> {
+fn predict_wrapped_denom(
+    path: H256,
+    channel: ChannelId,
+    base_token: Vec<u8>,
+    metadata_image: Vec<u8>,
+) -> Vec<u8> {
     let mut buf = vec![];
     bcs::serialize_into(&mut buf, &path).expect("works");
     bcs::serialize_into(&mut buf, &channel.raw()).expect("works");
     buf.extend_from_slice(&base_token);
+    buf.extend_from_slice(&metadata_image);
 
     Keccak256::new().chain_update(buf).finalize().to_vec()
 }
 
-async fn register_token_if_zkgm(
+#[derive(Deserialize)]
+struct SuiFungibleAssetMetadata {
+    name: String,
+    symbol: String,
+    decimals: u8,
+    owner: H256,
+    icon_url: Option<String>,
+    description: String,
+}
+
+fn parse_coin_ts(packet_data: Vec<Bytes>) -> anyhow::Result<Vec<TypeTag>> {
+    let parse_type_tag = |base_token: Vec<u8>| -> anyhow::Result<TypeTag> {
+        let quote_token = String::from_utf8(base_token)
+            .map_err(|_| anyhow!("in the unwrap case, the quote token must be a utf8 string"))?;
+        let fields: Vec<&str> = quote_token.split("::").collect();
+        if fields.len() != 3 {
+            panic!("a registered token must be always in `address::module_name::name` form");
+        }
+
+        Ok(StructTag {
+            address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+            module: Identifier::new(fields[1]).expect("module name is valid"),
+            name: Identifier::new(fields[2]).expect("name is valid"),
+            type_params: vec![],
+        }
+        .into())
+    };
+
+    Ok(packet_data
+        .into_iter()
+        .map(|d| {
+            let zkgm_packet = ZkgmPacket::abi_decode_params(&d)?;
+            let mut coin_ts = vec![];
+            match zkgm_packet.instruction.opcode {
+                OP_BATCH => {
+                    let Ok(batch) = Batch::abi_decode_params(&zkgm_packet.instruction.operand)
+                    else {
+                        panic!("impossible");
+                    };
+
+                    for instr in batch.instructions {
+                        let Ok(fao) = TokenOrderV2::abi_decode_params(&instr.operand) else {
+                            continue;
+                        };
+
+                        coin_ts.push(parse_type_tag(fao.base_token.clone().into())?);
+                    }
+                }
+                OP_TOKEN_ORDER => {
+                    let Ok(fao) = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
+                    else {
+                        panic!("impossible");
+                    };
+
+                    coin_ts.push(parse_type_tag(fao.base_token.clone().into())?);
+                }
+                _ => {}
+            }
+
+            Ok::<_, anyhow::Error>(coin_ts)
+        })
+        .collect::<Result<Vec<Vec<_>>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect())
+}
+
+async fn register_tokens_if_zkgm(
     module: &Module,
+    ptb: &mut ProgrammableTransactionBuilder,
     pk: &Arc<SuiKeyPair>,
     packet: &ibc_union_spec::Packet,
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
-) {
+) -> anyhow::Result<Vec<TypeTag>> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
-        return;
+        return Ok(vec![]);
     };
 
-    let Ok(fao) = TokenOrderV1::abi_decode_params(&zkgm_packet.instruction.operand) else {
-        return;
+    let mut coin_ts = vec![];
+
+    match zkgm_packet.instruction.opcode {
+        OP_BATCH => {
+            let Ok(batch) = Batch::abi_decode_params(&zkgm_packet.instruction.operand) else {
+                panic!("impossible");
+            };
+
+            let mut base_tokens: HashMap<alloy::primitives::Bytes, TypeTag> = HashMap::new();
+
+            for instr in batch.instructions {
+                let Ok(fao) = TokenOrderV2::abi_decode_params(&instr.operand) else {
+                    continue;
+                };
+
+                let base_token = fao.base_token.clone();
+
+                match base_tokens.entry(base_token) {
+                    Entry::Occupied(e) => {
+                        coin_ts.push(e.get().clone());
+                    }
+                    Entry::Vacant(e) => {
+                        if let Some(type_tag) = register_token_if_zkgm(
+                            module,
+                            ptb,
+                            pk,
+                            packet,
+                            &zkgm_packet,
+                            fao,
+                            module_info,
+                            store_initial_seq,
+                        )
+                        .await?
+                        {
+                            coin_ts.push(type_tag.clone());
+                            e.insert(type_tag);
+                        }
+                    }
+                }
+            }
+        }
+        OP_TOKEN_ORDER => {
+            let fao = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
+                .expect("impossible");
+            let mut coin_ts = vec![];
+            if let Some(type_tag) = register_token_if_zkgm(
+                module,
+                ptb,
+                pk,
+                packet,
+                &zkgm_packet,
+                fao,
+                module_info,
+                store_initial_seq,
+            )
+            .await?
+            {
+                coin_ts.push(type_tag);
+            }
+        }
+        _ => {}
+    }
+
+    Ok(coin_ts)
+}
+
+/// Deploy and register the token if needed in `ZKGM`
+#[allow(clippy::too_many_arguments)]
+async fn register_token_if_zkgm(
+    module: &Module,
+    ptb: &mut ProgrammableTransactionBuilder,
+    pk: &Arc<SuiKeyPair>,
+    packet: &ibc_union_spec::Packet,
+    zkgm_packet: &ZkgmPacket,
+    fao: TokenOrderV2,
+    module_info: &ModuleInfo,
+    store_initial_seq: SequenceNumber,
+) -> anyhow::Result<Option<TypeTag>> {
+    let (metadata_image, coin_metadata) = match fao.kind {
+        TOKEN_ORDER_KIND_INITIALIZE => {
+            // TODO(aeryz): we could drop this packet as well since we know that its gonna fail
+            let Ok(metadata) = TokenMetadata::abi_decode_params(&fao.metadata) else {
+                return Ok(None);
+            };
+
+            // TODO(aeryz): we can also drop here
+            let sui_metadata: SuiFungibleAssetMetadata =
+                bcs::from_bytes(&metadata.initializer).unwrap();
+
+            if sui_metadata.owner != H256::<HexPrefixed>::default() {
+                return Ok(None);
+            }
+
+            (
+                Keccak256::new()
+                    .chain_update(&fao.metadata)
+                    .finalize()
+                    .to_vec(),
+                Some(sui_metadata),
+            )
+        }
+        TOKEN_ORDER_KIND_ESCROW => {
+            if fao.metadata.len() != 32 {
+                return Err(anyhow!("invalid metadata"));
+            }
+
+            let wrapped_token = predict_wrapped_denom(
+                zkgm_packet.path.to_le_bytes().into(),
+                packet.destination_channel_id,
+                fao.base_token.to_vec(),
+                fao.metadata.into(),
+            );
+
+            // A wrapped token is only registered once, and once it's being received in the SUI side.
+            // `wrapped_token` is set to the given coin type. If there's already a coin type with this
+            // `wrapped_token`, we have to use that.
+            if let Some(wrapped_token_t) =
+                get_registered_wrapped_token(module, &wrapped_token).await?
+            {
+                return Ok(Some(wrapped_token_t));
+            } else {
+                return Err(anyhow!("a token cannot be received for the first time with `ESCROW`, it must be received with `INITIALIZE` first"));
+            }
+        }
+        // If it's an unescrow case, it means that this token is previously sent, so it's already been saved in ZKGM, so we can just parse
+        // the quote token as a type tag.
+        // If it's  a solve case, we expect the token to be registered previously by a third party. And we can again just parse the quote
+        // token as a type tag.
+        TOKEN_ORDER_KIND_UNESCROW | TOKEN_ORDER_KIND_SOLVE => {
+            // This means the transfer is an unwrap. Hence the `quote_token` must already be in the form `address::module::name`
+            // which defines the coin type `T`.
+            let quote_token = String::from_utf8(fao.quote_token.into()).map_err(|_| {
+                anyhow!("in the unwrap case, the quote token must be a utf8 string")
+            })?;
+            let fields: Vec<&str> = quote_token.split("::").collect();
+            if fields.len() != 3 {
+                panic!("a registered token must be always in `address::module_name::name` form");
+            }
+
+            return Ok(Some(
+                StructTag {
+                    address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+                    module: Identifier::new(fields[1]).expect("module name is valid"),
+                    name: Identifier::new(fields[2]).expect("name is valid"),
+                    type_params: vec![],
+                }
+                .into(),
+            ));
+        }
+        _ => panic!("tf?"),
     };
 
     let wrapped_token = predict_wrapped_denom(
-        fao.base_token_path.into(),
+        zkgm_packet.path.to_le_bytes().into(),
         packet.destination_channel_id,
         fao.base_token.to_vec(),
+        metadata_image,
     );
 
-    if fao.quote_token != wrapped_token {
-        return;
+    // A token might still be received with `INITIALIZE` although it's already registered. So, we do this
+    // additional check and do an early return if we find a registered token.
+    if let Some(wrapped_token_t) = get_registered_wrapped_token(module, &wrapped_token).await? {
+        return Ok(Some(wrapped_token_t));
     }
 
-    let mut bytecode = TOKEN_BYTECODE[0].to_vec();
-    // 31 because it will be followed by a u8 (decimals)
-    bytecode.extend_from_slice(&[0; 31]);
-    bytecode.extend_from_slice(&fao.base_token_decimals.to_be_bytes());
-    bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
-
-    let mut ptb = ProgrammableTransactionBuilder::new();
-
-    let res = ptb.command(Command::Publish(
-        vec![bytecode],
-        vec![
-            ObjectID::from_str(
-                "0x0000000000000000000000000000000000000000000000000000000000000001",
-            )
-            .unwrap(),
-            ObjectID::from_str(
-                "0x0000000000000000000000000000000000000000000000000000000000000002",
-            )
-            .unwrap(),
-        ],
-    ));
-    let arg = ptb
-        .input(CallArg::Pure(
-            bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
-        ))
-        .unwrap();
-    let _ = ptb.command(Command::TransferObjects(vec![res], arg));
-
-    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
-
-    tokio::time::sleep(Duration::from_secs(1)).await;
-    let (treasury_ref, coin_t) = module
-        .sui_client
-        .read_api()
-        .get_transaction_with_options(
-            transaction_response.digest,
-            SuiTransactionBlockResponseOptions::new().with_object_changes(),
-        )
-        .await
-        .unwrap()
-        .object_changes
-        .unwrap()
-        .into_iter()
-        .find_map(|o| match &o {
-            ObjectChange::Created {
-                object_type: StructTag {
-                    name, type_params, ..
-                },
-                ..
-            } => {
-                if name.as_ident_str() == ident_str!("TreasuryCap") {
-                    Some((o.object_ref(), type_params[0].clone()))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .unwrap();
-
-    let mut ptb = ProgrammableTransactionBuilder::new();
-
-    let arguments = [
-        ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: store_initial_seq,
-            mutable: true,
-        }))
-        .unwrap(),
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-            .unwrap(),
-    ]
-    .to_vec();
-
-    ptb.command(Command::move_call(
-        module_info.latest_address.into(),
-        Identifier::new(module_info.module_name.clone()).unwrap(),
-        ident_str!("register_capability").into(),
-        vec![coin_t],
-        arguments,
-    ));
-}
-
-struct SuiQuery<'a> {
-    client: &'a SuiClient,
-    params: Vec<CallArg>,
-}
-
-impl<'a> SuiQuery<'a> {
-    async fn new(client: &'a SuiClient, ibc_store_id: ObjectID) -> Self {
-        let object_ref = client
-            .read_api()
-            .get_object_with_options(ibc_store_id, SuiObjectDataOptions::new())
-            .await
-            .unwrap()
-            .object_ref_if_exists()
-            .unwrap();
-        Self {
-            client,
-            params: vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(object_ref))],
-        }
-    }
-
-    fn add_param<T>(mut self, param: T) -> Self
-    where
-        T: serde::Serialize,
-    {
-        self.params
-            .push(CallArg::Pure(bcs::to_bytes(&param).unwrap()));
-        self
-    }
-
-    async fn call(
-        self,
-        package: ObjectID,
-        function: &str,
-    ) -> Result<Vec<(Vec<u8>, SuiTypeTag)>, String> {
-        let mut ptb = ProgrammableTransactionBuilder::new();
-        ptb.command(Command::move_call(
-            package,
-            Identifier::new("ibc").unwrap(),
-            Identifier::new(function).unwrap(),
-            vec![],
-            self.params
-                .iter()
-                .enumerate()
-                .map(|(i, _)| Argument::Input(i as u16))
-                .collect(),
+    let Some(coin_metadata) = coin_metadata else {
+        return Err(anyhow!(
+            "the coin is going to be received for the first time, so the metadata must be provided"
         ));
+    };
+    let (treasury_ref, metadata_ref, coin_t) =
+        publish_new_coin(module, pk, coin_metadata.decimals).await?;
 
-        for arg in self.params {
-            ptb.input(arg).unwrap();
-        }
+    // let treasury_ref = module.sui_client
+    //     .read_api()
+    //     .get_object_with_options(
+    //         ObjectID::from_str("0xca5366bca6f671b348be40c1ecabae26ddbb85b15487739f8541edc257ee1ed2").unwrap(),
+    //         SuiObjectDataOptions::default().with_owner(),
+    //     )
+    //     .await
+    //     .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+    //     .data
+    //     .expect("ibc store object exists on chain").object_ref();
 
-        let res = self
-            .client
-            .read_api()
-            .dev_inspect_transaction_block(
-                SuiAddress::ZERO,
-                TransactionKind::ProgrammableTransaction(ptb.finish()),
-                None,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
+    // let metadata_ref= module.sui_client
+    //     .read_api()
+    //     .get_object_with_options(
+    //         ObjectID::from_str(
+    //             "0xe937ecb9e589f24408de40d8ba43c7ff9b96a7d0180f5447576f02dc06155103",
+    //         )
+    //         .unwrap(),
+    //         SuiObjectDataOptions::default().with_owner(),
+    //     )
+    //     .await
+    //     .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+    //     .data
+    //     .expect("ibc store object exists on chain")
+    //     .object_ref();
 
-        match (res.results, res.error) {
-            (Some(res), _) => Ok(res[0].clone().return_values),
-            (_, Some(err)) => Err(err),
-            _ => panic!("invalid"),
-        }
+    // let coin_t =
+    //         TypeTag::from_str("0xd722567ac2efe67cd6ab3f56a382a473b2c156208d0c5675de06e23ae16e4ee6::fungible_token::FUNGIBLE_TOKEN").unwrap();
+
+    // updating name, symbol, icon_url and the description since we don't have these in the published binary right now
+    // TODO(aeryz): we should generate the move binary to contain the necessary data and don't do these calls
+    move_api::coin_update_name(
+        ptb,
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        coin_metadata.name,
+    )
+    .await?;
+
+    move_api::coin_update_symbol(
+        ptb,
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        coin_metadata.symbol,
+    )
+    .await?;
+
+    move_api::coin_update_description(
+        ptb,
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        coin_metadata.description,
+    )
+    .await?;
+
+    if let Some(icon_url) = coin_metadata.icon_url {
+        move_api::coin_update_icon_url(ptb, treasury_ref, metadata_ref, coin_t.clone(), icon_url)
+            .await?;
     }
+
+    // We are finally registering the token before calling the recv
+    move_api::zkgm::register_capability_call(
+        ptb,
+        module_info,
+        store_initial_seq,
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+    )?;
+
+    Ok(Some(coin_t))
 }
 
 pub struct ModuleInfo {
     pub original_address: SuiAddress,
     pub latest_address: SuiAddress,
-    pub module_name: String,
+    pub module_name: Identifier,
     pub stores: Vec<SuiAddress>,
 }
 
-pub async fn parse_port(_: &SuiClient, port_id: &str) -> ModuleInfo {
+// original_address::module_name::store_address
+// TODO(aeryz): we can also choose to include store_name here
+pub async fn try_parse_port(graphql_url: &str, port_id: &[u8]) -> RpcResult<ModuleInfo> {
+    let port_id = String::from_utf8(port_id.to_vec()).map_err(|_| {
+        ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            "port parsing: port expected to be a valid string",
+            Some(json!({
+                "port": port_id,
+            })),
+        )
+    })?;
     let module_info = port_id.split("::").collect::<Vec<&str>>();
-    if module_info.len() < 4 {
+    if module_info.len() < 3 {
         panic!("invalid port id");
     }
 
-    // let upgrade_cap_address: SuiAddress = module_info[2].parse().unwrap();
+    let original_address = module_info[0].parse().map_err(|_| {
+        ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            "port parsing: original address is expected to be a valid address",
+            Some(json!({
+                "module_name": module_info[0],
+            })),
+        )
+    })?;
 
-    // let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = sui_client
-    //     .read_api()
-    //     .get_object_with_options(
-    //         upgrade_cap_address.into(),
-    //         SuiObjectDataOptions::new().with_content(),
-    //     )
-    //     .await
-    //     .unwrap()
-    //     .into_object()
-    //     .unwrap()
-    //     .content
-    //     .unwrap()
-    //     .try_into_move()
-    //     .unwrap()
-    //     .fields
-    //     .field_value("package")
-    //     .unwrap()
-    // else {
-    //     panic!("this can't be the case");
-    // };
+    let query = json!({
+        "query": "query ($address: SuiAddress) { latestPackage(address: $address) { address } }",
+        "variables": { "address": original_address }
+    });
 
-    // TODO(aeryz): the latest address has to be fetched using graphql
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(graphql_url)
+        .header("Content-Type", "application/json")
+        .body(query.to_string())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
 
-    ModuleInfo {
-        original_address: module_info[0].parse().unwrap(),
-        // TODO(aeryz): change this
-        latest_address: module_info[0].parse().unwrap(),
-        module_name: module_info[1].to_string(),
-        stores: module_info[3..]
+    let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+    let latest_address =
+        SuiAddress::from_str(v["data"]["latestPackage"]["address"].as_str().unwrap()).unwrap();
+
+    Ok(ModuleInfo {
+        original_address,
+        latest_address,
+        module_name: Identifier::from_str(module_info[1]).map_err(|_| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "port parsing: module name is expected to be a valid identifier",
+                Some(json!({
+                    "module_name": module_info[1],
+                })),
+            )
+        })?,
+        stores: module_info[2..]
             .iter()
-            .map(|s| s.parse().unwrap())
-            .collect(),
-    }
+            .map(|s| {
+                s.parse().map_err(|_| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        "port parsing: store is expected to be a valid address",
+                        Some(json!({
+                            "store": s,
+                        })),
+                    )
+                })
+            })
+            .collect::<Result<_, ErrorObject>>()?,
+    })
 }
 
 pub async fn send_transactions(
@@ -895,7 +916,7 @@ pub async fn send_transactions(
         .next()
         .expect("sender has a gas token");
 
-    let gas_budget = 200_000_000; //TODO: change it later
+    let gas_budget = 180_000_000; //TODO: change it later
     let gas_price = module
         .sui_client
         .read_api()
@@ -908,6 +929,24 @@ pub async fn send_transactions(
                 None::<()>,
             )
         })?;
+    println!(
+        "{}",
+        serde_json::to_string(
+            &module
+                .sui_client
+                .read_api()
+                .dev_inspect_transaction_block(
+                    sender,
+                    TransactionKind::ProgrammableTransaction(ptb.clone()),
+                    None,
+                    None,
+                    None
+                )
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
 
     let tx_data = TransactionData::new_programmable(
         sender,
@@ -916,6 +955,15 @@ pub async fn send_transactions(
         gas_budget,
         gas_price,
     );
+
+    /*
+        GasCostSummary { computation_cost: 693000000, storage_cost: 35013200, storage_rebate: 15506964, non_refundable_storage_fee: 156636 }
+
+
+    693_000_000
+    35_013_200
+    15_506_964
+        */
 
     let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
     let raw_tx = bcs::to_bytes(&intent_msg).expect("bcs should not fail");
@@ -943,14 +991,153 @@ pub async fn send_transactions(
             SuiTransactionBlockResponseOptions::default(),
             None,
         )
-        .await
-        .map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(e).with_message("error executing a tx"),
-                None::<()>,
-            )
-        })?;
+        .await;
+
+    info!("{transaction_response:?}");
+
+    let transaction_response = transaction_response.map_err(|e| {
+        ErrorObject::owned(
+            -1,
+            ErrorReporter(e).with_message("error executing a tx"),
+            None::<()>,
+        )
+    })?;
 
     Ok(transaction_response)
+}
+
+async fn get_registered_wrapped_token(
+    module: &Module,
+    wrapped_token: &[u8],
+) -> anyhow::Result<Option<TypeTag>> {
+    if let Some(wrapped_token_t) = module
+        .sui_client
+        .read_api()
+        .get_dynamic_field_object(
+            module.zkgm_config.wrapped_token_to_t,
+            DynamicFieldName {
+                type_: TypeTag::Vector(Box::new(TypeTag::U8)),
+                value: serde_json::to_value(wrapped_token).expect("serde will work"),
+            },
+        )
+        .await
+        .map_err(|_| anyhow!("wrapped_token_to_t is expected to return some data"))?
+        .data
+    {
+        match wrapped_token_t.content.expect("content always exists") {
+            SuiParsedData::MoveObject(object) => {
+                let SuiMoveValue::String(field_value) = object
+                    .fields
+                    .field_value("value")
+                    .expect("token has a `value` field")
+                else {
+                    panic!("token must have the type `String`, this voyager might be outdated");
+                };
+
+                debug!("the token is already registered");
+
+                let fields: Vec<&str> = field_value.split("::").collect();
+                if fields.len() != 3 {
+                    panic!(
+                        "a registered token must be always in `address::module_name::name` form"
+                    );
+                }
+
+                Ok(Some(
+                    StructTag {
+                        address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+                        module: Identifier::new(fields[1]).expect("module name is valid"),
+                        name: Identifier::new(fields[2]).expect("name is valid"),
+                        type_params: vec![],
+                    }
+                    .into(),
+                ))
+            }
+            SuiParsedData::Package(_) => panic!("this should never be a package"),
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+async fn publish_new_coin(
+    module: &Module,
+    pk: &Arc<SuiKeyPair>,
+    decimals: u8,
+) -> anyhow::Result<(ObjectRef, ObjectRef, TypeTag)> {
+    // There is no wrapped token
+    let mut bytecode = TOKEN_BYTECODE[0].to_vec();
+    // 31 because it will be followed by a u8 (decimals)
+    bytecode.extend_from_slice(&[0; 31]);
+    bytecode.extend_from_slice(&decimals.to_be_bytes());
+    bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let res = ptb.command(Command::Publish(
+        vec![bytecode],
+        vec![
+            ObjectID::from_str("0x1").unwrap(),
+            ObjectID::from_str("0x2").unwrap(),
+        ],
+    ));
+
+    let arg = ptb
+        .input(CallArg::Pure(
+            bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
+        ))
+        .unwrap();
+    let _ = ptb.command(Command::TransferObjects(vec![res], arg));
+
+    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
+
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    let object_changes = module
+        .sui_client
+        .read_api()
+        .get_transaction_with_options(
+            transaction_response.digest,
+            SuiTransactionBlockResponseOptions::new().with_object_changes(),
+        )
+        .await
+        .unwrap()
+        .object_changes
+        .unwrap();
+    let (treasury_ref, coin_t) = object_changes
+        .iter()
+        .find_map(|o| match &o {
+            ObjectChange::Created {
+                object_type: StructTag {
+                    name, type_params, ..
+                },
+                ..
+            } => {
+                if name.as_ident_str() == ident_str!("TreasuryCap") {
+                    Some((o.object_ref(), type_params[0].clone()))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .unwrap();
+
+    let metadata_ref = object_changes
+        .iter()
+        .find_map(|o| match &o {
+            ObjectChange::Created {
+                object_type: StructTag { name, .. },
+                ..
+            } => {
+                if name.as_ident_str() == ident_str!("CoinMetadata") {
+                    Some(o.object_ref())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .unwrap();
+
+    Ok((treasury_ref, metadata_ref, coin_t))
 }

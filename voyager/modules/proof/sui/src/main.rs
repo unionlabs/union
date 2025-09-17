@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
     checkpoint_summary::CheckpointContents,
-    digest::Digest,
+    fixed_bytes::SuiFixedBytes,
     object::{Data, MoveObject, MoveObjectType, ObjectInner, StructTag, TypeTag},
     storage_proof::StorageProof,
     transaction_effects::TransactionEffects,
@@ -143,9 +143,9 @@ impl ProofModuleServer<IbcUnion> for Module {
             .read_api()
             .get_transaction_with_options(previous_tx, SuiTransactionBlockResponseOptions::new())
             .await
-            .map_err(|e| err(e, "error fetching the tx"))?
-            .checkpoint
-            .expect("checkpoint is fetched");
+            .map_err(|e| err(e, "error fetching the tx"))?;
+
+        let checkpoint_number = checkpoint_number.checkpoint.unwrap();
 
         if height.height() != checkpoint_number {
             return Err(ErrorObject::owned(
@@ -257,7 +257,7 @@ fn convert_object(object: Object) -> ObjectInner {
                 authenticator: Box::new(Authenticator::SingleOwner(owner.to_inner().into())),
             },
         },
-        previous_transaction: Digest(object.previous_transaction.into_inner().into()),
+        previous_transaction: SuiFixedBytes(object.previous_transaction.into_inner().into()),
         storage_rebate: object.storage_rebate,
     }
 }

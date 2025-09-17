@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -61,6 +61,9 @@
 module ibc::connection_end {
     use ibc::ethabi;
 
+    use sui::bcs;
+    use sui::address;
+
     public struct ConnectionEnd has copy, store, drop {
         state: u8,
         client_id: u32,
@@ -108,18 +111,26 @@ module ibc::connection_end {
         connection.counterparty_connection_id = new_id;
     }
 
+    public struct ConnectionEndBcs has drop {
+        state: address,
+        client_id: address,
+        counterparty_client_id: address,
+        counterparty_connection_id: address
+    }
 
-    // Encode and decode functions
     public fun encode(connection: &ConnectionEnd): vector<u8> {
-        // TODO: test this later
-        let mut buf = vector::empty();
-
-        ethabi::encode_uint(&mut buf, connection.state);
-        ethabi::encode_uint(&mut buf, connection.client_id);
-        ethabi::encode_uint(&mut buf, connection.counterparty_client_id);
-        ethabi::encode_uint(&mut buf, connection.counterparty_connection_id);
-
-        buf
+        bcs::to_bytes(
+            &ConnectionEndBcs {
+                state: address::from_u256(connection.state as u256),
+                client_id: address::from_u256(connection.client_id as u256),
+                counterparty_client_id: address::from_u256(
+                    connection.counterparty_client_id as u256
+                ),
+                counterparty_connection_id: address::from_u256(
+                    connection.counterparty_connection_id as u256
+                )
+            }
+        )
     }
 
     // Constructor
@@ -154,8 +165,6 @@ module ibc::connection_end {
         };
 
         let encoded = encode(&connection);
-
-        std::debug::print(&encoded);
 
         assert!(encoded == buf, 1);
     }

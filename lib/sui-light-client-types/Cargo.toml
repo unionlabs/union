@@ -12,19 +12,20 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                = { workspace = true, features = ["sol-types"], optional = true }
-bcs                  = { workspace = true }
-bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
-blake2               = "0.10.6"
-cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_1"] }
-roaring              = "0.10.12"
-serde                = { workspace = true, optional = true, features = ["derive"] }
-serde_repr           = { version = "0.1.20", optional = true }
-serde_with           = { workspace = true, features = ["macros", "json"] }
-thiserror            = { workspace = true }
-typenum              = { workspace = true }
-unionlabs            = { workspace = true }
-unionlabs-primitives = { workspace = true, features = ["base58"] }
+alloy                    = { workspace = true, features = ["sol-types"], optional = true }
+bcs                      = { workspace = true }
+bincode                  = { workspace = true, features = ["alloc", "derive"], optional = true }
+blake2                   = "0.10.6"
+cosmwasm-std             = { workspace = true, features = ["cosmwasm_2_1"] }
+frame-support-procedural = { workspace = true }
+roaring                  = "0.10.12"
+serde                    = { workspace = true, optional = true, features = ["derive"] }
+serde_repr               = { version = "0.1.20", optional = true }
+serde_with               = { workspace = true, features = ["macros", "json"] }
+thiserror                = { workspace = true }
+typenum                  = { workspace = true }
+unionlabs                = { workspace = true }
+unionlabs-primitives     = { workspace = true, features = ["base58"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

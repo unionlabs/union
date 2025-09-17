@@ -58,60 +58,58 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::instruction {
+module zkgm::token_order_ack {
     use zkgm::zkgm_ethabi;
 
-    public struct Instruction has copy, drop, store {
-        version: u8,
-        opcode: u8,
-        operand: vector<u8>
+    public struct TokenOrderAck has copy, drop, store {
+        fill_type: u256,
+        market_maker: vector<u8>
     }
 
-    public fun new(version: u8, opcode: u8, operand: vector<u8>): Instruction {
-        Instruction { version, opcode, operand }
+    public fun new(fill_type: u256, market_maker: vector<u8>): TokenOrderAck {
+        TokenOrderAck { fill_type, market_maker }
     }
 
-    public fun version(instruction: &Instruction): u8 {
-        instruction.version
+    public fun fill_type(order: &TokenOrderAck): u256 {
+        order.fill_type
     }
 
-    public fun opcode(instruction: &Instruction): u8 {
-        instruction.opcode
+    public fun market_maker(order: &TokenOrderAck): &vector<u8> {
+        &order.market_maker
     }
 
-    public fun operand(instruction: &Instruction): &vector<u8> {
-        &instruction.operand
-    }
-
-    public fun encode(instruction: &Instruction): vector<u8> {
+    public fun encode(ack: &TokenOrderAck): vector<u8> {
         let mut buf = vector::empty<u8>();
+        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
+        // `market_maker` offset
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x40);
 
-        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.version);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
-        zkgm_ethabi::encode_bytes(&mut buf, &instruction.operand);
-
+        zkgm_ethabi::encode_bytes(
+            &mut buf,
+            &ack.market_maker,
+        );
         buf
     }
 
-    public fun decode(buf: &vector<u8>, index: &mut u64): Instruction {
-        let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
-        let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
-        // skipping the pointer
-        *index = *index + 0x20;
-        let operand = zkgm_ethabi::decode_bytes(buf, index);
-        new(version, opcode, operand)
+    public fun decode(buf: &vector<u8>): TokenOrderAck {
+        let mut index = 0;
+        TokenOrderAck {
+            fill_type: zkgm_ethabi::decode_uint(buf, &mut index),
+            market_maker: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+        }
     }
 
     #[test]
-    fun test_encode_instruction() {
-        let encoded =
-            x"000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000044141414100000000000000000000000000000000000000000000000000000000";
-        let mut index = 0;
-        let instruction = decode(&encoded, &mut index);
-        let expected_instruction = new(10, 20, b"AAAA");
+    fun test_encode_decode() {
+        let output =
+            x"00000000000000000000000000000000000000000000000000000000001e84800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e73646600000000000000000000000000000000000000000000000000";
+        let ack_data = TokenOrderAck {
+            fill_type: 2000000,
+            market_maker: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf"
+        };
 
-        assert!(instruction == expected_instruction, 1);
-        assert!(encode(&instruction) == encoded, 1);
+        let decoded = decode(&output);
+        assert!(decoded == ack_data, 1);
+        assert!(encode(&decoded) == output, 2);
     }
 }

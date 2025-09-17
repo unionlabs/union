@@ -1,7 +1,7 @@
 use blake2::{Blake2b, Digest as _};
 use unionlabs_primitives::{Bytes, FixedBytes};
 
-use crate::{digest::Digest, AccountAddress, Owner};
+use crate::{AccountAddress, Digest, Owner};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -16,10 +16,12 @@ pub struct ObjectInner {
 impl ObjectInner {
     #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
+        use crate::fixed_bytes::SuiFixedBytes;
+
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("Object::");
         bcs::serialize_into(&mut hasher, self).unwrap();
-        Digest(FixedBytes::new(hasher.finalize().into()))
+        SuiFixedBytes(FixedBytes::new(hasher.finalize().into()))
     }
 }
 
