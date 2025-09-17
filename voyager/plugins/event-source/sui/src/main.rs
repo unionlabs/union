@@ -369,6 +369,7 @@ impl Module {
         }))
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn channel_event_to_chain_event<EventFn: FnOnce(Channel, Connection) -> FullEvent>(
         &self,
         voyager_client: &VoyagerClient,
@@ -933,7 +934,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         chain_event(
                             counterparty_chain_id,
                             PacketRecv {
-                                packet_data: packet.packet.data.into(),
+                                packet_data: packet.packet.data,
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,

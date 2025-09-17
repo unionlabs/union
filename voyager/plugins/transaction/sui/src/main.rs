@@ -317,7 +317,7 @@ async fn process_msgs(
                 move_api::channel_open_ack(
                     ptb,
                     module,
-                    try_parse_port(&module.graphql_url, &port_id.as_bytes()).await?,
+                    try_parse_port(&module.graphql_url, port_id.as_bytes()).await?,
                     port_id,
                     data,
                 )?
@@ -327,9 +327,8 @@ async fn process_msgs(
                 module,
                 try_parse_port(
                     &module.graphql_url,
-                    &move_api::get_port_id(module, data.channel_id)
+                    move_api::get_port_id(module, data.channel_id)
                         .await?
-                        .as_str()
                         .as_bytes(),
                 )
                 .await?,
@@ -339,7 +338,7 @@ async fn process_msgs(
                 let port_id =
                     move_api::get_port_id(module, data.packets[0].destination_channel_id).await?;
 
-                let module_info = try_parse_port(&module.graphql_url, &port_id.as_bytes()).await?;
+                let module_info = try_parse_port(&module.graphql_url, port_id.as_bytes()).await?;
 
                 let store_initial_seq = module
                     .sui_client
@@ -418,7 +417,7 @@ async fn process_msgs(
                 let port_id =
                     move_api::get_port_id(module, data.packets[0].source_channel_id).await?;
 
-                let module_info = try_parse_port(&module.graphql_url, &port_id.as_bytes()).await?;
+                let module_info = try_parse_port(&module.graphql_url, port_id.as_bytes()).await?;
 
                 let store_initial_seq = module
                     .sui_client
@@ -634,6 +633,7 @@ async fn register_tokens_if_zkgm(
 }
 
 /// Deploy and register the token if needed in `ZKGM`
+#[allow(clippy::too_many_arguments)]
 async fn register_token_if_zkgm(
     module: &Module,
     ptb: &mut ProgrammableTransactionBuilder,
@@ -1017,7 +1017,7 @@ async fn get_registered_wrapped_token(
             module.zkgm_config.wrapped_token_to_t,
             DynamicFieldName {
                 type_: TypeTag::Vector(Box::new(TypeTag::U8)),
-                value: serde_json::to_value(&wrapped_token).expect("serde will work"),
+                value: serde_json::to_value(wrapped_token).expect("serde will work"),
             },
         )
         .await
@@ -1043,7 +1043,7 @@ async fn get_registered_wrapped_token(
                     );
                 }
 
-                return Ok(Some(
+                Ok(Some(
                     StructTag {
                         address: AccountAddress::from_str(fields[0]).expect("address is valid"),
                         module: Identifier::new(fields[1]).expect("module name is valid"),
@@ -1051,7 +1051,7 @@ async fn get_registered_wrapped_token(
                         type_params: vec![],
                     }
                     .into(),
-                ));
+                ))
             }
             SuiParsedData::Package(_) => panic!("this should never be a package"),
         }
@@ -1087,7 +1087,7 @@ async fn publish_new_coin(
             bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
         ))
         .unwrap();
-    let _ = ptb.command(Command::TransferObjects(vec![res.clone()], arg));
+    let _ = ptb.command(Command::TransferObjects(vec![res], arg));
 
     let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
 

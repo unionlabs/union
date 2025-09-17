@@ -368,7 +368,7 @@ pub mod zkgm {
                         p.source_channel_id,
                         p.destination_channel_id,
                         p.data.clone(),
-                        0 as u64,
+                        0,
                         p.timeout_timestamp,
                     )
                 })
@@ -395,6 +395,7 @@ pub mod zkgm {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn recv_packet_call(
         ptb: &mut ProgrammableTransactionBuilder,
         module: &Module,
@@ -483,7 +484,7 @@ pub mod zkgm {
                         p.source_channel_id,
                         p.destination_channel_id,
                         p.data.clone(),
-                        0 as u64,
+                        0,
                         p.timeout_timestamp,
                     )
                 })

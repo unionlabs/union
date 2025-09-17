@@ -84,7 +84,7 @@ impl Module {
                 self.ibc_store,
                 DynamicFieldName {
                     type_: TypeTag::Vector(Box::new(TypeTag::U8)),
-                    value: serde_json::to_value(&packet_hash).expect("serde will work"),
+                    value: serde_json::to_value(packet_hash).expect("serde will work"),
                 },
             )
             .await
@@ -143,7 +143,7 @@ impl Module {
                     && e.type_.name.as_str() == "PacketSend"
                 {
                     let send: PacketSend = serde_json::from_value(e.parsed_json).unwrap();
-                    if &send.packet_hash == packet_hash.as_ref() {
+                    if send.packet_hash == packet_hash.as_ref() {
                         Some(send.packet)
                     } else {
                         None
