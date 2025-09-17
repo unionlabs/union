@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+alloy               = { workspace = true, features = ["sol-types"] }
 embed-commit        = { workspace = true }
 ibc-union-spec      = { workspace = true, features = ["serde"] }
 jsonrpsee           = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
@@ -26,3 +27,4 @@ hex-literal                    = { workspace = true }
 voyager-transaction-plugin-sui = { workspace = true }
 concurrent-keyring  = { workspace = true }
 tokio = { workspace = true }
+sha3                = { workspace = true }
