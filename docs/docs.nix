@@ -72,6 +72,7 @@ _: {
 
               export PUPPETEER_SKIP_DOWNLOAD=1 
               pnpm install
+              pnpm -w run docgen
               pnpm run dev
             '';
           };
