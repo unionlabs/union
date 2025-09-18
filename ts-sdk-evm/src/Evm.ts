@@ -11,7 +11,6 @@ import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
 import * as O from "effect/Option"
 import { type Address, erc20Abi } from "viem"
-import * as Safe from "./Safe.js"
 import {
   type Abi,
   type Account as ViemAccount,
@@ -30,6 +29,7 @@ import {
 import type { Hash, WaitForTransactionReceiptTimeoutErrorType } from "viem"
 import type { Hex } from "viem"
 import * as internal from "./internal/evm.js"
+import * as Safe from "./Safe.js"
 
 /**
  * @category models

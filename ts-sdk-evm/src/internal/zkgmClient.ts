@@ -162,19 +162,19 @@ export const fromWallet = (
             Effect.serviceOption(Safe.Safe),
             Effect.flatMap(
               O.match({
-                onNone: () => 
+                onNone: () =>
                   // Normal wallet: txHash is on-chain hash, no safe hash
                   Effect.succeed(new ClientResponseImpl(request, client, originalTxHash, O.none())),
                 onSome: (safe) =>
                   pipe(
                     // Safe wallet: resolve to get on-chain hash
                     safe.resolveTxHash(originalTxHash),
-                    Effect.map((resolvedHash) => 
+                    Effect.map((resolvedHash) =>
                       new ClientResponseImpl(
-                        request, 
-                        client, 
+                        request,
+                        client,
                         resolvedHash as Hex, // txHash = on-chain hash
-                        O.some(originalTxHash) // safeHash = original Safe hash
+                        O.some(originalTxHash), // safeHash = original Safe hash
                       )
                     ),
                     Effect.mapError((safeError) =>
@@ -184,10 +184,10 @@ export const fromWallet = (
                         cause: safeError,
                         description: "Safe hash resolution failed",
                       })
-                    )
-                  )
-              })
-            )
+                    ),
+                  ),
+              }),
+            ),
           )
         ),
       )

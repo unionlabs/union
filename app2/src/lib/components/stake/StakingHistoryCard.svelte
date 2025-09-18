@@ -101,7 +101,7 @@ $effect(() => {
             </div>
           </div>
         {/each}
-        
+
         <div class="absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-zinc-950/60">
           <div class="text-center">
             {#if !walletConnected}
