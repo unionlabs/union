@@ -19271,7 +19271,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-sui-ibc-app-plugin"
+name = "voyager-sui-ibc-app-plugin-zkgm"
 version = "0.0.0"
 dependencies = [
  "alloy",

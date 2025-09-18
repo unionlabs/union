@@ -43,15 +43,9 @@ mod zkgm;
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub ibc_handler_address: SuiAddress,
-
     pub ibc_store: SuiAddress,
 
-    pub graphql_url: String,
-
     pub sui_client: sui_sdk::SuiClient,
-
-    pub keyring: ConcurrentKeyring<SuiAddress, Arc<SuiKeyPair>>,
 
     pub ibc_store_initial_seq: SequenceNumber,
 
@@ -70,10 +64,7 @@ pub struct ZkgmConfig {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
-    pub graphql_url: String,
-    pub ibc_contract: SuiAddress,
     pub ibc_store: SuiAddress,
-    pub keyring: KeyringConfig,
     pub zkgm_config: ZkgmConfig,
 }
 
@@ -115,7 +106,7 @@ impl TransactionPluginServer for Module {
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketRecv,
-    ) -> RpcResult<Option<ProgrammableTransaction>> {
+    ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let store_initial_seq = self
@@ -172,7 +163,7 @@ impl TransactionPluginServer for Module {
         // // it, this PTB will fail and no partial state will be persisted.
         zkgm::end_recv_call(&mut ptb, self, &module_info, fee_recipient, session, data);
 
-        Ok(Some(ptb.finish()))
+        Ok(ptb.finish())
     }
 
     async fn on_acknowledge_packet(
@@ -181,7 +172,7 @@ impl TransactionPluginServer for Module {
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketAcknowledgement,
-    ) -> RpcResult<Option<ProgrammableTransaction>> {
+    ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let store_initial_seq = self
@@ -223,7 +214,7 @@ impl TransactionPluginServer for Module {
 
         zkgm::end_ack_call(&mut ptb, self, &module_info, fee_recipient, session, data);
 
-        Ok(Some(ptb.finish()))
+        Ok(ptb.finish())
     }
 }
 
@@ -256,26 +247,8 @@ impl Module {
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
-            ibc_handler_address: config.ibc_contract,
             sui_client,
-            graphql_url: config.graphql_url,
             ibc_store_initial_seq,
-            keyring: ConcurrentKeyring::new(
-                config.keyring.name,
-                config.keyring.keys.into_iter().map(|config| {
-                    let pk = SuiKeyPair::decode(
-                        &String::from_utf8(config.value()).expect("priv keys are utf8 strings"),
-                    )
-                    .expect("private key is valid");
-
-                    let address = SuiAddress::from(&pk.public());
-
-                    KeyringEntry {
-                        address,
-                        signer: Arc::new(pk),
-                    }
-                }),
-            ),
             ibc_store: config.ibc_store,
             zkgm_config: config.zkgm_config,
         })
