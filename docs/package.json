@@ -18,6 +18,7 @@
     "@astrojs/starlight": "^0.34.4",
     "@astrojs/svelte": "^7.1.0",
     "@astrojs/vue": "^5.1.0",
+    "@cosmjs/math": "0.33.1",
     "@expressive-code/plugin-collapsible-sections": "^0.41.2",
     "@expressive-code/plugin-line-numbers": "^0.41.2",
     "@graphiql/plugin-explorer": "^5.0.0",

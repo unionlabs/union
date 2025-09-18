@@ -4,7 +4,7 @@ import { pipe } from "effect/Function"
 import * as Glob from "glob"
 import * as NFS from "node:fs"
 import * as Path from "node:path"
-import { Project, ScriptTarget, SyntaxKind } from "ts-morph"
+import { ModuleResolutionKind, Project, ScriptTarget, SyntaxKind } from "ts-morph"
 
 const toYaml = (o: Record<string, unknown>, n = 0): string =>
   Object.entries(o)
@@ -69,7 +69,12 @@ export default function examplesToPages({
         }
         logger.info(`Generating docs pages: ${JSON.stringify(files, null, 2)}`)
 
-        const project = new Project({ compilerOptions: { target: ScriptTarget.ESNext } })
+        const project = new Project({
+          compilerOptions: {
+            target: ScriptTarget.ESNext,
+            moduleResolution: ModuleResolutionKind.Bundler,
+          },
+        })
 
         const docsRoot = Path.join(process.cwd(), outDir)
         await NFS.promises.mkdir(docsRoot, { recursive: true })
