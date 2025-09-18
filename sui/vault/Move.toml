@@ -1,19 +1,18 @@
 [package]
-name    = "zkgm"
+name = "vault"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
 ibc = { local = "../ibc" }
-vault = { local = "../vault" }
+# zkgm = { local = "../ucs03_zkgm" }
 
 [addresses]
-ibc  = "_"
-zkgm = "_"
 vault = "_"
+ibc = "_"
+zkgm = "_"
 
+[dev-dependencies]
 [dev-addresses]
-ibc  = "0x22222"
-zkgm = "0x4444444444444"
-vault = "0x2334"
+
