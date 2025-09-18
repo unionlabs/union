@@ -66,7 +66,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use unionlabs_primitives::{Bytes, H256};
 
-pub const MAX_FEE_RATE: u128 = 100_000;
 /// The maximum allowed unbonding period is 42 days,
 /// which is twice the typical staking period of a Cosmos SDK-based chain.
 pub const MAX_UNBONDING_PERIOD: u64 = 3_628_800;
@@ -275,6 +274,7 @@ pub struct ProtocolFeeConfig {
     /// Fee percentage = fee_rate / 100_000
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
+    // TODO: BoundedU128<0, FEE_RATE_DENOMINATOR> once i have those types out of unionlabs
     pub fee_rate: u128,
 
     /// Address where the collected fees are sent.
@@ -287,10 +287,12 @@ pub struct ProtocolFeeConfig {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct AccountingState {
     /// The total amount of native tokens that have been bonded.
+    ///
+    /// This plus the pending rewards is the "total assets".
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
     pub total_bonded_native_tokens: u128,
-    /// The total issuance of the LST.
+    /// The total issuance of the LST, also known as the "total shares".
     ///
     /// Note that this is *not* the same as the total supply of the LST contract, but rather the
     /// total *cross-chain* supply of the LST. For example, when the LST is bridged, it will be

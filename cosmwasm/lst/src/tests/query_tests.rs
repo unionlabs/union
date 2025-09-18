@@ -80,8 +80,8 @@ use crate::{
         UnstakeRequestsByStakerHash,
     },
     tests::test_helper::{
-        mock_init_msg, setup, FEE_RECIPIENT, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2,
-        UNION_MONITOR_1, UNION_MONITOR_2,
+        mock_init_msg, set_rewards, setup, FEE_RECIPIENT, LST_ADDRESS, NATIVE_TOKEN,
+        STAKER_ADDRESS, UNION1, UNION2, UNION_MONITOR_1, UNION_MONITOR_2,
     },
     types::{
         staker_hash, AccountingState, BatchId, PendingBatch, ProtocolFeeConfig, ReceivedBatch,
@@ -107,8 +107,8 @@ fn state() {
         deps.as_ref(),
         QueryMsg::AccountingState {},
         &AccountingStateResponse {
-            total_bonded_native_tokens: Uint128::zero(),
-            total_issued_lst: Uint128::zero(),
+            total_assets: Uint128::zero(),
+            total_shares: Uint128::zero(),
             total_reward_amount: Uint128::zero(),
             redemption_rate: Decimal::one(),
             purchase_rate: Decimal::one(),
@@ -126,11 +126,28 @@ fn state() {
         deps.as_ref(),
         QueryMsg::AccountingState {},
         &AccountingStateResponse {
-            total_bonded_native_tokens: 400_000_u128.into(),
-            total_issued_lst: 100_000_u128.into(),
+            total_assets: 400_000_u128.into(),
+            total_shares: 100_000_u128.into(),
             total_reward_amount: 100_u128.into(),
             redemption_rate: Decimal::from_ratio(4_u128, 1_u128),
             purchase_rate: Decimal::percent(25),
+        },
+    );
+
+    set_rewards(
+        &mut deps.querier,
+        [("validator1", 20_000), ("validator2", 80_000)],
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        QueryMsg::AccountingState {},
+        &AccountingStateResponse {
+            total_assets: 500_000_u128.into(),
+            total_shares: 100_000_u128.into(),
+            total_reward_amount: 100_u128.into(),
+            redemption_rate: Decimal::from_ratio(5_u128, 1_u128),
+            purchase_rate: Decimal::percent(20),
         },
     );
 }
@@ -457,8 +474,6 @@ fn all_unstake_requests() {
         },
     );
 
-    dbg!(&deps.storage);
-
     // full iter
     assert_query_result(
         deps.as_ref(),
@@ -522,6 +537,7 @@ fn config() {
                 Addr::unchecked(UNION_MONITOR_2),
             ],
             lst_address: Addr::unchecked(LST_ADDRESS),
+            staker_address: Addr::unchecked(STAKER_ADDRESS),
             batch_period_seconds: 86400,
             unbonding_period_seconds: 1000000,
             stopped: false,

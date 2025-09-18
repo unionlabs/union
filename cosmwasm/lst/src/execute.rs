@@ -68,20 +68,19 @@ use depolama::StorageExt;
 
 use crate::{
     error::{ContractError, ContractResult},
-    helpers::{compute_mint_amount, compute_unbond_amount},
+    helpers::{assets_to_shares, shares_to_assets, total_assets},
     state::{
         AccountingStateStore, Admin, ConfigStore, CurrentPendingBatch, LstAddress, Monitors,
         PendingOwnerStore, ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped,
         SubmittedBatches, UnstakeRequests, UnstakeRequestsByStakerHash,
     },
     types::{
-        staker_hash, AccountingState, BatchExpectedAmount, BatchId, Config, PendingBatch,
-        PendingOwner, ProtocolFeeConfig, ReceivedBatch, SubmittedBatch, UnstakeRequest,
-        UnstakeRequestKey,
+        staker_hash, AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
+        ProtocolFeeConfig, ReceivedBatch, SubmittedBatch, UnstakeRequest, UnstakeRequestKey,
     },
 };
 
-pub const FEE_RATE_DENOMINATOR: u64 = 100_000;
+pub const FEE_RATE_DENOMINATOR: u32 = 100_000;
 /// 7 days
 pub const OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS: u64 = 60 * 60 * 24 * 7;
 
@@ -101,16 +100,6 @@ pub fn ensure_not_stopped(deps: Deps) -> Result<(), ContractError> {
 
 pub fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     if deps.storage.read_item::<Admin>()? != info.sender {
-        Err(ContractError::Unauthorized {
-            sender: info.sender.clone(),
-        })
-    } else {
-        Ok(())
-    }
-}
-
-pub fn ensure_sender(info: &MessageInfo, staker: &Addr) -> Result<(), ContractError> {
-    if info.sender != staker {
         Err(ContractError::Unauthorized {
             sender: info.sender.clone(),
         })
@@ -146,12 +135,16 @@ pub fn bond(
 
     let mut accounting_state = deps.storage.read_item::<AccountingStateStore>()?;
 
+    let total_assets = total_assets(
+        deps.as_ref(),
+        &accounting_state,
+        &config.native_token_denom,
+        &deps.storage.read_item::<StakerAddress>()?,
+    )?;
+
     // Compute mint amount
-    let mint_amount = compute_mint_amount(
-        accounting_state.total_bonded_native_tokens,
-        accounting_state.total_issued_lst,
-        bond_amount,
-    );
+    let mint_amount =
+        assets_to_shares(total_assets, accounting_state.total_issued_lst, bond_amount);
 
     // config.minimum_liquid_stake_amount *should* prevent this branch from being hit, however if
     // the ratio becomes very unbalanced then this may be hit
@@ -361,8 +354,15 @@ pub fn submit_batch(deps: DepsMut, env: Env) -> ContractResult<Response> {
         }
     };
 
-    let unbond_amount = compute_unbond_amount(
-        accounting_state.total_bonded_native_tokens,
+    let total_assets = total_assets(
+        deps.as_ref(),
+        &accounting_state,
+        &config.native_token_denom,
+        &deps.storage.read_item::<StakerAddress>()?,
+    )?;
+
+    let unbond_amount = shares_to_assets(
+        total_assets,
         accounting_state.total_issued_lst,
         total_lst_to_burn,
     );
@@ -459,18 +459,12 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
         return Err(ContractError::ComputedFeesAreZero { received_rewards });
     }
 
-    // TODO: This branch is not possible, protocol_fee is < received_rewards
-    let amount_after_protocol_fee =
-        received_rewards.checked_sub(protocol_fee).ok_or_else(|| {
-            ContractError::RewardsReceivedLessThanProtocolFee {
-                received_rewards,
-                protocol_fee,
-            }
-        })?;
+    let amount_after_protocol_fee = received_rewards
+        .checked_sub(protocol_fee)
+        .expect("protocol_fee is <= received_rewards; qed;");
 
     deps.storage
-        .upsert_item::<AccountingStateStore, ContractError>(|accounting_state| {
-            let mut accounting_state = accounting_state.expect("should exist");
+        .update_item::<AccountingStateStore, ContractError, ()>(|accounting_state| {
             if accounting_state.total_issued_lst == 0 {
                 return Err(ContractError::NoLiquidStake);
             }
@@ -485,7 +479,7 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
                 .checked_add(received_rewards)
                 .expect("overflow");
 
-            Ok(accounting_state)
+            Ok(())
         })?;
 
     Ok(Response::new()
@@ -737,11 +731,9 @@ pub fn update_config(
         //     query_and_validate_unbonding_period(deps.as_ref(), batch_period_seconds)?;
 
         deps.storage
-            .upsert_item::<ConfigStore, ContractError>(|config| {
-                Ok(Config {
-                    batch_period_seconds,
-                    ..config.expect("should exist")
-                })
+            .update_item::<ConfigStore, ContractError, _>(|config| {
+                config.batch_period_seconds = batch_period_seconds;
+                Ok(())
             })?;
 
         event = event.add_attribute("batch_period_seconds", batch_period_seconds.to_string());
@@ -750,11 +742,9 @@ pub fn update_config(
 
     if let Some(unbonding_period_seconds) = unbonding_period_seconds {
         deps.storage
-            .upsert_item::<ConfigStore, ContractError>(|config| {
-                Ok(Config {
-                    unbonding_period_seconds,
-                    ..config.expect("should exist")
-                })
+            .update_item::<ConfigStore, ContractError, _>(|config| {
+                config.unbonding_period_seconds = unbonding_period_seconds;
+                Ok(())
             })?;
 
         event = event.add_attribute(

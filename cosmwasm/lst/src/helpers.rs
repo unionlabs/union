@@ -58,54 +58,66 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Addr, DecCoin, Decimal256, Deps, StdResult, Uint128};
 
 use crate::types::AccountingState;
 
-pub fn compute_mint_amount(
-    total_bonded_native_tokens: u128,
-    total_issued_lst: u128,
-    native_token_to_bond: u128,
-) -> u128 {
+pub fn assets_to_shares(total_assets: u128, total_shares: u128, assets: u128) -> u128 {
     // possible truncation issues when quantities are small
     // initial very large total_bonded_native_tokens would cause round to 0 and block minting
     // mint at a 1:1 ratio if there is no bonded native token currently
-    if total_bonded_native_tokens == 0 {
-        native_token_to_bond
+    if total_assets == 0 {
+        assets
     } else {
-        Uint128::new(total_issued_lst)
-            .multiply_ratio(native_token_to_bond, total_bonded_native_tokens)
+        Uint128::new(assets)
+            .multiply_ratio(total_shares, total_assets)
             .u128()
     }
 }
 
-pub fn compute_unbond_amount(
-    total_bonded_native_tokens: u128,
-    total_issued_lst: u128,
-    batch_liquid_stake_token: u128,
-) -> u128 {
-    if batch_liquid_stake_token == 0 {
+pub fn shares_to_assets(total_assets: u128, total_shares: u128, shares: u128) -> u128 {
+    // TODO: Check if this branch can even be hit
+    if shares == 0 {
         0
     } else {
-        Uint128::new(total_bonded_native_tokens)
-            .multiply_ratio(batch_liquid_stake_token, total_issued_lst)
+        Uint128::new(shares)
+            .multiply_ratio(total_assets, total_shares)
             .into()
     }
 }
 
-// TODO: Extract the return type into a struct with named fields
-pub fn get_rates(state: &AccountingState) -> (Decimal, Decimal) {
-    let total_bonded_native_tokens = state.total_bonded_native_tokens;
-    let total_issued_lst = state.total_issued_lst;
-    if total_issued_lst == 0 || total_bonded_native_tokens == 0 {
-        (Decimal::one(), Decimal::one())
-    } else {
-        // (redemption_rate, purchase_rate)
-        (
-            Decimal::from_ratio(total_bonded_native_tokens, total_issued_lst),
-            Decimal::from_ratio(total_issued_lst, total_bonded_native_tokens),
-        )
-    }
+pub fn total_assets(
+    deps: Deps,
+    state: &AccountingState,
+    native_token_denom: &str,
+    staker_address: &Addr,
+) -> StdResult<u128> {
+    Ok(state
+        .total_bonded_native_tokens
+        .checked_add(total_pending_rewards(
+            deps,
+            native_token_denom,
+            staker_address,
+        )?)
+        .expect("overflow"))
+}
+
+fn total_pending_rewards(
+    deps: Deps,
+    native_token_denom: &str,
+    staker_address: &Addr,
+) -> StdResult<u128> {
+    Ok(deps
+        .querier
+        .query_delegation_total_rewards(staker_address)?
+        .total
+        .into_iter()
+        .filter_map(|DecCoin { denom, amount }| (denom == native_token_denom).then_some(amount))
+        .try_fold(Decimal256::zero(), |a, b| a.checked_add(b))
+        .map(|total| Uint128::try_from(total.to_uint_floor()))
+        .expect("too many tokens")
+        .expect("too many tokens")
+        .u128())
 }
 
 // NOTE: Unused for now, once the unbonding period is queried from the chain directly instead of

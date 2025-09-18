@@ -58,9 +58,11 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+use core::fmt;
+
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    Addr, OwnedDeps,
+    Addr, DecCoin, Decimal256, OwnedDeps,
 };
 
 use crate::{contract::init, msg::InitMsg, types::ProtocolFeeConfig};
@@ -73,7 +75,7 @@ pub const UNION1: &str = "union1union1";
 pub const UNION2: &str = "union1union2";
 pub const UNION3: &str = "union1union3";
 
-pub const UNION_STAKER: &str = "union1unionstaker";
+pub const STAKER_ADDRESS: &str = "union1unionstaker";
 
 pub const FEE_RECIPIENT: &str = "union1feerecipient";
 
@@ -84,7 +86,7 @@ pub const LST_ADDRESS: &str = "union1lsttokenaddress";
 
 pub fn mock_init_msg() -> InitMsg {
     InitMsg {
-        staker_address: Addr::unchecked(UNION_STAKER),
+        staker_address: Addr::unchecked(STAKER_ADDRESS),
         minimum_liquid_stake_amount: 100,
         lst_address: Addr::unchecked(LST_ADDRESS),
         monitors: vec![
@@ -110,6 +112,22 @@ pub fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier> {
     init(deps.as_mut(), mock_env(), msg).unwrap();
 
     deps
+}
+
+pub fn set_rewards(
+    querier: &mut MockQuerier,
+    amounts: impl IntoIterator<Item = (impl fmt::Display, u128)>,
+) {
+    for (validator, amount) in amounts {
+        querier.distribution.set_rewards(
+            validator.to_string(),
+            STAKER_ADDRESS,
+            vec![DecCoin::new(
+                Decimal256::from_atomics(amount, 0).unwrap(),
+                NATIVE_TOKEN,
+            )],
+        );
+    }
 }
 
 // NOTE: Unused for now, once the unbonding period is queried from the chain directly instead of

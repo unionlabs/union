@@ -71,7 +71,7 @@ use crate::{
     execute::{
         accept_ownership, bond, circuit_breaker, receive_rewards, receive_unstaked_tokens,
         resume_contract, revoke_ownership_transfer, slash_batches, submit_batch,
-        transfer_ownership, unbond, update_config, withdraw,
+        transfer_ownership, unbond, update_config, withdraw, FEE_RATE_DENOMINATOR,
     },
     msg::{ExecuteMsg, InitMsg, QueryMsg},
     query::{
@@ -82,7 +82,7 @@ use crate::{
         AccountingStateStore, Admin, ConfigStore, CurrentPendingBatch, LstAddress, Monitors,
         ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped, SubmittedBatches,
     },
-    types::{AccountingState, BatchId, Config, PendingBatch, MAX_FEE_RATE},
+    types::{AccountingState, BatchId, Config, PendingBatch},
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -116,7 +116,7 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
     );
 
     ensure!(
-        protocol_fee_config.fee_rate <= MAX_FEE_RATE,
+        protocol_fee_config.fee_rate <= FEE_RATE_DENOMINATOR as u128,
         ContractError::InvalidProtocolFeeRate
     );
 
