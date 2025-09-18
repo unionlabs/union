@@ -41,10 +41,12 @@ use union_test::{
 use unionlabs::{
     encoding::{Encode, Json},
     ethereum::keccak256,
-    primitives::{Bech32, FixedBytes, H160, U256},
+    primitives::{encoding::Base64, Bech32, Bytes, FixedBytes, H160, U256},
 };
-use voyager_sdk::primitives::{ChainId, Timestamp};
-
+use voyager_sdk::{
+    primitives::{ChainId, Timestamp},
+    serde_json::json,
+};
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
 // static ERC20: OnceCell<H160> = OnceCell::const_new();
@@ -187,7 +189,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 19; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 1; // TODO: Hardcoded now, it will be specified from config later.
 
         // TODO(aeryz): move config file into the testing framework's own config file
         let ctx = TestContext::new(
