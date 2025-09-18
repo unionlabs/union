@@ -391,6 +391,8 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
+      console.log("sender", sender)
+
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
         Effect.provide(walletClient),
         Effect.provide(publicClient),

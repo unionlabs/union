@@ -16,12 +16,12 @@ import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { matchOption, matchRuntimeResult } from "$lib/utils/snippets.svelte"
 import { FetchHttpClient } from "@effect/platform"
-import { Staking, Ucs05 } from "@unionlabs/sdk"
+import { Staking, Ucs05, Utils } from "@unionlabs/sdk"
 import { EU_ERC20, EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
 import { TokenRawAmount, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
-import { Brand, ConfigProvider, DateTime, Effect, Layer, Order, pipe } from "effect"
+import { BigDecimal, Brand, ConfigProvider, DateTime, Effect, Layer, Order, pipe } from "effect"
 import * as A from "effect/Array"
 import { constVoid } from "effect/Function"
 import * as O from "effect/Option"
@@ -234,8 +234,14 @@ $inspect(data)
         <div class="flex items-center gap-2">
           {#if O.isSome(incentives.current)
               && incentives.current.value._tag === "Success"}
+            {@const formattedIncentives = pipe(
+              incentives.current.value.value.rates.yearly,
+              BigDecimal.multiply(BigDecimal.fromBigInt(100n)),
+              BigDecimal.round({ mode: "from-zero", scale: 2 }),
+              Utils.formatBigDecimal,
+            )}
             <div class="text-xl text-accent">
-              {(incentives.current.value.value.rates.yearly * 100).toFixed(2)}%
+              {formattedIncentives}%
             </div>
           {:else}
             <div class="w-16 h-5 bg-zinc-700/50 rounded animate-pulse"></div>

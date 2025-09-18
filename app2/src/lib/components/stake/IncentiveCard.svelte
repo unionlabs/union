@@ -2,16 +2,16 @@
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
-import { formatIncentive } from "$lib/services/incentive"
+import { formatIncentive, IncentiveError, IncentiveResult } from "$lib/services/incentive"
 import { matchRuntimeResult } from "$lib/utils/snippets.svelte"
 import type { Chain, Token } from "@unionlabs/sdk/schema"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
-import { pipe } from "effect"
+import { BigDecimal, pipe } from "effect"
 import type { Exit, Option } from "effect"
 import * as O from "effect/Option"
 
 interface Props {
-  incentives: Option.Option<Exit.Exit<any, any>>
+  incentives: Option.Option<Exit.Exit<IncentiveResult, IncentiveError>>
   stakeAmount: Option.Option<bigint>
   evmChain: Option.Option<Chain>
   uOnEvmToken: Option.Option<Token>
@@ -46,21 +46,51 @@ const incentiveAmounts = $derived(pipe(
       O.map(exit => exit.value),
     )),
   O.filter(({ amount }) => amount > 0n),
-  O.map(({ amount, incentiveData }) => {
-    const apy = incentiveData.rates.yearly
+  O.flatMap(({ amount, incentiveData }) =>
+    O.gen(function*() {
+      const stakingRewards = incentiveData.rates.yearly
 
-    const apyBasisPoints = BigInt(Math.floor(apy * 10000))
-    const yearlyWei = (amount * apyBasisPoints) / 10000n
+      const stakingRewardsBasisPoints = pipe(
+        BigDecimal.multiply(stakingRewards, BigDecimal.fromBigInt(10_000n)),
+        BigDecimal.floor,
+      )
 
-    return {
-      yearly: yearlyWei,
-      monthly: yearlyWei / 12n,
-      weekly: yearlyWei / 52n,
-      daily: yearlyWei / 365n,
-      apy: apy * 100,
-    }
-  }),
+      const yearlyWei = yield* pipe(
+        BigDecimal.multiply(BigDecimal.fromBigInt(amount), stakingRewardsBasisPoints),
+        BigDecimal.divide(BigDecimal.fromBigInt(10_000n)),
+      )
+
+      const monthly = yield* BigDecimal.divide(yearlyWei, BigDecimal.fromBigInt(12n))
+      const weekly = yield* BigDecimal.divide(yearlyWei, BigDecimal.fromBigInt(52n))
+      const daily = yield* BigDecimal.divide(yearlyWei, BigDecimal.fromBigInt(365n))
+      console.log("result", daily)
+      const stakingRewardsPercentage = BigDecimal.multiply(
+        stakingRewards,
+        BigDecimal.fromBigInt(100n),
+      )
+
+      const result = {
+        yearly: yearlyWei,
+        monthly,
+        weekly,
+        daily,
+        stakingRewardsPercentage: stakingRewardsPercentage,
+      } as const
+
+      console.log("result", { result })
+
+      return result
+    })
+  ),
 ))
+
+const truncateBigDecimal = (self: BigDecimal.BigDecimal) =>
+  pipe(
+    self,
+    BigDecimal.multiply(BigDecimal.make(1n, 2)),
+    BigDecimal.scale(2),
+    x => x.value,
+  )
 </script>
 
 {#snippet renderIncentiveData(data: any)}
@@ -88,7 +118,9 @@ const incentiveAmounts = $derived(pipe(
                     chain={evmChain.value}
                     denom={uOnEvmToken.value.denom}
                     amount={TokenRawAmount.make(
-                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.daily : 0n,
+                      O.isSome(incentiveAmounts)
+                        ? truncateBigDecimal(incentiveAmounts.value.daily)
+                        : 0n,
                     )}
                     showWrapping={false}
                     showSymbol={true}
@@ -109,7 +141,9 @@ const incentiveAmounts = $derived(pipe(
                     chain={evmChain.value}
                     denom={uOnEvmToken.value.denom}
                     amount={TokenRawAmount.make(
-                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.weekly : 0n,
+                      O.isSome(incentiveAmounts)
+                        ? truncateBigDecimal(incentiveAmounts.value.weekly)
+                        : 0n,
                     )}
                     showWrapping={false}
                     showSymbol={true}
@@ -130,7 +164,9 @@ const incentiveAmounts = $derived(pipe(
                     chain={evmChain.value}
                     denom={uOnEvmToken.value.denom}
                     amount={TokenRawAmount.make(
-                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.monthly : 0n,
+                      O.isSome(incentiveAmounts)
+                        ? truncateBigDecimal(incentiveAmounts.value.monthly)
+                        : 0n,
                     )}
                     showWrapping={false}
                     showSymbol={true}
@@ -151,7 +187,7 @@ const incentiveAmounts = $derived(pipe(
                     chain={evmChain.value}
                     denom={uOnEvmToken.value.denom}
                     amount={TokenRawAmount.make(
-                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.yearly : 0n,
+                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.yearly.value : 0n,
                     )}
                     showWrapping={false}
                     showSymbol={true}

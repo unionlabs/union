@@ -11,7 +11,7 @@
  */
 
 import { HttpClient, HttpClientResponse } from "@effect/platform"
-import { Data, Effect, pipe, Schema } from "effect"
+import { BigDecimal, Data, Effect, pipe, Schema } from "effect"
 
 const REST_BASE_URL = import.meta.env.DEV ? "/api/union" : "https://rest.union.build"
 
@@ -21,19 +21,19 @@ export class IncentiveError extends Data.TaggedError("IncentiveError")<{
 }> {}
 
 const InflationResponse = Schema.Struct({
-  inflation: Schema.String,
+  inflation: Schema.BigDecimal,
 })
 
 const StakingPoolResponse = Schema.Struct({
   pool: Schema.Struct({
-    not_bonded_tokens: Schema.String,
-    bonded_tokens: Schema.String,
+    not_bonded_tokens: Schema.BigDecimal,
+    bonded_tokens: Schema.BigDecimal,
   }),
 })
 
 const DistributionParamsResponse = Schema.Struct({
   params: Schema.Struct({
-    community_tax: Schema.String,
+    community_tax: Schema.BigDecimal,
     base_proposer_reward: Schema.String,
     bonus_proposer_reward: Schema.String,
     withdraw_addr_enabled: Schema.Boolean,
@@ -43,22 +43,22 @@ const DistributionParamsResponse = Schema.Struct({
 const CirculatingSupplyResponse = Schema.Struct({
   amount: Schema.Struct({
     denom: Schema.String,
-    amount: Schema.String,
+    amount: Schema.BigDecimal,
   }),
 })
 
 // Schema for the incentive calculation result
 export const IncentiveResult = Schema.Struct({
   rates: Schema.Struct({
-    yearly: Schema.Number,
+    yearly: Schema.BigDecimalFromSelf,
   }),
-  incentiveNominal: Schema.Number,
-  incentiveAfterTax: Schema.Number,
-  inflation: Schema.Number,
-  totalSupply: Schema.Number,
-  bondedTokens: Schema.Number,
-  communityTax: Schema.Number,
-  bondedRatio: Schema.Number,
+  incentiveNominal: Schema.BigDecimalFromSelf,
+  incentiveAfterTax: Schema.BigDecimalFromSelf,
+  inflation: Schema.BigDecimalFromSelf,
+  totalSupply: Schema.BigDecimalFromSelf,
+  bondedTokens: Schema.BigDecimalFromSelf,
+  communityTax: Schema.BigDecimalFromSelf,
+  bondedRatio: Schema.BigDecimalFromSelf,
 })
 
 export type IncentiveResult = Schema.Schema.Type<typeof IncentiveResult>
@@ -120,23 +120,28 @@ export const calculateIncentive: Effect.Effect<
       getCirculatingSupply,
     ], { concurrency: "unbounded" })
 
-  const inflation = parseFloat(inflationData.inflation)
-  const bondedTokensRaw = parseFloat(stakingPoolData.pool.bonded_tokens)
-  const communityTax = parseFloat(distributionData.params.community_tax)
-  const circulatingSupplyRaw = parseFloat(circulatingSupplyData.amount.amount)
+  const inflation = inflationData.inflation
+  const bondedTokensRaw = stakingPoolData.pool.bonded_tokens
+  const communityTax = distributionData.params.community_tax
+  const circulatingSupplyRaw = circulatingSupplyData.amount.amount
 
-  const bondedTokens = bondedTokensRaw / 1_000_000_000_000_000_000
-  const totalSupply = circulatingSupplyRaw / 1_000_000_000_000_000_000
-
-  if (isNaN(inflation) || isNaN(bondedTokens) || isNaN(totalSupply) || isNaN(communityTax)) {
-    return yield* Effect.fail(
+  const dividend = BigDecimal.fromBigInt(1_000_000_000_000_000_000n)
+  const bondedTokens = yield* BigDecimal.divide(bondedTokensRaw, dividend).pipe(
+    Effect.mapError(() =>
       new IncentiveError({
-        message: "Invalid numeric values in API responses",
-      }),
-    )
-  }
+        message: "Could not calculate bonded tokens amount",
+      })
+    ),
+  )
+  const totalSupply = yield* BigDecimal.divide(circulatingSupplyRaw, dividend).pipe(
+    Effect.mapError(() =>
+      new IncentiveError({
+        message: "Could not calculate total supply amount",
+      })
+    ),
+  )
 
-  if (totalSupply === 0) {
+  if (BigDecimal.isZero(totalSupply)) {
     return yield* Effect.fail(
       new IncentiveError({
         message: "Invalid total supply",
@@ -144,7 +149,7 @@ export const calculateIncentive: Effect.Effect<
     )
   }
 
-  if (bondedTokens === 0) {
+  if (BigDecimal.isZero(bondedTokens)) {
     return yield* Effect.fail(
       new IncentiveError({
         message: "No bonded tokens found",
@@ -153,23 +158,41 @@ export const calculateIncentive: Effect.Effect<
   }
 
   // Step 1: Calculate nominal incentive rate
-  const incentiveNominal = (inflation * totalSupply) / bondedTokens
+  const incentiveNominal = yield* pipe(
+    BigDecimal.multiply(inflation, totalSupply),
+    BigDecimal.divide(bondedTokens),
+    Effect.mapError(() =>
+      new IncentiveError({
+        message: "Could not calculate nominal incentive",
+      })
+    ),
+  )
 
   // Step 2: Apply community tax
-  const incentiveAfterTax = incentiveNominal * (1 - communityTax)
+  const incentiveAfterTax = BigDecimal.multiply(
+    incentiveNominal,
+    BigDecimal.subtract(BigDecimal.fromBigInt(1n), communityTax),
+  )
+
+  const bondedRatio = yield* BigDecimal.divide(bondedTokens, totalSupply).pipe(
+    Effect.mapError(() =>
+      new IncentiveError({
+        message: "Could not bonded ratio",
+      })
+    ),
+  )
 
   return {
     rates: {
       yearly: incentiveAfterTax,
     },
-
     incentiveNominal,
     incentiveAfterTax,
     inflation,
     totalSupply,
     bondedTokens,
     communityTax,
-    bondedRatio: bondedTokens / totalSupply,
+    bondedRatio,
   }
 })
 
