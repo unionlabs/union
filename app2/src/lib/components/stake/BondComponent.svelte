@@ -1,8 +1,9 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
-import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import UInput from "$lib/components/ui/UInput.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
@@ -36,6 +37,7 @@ import {
   U_SOLVER_ON_UNION_METADATA,
 } from "@unionlabs/sdk/Constants"
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
+import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
@@ -66,11 +68,6 @@ const UCS03_EVM = Ucs05.EvmDisplay.make({
   address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
 })
 
-// MAINNET
-// union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy
-
-// TESTNET
-// union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0
 const UCS03_MINTER_ON_UNION = Ucs05.CosmosDisplay.make({
   address: "union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy",
 })
@@ -86,11 +83,13 @@ const JsonFromBase64 = Schema.compose(
 interface Props {
   evmChain: O.Option<Chain>
   uOnEvmToken: O.Option<TokenType>
+  eUOnEvmToken: O.Option<TokenType>
   uOnEvmBalance: O.Option<bigint>
+  bondAmount: O.Option<bigint>
   onBondSuccess?: () => void
 }
 
-let { evmChain, uOnEvmToken, uOnEvmBalance, onBondSuccess }: Props = $props()
+let { evmChain, uOnEvmToken, eUOnEvmToken, uOnEvmBalance, bondAmount = $bindable(), onBondSuccess }: Props = $props()
 
 type BondState = Data.TaggedEnum<{
   Ready: {}
@@ -163,17 +162,6 @@ const QlpConfigProvider = pipe(
 const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   bondInput,
   BigDecimal.fromString,
-))
-
-const bondAmount = $derived<O.Option<bigint>>(pipe(
-  inputAmount,
-  O.map(bd => {
-    const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
-    const normalized = BigDecimal.normalize(result)
-    return normalized.scale >= 0
-      ? normalized.value / (10n ** BigInt(normalized.scale))
-      : normalized.value * (10n ** BigInt(-normalized.scale))
-  }),
 ))
 
 const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
@@ -580,6 +568,12 @@ runPromiseExit$(() =>
       bondInput = ""
       shouldBond = false
       onBondSuccess?.()
+      
+      setTimeout(() => {
+        if (BondState.$is("Success")(bondState)) {
+          bondState = BondState.Ready()
+        }
+      }, 5000)
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
@@ -617,7 +611,7 @@ function handleRetry() {
 {/snippet}
 
 {#snippet renderBalance(amount: bigint)}
-  <div class="font-mono">
+  <div>
     {
       pipe(
         BigDecimal.fromBigInt(amount),
@@ -630,69 +624,41 @@ function handleRetry() {
 
 <div class="flex grow flex-col gap-4">
   <div>
-    <Label caseSensitive>U BALANCE</Label>
-    {@render matchOption(uOnEvmBalance, renderBalance, renderBalanceSkeleton)}
+    <Label caseSensitive>BALANCE</Label>
+    {#if O.isNone(WalletStore.evmAddress)}
+      <div>—</div>
+    {:else if O.isSome(evmChain) && O.isSome(uOnEvmToken) && O.isSome(uOnEvmBalance)}
+      <TokenComponent
+        chain={evmChain.value}
+        denom={uOnEvmToken.value.denom}
+        amount={TokenRawAmount.make(uOnEvmBalance.value)}
+        showWrapping={false}
+        showSymbol={true}
+        showIcon={true}
+      />
+    {:else}
+      {@render renderBalanceSkeleton()}
+    {/if}
   </div>
 
   <div>
-    <Input
+    <UInput
       id="bondInput"
-      type="text"
-      required
-      disabled={O.isNone(uOnEvmBalance)}
-      label="Bond Amount"
-      autocorrect="off"
+      label="Amount"
       placeholder="Enter amount"
-      spellcheck="false"
-      autocomplete="off"
-      inputmode="decimal"
-      data-field="amount"
-      onbeforeinput={(event) => {
-        const { inputType, data, currentTarget } = event
-        const { value } = currentTarget
-        const proposed = value + (data ?? "")
-
-        const maxDecimals = pipe(
-          uOnEvmToken,
-          O.map(Struct.get("representations")),
-          O.flatMap(A.head),
-          O.map(Struct.get("decimals")),
-          O.getOrElse(() => 18),
-        )
-
-        const validShape = /^\d*[.,]?\d*$/.test(proposed)
-        const validDecimalsDot = !proposed.includes(".")
-          || proposed.split(".")[1].length <= maxDecimals
-        const validDecimalsComma = !proposed.includes(",")
-          || proposed.split(",")[1].length <= maxDecimals
-        const isDelete = inputType.startsWith("delete")
-        const validDecimals = validDecimalsComma && validDecimalsDot
-        const noDuplicateLeadingZeroes = !proposed.startsWith("00")
-
-        const allow = isDelete
-          || (validDecimals && validShape && noDuplicateLeadingZeroes)
-
-        if (!allow) {
-          event.preventDefault()
-        }
-      }}
-      autocapitalize="none"
-      pattern="^[0-9]*[.,]?[0-9]*$"
-      value={bondInput}
-      class="h-14 text-center text-lg"
-      oninput={(event) => {
-        bondInput = event.currentTarget.value
-      }}
+      disabled={O.isNone(uOnEvmBalance)}
+      token={uOnEvmToken}
+      balance={uOnEvmBalance}
+      bind:humanValue={bondInput}
+      bind:weiValue={bondAmount}
     />
-    {bondAmount}
   </div>
 
-  <!-- Real-time Staking Rates -->
-  <div class="flex flex-col gap-2 text-xs">
+  <div class="flex flex-col gap-3 text-xs">
     {#if O.isSome(stakingRates.current) && stakingRates.current.value._tag === "Success"}
       <div class="flex justify-between">
         <span class="text-zinc-400">Purchase rate:</span>
-        <span class="font-mono text-zinc-300">
+        <span class="text-zinc-300">
           {
             pipe(
               stakingRates.current.value.value.purchase_rate,
@@ -701,199 +667,259 @@ function handleRetry() {
           }
         </span>
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-zinc-400">Mint amount:</span>
-        <div class="flex items-center gap-1">
-          <button
-            class={cn(
-              "px-2 py-1 text-xs border rounded transition-colors",
-              slippage === 1
-                ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
-            )}
-            onclick={() => slippage = 1}
-          >
-            1%
-          </button>
-          <button
-            class={cn(
-              "px-2 py-1 text-xs border rounded transition-colors",
-              slippage === 2
-                ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
-            )}
-            onclick={() => slippage = 2}
-          >
-            2%
-          </button>
-          <button
-            class={cn(
-              "px-2 py-1 text-xs border rounded transition-colors",
-              slippage === 3
-                ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
-            )}
-            onclick={() => slippage = 3}
-          >
-            3%
-          </button>
+
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-zinc-400">Slippage tolerance:</span>
+          <div class="flex items-center gap-1">
+            <button
+              class={cn(
+                "px-2 py-1 text-xs border rounded transition-colors",
+                slippage === 1
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
+              )}
+              onclick={() => slippage = 1}
+            >
+              1%
+            </button>
+            <button
+              class={cn(
+                "px-2 py-1 text-xs border rounded transition-colors",
+                slippage === 2
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
+              )}
+              onclick={() => slippage = 2}
+            >
+              2%
+            </button>
+            <button
+              class={cn(
+                "px-2 py-1 text-xs border rounded transition-colors",
+                slippage === 3
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
+              )}
+              onclick={() => slippage = 3}
+            >
+              3%
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-zinc-400">Min you'll receive:</span>
-        <span class="font-mono text-zinc-300">
-          {
-            pipe(
-              minimumReceiveAmount,
-              O.map(bd => Utils.formatBigDecimal(bd)),
-              O.getOrElse(() => "0"),
-            )
-          } eU
-        </span>
+        
+        <div class="flex justify-between">
+          <span class="text-zinc-400">You'll receive:</span>
+          <div>
+            {#if O.isSome(evmChain) && O.isSome(eUOnEvmToken) && O.isSome(minimumReceiveAmount)}
+              <TokenComponent
+                chain={evmChain.value}
+                denom={eUOnEvmToken.value.denom}
+                amount={TokenRawAmount.make((() => {
+                  const bd = minimumReceiveAmount.value
+                  const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
+                  const normalized = BigDecimal.normalize(result)
+                  return normalized.scale >= 0
+                    ? normalized.value / (10n ** BigInt(normalized.scale))
+                    : normalized.value * (10n ** BigInt(-normalized.scale))
+                })())}
+                showWrapping={false}
+                showSymbol={true}
+                showIcon={true}
+                maxDecimals={4}
+              />
+            {:else}
+              <span class="text-zinc-300">
+                {
+                  pipe(
+                    minimumReceiveAmount,
+                    O.map(bd => Utils.formatBigDecimal(bd)),
+                    O.getOrElse(() => "0"),
+                  )
+                } eU
+              </span>
+            {/if}
+          </div>
+        </div>
       </div>
     {:else}
       <div class="flex justify-between">
-        <span class="text-zinc-400">Loading rates...</span>
-        <div class="w-16 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+        <span class="text-zinc-400">Purchase rate:</span>
+        <div class="w-20 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+      </div>
+      
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-zinc-400">Slippage tolerance:</span>
+          <div class="flex items-center gap-1">
+            <div class="w-8 h-6 bg-zinc-700/50 rounded animate-pulse"></div>
+            <div class="w-8 h-6 bg-zinc-700/50 rounded animate-pulse"></div>
+            <div class="w-8 h-6 bg-zinc-700/50 rounded animate-pulse"></div>
+          </div>
+        </div>
+        
+        <div class="flex justify-between">
+          <span class="text-zinc-400">You'll receive:</span>
+          <div class="w-24 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+        </div>
       </div>
     {/if}
   </div>
 
-  <!-- Status Display -->
-  {#if !BondState.$is("Ready")(bondState)}
-    <div class="bg-zinc-950/50 rounded-lg p-4 border border-zinc-800">
-      <div class="flex items-center gap-3">
-        <div class="size-8 rounded-lg {isError ? 'bg-red-500/20 border-red-500/40' : isSuccess ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} flex items-center justify-center flex-shrink-0">
-          {#if isBonding}
-            <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin">
-            </div>
-          {:else if isSuccess}
-            <svg
-              class="w-4 h-4 text-emerald-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          {:else if isError}
-            <svg
-              class="w-4 h-4 text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01"
-              />
-            </svg>
-          {/if}
-        </div>
-        <div class="flex-1">
-          <div class="text-sm font-medium text-white">
-            {
-              Match.value(bondState).pipe(
-                Match.when(BondState.$is("SwitchingChain"), () => {
-                  const isSafeWallet = getLastConnectedWalletId() === "safe"
-                  return isSafeWallet
-                    ? "Preparing Safe Transaction"
-                    : "Switching to Sepolia"
-                }),
-                Match.when(BondState.$is("CheckingAllowance"), () =>
-                  "Checking Token Allowance"),
-                Match.when(BondState.$is("ApprovingAllowance"), () =>
-                  "Approving Token Spending"),
-                Match.when(BondState.$is("AllowanceSubmitted"), () =>
-                  "Allowance Submitted"),
-                Match.when(BondState.$is("WaitingForAllowanceConfirmation"), () =>
-                  "Allowance Confirming"),
-                Match.when(BondState.$is("AllowanceApproved"), () =>
-                  "Allowance Approved"),
-                Match.when(BondState.$is("CreatingTokenOrder"), () =>
-                  "Creating Token Order"),
-                Match.when(BondState.$is("PreparingBondTransaction"), () =>
-                  "Preparing Bond Transaction"),
-                Match.when(BondState.$is("ConfirmingBond"), () =>
-                  "Confirming Bond"),
-                Match.when(BondState.$is("BondSubmitted"), () =>
-                  "Bond Submitted"),
-                Match.when(BondState.$is("WaitingForConfirmation"), () =>
-                  "Transaction Confirming"),
-                Match.when(BondState.$is("WaitingForIndexer"), () =>
-                  "Indexing Transaction"),
-                Match.when(BondState.$is("Success"), () =>
-                  "Bond Successful"),
+  <div class="bg-zinc-950/50 rounded-lg p-4 border border-zinc-800">
+    <div class="flex items-center gap-3">
+        <div class="size-8 rounded-lg {isError ? 'bg-red-500/20 border-red-500/40' : isSuccess ? 'bg-accent/20 border-accent/40' : BondState.$is("Ready")(bondState) ? 'bg-zinc-700/20 border-zinc-600/40' : 'bg-accent/20 border-accent/40'} flex items-center justify-center flex-shrink-0">
+        {#if BondState.$is("Ready")(bondState)}
+          <svg
+            class="w-4 h-4 text-zinc-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        {:else if isBonding}
+          <div class="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin">
+          </div>
+        {:else if isSuccess}
+          <svg
+            class="w-4 h-4 text-accent"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        {:else if isError}
+          <svg
+            class="w-4 h-4 text-red-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01"
+            />
+          </svg>
+        {/if}
+      </div>
+      <div class="flex-1">
+        <div class="text-sm font-medium text-white">
+          {
+            Match.value(bondState).pipe(
+              Match.when(BondState.$is("Ready"), () =>
+                O.isNone(WalletStore.evmAddress)
+                  ? "Connect your wallet to start staking"
+                  : bondInput
+                  ? `Ready to stake ${bondInput} U`
+                  : "Enter amount to stake U tokens"),
+              Match.when(BondState.$is("SwitchingChain"), () => {
+                const isSafeWallet = getLastConnectedWalletId() === "safe"
+                return isSafeWallet
+                  ? "Preparing Safe Transaction"
+                  : "Switching to mainnet"
+              }),
+              Match.when(BondState.$is("CheckingAllowance"), () =>
+               "Checking Token Allowance"),
+              Match.when(BondState.$is("ApprovingAllowance"), () =>
+               `Approving ${bondInput || "0"} U`),
+              Match.when(BondState.$is("AllowanceSubmitted"), () =>
+               `Approval submitted`),
+              Match.when(BondState.$is("WaitingForAllowanceConfirmation"), () =>
+               `Confirming submission`),
+              Match.when(BondState.$is("AllowanceApproved"), () =>
+               `Approved ${bondInput || "0"} U`),
+              Match.when(BondState.$is("CreatingTokenOrder"), () =>
+               `Creating order`),
+              Match.when(BondState.$is("PreparingBondTransaction"), () =>
+               `Preparing bond`),
+              Match.when(BondState.$is("ConfirmingBond"), () =>
+               `Confirm bond`),
+              Match.when(BondState.$is("BondSubmitted"), () =>
+               `Bond successfully submitted`),
+              Match.when(BondState.$is("WaitingForConfirmation"), () =>
+               `Confirming submission`),
+              Match.when(BondState.$is("WaitingForIndexer"), () =>
+               `Indexing submission`),
+              Match.when(BondState.$is("Success"), () =>
+               `Bond submitted`),
                 Match.when(BondState.$is("Error"), () =>
-                  "Bond Failed"),
-                Match.when(BondState.$is("Ready"), () =>
-                  "Ready"),
-                Match.exhaustive,
-              )
-            }
-          </div>
-          <div class="text-xs {isError ? 'text-red-400' : isSuccess ? 'text-emerald-400' : 'text-blue-400'} mt-1">
-            {
-              Match.value(bondState).pipe(
-                Match.when(BondState.$is("SwitchingChain"), () => {
-                  const isSafeWallet = getLastConnectedWalletId() === "safe"
-                  return isSafeWallet
-                    ? "Preparing transaction for Safe wallet..."
-                    : "Please switch to Sepolia network in your wallet"
-                }),
-                Match.when(BondState.$is("CheckingAllowance"), () =>
-                  "Reading current token allowance from blockchain..."),
-                Match.when(BondState.$is("ApprovingAllowance"), () =>
-                  "Confirm token approval transaction in your wallet"),
-                Match.when(BondState.$is("AllowanceSubmitted"), ({ txHash }) =>
-                  `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
-                Match.when(
-                  BondState.$is("WaitingForAllowanceConfirmation"),
-                  ({ txHash }) =>
-                    `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`,
-                ),
-                Match.when(BondState.$is("AllowanceApproved"), () =>
-                  "Token spending approved, proceeding..."),
-                Match.when(BondState.$is("CreatingTokenOrder"), () =>
-                  "Building cross-chain token order..."),
-                Match.when(BondState.$is("PreparingBondTransaction"), () =>
-                  "Preparing bond transaction with contracts..."),
-                Match.when(BondState.$is("ConfirmingBond"), () =>
-                  "Confirm bond transaction in your wallet"),
-                Match.when(BondState.$is("BondSubmitted"), ({ txHash }) =>
-                  `Transaction submitted: ${txHash.slice(0, 10)}...`),
-                Match.when(BondState.$is("WaitingForConfirmation"), ({ txHash }) =>
-                  `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
-                Match.when(BondState.$is("WaitingForIndexer"), ({ txHash }) =>
-                  `Transaction confirmed, indexing data...`),
-                Match.when(BondState.$is("Success"), ({ txHash }) =>
-                  `Success! TX: ${txHash.slice(0, 10)}...`),
-                Match.when(BondState.$is("Error"), ({ message }) =>
-                  message),
-                Match.when(BondState.$is("Ready"), () =>
-                  ""),
-                Match.exhaustive,
-              )
-            }
-          </div>
+               "Bond Failed"),
+              Match.exhaustive,
+            )
+          }
+        </div>
+        <div class="text-xs {BondState.$is("Ready")(bondState) ? 'text-zinc-400' : isError ? 'text-red-400' : isSuccess ? 'text-accent' : 'text-accent'} mt-1">
+          {
+            Match.value(bondState).pipe(
+              Match.when(BondState.$is("Ready"), () =>
+                O.isNone(WalletStore.evmAddress)
+                  ? "Connect wallet to see balance and start staking"
+                  : bondInput
+                  ? "Click stake button to begin transaction"
+                  : "Enter the amount of U tokens you want to stake"),
+              Match.when(BondState.$is("SwitchingChain"), () => {
+                const isSafeWallet = getLastConnectedWalletId() === "safe"
+                return isSafeWallet
+                  ? "Preparing transaction for Safe wallet..."
+                  : "Please switch to mainnet in your wallet"
+              }),
+              Match.when(BondState.$is("CheckingAllowance"), () =>
+                "Reading current token allowance from blockchain..."),
+              Match.when(BondState.$is("ApprovingAllowance"), () =>
+                "Confirm token approval transaction in your wallet"),
+              Match.when(BondState.$is("AllowanceSubmitted"), ({ txHash }) =>
+                `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
+              Match.when(
+                BondState.$is("WaitingForAllowanceConfirmation"),
+                ({ txHash }) =>
+                  `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`,
+              ),
+              Match.when(BondState.$is("AllowanceApproved"), () =>
+                "Token spending approved, proceeding..."),
+              Match.when(BondState.$is("CreatingTokenOrder"), () =>
+                "Building cross-chain token order..."),
+              Match.when(BondState.$is("PreparingBondTransaction"), () =>
+                "Preparing bond transaction with contracts..."),
+              Match.when(BondState.$is("ConfirmingBond"), () =>
+                "Confirm bond transaction in your wallet"),
+              Match.when(BondState.$is("BondSubmitted"), ({ txHash }) =>
+                `Transaction submitted: ${txHash.slice(0, 10)}...`),
+              Match.when(BondState.$is("WaitingForConfirmation"), ({ txHash }) =>
+                `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
+              Match.when(BondState.$is("WaitingForIndexer"), ({ txHash }) =>
+                `Transaction confirmed, indexing data...`),
+              Match.when(BondState.$is("Success"), ({ txHash }) =>
+                `Success! TX: ${txHash.slice(0, 10)}...`),
+              Match.when(BondState.$is("Error"), ({ message }) =>
+                message),
+              Match.exhaustive,
+            )
+          }
         </div>
       </div>
     </div>
-  {/if}
+  </div>
 
   <div>
     <Button
-      class="w-full"
+      class="w-full relative z-30"
       variant={isError ? "secondary" : "primary"}
-      disabled={isBonding || isSuccess || O.isNone(bondAmount) || O.isNone(WalletStore.evmAddress)}
-      onclick={isError ? handleRetry : handleBondSubmit}
+      disabled={isBonding || O.isNone(WalletStore.evmAddress)}
+      onclick={isError ? handleRetry : isSuccess ? handleRetry : handleBondSubmit}
     >
       {#if isBonding}
         <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
@@ -934,7 +960,7 @@ function handleRetry() {
           Match.when(BondState.$is("BondSubmitted"), () => "Submitted"),
           Match.when(BondState.$is("WaitingForConfirmation"), () => "Confirming..."),
           Match.when(BondState.$is("WaitingForIndexer"), () => "Indexing..."),
-          Match.when(BondState.$is("Success"), () => "Success!"),
+          Match.when(BondState.$is("Success"), () => "Stake Again"),
           Match.when(BondState.$is("Error"), () => "Try Again"),
           Match.exhaustive,
         )

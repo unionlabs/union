@@ -41,7 +41,15 @@ const handleClick = () => {
 
 const status = $derived(
   item._tag === "Bond"
-    ? item.status
+    // For bonds, check both bond_success and delivery_success
+    ? Option.isSome(item.bond_success) && item.bond_success.value
+        && Option.isSome(item.delivery_success) && item.delivery_success.value
+      ? "success"
+      : (Option.isSome(item.bond_success) && !item.bond_success.value)
+          || (Option.isSome(item.delivery_success) && !item.delivery_success.value)
+      ? "failure"
+      : "pending"
+    // For unbonds, use existing logic
     : pipe(
       item.success,
       Option.map(success => success ? "success" : "failure"),
@@ -49,13 +57,60 @@ const status = $derived(
     ),
 )
 
-const statusConfig = $derived(
-  status === "success"
-    ? { bg: "bg-emerald-500/20 border-emerald-500/40", icon: "text-emerald-400", type: "checkmark" }
-    : status === "failure"
-    ? { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
-    : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" },
-)
+const statusConfig = $derived(() => {
+  if (status === "success") {
+    return { bg: "bg-accent/20 border-accent/40", icon: "text-accent", type: "checkmark" }
+  }
+  if (status === "failure") {
+    return { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
+  }
+
+  // For pending unbonds, show time-based display
+  if (item._tag === "Unbond" && item.unbond_send_timestamp) {
+    const sendTime = new Date(item.unbond_send_timestamp.toString())
+    const now = new Date()
+
+    // Check for invalid dates
+    if (isNaN(sendTime.getTime()) || isNaN(now.getTime())) {
+      return {
+        bg: "bg-orange-500/20 border-orange-500/40",
+        icon: "text-orange-400",
+        type: "spinner",
+      }
+    }
+
+    const unbondPeriodMs = 27 * 24 * 60 * 60 * 1000
+    const elapsedMs = now.getTime() - sendTime.getTime()
+    const remainingMs = Math.max(0, unbondPeriodMs - elapsedMs)
+    const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000))
+    const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+
+    // Show spinner only when within ±4h window
+    if (remainingMs <= 4 * 60 * 60 * 1000) { // 4 hours in ms
+      return {
+        bg: "bg-orange-500/20 border-orange-500/40",
+        icon: "text-orange-400",
+        type: "spinner",
+      }
+    }
+
+    // Show time remaining with validation
+    const timeText = remainingDays > 0
+      ? `${remainingDays}d`
+      : remainingHours > 0
+      ? `${remainingHours}h`
+      : "0h"
+    return {
+      bg: "bg-orange-500/20 border-orange-500/40",
+      icon: "text-orange-400",
+      type: "time",
+      text: timeText,
+    }
+  }
+
+  // Default pending state (bonds or unbonds without timestamp)
+  return { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" }
+})
 </script>
 
 {#if Option.isSome(chains.data)}
@@ -104,13 +159,17 @@ const statusConfig = $derived(
         value={item._tag === "Bond" ? item.bond_send_timestamp : item.unbond_send_timestamp}
         showSeconds={false}
       />
-      <div class="size-6 rounded border {statusConfig.bg} flex items-center justify-center flex-shrink-0">
-        {#if statusConfig.type === "spinner"}
+      <div class="size-6 rounded border {statusConfig().bg} flex items-center justify-center flex-shrink-0">
+        {#if statusConfig().type === "spinner"}
           <div class="w-3 h-3 border border-orange-400 border-t-transparent rounded-full animate-spin">
           </div>
-        {:else if statusConfig.type === "checkmark"}
+        {:else if statusConfig().type === "time"}
+          <span class="text-[10px] font-semibold {statusConfig().icon} leading-none">
+            {statusConfig().text}
+          </span>
+        {:else if statusConfig().type === "checkmark"}
           <svg
-            class="w-3 h-3 {statusConfig.icon}"
+            class="w-3 h-3 {statusConfig().icon}"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -122,9 +181,9 @@ const statusConfig = $derived(
               d="M5 13l4 4L19 7"
             />
           </svg>
-        {:else if statusConfig.type === "warning"}
+        {:else if statusConfig().type === "warning"}
           <svg
-            class="w-3 h-3 {statusConfig.icon}"
+            class="w-3 h-3 {statusConfig().icon}"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

@@ -1,22 +1,25 @@
 <script lang="ts">
-// WORK IN PROGRESS
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import { formatIncentive } from "$lib/services/incentive"
 import { matchRuntimeResult } from "$lib/utils/snippets.svelte"
+import type { Chain, Token } from "@unionlabs/sdk/schema"
+import { TokenRawAmount } from "@unionlabs/sdk/schema"
+import { pipe } from "effect"
 import type { Exit, Option } from "effect"
+import * as O from "effect/Option"
 
 interface Props {
   incentives: Option.Option<Exit.Exit<any, any>>
+  stakeAmount: Option.Option<bigint>
+  evmChain: Option.Option<Chain>
+  uOnEvmToken: Option.Option<Token>
 }
 
-let { incentives }: Props = $props()
+let { incentives, stakeAmount, evmChain, uOnEvmToken }: Props = $props()
 
-let selectedTab: "incentive" | "rewards" = $state("incentive")
-
-$effect(() => {
-  console.log("IncentiveCard received incentives:", incentives)
-})
+let selectedTab: "incentives" | "stats" = $state("incentives")
 
 function formatPercentage(value: number): string {
   return formatIncentive(value)
@@ -32,25 +35,141 @@ function formatLargeNumber(value: number): string {
   }
   return value.toLocaleString()
 }
+
+const incentiveAmounts = $derived(pipe(
+  O.Do,
+  O.bind("amount", () => stakeAmount),
+  O.bind("incentiveData", () =>
+    pipe(
+      incentives,
+      O.filter(exit => exit._tag === "Success"),
+      O.map(exit => exit.value),
+    )),
+  O.filter(({ amount }) => amount > 0n),
+  O.map(({ amount, incentiveData }) => {
+    const apy = incentiveData.rates.yearly
+
+    const apyBasisPoints = BigInt(Math.floor(apy * 10000))
+    const yearlyWei = (amount * apyBasisPoints) / 10000n
+
+    return {
+      yearly: yearlyWei,
+      monthly: yearlyWei / 12n,
+      weekly: yearlyWei / 52n,
+      daily: yearlyWei / 365n,
+      apy: apy * 100,
+    }
+  }),
+))
 </script>
 
 {#snippet renderIncentiveData(data: any)}
   <div class="flex flex-col h-full">
-    <!-- Header with Tabs -->
-    <div class="p-2 border-b border-zinc-800">
+    <div class="p-4 border-b border-zinc-800">
       <Tabs
         items={[
-          { id: "incentive", label: "Incentive" },
+          { id: "incentives", label: "Incentives" },
+          { id: "stats", label: "Stats" },
         ]}
         activeId={selectedTab}
-        onTabChange={(id) => selectedTab = id as "incentive" | "rewards"}
+        onTabChange={(id) => selectedTab = id as "incentives" | "stats"}
       />
     </div>
 
-    <!-- Content -->
-    <div class="p-2 flex flex-col flex-1">
-      {#if selectedTab === "incentive"}
-        <!-- Incentive Tab Content (APY equivalent) -->
+    <div class="p-4 flex flex-col flex-1">
+      {#if selectedTab === "incentives"}
+        <div class="relative flex-1">
+          <div class="space-y-3">
+            <div class="flex justify-between items-center p-3 bg-zinc-800/20 rounded-lg">
+              <span class="text-sm text-zinc-400">Daily (est):</span>
+              <div>
+                {#if O.isSome(evmChain) && O.isSome(uOnEvmToken)}
+                  <TokenComponent
+                    chain={evmChain.value}
+                    denom={uOnEvmToken.value.denom}
+                    amount={TokenRawAmount.make(
+                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.daily : 0n,
+                    )}
+                    showWrapping={false}
+                    showSymbol={true}
+                    showIcon={true}
+                    maxDecimals={4}
+                  />
+                {:else}
+                  <div class="w-20 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+                {/if}
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-zinc-800/20 rounded-lg">
+              <span class="text-sm text-zinc-400">Weekly (est):</span>
+              <div>
+                {#if O.isSome(evmChain) && O.isSome(uOnEvmToken)}
+                  <TokenComponent
+                    chain={evmChain.value}
+                    denom={uOnEvmToken.value.denom}
+                    amount={TokenRawAmount.make(
+                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.weekly : 0n,
+                    )}
+                    showWrapping={false}
+                    showSymbol={true}
+                    showIcon={true}
+                    maxDecimals={4}
+                  />
+                {:else}
+                  <div class="w-20 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+                {/if}
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-zinc-800/20 rounded-lg">
+              <span class="text-sm text-zinc-400">Monthly (est):</span>
+              <div>
+                {#if O.isSome(evmChain) && O.isSome(uOnEvmToken)}
+                  <TokenComponent
+                    chain={evmChain.value}
+                    denom={uOnEvmToken.value.denom}
+                    amount={TokenRawAmount.make(
+                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.monthly : 0n,
+                    )}
+                    showWrapping={false}
+                    showSymbol={true}
+                    showIcon={true}
+                    maxDecimals={4}
+                  />
+                {:else}
+                  <div class="w-20 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+                {/if}
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-zinc-800/20 rounded-lg">
+              <span class="text-sm text-zinc-400">Yearly (est):</span>
+              <div>
+                {#if O.isSome(evmChain) && O.isSome(uOnEvmToken)}
+                  <TokenComponent
+                    chain={evmChain.value}
+                    denom={uOnEvmToken.value.denom}
+                    amount={TokenRawAmount.make(
+                      O.isSome(incentiveAmounts) ? incentiveAmounts.value.yearly : 0n,
+                    )}
+                    showWrapping={false}
+                    showSymbol={true}
+                    showIcon={true}
+                    maxDecimals={4}
+                  />
+                {:else}
+                  <div class="w-20 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
+                {/if}
+              </div>
+            </div>
+          </div>
+
+          <div class="text-xs text-zinc-500 text-center mt-3">
+            Incentives are estimates based on current rate
+          </div>
+        </div>
+      {:else if selectedTab === "stats"}
         <div class="flex justify-center mb-2">
           <div class="flex flex-col items-center justify-center p-4 bg-zinc-800/30 rounded-lg w-full">
             <div class="text-4xl font-bold text-accent mb-2">
@@ -60,7 +179,6 @@ function formatLargeNumber(value: number): string {
           </div>
         </div>
 
-        <!-- 2x2 Grid of All Metrics -->
         <div class="grid grid-cols-2 gap-2 flex-1">
           <div class="flex flex-col items-center justify-center p-4 bg-zinc-800/30 rounded-lg">
             <div class="text-lg font-mono text-white mb-1">

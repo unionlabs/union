@@ -127,7 +127,7 @@ const bondData = $derived(pipe(
         </div>
       </div>
     {:then bond}
-      {@const status = bond.bond_success === true ? "success" : bond.bond_success === false ? "failure" : "pending"}
+      {@const overallStatus = bond.bond_success && bond.delivery_success ? "success" : (bond.bond_success === false || bond.delivery_success === false) ? "failure" : "pending"}
         
         <div class="p-6">
           <h1 class="text-2xl font-bold mb-4">Bond</h1>
@@ -163,13 +163,43 @@ const bondData = $derived(pipe(
                 <Label>Status</Label>
                 <div class="text-sm">
                   <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {
-                    status === 'success' 
+                    overallStatus === 'success' 
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
-                      : status === 'failure'
+                      : overallStatus === 'failure'
                         ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                         : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                   }">
-                    {status}
+                    {overallStatus}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label>Bond</Label>
+                <div class="text-sm">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {
+                    bond.bond_success === true
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
+                      : bond.bond_success === false
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                  }">
+                    {bond.bond_success === true ? "success" : bond.bond_success === false ? "failure" : "pending"}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label>Delivery</Label>
+                <div class="text-sm">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {
+                    bond.delivery_success === true
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
+                      : bond.delivery_success === false
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                  }">
+                    {bond.delivery_success === true ? "success" : bond.delivery_success === false ? "failure" : "pending"}
                   </span>
                 </div>
               </div>
