@@ -67,6 +67,8 @@ module vault::vault {
     use std::string::{Self, String};
     use std::type_name;
 
+    use vault::metadata::{Self, Metadata};
+
     const E_UNAUTHORIZED: u64 = 1;
     const E_INVALID_PACKET_HASH: u64 = 2;
     const E_INTENT_WHITELISTED_ONLY: u64 = 3;
@@ -101,14 +103,8 @@ module vault::vault {
     public struct TreasuryCapWithMetadata<phantom T> has key, store {
         id: UID,
         cap: TreasuryCap<T>,
-        name: String,
-        symbol: String,
-        decimals: u8,
-        icon_url: Option<String>,
-        description: String,
-        owner: address
+        metadata: Metadata,
     }
-
     
     fun init(ctx: &mut TxContext) {
         transfer::share_object(Vault {
@@ -139,12 +135,14 @@ module vault::vault {
         vault.token_type_to_treasury.add(string::from_ascii(typename_t.into_string()), TreasuryCapWithMetadata {
             id: object::new(ctx),
             cap: capability,
-            name: coin::get_name(metadata),
-            symbol: string::from_ascii(coin::get_symbol(metadata)),
-            decimals: coin::get_decimals(metadata),
-            icon_url: coin::get_icon_url(metadata).map!(|url| string::utf8(url.inner_url().into_bytes())),
-            description: coin::get_description(metadata),
-            owner
+            metadata: metadata::new(
+                coin::get_name(metadata),
+                string::from_ascii(coin::get_symbol(metadata)),
+                coin::get_decimals(metadata),
+                coin::get_icon_url(metadata).map!(|url| string::utf8(url.inner_url().into_bytes())),
+                coin::get_description(metadata),
+                owner
+            )
         });
     }
 
@@ -159,7 +157,7 @@ module vault::vault {
         let token = type_name::get<T>().into_string();
         let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
 
-        assert!(cap.owner == ctx.sender(), E_UNAUTHORIZED);
+        assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
 
         vault.fungible_counterparties.add(
             FungibleLane {
@@ -183,7 +181,7 @@ module vault::vault {
         let token = type_name::get<T>().into_string();
         let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
 
-        assert!(cap.owner == ctx.sender(), E_UNAUTHORIZED);
+        assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
 
         packet_hashes.do!(|hash| {
             assert!(hash.length() == 32, E_INVALID_PACKET_HASH);
@@ -271,10 +269,51 @@ module vault::vault {
         let cap = vault.token_type_to_treasury.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
 
         if (ctx.sender() != @zkgm) {
-            assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
+            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
         };
         
         coin::burn<T>(&mut cap.cap, c)
+    }
+
+    /// Coin admin functions
+    public fun mint<T>(
+        vault: &mut Vault,
+        value: u64,
+        ctx: &mut TxContext
+    ): Coin<T> {
+        let typename_t = string::from_ascii(type_name::get<T>().into_string());
+        let cap: &mut TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow_mut(typename_t);
+
+        if (ctx.sender() != @zkgm) {
+            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
+        };
+        
+        coin::mint<T>(&mut cap.cap, value, ctx)
+    }
+
+    public fun mint_and_transfer<T>(
+        vault: &mut Vault,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {
+        let typename_t = string::from_ascii(type_name::get<T>().into_string());
+        let cap: &mut TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow_mut(typename_t);
+
+        if (ctx.sender() != @zkgm) {
+            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
+        };
+        
+        coin::mint_and_transfer<T>(&mut cap.cap, amount, recipient, ctx);
+    }
+
+    public fun get_metadata<T>(
+        vault: &Vault,
+    ): &Metadata {
+        let typename_t = string::from_ascii(type_name::get<T>().into_string());
+        let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(typename_t);
+
+        &cap.metadata
     }
     
     fun get_treasury_cap<T>(
