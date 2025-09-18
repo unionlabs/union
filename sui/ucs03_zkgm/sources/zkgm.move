@@ -211,6 +211,12 @@ module zkgm::zkgm {
         salt: vector<u8>,        
     }
 
+    public struct SendCtx {
+        channel_id: u32,
+        salt: vector<u8>,
+        instructions: vector<Instruction>
+    }
+
     public struct AckCtx {
         packet_ctxs: vector<ZkgmPacketAckCtx>,
         packets: vector<Packet>,
@@ -333,27 +339,34 @@ module zkgm::zkgm {
         );
     }
 
+    public fun begin_send(
+        channel_id: u32,
+        salt: vector<u8>,
+    ): SendCtx {
+        SendCtx {
+            channel_id,
+            salt,
+            instructions: vector::empty()
+        }
+    }
+
     public fun send_with_coin<T>(
         zkgm: &mut RelayStore,
         ibc_store: &mut ibc::IBCStore,
-        clock: &Clock,
         coin: Coin<T>,
-        channel_id: u32,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: vector<u8>,
         version: u8,
         opcode: u8,
         operand: vector<u8>,
+        mut send_ctx: SendCtx,
         ctx: &mut TxContext
-    ) {
+    ): SendCtx {
         let instruction = instruction::new(version, opcode, operand);
         let sender = ctx.sender();
         let coin = zkgm.verify_internal<T>(
             ibc_store,
             option::some(coin),
             sender,
-            channel_id,
+            send_ctx.channel_id,
             0,
             instruction,
             ctx
@@ -361,13 +374,36 @@ module zkgm::zkgm {
         // This guarantees that the coin is used by some instruction
         coin.destroy_none();
 
-        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
+        send_ctx.instructions.push_back(instruction);
+
+        send_ctx
+    }
+
+    public fun end_send(
+        ibc_store: &mut ibc::IBCStore,
+        clock: &Clock,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        send_ctx: SendCtx,
+        ctx: &mut TxContext,
+    ) {
+        let SendCtx { channel_id, salt, instructions } = send_ctx;
+
+        let instruction = if (instructions.length() > 1) {
+            instructions.do_ref!(|instr| {
+                assert!(helper::is_allowed_batch_instruction(instr.opcode()), E_INVALID_BATCH_INSTRUCTION);
+            });
+            instruction::new(INSTR_VERSION_0, OP_BATCH, batch::new(instructions).encode())
+        } else {
+            instructions[0]
+        };
+
         ibc_store.send_packet(
             clock,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack),
+            zkgm_packet::encode(&zkgm_packet::new(salt, 0, instruction)),
             IbcAppWitness {},
             ctx
         );
