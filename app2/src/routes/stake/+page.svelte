@@ -230,7 +230,7 @@ $inspect(data)
 
     <Card class="p-4">
       <div class="flex flex-col gap-2">
-        <div class="text-sm text-zinc-400 uppercase tracking-wide">APY</div>
+        <div class="text-sm text-zinc-400 uppercase tracking-wide">Staking Rewards</div>
         <div class="flex items-center gap-2">
           {#if O.isSome(incentives.current)
               && incentives.current.value._tag === "Success"}
