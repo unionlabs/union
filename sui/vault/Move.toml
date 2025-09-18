@@ -15,4 +15,6 @@ zkgm = "_"
 
 [dev-dependencies]
 [dev-addresses]
-
+vault = "0x111"
+ibc = "0x222"
+zkgm = "0x333"
