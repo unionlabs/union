@@ -157,6 +157,36 @@ const unbondData = $derived(pipe(
                   </span>
                 </div>
               </div>
+
+              <!-- Unbond Progress -->
+              {#if unbond.unbond_send_timestamp && status === 'pending'}
+                {@const sendTime = new Date(unbond.unbond_send_timestamp)}
+                {@const now = new Date()}
+                {@const unbondPeriodMs = 27 * 24 * 60 * 60 * 1000}
+                {@const elapsedMs = now.getTime() - sendTime.getTime()}
+                {@const progressPercent = Math.min(100, Math.max(0, (elapsedMs / unbondPeriodMs) * 100))}
+                {@const remainingMs = Math.max(0, unbondPeriodMs - elapsedMs)}
+                {@const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000))}
+                {@const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))}
+                
+                <div>
+                  <Label>Unbond Progress</Label>
+                  <div class="space-y-2">
+                    <div class="flex justify-between text-xs text-zinc-400">
+                      <span>
+                        {remainingDays > 0 ? `${remainingDays}d ${remainingHours}h remaining ±4h` : remainingHours > 0 ? `${remainingHours}h remaining ±4h` : 'Almost ready ±4h'}
+                      </span>
+                      <span>{progressPercent.toFixed(1)}%</span>
+                    </div>
+                    <div class="w-full bg-zinc-700 rounded-full h-2">
+                      <div 
+                        class="bg-accent h-2 rounded-full transition-all duration-300" 
+                        style="width: {progressPercent}%"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              {/if}
               
               <div>
                 <Label>Timestamp</Label>
