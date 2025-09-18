@@ -15,6 +15,8 @@ let
       cp --no-preserve=mode -r ${evm-contracts}/* .
       cp --no-preserve=mode -r ${evm-sources}/* .
       WETH_ADDRESS="0x0000000000000000000000000000000000000000" \
+      DEPLOYER="0x0000000000000000000000000000000000000000" \
+      SENDER="0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD" \
         RATE_LIMIT_ENABLED="false" \
         PRIVATE_KEY=0x${builtins.readFile ./../genesis/devnet-eth/dev-key0.prv} \
         FOUNDRY_PROFILE="script" \
