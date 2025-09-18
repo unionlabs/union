@@ -1,10 +1,10 @@
 /**
- * @title Send Funds Holesky → Sepolia
- * @description Example transfer from Holesky to Sepolia.
+ * @title Send Funds Union → Sepolia
+ * @description Example transfer from Union to Sepolia.
  * @badge ✓:success
  */
 /// <reference types="effect" />
-/// <reference types="viem" />
+/// <reference types="@cosmjs/math" />
 // @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // @paths: {"@unionlabs/sdk-cosmos": ["../ts-sdk-cosmos/src"], "@unionlabs/sdk-cosmos/*": ["../ts-sdk-cosmos/src/*"]}
 // @ts-ignore
@@ -14,7 +14,6 @@ if (typeof BigInt.prototype.toJSON !== "function") {
     return this.toString()
   }
 }
-import { Decimal } from "@cosmjs/math"
 // ---cut---
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
@@ -70,13 +69,13 @@ const program = Effect.gen(function*() {
       "memo memo memo",
       { prefix: "union" },
     ),
-    { gasPrice: new GasPrice(Decimal.one(18), "au") },
+    { gasPrice: GasPrice.fromString("100000au") },
   )),
   Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
   Effect.provide(ChainRegistry.Default),
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
-Effect.runPromise(program as unknown as any)
+Effect.runPromise(program)
   .then(console.log)
   .catch(console.error)

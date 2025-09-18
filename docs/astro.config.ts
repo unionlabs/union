@@ -296,12 +296,18 @@ export default defineConfig({
                   label: "Getting Started",
                   link: "/integrations/typescript",
                 },
-                // {
-                //   label: "Examples (EVM)",
-                //   autogenerate: {
-                //     directory: "/integrations/typescript/examples/evm",
-                //   },
-                // },
+                {
+                  label: "Examples (EVM)",
+                  autogenerate: {
+                    directory: "/integrations/typescript/examples/evm",
+                  },
+                },
+                {
+                  label: "Examples (Cosmos)",
+                  autogenerate: {
+                    directory: "/integrations/typescript/examples/cosmos",
+                  },
+                },
               ],
             },
             {
@@ -380,18 +386,22 @@ export default defineConfig({
         },
       ],
       plugins: [
-        // examplesToPages({
-        //   baseDir: "../ts-sdk-evm/examples",
-        //   entryPoints: [
-        //     // "../ts-sdk/examples/UCS03/*.ts",
-        //     // "../ts-sdk/examples/Sui/*.ts",
-        //     // "../ts-sdk/examples/EVM/*.ts",
-        //     // "../ts-sdk/examples/Cosmos/*.ts",
-        //     "../ts-sdk-evm/examples/*.ts",
-        //   ],
-        //   outDir: "./src/content/docs/integrations/typescript/examples/evm",
-        //   clean: true,
-        // }),
+        examplesToPages({
+          baseDir: "../ts-sdk-evm/examples",
+          entryPoints: [
+            "../ts-sdk-evm/examples/*.ts",
+          ],
+          outDir: "./src/content/docs/integrations/typescript/examples/evm",
+          clean: true,
+        }),
+        examplesToPages({
+          baseDir: "../ts-sdk-cosmos/examples",
+          entryPoints: [
+            "../ts-sdk-cosmos/examples/*.ts",
+          ],
+          outDir: "./src/content/docs/integrations/typescript/examples/cosmos",
+          clean: true,
+        }),
         starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {

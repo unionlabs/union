@@ -98,6 +98,6 @@ const program = Effect.gen(function*() {
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
-Effect.runPromise(program as unknown as any)
+Effect.runPromise(program)
   .then(console.log)
   .catch(console.error)

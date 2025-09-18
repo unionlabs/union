@@ -39,6 +39,8 @@
       "@cosmjs/stargate": "patches/@cosmjs__stargate.patch"
     },
     "overrides": {
+      "@cosmjs/math": "0.33.1",
+      "viem": "2.33.3",
       "ansi-regex": "<6.2.1",
       "ansi-styles": "<6.2.2",
       "backslash": "<0.2.1",

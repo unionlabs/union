@@ -4,7 +4,7 @@
  * @badge ✓:success
  */
 /// <reference types="effect" />
-/// <reference types="viem" />
+/// <reference types="@cosmjs/math" />
 // @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // @paths: {"@unionlabs/sdk-cosmos": ["../ts-sdk-cosmos/src"], "@unionlabs/sdk-cosmos/*": ["../ts-sdk-cosmos/src/*"]}
 // @ts-ignore
@@ -14,7 +14,6 @@ if (typeof BigInt.prototype.toJSON !== "function") {
     return this.toString()
   }
 }
-import { Decimal } from "@cosmjs/math"
 // ---cut---
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
@@ -63,7 +62,7 @@ const program = Effect.gen(function*() {
       "bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh",
       "https://rpc.bbn-1.babylon.chain.kitchen",
       signer,
-      { gasPrice: new GasPrice(Decimal.one(18), "ubbn") },
+      { gasPrice: GasPrice.fromString("0.0007ubbn") },
     )),
     Effect.provide(Cosmos.Client.Live("https://rpc.bbn-1.babylon.chain.kitchen")),
   )
@@ -76,6 +75,6 @@ const program = Effect.gen(function*() {
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
-Effect.runPromise(program as unknown as any)
+Effect.runPromise(program)
   .then(console.log)
   .catch(console.error)
