@@ -138,6 +138,7 @@ module zkgm::zkgm {
     const E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT: u64 = 44;
     const E_INVALID_SOLVER_ADDRESS: u64 = 45;
     const E_INVALID_QUOTE_TOKEN: u64 = 46;
+    const E_EXECUTION_ALREADY_COMPLETE: u64 = 47;
 
     public struct IbcAppWitness has drop {}
 
@@ -216,6 +217,11 @@ module zkgm::zkgm {
         cursor: u64,
         acks: vector<Ack>,
         raw_acks: vector<vector<u8>>,
+    }
+
+    public struct TimeoutCtx {
+        packet_ctx: ZkgmPacketAckCtx,
+        packet: Packet,
     }
 
     fun init(ctx: &mut TxContext) {
@@ -734,102 +740,103 @@ module zkgm::zkgm {
         let AckCtx { .. } = ack_ctx;
     }
 
-    // public fun acknowledge_packet<T>(
-    //     ibc: &mut ibc::IBCStore,
-    //     zkgm: &mut RelayStore,
-    //     packet_source_channels: vector<u32>,
-    //     packet_destination_channels: vector<u32>,
-    //     packet_data: vector<vector<u8>>,
-    //     packet_timeout_heights: vector<u64>,
-    //     packet_timeout_timestamps: vector<u64>,
-    //     acknowledgements: vector<vector<u8>>,
-    //     relayer: address,
-    //     proof: vector<u8>,
-    //     proof_height: u64,
-    //     ctx: &mut TxContext
-    // ) {
-    //     assert!(acknowledgements.length() == packet_source_channels.length(), E_ACK_AND_PACKET_LENGTH_MISMATCH);
-
-    //     let mut packets: vector<Packet> = vector::empty();
-    //     let mut i = 0;
-    //     while (i < packet_source_channels.length()) {
-    //         packets.push_back(packet::new(
-    //             packet_source_channels[i],
-    //             packet_destination_channels[i],
-    //             packet_data[i],
-    //             packet_timeout_heights[i],
-    //             packet_timeout_timestamps[i],
-    //         ));
-    //         zkgm.on_acknowledge_packet<T>(
-    //             ibc,
-    //             packets[i],
-    //             acknowledgements[i],
-    //             relayer,
-    //             ctx
-    //         );
-    //         i = i + 1;
-    //     };
-        
-    //     ibc.acknowledge_packet(
-    //         packets,
-    //         acknowledgements,
-    //         proof,
-    //         proof_height,
-    //         relayer,
-    //         IbcAppWitness {}
-    //     );
-    // }
-
-    public fun timeout_packet<T>(
-        ibc_store: &mut ibc::IBCStore,
-        zkgm: &mut RelayStore,
+    
+    public fun begin_timeout(
         packet_source_channel: u32,
         packet_destination_channel: u32,
         packet_data: vector<u8>,
         packet_timeout_height: u64,
         packet_timeout_timestamp: u64,
-        proof: vector<u8>,
-        proof_height: u64,
-        relayer: address,
-        ctx: &mut TxContext
-    ) {
-        let ibc_packet =
-            packet::new(
+    ): TimeoutCtx {
+        let zkgm_packet = zkgm_packet::decode(&packet_data);
+        TimeoutCtx {
+            packet_ctx: ZkgmPacketAckCtx {
+                instruction_set: extract_batch(zkgm_packet.instruction()),
+                cursor: 0,
+                path: zkgm_packet.path(),
+                salt: zkgm_packet.salt(),
+            },
+            packet: packet::new(
                 packet_source_channel,
                 packet_destination_channel,
                 packet_data,
                 packet_timeout_height,
-                packet_timeout_timestamp
-            );
+                packet_timeout_timestamp,
+            ),
+        }
+    }
 
-        let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+    public fun timeout_packet<T>(
+        ibc: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
+        relayer: address,
+        mut timeout_ctx: TimeoutCtx,
+        ctx: &mut TxContext
+    ): TimeoutCtx {
+        let packet = timeout_ctx.packet;
+        let zkgm_packet = &mut timeout_ctx.packet_ctx;
+        let instr_len = zkgm_packet.instruction_set.length();
 
-        if (helper::is_forwarded_packet(zkgm_packet.salt())) {
-            let packet_hash = commitment::commit_packet(&ibc_packet)  ;
-            if (zkgm.in_flight_packet.contains(packet_hash)) {
-                let parent = zkgm.in_flight_packet.remove(packet_hash);
-                ibc_store.write_acknowledgement(
-                    parent,
-                    ack::failure(ACK_EMPTY).encode(),
-                    IbcAppWitness {}
-                );
-                return
+        assert!(zkgm_packet.cursor < instr_len, E_EXECUTION_ALREADY_COMPLETE);
+
+        let mut type_is_exhausted = false;
+
+        while (zkgm_packet.cursor < instr_len) {
+            let instruction = zkgm_packet.instruction_set[zkgm_packet.cursor];
+
+            // if we previously run an instruction where type type `T` is used, we should
+            // return timeout_ctx and expect to be called with the appropriate type again.
+            if (instruction.opcode() == OP_TOKEN_ORDER) {
+                if (type_is_exhausted) {
+                    return timeout_ctx
+                } else {
+                    type_is_exhausted = true;
+                };
             };
+
+            if (helper::is_forwarded_packet(zkgm_packet.salt)) {
+                let packet_hash = commitment::commit_packet(&packet);
+
+                if (zkgm.in_flight_packet.contains(packet_hash)) {
+                    let parent = zkgm.in_flight_packet.remove(packet_hash);
+                    ibc.write_acknowledgement(parent, ack::failure(ACK_EMPTY).encode(), IbcAppWitness {});
+                    zkgm_packet.cursor = zkgm_packet.cursor + 1;
+                    continue
+                };
+            };
+
+            zkgm.timeout_internal<T>(
+                packet,
+                relayer,
+                zkgm_packet.path,
+                instruction,
+                ctx,
+            );
+            
+            zkgm_packet.cursor = zkgm_packet.cursor + 1;
         };
 
-        ibc_store.timeout_packet(
-            ibc_packet,
+        timeout_ctx
+    }
+    
+    public fun end_timeout(
+        ibc: &mut ibc::IBCStore,
+        proof: vector<u8>,
+        proof_height: u64,
+        timeout_ctx: TimeoutCtx,
+    ) {
+        // make sure all instructions in the packet are run
+        assert!(timeout_ctx.packet_ctx.cursor == timeout_ctx.packet_ctx.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+
+        ibc.timeout_packet(
+            timeout_ctx.packet,
             proof,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
 
-        zkgm.timeout_internal<T>(
-            ibc_packet,
-            relayer,
-            zkgm_packet.path(),
-            zkgm_packet.instruction(),
-            ctx,
-        );
+        // dropping the ctx by decontstructing it
+        let TimeoutCtx { .. } = timeout_ctx;
     }
 
     public fun channel_close_init(_channel_id: u32) {
@@ -1628,7 +1635,7 @@ module zkgm::zkgm {
         instruction: Instruction,
         ctx: &mut TxContext
     ) {
-        let version = instruction::version(&instruction);
+        let version = instruction.version();
 
         match (instruction.opcode()) {
             OP_TOKEN_ORDER => {
@@ -1643,16 +1650,6 @@ module zkgm::zkgm {
                     abort E_UNSUPPORTED_VERSION
                 };
                       
-            },
-            OP_BATCH => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-                zkgm.timeout_batch<T>(
-                    ibc_packet,
-                    relayer,
-                    path,
-                    batch::decode(instruction.operand()),
-                    ctx
-                );
             },
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
@@ -1669,28 +1666,6 @@ module zkgm::zkgm {
             },
             _ => abort E_UNKNOWN_SYSCALL
         };
-    }
-
-    fun timeout_batch<T>(
-        zkgm: &mut RelayStore,
-        packet: Packet,
-        relayer: address,
-        path: u256,
-        batch: Batch,
-        ctx: &mut TxContext
-    ) {
-        let l = batch.instructions().length();
-        let mut i = 0;
-        while (i < l) {
-            zkgm.timeout_internal<T>(
-                packet,
-                relayer,
-                path,
-                batch.instructions()[i],
-                ctx
-            );
-            i = i + 1;
-        }
     }
 
     fun timeout_token_order<T>(
