@@ -49,6 +49,7 @@ import { Array as Arr, Cause, Effect, Exit, Layer, Match, Option, Stream } from 
 import * as B from "effect/Boolean"
 import type { NoSuchElementException } from "effect/Cause"
 import { pipe } from "effect/Function"
+import { onDestroy } from "svelte"
 import { custom } from "viem"
 
 type Props = {

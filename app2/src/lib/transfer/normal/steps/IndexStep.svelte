@@ -7,6 +7,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte"
 import type { WaitForIndex } from "$lib/transfer/normal/steps/steps"
 import { Option } from "effect"
+import { onDestroy } from "svelte"
 import { fly } from "svelte/transition"
 
 type Props = {
@@ -22,6 +23,10 @@ $effect(() => {
   if (Option.isSome(transferHashStore.data)) {
     transferHashStore.stopPolling()
   }
+})
+
+onDestroy(() => {
+  transferHashStore.reset()
 })
 
 const handleRedirect = () => {

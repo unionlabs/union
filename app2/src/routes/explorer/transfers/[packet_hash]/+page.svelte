@@ -16,7 +16,7 @@ import { packetDetails } from "$lib/stores/packets.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { getChain, TokenRawDenom, TransactionHash } from "@unionlabs/sdk/schema"
-import { Data, Fiber, Option } from "effect"
+import { Data, Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 
 // Store for the transfer details
@@ -31,7 +31,7 @@ import A from "$lib/components/ui/A.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times"
-import { runFork, runPromise } from "$lib/runtime"
+import * as AppRuntime from "$lib/runtime"
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { fromHex } from "viem"
 import Layout from "../../../+layout.svelte"
@@ -46,14 +46,12 @@ const { data }: Props = $props()
 // State for packet details visibility
 let showPacketDetails = $state(false)
 
-let fiber: Fiber.Fiber<any, any>
-
 onMount(() => {
-  fiber = runFork(transferByPacketHashQuery(data.packetHash))
+  AppRuntime.runPromise(Effect.promise(() => packetDetails.clearFiber()))
+  AppRuntime.runFork$(() => transferByPacketHashQuery(data.packetHash))
   packetDetails.runEffect(packetDetailsQuery(data.packetHash))
 
   return async () => {
-    await runPromise(Fiber.interrupt(fiber))
     transferDetails.data = Option.none()
     transferDetails.error = Option.none()
 
