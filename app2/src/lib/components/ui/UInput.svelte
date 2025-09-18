@@ -2,11 +2,11 @@
 import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import { Utils } from "@unionlabs/sdk"
+import type { Token } from "@unionlabs/sdk/schema"
 import { BigDecimal, pipe } from "effect"
+import { Struct } from "effect"
 import * as A from "effect/Array"
 import * as O from "effect/Option"
-import { Struct } from "effect"
-import type { Token } from "@unionlabs/sdk/schema"
 
 interface Props {
   id: string
@@ -17,7 +17,7 @@ interface Props {
   token?: O.Option<Token>
   balance?: O.Option<bigint>
   class?: string
-  humanValue: string    
+  humanValue: string
   weiValue: O.Option<bigint>
 }
 
@@ -31,7 +31,7 @@ let {
   balance = O.none(),
   class: className = "h-14 text-center text-lg",
   humanValue = $bindable(),
-  weiValue = $bindable()
+  weiValue = $bindable(),
 }: Props = $props()
 
 // Get decimals from token if available, otherwise use provided decimals
@@ -92,7 +92,7 @@ function handleMaxClick() {
     // Convert balance (wei) to human readable format
     const balanceDecimal = pipe(
       BigDecimal.fromBigInt(balance.value),
-      BigDecimal.unsafeDivide(BigDecimal.make(10n ** BigInt(tokenDecimals), 0))
+      BigDecimal.unsafeDivide(BigDecimal.make(10n ** BigInt(tokenDecimals), 0)),
     )
     humanValue = Utils.formatBigDecimal(balanceDecimal)
   }

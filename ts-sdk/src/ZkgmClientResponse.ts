@@ -3,12 +3,12 @@
  *
  * @since 2.0.0
  */
+import * as O from "effect/Option"
 import * as internal from "./internal/zkgmClientResponse.js"
 import { Hex } from "./schema/hex.js"
 import type * as ClientError from "./ZkgmClientError.js"
 import type * as ClientRequest from "./ZkgmClientRequest.js"
 import * as IncomingMessage from "./ZkgmIncomingMessage.js"
-import * as O from "effect/Option"
 
 /**
  * @category type ids
