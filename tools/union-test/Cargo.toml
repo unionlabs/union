@@ -11,6 +11,7 @@ repository   = { workspace = true }
 
 [dependencies]
 alloy                          = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+alloy-sol-types                = { workspace = true }
 axum                           = { workspace = true, features = ["macros", "tokio", "json"] }
 bip32                          = { workspace = true }
 cometbft-rpc                   = { workspace = true }
