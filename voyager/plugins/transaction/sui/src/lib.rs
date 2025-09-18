@@ -35,7 +35,7 @@ trait TransactionPlugin {
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketRecv,
-    ) -> RpcResult<Option<ProgrammableTransaction>>;
+    ) -> RpcResult<ProgrammableTransaction>;
 
     #[method(name = "onAcknowledgePacket")]
     async fn on_acknowledge_packet(
@@ -44,7 +44,7 @@ trait TransactionPlugin {
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketAcknowledgement,
-    ) -> RpcResult<Option<ProgrammableTransaction>>;
+    ) -> RpcResult<ProgrammableTransaction>;
 }
 
 pub async fn send_transactions(

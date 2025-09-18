@@ -1,7 +1,13 @@
-use std::{collections::VecDeque, fmt::Debug, panic::AssertUnwindSafe, str::FromStr, sync::Arc};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    fmt::Debug,
+    panic::AssertUnwindSafe,
+    str::FromStr,
+    sync::Arc,
+};
 
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
-use ibc_union_spec::{datagram::Datagram, IbcUnion};
+use ibc_union_spec::{datagram::Datagram, path::ChannelPath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -29,7 +35,7 @@ use voyager_sdk::{
     hook::SubmitTxHook,
     message::{data::Data, PluginMessage, VoyagerMessage},
     plugin::Plugin,
-    primitives::ChainId,
+    primitives::{ChainId, QueryHeight},
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     serde_json::{self, json},
     vm::{call, noop, pass::PassResult, Op, Visit},
@@ -64,6 +70,8 @@ pub struct Module {
     pub keyring: ConcurrentKeyring<SuiAddress, Arc<SuiKeyPair>>,
 
     pub ibc_store_initial_seq: SequenceNumber,
+
+    pub channel_version_to_plugin: BTreeMap<String, String>,
 }
 
 impl Plugin for Module {
@@ -117,6 +125,7 @@ impl Plugin for Module {
                 }),
             ),
             ibc_store: config.ibc_store,
+            channel_version_to_plugin: config.channel_version_to_plugin,
         })
     }
 
@@ -140,8 +149,8 @@ pub struct Config {
     pub graphql_url: String,
     pub ibc_contract: SuiAddress,
     pub ibc_store: SuiAddress,
-
     pub keyring: KeyringConfig,
+    pub channel_version_to_plugin: BTreeMap<String, String>,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -228,11 +237,30 @@ impl Module {
                     let module_info =
                         try_parse_port(&self.graphql_url, &port_id.as_bytes()).await?;
 
-                    if let Some(p) = voyager_client
-                        .plugin_client("voyager-sui-ibc-app-plugin")
-                        .on_recv_packet(pk.copy(), module_info.clone(), fee_recipient, data.clone())
+                    let channel_version = voyager_client
+                        .query_ibc_state(
+                            self.chain_id.clone(),
+                            QueryHeight::Latest,
+                            ChannelPath {
+                                channel_id: data.packets[0].destination_channel_id,
+                            },
+                        )
                         .await?
+                        .version;
+
+                    if let Some(plugin_client) =
+                        self.channel_version_to_plugin.get(&channel_version)
                     {
+                        let p = voyager_client
+                            .plugin_client(plugin_client)
+                            .on_recv_packet(
+                                pk.copy(),
+                                module_info.clone(),
+                                fee_recipient,
+                                data.clone(),
+                            )
+                            .await?;
+
                         merge_ptbs(&mut ptb, p);
                     } else {
                         let _store_initial_seq = self
@@ -263,16 +291,29 @@ impl Module {
                     let module_info =
                         try_parse_port(&self.graphql_url, &port_id.as_bytes()).await?;
 
-                    if let Some(p) = voyager_client
-                        .plugin_client("voyager-sui-ibc-app-plugin")
-                        .on_acknowledge_packet(
-                            pk.copy(),
-                            module_info.clone(),
-                            fee_recipient,
-                            data.clone(),
+                    let channel_version = voyager_client
+                        .query_ibc_state(
+                            self.chain_id.clone(),
+                            QueryHeight::Latest,
+                            ChannelPath {
+                                channel_id: data.packets[0].source_channel_id,
+                            },
                         )
                         .await?
+                        .version;
+
+                    if let Some(plugin_client) =
+                        self.channel_version_to_plugin.get(&channel_version)
                     {
+                        let p = voyager_client
+                            .plugin_client(plugin_client)
+                            .on_acknowledge_packet(
+                                pk.copy(),
+                                module_info.clone(),
+                                fee_recipient,
+                                data.clone(),
+                            )
+                            .await?;
                         merge_ptbs(&mut ptb, p);
                     } else {
                         let _store_initial_seq = self
