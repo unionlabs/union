@@ -12,7 +12,7 @@ import "./internal/Versioned.sol";
 import "./apps/ucs/03-zkgm/ISolver.sol";
 import "./core/04-channel/IBCPacket.sol";
 
-contract U is
+contract UnionversalToken is
     Initializable,
     UUPSUpgradeable,
     AccessManagedUpgradeable,
@@ -22,14 +22,14 @@ contract U is
 {
     using LibBytes for *;
 
-    error U_OnlyZkgm();
-    error U_IntentWhitelistedOnly();
-    error U_CounterpartyIsNotFungible();
-    error U_BaseAmountMustCoverQuoteAmount();
-    error U_InvalidCounterpartyBeneficiary();
-    error U_Fool();
+    error UnionversalToken_OnlyZkgm();
+    error UnionversalToken_IntentWhitelistedOnly();
+    error UnionversalToken_CounterpartyIsNotFungible();
+    error UnionversalToken_BaseAmountMustCoverQuoteAmount();
+    error UnionversalToken_InvalidCounterpartyBeneficiary();
+    error UnionversalToken_Fool();
 
-    bytes32 internal constant U_STORAGE_SLOT = keccak256(
+    bytes32 internal constant UnionversalToken_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.storage.zkgm.u")) - 1)
     ) & ~bytes32(uint256(0xff));
 
@@ -49,7 +49,7 @@ contract U is
     }
 
     function _getUStorage() private pure returns (UStorage storage $) {
-        bytes32 slot = U_STORAGE_SLOT;
+        bytes32 slot = UnionversalToken_STORAGE_SLOT;
         assembly {
             $.slot := slot
         }
@@ -67,10 +67,12 @@ contract U is
         uint8 _decimals,
         bytes calldata _salt
     ) external initializer {
-        __U_init(_authority, _zkgm, _name, _symbol, _decimals, _salt);
+        __UnionversalToken_init(
+            _authority, _zkgm, _name, _symbol, _decimals, _salt
+        );
     }
 
-    function __U_init(
+    function __UnionversalToken_init(
         address _authority,
         address _zkgm,
         string calldata _name,
@@ -157,7 +159,7 @@ contract U is
         if (intent) {
             bytes32 packetHash = IBCPacketLib.commitPacket(packet);
             if (!_getUStorage().intentWhitelist[packetHash]) {
-                revert U_IntentWhitelistedOnly();
+                revert UnionversalToken_IntentWhitelistedOnly();
             }
         }
 
@@ -165,15 +167,15 @@ contract U is
             .fungibleCounterparties[path][packet.destinationChannelId][order
             .baseToken];
         if (counterparty.beneficiary.length == 0) {
-            revert U_CounterpartyIsNotFungible();
+            revert UnionversalToken_CounterpartyIsNotFungible();
         }
 
         if (!order.quoteToken.eq(abi.encodePacked(address(this)))) {
-            revert U_Fool();
+            revert UnionversalToken_Fool();
         }
 
         if (order.quoteAmount > order.baseAmount) {
-            revert U_BaseAmountMustCoverQuoteAmount();
+            revert UnionversalToken_BaseAmountMustCoverQuoteAmount();
         }
 
         // Incentive relayer.
@@ -193,7 +195,7 @@ contract U is
 
     modifier onlyZkgm() {
         if (msg.sender != _getUStorage().zkgm) {
-            revert U_OnlyZkgm();
+            revert UnionversalToken_OnlyZkgm();
         }
         _;
     }

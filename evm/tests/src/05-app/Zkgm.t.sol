@@ -19,7 +19,6 @@ import "../../../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../../../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../../../contracts/apps/Base.sol";
 import "../../../contracts/Manager.sol";
-import "../../../contracts/U.sol";
 
 contract TestZkgm is UCS03Zkgm {
     constructor(

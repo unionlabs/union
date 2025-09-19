@@ -17,8 +17,8 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
 import "@safe-utils/Safe.sol";
 
+import "../contracts/UnionversalToken.sol";
 import "../contracts/CrosschainVault.sol";
-import "../contracts/U.sol";
 import "../contracts/ProxyAccount.sol";
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
@@ -277,14 +277,14 @@ abstract contract UnionScript is UnionBase {
         string memory name,
         string memory symbol,
         uint8 decimals
-    ) internal returns (U) {
-        return U(
+    ) internal returns (UnionversalToken) {
+        return UnionversalToken(
             deployIfNotExists(
                 string(INSTANCE_SALT.U),
                 abi.encode(
-                    address(new U()),
+                    address(new UnionversalToken()),
                     abi.encodeCall(
-                        U.initialize,
+                        UnionversalToken.initialize,
                         (
                             address(authority),
                             address(zkgm),
@@ -306,14 +306,14 @@ abstract contract UnionScript is UnionBase {
         string memory name,
         string memory symbol,
         uint8 decimals
-    ) internal returns (U) {
-        return U(
+    ) internal returns (UnionversalToken) {
+        return UnionversalToken(
             deployIfNotExists(
                 string(INSTANCE_SALT.EU),
                 abi.encode(
-                    address(new U()),
+                    address(new UnionversalToken()),
                     abi.encodeCall(
-                        U.initialize,
+                        UnionversalToken.initialize,
                         (
                             address(authority),
                             address(zkgm),
@@ -834,7 +834,8 @@ contract DeployDeployerAndIBC is UnionScript, VersionedScript {
         deployer = deployDeployer();
         Contracts memory contracts =
             deployIBC(vm.addr(privateKey), getUCS03Params());
-        U u = deployU(contracts.manager, contracts.ucs03, "Union", "U", 18);
+        UnionversalToken u =
+            deployU(contracts.manager, contracts.ucs03, "Union", "U", 18);
         contracts.handler.registerClient(
             LightClients.COMETBLS, contracts.cometblsClient
         );
@@ -1008,7 +1009,8 @@ contract GetDeployed is VersionedScript {
             abi.encode(
                 implOf(u),
                 abi.encodeCall(
-                    U.initialize, (manager, ucs03, "Union", "U", 18, hex"")
+                    UnionversalToken.initialize,
+                    (manager, ucs03, "Union", "U", 18, hex"")
                 )
             )
         );
@@ -1027,7 +1029,7 @@ contract GetDeployed is VersionedScript {
                 abi.encode(
                     implOf(eu),
                     abi.encodeCall(
-                        U.initialize,
+                        UnionversalToken.initialize,
                         (
                             manager,
                             ucs03,
@@ -1212,13 +1214,19 @@ contract GetDeployed is VersionedScript {
         impls.serialize(implOf(manager).toHexString(), implManager);
 
         string memory implU = "implU";
-        implU.serialize("contract", string("contracts/U.sol:U"));
+        implU.serialize(
+            "contract",
+            string("contracts/UnionversalToken.sol:UnionversalToken")
+        );
         implU = implU.serialize("args", bytes(hex""));
         impls.serialize(implOf(u).toHexString(), implU);
 
         if (eu.code.length > 0) {
             string memory implEU = "implEU";
-            implEU.serialize("contract", string("contracts/U.sol:U"));
+            implEU.serialize(
+                "contract",
+                string("contracts/UnionversalToken.sol:UnionversalToken")
+            );
             implEU = implEU.serialize("args", bytes(hex""));
             impls.serialize(implOf(eu).toHexString(), implEU);
         }
@@ -1994,7 +2002,7 @@ contract UpgradeU is BaseUpgrade {
         )
     {
         targetContract = getDeployed(string(INSTANCE_SALT.U));
-        newImplementation = address(new U());
+        newImplementation = address(new UnionversalToken());
         upgradeCall = new bytes(0);
     }
 }
@@ -2012,7 +2020,7 @@ contract UpgradeEU is BaseUpgrade {
         )
     {
         targetContract = getDeployed(string(INSTANCE_SALT.EU));
-        newImplementation = address(new U());
+        newImplementation = address(new UnionversalToken());
         upgradeCall = new bytes(0);
     }
 }
@@ -2168,7 +2176,7 @@ contract DeployU is UnionScript, VersionedScript {
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         vm.startBroadcast(privateKey);
-        U u = deployU(manager, ucs03, "Union", "U", 18);
+        UnionversalToken u = deployU(manager, ucs03, "Union", "U", 18);
         vm.stopBroadcast();
 
         console.log("U: ", address(u));
@@ -2183,7 +2191,7 @@ contract DryDeployU is UnionScript, VersionedScript {
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         vm.startPrank(getSender());
-        U u = deployU(manager, ucs03, "Union", "U", 18);
+        UnionversalToken u = deployU(manager, ucs03, "Union", "U", 18);
         vm.stopPrank();
 
         console.log("U: ", address(u));
@@ -2200,7 +2208,8 @@ contract DeployEU is UnionScript, VersionedScript {
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         vm.startBroadcast(privateKey);
-        U eu = deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
+        UnionversalToken eu =
+            deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
         vm.stopBroadcast();
 
         console.log("eU: ", address(eu));
@@ -2215,7 +2224,8 @@ contract DryDeployEU is UnionScript, VersionedScript {
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         vm.startPrank(getSender());
-        U eu = deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
+        UnionversalToken eu =
+            deployEU(manager, ucs03, "Escher Staked U", "eU", 18);
         vm.stopPrank();
 
         console.log("eU: ", address(eu));
@@ -2377,7 +2387,7 @@ contract SafeUpgradeU is BaseUpgrade {
         )
     {
         targetContract = getDeployed(string(INSTANCE_SALT.U));
-        newImplementation = address(new U());
+        newImplementation = address(new UnionversalToken());
         upgradeCall = new bytes(0);
     }
 }
@@ -2395,7 +2405,7 @@ contract SafeUpgradeEU is BaseUpgrade {
         )
     {
         targetContract = getDeployed(string(INSTANCE_SALT.EU));
-        newImplementation = address(new U());
+        newImplementation = address(new UnionversalToken());
         upgradeCall = new bytes(0);
     }
 }
