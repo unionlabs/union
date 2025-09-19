@@ -1,6 +1,5 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::collections::VecDeque;
 
-use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv};
 use jsonrpsee::{
     core::{async_trait, JsonValue as Value, RpcResult},
@@ -54,7 +53,8 @@ pub struct Module {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ZkgmConfig {
-    address: SuiAddress,
+    zkgm_address: SuiAddress,
+    vault_object_id: ObjectID,
     /// ID of the `wrapped_token_to_t` mapping
     wrapped_token_to_t: ObjectID,
 }
@@ -109,21 +109,8 @@ impl TransactionPluginServer for Module {
     ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let store_initial_seq = self
-            .sui_client
-            .read_api()
-            .get_object_with_options(
-                module_info.stores[0].into(),
-                SuiObjectDataOptions::new().with_owner(),
-            )
-            .await
-            .unwrap()
-            .data
-            .expect("object exists on chain")
-            .owner
-            .expect("owner will be present")
-            .start_version()
-            .expect("object is shared, hence it has a start version");
+        let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
+        let vault_store_initial_seq = self.get_initial_seq(self.zkgm_config.vault_object_id).await;
 
         // If the module is ZKGM, then we register the tokens if needed. Otherwise,
         // the registered tokens are returned.
@@ -151,6 +138,8 @@ impl TransactionPluginServer for Module {
                 self,
                 &module_info,
                 store_initial_seq,
+                self.zkgm_config.vault_object_id,
+                vault_store_initial_seq,
                 coin_t,
                 fee_recipient,
                 data.relayer_msgs.clone(),
@@ -175,21 +164,8 @@ impl TransactionPluginServer for Module {
     ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let store_initial_seq = self
-            .sui_client
-            .read_api()
-            .get_object_with_options(
-                module_info.stores[0].into(),
-                SuiObjectDataOptions::new().with_owner(),
-            )
-            .await
-            .unwrap()
-            .data
-            .expect("object exists on chain")
-            .owner
-            .expect("owner will be present")
-            .start_version()
-            .expect("object is shared, hence it has a start version");
+        let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
+        let vault_store_initial_seq = self.get_initial_seq(self.zkgm_config.vault_object_id).await;
 
         // If the module is ZKGM, then we register the tokens if needed. Otherwise,
         // the registered tokens are returned.
@@ -206,6 +182,8 @@ impl TransactionPluginServer for Module {
                 self,
                 &module_info,
                 store_initial_seq,
+                self.zkgm_config.vault_object_id,
+                vault_store_initial_seq,
                 coin_t,
                 fee_recipient,
                 session,
@@ -252,6 +230,20 @@ impl Module {
             ibc_store: config.ibc_store,
             zkgm_config: config.zkgm_config,
         })
+    }
+
+    async fn get_initial_seq(&self, object: ObjectID) -> SequenceNumber {
+        self.sui_client
+            .read_api()
+            .get_object_with_options(object, SuiObjectDataOptions::new().with_owner())
+            .await
+            .unwrap()
+            .data
+            .expect("object exists on chain")
+            .owner
+            .expect("owner will be present")
+            .start_version()
+            .expect("object is shared, hence it has a start version")
     }
 }
 
