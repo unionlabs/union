@@ -60,9 +60,13 @@ static UNION_ZKGM_ADDRESS: &str =
 //     "union1tt6nn3qv0q0z4gq4s2h65a2acv3lcwxjwf8ey3jgnwmtqkfnyq9q4q5y8x";
 static EVM_ZKGM_BYTES: [u8; 20] = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
 static EVM_IBC_BYTES: [u8; 20] = hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5");
+
+// u: union1pntx7gm7shsp6slef74ae7wvcc35t3wdmanh7wrg4xkq95m24qds5atmcp
+// lst: union1fdg764zzxwvwyqkx3fuj0236l9ddh5xmutgvj2mv9cduffy82z9sp62ygc
+
 #[derive(Serialize)]
 struct BondInner<'a> {
-    mint_to: &'a str,
+    mint_to_address: &'a str,
     min_mint_amount: &'a str,
 }
 #[derive(Serialize)]
@@ -79,14 +83,14 @@ fn make_zkgm_call_payload(
 ) -> String {
     let bond = BondMsg {
         bond: BondInner {
-            mint_to,
+            mint_to_address: mint_to,
             min_mint_amount: min_amount,
         },
     };
 
     let wasm_exec: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: lst_hub.to_string(),
-        msg: to_json_binary(&bond).expect("bond json"),
+        msg: to_json_binary(&bond).unwrap(),
         funds: vec![CwCoin {
             denom: funds_denom.to_string(),
             amount: funds_amount.into(),
@@ -234,7 +238,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             src,
             dst,
             needed_channel_count,
-            "/home/kaancaglan/dev/union/voyager/config.jsonc",
+            "/home/aeryz/dev/union/union/voyager/config.jsonc",
         )
         .await
         .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -308,6 +312,7 @@ async fn ensure_channels_opened(channel_count: usize) {
         .await;
 }
 
+#[tokio::test]
 async fn test_escher_lst() {
     let ctx = init_ctx().await;
 
@@ -430,12 +435,11 @@ async fn test_escher_lst() {
     let lst_hub = "union1fdg764zzxwvwyqkx3fuj0236l9ddh5xmutgvj2mv9cduffy82z9sp62ygc";
     // let lst = "union1jansh23v7teaznyljq6ss4vx6eym8yrz0dsjchap4u7j3etx94vqhmcwn5";
 
-    let zkgm_proxy = "union1ykagxh4cmvvyldvh98yxr9vlaqn3j77xepatml4paren37rw4zusthnwpv";
-
     let addr: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
     let canon = cosmwasm_std::CanonicalAddr::from(addr.data().as_ref());
 
     let zkgm_proxy_canon = instantiate2_address(
+        // Checksum of the base contract
         &hex_literal::hex!("ec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1"),
         &canon,
         proxy_account_salt_for_tests(
@@ -483,9 +487,9 @@ async fn test_escher_lst() {
     let zkgm_msg_json = make_zkgm_call_payload(
         lst_hub,
         "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
-        "3",
+        "10",
         "muno",
-        3,
+        10,
     );
 
     let proxy_balance = ctx
@@ -509,7 +513,7 @@ async fn test_escher_lst() {
                     opcode: OP_TOKEN_ORDER,
                     operand: TokenOrderV2 {
                         sender: evm_address.to_vec().into(),
-                        receiver: receiver,
+                        receiver,
                         base_token: u_on_eth.to_vec().into(),
                         base_amount: "150".parse().unwrap(),
                         kind: TOKEN_ORDER_KIND_SOLVE,
@@ -531,7 +535,11 @@ async fn test_escher_lst() {
                     operand: Call {
                         sender: evm_address.to_vec().into(),
                         eureka: false,
-                        contract_address: lst_hub.as_bytes().to_vec().into(),
+                        contract_address: zkgm_proxy_calculated
+                            .to_string()
+                            .as_bytes()
+                            .to_vec()
+                            .into(),
                         contract_calldata: zkgm_msg_json.as_bytes().to_vec().into(),
                     }
                     .abi_encode_params()
@@ -599,11 +607,6 @@ async fn test_escher_lst() {
         .unwrap();
 
     println!("Proxy balance before: {}", proxy_balance);
-}
-
-#[tokio::test]
-async fn test_escher_lst_success() {
-    self::test_escher_lst().await;
 }
 
 fn proxy_account_salt_for_tests(
