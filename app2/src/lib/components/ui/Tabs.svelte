@@ -54,7 +54,7 @@ $effect(() => {
 >
   <!-- Sliding background indicator -->
   <div
-    class="absolute bg-zinc-800 rounded-md transition-all duration-300 z-0"
+    class="absolute bg-zinc-800/90 border border-zinc-700/50 rounded-md transition-all duration-300 z-0 shadow-sm"
     style:width="{activeTabStyle.width}px"
     style:height="{activeTabStyle.height}px"
     style:left="{activeTabStyle.left}px"
@@ -68,7 +68,7 @@ $effect(() => {
       bind:this={itemRefs[index]}
       onclick={() => onTabChange(item.id)}
       class={cn(
-        "px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors relative cursor-pointer z-10",
+        "px-3 sm:px-4 py-2 sm:py-2 text-sm font-medium rounded-md transition-colors relative cursor-pointer z-10",
         activeId === item.id
           ? "text-white"
           : "text-zinc-500 hover:text-zinc-300",
