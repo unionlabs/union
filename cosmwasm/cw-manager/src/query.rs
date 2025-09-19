@@ -187,7 +187,11 @@ pub fn has_role(
 /// ```solidity
 /// function _isExecuting(address target, bytes4 selector) private view returns (bool)
 /// ```
-fn is_executing(deps: Deps, target: &Addr, method: &Method) -> Result<bool, ContractError> {
+pub(crate) fn is_executing(
+    deps: Deps,
+    target: &Addr,
+    method: &Method,
+) -> Result<bool, ContractError> {
     Ok(deps
         .storage
         .maybe_read_item::<ExecutionId>()?
@@ -201,7 +205,7 @@ fn is_executing(deps: Deps, target: &Addr, method: &Method) -> Result<bool, Cont
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L737>
-fn hash_execution_id(target: &Addr, method: &Method) -> H256 {
+pub(crate) fn hash_execution_id(target: &Addr, method: &Method) -> H256 {
     sha2::Sha256::digest(format!("{target}:{method}")).into()
 }
 

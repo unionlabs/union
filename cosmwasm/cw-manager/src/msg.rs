@@ -46,4 +46,37 @@ pub enum QueryMsg {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg {}
+pub enum ExecuteMsg {
+    LabelRole {
+        role_id: RoleId,
+        label: String,
+    },
+    GrantRole {
+        role_id: RoleId,
+        account: Addr,
+        execution_delay: u32,
+    },
+    RevokeRole {
+        role_id: RoleId,
+        account: Addr,
+    },
+    RenounceRole {
+        role_id: RoleId,
+        caller_confirmation: Addr,
+    },
+
+    SetRoleAdmin {
+        role_id: RoleId,
+        admin: RoleId,
+    },
+
+    SetRoleGuardian {
+        role_id: RoleId,
+        guardian: RoleId,
+    },
+
+    SetRoleGrantDelay {
+        role_id: RoleId,
+        grant_delay: RoleId,
+    },
+}
