@@ -7,6 +7,7 @@ import UInput from "$lib/components/ui/UInput.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
+import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { matchOption } from "$lib/utils/snippets.svelte"
@@ -480,16 +481,24 @@ runPromiseExit$(() =>
     : Effect.void
 )
 
-function handleUnbondSubmit() {
-  if (isUnbonding) {
-    return
-  }
-  unbondState = UnbondState.Ready()
-  shouldUnbond = true
-}
+function handleButtonClick() {
+  if (isUnbonding) return
 
-function handleRetry() {
-  unbondState = UnbondState.Ready()
+  Match.value({ isError, isSuccess, hasWallet: O.isSome(WalletStore.evmAddress) }).pipe(
+    Match.when({ isError: true }, () => {
+      unbondState = UnbondState.Ready()
+    }),
+    Match.when({ isSuccess: true }, () => {
+      unbondState = UnbondState.Ready()
+    }),
+    Match.when({ hasWallet: false }, () => {
+      uiStore.openWalletModal()
+    }),
+    Match.orElse(() => {
+      unbondState = UnbondState.Ready()
+      shouldUnbond = true
+    })
+  )
 }
 </script>
 
@@ -734,8 +743,8 @@ function handleRetry() {
     <Button
       class="w-full relative z-30"
       variant={isError ? "secondary" : "primary"}
-      disabled={isUnbonding || O.isNone(WalletStore.evmAddress)}
-      onclick={isError ? handleRetry : isSuccess ? handleRetry : handleUnbondSubmit}
+      disabled={isUnbonding}
+      onclick={handleButtonClick}
     >
       {#if isUnbonding}
         <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
