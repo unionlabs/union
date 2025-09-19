@@ -82,11 +82,14 @@ pub fn begin_recv_call(
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn recv_packet_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: &ModuleInfo,
-    store_initial_seq: SequenceNumber,
+    zkgm_store_initial_seq: SequenceNumber,
+    vault_object_id: ObjectID,
+    vault_store_initial_seq: SequenceNumber,
     coin_t: TypeTag,
     fee_recipient: SuiAddress,
     relayer_msgs: Vec<Bytes>,
@@ -100,7 +103,12 @@ pub fn recv_packet_call(
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].into(),
-            initial_shared_version: store_initial_seq,
+            initial_shared_version: zkgm_store_initial_seq,
+            mutable: true,
+        }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: vault_object_id,
+            initial_shared_version: vault_store_initial_seq,
             mutable: true,
         }),
         SUI_CALL_ARG_CLOCK,
@@ -196,11 +204,14 @@ pub fn begin_ack_call(
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn acknowledge_packet_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: &ModuleInfo,
-    store_initial_seq: SequenceNumber,
+    zkgm_store_initial_seq: SequenceNumber,
+    vault_object_id: ObjectID,
+    vault_store_initial_seq: SequenceNumber,
     coin_t: TypeTag,
     fee_recipient: SuiAddress,
     session: Argument,
@@ -213,7 +224,12 @@ pub fn acknowledge_packet_call(
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].into(),
-            initial_shared_version: store_initial_seq,
+            initial_shared_version: zkgm_store_initial_seq,
+            mutable: true,
+        }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: vault_object_id,
+            initial_shared_version: vault_store_initial_seq,
             mutable: true,
         }),
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
