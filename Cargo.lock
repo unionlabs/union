@@ -4844,7 +4844,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-u"
+name = "cw-unionversal-token"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",

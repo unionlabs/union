@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CW Escrow Vault is a CosmWasm smart contract that acts as a solver in the UCS03 ZKGM protocol, enabling fungible cross-chain asset transfers between Cosmos and EVM chains. It manages the escrow and release of native and CW20 tokens, serving as the Cosmos-side counterparty to the U.sol contract on EVM chains.
+The CW Escrow Vault is a CosmWasm smart contract that acts as a solver in the UCS03 ZKGM protocol, enabling fungible cross-chain asset transfers between Cosmos and EVM chains. It manages the escrow and release of native and CW20 tokens, serving as the Cosmos-side counterparty to the UnionversalToken.sol contract on EVM chains.
 
 ## Purpose in the ZKGM Protocol
 
@@ -19,14 +19,14 @@ The CW Escrow Vault implements the **ISolver interface** to participate as an au
 ### Key Components
 
 - **CW Escrow Vault (Cosmos)**: This contract - acts as a solver that fills orders with escrowed tokens
-- **U.sol (EVM)**: The EVM counterpart - mints/burns synthetic tokens and acts as a solver
+- **UnionversalToken.sol (EVM)**: The EVM counterpart - mints/burns synthetic tokens and acts as a solver
 - **UCS03 ZKGM Protocol**: The cross-chain messaging protocol with open filling mechanism
 
 ### Fungible Lane Configuration
 
 Both vaults are configured as solvers where:
 
-- For Cosmos → EVM: Escrow Vault stores U.sol address as `counterparty_beneficiary`
+- For Cosmos → EVM: Escrow Vault stores UnionversalToken.sol address as `counterparty_beneficiary`
 - For EVM → Cosmos: Escrow Vault returns zero address to trigger token burning
 - When filling orders, the vault returns the appropriate beneficiary in the acknowledgement
 - The source chain either sends base tokens to the beneficiary or burns them (if beneficiary is 0)
@@ -37,7 +37,7 @@ Both vaults are configured as solvers where:
 
 1. **User initiates transfer**: Sends native/CW20 tokens via ZKGM with a TokenOrderV2
 2. **Packet sent to EVM**: ZKGM sends packet across IBC to the destination chain
-3. **U.sol fills the order**:
+3. **UnionversalToken.sol fills the order**:
    - Mints synthetic tokens to the receiver
    - Returns CW Escrow Vault address as beneficiary in acknowledgement
 4. **Base tokens sent to vault**: ZKGM on Cosmos sends base tokens to the Escrow Vault
@@ -99,7 +99,7 @@ SetFungibleCounterparty {
     path: Uint256,                    // Routing path identifier
     channel_id: ChannelId,            // IBC channel
     base_token: Bytes,               // Token on source chain
-    counterparty_beneficiary: Bytes, // U.sol address on EVM
+    counterparty_beneficiary: Bytes, // UnionversalToken.sol address on EVM
     escrowed_denom: String,          // Local token to use for filling
 }
 ```

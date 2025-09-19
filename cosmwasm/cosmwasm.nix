@@ -1015,7 +1015,7 @@ _: {
 
       cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" { };
 
-      cw-u = crane.buildWasmContract "cosmwasm/cw-u" { };
+      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" { };
 
       lst = crane.buildWasmContract "cosmwasm/lst" { };
 
@@ -1090,7 +1090,7 @@ _: {
             on-zkgm-call-proxy
             cw-account
             cw-escrow-vault
-            cw-u
+            cw-unionversal-token
             lst
             ;
           cosmwasm-scripts =
