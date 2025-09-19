@@ -15,6 +15,7 @@ use serde_json::value::RawValue;
 use crate::msg::QueryMsg;
 
 pub mod error;
+pub mod event;
 pub mod execute;
 pub mod msg;
 pub mod query;

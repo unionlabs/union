@@ -16,7 +16,6 @@ pub enum ContractError {
     AccessManagerNotScheduled(H256),
     AccessManagerNotReady(H256),
     AccessManagerExpired(H256),
-
     #[error("role {0} is locked")]
     AccessManagerLockedRole(RoleId),
     AccessManagerBadConfirmation(),
