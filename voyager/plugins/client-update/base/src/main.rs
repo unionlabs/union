@@ -68,9 +68,17 @@ pub struct Module {
     pub ibc_handler_address: H160,
 }
 
+fn default_client_type() -> ClientType {
+    ClientType::new(ClientType::BASE)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
+    // Default to base for backward compatibility.
+    #[serde(default = "default_client_type")]
+    pub client_type: ClientType,
+
     pub l2_chain_id: ChainId,
 
     pub l1_dispute_game_factory_proxy: H160,
@@ -208,10 +216,7 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.l2_chain_id),
-            interest_filter: UpdateHook::filter(
-                &config.l2_chain_id,
-                &ClientType::new(ClientType::BASE),
-            ),
+            interest_filter: UpdateHook::filter(&config.l2_chain_id, &config.client_type),
         }
     }
 

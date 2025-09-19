@@ -85,7 +85,8 @@ impl ClientBootstrapModule for Module {
         let l2_chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(l2_chain_id.to_string())?;
-        info.ensure_client_type(ClientType::BASE)?;
+        info.ensure_client_type(ClientType::BASE)
+            .or_else(|_| info.ensure_client_type(ClientType::OPTIMISM))?;
 
         Ok(Self {
             chain_id: l2_chain_id,
