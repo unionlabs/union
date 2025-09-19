@@ -1,7 +1,8 @@
-use cosmwasm_std::{Addr, Deps, Env};
+use cosmwasm_std::{Addr, Deps, Env, Event};
 use depolama::StorageExt;
 
 use crate::{
+    error::{self, ContractError},
     state::RoleMembers,
     types::{Access, RoleId},
 };
@@ -76,9 +77,9 @@ fn _grant_role(
     account: &Addr,
     grant_delay: u32,
     execution_delay: u32,
-) {
+) -> Result<(bool, Event), ContractError> {
     if role_id == RoleId::PUBLIC_ROLE {
-        return Err(Error::AccessManagerLockedRole(role_id));
+        return Err(ContractError::AccessManagerLockedRole(role_id));
     }
 
     let new_member = deps
