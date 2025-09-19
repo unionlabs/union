@@ -6,7 +6,7 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct BtcDelegationRewardsTracker {
-    /// StartPeriodCumulativeReward the starting period the the BTC delegator
+    /// StartPeriodCumulativeReward the starting period the BTC delegator
     /// made his last withdraw of rewards or modified his active staking amount
     /// of satoshis.
     #[prost(uint64, tag = "1")]
