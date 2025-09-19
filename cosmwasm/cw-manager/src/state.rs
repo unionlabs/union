@@ -6,10 +6,7 @@ use depolama::{
 use unionlabs_encoding::{Bincode, DecodeAs, EncodeAs};
 use unionlabs_primitives::H256;
 
-use crate::{
-    execute::Method,
-    types::{Access, Role, RoleId, TargetConfig},
-};
+use crate::types::{Access, Role, RoleId, Schedule, Selector, TargetConfig};
 
 /// The admin of this manager contract. This is the only address that is able to add or remove role permissions.
 pub enum Admin {}
@@ -47,18 +44,18 @@ pub enum TargetAllowedRoles {}
 impl Store for TargetAllowedRoles {
     const PREFIX: Prefix = Prefix::new(b"target_allowed_roles");
     // target address, method
-    type Key = (Addr, Method);
+    type Key = (Addr, Selector);
     type Value = RoleId;
 }
-impl KeyCodec<(Addr, Method)> for TargetAllowedRoles {
-    fn encode_key((addr, method): &(Addr, Method)) -> Bytes {
+impl KeyCodec<(Addr, Selector)> for TargetAllowedRoles {
+    fn encode_key((addr, method): &(Addr, Selector)) -> Bytes {
         (addr.clone().into_string(), method)
             .encode_as::<Bincode>()
             .into()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<(Addr, Method)> {
-        let (addr, method) = <(String, Method)>::decode_as::<Bincode>(raw)
+    fn decode_key(raw: &Bytes) -> StdResult<(Addr, Selector)> {
+        let (addr, method) = <(String, Selector)>::decode_as::<Bincode>(raw)
             .map_err(|e| StdError::generic_err(format!("unable to decode: {e:?}")))?;
 
         Ok((Addr::unchecked(addr), method))
@@ -136,6 +133,25 @@ impl ValueCodecViaEncoding for RoleMembers {
 /// mapping(bytes32 operationId => Schedule) private _schedules;
 /// ```
 pub enum Schedules {}
+impl Store for Schedules {
+    const PREFIX: Prefix = Prefix::new(b"schedules");
+    type Key = H256;
+    type Value = Schedule;
+}
+impl KeyCodec<H256> for Schedules {
+    fn encode_key(key: &H256) -> Bytes {
+        key.into_bytes()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<H256> {
+        raw.as_ref()
+            .try_into()
+            .map_err(|e| StdError::generic_err(format!("invalid key: {e}")))
+    }
+}
+impl ValueCodecViaEncoding for Schedules {
+    type Encoding = Bincode;
+}
 
 /// Used to identify operations that are currently being executed via {execute}.
 /// This should be transient storage when supported by the CosmWasm.

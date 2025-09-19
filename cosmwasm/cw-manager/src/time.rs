@@ -1,6 +1,7 @@
+// TODO: Add a trait for "timestamp provider" and use that instead of threading a timestamp value everywhere
+
 use std::cmp;
 
-use cosmwasm_std::Env;
 use serde::{Deserialize, Serialize};
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L61>
@@ -78,8 +79,8 @@ impl Delay {
     /// ```
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L86>
-    pub fn get_full(&self, env: &Env) -> UnpackedDelay {
-        self.get_full_at(env.block.time.seconds())
+    pub fn get_full(&self, timestamp: u64) -> UnpackedDelay {
+        self.get_full_at(timestamp)
     }
 
     /// Get the current value.
@@ -89,8 +90,8 @@ impl Delay {
     /// ```
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L93>
-    pub fn get(&self, env: &Env) -> u32 {
-        self.get_full_at(env.block.time.seconds()).value_before
+    pub fn get(&self, timestamp: u64) -> u32 {
+        self.get_full_at(timestamp).value_before
     }
 
     /// Update a Delay object so that it takes a new duration after a timepoint that is automatically computed to enforce the old delay at the moment of the update. Returns the updated Delay object and the timestamp when the new delay becomes effective.
@@ -104,8 +105,8 @@ impl Delay {
     /// ```
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L103-L107>
-    pub fn with_update(&self, env: &Env, new_value: u32, min_setback: u32) -> (Delay, u64) {
-        let value = self.get(env);
+    pub fn with_update(&self, timestamp: u64, new_value: u32, min_setback: u32) -> (Delay, u64) {
+        let value = self.get(timestamp);
         let setback = cmp::max(
             min_setback,
             if value > new_value {
@@ -114,7 +115,7 @@ impl Delay {
                 0
             },
         );
-        let effect = env.block.time.seconds() + setback as u64;
+        let effect = timestamp + setback as u64;
         (
             Delay {
                 effect_date: effect,

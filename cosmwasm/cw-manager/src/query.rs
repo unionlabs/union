@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Deps, Env};
+use cosmwasm_std::Addr;
 use depolama::StorageExt;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -8,7 +8,8 @@ use crate::{
     error::ContractError,
     state::{ExecutionId, RoleMembers, Roles, TargetAllowedRoles, Targets},
     time::UnpackedDelay,
-    types::{Method, RoleId},
+    types::{RoleId, Selector},
+    Ctx,
 };
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L139>
@@ -21,30 +22,29 @@ use crate::{
 /// ) public view virtual returns (bool immediate, uint32 delay)
 /// ```
 pub fn can_call(
-    deps: Deps,
-    env: &Env,
+    ctx: &Ctx,
     caller: &Addr,
     target: &Addr,
-    method: Method,
+    selector: Selector,
 ) -> Result<CanCall, ContractError> {
-    if is_target_closed(deps, target)? {
+    if is_target_closed(ctx, target)? {
         Ok(CanCall {
             immediate: false,
             delay: 0,
         })
-    } else if caller == env.contract.address {
+    } else if caller == ctx.address_this() {
         // Caller is AccessManager, this means the call was sent through {execute} and it already checked
         // permissions. We verify that the call "identifier", which is set during {execute}, is correct.
         Ok(CanCall {
-            immediate: is_executing(deps, target, &method)?,
+            immediate: is_executing(ctx, target, &selector)?,
             delay: 0,
         })
     } else {
-        let role_id = get_target_function_role(deps, target, &method)?;
+        let role_id = get_target_function_role(ctx, target, &selector)?;
         let HasRole {
             is_member,
             execution_delay,
-        } = has_role(deps, env, role_id, caller)?;
+        } = has_role(ctx, role_id, caller)?;
         if is_member {
             Ok(CanCall {
                 immediate: execution_delay == 0,
@@ -59,12 +59,20 @@ pub fn can_call(
     }
 }
 
+/// ```solidity
+/// function expiration() public view virtual returns (uint32)
+/// ```
+///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L158>
 pub fn expiration() -> u32 {
     // 1 week
     7 * 24 * 60 * 60
 }
 
+/// ```solidity
+/// function minSetback() public view virtual returns (uint32)
+/// ```
+///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L163>
 pub fn min_setback() -> u32 {
     // 5 days
@@ -76,8 +84,8 @@ pub fn min_setback() -> u32 {
 /// ```solidity
 /// function isTargetClosed(address target) public view virtual returns (bool)
 /// ```
-pub fn is_target_closed(deps: Deps, target: &Addr) -> Result<bool, ContractError> {
-    Ok(deps.storage.read::<Targets>(target)?.closed)
+pub fn is_target_closed(ctx: &Ctx, target: &Addr) -> Result<bool, ContractError> {
+    Ok(ctx.read::<Targets>(target)?.closed)
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L173>
@@ -86,13 +94,11 @@ pub fn is_target_closed(deps: Deps, target: &Addr) -> Result<bool, ContractError
 /// function getTargetFunctionRole(address target, bytes4 selector) public view virtual returns (uint64)
 /// ```
 pub fn get_target_function_role(
-    deps: Deps,
+    ctx: &Ctx,
     target: &Addr,
-    method: &Method,
+    selector: &Selector,
 ) -> Result<RoleId, ContractError> {
-    Ok(deps
-        .storage
-        .read::<TargetAllowedRoles>(&(target.clone(), method.clone()))?)
+    Ok(ctx.read::<TargetAllowedRoles>(&(target.clone(), selector.clone()))?)
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L178>
@@ -100,8 +106,11 @@ pub fn get_target_function_role(
 /// ```solidity
 /// function getTargetAdminDelay(address target) public view virtual returns (uint32)
 /// ```
-pub fn get_target_admin_delay(deps: Deps, env: &Env, target: &Addr) -> Result<u32, ContractError> {
-    Ok(deps.storage.read::<Targets>(target)?.admin_delay.get(env))
+pub fn get_target_admin_delay(ctx: &mut Ctx, target: &Addr) -> Result<u32, ContractError> {
+    Ok(ctx
+        .read::<Targets>(target)?
+        .admin_delay
+        .get(ctx.timestamp()))
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L183>
@@ -109,8 +118,8 @@ pub fn get_target_admin_delay(deps: Deps, env: &Env, target: &Addr) -> Result<u3
 /// ```solidity
 /// function getRoleAdmin(uint64 roleId) public view virtual returns (uint64)
 /// ```
-pub fn get_role_admin(deps: Deps, role_id: RoleId) -> Result<RoleId, ContractError> {
-    Ok(deps.storage.read::<Roles>(&role_id)?.admin)
+pub fn get_role_admin(ctx: &Ctx, role_id: RoleId) -> Result<RoleId, ContractError> {
+    Ok(ctx.read::<Roles>(&role_id)?.admin)
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L188>
@@ -118,8 +127,8 @@ pub fn get_role_admin(deps: Deps, role_id: RoleId) -> Result<RoleId, ContractErr
 /// ```solidity
 /// function getRoleGuardian(uint64 roleId) public view virtual returns (uint64)
 /// ```
-pub fn get_role_guardian(deps: Deps, role_id: RoleId) -> Result<RoleId, ContractError> {
-    Ok(deps.storage.read::<Roles>(&role_id)?.guardian)
+pub fn get_role_guardian(ctx: &Ctx, role_id: RoleId) -> Result<RoleId, ContractError> {
+    Ok(ctx.read::<Roles>(&role_id)?.guardian)
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L193>
@@ -127,8 +136,11 @@ pub fn get_role_guardian(deps: Deps, role_id: RoleId) -> Result<RoleId, Contract
 /// ```solidity
 /// function getRoleGrantDelay(uint64 roleId) public view virtual returns (uint32)
 /// ```
-pub fn get_role_grant_delay(deps: Deps, env: &Env, role_id: RoleId) -> Result<u32, ContractError> {
-    Ok(deps.storage.read::<Roles>(&role_id)?.grant_delay.get(env))
+pub fn get_role_grant_delay(ctx: &Ctx, role_id: RoleId) -> Result<u32, ContractError> {
+    Ok(ctx
+        .read::<Roles>(&role_id)?
+        .grant_delay
+        .get(ctx.timestamp()))
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L198>
@@ -140,16 +152,13 @@ pub fn get_role_grant_delay(deps: Deps, env: &Env, role_id: RoleId) -> Result<u3
 /// ) public view virtual returns (uint48 since, uint32 currentDelay, uint32 pendingDelay, uint48 effect)
 /// ```
 pub fn get_access(
-    deps: Deps,
-    env: &Env,
+    ctx: &Ctx,
     role_id: RoleId,
     account: &Addr,
 ) -> Result<(u64, UnpackedDelay), ContractError> {
-    let access = deps
-        .storage
-        .read::<RoleMembers>(&(role_id, account.clone()))?;
+    let access = ctx.read::<RoleMembers>(&(role_id, account.clone()))?;
 
-    Ok((access.since, access.delay.get_full(env)))
+    Ok((access.since, access.delay.get_full(ctx.timestamp())))
 }
 
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L211>
@@ -160,21 +169,16 @@ pub fn get_access(
 ///     address account
 /// ) public view virtual returns (bool isMember, uint32 executionDelay)
 /// ```
-pub fn has_role(
-    deps: Deps,
-    env: &Env,
-    role_id: RoleId,
-    account: &Addr,
-) -> Result<HasRole, ContractError> {
+pub fn has_role(ctx: &Ctx, role_id: RoleId, account: &Addr) -> Result<HasRole, ContractError> {
     if role_id == RoleId::PUBLIC_ROLE {
         Ok(HasRole {
             is_member: true,
             execution_delay: 0,
         })
     } else {
-        let (since, delay) = get_access(deps, env, role_id, account)?;
+        let (since, delay) = get_access(ctx, role_id, account)?;
         Ok(HasRole {
-            is_member: since != 0 && since <= env.block.time.seconds(),
+            is_member: since != 0 && since <= ctx.timestamp(),
             execution_delay: delay.value_before,
         })
     }
@@ -188,14 +192,13 @@ pub fn has_role(
 /// function _isExecuting(address target, bytes4 selector) private view returns (bool)
 /// ```
 pub(crate) fn is_executing(
-    deps: Deps,
+    ctx: &Ctx,
     target: &Addr,
-    method: &Method,
+    selector: &Selector,
 ) -> Result<bool, ContractError> {
-    Ok(deps
-        .storage
+    Ok(ctx
         .maybe_read_item::<ExecutionId>()?
-        .is_some_and(|id| id == hash_execution_id(target, method)))
+        .is_some_and(|id| id == hash_execution_id(target, selector)))
 }
 
 /// Hashing function for execute protection.
@@ -205,8 +208,8 @@ pub(crate) fn is_executing(
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L737>
-pub(crate) fn hash_execution_id(target: &Addr, method: &Method) -> H256 {
-    sha2::Sha256::digest(format!("{target}:{method}")).into()
+pub(crate) fn hash_execution_id(target: &Addr, selector: &Selector) -> H256 {
+    sha2::Sha256::digest(format!("{target}:{selector}")).into()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

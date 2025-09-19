@@ -1,7 +1,7 @@
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 
-use crate::{execute::Method, types::RoleId};
+use crate::types::{RoleId, Selector};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -9,7 +9,7 @@ pub enum QueryMsg {
     AdminRole {},
     PublicRole {},
     CanCall {
-        method: String,
+        selector: String,
         target: Addr,
         caller: Addr,
     },
@@ -20,7 +20,7 @@ pub enum QueryMsg {
     },
     GetTargetFunctionRole {
         target: Addr,
-        method: Method,
+        selector: Selector,
     },
     GetTargetAdminDelay {
         target: Addr,
@@ -44,7 +44,7 @@ pub enum QueryMsg {
     },
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, strum::IntoStaticStr)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     LabelRole {
@@ -75,8 +75,35 @@ pub enum ExecuteMsg {
         guardian: RoleId,
     },
 
-    SetRoleGrantDelay {
+    SetGrantDelay {
         role_id: RoleId,
-        grant_delay: RoleId,
+        grant_delay: u32,
     },
+
+    SetTargetAdminDelay {
+        target: Addr,
+        new_delay: u32,
+    },
+
+    SetTargetClosed {
+        target: Addr,
+        closed: bool,
+    },
+
+    SetTargetFunctionRole {
+        target: Addr,
+        selectors: Vec<Selector>,
+        role_id: RoleId,
+    },
+
+    UpdateAuthority {
+        target: Addr,
+        new_authority: Addr,
+    },
+}
+
+impl ExecuteMsg {
+    pub(crate) fn selector(&self) -> Selector {
+        Selector::new(<&'static str>::from(self))
+    }
 }

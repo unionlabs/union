@@ -285,7 +285,7 @@ members = [
   "tools/union-test",
   "lib/cw20-ctx",
   "lib/ucs03-zkgmable",
-  "lib/ucs03-solvable", "lib/access-manager", "lib/access-manager-derive",
+  "lib/ucs03-solvable",
 ]
 
 [workspace.package]

@@ -76,7 +76,8 @@ pub struct Schedule {
     /// Moment at which the operation can be executed.
     pub timepoint: u64,
     /// Operation nonce to allow third-party contracts to identify the operation.
-    pub nonce: u64,
+    // TODO: Newtype
+    pub nonce: u32,
 }
 
 #[derive(
@@ -126,9 +127,16 @@ impl RoleId {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
-pub struct Method(String);
+// TODO: &str
+pub struct Selector(String);
 
-impl fmt::Display for Method {
+impl Selector {
+    pub(crate) fn new(selector: impl Into<String>) -> Self {
+        Self(selector.into())
+    }
+}
+
+impl fmt::Display for Selector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }

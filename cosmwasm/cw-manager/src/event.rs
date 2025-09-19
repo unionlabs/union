@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Event};
-use unionlabs_primitives::{Bytes, H256, H32};
+use unionlabs_primitives::{Bytes, H256};
 
-use crate::types::RoleId;
+use crate::types::{Selector, RoleId};
 
 /// A delayed operation was scheduled.
 ///
@@ -26,11 +26,11 @@ pub(crate) fn operation_scheduled(
     data: Bytes,
 ) -> Event {
     Event::new("operation_schedule")
-        .add_attribute("operation_id", operation_id.into_bytes().to_string())
+        .add_attribute("operation_id", operation_id.to_string())
         .add_attribute("nonce", nonce.to_string())
         .add_attribute("schedule", schedule.to_string())
-        .add_attribute("caller", caller.to_string())
-        .add_attribute("target", target.to_string())
+        .add_attribute("caller", caller)
+        .add_attribute("target", target)
         .add_attribute("data", data.to_string())
 }
 
@@ -43,7 +43,7 @@ pub(crate) fn operation_scheduled(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L19-L22>
 pub(crate) fn operation_executed(operation_id: H256, nonce: u32) -> Event {
     Event::new("operation_executed")
-        .add_attribute("operation_id", operation_id.into_bytes().to_string())
+        .add_attribute("operation_id", operation_id.to_string())
         .add_attribute("nonce", nonce.to_string())
 }
 
@@ -56,7 +56,7 @@ pub(crate) fn operation_executed(operation_id: H256, nonce: u32) -> Event {
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L24-L27>
 pub(crate) fn operation_canceled(operation_id: H256, nonce: u32) -> Event {
     Event::new("operation_canceled")
-        .add_attribute("operation_id", operation_id.into_bytes().to_string())
+        .add_attribute("operation_id", operation_id.to_string())
         .add_attribute("nonce", nonce.to_string())
 }
 
@@ -118,7 +118,7 @@ pub(crate) fn role_revoked(role_id: RoleId, account: &Addr) -> Event {
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L48-L51>
-pub(crate) fn role_admin_changed(role_id: RoleId, admin: u64) -> Event {
+pub(crate) fn role_admin_changed(role_id: RoleId, admin: RoleId) -> Event {
     Event::new("role_admin_changed")
         .add_attribute("role_id", role_id.to_string())
         .add_attribute("admin", admin.to_string())
@@ -131,7 +131,7 @@ pub(crate) fn role_admin_changed(role_id: RoleId, admin: u64) -> Event {
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L53-L56>
-pub(crate) fn role_guardian_changed(role_id: RoleId, guardian: u64) -> Event {
+pub(crate) fn role_guardian_changed(role_id: RoleId, guardian: RoleId) -> Event {
     Event::new("role_guardian_changed")
         .add_attribute("role_id", role_id.to_string())
         .add_attribute("guardian", guardian.to_string())
@@ -171,10 +171,14 @@ pub(crate) fn target_closed(target: &Addr, closed: bool) -> Event {
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L68-L71>
-pub(crate) fn target_function_role_updated(target: &Addr, selector: H32, role_id: RoleId) -> Event {
+pub(crate) fn target_function_role_updated(
+    target: &Addr,
+    method: &Selector,
+    role_id: RoleId,
+) -> Event {
     Event::new("target_function_role_updated")
         .add_attribute("target", target)
-        .add_attribute("selector", selector.to_string())
+        .add_attribute("selector", method.to_string())
         .add_attribute("role_id", role_id.to_string())
 }
 
