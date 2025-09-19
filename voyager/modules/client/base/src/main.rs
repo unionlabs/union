@@ -40,8 +40,10 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> anyhow::Result<Self> {
-        info.ensure_client_type(ClientType::BASE)?;
-        info.ensure_consensus_type(ConsensusType::BASE)?;
+        info.ensure_client_type(ClientType::BASE)
+            .or_else(|_| info.ensure_client_type(ClientType::OPTIMISM))?;
+        info.ensure_consensus_type(ConsensusType::BASE)
+            .or_else(|_| info.ensure_consensus_type(ConsensusType::OPTIMISM))?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
         Ok(Self {})

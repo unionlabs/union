@@ -171,6 +171,13 @@ impl ClientType {
     /// [fast finality]: https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/bsc-api-list/#economic-finality-fast-finality
     pub const PARLIA: &'static str = "parlia";
 
+    /// A client tracking the state of the [Optimism] optimistic L2, settling on
+    /// Ethereum, verified by verifying the L2 settlement on the L1.
+    ///
+    /// [Optimism]: http://optimism.io
+    /// [L2 settlement]: https://github.com/ethereum-optimism/optimism/tree/develop/packages/contracts-bedrock
+    pub const OPTIMISM: &'static str = "optimism";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
@@ -242,6 +249,13 @@ impl ConsensusType {
     /// [Base]: https://www.base.org
     /// [custom OP stack]: https://github.com/base/contracts
     pub const BASE: &'static str = "base";
+
+    /// A client tracking the state of the [Optimism] optimistic L2, settling on
+    /// Ethereum, verified by verifying the L2 settlement on the L1.
+    ///
+    /// [Optimism]: http://optimism.io
+    /// [L2 settlement]: https://github.com/ethereum-optimism/optimism/tree/develop/packages/contracts-bedrock
+    pub const OPTIMISM: &'static str = "optimism";
 
     // lots more to come - near, linea, polygon - stay tuned
 }
