@@ -53,7 +53,6 @@ pub struct Module {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ZkgmConfig {
-    zkgm_address: SuiAddress,
     vault_object_id: ObjectID,
     /// ID of the `wrapped_token_to_t` mapping
     wrapped_token_to_t: ObjectID,
@@ -129,9 +128,9 @@ impl TransactionPluginServer for Module {
         // which means, we have to consume it within the same PTB via `end_recv`.
         let mut session = zkgm::begin_recv_call(&mut ptb, &module_info, data.clone());
 
-        // // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
-        // // endpoint must be called as many times as the partitions. Since the number of coins will be the
-        // // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
+        // SUI code partitions the instructions by the instructions that need coin. And the `recv_packet`
+        // endpoint must be called as many times as the partitions. Since the number of coins will be the
+        // same as the number of partitions, we are calling `recv_packet` based on the number of coins.
         for coin_t in coin_ts {
             session = zkgm::recv_packet_call(
                 &mut ptb,
@@ -147,9 +146,9 @@ impl TransactionPluginServer for Module {
             );
         }
 
-        // // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
-        // // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
-        // // it, this PTB will fail and no partial state will be persisted.
+        // `end_recv` is done to consume the `session`, and do the recv commitment. Very important thing
+        // to note here is that, the fact that `session` have to be consumed makes it s.t. if we don't consume
+        // it, this PTB will fail and no partial state will be persisted.
         zkgm::end_recv_call(&mut ptb, self, &module_info, fee_recipient, session, data);
 
         Ok(ptb.finish())

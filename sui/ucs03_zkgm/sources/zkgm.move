@@ -72,7 +72,7 @@ module zkgm::zkgm {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
 
-    use vault::vault::Vault;
+    use vault::vault::{Vault, VaultCap};
 
     use zkgm::ack::{Self, Ack};
     use zkgm::batch;
@@ -139,6 +139,8 @@ module zkgm::zkgm {
     const E_VAULT_MISMATCH: u64 = 48;
     // const E_ONLY_MAKER: u64 = 0xdeadc0de;
 
+    const VAULT_CAP_OBJECT_KEY: vector<u8> = b"VAULT_CAP";
+
     public struct IbcAppWitness has drop {}
 
     public struct RelayStore has key {
@@ -147,8 +149,8 @@ module zkgm::zkgm {
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
         token_origin: Table<vector<u8>, u256>,
-        bag_to_coin: ObjectBag,
         wrapped_denom_to_t: Table<vector<u8>, String>,
+        object_store: ObjectBag,
     }
 
     public struct ChannelBalancePair has copy, drop, store {
@@ -211,9 +213,16 @@ module zkgm::zkgm {
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
-            bag_to_coin: object_bag::new(ctx),
+            object_store: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
         });
+    }
+
+    public fun register_vault_cap(
+        zkgm: &mut RelayStore,
+        vault_cap: VaultCap,
+    ) {
+        zkgm.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
     }
 
     public fun channel_open_init(
@@ -455,7 +464,7 @@ module zkgm::zkgm {
         mut exec_ctx: RecvCtx,
         ctx: &mut TxContext
     ): RecvCtx {
-        assert!(object::id(vault) == zkgm.vault_id, E_VAULT_MISMATCH);
+        // assert!(object::id(vault) == zkgm.vault_id, E_VAULT_MISMATCH);
 
         // aborts if there is not a session
         let packet_cursor = exec_ctx.cursor;
@@ -491,7 +500,7 @@ module zkgm::zkgm {
             );
             // TODO(aeryz): should we abort here?
             if (err != 0) {
-                abort 1
+                abort err
             };
             zkgm_packet.acks.push_back(ack);
 
@@ -878,7 +887,7 @@ module zkgm::zkgm {
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
         if (order.kind() == TOKEN_ORDER_KIND_SOLVE) {
-            return solver_fill<T>(
+            return zkgm.solver_fill<T>(
                 vault,
                 ibc_packet,
                 order,
@@ -903,6 +912,7 @@ module zkgm::zkgm {
     }
 
     fun solver_fill<T>(
+        zkgm: &RelayStore,
         vault: &mut Vault,
         ibc_packet: Packet,
         order: TokenOrderV2,
@@ -926,6 +936,7 @@ module zkgm::zkgm {
         };
 
         vault.solve<T>(
+            zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
             ibc_packet,
             *order.base_token(),
             quote_token,
@@ -948,10 +959,10 @@ module zkgm::zkgm {
     ) {
         let typename_t = type_name::get<T>();
         let key = typename_t.into_string();
-        if(!relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+        if(!relay_store.object_store.contains(string::from_ascii(key))) {
             abort E_NO_COIN_IN_BAG
         };
-        let coin = relay_store.bag_to_coin.borrow_mut<String, Coin<T>>(string::from_ascii(key));
+        let coin = relay_store.object_store.borrow_mut<String, Coin<T>>(string::from_ascii(key));
 
         let transferred_coin = coin.split<T>(amount, ctx);
         transfer::public_transfer(transferred_coin, receiver);
@@ -977,10 +988,20 @@ module zkgm::zkgm {
             return (vector::empty(), E_ANOTHER_TOKEN_IS_REGISTERED)
         };
         if (quote_amount > 0) {
-            vault.mint_and_transfer<T>(quote_amount as u64, receiver, ctx);
+            vault.mint_and_transfer_with_cap<T>(
+                zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                quote_amount as u64,
+                receiver,
+                ctx
+            );
         };
         if (fee > 0){
-            vault.mint_and_transfer<T>(fee, relayer, ctx);
+            vault.mint_and_transfer_with_cap<T>(
+                zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                fee,
+                relayer,
+                ctx
+            );
         };
 
         (token_order_ack::new(
@@ -1344,7 +1365,7 @@ module zkgm::zkgm {
         channel_id: u32,
         path: u256,
         order: TokenOrderV2,
-        ctx: &mut TxContext
+        ctx: &TxContext
     ) {
         let base_token = *order.base_token();
 
@@ -1380,7 +1401,11 @@ module zkgm::zkgm {
             // We don't have to verify that metadataImage matches the stored one
             // because the prediction would fail otherwise and we would fall
             // back in the else branch.
-            vault.burn<T>(coin, ctx);
+            vault.burn_with_cap<T>(
+                zkgm.object_store.borrow<_, VaultCap>(VAULT_CAP_OBJECT_KEY),
+                coin,
+                ctx
+            );
         } else {
             
             zkgm.increase_outstanding(
@@ -1499,7 +1524,12 @@ module zkgm::zkgm {
                 let market_maker = bcs::new(*asset_order_ack.market_maker()).peel_address();
 
                 if (order.kind() == TOKEN_ORDER_KIND_UNESCROW) {
-                    vault.mint_and_transfer<T>(order.base_amount() as u64, market_maker, ctx);
+                    vault.mint_and_transfer_with_cap<T>(
+                        zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                        order.base_amount() as u64,
+                        market_maker,
+                        ctx
+                    );
                 } else {
                     let res = zkgm.decrease_outstanding(
                         ibc_packet.source_channel_id(), 
@@ -1511,12 +1541,16 @@ module zkgm::zkgm {
                     assert!(res == 0, res);
                     if (market_maker == @0x0) {
                         let coin = {
-                            let coin: &mut Coin<T> = zkgm.bag_to_coin.borrow_mut(
+                            let coin: &mut Coin<T> = zkgm.object_store.borrow_mut(
                                 string::from_ascii(type_name::get<T>().into_string())
                             );
                             coin.split<T>(order.base_amount() as u64, ctx)
                         };
-                        vault.burn<T>(coin, ctx);
+                        vault.burn_with_cap<T>(
+                            zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                            coin,
+                            ctx
+                        );
                     } else {
                         zkgm.distribute_coin<T>(market_maker, order.base_amount() as u64, ctx);
                     };
@@ -1709,11 +1743,11 @@ module zkgm::zkgm {
     ) {
         let typename_t = type_name::get<T>();
         let key = type_name::into_string(typename_t);
-        if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
-            let self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+        if(relay_store.object_store.contains(string::from_ascii(key))) {
+            let self_coin = relay_store.object_store.borrow_mut(string::from_ascii(key));
             coin::join(self_coin, coin)
         } else{
-            relay_store.bag_to_coin.add(string::from_ascii(key), coin)
+            relay_store.object_store.add(string::from_ascii(key), coin)
         }
     }
 

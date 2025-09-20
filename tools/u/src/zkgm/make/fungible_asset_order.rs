@@ -1,12 +1,18 @@
+use std::str::FromStr;
+
 use alloy::{primitives::Keccak256, sol_types::SolValue};
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use ucs03_zkgm::com::{
-    Batch, Instruction, TokenMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_0,
+    Batch, Instruction, SolverMetadata, TokenMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_0,
     INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_INITIALIZE,
+    TOKEN_ORDER_KIND_SOLVE,
 };
-use unionlabs::primitives::{Bytes, H256, U256};
+use unionlabs::{
+    encoding::Decode,
+    primitives::{encoding::HexUnprefixed, Bytes, H256, U256},
+};
 
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
@@ -108,29 +114,40 @@ impl Cmd {
                 println!("{instruction}");
             }
             Cmd::V2Sui(fao) => {
-                let metadata = TokenMetadata {
-                    implementation: Default::default(),
-                    initializer: bcs::to_bytes(&fao.metadata).unwrap().into(),
+                // let metadata = TokenMetadata {
+                //     implementation: Default::default(),
+                //     initializer: bcs::to_bytes(&fao.metadata).unwrap().into(),
+                // }
+                // .abi_encode_params()
+                // .into();
+
+                // let quote_token = match fao.base.quote_token {
+                //     Some(qt) => qt.into(),
+                //     None => {
+                //         let mut h = Keccak256::new();
+                //         h.update(&metadata);
+                //         predict_wrapped_token_sui(
+                //             U256::ZERO,
+                //             fao.channel,
+                //             fao.base.base_token.clone().into(),
+                //             h.finalize().to_vec(),
+                //         )
+                //         .into()
+                //     }
+                // };
+
+                let metadata = SolverMetadata {
+                    solverAddress: Bytes::<HexUnprefixed>::from_str(
+                        "c113302f2d081c65299ac245ce043c124368af79b5a9ce38d86855841b64d386",
+                    )
+                    .unwrap()
+                    .into(),
+                    metadata: Default::default(),
                 }
                 .abi_encode_params()
                 .into();
 
-                let quote_token = match fao.base.quote_token {
-                    Some(qt) => qt.into(),
-                    None => {
-                        let mut h = Keccak256::new();
-                        h.update(&metadata);
-                        predict_wrapped_token_sui(
-                            U256::ZERO,
-                            fao.channel,
-                            fao.base.base_token.clone().into(),
-                            h.finalize().to_vec(),
-                        )
-                        .into()
-                    }
-                };
-
-                let instruction = Instruction {
+                let instruction: Bytes = Instruction {
                     version: INSTR_VERSION_2,
                     opcode: OP_TOKEN_ORDER,
                     operand: TokenOrderV2 {
@@ -138,20 +155,10 @@ impl Cmd {
                         receiver: fao.base.receiver.into(),
                         base_token: fao.base.base_token.into(),
                         base_amount: fao.base.base_amount.into(),
-                        quote_token,
+                        quote_token: fao.base.quote_token.unwrap().into(),
                         quote_amount: fao.base.quote_amount.into(),
-                        kind: TOKEN_ORDER_KIND_INITIALIZE,
+                        kind: TOKEN_ORDER_KIND_SOLVE,
                         metadata,
-                    }
-                    .abi_encode_params()
-                    .into(),
-                };
-
-                let batch: Bytes = Instruction {
-                    version: INSTR_VERSION_0,
-                    opcode: OP_BATCH,
-                    operand: Batch {
-                        instructions: vec![instruction.clone(), instruction],
                     }
                     .abi_encode_params()
                     .into(),
@@ -159,7 +166,20 @@ impl Cmd {
                 .abi_encode_params()
                 .into();
 
-                println!("{batch}");
+                // let batch: Bytes = Instruction {
+                //     version: INSTR_VERSION_0,
+                //     opcode: OP_BATCH,
+                //     operand: Batch {
+                //         instructions: vec![instruction.clone(), instruction],
+                //     }
+                //     .abi_encode_params()
+                //     .into(),
+                // }
+                // .abi_encode_params()
+                // .into();
+                //
+
+                println!("{instruction}");
             }
         }
 

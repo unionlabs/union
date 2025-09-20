@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     fmt::Debug,
     panic::AssertUnwindSafe,
     str::FromStr,
@@ -142,7 +142,6 @@ impl Plugin for Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
@@ -340,9 +339,11 @@ impl Module {
             }
         }
 
-        merge_ptbs(&mut ptb, ptb_builder.finish());
+        // TODO(aeryz): this is messing with the tx order, instead merge on each loop
+        let mut final_ptb = ptb_builder.finish();
+        merge_ptbs(&mut final_ptb, ptb);
 
-        Ok(ptb)
+        Ok(final_ptb)
     }
 }
 
@@ -449,7 +450,7 @@ pub async fn try_parse_port(graphql_url: &str, port_id: &[u8]) -> RpcResult<Modu
     })?;
 
     let query = json!({
-        "query": "query ($address: SuiAddress) { latestPackage(address: $address) { address } }",
+        "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
         "variables": { "address": original_address }
     });
 
@@ -466,8 +467,12 @@ pub async fn try_parse_port(graphql_url: &str, port_id: &[u8]) -> RpcResult<Modu
         .unwrap();
 
     let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
-    let latest_address =
-        SuiAddress::from_str(v["data"]["latestPackage"]["address"].as_str().unwrap()).unwrap();
+    let latest_address = SuiAddress::from_str(
+        v["data"]["packageVersions"]["nodes"][0]["address"]
+            .as_str()
+            .unwrap(),
+    )
+    .unwrap();
 
     Ok(ModuleInfo {
         original_address,
@@ -499,13 +504,25 @@ pub async fn try_parse_port(graphql_url: &str, port_id: &[u8]) -> RpcResult<Modu
 }
 
 pub fn merge_ptbs(lhs: &mut ProgrammableTransaction, rhs: ProgrammableTransaction) {
-    let input_offset = lhs.inputs.len() as u16;
-    lhs.inputs.extend_from_slice(&rhs.inputs);
+    let mut call_arg_indices = HashMap::new();
+    let mut cursor: u16 = 0;
+
+    let mut unique_inputs = Vec::new();
+
+    lhs.inputs.iter().chain(rhs.inputs.iter()).for_each(|i| {
+        if !call_arg_indices.contains_key(i) {
+            unique_inputs.push(i.clone());
+            call_arg_indices.insert(i.clone(), cursor);
+            cursor += 1;
+        }
+    });
+
+    lhs.inputs = unique_inputs;
 
     let result_offset = lhs.commands.len() as u16;
 
     let adjust_indices = |arg: &mut Argument| match arg {
-        Argument::Input(i) => *i += input_offset,
+        Argument::Input(i) => *i = *call_arg_indices.get(&rhs.inputs[*i as usize]).unwrap(),
         Argument::Result(i) => *i += result_offset,
         Argument::NestedResult(i, _) => *i += result_offset,
         _ => {}

@@ -295,7 +295,7 @@ impl StateModuleServer<IbcUnion> for Module {
 
                 into_value(consensus_state_bytes)
             }
-            _ => todo!(),
+            what => panic!("WHAT: {what:?}"),
         })
     }
 }

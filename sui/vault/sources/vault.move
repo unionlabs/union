@@ -84,6 +84,10 @@ module vault::vault {
         fungible_counterparties: Table<FungibleLane, FungibleCounterparty>,
     }
 
+    public struct VaultCap has key, store {
+        id: UID
+    }
+
     public struct IntentWhitelistKey has copy, drop, store {
         token: vector<u8>,
         packet_hash: vector<u8>,
@@ -107,6 +111,12 @@ module vault::vault {
     }
     
     fun init(ctx: &mut TxContext) {
+        transfer::transfer(
+            VaultCap {
+                id: object::new(ctx)
+            },
+            ctx.sender()
+        );
         transfer::share_object(Vault {
             id: object::new(ctx),
             token_type_to_treasury: object_bag::new(ctx),
@@ -154,7 +164,7 @@ module vault::vault {
         beneficiary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let token = type_name::get<T>().into_string();
+        let token =  string::from_ascii(type_name::get<T>().into_string());
         let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
 
         assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
@@ -203,6 +213,7 @@ module vault::vault {
 
     public fun solve<T>(
         vault: &mut Vault,
+        _: &VaultCap,
         packet: ibc::packet::Packet,
         base_token: vector<u8>,
         quote_token: vector<u8>,
@@ -215,8 +226,6 @@ module vault::vault {
         intent: bool,
         ctx: &mut TxContext,
     ): (vector<u8>, u64) {
-        assert!(ctx.sender() == @zkgm, E_UNAUTHORIZED);
-
         if (type_name::get<T>().into_string().into_bytes() != quote_token) {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
@@ -238,7 +247,7 @@ module vault::vault {
             base_token,
         };
 
-        if (vault.fungible_counterparties.contains(fungibility)) {
+        if (!vault.fungible_counterparties.contains(fungibility)) {
             return (vector::empty(), E_ONLY_MAKER)
         };
 
@@ -264,16 +273,34 @@ module vault::vault {
         (counterparty_beneficiary, 0)
     }
 
-    public fun burn<T>(vault: &mut Vault, c: Coin<T>, ctx: &mut TxContext): u64 {
-        let typename_t = type_name::get<T>();
-        let cap = vault.token_type_to_treasury.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
-
-        if (ctx.sender() != @zkgm) {
-            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
-        };
-        
-        coin::burn<T>(&mut cap.cap, c)
+    public fun burn_with_cap<T>(vault: &mut Vault, _: &VaultCap, c: Coin<T>, ctx: &TxContext): u64 {
+        vault.burn_internal(false, c, ctx)
     }
+
+    public fun mint_with_cap<T>(
+        vault: &mut Vault,
+        _: &VaultCap,
+        value: u64,
+        ctx: &mut TxContext
+    ): Coin<T> {
+        vault.mint_internal(false, value, ctx)
+    }
+
+    public fun mint_and_transfer_with_cap<T>(
+        vault: &mut Vault,
+        _: &VaultCap,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {
+        vault.mint_and_transfer_internal<T>(false, amount, recipient, ctx);
+    }
+
+
+    public fun burn<T>(vault: &mut Vault, c: Coin<T>, ctx: &TxContext): u64 {
+        vault.burn_internal(true, c, ctx)
+    }
+
 
     /// Coin admin functions
     public fun mint<T>(
@@ -281,14 +308,7 @@ module vault::vault {
         value: u64,
         ctx: &mut TxContext
     ): Coin<T> {
-        let typename_t = string::from_ascii(type_name::get<T>().into_string());
-        let cap: &mut TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow_mut(typename_t);
-
-        if (ctx.sender() != @zkgm) {
-            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
-        };
-        
-        coin::mint<T>(&mut cap.cap, value, ctx)
+        vault.mint_internal<T>(true, value, ctx)
     }
 
     public fun mint_and_transfer<T>(
@@ -297,13 +317,52 @@ module vault::vault {
         recipient: address,
         ctx: &mut TxContext
     ) {
-        let typename_t = string::from_ascii(type_name::get<T>().into_string());
-        let cap: &mut TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow_mut(typename_t);
+        vault.mint_and_transfer_internal<T>(true, amount, recipient, ctx);
+    }
 
-        if (ctx.sender() != @zkgm) {
+    fun burn_internal<T>(vault: &mut Vault, owner_check: bool, c: Coin<T>, ctx: &TxContext): u64 {
+        let typename_t = type_name::get<T>();
+        let cap = vault.token_type_to_treasury.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
+
+        if (owner_check) {    
             assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
         };
         
+        coin::burn<T>(&mut cap.cap, c)
+    }
+
+
+    /// Coin admin functions
+    fun mint_internal<T>(
+        vault: &mut Vault,
+        owner_check: bool,
+        value: u64,
+        ctx: &mut TxContext
+    ): Coin<T> {
+        let typename_t = string::from_ascii(type_name::get<T>().into_string());
+        let cap: &mut TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow_mut(typename_t);
+
+        if (owner_check) {    
+            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
+        };
+        
+        coin::mint<T>(&mut cap.cap, value, ctx)
+    }
+
+    fun mint_and_transfer_internal<T>(
+        vault: &mut Vault,
+        owner_check: bool,
+        amount: u64,
+        recipient: address,
+        ctx: &mut TxContext
+    ) {
+        let typename_t = string::from_ascii(type_name::get<T>().into_string());
+        let cap: &mut TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow_mut(typename_t);
+        
+        if (owner_check) {    
+            assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
+        };
+
         coin::mint_and_transfer<T>(&mut cap.cap, amount, recipient, ctx);
     }
 
