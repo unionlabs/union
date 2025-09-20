@@ -761,7 +761,6 @@ pub async fn register_tokens_if_zkgm(
         OP_TOKEN_ORDER => {
             let fao = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
                 .expect("impossible");
-            let mut coin_ts = vec![];
             if let Some(type_tag) = register_token_if_zkgm(
                 module,
                 ptb,

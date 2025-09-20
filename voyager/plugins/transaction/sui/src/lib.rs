@@ -75,6 +75,8 @@ pub async fn send_transactions(
                 None::<()>,
             )
         })?;
+
+    println!("ptb bro: {ptb:?}");
     println!(
         "{}",
         serde_json::to_string(
