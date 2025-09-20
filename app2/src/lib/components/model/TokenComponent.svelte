@@ -21,6 +21,7 @@ interface Props {
   icon?: Option.Option<string> | undefined
   showIcon?: boolean
   showSymbol?: boolean
+  maxDecimals?: number | undefined
 }
 
 const {
@@ -31,6 +32,7 @@ const {
   icon = Option.none(),
   showIcon = true,
   showSymbol = true,
+  maxDecimals = undefined,
 }: Props = $props()
 
 // Start the query when the component mounts
@@ -71,10 +73,23 @@ const displayAmount = $derived(
       const whole = amt / decimal
       const fraction = amt % decimal
 
-      // Convert fraction to string and remove trailing zeros
-      const fractionStr = fraction === 0n
-        ? ""
-        : `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
+      // Convert fraction to string and apply decimal limiting
+      let fractionStr = ""
+      if (fraction !== 0n) {
+        let fractionPart = fraction.toString().padStart(info.decimals, "0")
+
+        // Apply maxDecimals if specified
+        if (maxDecimals !== undefined && maxDecimals >= 0) {
+          fractionPart = fractionPart.substring(0, maxDecimals)
+        }
+
+        // Remove trailing zeros
+        fractionPart = fractionPart.replace(/0+$/, "")
+
+        if (fractionPart.length > 0) {
+          fractionStr = `.${fractionPart}`
+        }
+      }
 
       return Option.some(`${whole}${fractionStr}`)
     },

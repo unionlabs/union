@@ -1356,6 +1356,7 @@ export class Batch extends S.TaggedClass<Batch>()("@unionlabs/sdk/Ucs03/Batch", 
       decoding: () => 0 as const,
     }),
   ),
+  // XXX: can only be `Call` or `TokenOrder`
   operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
 }) {
   static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
@@ -1434,7 +1435,7 @@ export type TokenOrder = typeof TokenOrder.Type
  * @category models
  * @since 2.0.0
  */
-export type Schema = Instruction | Forward | Call | Batch | TokenOrder
+export type Schema = Instruction | Forward | Call | Batch | TokenOrder // XXX: call this `Root` and drop `Instruction`
 
 /**
  * @category models
@@ -1813,6 +1814,7 @@ export const Ucs03FromInstruction = S.transformOrFail(
     decode: (fromA, _, ast, fromI) =>
       pipe(
         fromA.operand,
+        // XXX: choose decode given explicit opcode / version
         S.decode(Ucs03FromHex),
         Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
       ),
