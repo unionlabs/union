@@ -73,12 +73,13 @@ use crate::{
     query::query_state,
     state::AccountingStateStore,
     tests::test_helper::{
-        mock_init_msg, setup, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2, UNION_STAKER,
+        mock_init_msg, set_rewards, setup, LST_ADDRESS, NATIVE_TOKEN, STAKER_ADDRESS, UNION1,
+        UNION2,
     },
 };
 
 #[test]
-fn bond_local_works() {
+fn bond_without_pending_rewards() {
     let mut deps = setup();
     let info = message_info(&Addr::unchecked(UNION1), &coins(1000, NATIVE_TOKEN));
     let mint_amount = 1000u128.into();
@@ -95,7 +96,7 @@ fn bond_local_works() {
     assert_eq!(
         res.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
-            to_address: UNION_STAKER.into(),
+            to_address: STAKER_ADDRESS.into(),
             amount: info.funds.clone()
         })
     );
@@ -140,14 +141,7 @@ fn bond_local_works() {
     // there is no further state change
     assert_eq!(state, prev_state);
 
-    // manually changing the rate instead of going through the `rewards` entrypoint
-    deps.storage
-        .upsert::<AccountingStateStore, StdError>(&(), |s| {
-            let mut s = s.expect("exists");
-            s.total_bonded_native_tokens += 100;
-            Ok(s)
-        })
-        .unwrap();
+    set_rewards(&mut deps.querier, [("validator1", 100)]);
 
     let res = execute(
         deps.as_mut(),
@@ -161,8 +155,6 @@ fn bond_local_works() {
     )
     .unwrap();
 
-    // Since this is a local call, there will be no slippage and all payments will be done to
-    // the sender. Hence, the calculated 909 is paid to the sender.
     assert_eq!(
         res.messages[1].msg,
         CosmosMsg::Wasm(WasmMsg::Execute {
@@ -217,11 +209,10 @@ fn slippage_not_met() {
 
     // manually changing the rate instead of going through the `rewards` entrypoint
     deps.storage
-        .upsert::<AccountingStateStore, StdError>(&(), |s| {
-            let mut s = s.expect("exists");
+        .update::<AccountingStateStore, StdError, _>(&(), |s| {
             s.total_bonded_native_tokens += 10000;
             s.total_issued_lst += 1234;
-            Ok(s)
+            Ok(())
         })
         .unwrap();
 

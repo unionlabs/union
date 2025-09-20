@@ -61,7 +61,7 @@
 use cosmwasm_std::{
     coins,
     testing::{message_info, mock_env},
-    Addr, BankMsg, Coin, CosmosMsg, Event, StdError,
+    Addr, BankMsg, Coin, CosmosMsg, Event,
 };
 use depolama::StorageExt;
 
@@ -71,7 +71,7 @@ use crate::{
     error::ContractError,
     msg::ExecuteMsg,
     state::AccountingStateStore,
-    tests::test_helper::{mock_init_msg, setup, FEE_RECIPIENT, NATIVE_TOKEN, UNION_STAKER},
+    tests::test_helper::{mock_init_msg, setup, FEE_RECIPIENT, NATIVE_TOKEN, STAKER_ADDRESS},
     types::AccountingState,
 };
 
@@ -81,11 +81,10 @@ fn receive_rewards_works() {
 
     let state = deps
         .storage
-        .upsert_item::<AccountingStateStore, StdError>(|s| {
-            let mut s = s.unwrap();
+        .update_item::<AccountingStateStore, ContractError, _>(|s| {
             s.total_bonded_native_tokens = 1_100;
             s.total_issued_lst = 1_000;
-            Ok(s)
+            Ok(s.clone())
         })
         .unwrap();
 
@@ -111,7 +110,7 @@ fn receive_rewards_works() {
     assert_eq!(
         res.messages[0].msg,
         CosmosMsg::Bank(BankMsg::Send {
-            to_address: UNION_STAKER.into(),
+            to_address: STAKER_ADDRESS.into(),
             amount: vec![Coin {
                 denom: NATIVE_TOKEN.into(),
                 amount: (reward_amount - fee).into()
@@ -158,12 +157,11 @@ fn receive_rewards_and_send_fees_to_fee_recipient() {
     let env = mock_env();
 
     deps.storage
-        .upsert_item::<AccountingStateStore, ContractError>(|state| {
-            let mut state = state.unwrap();
+        .update_item::<AccountingStateStore, ContractError, _>(|state| {
             state.total_issued_lst = 100_000;
             state.total_bonded_native_tokens = 100_000;
             state.total_reward_amount = 0;
-            Ok(state)
+            Ok(())
         })
         .unwrap();
 
@@ -181,7 +179,7 @@ fn receive_rewards_and_send_fees_to_fee_recipient() {
         res.messages[0].msg,
         CosmosMsg::from(BankMsg::Send {
             // funds are sent to the staker no matter who sent the rewards
-            to_address: UNION_STAKER.to_owned(),
+            to_address: STAKER_ADDRESS.to_owned(),
             amount: coins(90, NATIVE_TOKEN)
         })
     );
@@ -210,12 +208,11 @@ fn receive_rewards_with_zero_fees_fails() {
     let env = mock_env();
 
     deps.storage
-        .upsert_item::<AccountingStateStore, ContractError>(|state| {
-            let mut state = state.unwrap();
+        .update_item::<AccountingStateStore, ContractError, _>(|state| {
             state.total_issued_lst = 100_000;
             state.total_bonded_native_tokens = 100_000;
             state.total_reward_amount = 0;
-            Ok(state)
+            Ok(())
         })
         .unwrap();
 

@@ -60,7 +60,7 @@
 
 use cosmwasm_std::{
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Coin, CosmosMsg, Event, StdError, Timestamp, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Event, Timestamp, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -68,6 +68,7 @@ use depolama::StorageExt;
 use super::test_helper::{NATIVE_TOKEN, UNION3};
 use crate::{
     contract::execute,
+    error::ContractError,
     msg::ExecuteMsg,
     state::{
         AccountingStateStore, CurrentPendingBatch, ReceivedBatches, SubmittedBatches,
@@ -82,11 +83,10 @@ fn unbond_works() {
     let mut deps = setup();
 
     deps.storage
-        .upsert_item::<AccountingStateStore, StdError>(|s| {
-            let mut s = s.unwrap();
+        .update_item::<AccountingStateStore, ContractError, _>(|s| {
             s.total_bonded_native_tokens = 1_100;
             s.total_issued_lst = 1_000;
-            Ok(s)
+            Ok(())
         })
         .unwrap();
 
@@ -255,11 +255,10 @@ fn receive_unstaked_tokens_works() {
     let mut deps = setup();
 
     deps.storage
-        .upsert_item::<AccountingStateStore, StdError>(|s| {
-            let mut s = s.unwrap();
+        .update_item::<AccountingStateStore, ContractError, _>(|s| {
             s.total_bonded_native_tokens = 5_000;
             s.total_issued_lst = 5_000;
-            Ok(s)
+            Ok(())
         })
         .unwrap();
 

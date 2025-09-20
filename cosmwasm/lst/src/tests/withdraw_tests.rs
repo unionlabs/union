@@ -60,7 +60,7 @@
 
 use cosmwasm_std::{
     testing::{message_info, mock_env},
-    Addr, Coin, CosmosMsg, StdError,
+    Addr, Coin, CosmosMsg,
 };
 use depolama::StorageExt;
 
@@ -78,11 +78,10 @@ fn withdraw() {
     let mut deps = setup();
 
     deps.storage
-        .upsert_item::<AccountingStateStore, StdError>(|s| {
-            let mut s = s.unwrap();
+        .update_item::<AccountingStateStore, ContractError, _>(|s| {
             s.total_bonded_native_tokens = 300_000;
             s.total_issued_lst = 130_000;
-            Ok(s)
+            Ok(())
         })
         .unwrap();
 

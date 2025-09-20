@@ -270,6 +270,7 @@ pub struct ConfigResponse {
     pub protocol_fee_config: ProtocolFeeConfig,
     pub monitors: Vec<Addr>,
     pub lst_address: Addr,
+    pub staker_address: Addr,
     pub batch_period_seconds: u64,
     pub unbonding_period_seconds: u64,
     pub stopped: bool,
@@ -279,8 +280,8 @@ pub struct ConfigResponse {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct AccountingStateResponse {
-    pub total_bonded_native_tokens: Uint128,
-    pub total_issued_lst: Uint128,
+    pub total_assets: Uint128,
+    pub total_shares: Uint128,
     pub total_reward_amount: Uint128,
     pub redemption_rate: Decimal,
     pub purchase_rate: Decimal,

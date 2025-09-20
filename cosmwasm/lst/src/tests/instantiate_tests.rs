@@ -67,9 +67,10 @@ use depolama::StorageExt;
 use crate::{
     contract::{init, instantiate},
     error::ContractError,
+    execute::FEE_RATE_DENOMINATOR,
     state::CurrentPendingBatch,
     tests::test_helper::{mock_init_msg, UNION1},
-    types::{BatchId, PendingBatch, MAX_FEE_RATE},
+    types::{BatchId, PendingBatch},
 };
 
 #[test]
@@ -77,7 +78,7 @@ fn invalid_max_fee_rate_fails() {
     let mut deps = mock_dependencies();
     let mut msg = mock_init_msg();
 
-    msg.protocol_fee_config.fee_rate = MAX_FEE_RATE + 1;
+    msg.protocol_fee_config.fee_rate = (FEE_RATE_DENOMINATOR as u128) + 1;
 
     assert_eq!(
         init(deps.as_mut(), mock_env(), msg).unwrap_err(),

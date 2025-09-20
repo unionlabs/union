@@ -62,7 +62,7 @@ use cosmwasm_std::{Addr, StdError};
 use cw_utils::PaymentError;
 use frissitheto::UpgradeError;
 
-use crate::types::{BatchId, MAX_FEE_RATE};
+use crate::{execute::FEE_RATE_DENOMINATOR, types::BatchId};
 
 pub type ContractResult<T> = core::result::Result<T, ContractError>;
 
@@ -173,7 +173,7 @@ pub enum ContractError {
     #[error("slippage not met (min={min_mint_amount}, actual={actual})")]
     SlippageNotMet { min_mint_amount: u128, actual: u128 },
 
-    #[error("protocol fee rate can't be higher then {MAX_FEE_RATE}")]
+    #[error("protocol fee rate can't be higher then {FEE_RATE_DENOMINATOR}")]
     InvalidProtocolFeeRate,
     #[error(
         "the batch period ({batch_period_seconds}) is larger than the \

@@ -58,14 +58,14 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+mod bond_tests;
 mod circuit_breaker_tests;
 mod helper_tests;
 mod instantiate_tests;
 mod ownership_tests;
 mod query_tests;
 mod reward_tests;
-mod stake_tests;
 mod submit_batch_tests;
 mod test_helper;
-mod unstake_tests;
+mod unbond_tests;
 mod withdraw_tests;

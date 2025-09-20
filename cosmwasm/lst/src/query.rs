@@ -60,18 +60,18 @@
 
 use std::ops::Bound;
 
-use cosmwasm_std::{Addr, Deps, Order, StdResult};
+use cosmwasm_std::{Addr, Decimal, Deps, Order, StdResult};
 use depolama::{StorageExt, Store};
 use itertools::Itertools;
 
 use crate::{
     error::ContractError,
-    helpers::get_rates,
+    helpers::total_assets,
     msg::{AccountingStateResponse, Batch, BatchesResponse, ConfigResponse, IdentifiedBatch},
     state::{
         AccountingStateStore, ConfigStore, CurrentPendingBatch, LstAddress, Monitors,
-        ProtocolFeeConfigStore, ReceivedBatches, Stopped, SubmittedBatches, UnstakeRequests,
-        UnstakeRequestsByStakerHash,
+        ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped, SubmittedBatches,
+        UnstakeRequests, UnstakeRequestsByStakerHash,
     },
     types::{staker_hash, BatchId, Config, PendingBatch, UnstakeRequest, UnstakeRequestKey},
 };
@@ -89,6 +89,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         minimum_liquid_stake_amount: minimum_liquid_stake_amount.into(),
         protocol_fee_config: deps.storage.read_item::<ProtocolFeeConfigStore>()?,
         lst_address: deps.storage.read_item::<LstAddress>()?,
+        staker_address: deps.storage.read_item::<StakerAddress>()?,
         monitors: deps
             .storage
             .read_item::<Monitors>()?
@@ -103,16 +104,35 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 
 pub fn query_state(deps: Deps) -> StdResult<AccountingStateResponse> {
     let accounting_state = deps.storage.read_item::<AccountingStateStore>()?;
+    let staker_address = deps.storage.read_item::<StakerAddress>()?;
+    let native_token_denom = deps.storage.read_item::<ConfigStore>()?.native_token_denom;
 
-    let (redemption_rate, purchase_rate) = get_rates(&accounting_state);
-    let res = AccountingStateResponse {
-        total_bonded_native_tokens: accounting_state.total_bonded_native_tokens.into(),
-        total_issued_lst: accounting_state.total_issued_lst.into(),
+    let total_assets = total_assets(
+        deps,
+        &accounting_state,
+        &native_token_denom,
+        &staker_address,
+    )?;
+
+    let total_issued_lst = accounting_state.total_issued_lst;
+
+    let (redemption_rate, purchase_rate) = if total_issued_lst == 0 || total_assets == 0 {
+        (Decimal::one(), Decimal::one())
+    } else {
+        // (redemption_rate, purchase_rate)
+        (
+            Decimal::from_ratio(total_assets, total_issued_lst),
+            Decimal::from_ratio(total_issued_lst, total_assets),
+        )
+    };
+
+    Ok(AccountingStateResponse {
+        total_assets: total_assets.into(),
+        total_shares: accounting_state.total_issued_lst.into(),
         total_reward_amount: accounting_state.total_reward_amount.into(),
         redemption_rate,
         purchase_rate,
-    };
-    Ok(res)
+    })
 }
 
 pub fn query_batch(deps: Deps, batch_id: BatchId) -> Result<Option<Batch>, ContractError> {
