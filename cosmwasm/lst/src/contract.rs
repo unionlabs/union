@@ -58,9 +58,10 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    ensure, entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    ensure, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
