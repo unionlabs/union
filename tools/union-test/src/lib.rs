@@ -3,12 +3,14 @@ use std::{future::Future, sync::Arc, time::Duration};
 use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
 // use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
+use cosmwasm_std::Addr;
 use ibc_union_spec::{
     path::{BatchPacketsPath, StorePath},
     ChannelId, MustBeZero, Packet,
 };
 use jsonrpsee::http_client::HttpClient;
 use protos::cosmos::base::v1beta1::Coin;
+use regex::Regex;
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bech32, Bytes, FixedBytes, H160, H256},
@@ -21,10 +23,10 @@ use voyager_sdk::{
 };
 pub mod channel_provider;
 pub mod cosmos;
+pub mod cosmos_helpers;
 pub mod evm;
 pub mod helpers;
 pub mod voyager;
-use regex::Regex;
 
 use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
@@ -140,8 +142,8 @@ pub trait IbcEventHash {
     type Hash;
 }
 
-impl<'a> ChainEndpoint for evm::Module<'a> {
-    type Msg = RawCallBuilder<&'a DynProvider<AnyNetwork>, AnyNetwork>;
+impl ChainEndpoint for evm::Module {
+    type Msg = RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>;
     type Contract = H160;
     type PredictWrappedTokenResponse = H160;
     type PredictWrappedTokenFromMetadataImageV2Response = H160;
@@ -278,13 +280,11 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
 
     async fn send_ibc_transaction(
         &self,
-        contract: Self::Contract,
+        _: Self::Contract,
         msg: Self::Msg,
-        signer: &Self::ProviderType,
+        _: &Self::ProviderType,
     ) -> anyhow::Result<(H256, u64)> {
-        self.send_ibc_transaction(contract, msg, signer)
-            .await
-            .map_err(Into::into)
+        self.send_ibc_transaction(msg).await.map_err(Into::into)
     }
 
     async fn wait_for_packet_recv(
@@ -326,7 +326,7 @@ impl IbcEventHash for ibc_solidity::Ibc::PacketRecv {
 
 impl ChainEndpoint for cosmos::Module {
     type Msg = (Vec<u8>, Vec<Coin>);
-    type Contract = Bech32<H256>;
+    type Contract = Addr;
     type PredictWrappedTokenResponse = String;
     type PredictWrappedTokenFromMetadataImageV2Response = String;
     type ProviderType = LocalSigner;
@@ -485,8 +485,8 @@ where
         channel_count: usize,
         voyager_config_file_path: &str,
     ) -> anyhow::Result<Self> {
-        voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
-        voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
+        // voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
+        // voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
         let channel_pool = ChannelPool::new();
         println!(
             "Creating test context for {} and {}. Init_fetch called for both chains.",

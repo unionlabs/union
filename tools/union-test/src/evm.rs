@@ -33,7 +33,7 @@ use voyager_sdk::{
 use crate::helpers;
 
 #[derive(Debug)]
-pub struct Module<'a> {
+pub struct Module {
     pub chain_id: ChainId,
 
     pub ibc_handler_address: H160,
@@ -50,8 +50,6 @@ pub struct Module<'a> {
     pub fixed_gas_price: Option<u128>,
 
     pub gas_multiplier: f64,
-
-    pub _marker: PhantomData<&'a ()>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,7 +74,7 @@ pub struct Config {
     pub gas_multiplier: f64,
 }
 
-impl<'a> Module<'a> {
+impl Module {
     pub async fn new(config: Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
@@ -139,7 +137,6 @@ impl<'a> Module<'a> {
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
             gas_multiplier: config.gas_multiplier,
-            _marker: PhantomData,
         })
     }
 
@@ -727,9 +724,7 @@ impl<'a> Module<'a> {
 
     pub async fn send_ibc_transaction(
         &self,
-        _contract: H160,
-        msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
-        _provider: &DynProvider<AnyNetwork>,
+        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> RpcResult<(FixedBytes<32>, u64)> {
         let res = self
             .keyring
@@ -790,7 +785,7 @@ impl<'a> Module<'a> {
     pub async fn submit_transaction(
         &self,
         _wallet: &LocalSigner<SigningKey>,
-        mut call: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
+        mut call: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
         if let Some(max_gas_price) = self.max_gas_price {
             let gas_price = self

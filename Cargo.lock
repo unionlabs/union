@@ -15241,6 +15241,7 @@ name = "union-test"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "alloy-sol-types",
  "axum 0.8.3",
  "bip32 0.5.3",
  "cometbft-rpc",
@@ -15254,6 +15255,7 @@ dependencies = [
  "ibc-union-msg",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
+ "lst",
  "once_cell",
  "protos",
  "rand 0.8.5",

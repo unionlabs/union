@@ -37,7 +37,7 @@ trusted-mpt-light-client-types = { workspace = true, features = ["serde", "binco
 ucs03-zkgm                     = { workspace = true, features = ["library"] }
 unionlabs                      = { workspace = true }
 voyager-sdk                    = { workspace = true }
-
+lst = { workspace = true, features = [ "library" ] }
 
 [dev-dependencies]
 once_cell   = "1.17"

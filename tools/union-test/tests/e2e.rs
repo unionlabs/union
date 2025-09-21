@@ -1,5 +1,3 @@
-// tests/e2e.rs
-
 use std::{
     num::NonZero,
     str::FromStr,
