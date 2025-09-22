@@ -159,8 +159,8 @@ const unbondData = $derived(pipe(
               </div>
 
               <!-- Unbond Progress -->
-              {#if unbond.unbond_send_timestamp && status === 'pending'}
-                {@const sendTime = new Date(unbond.unbond_send_timestamp)}
+              {#if unbond.unbond_send_timestamp}
+                {@const sendTime = new Date(unbond.unbond_recv_timestamp)}
                 {@const now = new Date()}
                 {@const unbondPeriodMs = 27 * 24 * 60 * 60 * 1000}
                 {@const elapsedMs = now.getTime() - sendTime.getTime()}
