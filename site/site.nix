@@ -20,10 +20,13 @@ _: {
     {
       packages = {
         site = mkCi false (buildPnpmPackage {
-          hash = "sha256-XQJ+vbwVQz3lXnFzJ7X7FF7dq2Bt0d8IMDBkGl+NfuU=";
+          # hash = "sha256-HLL0s9pXWGK9O/L4S6SUTdhq2q3TipGeNfyHoB/QVWI=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../site
+          ];
+          pnpmWorkspaces = [
+            "site"
           ];
           nativeBuildInputs = deps;
           buildInputs = deps;

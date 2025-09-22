@@ -37,34 +37,27 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@effect/platform": "^0.84",
+    "@effect/platform": "catalog:peer",
     "@unionlabs/sdk": "workspace:^",
-    "@safe-global/safe-apps-sdk": "^9",
-    "effect": "^3.16",
-    "viem": "^2"
-  },
-  "peerDependenciesMeta": {
-    "@safe-global/safe-apps-sdk": {
-      "optional": true
-    }
+    "effect": "catalog:peer",
+    "viem": "catalog:peer"
   },
   "devDependencies": {
-    "@babel/cli": "^7.27.2",
-    "@babel/core": "^7.27.1",
-    "@babel/plugin-transform-export-namespace-from": "^7.27.1",
-    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
-    "@cosmjs/math": "^0.33.1",
-    "@effect/build-utils": "^0.8.3",
-    "@effect/platform": "0.84.6",
-    "@safe-global/safe-apps-sdk": "~9.1.0",
-    "@types/node": "^22.13.1",
+    "@babel/cli": "catalog:",
+    "@babel/core": "catalog:",
+    "@babel/plugin-transform-export-namespace-from": "catalog:",
+    "@babel/plugin-transform-modules-commonjs": "catalog:",
+    "@effect/build-utils": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
     "@unionlabs/sdk": "workspace:^",
-    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "babel-plugin-annotate-pure-calls": "catalog:",
     "dpdm": "^3.14.0",
-    "effect": "3.16.3",
+    "effect": "catalog:",
     "madge": "^8.0.0",
-    "viem": "^2.33.3",
-    "vitest": "^3.0.5"
+    "viem": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@scure/base": "1.2.4",

@@ -1,32 +1,22 @@
 _: {
   perSystem =
     {
-      lib,
       pkgs,
-      pkgsUnstable,
       ensureAtRepositoryRoot,
+      buildPnpmPackage,
       ...
     }:
-    let
-      deps = with pkgsUnstable; [
-        pkg-config
-        python3
-        nodePackages_latest.nodejs
-      ];
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit lib pkgs;
-      };
-    in
     {
       packages = {
         zkgm-dev = buildPnpmPackage {
-          hash = "sha256-0cYfJjoSfcHBEzvxi5XWVncjnBllgcCMEhtktZXd2hw=";
+          hash = "sha256-zwQF3zKQSD5WFjn7EhmjNwVWW0NytYMZlHoc+aJ5/9M=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../zkgm-dev
           ];
-          nativeBuildInputs = deps;
-          buildInputs = deps;
+          pnpmWorkspaces = [
+            "zkgm-dev"
+          ];
           buildPhase = ''
             runHook preBuild
             export NODE_OPTIONS="--no-warnings";
@@ -49,7 +39,6 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "zkgm-dev-dev-server";
-            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd zkgm-dev/

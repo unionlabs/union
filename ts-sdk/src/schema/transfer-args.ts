@@ -23,7 +23,7 @@ const BaseTransferFields = {
     message: () => "sourceChannelId must be a non-negative integer",
   }),
   destinationRpcType: RpcType.annotations({
-    message: () => "destinationType must be a valid RPC type ('evm', 'cosmos', or 'aptos')",
+    message: () => "destinationType must be a valid RPC type ('evm' or 'cosmos')",
   }),
   ucs03address: S.String,
 }
@@ -57,20 +57,7 @@ export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(
   CosmosTransferSchema,
 ) {}
 
-const AptosTransferSchema = S.Struct({
-  ...BaseTransferFields,
-  sourceRpcType: S.Literal("aptos").annotations({
-    message: () => "sourceRpcType must be 'aptos'",
-  }),
-  receiver: S.String.pipe(
-    S.nonEmptyString({ message: () => "receiver must be a non-empty string" }),
-  ),
-})
-type AptosTransferSchema = typeof AptosTransferSchema.Type
-
-export class AptosTransfer extends S.Class<AptosTransfer>("AptosTransfer")(AptosTransferSchema) {}
-
-export const TransferSchema = S.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
+export const TransferSchema = S.Union(EVMTransfer, CosmosTransfer).annotations({
   identifier: "Transfer",
   title: "Transfer",
   description: "transfer arguments",
@@ -93,7 +80,6 @@ export class ValidTransfer extends S.Class<ValidTransfer>("ValidTransfer")(Valid
 const PartialTransferUnionS = S.Union(
   S.partial(EvmTransferSchema),
   S.partial(CosmosTransferSchema),
-  S.partial(AptosTransferSchema),
 )
 type PartialTransferUnionS = typeof PartialTransferUnionS.Type
 

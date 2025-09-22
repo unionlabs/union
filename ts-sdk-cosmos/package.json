@@ -37,32 +37,33 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@cosmjs/cosmwasm-stargate": "^0.33.1",
-    "@cosmjs/math": "~0.33",
-    "@cosmjs/proto-signing": "~0.33",
-    "@cosmjs/stargate": "~0.33",
-    "@effect/platform": "^0.84",
+    "@cosmjs/cosmwasm-stargate": "catalog:peer",
+    "@cosmjs/math": "catalog:",
+    "@cosmjs/proto-signing": "catalog:peer",
+    "@cosmjs/stargate": "catalog:peer",
+    "@effect/platform": "catalog:peer",
     "@unionlabs/sdk": "workspace:^",
-    "effect": "^3.16"
+    "effect": "catalog:peer"
   },
   "devDependencies": {
-    "@babel/cli": "^7.27.2",
-    "@babel/core": "^7.27.1",
-    "@babel/plugin-transform-export-namespace-from": "^7.27.1",
-    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
-    "@cosmjs/cosmwasm-stargate": "^0.33.1",
-    "@cosmjs/math": "^0.33.1",
-    "@cosmjs/proto-signing": "~0.33.1",
-    "@cosmjs/stargate": "~0.33.1",
-    "@effect/build-utils": "^0.8.3",
-    "@effect/platform": "0.84.6",
-    "@types/node": "^22.13.1",
+    "@babel/cli": "catalog:",
+    "@babel/core": "catalog:",
+    "@babel/plugin-transform-export-namespace-from": "catalog:",
+    "@babel/plugin-transform-modules-commonjs": "catalog:",
+    "@cosmjs/cosmwasm-stargate": "catalog:",
+    "@cosmjs/math": "0.33.1",
+    "@cosmjs/proto-signing": "catalog:",
+    "@cosmjs/stargate": "catalog:",
+    "@effect/build-utils": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
     "@unionlabs/sdk": "workspace:^",
-    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "babel-plugin-annotate-pure-calls": "catalog:",
     "dpdm": "^3.14.0",
-    "effect": "3.16.3",
+    "effect": "catalog:",
     "madge": "^8.0.0",
-    "vitest": "^3.0.5"
-  },
-  "dependencies": {}
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }

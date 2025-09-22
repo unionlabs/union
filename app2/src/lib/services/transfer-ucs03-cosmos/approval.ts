@@ -1,6 +1,6 @@
 import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos/execute"
+import { isValidBech32ContractAddress } from "$lib/utils"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
-import { isValidBech32ContractAddress } from "@unionlabs/client"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 import { fromHex, isHex } from "viem"

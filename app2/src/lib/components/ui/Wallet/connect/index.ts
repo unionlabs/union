@@ -1,4 +1,3 @@
-import type { AptosWalletId } from "$lib/wallet/aptos"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import type { EvmWalletId } from "$lib/wallet/evm"
 import type { RpcType } from "@unionlabs/sdk/schema"
@@ -19,11 +18,10 @@ type Props<TChain extends Chain = Chain> = {
   address: string | undefined
   connectStatus: ChainConnectStatus
   chainWalletsInformation: ChainWalletsInformation
-  connectedWalletId:
+  connectedWalletId?:
     | (TChain extends "cosmos" ? CosmosWalletId
-      : TChain extends "aptos" ? AptosWalletId
-      : EvmWalletId)
-    | null
+      : TChain extends "evm" ? EvmWalletId
+      : never)
     | undefined
   onConnectClick: (walletIdentifier: string) => void | Promise<void>
   onDisconnectClick: () => void

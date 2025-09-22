@@ -1,32 +1,22 @@
 _: {
   perSystem =
     {
-      lib,
       pkgs,
-      pkgsUnstable,
       ensureAtRepositoryRoot,
+      buildPnpmPackage,
       ...
     }:
-    let
-      deps = with pkgsUnstable; [
-        pkg-config
-        python3
-        nodePackages_latest.nodejs
-      ];
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit lib pkgs;
-      };
-    in
     {
       packages = {
         ceremony = buildPnpmPackage {
-          hash = "sha256-mJMACgM8zE0kJDCr1bGlNFPEFjEOqGKDJpM7v+6+KCc=";
+          hash = "sha256-MBGk8NmJCvPMarQ4wdXzPzZULfjU9e+sCq4G4CXGov4=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../ceremony
           ];
-          nativeBuildInputs = deps;
-          buildInputs = deps;
+          pnpmWorkspaces = [
+            "union-cermony"
+          ];
           buildPhase = ''
             runHook preBuild
             export NODE_OPTIONS="--no-warnings";
@@ -49,7 +39,6 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "ceremony-dev-server";
-            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd ceremony/

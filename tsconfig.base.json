@@ -34,6 +34,7 @@
     "module": "NodeNext",
     "incremental": true,
     "removeComments": false,
+    "traceResolution": false,
     "plugins": [
       {
         "name": "@effect/language-service",

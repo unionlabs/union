@@ -1,20 +1,12 @@
 _: {
   perSystem =
     {
-      pkgs,
-      lib,
+      buildPnpmPackage,
       ...
     }:
-    let
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit pkgs lib;
-      };
-      pnpm = pkgs.pnpm_10;
-    in
     {
       packages = {
         ts-sdk-sui = buildPnpmPackage {
-          inherit pnpm;
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../ts-sdk
@@ -24,7 +16,7 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-sui"
           ];
-          hash = "sha256-nFzsUnmiZRyN0Gi3XT4W+srG7vJ8IsJ9wOfIdxb10NI=";
+          hash = "sha256-X+yOSBK99AnS11sXHfQuQjqgjkxrCJms4z+A+Xrh8Ss=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -33,7 +25,7 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk-sui/* $out
+            cp -r ./ts-sdk-sui/build/* $out
           '';
           checkPhase = ''
             pnpm run --filter=@unionlabs/sdk-sui check

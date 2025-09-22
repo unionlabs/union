@@ -1,7 +1,7 @@
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import { type Chain, NumberFromHexString, UniversalChainId } from "@unionlabs/sdk/schema"
+import { type Chain, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
   Array as A,
   BigDecimal,
@@ -20,7 +20,6 @@ import { GasPriceError } from "./error"
 import * as GasPrice from "./service"
 
 export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChain", {
-  provides: GasPrice.GasPrice,
   lookup: pipe(
     Match.type<Chain>(),
     Match.when(

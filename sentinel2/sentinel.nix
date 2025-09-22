@@ -116,7 +116,6 @@ in
         python3
         pkg-config
         sqlite
-        nodejs_20
         nodePackages_latest."patch-package"
       ];
       buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
@@ -127,7 +126,7 @@ in
       packages = {
         sentinel2 = buildPnpmPackage {
           packageJsonPath = ./package.json;
-          hash = "sha256-mfPIaW8WQ+lN4H6EKIdT99fgzyq8D64njFY7udoFJaE=";
+          # hash = "sha256-Jzx9nGUYazeARoBV3lZP/V4kwUTDdg0uGR8BXCNqSqE=";
           extraSrcs = [
             ../sentinel2
             ../ts-sdk
@@ -148,8 +147,6 @@ in
             python3
             pkg-config
             sqlite
-            nodejs_20
-            nodePackages_latest."patch-package"
           ];
           buildInputs = [
             pkgs.bashInteractive
@@ -181,12 +178,12 @@ in
                         # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
                         cat <<EOF > $out/bin/sentinel2
             #!${pkgs.bashInteractive}/bin/bash
-            export PATH=${pkgs.nodejs_20}/bin:\$PATH
+            export PATH=${pkgsUnstable.nodejs_24}/bin:\$PATH
             cd "$out/lib"
             export NODE_PATH="$out/lib/node_modules"
             EOF
 
-                        echo 'exec '"${pkgs.nodejs_20}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
+                        echo 'exec '"${pkgsUnstable.nodejs_24}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
                         chmod +x $out/bin/sentinel2
           '';
 

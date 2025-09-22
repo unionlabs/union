@@ -37,6 +37,8 @@ import type { Hex } from "viem"
 import * as internal from "./internal/evm.js"
 import * as Safe from "./Safe.js"
 
+import type {} from "effect"
+
 /**
  * @category models
  * @since 0.0.0

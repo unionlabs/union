@@ -2,33 +2,22 @@ _: {
   perSystem =
     {
       pkgs,
-      pkgsUnstable,
-      lib,
+      buildPnpmPackage,
       self',
       ensureAtRepositoryRoot,
       ...
     }:
-    let
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit pkgs lib;
-      };
-      deps = with pkgsUnstable; [
-        python3
-        stdenv.cc
-        pkg-config
-        nodePackages_latest.nodejs
-        pnpm_10
-      ];
-      pnpm = pkgs.pnpm_10;
-    in
     {
       packages = {
         ts-sdk = buildPnpmPackage {
-          inherit pnpm;
           packageJsonPath = ./package.json;
-          extraSrcs = [ ../ts-sdk ];
-          pnpmWorkspaces = [ "@unionlabs/sdk" ];
-          hash = "sha256-0gGO6QZYH2kCG2O5QsvwGEz3GRXQLvXfwk0fwSLNQoA=";
+          hash = "sha256-X+yOSBK99AnS11sXHfQuQjqgjkxrCJms4z+A+Xrh8Ss=";
+          pnpmWorkspaces = [
+            "@unionlabs/sdk"
+          ];
+          extraSrcs = [
+            ../ts-sdk
+          ];
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -37,7 +26,11 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk/* $out
+            echo TS SDK NODE ROOT
+            ls -lah ./ts-sdk
+            echo TS SDK NODE NODE MODULES
+            ls -lah ./ts-sdk/node_modules
+            cp -r ./ts-sdk/build/* $out
           '';
           checkPhase = ''
             pnpm --filter=@unionlabs/sdk check
@@ -52,7 +45,7 @@ _: {
             name = "publish-ts-sdk";
             text = ''
               cd ${self'.packages.ts-sdk}/
-              ${pnpm}/bin/pnpm publish --access='public'
+              pnpm publish --access='public'
             '';
           };
         };
@@ -60,7 +53,6 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "ts-sdk-fetch-schema";
-            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd ts-sdk/

@@ -1,7 +1,6 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import type { GraphQLError } from "$lib/graphql/error"
-import { FetchAptosTokenBalanceError } from "$lib/services/aptos/balances"
 import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
 import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
 import type { NoViemChainError } from "$lib/services/evm/clients"
@@ -73,7 +72,6 @@ interface Props {
     | CreateWalletClientError
     | CryptoError
     | ExecuteContractError
-    | FetchAptosTokenBalanceError
     | FetchNativeBalanceError
     | FromHexError
     | GasPriceError
@@ -128,7 +126,6 @@ const getUserFriendlyMessage = pipe(
     FromHexError: () => `Failed to decode hex.`,
     GetChainInfoError: (x) => `No info for EVM chain ${x.chainId}.`, // TODO: rename to EVM
     NoCosmosChainInfoError: (x) => `No info for Cosmos chain ${x.chain.display_name}.`,
-    FetchAptosTokenBalanceError: () => `Failed to fetch aptos token balance.`,
     NoRpcError: (error) => `No ${error.type} endpoint available for ${error.chain.display_name}.`,
     NoSuchElementException: () => "An unexpected error occurred.", // TODO: remove me for more explicit errors
     NoViemChain: () => "Chain configuration not found for the selected network.",

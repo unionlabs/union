@@ -2,28 +2,20 @@ _: {
   perSystem =
     {
       ensureAtRepositoryRoot,
-      lib,
       mkCi,
-      pkgs,
       pkgsUnstable,
+      buildPnpmPackage,
       ...
     }:
     let
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit pkgs lib;
-      };
       deps = with pkgsUnstable; [
         vips
         pkg-config
-        nodePackages_latest.nodejs
-        pnpm_10
       ];
-      pnpm = pkgs.pnpm_10;
     in
     {
       packages = {
         docs = mkCi false (buildPnpmPackage {
-          inherit pnpm;
           extraSrcs = [
             ../docs
             ../ts-sdk
@@ -33,7 +25,7 @@ _: {
             ../versions
             ../deployments
           ];
-          hash = "sha256-ArQ8Leva60j1BTDHYQUbvOzkVglLJwLAwwSTPH1w0pk=";
+          # hash = "sha256-L0Aj7MqG6Mnk700KBoWtsDt+X9tQ5nFb3rz5+EoLC7Q=";
           packageJsonPath = ./package.json;
           pnpmWorkspaces = [
             "docs"
@@ -48,7 +40,7 @@ _: {
             export PUPPETEER_SKIP_DOWNLOAD=1
             export ASTRO_TELEMETRY_DISABLED=1
             export NODE_OPTIONS="--no-warnings"
-            pnpm run docgen
+            # pnpm -w run docgen # TODO(ehegnes): enable
             pnpm --filter=docs build
             runHook postBuild
           '';
