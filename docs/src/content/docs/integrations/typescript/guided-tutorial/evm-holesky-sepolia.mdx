@@ -1,0 +1,168 @@
+---
+title: "Send Funds Holesky → Sepolia"
+description: Guide for transfers from Holesky to Sepolia.
+---
+
+This guide walk's you through writing our example ["Send Funds Holesky -> Sepolia"](/integrations/typescript/examples/evm/send-funds-holesky-to-sepolia/). The goal of this guide it to show you how to create a token order and submit it to the [UCS03 - ZKGM](/ucs/04) interface.
+
+Relevant imports will be included with each step. Outside of libraries provided by Union, this guide uses [viem](https://viem.sh/) and [Effect](https://effect.website/).
+
+## Program
+
+This first section is a walk through of creating the program section of the send funds example.
+
+### 1. Program declaration
+
+Begin by using Effect to create a program function, the remainder of this section will take place within the function body.
+
+```js
+import { Effect } from "effect"
+
+const program = Effect.gen(function*() {})
+```
+
+### 2. Source and Destination
+
+Using the `ChainRegistry` from the Union TS SDK, you can declare the source and destination chains used in this example. In this case, the source is Holesky (`ethereum.17000`) and the destination is Sepolia (`ethereum.11155111`).
+
+```js
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+
+  const source = yield* ChainRegistry.byUniversalId(
+    UniversalChainId.make("ethereum.17000"),
+  )
+  const destination = yield* ChainRegistry.byUniversalId(
+    UniversalChainId.make("ethereum.11155111"),
+  )
+```
+
+:::note
+The ID's provided here are Universal Chain ID's as defined by [UCS04](/ucs/04).
+:::
+
+### 3. Token Order
+
+Now you can define the token order that will be responsible for the transfer. This example uses the `TokenOrderV2` TS interface.
+
+To construct the token order, you will need the token contract/denom on both the source chain (`baseToken`) and the destination chain (`quoteToken`). In this case, we are using the relevant contract addresses for LINK.
+
+We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `esccrow`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [UCS03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
+
+```js
+import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
+import { Effect, Logger } from "effect"
+
+  const tokenOrder = yield* TokenOrder.make({
+    source,
+    destination,
+    sender: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
+    receiver: "0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302",
+    // LINK on Holesky
+    baseToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
+    baseAmount: 10n,
+    // Holesky LINK on Sepolia
+    quoteToken: "0x80fdbf104ec58a527ec40f7b03f88c404ef4ba63",
+    quoteAmount: 10n,
+    kind: "escrow",
+    metadata: undefined,
+    version: 2,
+  })
+
+  yield* Effect.log("Token Order V2", tokenOrder)
+```
+
+### 4. zkgm Request
+
+Finally, the token order you've constructed can be used as an `instruction` to create a `ZkgmClientRequest`.
+
+```js
+import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
+
+  const request = ZkgmClientRequest.make({
+    source,
+    destination,
+    channelId: ChannelId.make(2),
+    ucs03Address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+    instruction: tokenOrder,
+  })
+```
+
+### 5. zkgm Execution & Response
+
+Now that you've created a full zkgm request, you can execute it and wait on the response to close out the program.
+
+```js
+import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
+import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
+import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
+import * as ZkgmIncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
+
+  const zkgmClient = yield* ZkgmClient.ZkgmClient
+
+  // NOTE: 1. switch chain is assumed
+  // NOTE: 2. write in progress
+
+  const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
+
+  // NOTE: 3. write complete (with tx hash)
+
+  yield* Effect.log("Submission Hash", response.txHash)
+
+  const completion = yield* response.waitFor(
+    ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
+  )
+
+  // NOTE: 4. tx complete
+
+  yield* Effect.log("Completion", completion)
+```
+
+:::note
+***NOTE #1*** -
+In this example, it does not matter, as we manually provide the key and specify the transport in [Execution](#execution). If you were developing a web app with a wallet client - you would need to switch the chains here.
+:::
+
+## Execution
+
+With the program ready, we can now use Effect to execute our transfer and listen for a response.
+
+```js
+import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { Effect, Logger } from "effect"
+import { http } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
+import { holesky } from "viem/chains"
+
+const program = Effect.gen(function*() {
+  // ... program ...
+}).pipe(
+  Effect.provide(EvmZkgmClient.layerWithoutWallet),
+  Effect.provide(Evm.WalletClient.Live({
+    account: privateKeyToAccount(
+      (process.env.KEY as any) ?? "0x...",
+    ),
+    chain: holesky,
+    transport: http("https://rpc.17000.ethereum.chain.kitchen"),
+  })),
+  Effect.provide(Evm.PublicClient.Live({
+    chain: holesky,
+    transport: http("https://rpc.17000.ethereum.chain.kitchen"),
+  })),
+  Effect.provide(ChainRegistry.Default),
+  Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
+)
+
+Effect.runPromise(program)
+  .then(console.log)
+  .catch(console.error)
+```
+
+---
+
+You have now created and executed a transfer between two EVM chains using USC03-ZKGM with the Union TS SDK 🎉.
+
+For ease of use, you can refer to the complete example ["Send Funds Holesky -> Sepolia"](/integrations/typescript/examples/evm/send-funds-holesky-to-sepolia/).
+
+Happy building!
