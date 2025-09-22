@@ -6,6 +6,10 @@ type SettlementInfo = {
 }
 
 export const settlementDelays = {
+  "base.8453": {
+    url: "https://etherscan.io/address/0xdDa53E23f8a32640b04D7256e651C1db98dB11C1",
+    interval: "2 hours",
+  },
   "bob.60808": {
     url: "https://etherscan.io/address/0xdDa53E23f8a32640b04D7256e651C1db98dB11C1",
     interval: "12 hours",
