@@ -12,6 +12,7 @@ use cosmos_client::{
     BroadcastTxCommitError, TxClient,
 };
 use cosmos_sdk_event::CosmosSdkEvent;
+use cosmwasm_std::Addr;
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use protos::{
     cosmos::{
@@ -158,7 +159,7 @@ impl Module {
         })
     }
 
-    pub async fn native_balance(&self, address: Bech32<H256>, token: &str) -> anyhow::Result<u128> {
+    pub async fn native_balance(&self, address: Addr, token: &str) -> anyhow::Result<u128> {
         let balance: u128 = self
             .rpc
             .client()
@@ -438,12 +439,9 @@ impl Module {
                             let ack_bytes: &[u8] = acknowledgement.as_ref();
 
                             // Grab the first 32 bytes — this is the uint256 in ABI encoding
-                            let mut tag_be = [0u8; 32];
-                            tag_be.copy_from_slice(&ack_bytes[..32]);
-                            let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
                             return Some(helpers::PacketAck {
                                 packet_hash: *packet_hash,
-                                tag: tag_u128,
+                                tag: alloy::primitives::U256::from_le_slice(&ack_bytes[..32]),
                             });
                         }
                         None
@@ -519,7 +517,7 @@ impl Module {
 
     pub async fn predict_wrapped_token(
         &self,
-        contract: Bech32<H256>,
+        contract: Addr,
         channel_id: ChannelId,
         token: Vec<u8>,
     ) -> anyhow::Result<String> {
@@ -614,7 +612,7 @@ impl Module {
 
     pub async fn send_transaction_with_retry(
         &self,
-        contract: Bech32<H256>,
+        contract: Addr,
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
@@ -650,7 +648,7 @@ impl Module {
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
-        contract: Bech32<H256>,
+        contract: Addr,
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
@@ -690,7 +688,7 @@ impl Module {
 
     pub async fn send_ibc_transaction(
         &self,
-        contract: Bech32<H256>,
+        contract: Addr,
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
     ) -> anyhow::Result<(H256, u64)> {

@@ -1,3 +1,4 @@
+use alloy::primitives::U256;
 use unionlabs::primitives::FixedBytes;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -30,7 +31,7 @@ pub struct PacketTimeout {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PacketAck {
     pub packet_hash: FixedBytes<32>,
-    pub tag: u128,
+    pub tag: U256,
 }
 
 #[derive(Debug, Clone, PartialEq)]

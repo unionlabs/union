@@ -27,6 +27,7 @@ pub mod cosmos_helpers;
 pub mod evm;
 pub mod helpers;
 pub mod voyager;
+pub mod zkgm_helper;
 
 use crate::{
     channel_provider::{ChannelConfirm, ChannelPair, ChannelPool},
@@ -405,7 +406,7 @@ impl ChainEndpoint for cosmos::Module {
 
     async fn send_ibc_transaction(
         &self,
-        contract: Bech32<H256>,
+        contract: Addr,
         msg: Self::Msg,
         signer: &Self::ProviderType,
     ) -> anyhow::Result<(H256, u64)> {

@@ -337,16 +337,9 @@ impl Module {
                     {
                         let ack_bytes: &[u8] = ev.acknowledgement.as_ref();
 
-                        // Grab the first 32 bytes — this is the uint256 in ABI encoding
-                        let mut tag_be = [0u8; 32];
-                        tag_be.copy_from_slice(&ack_bytes[..32]);
-
-                        // If you want it as u128 (will fail if > u128::MAX)
-                        let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
-
                         Some(helpers::PacketAck {
                             packet_hash: ev.packet_hash.into(),
-                            tag: tag_u128,
+                            tag: alloy::primitives::U256::from_le_slice(&ack_bytes[..32]),
                         })
                     }
                     _ => None,
@@ -989,6 +982,17 @@ impl Module {
 }
 
 pub mod zkgm {
+
+    impl From<ucs03_zkgm::com::Instruction> for Instruction {
+        fn from(value: ucs03_zkgm::com::Instruction) -> Self {
+            Self {
+                version: value.version,
+                opcode: value.opcode,
+                operand: value.operand,
+            }
+        }
+    }
+
     alloy::sol! {
         #![sol(rpc)]
         struct GovernanceToken {
