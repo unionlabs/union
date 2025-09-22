@@ -1,14 +1,14 @@
 use std::{str::FromStr as _, sync::Arc, time::Duration};
 
 use alloy_sol_types::SolValue as _;
-use cosmwasm_std::Addr;
+use cosmwasm_std::{instantiate2_address, Addr};
 use hex_literal::hex;
 use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
 use rand::RngCore as _;
 use serde::Deserialize;
 use tokio::sync::OnceCell;
 use ucs03_zkgm::com::{
-    Instruction, SolverMetadata, TokenOrderV2, INSTR_VERSION_2, OP_TOKEN_ORDER,
+    Instruction, SolverMetadata, TokenOrderV2, INSTR_VERSION_2, OP_TOKEN_ORDER, TAG_ACK_SUCCESS,
     TOKEN_ORDER_KIND_SOLVE,
 };
 use union_test::{
@@ -232,7 +232,7 @@ pub async fn eth_fund_u(
         let mut salt_bytes = [0u8; 32];
         rand::rng().fill_bytes(&mut salt_bytes);
 
-        let _ = t
+        let ack = t
             .ctx
             .send_and_recv_and_ack_with_retry::<cosmos::Module, evm::Module>(
                 &t.ctx.src,
@@ -261,6 +261,44 @@ pub async fn eth_fund_u(
             )
             .await?;
 
+        // make sure the transfer is successful
+        assert_eq!(ack.tag, TAG_ACK_SUCCESS);
+
         Ok(())
+    }
+}
+
+pub mod evm_helper {
+    use alloy::primitives::Address;
+
+    use super::*;
+
+    pub fn make_token_order_v2(
+        escrow_vault_address: &Addr,
+        sender: &Address,
+        receiver: &Addr,
+        amount: alloy::primitives::U256,
+    ) -> Instruction {
+        Instruction {
+            version: INSTR_VERSION_2,
+            opcode: OP_TOKEN_ORDER,
+            operand: TokenOrderV2 {
+                sender: sender.to_vec().into(),
+                receiver: receiver.as_bytes().to_vec().into(),
+                base_token: ETH_ADDRESS_U.into_bytes().into(),
+                base_amount: amount,
+                quote_token: b"muno".into(),
+                quote_amount: amount,
+                kind: TOKEN_ORDER_KIND_SOLVE,
+                metadata: SolverMetadata {
+                    solverAddress: escrow_vault_address.as_bytes().to_vec().into(),
+                    metadata: Default::default(),
+                }
+                .abi_encode_params()
+                .into(),
+            }
+            .abi_encode_params()
+            .into(),
+        }
     }
 }

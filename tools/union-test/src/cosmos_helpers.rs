@@ -1,8 +1,12 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{instantiate2_address, Addr};
+use alloy_sol_types::SolValue as _;
+use cosmwasm_std::{instantiate2_address, Addr, CanonicalAddr};
 use hex_literal::hex;
-use unionlabs::primitives::Bech32;
+use unionlabs::{
+    ethereum::keccak256,
+    primitives::{Bech32, FixedBytes},
+};
 use voyager_sdk::anyhow;
 
 pub const COSMOS_BASE_CONTRACT_HASH: [u8; 32] =
@@ -27,4 +31,27 @@ pub fn calculate_cosmos_contract_address(creator: &str, salt: &[u8]) -> anyhow::
     let bech_addr = Bech32::new(bech_addr.hrp(), addr.as_slice());
 
     Ok(Addr::unchecked(bech_addr.to_string()))
+}
+
+pub fn calculate_proxy_address(
+    zkgm_address: &Addr,
+    path: alloy::primitives::U256,
+    channel_id: u32,
+    sender: &[u8],
+) -> Addr {
+    let addr = Bech32::<FixedBytes<32>>::from_str(zkgm_address.as_str()).unwrap();
+    let canonical_addr = instantiate2_address(
+        &COSMOS_BASE_CONTRACT_HASH,
+        &CanonicalAddr::from(addr.data().as_ref()),
+        keccak256((path, channel_id, sender.to_vec()).abi_encode_params()).as_ref(),
+    )
+    .unwrap();
+
+    Addr::unchecked(
+        Bech32::<FixedBytes<32>>::new(
+            addr.hrp().clone(),
+            canonical_addr.as_slice().try_into().unwrap(),
+        )
+        .to_string(),
+    )
 }
