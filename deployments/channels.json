@@ -70,6 +70,10 @@
           "PACKET_SEND_LC_UPDATE_L0": "321174"
         }
       },
+      "sla": {
+        "forward": "PT3H",
+        "reverse": "PT20M"
+      },
       "tags": ["canonical", "tokenorder-v2"]
     },
     "2": {
@@ -87,6 +91,10 @@
           "PACKET_SEND_LC_UPDATE_L1": "519141",
           "PACKET_SEND_LC_UPDATE_L2": "721546"
         }
+      },
+      "sla": {
+        "forward": "PT3H",
+        "reverse": "PT20M"
       },
       "tags": ["canonical", "tokenorder-v2"]
     },
@@ -107,7 +115,7 @@
         }
       },
       "sla": {
-        "forward": "PT20M",
+        "forward": "PT3H",
         "reverse": "PT45M"
       },
       "tags": ["canonical", "tokenorder-v2"]
@@ -382,6 +390,10 @@
           "PACKET_SEND_LC_UPDATE_L0": "321174"
         }
       },
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT20M"
+      },
       "tags": ["canonical", "tokenorder-v2"]
     },
     "2": {
@@ -400,12 +412,20 @@
           "PACKET_SEND_LC_UPDATE_L2": "1028227"
         }
       },
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT45M"
+      },
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "union.union-1": {
     "1": {
       "comments": "ethereum.1 channel 2",
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT45M"
+      },
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
