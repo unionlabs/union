@@ -107,8 +107,8 @@ const querySlippage = pipe(
     },
   ),
   Effect.flatMap(Schema.decodeUnknown(Schema.Struct({
-    total_bonded_native_tokens: Schema.BigInt,
-    total_issued_lst: Schema.BigInt,
+    total_assets: Schema.BigInt,
+    total_shares: Schema.BigInt,
     total_reward_amount: Schema.BigInt,
     redemption_rate: Schema.BigDecimal,
     purchase_rate: Schema.BigDecimal,
