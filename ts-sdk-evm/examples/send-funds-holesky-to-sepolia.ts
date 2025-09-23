@@ -60,6 +60,7 @@ const program = Effect.gen(function*() {
     destination,
     channelId: ChannelId.make(2),
     ucs03Address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+    kind: "simulateAndExecute",
     instruction: tokenOrder,
   })
 

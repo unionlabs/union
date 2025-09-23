@@ -17,7 +17,7 @@ export const TypeId: ClientRequest.TypeId = Symbol.for(
 
 const Proto: Omit<
   ClientRequest.ZkgmClientRequest,
-  "source" | "destination" | "channelId" | "ucs03Address" | "instruction"
+  "source" | "destination" | "channelId" | "ucs03Address" | "instruction" | "kind"
 > = {
   [TypeId]: TypeId,
   ...Inspectable.BaseProto,
@@ -29,6 +29,7 @@ const Proto: Omit<
       channelId: this.channelId,
       ucs03Address: this.ucs03Address,
       instruction: this.instruction,
+      kind: this.kind,
     }
   },
   pipe() {
@@ -42,6 +43,7 @@ function makeProto(
   channelId: ChannelId,
   ucs03Address: string,
   instruction: ZkgmInstruction,
+  kind: "execute" | "simulateAndExecute",
 ): ClientRequest.ZkgmClientRequest {
   const self = Object.create(Proto)
   self.source = source
@@ -49,6 +51,7 @@ function makeProto(
   self.channelId = channelId
   self.ucs03Address = ucs03Address
   self.instruction = instruction
+  self.kind = kind
   return self
 }
 
@@ -63,6 +66,7 @@ export const empty: ClientRequest.ZkgmClientRequest = makeProto(
   void 0 as unknown as ChannelId,
   void 0 as unknown as Hex,
   void 0 as unknown as ZkgmInstruction,
+  "execute",
 )
 
 /** @internal */
@@ -72,6 +76,7 @@ export const make = (options: {
   channelId: ChannelId
   ucs03Address: string
   instruction: ZkgmInstruction
+  kind?: "execute" | "simulateAndExecute" | undefined
 }) => modify(empty, options)
 
 /** @internal */
@@ -101,6 +106,9 @@ export const modify = dual<
   if (options.instruction) {
     result = setInstruction(result, options.instruction)
   }
+  if (options.kind) {
+    result = setKind(result, options.kind)
+  }
 
   return result
 })
@@ -118,6 +126,7 @@ export const setSource = dual<
     self.channelId,
     self.ucs03Address,
     self.instruction,
+    self.kind,
   ))
 
 /** @internal */
@@ -133,6 +142,7 @@ export const setDestination = dual<
     self.channelId,
     self.ucs03Address,
     self.instruction,
+    self.kind,
   ))
 
 /** @internal */
@@ -148,6 +158,7 @@ export const setChannelId = dual<
     channelId,
     self.ucs03Address,
     self.instruction,
+    self.kind,
   ))
 /** @internal */
 export const setUcs03Address = dual<
@@ -162,6 +173,7 @@ export const setUcs03Address = dual<
     self.channelId,
     ucs03Address,
     self.instruction,
+    self.kind,
   ))
 
 /** @internal */
@@ -180,6 +192,26 @@ export const setInstruction = dual<
     self.channelId,
     self.ucs03Address,
     instruction,
+    self.kind,
+  ))
+
+/** @internal */
+export const setKind = dual<
+  (
+    kind: "execute" | "simulateAndExecute",
+  ) => (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
+  (
+    self: ClientRequest.ZkgmClientRequest,
+    kind: "execute" | "simulateAndExecute",
+  ) => ClientRequest.ZkgmClientRequest
+>(2, (self, kind) =>
+  makeProto(
+    self.source,
+    self.destination,
+    self.channelId,
+    self.ucs03Address,
+    self.instruction,
+    kind,
   ))
 
 /** @internal */
