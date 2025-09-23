@@ -21,8 +21,6 @@ members = [
   "generated/rust/protos",
   # "generated/rust/aptos-move-ibc",
 
-  "hubble",
-
   "lib/beacon-api",
   "lib/cometbft-rpc",
   "lib/cosmos-client",
