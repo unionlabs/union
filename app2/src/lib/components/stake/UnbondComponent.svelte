@@ -12,6 +12,7 @@ import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { matchOption } from "$lib/utils/snippets.svelte"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
+import { instantiate2 } from "$lib/stake/instantiate2"
 import {
   Batch,
   Call,
@@ -53,12 +54,12 @@ import * as A from "effect/Array"
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { bytesToHex, custom, encodeAbiParameters, fromHex, http, keccak256 } from "viem"
-import { mainnet } from "viem/chains"
+import { sepolia } from "viem/chains"
 
-const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.1")
-const UNION_CHAIN_ID = UniversalChainId.make("union.union-1")
-const SOURCE_CHANNEL_ID = ChannelId.make(2)
-const DESTINATION_CHANNEL_ID = ChannelId.make(1)
+const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
+const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
+const SOURCE_CHANNEL_ID = ChannelId.make(3)
+const DESTINATION_CHANNEL_ID = ChannelId.make(3)
 const UCS03_EVM = Ucs05.EvmDisplay.make({
   address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
 })
@@ -119,10 +120,6 @@ const isUnbonding = $derived(
 const isSuccess = $derived(UnbondState.$is("Success")(unbondState))
 const isError = $derived(UnbondState.$is("Error")(unbondState))
 
-const bytecode_base_checksum =
-  "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
-const canonical_zkgm = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
-const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
 
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
@@ -133,67 +130,6 @@ const QlpConfigProvider = pipe(
   Layer.setConfigProvider,
 )
 
-const instantiate2 = Effect.fn(
-  function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.AnyDisplay }) {
-    const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
-    const abi = [
-      {
-        name: "path",
-        type: "uint256",
-        internalType: "uint256",
-      },
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32",
-      },
-      {
-        name: "sender",
-        type: "bytes",
-        internalType: "bytes",
-      },
-    ] as const
-
-    const args = [
-      options.path,
-      options.channel,
-      sender,
-    ] as const
-
-    const encoded = yield* Effect.try(() => encodeAbiParameters(abi, args))
-
-    const u64toBeBytes = (n: bigint) => {
-      const buffer = new ArrayBuffer(8)
-      const view = new DataView(buffer)
-      view.setBigUint64(0, n)
-      return new Uint8Array(view.buffer)
-    }
-
-    const sha256 = (data: any) => globalThis.crypto.subtle.digest("SHA-256", data)
-
-    const salt = keccak256(encoded, "bytes")
-
-    const _args = [
-      ...fromHex(module_hash, "bytes"),
-      ...new TextEncoder().encode("wasm"),
-      0,
-      ...u64toBeBytes(32n),
-      ...fromHex(bytecode_base_checksum, "bytes"),
-      ...u64toBeBytes(32n),
-      ...fromHex(canonical_zkgm, "bytes"),
-      ...u64toBeBytes(32n),
-      ...salt,
-      ...u64toBeBytes(0n),
-    ] as const
-
-    const data = Uint8Array.from(_args)
-    const r = yield* Effect.tryPromise(() => sha256(data))
-    const rBytes = bytesToHex(new Uint8Array(r))
-    const r2 = yield* Schema.decode(Ucs05.Bech32FromCanonicalBytesWithPrefix("union"))(rBytes)
-
-    return Ucs05.CosmosDisplay.make({ address: r2 })
-  },
-)
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   pipe(
@@ -364,7 +300,7 @@ runPromiseExit$(() =>
 
       unbondState = UnbondState.SwitchingChain()
 
-      const VIEM_CHAIN = mainnet
+      const VIEM_CHAIN = sepolia
 
       const connectorClient = yield* getWagmiConnectorClient
 
