@@ -20,7 +20,7 @@ _: {
     {
       packages = {
         zkgm-dev = buildPnpmPackage {
-          hash = "sha256-THyYGHzP0FYc/NdCORvVJHYfCRjOSyjPSglVOa3r+FY=";
+          hash = "sha256-0cYfJjoSfcHBEzvxi5XWVncjnBllgcCMEhtktZXd2hw=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../zkgm-dev

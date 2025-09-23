@@ -24,7 +24,7 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-evm"
           ];
-          hash = "sha256-XpCYNgRkkUN0O43Bodkk9XNpVRHkAZV6s20bfMUGNkk=";
+          hash = "sha256-/2HUXozGfMaviwZaBKcUuy9Njq6wh3XVzT4sVbT7Z/8=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild

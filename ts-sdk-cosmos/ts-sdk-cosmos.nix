@@ -24,7 +24,7 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-cosmos"
           ];
-          hash = "sha256-vrjzTdwKSucWWetnL4kw2KLCS9NhXfkiM9LgoswD2QE=";
+          hash = "sha256-0gGO6QZYH2kCG2O5QsvwGEz3GRXQLvXfwk0fwSLNQoA=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
