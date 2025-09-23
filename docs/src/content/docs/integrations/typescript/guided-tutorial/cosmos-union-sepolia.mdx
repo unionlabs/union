@@ -1,0 +1,159 @@
+---
+title: Send Funds Union → Sepolia
+description: Example transfer from Union to Sepolia.
+---
+
+This guide walk's you through writing our example ["Send Funds Union -> Sepolia"](/integrations/typescript/examples/cosmos/send-funds-union-to-sepolia/). The goal of this guide it to show you how to create a token order and submit it to the [UCS03 - ZKGM](/ucs/04) interface.
+
+Relevant imports will be included with each step. Outside of libraries provided by Union, this guide uses [Effect](https://effect.website/).
+
+## Program
+
+This first section is a walk through of creating the program section of the send funds example.
+
+### 1. Program declaration
+
+Begin by using Effect to create a program function.
+
+```js
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {})
+```
+
+### 2. Source and Destination
+
+Using the `ChainRegistry` from the Union TS SDK, you can declare the source and destination chains used in this example. In this case, the source is Union Testnet (`union.union-testnet-10`) and the destination is Sepolia (`ethereum.11155111`).
+
+```js
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+  const source = yield* ChainRegistry.byUniversalId(
+    UniversalChainId.make("union.union-testnet-10"),
+  )
+  const destination = yield* ChainRegistry.byUniversalId(
+    UniversalChainId.make("ethereum.11155111"),
+  )
+})
+```
+
+:::note
+The ID's provided here are Universal Chain ID's as defined by [UCS04](/ucs/04).
+:::
+
+### 3. Token Order
+
+Now you can define the token order that will be responsible for the transfer. This example uses the `TokenOrderV2` TS interface.
+
+To construct the token order, you will need the token contract/denom on both the source chain (`baseToken`) and the destination chain (`quoteToken`). In this case, we are using the relevant contract addresses for U.
+
+We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `solve`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [UCS03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
+
+```js
+import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+
+  // ... snip ...
+
+  const tokenOrder = yield* TokenOrder.make({
+    source,
+    destination,
+    sender: "union122ny3mep2l7nhtafpwav2y9e5jrslhek76hsjl",
+    receiver: "0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302",
+    baseToken: "au",
+    baseAmount: 10n,
+    quoteToken: "0xba5eD44733953d79717F6269357C77718C8Ba5ed",
+    quoteAmount: 10n,
+    kind: "solve",
+    metadata:
+      "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    version: 2,
+  })
+})
+```
+
+:::note
+Solver metadata is supplied here in accordance with [UCS03](/ucs/03)
+:::
+
+### 4. zkgm Request
+
+Finally, the token order you've constructed can be used as an `instruction` to create a `ZkgmClientRequest`.
+
+```js
+import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
+import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+
+  // ... snip ...
+
+  const request = ZkgmClientRequest.make({
+    source,
+    destination,
+    channelId: ChannelId.make(1),
+    ucs03Address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+    instruction: tokenOrder,
+  })
+})
+```
+
+### 5. zkgm Execution & Response
+
+Now that you've created a full zkgm request, you can execute it and wait on the response to close out the program.
+
+```js
+import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+
+  // ... snip ...
+
+  const zkgmClient = yield* ZkgmClient.ZkgmClient
+
+  const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
+
+  yield* Effect.log("TX Hash:", response.txHash)
+})
+```
+
+## Execution
+
+With the program ready, we can now use Effect to execute our transfer and listen for a response.
+
+```js
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import { GasPrice } from "@cosmjs/stargate"
+import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+  // ... program ...
+}).pipe(
+  Effect.provide(CosmosZkgmClient.layerWithoutSigningClient),
+  Effect.provide(Cosmos.SigningClient.Live(
+    "union122ny3mep2l7nhtafpwav2y9e5jrslhek76hsjl",
+    "https://rpc.union-testnet-10.union.chain.kitchen",
+    await DirectSecp256k1HdWallet.fromMnemonic(
+      "memo memo memo",
+      { prefix: "union" },
+    ),
+    { gasPrice: GasPrice.fromString("100000au") },
+  )),
+  Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
+  Effect.provide(ChainRegistry.Default),
+  Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
+)
+
+Effect.runPromise(program)
+  .then(console.log)
+  .catch(console.error)
+```
