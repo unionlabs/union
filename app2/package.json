@@ -17,7 +17,7 @@
     "supabase:generate": "supabase gen types --lang='typescript' --project-id='uorqzpuryrgfnecadajo' > './src/lib/dashboard/database.types.ts'"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
+    "@types/node": "^24.3.1",
     "@aptos-labs/ts-sdk": "1.38.0",
     "@chain-registry/types": "^0.50.144",
     "@cosmjs/amino": "^0.33.1",
