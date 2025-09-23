@@ -30,7 +30,6 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`uniond`](./uniond/README.md)                      | The Union node implementation, using [`CometBLS`]    | [Go]                  |
 | [`galoisd`](./galoisd)                              | The zero-knowledge prover implementation             | [Go] [Gnark]          |
 | [`voyager`](./voyager)                              | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
-| [`hubble`](./hubble)                                | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
 | [`cosmwasm`](./cosmwasm)                            | [CosmWasm] smart contract stack                      | [Rust]                |
 | [`light-clients`](./cosmwasm/ibc-union/lightclient) | [Light Clients] for various ecosystems               | [Rust]                |
 | [`unionvisor`](./unionvisor/README.md)              | Node supervisor intended for production usage        | [Rust]                |

@@ -187,7 +187,6 @@
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
         ./mpc/mpc.nix
-        ./hubble/hubble.nix
         ./lib/aptos.nix
         ./uniond/proto.nix
         ./docs/docs.nix
@@ -211,7 +210,6 @@
         ./tools/rust/crane.nix
         ./tools/tera/tera.nix
         ./tools/docgen/docgen.nix
-        ./tools/hasura-cli/hasura-cli.nix
         ./tools/todo-comment.nix
         ./tools/iaviewer/iaviewer.nix
         ./networks/e2e-setup.nix
@@ -569,7 +567,6 @@
                     pkgs.solc
                     pkgs.foundry-bin
                     pkgs.sqlx-cli
-                    self'.packages.hasura-cli
                     self'.packages.ignite-cli
                   ]
                 else
