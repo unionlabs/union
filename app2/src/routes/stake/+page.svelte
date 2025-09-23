@@ -5,6 +5,7 @@ import BondComponent from "$lib/components/stake/BondComponent.svelte"
 import IncentiveCard from "$lib/components/stake/IncentiveCard.svelte"
 import StakingHistoryCard from "$lib/components/stake/StakingHistoryCard.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
+import WithdrawalComponent from "$lib/components/stake/WithdrawalComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
@@ -14,7 +15,6 @@ import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
 import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
-import { matchOption, matchRuntimeResult } from "$lib/utils/snippets.svelte"
 import { FetchHttpClient } from "@effect/platform"
 import { Staking, Ucs05, Utils } from "@unionlabs/sdk"
 import { EU_ERC20, EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
@@ -30,7 +30,7 @@ import { onMount } from "svelte"
 type StakeTab = "bond" | "unbond" | "withdraw"
 type TableFilter = "all" | "bond" | "unbond"
 
-const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.1")
+const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
 
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
@@ -258,6 +258,7 @@ $inspect(data)
           items={[
             { id: "bond", label: "Stake" },
             { id: "unbond", label: "Unstake" },
+            { id: "withdraw", label: "Withdraw" },
           ]}
           activeId={selectedTab}
           onTabChange={(id) => selectedTab = id as StakeTab}
@@ -283,12 +284,11 @@ $inspect(data)
             onUnbondSuccess={refreshBondData}
           />
         {:else if selectedTab === "withdraw"}
-          <div class="flex flex-col gap-4 text-center py-8">
-            <div class="text-zinc-400 text-sm">Withdrawal functionality</div>
-            <div class="text-zinc-500 text-xs">
-              Query withdrawable balance and implement withdrawal logic
-            </div>
-          </div>
+          <WithdrawalComponent
+            {evmChain}
+            {uOnEvmToken}
+            onWithdrawSuccess={refreshBondData}
+          />
         {/if}
       </div>
     </Card>
