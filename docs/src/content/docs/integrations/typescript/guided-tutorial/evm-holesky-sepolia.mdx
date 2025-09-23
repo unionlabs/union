@@ -13,10 +13,10 @@ This first section is a walk through of creating the program section of the send
 
 ### 1. Program declaration
 
-Begin by using Effect to create a program function, the remainder of this section will take place within the function body.
+Begin by using Effect to create a program function.
 
 ```js
-import { Effect } from "effect"
+import { Effect, Logger } from "effect"
 
 const program = Effect.gen(function*() {})
 ```
@@ -27,13 +27,16 @@ Using the `ChainRegistry` from the Union TS SDK, you can declare the source and 
 
 ```js
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { Effect, Logger } from "effect"
 
+const program = Effect.gen(function*() {
   const source = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.17000"),
   )
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.11155111"),
   )
+})
 ```
 
 :::note
@@ -52,6 +55,10 @@ We also need to determine the `Kind` for the `TokenOrder`. In this case, we use 
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import { Effect, Logger } from "effect"
 
+const program = Effect.gen(function*() {
+
+  // ... snip ...
+
   const tokenOrder = yield* TokenOrder.make({
     source,
     destination,
@@ -69,6 +76,7 @@ import { Effect, Logger } from "effect"
   })
 
   yield* Effect.log("Token Order V2", tokenOrder)
+})
 ```
 
 ### 4. zkgm Request
@@ -77,6 +85,11 @@ Finally, the token order you've constructed can be used as an `instruction` to c
 
 ```js
 import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+
+  // ... snip ...
 
   const request = ZkgmClientRequest.make({
     source,
@@ -85,6 +98,7 @@ import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
     ucs03Address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
     instruction: tokenOrder,
   })
+})
 ```
 
 ### 5. zkgm Execution & Response
@@ -97,6 +111,11 @@ import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as ZkgmIncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
+import { Effect, Logger } from "effect"
+
+const program = Effect.gen(function*() {
+
+  // ... snip ...
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
@@ -116,6 +135,7 @@ import * as ZkgmIncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
   // NOTE: 4. tx complete
 
   yield* Effect.log("Completion", completion)
+})
 ```
 
 :::note
