@@ -1,18 +1,25 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import UInput from "$lib/components/ui/UInput.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
+import {
+  DESTINATION_CHANNEL_ID,
+  ETHEREUM_CHAIN_ID,
+  SOURCE_CHANNEL_ID,
+  UCS03_EVM_ADDRESS,
+  UCS03_ZKGM,
+  UNION_CHAIN_ID,
+} from "$lib/stake/config"
+import { predictProxy } from "$lib/stake/instantiate2"
+import { StakingHubStatusSchema } from "$lib/stake/schemas"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
-import { matchOption } from "$lib/utils/snippets.svelte"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
-import { instantiate2 } from "$lib/stake/instantiate2"
 import {
   Batch,
   Call,
@@ -23,8 +30,8 @@ import {
   Utils,
   ZkgmClient,
   ZkgmClientRequest,
-  ZkgmIncomingMessage,
 } from "@unionlabs/sdk"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
@@ -35,42 +42,27 @@ import {
 } from "@unionlabs/sdk/Constants"
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
-import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
 import {
   BigDecimal,
   ConfigProvider,
   Data,
   Effect,
+  Exit,
   Layer,
   Match,
   pipe,
   Schedule,
   Schema,
-  Struct,
 } from "effect"
-import * as A from "effect/Array"
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
-import { bytesToHex, custom, encodeAbiParameters, fromHex, http, keccak256 } from "viem"
+import { custom } from "viem"
 import { sepolia } from "viem/chains"
+import QuickAmountButtons from "./QuickAmountButtons.svelte"
+import StatusDisplay from "./StatusDisplay.svelte"
 
-const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
-const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
-const SOURCE_CHANNEL_ID = ChannelId.make(3)
-const DESTINATION_CHANNEL_ID = ChannelId.make(3)
-const UCS03_EVM = Ucs05.EvmDisplay.make({
-  address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-})
-const UCS03_ZKGM = Ucs05.CosmosDisplay.make({
-  address: "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
-})
-
-const JsonFromBase64 = Schema.compose(
-  Schema.StringFromBase64,
-  Schema.parseJson(),
-)
+const UCS03_EVM = Ucs05.EvmDisplay.make({ address: UCS03_EVM_ADDRESS })
 
 interface Props {
   evmChain: O.Option<Chain>
@@ -80,7 +72,18 @@ interface Props {
   onUnbondSuccess?: () => void
 }
 
-let { evmChain, uOnEvmToken, eUOnEvmToken, eUOnEvmBalance, onUnbondSuccess }: Props = $props()
+let {
+  evmChain,
+  uOnEvmToken,
+  eUOnEvmToken,
+  eUOnEvmBalance,
+  onUnbondSuccess,
+}: Props = $props()
+
+const JsonFromBase64 = Schema.compose(
+  Schema.StringFromBase64,
+  Schema.parseJson(),
+)
 
 type UnbondState = Data.TaggedEnum<{
   Ready: {}
@@ -107,10 +110,21 @@ let unbondAmount = $state<O.Option<bigint>>(O.none())
 let unbondState = $state<UnbondState>(UnbondState.Ready())
 let shouldUnbond = $state<boolean>(false)
 
-const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
-  unbondInput,
-  BigDecimal.fromString,
-))
+// Fetch staking rates to show redemption rate
+const stakingRates = runPromiseExit$(() =>
+  Effect.gen(function*() {
+    return yield* pipe(
+      Cosmos.queryContract(
+        EU_STAKING_HUB,
+        {
+          accounting_state: {},
+        },
+      ),
+      Effect.flatMap(Schema.decodeUnknown(StakingHubStatusSchema)),
+      Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
+    )
+  })
+)
 
 const isUnbonding = $derived(
   !UnbondState.$is("Ready")(unbondState)
@@ -120,7 +134,6 @@ const isUnbonding = $derived(
 const isSuccess = $derived(UnbondState.$is("Success")(unbondState))
 const isError = $derived(UnbondState.$is("Error")(unbondState))
 
-
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
     new Map([
@@ -129,7 +142,6 @@ const QlpConfigProvider = pipe(
   ),
   Layer.setConfigProvider,
 )
-
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   pipe(
@@ -192,7 +204,7 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   Effect.gen(function*() {
     const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
     const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
-    const receiver = yield* instantiate2({
+    const receiver = yield* predictProxy({
       path: 0n,
       channel: DESTINATION_CHANNEL_ID,
       sender,
@@ -392,7 +404,7 @@ runPromiseExit$(() =>
       unbondInput = ""
       shouldUnbond = false
       onUnbondSuccess?.()
-      
+
       setTimeout(() => {
         if (UnbondState.$is("Success")(unbondState)) {
           unbondState = UnbondState.Ready()
@@ -420,7 +432,9 @@ runPromiseExit$(() =>
 )
 
 function handleButtonClick() {
-  if (isUnbonding) return
+  if (isUnbonding) {
+    return
+  }
 
   Match.value({ isError, isSuccess, hasWallet: O.isSome(WalletStore.evmAddress) }).pipe(
     Match.when({ isError: true }, () => {
@@ -435,247 +449,117 @@ function handleButtonClick() {
     Match.orElse(() => {
       unbondState = UnbondState.Ready()
       shouldUnbond = true
-    })
+    }),
   )
 }
 </script>
 
-{#snippet renderBalanceSkeleton()}
-  <Skeleton class="w-full h-6 ml-auto" />
-{/snippet}
-
-{#snippet renderBalance(amount: bigint)}
-  <div>
-    {
-      pipe(
-        BigDecimal.fromBigInt(amount),
-        BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
-        Utils.formatBigDecimal,
-      )
-    }
-  </div>
-{/snippet}
-
 <div class="flex grow flex-col gap-4">
-  <div>
-    <Label caseSensitive>BALANCE</Label>
-    {#if O.isNone(WalletStore.evmAddress)}
-      <div>—</div>
-    {:else if O.isSome(evmChain) && O.isSome(eUOnEvmToken) && O.isSome(eUOnEvmBalance)}
-      <TokenComponent
-        chain={evmChain.value}
-        denom={eUOnEvmToken.value.denom}
-        amount={TokenRawAmount.make(eUOnEvmBalance.value)}
-        showWrapping={false}
-        showSymbol={true}
-        showIcon={true}
+  <!-- Input Section with Balance -->
+  <div class="space-y-3">
+    <div class="flex justify-between items-center">
+      <label
+        for="unbondInput"
+        class="text-xs font-medium text-zinc-400 uppercase tracking-wider"
+      >Amount to Unstake</label>
+      <div class="text-xs text-zinc-500">
+        Balance:
+        {#if O.isNone(WalletStore.evmAddress)}
+          <span class="text-zinc-400">—</span>
+        {:else if O.isSome(evmChain) && O.isSome(eUOnEvmToken) && O.isSome(eUOnEvmBalance)}
+          <TokenComponent
+            chain={evmChain.value}
+            denom={eUOnEvmToken.value.denom}
+            amount={TokenRawAmount.make(eUOnEvmBalance.value)}
+            showWrapping={false}
+            showSymbol={true}
+            showIcon={false}
+          />
+        {:else}
+          <Skeleton class="w-16 h-4" />
+        {/if}
+      </div>
+    </div>
+
+    <div class="relative">
+      <UInput
+        id="unbondInput"
+        label=""
+        placeholder="0.0"
+        disabled={false}
+        token={eUOnEvmToken}
+        balance={eUOnEvmBalance}
+        bind:humanValue={unbondInput}
+        bind:weiValue={unbondAmount}
       />
-    {:else}
-      {@render renderBalanceSkeleton()}
-    {/if}
-  </div>
 
-  <div>
-    <UInput
-      id="unbondInput"
-      label="Amount"
-      placeholder="Enter amount"
-      disabled={false}
-      token={eUOnEvmToken}
-      balance={eUOnEvmBalance}
-      bind:humanValue={unbondInput}
-      bind:weiValue={unbondAmount}
-    />
-  </div>
-
-  <div class="flex justify-between items-center text-xs">
-    <span class="text-zinc-400">Unbond time:</span>
-    <span class="text-zinc-300">27 days</span>
-  </div>
-
-  <div class="flex justify-between items-center text-xs">
-    <span class="text-zinc-400">You'll receive:</span>
-    <div>
-      {#if O.isSome(evmChain) && O.isSome(uOnEvmToken) && O.isSome(unbondAmount)}
-        <TokenComponent
-          chain={evmChain.value}
-          denom={uOnEvmToken.value.denom}
-          amount={TokenRawAmount.make(unbondAmount.value)}
-          showWrapping={false}
-          showSymbol={true}
-          showIcon={true}
-          maxDecimals={4}
+      <!-- Quick Percentage Buttons -->
+      <div class="mt-2">
+        <QuickAmountButtons
+          balance={eUOnEvmBalance}
+          decimals={18}
+          onAmountSelect={(amount, wei) => {
+            unbondInput = amount
+            unbondAmount = O.some(wei)
+          }}
         />
-      {:else}
-        <span class="text-zinc-300">0 U</span>
-      {/if}
+      </div>
     </div>
   </div>
 
-    <div class="bg-zinc-950/50 rounded-lg p-4 border border-zinc-800">
-      <div class="flex items-center gap-3">
-        <div class="size-8 rounded-lg {isError ? 'bg-red-500/20 border-red-500/40' : isSuccess ? 'bg-accent/20 border-accent/40' : UnbondState.$is("Ready")(unbondState) ? 'bg-zinc-700/20 border-zinc-600/40' : 'bg-accent/20 border-accent/40'} flex items-center justify-center flex-shrink-0">
-          {#if UnbondState.$is("Ready")(unbondState)}
-            <svg
-              class="w-4 h-4 text-zinc-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          {:else if isUnbonding}
-            <div class="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin">
-            </div>
-          {:else if isSuccess}
-            <svg
-              class="w-4 h-4 text-accent"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          {:else if isError}
-            <svg
-              class="w-4 h-4 text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01"
-              />
-            </svg>
+  <!-- Transaction Preview Card -->
+  <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">
+    <div class="flex justify-between items-center">
+      <span class="text-xs text-zinc-500">Exchange Rate</span>
+      {#if O.isSome(stakingRates.current) && Exit.isSuccess(stakingRates.current.value)}
+        <span class="text-sm font-medium text-zinc-200">
+          1 eU = {
+            pipe(
+              stakingRates.current.value.value.redemption_rate,
+              BigDecimal.round({ mode: "from-zero", scale: 6 }),
+              Utils.formatBigDecimal,
+            )
+          } U
+        </span>
+      {:else}
+        <Skeleton class="w-20 h-5" />
+      {/if}
+    </div>
+
+    <div class="flex justify-between items-center">
+      <span class="text-xs text-zinc-500">Unbond Period</span>
+      <span class="text-sm font-medium text-zinc-200">27 days</span>
+    </div>
+
+    <div class="pt-2 border-t border-zinc-800">
+      <div class="flex justify-between items-center">
+        <span class="text-xs text-zinc-500">You'll Receive</span>
+        <div class="text-right">
+          {#if O.isSome(evmChain) && O.isSome(uOnEvmToken) && O.isSome(unbondAmount)}
+            <TokenComponent
+              chain={evmChain.value}
+              denom={uOnEvmToken.value.denom}
+              amount={TokenRawAmount.make(unbondAmount.value)}
+              showWrapping={false}
+              showSymbol={true}
+              showIcon={true}
+              maxDecimals={4}
+            />
+          {:else}
+            <span class="text-sm font-medium text-zinc-300">0 U</span>
+            <div class="text-xs text-zinc-500 mt-0.5">Enter amount</div>
           {/if}
-        </div>
-        <div class="flex-1">
-          <div class="text-sm font-medium text-white">
-            {
-              Match.value(unbondState).pipe(
-                Match.when(UnbondState.$is("Ready"), () =>
-                  O.isNone(WalletStore.evmAddress)
-                    ? "Connect your wallet to start unstaking"
-                    : unbondInput
-                    ? `Ready to unstake ${unbondInput} eU`
-                    : "Enter amount to unstake eU tokens"),
-                Match.when(UnbondState.$is("SwitchingChain"), () => {
-                  const isSafeWallet = getLastConnectedWalletId() === "safe"
-                  return isSafeWallet
-                    ? "Preparing Safe Transaction"
-                    : "Switching to mainnet"
-                }),
-                Match.when(
-                  UnbondState.$is("CheckingAllowance"),
-                  () => "Checking Token Allowance",
-                ),
-                Match.when(
-                  UnbondState.$is("ApprovingAllowance"),
-                  () => `Approving ${unbondInput || "0"} eU`,
-                ),
-                Match.when(
-                  UnbondState.$is("AllowanceSubmitted"),
-                  () => `Approval submitted`,
-                ),
-                Match.when(
-                  UnbondState.$is("WaitingForAllowanceConfirmation"),
-                  () => `Confirming submission`,
-                ),
-                Match.when(
-                  UnbondState.$is("AllowanceApproved"),
-                  () => `Approved ${unbondInput || "0"} eU`,
-                ),
-                Match.when(
-                  UnbondState.$is("CreatingTokenOrder"),
-                  () => `Creating order`,
-                ),
-                Match.when(
-                  UnbondState.$is("PreparingUnbondTransaction"),
-                  () => `Preparing unbond`,
-                ),
-                Match.when(
-                  UnbondState.$is("ConfirmingUnbond"),
-                  () => `Confirm unbond`,
-                ),
-                Match.when(UnbondState.$is("UnbondSubmitted"), () => `Unbond successfully submitted`),
-                Match.when(
-                  UnbondState.$is("WaitingForConfirmation"),
-                  () => `Confirming submission`,
-                ),
-                Match.when(
-                  UnbondState.$is("WaitingForIndexer"),
-                  () => `Indexing submission`,
-                ),
-                Match.when(UnbondState.$is("Success"), () => `Unbond submitted`),
-                Match.when(UnbondState.$is("Error"), () => "Unbond Failed"),
-                Match.exhaustive,
-              )
-            }
-          </div>
-          <div class="text-xs {UnbondState.$is("Ready")(unbondState) ? 'text-zinc-400' : isError ? 'text-red-400' : isSuccess ? 'text-accent' : 'text-accent'} mt-1">
-            {
-              Match.value(unbondState).pipe(
-                Match.when(UnbondState.$is("Ready"), () =>
-                  O.isNone(WalletStore.evmAddress)
-                    ? "Connect wallet to see balance and start unstaking"
-                    : unbondInput
-                    ? "Click unstake button to begin transaction (27 day unbond period)"
-                    : "Enter the amount of eU tokens you want to unstake"),
-                Match.when(UnbondState.$is("SwitchingChain"), () => {
-                  const isSafeWallet = getLastConnectedWalletId() === "safe"
-                  return isSafeWallet
-                    ? "Preparing transaction for Safe wallet..."
-                    : "Please switch to mainnet in your wallet"
-                }),
-                Match.when(UnbondState.$is("CheckingAllowance"), () =>
-                  "Reading current token allowance from blockchain..."),
-                Match.when(UnbondState.$is("ApprovingAllowance"), () =>
-                  "Confirm token approval transaction in your wallet"),
-                Match.when(UnbondState.$is("AllowanceSubmitted"), ({ txHash }) =>
-                  `Allowance transaction submitted: ${txHash.slice(0, 10)}...`),
-                Match.when(
-                  UnbondState.$is("WaitingForAllowanceConfirmation"),
-                  ({ txHash }) =>
-                    `Waiting for allowance confirmation: ${txHash.slice(0, 10)}...`,
-                ),
-                Match.when(UnbondState.$is("AllowanceApproved"), () =>
-                  "Token spending approved, proceeding..."),
-                Match.when(UnbondState.$is("CreatingTokenOrder"), () =>
-                  "Building cross-chain token order..."),
-                Match.when(UnbondState.$is("PreparingUnbondTransaction"), () =>
-                  "Preparing unbond transaction with contracts..."),
-                Match.when(UnbondState.$is("ConfirmingUnbond"), () =>
-                  "Confirm unbond transaction in your wallet"),
-                Match.when(UnbondState.$is("UnbondSubmitted"), ({ txHash }) =>
-                  `Transaction submitted: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("WaitingForConfirmation"), ({ txHash }) =>
-                  `Waiting for confirmation: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("WaitingForIndexer"), ({ txHash }) =>
-                  `Transaction confirmed, indexing data...`),
-                Match.when(UnbondState.$is("Success"), ({ txHash }) =>
-                  `Success! TX: ${txHash.slice(0, 10)}...`),
-                Match.when(UnbondState.$is("Error"), ({ message }) =>
-                  message),
-                Match.exhaustive,
-              )
-            }
-          </div>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Status Display -->
+  <StatusDisplay
+    state={unbondState}
+    type="unbond"
+    inputAmount={unbondInput}
+  />
 
   <div>
     <Button
@@ -707,7 +591,9 @@ function handleButtonClick() {
           Match.when(UnbondState.$is("Ready"), () =>
             O.isNone(WalletStore.evmAddress)
               ? "Connect Wallet"
-              : `Unstake ${unbondInput || "0"} eU`),
+              : unbondInput
+              ? "Unstake"
+              : "Enter Amount"),
           Match.when(UnbondState.$is("SwitchingChain"), () => "Switching..."),
           Match.when(UnbondState.$is("CheckingAllowance"), () => "Checking..."),
           Match.when(UnbondState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),

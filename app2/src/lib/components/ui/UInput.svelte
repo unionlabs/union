@@ -29,7 +29,7 @@ let {
   decimals = 18,
   token = O.none(),
   balance = O.none(),
-  class: className = "h-14 text-center text-lg",
+  class: className = "h-14 pl-4 text-left text-lg",
   humanValue = $bindable(),
   weiValue = $bindable(),
 }: Props = $props()

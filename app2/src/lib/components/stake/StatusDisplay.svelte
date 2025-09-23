@@ -1,0 +1,284 @@
+<script lang="ts">
+import { Match, Option as O } from "effect"
+import type { Data } from "effect"
+import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+
+interface Props {
+  state: Data.TaggedEnum.Value<any, any>
+  type: "bond" | "unbond" | "withdrawal"
+  inputAmount?: string
+  class?: string
+}
+
+let {
+  state,
+  type,
+  inputAmount = "",
+  class: className = "",
+}: Props = $props()
+
+const isReady = $derived(state._tag === "Ready")
+const isSuccess = $derived(state._tag === "Success")
+const isError = $derived(state._tag === "Error")
+const isActive = $derived(!isReady && !isSuccess && !isError)
+
+const isSafeWallet = $derived(getLastConnectedWalletId() === "safe")
+const txHash = $derived("txHash" in state ? state.txHash : undefined)
+const errorMessage = $derived("message" in state ? state.message : "An error occurred")
+
+const getMessage = (type: string, state: any, inputAmount: string) => {
+  const baseMessages: Record<string, Record<string, any>> = {
+    bond: {
+      Ready: {
+        title: O.isNone(WalletStore.evmAddress)
+          ? "Connect your wallet to start staking"
+          : inputAmount
+          ? `Ready to stake ${inputAmount} U`
+          : "Enter amount to stake U tokens",
+        subtitle: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet to see balance and start staking"
+          : inputAmount
+          ? "Click stake button to begin transaction"
+          : "Enter the amount of U tokens you want to stake"
+      },
+      SwitchingChain: {
+        title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
+        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
+      },
+      CheckingAllowance: {
+        title: "Checking Token Allowance",
+        subtitle: "Reading current token allowance from blockchain..."
+      },
+      ApprovingAllowance: {
+        title: `Approving ${inputAmount || "0"} U`,
+        subtitle: "Confirm token approval transaction in your wallet"
+      },
+      AllowanceSubmitted: {
+        title: "Approval submitted",
+        subtitle: "Allowance transaction submitted",
+        txHash
+      },
+      WaitingForAllowanceConfirmation: {
+        title: "Confirming submission",
+        subtitle: "Waiting for allowance confirmation",
+        txHash
+      },
+      AllowanceApproved: {
+        title: `Approved ${inputAmount || "0"} U`,
+        subtitle: "Token spending approved, proceeding..."
+      },
+      CreatingTokenOrder: {
+        title: "Creating order",
+        subtitle: "Building cross-chain token order..."
+      },
+      PreparingBondTransaction: {
+        title: "Preparing bond",
+        subtitle: "Preparing bond transaction with contracts..."
+      },
+      ConfirmingBond: {
+        title: "Confirm bond",
+        subtitle: "Confirm bond transaction in your wallet"
+      },
+      BondSubmitted: {
+        title: "Bond successfully submitted",
+        subtitle: "Transaction submitted",
+        txHash
+      },
+      WaitingForConfirmation: {
+        title: "Confirming submission",
+        subtitle: "Waiting for confirmation",
+        txHash
+      },
+      WaitingForIndexer: {
+        title: "Indexing submission",
+        subtitle: "Transaction confirmed, indexing data...",
+        txHash
+      },
+      Success: {
+        title: "Bond submitted",
+        subtitle: "Your stake has been successfully submitted!",
+        txHash
+      },
+      Error: {
+        title: "Bond Failed",
+        subtitle: errorMessage
+      }
+    },
+    unbond: {
+      Ready: {
+        title: O.isNone(WalletStore.evmAddress)
+          ? "Connect your wallet to start unstaking"
+          : inputAmount
+          ? `Ready to unstake ${inputAmount} eU`
+          : "Enter amount to unstake eU tokens",
+        subtitle: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet to see balance and start unstaking"
+          : inputAmount
+          ? "Click unstake button to begin transaction (27 day unbond period)"
+          : "Enter the amount of eU tokens you want to unstake"
+      },
+      SwitchingChain: {
+        title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
+        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
+      },
+      CheckingAllowance: {
+        title: "Checking Token Allowance",
+        subtitle: "Reading current token allowance from blockchain..."
+      },
+      ApprovingAllowance: {
+        title: `Approving ${inputAmount || "0"} eU`,
+        subtitle: "Confirm token approval transaction in your wallet"
+      },
+      AllowanceSubmitted: {
+        title: "Approval submitted",
+        subtitle: "Allowance transaction submitted",
+        txHash
+      },
+      WaitingForAllowanceConfirmation: {
+        title: "Confirming submission",
+        subtitle: "Waiting for allowance confirmation",
+        txHash
+      },
+      AllowanceApproved: {
+        title: `Approved ${inputAmount || "0"} eU`,
+        subtitle: "Token spending approved, proceeding..."
+      },
+      CreatingTokenOrder: {
+        title: "Creating order",
+        subtitle: "Building cross-chain token order..."
+      },
+      PreparingUnbondTransaction: {
+        title: "Preparing unbond",
+        subtitle: "Preparing unbond transaction with contracts..."
+      },
+      ConfirmingUnbond: {
+        title: "Confirm unbond",
+        subtitle: "Confirm unbond transaction in your wallet"
+      },
+      UnbondSubmitted: {
+        title: "Unbond successfully submitted",
+        subtitle: "Transaction submitted",
+        txHash
+      },
+      WaitingForConfirmation: {
+        title: "Confirming submission",
+        subtitle: "Waiting for confirmation",
+        txHash
+      },
+      WaitingForIndexer: {
+        title: "Indexing submission",
+        subtitle: "Transaction confirmed, indexing data...",
+        txHash
+      },
+      Success: {
+        title: "Unbond submitted",
+        subtitle: "Your unbond request has been successfully submitted!",
+        txHash
+      },
+      Error: {
+        title: "Unbond Failed",
+        subtitle: errorMessage
+      }
+    },
+    withdrawal: {
+      Ready: {
+        title: O.isNone(WalletStore.evmAddress)
+          ? "Connect your wallet to view withdrawals"
+          : "Ready to withdraw",
+        subtitle: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet to see your withdrawable tokens"
+          : "Withdraw your tokens to your wallet"
+      },
+      Loading: {
+        title: "Processing withdrawal transaction",
+        subtitle: "Please wait while we process your withdrawal...",
+      },
+      Success: {
+        title: "Withdrawal completed successfully",
+        subtitle: "Your tokens have been successfully withdrawn",
+      },
+      Error: {
+        title: "Withdrawal failed",
+        subtitle: errorMessage
+      }
+    }
+  }
+  
+  return baseMessages[type]?.[state._tag] || { title: state._tag, subtitle: "" }
+}
+
+const currentMessage = $derived(getMessage(type, state, inputAmount))
+</script>
+
+<div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3.5 {className}">
+  <div class="flex items-center gap-3">
+    <div class="size-7 rounded-md {isError ? 'bg-red-500/10 border border-red-500/20' : isSuccess ? 'bg-accent/10 border border-accent/20' : isReady ? 'bg-zinc-800' : 'bg-accent/10 border border-accent/20'} flex items-center justify-center flex-shrink-0">
+      {#if isReady}
+        <svg
+          class="w-3.5 h-3.5 text-zinc-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      {:else if isActive}
+        <Skeleton class="w-3.5 h-3.5 rounded-full" />
+      {:else if isSuccess}
+        <svg
+          class="w-3.5 h-3.5 text-accent"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      {:else if isError}
+        <svg
+          class="w-3.5 h-3.5 text-red-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01"
+          />
+        </svg>
+      {/if}
+    </div>
+    <div class="flex-1">
+      <div class="text-[13px] font-medium text-white">
+        {currentMessage.title}
+      </div>
+      <div class="text-[11px] {isReady ? 'text-zinc-500' : isError ? 'text-red-400/80' : isSuccess ? 'text-accent/80' : 'text-accent/60'} mt-0.5">
+        {currentMessage.subtitle}
+        {#if currentMessage.txHash}
+          {" "}
+          <a
+            href="https://etherscan.io/tx/{currentMessage.txHash}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="underline hover:no-underline"
+          >
+            View
+          </a>
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>

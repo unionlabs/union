@@ -68,7 +68,7 @@ $effect(() => {
       bind:this={itemRefs[index]}
       onclick={() => onTabChange(item.id)}
       class={cn(
-        "px-3 sm:px-4 py-2 sm:py-2 text-sm font-medium rounded-md transition-colors relative cursor-pointer z-10",
+        "px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors relative cursor-pointer z-10",
         activeId === item.id
           ? "text-white"
           : "text-zinc-500 hover:text-zinc-300",

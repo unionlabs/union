@@ -15,7 +15,7 @@ const module_hash = "0x120970d812836f19888625587a4606a5ad23cef31c8684e6017715525
  * Generate a deterministic Union cosmos address from an EVM address using instantiate2
  * This is used to create the receiver address for cross-chain operations
  */
-export const instantiate2 = Effect.fn(
+export const predictProxy = Effect.fn(
   function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.AnyDisplay }) {
     const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
     const abi = [

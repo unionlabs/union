@@ -1,9 +1,8 @@
 <script lang="ts">
-import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import BalanceCard from "$lib/components/stake/BalanceCard.svelte"
 import BondComponent from "$lib/components/stake/BondComponent.svelte"
-import IncentiveCard from "$lib/components/stake/IncentiveCard.svelte"
 import StakingHistoryCard from "$lib/components/stake/StakingHistoryCard.svelte"
+import StakingStatsGrid from "$lib/components/stake/StakingStatsGrid.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
 import WithdrawalComponent from "$lib/components/stake/WithdrawalComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
@@ -11,17 +10,29 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { calculateIncentive } from "$lib/services/incentive"
+import { ETHEREUM_CHAIN_ID } from "$lib/stake/config"
 import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
 import { tokensStore as TokenStore } from "$lib/stores/tokens.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { FetchHttpClient } from "@effect/platform"
 import { Staking, Ucs05, Utils } from "@unionlabs/sdk"
-import { EU_ERC20, EU_LST, U_ERC20 } from "@unionlabs/sdk/Constants"
+import { Cosmos } from "@unionlabs/sdk-cosmos"
+import { EU_ERC20, EU_LST, EU_STAKING_HUB, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
-import { TokenRawAmount, UniversalChainId } from "@unionlabs/sdk/schema"
+import { UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
-import { BigDecimal, Brand, ConfigProvider, DateTime, Effect, Layer, Order, pipe } from "effect"
+import {
+  BigDecimal,
+  Brand,
+  ConfigProvider,
+  DateTime,
+  Effect,
+  Layer,
+  Order,
+  pipe,
+  Schema,
+} from "effect"
 import * as A from "effect/Array"
 import { constVoid } from "effect/Function"
 import * as O from "effect/Option"
@@ -30,7 +41,10 @@ import { onMount } from "svelte"
 type StakeTab = "bond" | "unbond" | "withdraw"
 type TableFilter = "all" | "bond" | "unbond"
 
-const EVM_UNIVERSAL_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
+const EVM_UNIVERSAL_CHAIN_ID = ETHEREUM_CHAIN_ID
+
+// State for rate display toggle
+let showInverseRate = $state(false)
 
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
@@ -113,6 +127,28 @@ const incentives = AppRuntime.runPromiseExit$(() => {
   )
 })
 
+// Fetch staking rates to get the purchase rate (eU/U exchange rate)
+const stakingRates = AppRuntime.runPromiseExit$(() =>
+  Effect.gen(function*() {
+    return yield* pipe(
+      Cosmos.queryContract(
+        EU_STAKING_HUB,
+        {
+          accounting_state: {},
+        },
+      ),
+      Effect.flatMap(Schema.decodeUnknown(Schema.Struct({
+        total_assets: Schema.BigInt,
+        total_shares: Schema.BigInt,
+        total_reward_amount: Schema.BigInt,
+        redemption_rate: Schema.BigDecimal,
+        purchase_rate: Schema.BigDecimal,
+      }))),
+      Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
+    )
+  })
+)
+
 const evmChain = $derived(pipe(
   ChainStore.data,
   O.flatMap(A.findFirst(x => x.universal_chain_id === EVM_UNIVERSAL_CHAIN_ID)),
@@ -169,91 +205,53 @@ const eUOnEvmBalance = $derived(pipe(
   ),
 ))
 
+// Get the exchange rate from the staking contract
+const exchangeRate = $derived.by(() => {
+  if (O.isSome(stakingRates.current) && stakingRates.current.value._tag === "Success") {
+    const purchaseRate = stakingRates.current.value.value.purchase_rate
+
+    if (showInverseRate) {
+      // eU/U rate: how much U you need per eU (inverse of purchase rate)
+      const inverseRate = pipe(
+        BigDecimal.divide(BigDecimal.fromBigInt(1n), purchaseRate),
+        O.getOrElse(() => BigDecimal.fromBigInt(0n)),
+        BigDecimal.round({ mode: "from-zero", scale: 4 }),
+        Utils.formatBigDecimal,
+      )
+      return inverseRate
+    } else {
+      // U/eU rate: how much eU you get per U (purchase rate)
+      const rateNumber = pipe(
+        purchaseRate,
+        BigDecimal.round({ mode: "from-zero", scale: 4 }),
+        Utils.formatBigDecimal,
+      )
+      return rateNumber
+    }
+  }
+  return "—"
+})
+
 $inspect(data)
 </script>
 
 <Sections>
-  <div class="hidden md:grid grid-cols-3 gap-4">
-    <Card class="p-4">
-      <div class="flex flex-col gap-2">
-        <div class="text-sm text-zinc-400 uppercase tracking-wide">U balance</div>
-        <div class="flex items-center gap-2">
-          {#if O.isNone(WalletStore.evmAddress)}
-            <div class="text-xl">—</div>
-          {:else if O.isSome(evmChain) && O.isSome(uOnEvmToken) && O.isSome(uOnEvmBalance)}
-            <div class="text-xl font-semibold">
-              <TokenComponent
-                chain={evmChain.value}
-                denom={uOnEvmToken.value.denom}
-                amount={TokenRawAmount.make(uOnEvmBalance.value)}
-                showWrapping={false}
-                showSymbol={true}
-                showIcon={true}
-              />
-            </div>
-          {:else}
-            <div class="flex items-center gap-2">
-              <div class="w-5 h-5 bg-zinc-700/50 rounded-full animate-pulse"></div>
-              <div class="w-20 h-6 bg-zinc-700/50 rounded animate-pulse"></div>
-            </div>
-          {/if}
-        </div>
-      </div>
-    </Card>
-
-    <Card class="p-4">
-      <div class="flex flex-col gap-2">
-        <div class="text-sm text-zinc-400 uppercase tracking-wide">eU balance</div>
-        <div class="flex items-center gap-2">
-          {#if O.isNone(WalletStore.evmAddress)}
-            <div class="text-xl">—</div>
-          {:else if O.isSome(evmChain) && O.isSome(eUOnEvmToken) && O.isSome(eUOnEvmBalance)}
-            <div class="text-xl font-semibold">
-              <TokenComponent
-                chain={evmChain.value}
-                denom={eUOnEvmToken.value.denom}
-                amount={TokenRawAmount.make(eUOnEvmBalance.value)}
-                showWrapping={false}
-                showSymbol={true}
-                showIcon={true}
-              />
-            </div>
-          {:else}
-            <div class="flex items-center gap-2">
-              <div class="w-5 h-5 bg-zinc-700/50 rounded-full animate-pulse"></div>
-              <div class="w-20 h-6 bg-zinc-700/50 rounded animate-pulse"></div>
-            </div>
-          {/if}
-        </div>
-      </div>
-    </Card>
-
-    <Card class="p-4">
-      <div class="flex flex-col gap-2">
-        <div class="text-sm text-zinc-400 uppercase tracking-wide">Staking Rewards</div>
-        <div class="flex items-center gap-2">
-          {#if O.isSome(incentives.current)
-              && incentives.current.value._tag === "Success"}
-            {@const formattedIncentives = pipe(
-              incentives.current.value.value.rates.yearly,
-              BigDecimal.multiply(BigDecimal.fromBigInt(100n)),
-              BigDecimal.round({ mode: "from-zero", scale: 2 }),
-              Utils.formatBigDecimal,
-            )}
-            <div class="text-xl text-accent">
-              {formattedIncentives}%
-            </div>
-          {:else}
-            <div class="w-16 h-5 bg-zinc-700/50 rounded animate-pulse"></div>
-          {/if}
-        </div>
-      </div>
-    </Card>
+  <!-- Mobile: Balance Card first -->
+  <div class="lg:hidden">
+    <BalanceCard
+      {evmChain}
+      {uOnEvmToken}
+      {eUOnEvmToken}
+      {uOnEvmBalance}
+      {eUOnEvmBalance}
+    />
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Main grid with actions on left, balance+stats on right (desktop) -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left Column: Staking Actions Card -->
     <Card divided>
-      <div class="p-4 border-b border-zinc-800">
+      <div class="px-4 py-2.5 border-b border-zinc-800">
         <Tabs
           items={[
             { id: "bond", label: "Stake" },
@@ -262,6 +260,7 @@ $inspect(data)
           ]}
           activeId={selectedTab}
           onTabChange={(id) => selectedTab = id as StakeTab}
+          class="text-xs"
         />
       </div>
 
@@ -293,14 +292,38 @@ $inspect(data)
       </div>
     </Card>
 
-    <IncentiveCard
+    <!-- Right Column: Balance Card + Stats Grid (desktop only) -->
+    <div class="hidden lg:block space-y-6">
+      <!-- Balance Card -->
+      <BalanceCard
+        {evmChain}
+        {uOnEvmToken}
+        {eUOnEvmToken}
+        {uOnEvmBalance}
+        {eUOnEvmBalance}
+      />
+
+      <!-- Stats Grid -->
+      <StakingStatsGrid
+        incentives={incentives.current}
+        {exchangeRate}
+        {showInverseRate}
+        onToggleRate={() => showInverseRate = !showInverseRate}
+      />
+    </div>
+  </div>
+
+  <!-- Mobile: Stats Grid after actions -->
+  <div class="lg:hidden">
+    <StakingStatsGrid
       incentives={incentives.current}
-      stakeAmount={bondAmount}
-      {evmChain}
-      {uOnEvmToken}
+      {exchangeRate}
+      {showInverseRate}
+      onToggleRate={() => showInverseRate = !showInverseRate}
     />
   </div>
 
+  <!-- Staking History (separate, below everything) -->
   <StakingHistoryCard
     data={data.current}
     walletConnected={O.isSome(WalletStore.evmAddress)}

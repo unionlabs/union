@@ -1,6 +1,7 @@
 <script lang="ts">
 import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import { matchRuntimeResult } from "$lib/utils/snippets.svelte"
 import type { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
@@ -8,7 +9,7 @@ import { Array as A, Option as O } from "effect"
 import type { Exit } from "effect"
 
 interface Props {
-  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>, any>>
+  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>, unknown>>
   walletConnected: boolean
 }
 
@@ -42,7 +43,7 @@ $effect(() => {
   {@const hasData = O.isSome(maybeBonds) && filteredBonds.length > 0}
 
   <div class="relative">
-    <div class="p-4 border-b border-zinc-800">
+    <div class="px-4 py-2.5 border-b border-zinc-800">
       <div class="flex items-center justify-between gap-1 sm:gap-2">
         <Tabs
           items={[
@@ -88,15 +89,15 @@ $effect(() => {
           <div class="p-4 border-b border-zinc-800/50 last:border-b-0">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-zinc-700/50 rounded animate-pulse"></div>
+                <Skeleton class="w-8 h-8" />
                 <div class="flex flex-col gap-1">
-                  <div class="w-24 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
-                  <div class="w-16 h-3 bg-zinc-700/50 rounded animate-pulse"></div>
+                  <Skeleton class="w-24 h-4" />
+                  <Skeleton class="w-16 h-3" />
                 </div>
               </div>
               <div class="flex flex-col items-end gap-1">
-                <div class="w-20 h-4 bg-zinc-700/50 rounded animate-pulse"></div>
-                <div class="w-12 h-3 bg-zinc-700/50 rounded animate-pulse"></div>
+                <Skeleton class="w-20 h-4" />
+                <Skeleton class="w-12 h-3" />
               </div>
             </div>
           </div>
@@ -133,7 +134,7 @@ $effect(() => {
 {/snippet}
 
 {#snippet renderSkeleton()}
-  <div class="relative overflow-auto max-h-72 rounded-lg ring-1 ring-zinc-800/80 animate-pulse">
+  <div class="relative overflow-auto max-h-72 rounded-lg ring-1 ring-zinc-800/80">
     <table class="w-full text-sm">
       <thead class="sticky top-0 z-10 bg-zinc-950/90">
         <tr class="text-zinc-400 border-b border-zinc-800/80">
