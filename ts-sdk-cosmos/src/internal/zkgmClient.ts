@@ -60,7 +60,6 @@ export const fromSigningClient = (
                 { version: 1 },
                 (v1) =>
                   Effect.gen(function*() {
-                    console.log("cosmos base token", { baseToken: v1.baseToken })
                     const meta = yield* pipe(
                       Cosmos.readCw20TokenInfo(v1.baseToken.address as unknown as any),
                       Effect.either,
@@ -84,8 +83,6 @@ export const fromSigningClient = (
         }),
       )
 
-      console.log("[@unionlabs/sdk-cosmos/internal/zkgmClient]", { signingClient, client })
-
       const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
 
       const salt = yield* Utils.generateSalt("cosmos").pipe(
@@ -98,8 +95,6 @@ export const fromSigningClient = (
           })
         ),
       )
-
-      console.log("@unionlabs/sdk-cosmos/internal/zkgmClient", { salt, timeout_timestamp })
 
       const instruction = yield* pipe(
         encodeInstruction(request.instruction),
@@ -114,8 +109,6 @@ export const fromSigningClient = (
         ),
       )
 
-      console.log("@unionlabs/sdk-cosmos/internal/zkgmClient", { instruction })
-
       const funds = pipe(
         ClientRequest.requiredFunds(request),
         O.map(A.filter(([x]) => Token.isNative(x))),
@@ -125,8 +118,6 @@ export const fromSigningClient = (
         }))),
         O.getOrElse(A.empty),
       )
-
-      console.log("@unionlabs/sdk-cosmos/internal/zkgmClient", { funds })
 
       const args = [
         signingClient.address,
@@ -142,8 +133,6 @@ export const fromSigningClient = (
         },
         funds,
       ] as const
-
-      console.log("@unionlabs/sdk-cosmos/internal/zkgmClient", { args })
 
       const sendInstruction = Cosmos.executeContract(
         ...args,

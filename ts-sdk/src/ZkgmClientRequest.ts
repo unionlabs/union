@@ -36,6 +36,10 @@ export interface ZkgmClientRequest extends Inspectable, Pipeable {
   readonly channelId: ChannelId
   readonly ucs03Address: string
   readonly instruction: ZkgmInstruction.ZkgmInstruction
+  /**
+   * **NOTE:** only for EVM submission
+   */
+  readonly kind: "execute" | "simulateAndExecute"
 }
 
 /**
@@ -48,6 +52,7 @@ export interface Options {
   readonly channelId: ChannelId
   readonly ucs03Address: string // XXX: narrow
   readonly instruction?: ZkgmInstruction.ZkgmInstruction | undefined
+  readonly kind?: "execute" | "simulateAndExecute" | undefined
 }
 
 /**
@@ -60,6 +65,7 @@ export const make: (options: {
   channelId: ChannelId
   ucs03Address: string // XXX: narrow
   instruction: ZkgmInstruction.ZkgmInstruction
+  kind?: "execute" | "simulateAndExecute" | undefined
 }) => ZkgmClientRequest = internal.make
 
 /**
@@ -79,6 +85,15 @@ export const setDestination: {
   (destination: Chain): (self: ZkgmClientRequest) => ZkgmClientRequest
   (self: ZkgmClientRequest, destination: Chain): ZkgmClientRequest
 } = internal.setDestination
+
+/**
+ * @category combinators
+ * @since 2.0.0
+ */
+export const setKind: {
+  (kind: "execute" | "simulateAndExecute"): (self: ZkgmClientRequest) => ZkgmClientRequest
+  (self: ZkgmClientRequest, kind: "execute" | "simulateAndExecute"): ZkgmClientRequest
+} = internal.setKind
 
 /**
  * Extracts from a {@link ZkgmClientRequest} any {@link Token.Any}s required for execution along each amount.

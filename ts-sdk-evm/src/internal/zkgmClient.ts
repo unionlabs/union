@@ -80,8 +80,6 @@ export const fromWallet = (
         }),
       )
 
-      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { wallet, client })
-
       const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
       const salt = yield* Utils.generateSalt("evm").pipe(
         Effect.mapError((cause) =>
@@ -93,8 +91,6 @@ export const fromWallet = (
           })
         ),
       )
-
-      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { salt, timeoutTimestamp })
 
       const operand = yield* pipe(
         encodeInstruction(request.instruction),
@@ -109,8 +105,6 @@ export const fromWallet = (
         ),
       )
 
-      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { operand })
-
       const funds = ClientRequest.requiredFunds(request).pipe(
         O.map(A.filter(([x]) => Token.isNative(x))),
         O.flatMap(O.liftPredicate(A.isNonEmptyReadonlyArray)),
@@ -119,30 +113,42 @@ export const fromWallet = (
         O.getOrUndefined,
       )
 
-      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { funds })
-
-      const args = [
-        request.channelId,
-        0n,
-        timeoutTimestamp,
-        salt,
-        {
-          opcode: request.instruction.opcode,
-          version: request.instruction.version,
-          operand,
-        },
-      ] as const
-
-      console.log("[@unionlabs/sdk-evm/internal/zkgmClient]", { args })
-
-      const sendInstruction = Evm.writeContract({
+      const params = {
         account: wallet.account,
         abi: Ucs03.Abi,
-        chain: wallet.chain,
         functionName: "send",
         address: request.ucs03Address as unknown as any,
-        args,
+        args: [
+          request.channelId,
+          0n,
+          timeoutTimestamp,
+          salt,
+          {
+            opcode: request.instruction.opcode,
+            version: request.instruction.version,
+            operand,
+          },
+        ],
         value: funds,
+      } as const
+
+      const simulateInstruction = Evm.simulateContract({
+        ...params,
+      }).pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "simulateContract",
+          })
+        ),
+        Effect.provideService(Evm.PublicClient, client),
+      )
+
+      const sendInstruction = Evm.writeContract({
+        ...params,
+        chain: wallet.chain,
       }).pipe(
         Effect.mapError((cause) =>
           new ClientError.RequestError({
@@ -156,7 +162,28 @@ export const fromWallet = (
       )
 
       return yield* pipe(
-        sendInstruction,
+        Match.value(request.kind),
+        Match.when("execute", () => sendInstruction),
+        Match.when("simulateAndExecute", () =>
+          pipe(
+            simulateInstruction,
+            Effect.tap((simulation) => Effect.logTrace("Simulation successful:", { simulation })),
+            Effect.andThen(({ request }) =>
+              Evm.writeContract({
+                ...request,
+                account: wallet.account,
+              })
+            ),
+            Effect.catchTag("@unionlabs/sdk/Evm/WriteContractError", (cause) =>
+              new ClientError.RequestError({
+                reason: "Transport",
+                request,
+                cause,
+                description: "writeContract",
+              })),
+            Effect.provideService(Evm.WalletClient, wallet),
+          )),
+        Match.exhaustive,
         Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
       )
     })

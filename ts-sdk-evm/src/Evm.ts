@@ -24,7 +24,13 @@ import {
   type WriteContractErrorType,
   type WriteContractParameters,
 } from "viem"
-import type { Hash, WaitForTransactionReceiptTimeoutErrorType } from "viem"
+import type {
+  DeriveChain,
+  Hash,
+  SimulateContractErrorType,
+  SimulateContractParameters,
+  WaitForTransactionReceiptTimeoutErrorType,
+} from "viem"
 import type { Hex } from "viem"
 import * as internal from "./internal/evm.js"
 
@@ -177,18 +183,16 @@ export const readContract = <
  * @since 0.0.0
  */
 export const writeContract = <
-  TAbi extends Abi,
-  TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable"> = ContractFunctionName<
-    TAbi,
-    "nonpayable" | "payable"
+  const abi extends Abi | readonly unknown[],
+  functionName extends ContractFunctionName<abi, "payable" | "nonpayable">,
+  args extends ContractFunctionArgs<
+    abi,
+    "payable" | "nonpayable",
+    functionName
   >,
-  TArgs extends ContractFunctionArgs<
-    TAbi,
-    "nonpayable" | "payable",
-    TFunctionName
-  > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>,
+  chainOverride extends ViemChain | undefined = undefined,
 >(
-  params: WriteContractParameters<TAbi, TFunctionName, TArgs>,
+  params: WriteContractParameters<abi, functionName, args>,
 ) =>
   pipe(
     WalletClient,
@@ -198,6 +202,49 @@ export const writeContract = <
         catch: error =>
           new WriteContractError({
             cause: Utils.extractErrorDetails(error as WriteContractErrorType),
+          }),
+      })
+    ),
+  )
+
+/**
+ * @category utils
+ * @since 0.0.0
+ */
+export const simulateContract = <
+  abi extends Abi | readonly unknown[] = Abi,
+  functionName extends ContractFunctionName<
+    abi,
+    "nonpayable" | "payable"
+  > = ContractFunctionName<abi, "nonpayable" | "payable">,
+  args extends ContractFunctionArgs<
+    abi,
+    "nonpayable" | "payable",
+    functionName
+  > = ContractFunctionArgs<abi, "nonpayable" | "payable", functionName>,
+  chain extends ViemChain | undefined = ViemChain | undefined,
+  chainOverride extends ViemChain | undefined = ViemChain | undefined,
+  accountOverride extends ViemAccount | Address | null | undefined = undefined,
+  ///
+  derivedChain extends ViemChain | undefined = DeriveChain<chain, chainOverride>,
+>(
+  params: SimulateContractParameters<
+    abi,
+    functionName,
+    args,
+    chain,
+    chainOverride,
+    accountOverride
+  >,
+) =>
+  pipe(
+    PublicClient,
+    Effect.andThen(({ client }) =>
+      Effect.tryPromise({
+        try: () => client.simulateContract(params),
+        catch: error =>
+          new SimulateContractError({
+            cause: Utils.extractErrorDetails(error as SimulateContractErrorType),
           }),
       })
     ),
@@ -298,6 +345,16 @@ export class ReadContractError extends Data.TaggedError("@unionlabs/sdk/Evm/Read
 export class WriteContractError extends Data.TaggedError("@unionlabs/sdk/Evm/WriteContractError")<{
   cause: WriteContractErrorType
 }> {}
+
+/**
+ * @category errors
+ * @since 0.0.0
+ */
+export class SimulateContractError
+  extends Data.TaggedError("@unionlabs/sdk/Evm/SimulateContractError")<{
+    cause: SimulateContractErrorType
+  }>
+{}
 
 /**
  * @category errors
