@@ -13,6 +13,7 @@ use cosmos_client::{
 };
 use cosmos_sdk_event::CosmosSdkEvent;
 use cosmwasm_std::Addr;
+use cw20::Cw20QueryMsg;
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use protos::{
     cosmos::{
@@ -21,16 +22,17 @@ use protos::{
     },
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
     google::protobuf::any::mk_any,
     ibc::core::client::height::Height,
     primitives::{encoding::HexUnprefixed, Bech32, Bytes, H160, H256},
+    prost,
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow, bail, Context},
+    anyhow::{self, anyhow, bail},
     primitives::ChainId,
     serde_json,
     vm::BoxDynError,
@@ -441,7 +443,7 @@ impl Module {
                             // Grab the first 32 bytes — this is the uint256 in ABI encoding
                             return Some(helpers::PacketAck {
                                 packet_hash: *packet_hash,
-                                tag: alloy::primitives::U256::from_le_slice(&ack_bytes[..32]),
+                                tag: alloy::primitives::U256::from_be_slice(&ack_bytes[..32]),
                             });
                         }
                         None
@@ -521,35 +523,17 @@ impl Module {
         channel_id: ChannelId,
         token: Vec<u8>,
     ) -> anyhow::Result<String> {
-        let msg = QueryMsg::PredictWrappedToken {
-            path: "0".to_string(),
-            channel_id,
-            token: token.into(),
-        };
-        let req = QuerySmartContractStateRequest {
-            address: contract.to_string(),
-            query_data: serde_json::to_vec(&msg)
-                .context("serializing PredictWrappedToken QueryMsg")?,
-        };
-
-        let raw = self
-            .rpc
-            .client()
-            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
-                "/cosmwasm.wasm.v1.Query/SmartContractState",
-                &req,
-                None,
-                false,
+        Ok(self
+            .query_wasm_smart::<_, PredictWrappedTokenResponse>(
+                contract,
+                &QueryMsg::PredictWrappedToken {
+                    path: "0".to_string(),
+                    channel_id,
+                    token: token.into(),
+                },
             )
             .await?
-            .into_result()?
-            .unwrap()
-            .data;
-
-        let resp: PredictWrappedTokenResponse =
-            serde_json::from_slice(&raw).context("deserializing PredictWrappedTokenResponse")?;
-
-        Ok(resp.wrapped_token)
+            .wrapped_token)
     }
 
     pub async fn get_signer(&self) -> (Bech32<H160>, &LocalSigner) {
@@ -564,10 +548,19 @@ impl Module {
         }
     }
 
-    pub async fn get_minter(&self, contract: Bech32<H256>) -> anyhow::Result<String> {
+    pub async fn get_minter(&self, contract: Addr) -> anyhow::Result<String> {
+        self.query_wasm_smart::<_, String>(contract, QueryMsg::GetMinter {})
+            .await
+    }
+
+    pub async fn query_wasm_smart<Req: Serialize, Res: DeserializeOwned>(
+        &self,
+        contract: Addr,
+        req: Req,
+    ) -> anyhow::Result<Res> {
         let req = QuerySmartContractStateRequest {
             address: contract.to_string(),
-            query_data: serde_json::to_vec(&QueryMsg::GetMinter {})?,
+            query_data: serde_json::to_vec(&req)?,
         };
 
         let raw = self
@@ -584,10 +577,20 @@ impl Module {
             .unwrap()
             .data;
 
-        // 3) Deserialize the JSON `{ "minter": "union1..." }` into our struct
-        let resp = serde_json::from_slice(&raw).context("deserializing GetMinterResponse")?;
+        Ok(serde_json::from_slice(&raw)?)
+    }
 
-        Ok(resp)
+    pub async fn get_cw20_balance(&self, address: &Addr, token: &Addr) -> anyhow::Result<u128> {
+        let resp = self
+            .query_wasm_smart::<_, cw20::BalanceResponse>(
+                token.clone(),
+                Cw20QueryMsg::Balance {
+                    address: address.to_string(),
+                },
+            )
+            .await?;
+
+        Ok(resp.balance.u128())
     }
 
     pub async fn get_balance(
@@ -610,7 +613,7 @@ impl Module {
             .ok_or_else(|| anyhow::anyhow!("no balance for denom {}", denom))
     }
 
-    pub async fn send_transaction_with_retry(
+    pub async fn send_cosmwasm_transaction_with_retry(
         &self,
         contract: Addr,
         msg: (Vec<u8>, Vec<Coin>),
@@ -619,7 +622,7 @@ impl Module {
         let max_retries = 5;
         for attempt in 1..=max_retries {
             let outcome = self
-                .send_transaction(contract.clone(), msg.clone(), signer)
+                .send_cosmwasm_transaction(contract.clone(), msg.clone(), signer)
                 .await;
 
             if let Some(Ok(_)) = &outcome {
@@ -645,8 +648,22 @@ impl Module {
         None
     }
 
+    pub async fn send_transaction<T: prost::Name + prost::Message>(
+        &self,
+        msg: T,
+        signer: &LocalSigner,
+    ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
+        let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
+
+        let outcome = tx_client
+            .broadcast_tx_commit([mk_any(&msg)], "memo", true)
+            .await;
+
+        Some(outcome)
+    }
+
     // TODO(aeryz): return the digest
-    pub async fn send_transaction(
+    pub async fn send_cosmwasm_transaction(
         &self,
         contract: Addr,
         msg: (Vec<u8>, Vec<Coin>),
@@ -676,6 +693,33 @@ impl Module {
         Some(outcome)
     }
 
+    pub async fn stake(
+        &self,
+        validator_address: String,
+        amount: u128,
+        signer: &LocalSigner,
+    ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
+        let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
+
+        let signer_address = signer.address();
+        let outcome = tx_client
+            .broadcast_tx_commit(
+                [mk_any(&protos::cosmos::staking::v1beta1::MsgDelegate {
+                    delegator_address: signer_address.to_string(),
+                    validator_address,
+                    amount: Some(Coin {
+                        denom: "muno".to_string(),
+                        amount: amount.to_string(),
+                    }),
+                })],
+                "memo",
+                true,
+            )
+            .await;
+
+        Some(outcome)
+    }
+
     /// Helper to detect the ABCI “account sequence mismatch” error.
     fn is_sequence_mismatch(&self, err: &BroadcastTxCommitError) -> bool {
         match err {
@@ -692,7 +736,7 @@ impl Module {
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
     ) -> anyhow::Result<(H256, u64)> {
-        let result = self.send_transaction(contract, msg, signer).await;
+        let result = self.send_cosmwasm_transaction(contract, msg, signer).await;
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
         let height = tx_result
             .height

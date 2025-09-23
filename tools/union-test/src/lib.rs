@@ -11,6 +11,7 @@ use ibc_union_spec::{
 use jsonrpsee::http_client::HttpClient;
 use protos::cosmos::base::v1beta1::Coin;
 use regex::Regex;
+use tracing::info;
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bech32, Bytes, FixedBytes, H160, H256},
@@ -722,7 +723,7 @@ where
         destination_chain: &Dst,
         timeout: Duration,
         signer: &Src::ProviderType,
-    ) -> anyhow::Result<helpers::PacketAck> {
+    ) -> anyhow::Result<(helpers::PacketRecv, helpers::PacketAck)> {
         let (packet_hash, _height) = match source_chain
             .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
@@ -735,25 +736,24 @@ where
                 anyhow::bail!("send_ibc_transaction failed: {:?}", e);
             }
         };
-        println!(
+
+        info!(
             "Packet sent from {} to {} with hash: {}",
             source_chain.chain_id(),
             destination_chain.chain_id(),
             packet_hash
         );
 
-        match destination_chain
+        let recv = destination_chain
             .wait_for_packet_recv(packet_hash, timeout)
-            .await
-        {
-            Ok(evt) => evt,
-            Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
-        };
+            .await?;
 
-        match source_chain.wait_for_packet_ack(packet_hash, timeout).await {
-            Ok(evt) => Ok(evt),
-            Err(e) => anyhow::bail!("wait_for_packet_ack failed: {:?}", e),
-        }
+        Ok((
+            recv,
+            source_chain
+                .wait_for_packet_ack(packet_hash, timeout)
+                .await?,
+        ))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1161,7 +1161,7 @@ where
         retry_delay: Duration,
         timeout: Duration,
         signer: &Src::ProviderType,
-    ) -> anyhow::Result<helpers::PacketAck> {
+    ) -> anyhow::Result<(helpers::PacketRecv, helpers::PacketAck)> {
         let mut attempt = 0;
         println!(
             "Starting send_and_recv_with_retry with max_retries: {}, retry_delay: {:?}",

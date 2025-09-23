@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, panic::AssertUnwindSafe, str::FromStr, time::Duration};
+use std::{panic::AssertUnwindSafe, str::FromStr, time::Duration};
 
 use alloy::{
     contract::{Error, RawCallBuilder, Result},
@@ -20,7 +20,7 @@ use ibc_solidity::Ibc::IbcEvents;
 use ibc_union_spec::{datagram::Datagram, ChannelId};
 use jsonrpsee::{core::RpcResult, types::ErrorObjectOwned};
 use serde::{Deserialize, Serialize};
-use tracing::{error, info_span, warn, Instrument};
+use tracing::{debug, error, info_span, warn, Instrument};
 use unionlabs::{
     primitives::{FixedBytes, H160, H256, U256},
     ErrorReporter,
@@ -339,7 +339,7 @@ impl Module {
 
                         Some(helpers::PacketAck {
                             packet_hash: ev.packet_hash.into(),
-                            tag: alloy::primitives::U256::from_le_slice(&ack_bytes[..32]),
+                            tag: alloy::primitives::U256::from_be_slice(&ack_bytes[..32]),
                         })
                     }
                     _ => None,
@@ -520,12 +520,12 @@ impl Module {
                 .map_err(|_rpc_err| TxSubmitError::InclusionError)?;
 
             if let Some(rcpt) = maybe_rcpt {
-                println!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
+                debug!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
                 return Ok(());
             }
             if attempts <= 5 {
                 attempts += 1;
-                println!("receipt not yet available, retry {attempts}/5…");
+                debug!("receipt not yet available, retry {attempts}/5…");
                 tokio::time::sleep(Duration::from_secs(4)).await;
                 continue;
             }

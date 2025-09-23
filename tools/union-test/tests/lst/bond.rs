@@ -1,19 +1,10 @@
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 
-use alloy::sol_types::SolValue;
-use cosmwasm_std::{
-    instantiate2_address, to_json_binary, Addr, Coin as CwCoin, CosmosMsg, Uint128, WasmMsg,
-};
-use lst::msg::ExecuteMsg as LstExecuteMsg;
-use protos::cosmos::base::v1beta1::Coin;
+use alloy::{network::AnyNetwork, primitives::Address, providers::DynProvider};
+use cosmwasm_std::{to_json_binary, Addr, Coin as CwCoin, CosmosMsg, Decimal, WasmMsg};
+use lst::msg::{AccountingStateResponse, ExecuteMsg as LstExecuteMsg};
 use rand::RngCore;
-use ucs03_zkgm::{
-    self,
-    com::{
-        Batch, Call, Instruction, SolverMetadata, TokenOrderV2, INSTR_VERSION_0, INSTR_VERSION_2,
-        OP_BATCH, OP_CALL, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_SOLVE,
-    },
-};
+use tracing::info;
 use union_test::{
     cosmos::{self},
     cosmos_helpers::calculate_proxy_address,
@@ -23,10 +14,7 @@ use union_test::{
     },
     zkgm_helper,
 };
-use unionlabs::{
-    encoding::{Encode, Json},
-    primitives::{Bech32, FixedBytes, H160, U256},
-};
+use unionlabs::primitives::U256;
 
 use crate::lst::*;
 
@@ -35,18 +23,18 @@ use crate::lst::*;
 // u: union1pntx7gm7shsp6slef74ae7wvcc35t3wdmanh7wrg4xkq95m24qds5atmcp
 // lst: union1fdg764zzxwvwyqkx3fuj0236l9ddh5xmutgvj2mv9cduffy82z9sp62ygc
 
-fn make_zkgm_call_payload(
+fn make_zkgm_bond_payload_via_call(
     lst_hub: &str,
     mint_to: &str,
-    min_mint_amount: Uint128,
+    min_mint_amount: u128,
     funds_denom: &str,
-    funds_amount: u32,
-) -> String {
+    funds_amount: u128,
+) -> Vec<u8> {
     let wasm_exec: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: lst_hub.to_string(),
         msg: to_json_binary(&LstExecuteMsg::Bond {
             mint_to_address: Addr::unchecked(mint_to),
-            min_mint_amount,
+            min_mint_amount: min_mint_amount.into(),
         })
         .unwrap(),
         funds: vec![CwCoin {
@@ -55,73 +43,32 @@ fn make_zkgm_call_payload(
         }],
     });
 
-    voyager_sdk::serde_json::to_string(&vec![wasm_exec]).expect("vec cosmosmsg json")
+    voyager_sdk::serde_json::to_vec(&vec![wasm_exec]).expect("vec cosmosmsg json")
 }
 
-#[tokio::test]
-async fn test_escher_lst_success() {
-    let t = init_ctx().await;
-
-    let (evm_address, evm_provider) = t.ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_provider) = t.ctx.src.get_signer().await;
-    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
-
-    // ensure_channels_opened(ctx.channel_count).await;
-    // let available_channel = ctx.get_available_channel_count().await;
-    // assert!(available_channel > 0);
-    // let pair = ctx.get_channel().await.expect("channel available");
-
-    let dst_channel_id = 1;
-    let src_channel_id = 1;
-
-    // setting "muno" as the fungible counterparty
-    eth_set_fungible_counterparty(
-        &t.ctx.dst,
-        src_channel_id,
-        b"muno",
-        t.union_address.escrow_vault.as_bytes(),
-    )
-    .await
-    .unwrap();
-
-    // funding the eth address that we are execute bond with, with muno
-    eth_fund_u(
-        &t,
-        src_channel_id,
-        cosmos_address.to_string(),
-        evm_address.into(),
-        100_000,
-        500_000,
-    )
-    .await
-    .unwrap();
-
-    let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
-
-    let proxy_address = calculate_proxy_address(
+async fn bond(
+    t: &LstContext,
+    src_channel_id: u32,
+    dst_channel_id: u32,
+    sender_on_evm: Address,
+    sender_evm_provider: DynProvider<AnyNetwork>,
+    min_mint_amount: u128,
+    bond_amount: u128,
+) {
+    let proxy_address_on_union = calculate_proxy_address(
         &t.union_address.zkgm,
         alloy::primitives::U256::ZERO,
         dst_channel_id,
-        evm_address.as_slice(),
+        sender_on_evm.as_ref(),
     );
 
-    let zkgm_msg_json = make_zkgm_call_payload(
-        lst_hub,
-        "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
-        150u128.into(),
-        "muno",
-        150,
-    );
-
-    let proxy_balance = t
-        .ctx
-        .src
-        .native_balance(proxy_address.clone(), "muno")
+    // funding the eth address that we execute bond with, with muno
+    eth_fund_u(&t, src_channel_id, sender_on_evm.into(), 100_000, 500_000)
         .await
         .unwrap();
 
-    println!("Proxy balance before: {}", proxy_balance);
+    let mut salt_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let _ = t
         .ctx
@@ -130,12 +77,12 @@ async fn test_escher_lst_success() {
             ETH_ADDRESS_U,
             ETH_ADDRESS_ZKGM,
             U256::from(100000000000u64),
-            evm_provider.clone(),
+            sender_evm_provider.clone(),
         )
         .await
         .unwrap();
 
-    let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), evm_provider.clone());
+    let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), sender_evm_provider.clone());
 
     let call = ucs03_zkgm
         .send(
@@ -146,21 +93,28 @@ async fn test_escher_lst_success() {
             InstructionEvm::from(zkgm_helper::make_batch(vec![
                 evm_helper::make_token_order_v2(
                     &t.union_address.escrow_vault,
-                    &evm_address,
-                    &proxy_address,
-                    alloy::primitives::U256::from(150u128),
+                    &sender_on_evm,
+                    &proxy_address_on_union,
+                    alloy::primitives::U256::from(bond_amount),
                 ),
                 zkgm_helper::make_call(
-                    evm_address.to_vec().into(),
-                    proxy_address.as_bytes().to_vec().into(),
-                    zkgm_msg_json.as_bytes().to_vec().into(),
+                    sender_on_evm.to_vec().into(),
+                    proxy_address_on_union.as_bytes().to_vec().into(),
+                    make_zkgm_bond_payload_via_call(
+                        t.union_address.lst_hub.as_str(),
+                        &proxy_address_on_union.to_string(),
+                        min_mint_amount,
+                        "muno",
+                        bond_amount,
+                    )
+                    .into(),
                 ),
             ])),
         )
         .clear_decoder()
         .with_cloned_provider();
 
-    let acked_packet = t
+    let (_, ack) = t
         .ctx
         .send_and_recv_and_ack_with_retry::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
@@ -170,25 +124,133 @@ async fn test_escher_lst_success() {
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
-            &evm_provider,
+            &sender_evm_provider,
         )
-        .await;
-
-    let acked_packet = acked_packet.unwrap();
-    assert!(
-        acked_packet.tag == TAG_ACK_SUCCESS,
-        "Packet is not acked successfully, but it should be. Tag: {:?}",
-        acked_packet.tag
-    );
-
-    let proxy_balance = t
-        .ctx
-        .src
-        .native_balance(zkgm_proxy_calculated, "muno")
         .await
         .unwrap();
 
-    println!("Proxy balance before: {}", proxy_balance);
+    assert_eq!(ack.tag, TAG_ACK_SUCCESS);
+}
+
+async fn get_accounting_state(t: &LstContext) -> anyhow::Result<AccountingStateResponse> {
+    t.ctx
+        .src
+        .query_wasm_smart::<_, AccountingStateResponse>(
+            t.union_address.lst_hub.clone(),
+            lst::msg::QueryMsg::AccountingState {},
+        )
+        .await
+}
+
+#[tokio::test]
+async fn test_bond_success() {
+    run_test_in_queue("bond", async |t| {
+        // ensure_channels_opened(ctx.channel_count).await;
+        // let available_channel = ctx.get_available_channel_count().await;
+        // assert!(available_channel > 0);
+        // let pair = ctx.get_channel().await.expect("channel available");
+
+        let dst_channel_id = 1;
+        let src_channel_id = 1;
+
+        // setting "muno" as the fungible counterparty
+        eth_set_fungible_counterparty(
+            &t.ctx.dst,
+            src_channel_id,
+            b"muno",
+            t.union_address.escrow_vault.as_bytes(),
+        )
+        .await
+        .unwrap();
+
+        let bonds = [(120, 200), (400, 700)];
+
+        let evm_signers = [
+            t.ctx.dst.get_provider().await,
+            t.ctx.dst.get_provider().await,
+        ];
+
+        for (bond_amount, evm_signer) in bonds.into_iter().zip(evm_signers) {
+            let (evm_address, evm_provider): (Address, DynProvider<AnyNetwork>) = evm_signer;
+            let (min_mint_amount, bond_amount) = bond_amount;
+
+            let proxy_address = calculate_proxy_address(
+                &t.union_address.zkgm,
+                alloy::primitives::U256::ZERO,
+                dst_channel_id,
+                evm_address.as_ref(),
+            );
+
+            let eu_balance = || async {
+                t.ctx
+                    .src
+                    .get_cw20_balance(&proxy_address, &t.union_address.eu)
+                    .await
+                    .unwrap()
+            };
+
+            let eu_balance_before = eu_balance().await;
+
+            let state = get_accounting_state(&t).await.unwrap();
+
+            bond(
+                &t,
+                src_channel_id,
+                dst_channel_id,
+                evm_address,
+                evm_provider,
+                min_mint_amount,
+                bond_amount,
+            )
+            .await;
+
+            let new_state = get_accounting_state(&t).await.unwrap();
+
+            // We expect to get the same amount of `total_asset` change. We don't have to check the
+            // actual value since it's the unit test's job.
+            let eu_balance_after_stake = eu_balance().await;
+            assert_eq!(
+                eu_balance_after_stake - eu_balance_before,
+                new_state.total_shares.u128() - state.total_shares.u128()
+            );
+
+            let k = t
+                .ctx
+                .src
+                .privileged_acc_keyring
+                .with(async |k| k)
+                .await
+                .unwrap();
+
+            let outcome = t
+                .ctx
+                .src
+                .stake(
+                    "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej".to_string(),
+                    bond_amount,
+                    // &t.staker,
+                    k,
+                )
+                .await
+                .unwrap()
+                .unwrap();
+
+            assert_eq!(outcome.tx_result.code, Code::Ok);
+        }
+
+        let mut prev_rate = Decimal::MAX;
+        for i in 1..10 {
+            tokio::time::sleep(Duration::from_secs(10)).await;
+
+            let new_rate = get_accounting_state(&t).await.unwrap().purchase_rate;
+            info!("checking the rate ({i}).. new_rate: {new_rate} prev_rate: {prev_rate}");
+
+            assert!(new_rate < prev_rate);
+
+            prev_rate = new_rate;
+        }
+    })
+    .await;
 }
 
 // #[tokio::test]
