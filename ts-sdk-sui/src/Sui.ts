@@ -387,7 +387,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
       })
       return coins
     })
-    
+
   export const getAllCoinsUnique = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
@@ -429,6 +429,58 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
 
     return result
   })
+
+  export const getCoinName = (address: string) =>
+  Effect.gen(function*() {
+    const client = (yield* PublicClient).client
+
+    const name = yield* Effect.tryPromise({
+      try: async () => {
+        const result = await client.getCoinMetadata({ coinType: address })
+        return result?.name
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as ReadCoinError),
+        }),
+    })
+    return name
+  })
+
+  export const getCoinDecimals = (address: string) =>
+  Effect.gen(function*() {
+    const client = (yield* PublicClient).client
+
+    const decimals = yield* Effect.tryPromise({
+      try: async () => {
+        const result = await client.getCoinMetadata({ coinType: address })
+        return result?.decimals
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as ReadCoinError),
+        }),
+    })
+    return decimals
+  })
+
+export const readCoinSymbol = (address: string) =>
+  Effect.gen(function*() {
+    const client = (yield* PublicClient).client
+
+    const symbol = yield* Effect.tryPromise({
+      try: async () => {
+        const result = await client.getCoinMetadata({ coinType: address })
+        return result?.symbol
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as ReadCoinError),
+        }),
+    })
+    return symbol
+  })
+
 
 // /**
 //  * Read the balance of an ERC20 token for a specific address
