@@ -1,7 +1,7 @@
 <script lang="ts">
-import * as O from "effect/Option"
 import { Utils } from "@unionlabs/sdk"
-import { BigDecimal } from "effect"
+import { BigDecimal, pipe } from "effect"
+import * as O from "effect/Option"
 
 interface Props {
   balance: O.Option<bigint>
@@ -17,20 +17,24 @@ let {
   disabled = false,
 }: Props = $props()
 
-function selectPercentage(percentage: number) {
-  if (O.isSome(balance)) {
-    const amount = (balance.value * BigInt(percentage)) / 100n
-    const amountDecimal = BigDecimal.make(amount, decimals)
-    onAmountSelect(Utils.formatBigDecimal(amountDecimal), amount)
-  }
-}
+const selectPercentage = (percentage: number) =>
+  pipe(
+    balance,
+    O.map(bal => {
+      const amount = (bal * BigInt(percentage)) / 100n
+      const amountDecimal = BigDecimal.make(amount, decimals)
+      onAmountSelect(Utils.formatBigDecimal(amountDecimal), amount)
+    }),
+  )
 
-function selectMax() {
-  if (O.isSome(balance)) {
-    const amountDecimal = BigDecimal.make(balance.value, decimals)
-    onAmountSelect(Utils.formatBigDecimal(amountDecimal), balance.value)
-  }
-}
+const selectMax = () =>
+  pipe(
+    balance,
+    O.map(bal => {
+      const amountDecimal = BigDecimal.make(bal, decimals)
+      onAmountSelect(Utils.formatBigDecimal(amountDecimal), bal)
+    }),
+  )
 </script>
 
 <div class="flex gap-2">

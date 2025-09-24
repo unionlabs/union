@@ -20,7 +20,6 @@ import { Staking, Ucs05, Utils } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { EU_ERC20, EU_LST, EU_STAKING_HUB, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
-import { UniversalChainId } from "@unionlabs/sdk/schema"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
 import {
   BigDecimal,
@@ -28,6 +27,7 @@ import {
   ConfigProvider,
   DateTime,
   Effect,
+  Exit,
   Layer,
   Order,
   pipe,
@@ -43,7 +43,6 @@ type TableFilter = "all" | "bond" | "unbond"
 
 const EVM_UNIVERSAL_CHAIN_ID = ETHEREUM_CHAIN_ID
 
-// State for rate display toggle
 let showInverseRate = $state(false)
 
 const QlpConfigProvider = pipe(
@@ -68,7 +67,6 @@ const eUOnEvmToken = $derived(pipe(
 let selectedTab = $state<StakeTab>("bond")
 let refreshTrigger = $state<number>(0)
 
-// Shared state for bond amount (to calculate earnings)
 let bondAmount = $state<O.Option<bigint>>(O.none())
 
 const refreshBondData = () => {
@@ -107,9 +105,11 @@ const data = AppRuntime.runPromiseExit$(() => {
       ),
     )
   }).pipe(
-    Effect.provide(Staking.Staking.DefaultWithoutDependencies),
-    Effect.provide(Layer.fresh(Indexer.Default)),
-    Effect.provide(QlpConfigProvider),
+    Effect.provide(Layer.mergeAll(
+      Staking.Staking.DefaultWithoutDependencies,
+      Layer.fresh(Indexer.Default),
+      QlpConfigProvider,
+    )),
   )
 })
 
@@ -127,7 +127,6 @@ const incentives = AppRuntime.runPromiseExit$(() => {
   )
 })
 
-// Fetch staking rates to get the purchase rate (eU/U exchange rate)
 const stakingRates = AppRuntime.runPromiseExit$(() =>
   Effect.gen(function*() {
     return yield* pipe(
@@ -205,34 +204,27 @@ const eUOnEvmBalance = $derived(pipe(
   ),
 ))
 
-// Get the exchange rate from the staking contract
-const exchangeRate = $derived.by(() => {
-  if (O.isSome(stakingRates.current) && stakingRates.current.value._tag === "Success") {
-    const purchaseRate = stakingRates.current.value.value.purchase_rate
-
-    if (showInverseRate) {
-      // eU/U rate: how much U you need per eU (inverse of purchase rate)
-      const inverseRate = pipe(
+const exchangeRate = $derived(pipe(
+  stakingRates.current,
+  O.flatMap(Exit.match({
+    onFailure: () => O.none(),
+    onSuccess: value => O.some(value.purchase_rate),
+  })),
+  O.map(purchaseRate =>
+    showInverseRate
+      ? pipe(
         BigDecimal.divide(BigDecimal.fromBigInt(1n), purchaseRate),
         O.getOrElse(() => BigDecimal.fromBigInt(0n)),
         BigDecimal.round({ mode: "from-zero", scale: 4 }),
         Utils.formatBigDecimal,
       )
-      return inverseRate
-    } else {
-      // U/eU rate: how much eU you get per U (purchase rate)
-      const rateNumber = pipe(
+      : pipe(
         purchaseRate,
         BigDecimal.round({ mode: "from-zero", scale: 4 }),
         Utils.formatBigDecimal,
       )
-      return rateNumber
-    }
-  }
-  return "—"
-})
-
-$inspect(data)
+  ),
+))
 </script>
 
 <Sections>

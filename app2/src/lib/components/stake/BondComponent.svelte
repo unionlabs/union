@@ -20,7 +20,6 @@ import { StakingHubStatusSchema } from "$lib/stake/schemas"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
-import { cn } from "$lib/utils"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import {
   Batch,
@@ -49,6 +48,7 @@ import {
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import {
   BigDecimal,
   ConfigProvider,
@@ -66,6 +66,7 @@ import { graphql } from "gql.tada"
 import { custom } from "viem"
 import { sepolia } from "viem/chains"
 import QuickAmountButtons from "./QuickAmountButtons.svelte"
+import SlippageSelector from "./SlippageSelector.svelte"
 import StatusDisplay from "./StatusDisplay.svelte"
 
 const UCS03_EVM = Ucs05.EvmDisplay.make({ address: UCS03_EVM_ADDRESS })
@@ -171,7 +172,7 @@ const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
 
     const expectedScaled = inputNorm.value * rateNorm.value
     // Handle decimal slippage values properly
-    const slippageBasisPoints = Math.floor(slippage * 100) // Convert to basis points (0.5% = 50)
+    const slippageBasisPoints = Math.floor(slippage * 100)
     const minScaled = expectedScaled * BigInt(10000 - slippageBasisPoints) / 10000n
     return BigDecimal.make(minScaled, inputNorm.scale + rateNorm.scale)
   }),
@@ -377,8 +378,13 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, slippagePerce
 runPromiseExit$(() =>
   shouldBond
     ? Effect.gen(function*() {
-      const senderOpt = WalletStore.evmAddress
-      if (O.isNone(senderOpt) || O.isNone(bondAmount) || O.isNone(evmChain)) {
+      const validatedData = O.all({
+        sender: WalletStore.evmAddress,
+        sendAmount: bondAmount,
+        chain: evmChain,
+      })
+
+      if (O.isNone(validatedData)) {
         bondState = BondState.Error({
           message: "Missing required data: wallet address, bond amount, or chain",
         })
@@ -386,9 +392,7 @@ runPromiseExit$(() =>
         return yield* Effect.fail(new Error("Missing required data"))
       }
 
-      const sender = senderOpt.value
-      const sendAmount = O.getOrThrow(bondAmount)
-      const chain = evmChain.value
+      const { sender, sendAmount, chain } = validatedData.value
 
       bondState = BondState.SwitchingChain()
 
@@ -420,9 +424,11 @@ runPromiseExit$(() =>
       })
 
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(maybeSafe),
+        Effect.provide(Layer.mergeAll(
+          walletClient,
+          publicClient,
+          maybeSafe,
+        )),
       )
 
       bondState = BondState.CreatingTokenOrder()
@@ -434,11 +440,13 @@ runPromiseExit$(() =>
       bondState = BondState.ConfirmingBond()
 
       const executeBondWithProviders = executeBond(sender, sendAmount, slippage).pipe(
-        Effect.provide(maybeSafe),
-        Effect.provide(EvmZkgmClient.layerWithoutWallet),
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(ChainRegistry.Default),
+        Effect.provide(Layer.mergeAll(
+          maybeSafe,
+          EvmZkgmClient.layerWithoutWallet,
+          walletClient,
+          publicClient,
+          ChainRegistry.Default,
+        )),
       )
 
       const { txHash } = yield* executeBondWithProviders
@@ -479,8 +487,10 @@ runPromiseExit$(() =>
           times: 30,
           while: (error) => String(error.message || "").includes("is missing"),
         }),
-        Effect.provide(Indexer.Indexer.Default),
-        Effect.provide(QlpConfigProvider),
+        Effect.provide(Layer.mergeAll(
+          Indexer.Indexer.Default,
+          QlpConfigProvider,
+        )),
       )
 
       bondState = BondState.Success({ txHash: txHash })
@@ -497,16 +507,16 @@ runPromiseExit$(() =>
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
-          const errorObj = error as any
-          const fullError = errorObj?.cause?.cause?.shortMessage
-            || errorObj?.cause?.message
-            || errorObj?.message
-            || JSON.stringify(error)
+          const errorDetails = extractErrorDetails(error) as any
+          const fullError = errorDetails?.cause?.cause?.shortMessage
+            || errorDetails?.cause?.message
+            || errorDetails?.message
+            || JSON.stringify(errorDetails)
           const shortMessage = String(fullError).split(".")[0]
 
           bondState = BondState.Error({ message: shortMessage })
           shouldBond = false
-          return yield* Effect.succeed(false)
+          return yield* Effect.void
         })
       ),
     )
@@ -535,22 +545,6 @@ function handleButtonClick() {
   )
 }
 </script>
-
-{#snippet renderBalanceSkeleton()}
-  <Skeleton class="w-full h-6 ml-auto" />
-{/snippet}
-
-{#snippet renderBalance(amount: bigint)}
-  <div>
-    {
-      pipe(
-        BigDecimal.fromBigInt(amount),
-        BigDecimal.unsafeDivide(BigDecimal.make(1n, -18)),
-        Utils.formatBigDecimal,
-      )
-    }
-  </div>
-{/snippet}
 
 <div class="flex grow flex-col gap-4">
   <!-- Input Section with Balance -->
@@ -623,26 +617,10 @@ function handleButtonClick() {
       </div>
 
       <!-- Slippage Settings -->
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <span class="text-xs text-zinc-500">Slippage</span>
-          <div class="flex gap-1">
-            {#each [0.5, 1, 2] as value}
-              <button
-                class={cn(
-                  "px-2 py-1 text-xs font-medium rounded transition-all",
-                  slippage === value
-                    ? "bg-accent/20 text-accent border border-accent/40"
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border border-zinc-700",
-                )}
-                onclick={() => slippage = value}
-              >
-                {value}%
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
+      <SlippageSelector
+        value={slippage}
+        onchange={(value) => slippage = value}
+      />
 
       <!-- You'll Receive -->
       <div class="pt-2 border-t border-zinc-800">

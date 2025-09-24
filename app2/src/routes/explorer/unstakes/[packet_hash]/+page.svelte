@@ -72,13 +72,15 @@ const unbondData = $derived(pipe(
     const unbonds = result.v2_unbonds as Array<any>
     
     if (unbonds.length === 0) {
-      return yield* Effect.fail(new Error("Unbond not found"))
+      return yield* Effect.fail(new Error("Unstake not found"))
     }
     
     return unbonds[0]
   }),
-  Effect.provide(Indexer.Indexer.Default),
-  Effect.provide(QlpConfigProvider),
+  Effect.provide(Layer.mergeAll(
+    Indexer.Indexer.Default,
+    QlpConfigProvider
+  )),
   Effect.runPromise
 ))
 
@@ -114,10 +116,10 @@ const unbondData = $derived(pipe(
       {@const status = unbond.success === true ? "success" : unbond.success === false ? "failure" : "pending"}
         
         <div class="p-6">
-          <h1 class="text-2xl font-bold mb-4">Unbond</h1>
+          <h1 class="text-2xl font-bold mb-4">Unstake</h1>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Unbond Details -->
+            <!-- Unstake Details -->
             <div class="space-y-4">
               <div>
                 <Label>Packet Hash</Label>
@@ -158,7 +160,7 @@ const unbondData = $derived(pipe(
                 </div>
               </div>
 
-              <!-- Unbond Progress -->
+              <!-- Unstake Progress -->
               {#if unbond.unbond_send_timestamp}
                 {@const sendTime = new Date(unbond.unbond_recv_timestamp)}
                 {@const now = new Date()}
@@ -170,7 +172,7 @@ const unbondData = $derived(pipe(
                 {@const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))}
                 
                 <div>
-                  <Label>Unbond Progress</Label>
+                  <Label>Unstake Progress</Label>
                   <div class="space-y-2">
                     <div class="flex justify-between text-xs text-zinc-400">
                       <span>
@@ -240,7 +242,7 @@ const unbondData = $derived(pipe(
         <!-- Raw Data Section -->
         <details class="group border-t border-zinc-800">
           <summary class="flex cursor-pointer items-center justify-between px-6 py-4 text-sm text-zinc-400 hover:text-zinc-200">
-            <span class="font-medium">Raw Unbond Data</span>
+            <span class="font-medium">Raw Unstake Data</span>
             <span class="transition-transform group-open:rotate-180">↓</span>
           </summary>
           <div class="px-6 pb-6">

@@ -43,6 +43,7 @@ import {
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import {
   BigDecimal,
   ConfigProvider,
@@ -297,8 +298,13 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
 runPromiseExit$(() =>
   shouldUnbond
     ? Effect.gen(function*() {
-      const senderOpt = WalletStore.evmAddress
-      if (O.isNone(senderOpt) || O.isNone(unbondAmount) || O.isNone(evmChain)) {
+      const validatedData = O.all({
+        sender: WalletStore.evmAddress,
+        sendAmount: unbondAmount,
+        chain: evmChain,
+      })
+
+      if (O.isNone(validatedData)) {
         unbondState = UnbondState.Error({
           message: "Missing required data: wallet address, unbond amount, or chain",
         })
@@ -306,9 +312,7 @@ runPromiseExit$(() =>
         return yield* Effect.fail(new Error("Missing required data"))
       }
 
-      const sender = senderOpt.value
-      const sendAmount = O.getOrThrow(unbondAmount)
-      const chain = evmChain.value
+      const { sender, sendAmount, chain } = validatedData.value
 
       unbondState = UnbondState.SwitchingChain()
 
@@ -342,19 +346,23 @@ runPromiseExit$(() =>
       console.log("sender", sender)
 
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(maybeSafe),
+        Effect.provide(Layer.mergeAll(
+          walletClient,
+          publicClient,
+          maybeSafe,
+        )),
       )
 
       unbondState = UnbondState.ConfirmingUnbond()
 
       const executeBondWithProviders = executeUnbond(sender, sendAmount).pipe(
-        Effect.provide(maybeSafe),
-        Effect.provide(EvmZkgmClient.layerWithoutWallet),
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(ChainRegistry.Default),
+        Effect.provide(Layer.mergeAll(
+          maybeSafe,
+          EvmZkgmClient.layerWithoutWallet,
+          walletClient,
+          publicClient,
+          ChainRegistry.Default,
+        )),
       )
 
       const { txHash, safeHash } = yield* executeBondWithProviders
@@ -395,8 +403,10 @@ runPromiseExit$(() =>
           times: 30,
           while: (error) => String(error.message || "").includes("is missing"),
         }),
-        Effect.provide(Indexer.Indexer.Default),
-        Effect.provide(QlpConfigProvider),
+        Effect.provide(Layer.mergeAll(
+          Indexer.Indexer.Default,
+          QlpConfigProvider,
+        )),
       )
 
       unbondState = UnbondState.Success({ txHash: txHash })
@@ -415,16 +425,16 @@ runPromiseExit$(() =>
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
-          const errorObj = error as any
-          const fullError = errorObj?.cause?.cause?.shortMessage
-            || errorObj?.cause?.message
-            || errorObj?.message
-            || JSON.stringify(error)
+          const errorDetails = extractErrorDetails(error) as any
+          const fullError = errorDetails?.cause?.cause?.shortMessage
+            || errorDetails?.cause?.message
+            || errorDetails?.message
+            || JSON.stringify(errorDetails)
           const shortMessage = String(fullError).split(".")[0]
 
           unbondState = UnbondState.Error({ message: shortMessage })
           shouldUnbond = false
-          return yield* Effect.succeed(false)
+          return yield* Effect.void
         })
       ),
     )

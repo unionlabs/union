@@ -118,8 +118,8 @@ $effect(() => {
                   tableFilter === "all"
                   ? "transactions"
                   : tableFilter === "bond"
-                  ? "stake transactions"
-                  : "unstake transactions"
+                  ? "stakes"
+                  : "unstakes"
                 } yet
               </div>
               <div class="text-zinc-500 text-xs mt-1">

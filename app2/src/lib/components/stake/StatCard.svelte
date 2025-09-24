@@ -1,10 +1,11 @@
 <script lang="ts">
+import * as O from "effect/Option"
 import type { Snippet } from "svelte"
 
 interface Props {
   label: string
-  value?: string | number | undefined
-  subtitle?: string | undefined
+  value: O.Option<string | number>
+  subtitle: O.Option<string>
   icon?: Snippet
   loading?: boolean
   clickable?: boolean
@@ -15,8 +16,8 @@ interface Props {
 
 let {
   label,
-  value,
-  subtitle,
+  value = O.none(),
+  subtitle = O.none(),
   icon,
   loading = false,
   clickable = false,
@@ -31,7 +32,7 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
 </script>
 
 {#if clickable}
-  <button 
+  <button
     {onclick}
     class="{combinedClass} relative"
   >
@@ -40,7 +41,7 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         {@render indicator()}
       </div>
     {/if}
-    
+
     <div class="flex flex-col gap-1.5">
       <div class="flex items-center gap-1.5">
         {#if icon}
@@ -50,20 +51,20 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
           {label}
         </div>
       </div>
-      {#if loading || value === undefined}
+      {#if loading || O.isNone(value)}
         <div class="h-6 w-14 bg-zinc-800/50 rounded animate-pulse"></div>
-      {:else if subtitle}
+      {:else if O.isSome(subtitle)}
         <div class="flex items-baseline gap-1.5">
           <span class="text-lg font-semibold text-zinc-100 tabular-nums">
-            {value}
+            {O.getOrElse(value, () => "")}
           </span>
           <span class="text-xs text-zinc-500">
-            {subtitle}
+            {O.getOrElse(subtitle, () => "")}
           </span>
         </div>
       {:else}
         <div class="text-lg font-semibold text-zinc-100 tabular-nums">
-          {value}
+          {O.getOrElse(value, () => "")}
         </div>
       {/if}
     </div>
@@ -75,7 +76,7 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         {@render indicator()}
       </div>
     {/if}
-    
+
     <div class="flex flex-col gap-1.5">
       <div class="flex items-center gap-1.5">
         {#if icon}
@@ -85,20 +86,20 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
           {label}
         </div>
       </div>
-      {#if loading || value === undefined}
+      {#if loading || O.isNone(value)}
         <div class="h-6 w-14 bg-zinc-800/50 rounded animate-pulse"></div>
-      {:else if subtitle}
+      {:else if O.isSome(subtitle)}
         <div class="flex items-baseline gap-1.5">
           <span class="text-lg font-semibold text-zinc-100 tabular-nums">
-            {value}
+            {O.getOrElse(value, () => "")}
           </span>
           <span class="text-xs text-zinc-500">
-            {subtitle}
+            {O.getOrElse(subtitle, () => "")}
           </span>
         </div>
       {:else}
         <div class="text-lg font-semibold text-zinc-100 tabular-nums">
-          {value}
+          {O.getOrElse(value, () => "")}
         </div>
       {/if}
     </div>

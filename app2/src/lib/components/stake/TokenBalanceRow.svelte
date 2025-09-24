@@ -9,8 +9,6 @@ interface Props {
   chain: O.Option<Chain>
   token: O.Option<Token>
   balance: O.Option<bigint>
-  symbol: string
-  showSymbol?: boolean
   hoverable?: boolean
   title?: string
   class?: string
@@ -20,8 +18,6 @@ let {
   chain,
   token,
   balance,
-  symbol,
-  showSymbol = true,
   hoverable = false,
   title = "",
   class: className = "",
@@ -30,7 +26,7 @@ let {
 const isWalletConnected = $derived(O.isSome(WalletStore.evmAddress))
 </script>
 
-<div 
+<div
   class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3.5 {hoverable ? 'transition-all hover:border-zinc-700 cursor-pointer' : ''} {className}"
   {title}
 >
@@ -48,21 +44,13 @@ const isWalletConnected = $derived(O.isSome(WalletStore.evmAddress))
             showIcon={true}
           />
         </div>
-        {#if showSymbol}
-          <span class="text-sm text-zinc-500 {hoverable ? 'group-hover:text-zinc-400 transition-colors' : ''}">
-            {symbol}
-          </span>
-        {/if}
       {:else}
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 bg-zinc-800 rounded-full animate-pulse"></div>
-          {#if showSymbol}
-            <div class="w-8 h-4 bg-zinc-800 rounded animate-pulse"></div>
-          {/if}
         </div>
       {/if}
     </div>
-    
+
     <!-- Balance -->
     <div class="text-right">
       {#if !isWalletConnected}

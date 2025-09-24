@@ -4,7 +4,7 @@ import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { getChain } from "@unionlabs/sdk/schema"
 import type { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
-import { Option, pipe } from "effect"
+import { Match, Option, pipe } from "effect"
 import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
 
@@ -14,42 +14,34 @@ interface Props {
 
 const { item }: Props = $props()
 
-const sourceChain = $derived(
-  Option.flatMap(
-    chains.data,
-    chainsData => getChain(chainsData, item.source_chain.universal_chain_id),
-  ),
-)
+const sourceChain = $derived(pipe(
+  chains.data,
+  Option.flatMap(data => getChain(data, item.source_chain.universal_chain_id)),
+))
 
-const destinationChain = $derived(
-  Option.flatMap(
-    chains.data,
-    chainsData =>
-      getChain(
-        chainsData,
-        item._tag === "Bond"
-          ? item.destination_chain.universal_chain_id
-          : item.destination_chain.universal_chain_id,
-      ),
-  ),
-)
+const destinationChain = $derived(pipe(
+  chains.data,
+  Option.flatMap(data => getChain(data, item.destination_chain.universal_chain_id)),
+))
 
 const handleClick = () => {
-  const route = item._tag === "Bond" ? "bonds" : "unbonds"
+  const route = item._tag === "Bond" ? "stakes" : "unstakes"
   goto(`/explorer/${route}/${item.packet_hash}`)
 }
 
 const status = $derived(
   item._tag === "Bond"
-    // For bonds, check both bond_success and delivery_success
-    ? Option.isSome(item.bond_success) && item.bond_success.value
-        && Option.isSome(item.delivery_success) && item.delivery_success.value
-      ? "success"
-      : (Option.isSome(item.bond_success) && !item.bond_success.value)
-          || (Option.isSome(item.delivery_success) && !item.delivery_success.value)
-      ? "failure"
-      : "pending"
-    // For unbonds, use existing logic
+    ? pipe(
+      { bond: item.bond_success, delivery: item.delivery_success },
+      ({ bond, delivery }) => {
+        const bondSuccess = pipe(bond, Option.getOrElse(() => false))
+        const deliverySuccess = pipe(delivery, Option.getOrElse(() => false))
+
+        return Option.isSome(bond) || Option.isSome(delivery)
+          ? bondSuccess && deliverySuccess ? "success" : "failure"
+          : "pending"
+      },
+    )
     : pipe(
       item.success,
       Option.map(success => success ? "success" : "failure"),
@@ -57,60 +49,60 @@ const status = $derived(
     ),
 )
 
-const statusConfig = $derived(() => {
-  if (status === "success") {
-    return { bg: "bg-accent/20 border-accent/40", icon: "text-accent", type: "checkmark" }
-  }
-  if (status === "failure") {
-    return { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
-  }
+// Constants for time calculations
+const UNBOND_PERIOD_MS = 27 * 24 * 60 * 60 * 1000 // 27 days
+const SPINNER_THRESHOLD_MS = 4 * 60 * 60 * 1000 // 4 hours
+const DAY_MS = 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
 
-  // For pending unbonds, show time-based display
-  if (item._tag === "Unbond" && item.unbond_send_timestamp) {
-    const sendTime = new Date(item.unbond_send_timestamp.toString())
-    const now = new Date()
+// Helper to compute time info for pending unstakes
+const unbondTimeInfo = $derived(
+  item._tag === "Unbond" && item.unbond_send_timestamp && status === "pending"
+    ? pipe(
+      Option.some(new Date(item.unbond_send_timestamp.toString())),
+      Option.filter(date => !isNaN(date.getTime())),
+      Option.map(sendTime => {
+        const remainingMs = Math.max(0, UNBOND_PERIOD_MS - (Date.now() - sendTime.getTime()))
+        const days = Math.floor(remainingMs / DAY_MS)
+        const hours = Math.floor((remainingMs % DAY_MS) / HOUR_MS)
 
-    // Check for invalid dates
-    if (isNaN(sendTime.getTime()) || isNaN(now.getTime())) {
-      return {
-        bg: "bg-orange-500/20 border-orange-500/40",
-        icon: "text-orange-400",
-        type: "spinner",
-      }
-    }
+        return {
+          remainingMs,
+          timeText: days > 0 ? `${days}d` : hours > 0 ? `${hours}h` : "0h",
+        }
+      }),
+    )
+    : Option.none(),
+)
 
-    const unbondPeriodMs = 27 * 24 * 60 * 60 * 1000
-    const elapsedMs = now.getTime() - sendTime.getTime()
-    const remainingMs = Math.max(0, unbondPeriodMs - elapsedMs)
-    const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000))
-    const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+type StatusConfigType = {
+  bg: string
+  icon: string
+  type: "checkmark" | "warning" | "spinner" | "time"
+  text?: string
+}
 
-    // Show spinner only when within ±4h window
-    if (remainingMs <= 4 * 60 * 60 * 1000) { // 4 hours in ms
-      return {
-        bg: "bg-orange-500/20 border-orange-500/40",
-        icon: "text-orange-400",
-        type: "spinner",
-      }
-    }
+const orangePendingStyle = {
+  bg: "bg-orange-500/20 border-orange-500/40",
+  icon: "text-orange-400",
+}
 
-    // Show time remaining with validation
-    const timeText = remainingDays > 0
-      ? `${remainingDays}d`
-      : remainingHours > 0
-      ? `${remainingHours}h`
-      : "0h"
-    return {
-      bg: "bg-orange-500/20 border-orange-500/40",
-      icon: "text-orange-400",
-      type: "time",
-      text: timeText,
-    }
-  }
-
-  // Default pending state (bonds or unbonds without timestamp)
-  return { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" }
-})
+const statusConfig = $derived<StatusConfigType>(
+  status === "success"
+    ? { bg: "bg-accent/20 border-accent/40", icon: "text-accent", type: "checkmark" }
+    : status === "failure"
+    ? { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
+    : pipe(
+      unbondTimeInfo,
+      Option.match({
+        onNone: () => ({ ...orangePendingStyle, type: "spinner" }),
+        onSome: (info) =>
+          info.remainingMs <= SPINNER_THRESHOLD_MS
+            ? { ...orangePendingStyle, type: "spinner" }
+            : { ...orangePendingStyle, type: "time", text: info.timeText },
+      }),
+    ),
+)
 </script>
 
 {#if Option.isSome(chains.data)}
@@ -123,7 +115,7 @@ const statusConfig = $derived(() => {
     <div>
       <div class="flex items-center gap-2 font-semibold">
         <span class="text-zinc-300 text-xs uppercase font-mono">
-          {item._tag}
+          {item._tag === "Bond" ? "Stake" : "Unstake"}
         </span>
         {#if Option.isSome(sourceChain)}
           <TokenComponent
@@ -159,17 +151,17 @@ const statusConfig = $derived(() => {
         value={item._tag === "Bond" ? item.bond_send_timestamp : item.unbond_send_timestamp}
         showSeconds={false}
       />
-      <div class="size-6 rounded border {statusConfig().bg} flex items-center justify-center flex-shrink-0">
-        {#if statusConfig().type === "spinner"}
+      <div class="size-6 rounded border {statusConfig.bg} flex items-center justify-center flex-shrink-0">
+        {#if statusConfig.type === "spinner"}
           <div class="w-3 h-3 border border-orange-400 border-t-transparent rounded-full animate-spin">
           </div>
-        {:else if statusConfig().type === "time"}
-          <span class="text-[10px] font-semibold {statusConfig().icon} leading-none">
-            {statusConfig().text}
+        {:else if statusConfig.type === "time"}
+          <span class="text-[10px] font-semibold {statusConfig.icon} leading-none">
+            {statusConfig.text}
           </span>
-        {:else if statusConfig().type === "checkmark"}
+        {:else if statusConfig.type === "checkmark"}
           <svg
-            class="w-3 h-3 {statusConfig().icon}"
+            class="w-3 h-3 {statusConfig.icon}"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -181,9 +173,9 @@ const statusConfig = $derived(() => {
               d="M5 13l4 4L19 7"
             />
           </svg>
-        {:else if statusConfig().type === "warning"}
+        {:else if statusConfig.type === "warning"}
           <svg
-            class="w-3 h-3 {statusConfig().icon}"
+            class="w-3 h-3 {statusConfig.icon}"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

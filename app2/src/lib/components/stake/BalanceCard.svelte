@@ -2,9 +2,9 @@
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
-import TokenBalanceRow from "./TokenBalanceRow.svelte"
 import type { Chain, Token } from "@unionlabs/sdk/schema"
 import * as O from "effect/Option"
+import TokenBalanceRow from "./TokenBalanceRow.svelte"
 
 interface Props {
   evmChain: O.Option<Chain>
@@ -14,29 +14,29 @@ interface Props {
   eUOnEvmBalance: O.Option<bigint>
 }
 
-let { 
-  evmChain, 
+let {
+  evmChain,
   uOnEvmToken,
   eUOnEvmToken,
   uOnEvmBalance,
-  eUOnEvmBalance
+  eUOnEvmBalance,
 }: Props = $props()
 
-type BalanceTab = "balances" | "rewards" 
+type BalanceTab = "balances" | "rewards"
 let selectedTab = $state<BalanceTab>("balances")
 </script>
 
-  <Card divided>
-    <div class="px-4 py-2.5 border-b border-zinc-800">
-      <Tabs
-        items={[
-          { id: "balances", label: "Balances" },
-          // { id: "rewards", label: "Rewards" },
-        ]}
-        activeId={selectedTab}
-        onTabChange={(id) => selectedTab = id as BalanceTab}
-      />
-    </div>
+<Card divided>
+  <div class="px-4 py-2.5 border-b border-zinc-800">
+    <Tabs
+      items={[
+        { id: "balances", label: "Balances" },
+        // { id: "rewards", label: "Rewards" },
+      ]}
+      activeId={selectedTab}
+      onTabChange={(id) => selectedTab = id as BalanceTab}
+    />
+  </div>
 
   <div class="p-4">
     {#if selectedTab === "balances"}
@@ -46,7 +46,6 @@ let selectedTab = $state<BalanceTab>("balances")
           chain={evmChain}
           token={uOnEvmToken}
           balance={uOnEvmBalance}
-          symbol="U"
           hoverable={true}
           title="Union Token"
           class="group"
@@ -57,11 +56,10 @@ let selectedTab = $state<BalanceTab>("balances")
           chain={evmChain}
           token={eUOnEvmToken}
           balance={eUOnEvmBalance}
-          symbol="eU"
           hoverable={true}
           title="Staked Union Token"
         />
-        
+
         <!-- Get U Button -->
         <Button
           variant="primary"

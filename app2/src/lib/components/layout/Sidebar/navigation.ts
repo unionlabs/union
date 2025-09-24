@@ -74,11 +74,10 @@ export const navigation: Array<NavSection> = [
             path: "/explorer/find-packet",
             title: "Find Packet",
           },
-          {
-            path: "/explorer/orbital",
-            title: "Orbital",
-            new: true,
-          },
+          // {
+          //   path: "/explorer/orbital",
+          //   title: "Orbital",
+          // },
           // {
           //   path: "/explorer/connections",
           //   title: "Connections"
@@ -90,7 +89,6 @@ export const navigation: Array<NavSection> = [
           {
             path: "/explorer/clients",
             title: "Clients",
-            new: true,
           },
         ],
       },
@@ -98,16 +96,16 @@ export const navigation: Array<NavSection> = [
   },
   {
     items: [{
-      path: "/udrop/claim",
-      title: "U Claim",
-      icon: AirdropIcon,
-    }],
-  },
-  {
-    items: [{
       path: "/stake",
       title: "Liquid Staking",
       icon: EscherLogo,
+      subroutes: [
+        {
+          path: "/udrop/claim",
+          title: "eU claim",
+          new: true,
+        },
+      ],
     }],
   },
   {

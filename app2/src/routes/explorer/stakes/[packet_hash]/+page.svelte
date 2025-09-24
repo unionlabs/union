@@ -87,7 +87,7 @@ const bondData = $derived(pipe(
       const bonds = result.v2_bonds as Array<any>
       
       if (bonds.length === 0) {
-        return yield* Effect.fail(new Error("Bond not found"))
+        return yield* Effect.fail(new Error("Stake not found"))
       }
       
       return bonds[0]
@@ -130,10 +130,10 @@ const bondData = $derived(pipe(
       {@const overallStatus = bond.bond_success && bond.delivery_success ? "success" : (bond.bond_success === false || bond.delivery_success === false) ? "failure" : "pending"}
         
         <div class="p-6">
-          <h1 class="text-2xl font-bold mb-4">Bond</h1>
+          <h1 class="text-2xl font-bold mb-4">Stake</h1>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Bond Details -->
+            <!-- Stake Details -->
             <div class="space-y-4">
               <div>
                 <Label>Packet Hash</Label>
@@ -175,7 +175,7 @@ const bondData = $derived(pipe(
               </div>
 
               <div>
-                <Label>Bond</Label>
+                <Label>Stake</Label>
                 <div class="text-sm">
                   <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {
                     bond.bond_success === true
@@ -263,7 +263,7 @@ const bondData = $derived(pipe(
         <!-- Raw Data Section -->
         <details class="group border-t border-zinc-800">
           <summary class="flex cursor-pointer items-center justify-between px-6 py-4 text-sm text-zinc-400 hover:text-zinc-200">
-            <span class="font-medium">Raw Bond Data</span>
+            <span class="font-medium">Raw Stake Data</span>
             <span class="transition-transform group-open:rotate-180">↓</span>
           </summary>
           <div class="px-6 pb-6">

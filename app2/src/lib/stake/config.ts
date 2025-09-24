@@ -1,11 +1,11 @@
-import { UniversalChainId, ChannelId } from "@unionlabs/sdk/schema"
 import { Ucs05 } from "@unionlabs/sdk"
+import { ChannelId, UniversalChainId } from "@unionlabs/sdk/schema"
 
 // Chain configuration
 export const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.11155111")
 export const UNION_CHAIN_ID = UniversalChainId.make("union.union-testnet-10")
 
-// Channel configuration  
+// Channel configuration
 export const SOURCE_CHANNEL_ID = ChannelId.make(3)
 export const DESTINATION_CHANNEL_ID = ChannelId.make(3)
 

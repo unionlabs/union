@@ -36,6 +36,7 @@ import { U_BANK, U_ERC20, U_SOLVER_ON_ETH_METADATA } from "@unionlabs/sdk/Consta
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { BigDecimal, Data, Effect, Layer, Match, pipe, Schema } from "effect"
 import * as A from "effect/Array"
 import * as O from "effect/Option"
@@ -331,8 +332,12 @@ let shouldWithdraw = $state<boolean>(false)
 runPromiseExit$(() =>
   shouldWithdraw
     ? Effect.gen(function*() {
-      const senderOpt = WalletStore.evmAddress
-      if (O.isNone(senderOpt) || BigDecimal.isZero(withdrawableAmount) || O.isNone(evmChain)) {
+      const validatedData = O.all({
+        sender: WalletStore.evmAddress,
+        chain: evmChain,
+      })
+
+      if (O.isNone(validatedData) || BigDecimal.isZero(withdrawableAmount)) {
         withdrawalState = WithdrawalState.Error({
           message: "Missing required data: wallet address, withdrawable batches, or chain",
         })
@@ -340,9 +345,8 @@ runPromiseExit$(() =>
         return yield* Effect.fail(new Error("Missing required data"))
       }
 
-      const sender = senderOpt.value
+      const { sender, chain } = validatedData.value
       const batches = withdrawableBatches
-      const chain = evmChain.value
 
       withdrawalState = WithdrawalState.Loading()
 
@@ -372,11 +376,13 @@ runPromiseExit$(() =>
       })
 
       const { txHash } = yield* executeWithdraw(sender, batches).pipe(
-        Effect.provide(maybeSafe),
-        Effect.provide(EvmZkgmClient.layerWithoutWallet),
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(ChainRegistry.Default),
+        Effect.provide(Layer.mergeAll(
+          maybeSafe,
+          EvmZkgmClient.layerWithoutWallet,
+          walletClient,
+          publicClient,
+          ChainRegistry.Default,
+        )),
       )
 
       withdrawalState = WithdrawalState.Success({ message: "Withdrawal submitted successfully" })
@@ -391,11 +397,11 @@ runPromiseExit$(() =>
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
-          const errorObj = error as any
-          const fullError = errorObj?.cause?.cause?.shortMessage
-            || errorObj?.cause?.message
-            || errorObj?.message
-            || JSON.stringify(error)
+          const errorDetails = extractErrorDetails(error) as any
+          const fullError = errorDetails?.cause?.cause?.shortMessage
+            || errorDetails?.cause?.message
+            || errorDetails?.message
+            || JSON.stringify(errorDetails)
           const shortMessage = String(fullError).split(".")[0]
 
           withdrawalState = WithdrawalState.Error({ message: shortMessage })
@@ -543,16 +549,17 @@ const handleWithdraw = () => {
     {/if}
     {
       Match.value(withdrawalState).pipe(
-        Match.when(WithdrawalState.$is("Ready"), () => {
-          if (O.isNone(WalletStore.evmAddress)) {
-            return "Connect Wallet"
-          }
-          if (userBatches.length === 0) {
-            return "No Withdrawals Available"
-          }
-
-          return "Withdraw"
-        }),
+        Match.when(WithdrawalState.$is("Ready"), () =>
+          pipe(
+            WalletStore.evmAddress,
+            O.match({
+              onNone: () => "Connect Wallet",
+              onSome: () =>
+                userBatches.length === 0
+                  ? "No Withdrawals Available"
+                  : "Withdraw",
+            }),
+          )),
         Match.when(WithdrawalState.$is("Loading"), () => "Processing..."),
         Match.when(WithdrawalState.$is("Success"), () => "Success!"),
         Match.when(WithdrawalState.$is("Error"), () => "Try Again"),

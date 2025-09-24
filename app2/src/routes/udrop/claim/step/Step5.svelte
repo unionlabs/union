@@ -7,7 +7,7 @@ import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Evm } from "@unionlabs/sdk-evm"
-import { Data, Effect, Match, Option } from "effect"
+import { Data, Effect, Layer, Match, Option } from "effect"
 import { createPublicClient, custom, formatUnits } from "viem"
 import { mainnet } from "viem/chains"
 import StepLayout from "../StepLayout.svelte"
@@ -140,8 +140,10 @@ runPromiseExit$(() =>
           params.proof,
         ],
       }).pipe(
-        Effect.provide(publicClient),
-        Effect.provide(walletClient),
+        Effect.provide(Layer.mergeAll(
+          publicClient,
+          walletClient,
+        )),
       )
 
       yield* Effect.log("Transaction submitted", { txHash })
