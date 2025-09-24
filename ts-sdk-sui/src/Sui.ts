@@ -299,9 +299,16 @@ export class CreateWalletClientError
 {}
 
 /**
- * Read Coin token metadata (name, symbol, decimals)
- * @param tokenAddress The address of the Coin token
- * @returns An Effect that resolves to the coin metadata
+ * Read Coin metadata (name, symbol, decimals, …) for a given `coinType`.
+ *
+ * Example:
+ * ```ts
+ * const meta = yield* readCoinMetadata("0x2::sui::SUI")
+ * ```
+ *
+ * @param tokenAddress Canonical coin type string (e.g., `"0x2::sui::SUI"`)
+ * @returns Effect resolving to `getCoinMetadata` result
+ * @throws ReadCoinError on RPC failure
  *
  * @category utils
  * @since 0.0.0
@@ -323,6 +330,20 @@ export const readCoinMetadata = (tokenAddress: Address) =>
     return metadata
   })
 
+/**
+ * Read all coin objects for a given `coinType` and owner address.
+ *
+ * Note:
+ * - Sui splits balances across multiple coin objects; each carries `balance` and `coinObjectId`.
+ * - Use {@link readTotalCoinBalance} if you want a single summed value.
+ *
+ * @param contractAddress Canonical coin type (e.g., `"0x2::sui::SUI"`)
+ * @param address         Owner Sui address
+ * @returns Effect resolving to the paged coin objects’ `data` array
+ *
+ * @category utils
+ * @since 0.0.0
+ */
 export const readCoinBalances = (contractAddress: string, address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
@@ -344,6 +365,16 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     return coins
   })
 
+  /**
+ * Read and sum all coin object balances for a given `coinType` and owner.
+ *
+ * @param contractAddress Canonical coin type
+ * @param address         Owner Sui address
+ * @returns Effect resolving to a `bigint` total (in the coin’s base units)
+ *
+ * @category utils
+ * @since 0.0.0
+ */
   export const readTotalCoinBalance = (contractAddress: string, address: string) =>
     Effect.gen(function*() {
       const client = (yield* PublicClient).client
@@ -368,6 +399,16 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
       return totalBalance
     })
 
+
+/**
+ * Fetch *all* coin objects (any coin type) for an owner.
+ *
+ * @param address Owner Sui address
+ * @returns Effect resolving to `getAllCoins().data`
+ *
+ * @category utils
+ * @since 0.0.0
+ */
   export const getAllCoins = (address: string) =>
     Effect.gen(function*() {
       const client = (yield* PublicClient).client
@@ -388,6 +429,24 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
       return coins
     })
 
+    /**
+ * Fetch all coins for an owner and return a unique list grouped by `coinType`,
+ * with balances summed across coin objects.
+ *
+ * Example output:
+ * ```ts
+ * [
+ *   { coinType: "0x2::sui::SUI", balance: "123456789" },
+ *   { coinType: "0x...::USDC::USDC", balance: "4200000" }
+ * ]
+ * ```
+ *
+ * @param address Owner Sui address
+ * @returns Effect resolving to `{ coinType, balance }[]` (balance as string)
+ *
+ * @category utils
+ * @since 0.0.0
+ */
   export const getAllCoinsUnique = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
@@ -430,6 +489,16 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     return result
   })
 
+
+/**
+ * Convenience: read coin **name** for a given `coinType`.
+ *
+ * @param address Canonical coin type
+ * @returns Effect resolving to `string | undefined`
+ *
+ * @category utils
+ * @since 0.0.0
+ */
   export const getCoinName = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
@@ -447,6 +516,15 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     return name
   })
 
+/**
+ * Convenience: read coin **decimals** for a given `coinType`.
+ *
+ * @param address Canonical coin type
+ * @returns Effect resolving to `number | undefined`
+ *
+ * @category utils
+ * @since 0.0.0
+ */
   export const getCoinDecimals = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
@@ -463,7 +541,16 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     })
     return decimals
   })
-
+  
+/**
+ * Convenience: read coin **symbol** for a given `coinType`.
+ *
+ * @param address Canonical coin type
+ * @returns Effect resolving to `string | undefined`
+ *
+ * @category utils
+ * @since 0.0.0
+ */
 export const readCoinSymbol = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
@@ -482,26 +569,41 @@ export const readCoinSymbol = (address: string) =>
   })
 
 
+// // TODO: Decide the parameters here.
 // /**
-//  * Read the balance of an ERC20 token for a specific address
-//  *
-//  * @param tokenAddress The address of the ERC20 token
-//  * @param ownerAddress The address to check the balance for
-//  *
-//  * @returns An Effect that resolves to the token balance
-//  *
 //  * @category utils
 //  * @since 0.0.0
 //  */
-// export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =>
+// export const sendInstruction = (instruction: Ucs03.Instruction) =>
 //   Effect.gen(function*() {
-//     const client = (yield* PublicClient).client
+//     const walletClient = yield* WalletClient
+//     const sourceConfig = yield* ChannelSource
 
-//     return yield* readContract(client, {
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "balanceOf",
-//       args: [ownerAddress],
+//     const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+//     const salt = yield* Utils.generateSalt("evm")
+
+//     const operand = yield* S.encode(Ucs03.InstructionFromHex)(instruction)
+
+//     return yield* writeContract({
+//       client: walletClient.client,
+//       signer: walletClient.signer,
+//       account: walletClient.account,
+//       abi: Ucs03.Abi, 
+//       // chain: walletClient.chain, TODO: Do we need this?
+//       fn: "send",
+//       address: sourceConfig.ucs03address,
+//       args: [
+//         sourceConfig.channelId,
+//         0n,
+//         timeoutTimestamp,
+//         salt,
+//         {
+//           opcode: instruction.opcode,
+//           version: instruction.version,
+//           operand,
+//         },
+//       ],
+//       value: 10n,
 //     })
 //   })
 
@@ -533,63 +635,6 @@ export const readCoinSymbol = (address: string) =>
 //   })
 
 // /**
-//  * Read the name of an ERC20 token
-//  * @param tokenAddress The address of the ERC20 token
-//  * @returns An Effect that resolves to the token name
-//  *
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const readErc20Name = (tokenAddress: Address) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClient).client
-
-//     return yield* readContract(client, {
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "name",
-//     })
-//   })
-
-// /**
-//  * Read the symbol of an ERC20 token
-//  * @param tokenAddress The address of the ERC20 token
-//  * @returns An Effect that resolves to the token symbol
-//  *
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const readErc20Symbol = (tokenAddress: Address) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClient).client
-
-//     return yield* readContract(client, {
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "symbol",
-//     })
-//   })
-
-// /**
-//  * Read the decimals of an ERC20 token
-//  * @param tokenAddress The address of the ERC20 token
-//  * @returns An Effect that resolves to the token decimals
-//  *
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const readErc20Decimals = (tokenAddress: Address) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClient).client
-
-//     return yield* readContract(client, {
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "decimals",
-//     })
-//   })
-
-// /**
 //  * Read the TotalSupply of an ERC20 token
 //  * @param tokenAddress The address of the ERC20 token
 //  * @param blockNumber The blockNumber at certain point
@@ -607,113 +652,5 @@ export const readCoinSymbol = (address: string) =>
 //       abi: erc20Abi,
 //       functionName: "totalSupply",
 //       blockNumber: blockNumber,
-//     })
-//   })
-
-// /**
-//  * Read the TotalSupply of an ERC20 token
-//  * @param tokenAddress The address of the ERC20 token
-//  * @returns An Effect that resolves to the totalSupply
-//  *
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const readErc20TotalSupply = (tokenAddress: Address) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClient).client
-
-//     return yield* readContract(client, {
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "totalSupply",
-//     })
-//   })
-
-// /**
-//  * Read the allowance of an ERC20 token for a specific owner and spender
-//  * @param tokenAddress The address of the ERC20 token
-//  * @param ownerAddress The address of the token owner
-//  * @param spenderAddress The address of the spender
-//  * @returns An Effect that resolves to the token allowance
-//  *
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const readErc20Allowance = (
-//   tokenAddress: Address,
-//   ownerAddress: Address,
-//   spenderAddress: Address,
-// ) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClient).client
-
-//     return yield* readContract(client, {
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "allowance",
-//       args: [ownerAddress, spenderAddress],
-//     })
-//   })
-
-// /**
-//  * Increase the allowance of an ERC20 token for a specific spender
-//  * @param tokenAddress The address of the ERC20 token
-//  * @param spenderAddress The address of the spender
-//  * @param amount The amount to increase the allowance by
-//  * @returns An Effect that resolves to the transaction hash
-//  *
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const increaseErc20Allowance = (
-//   tokenAddress: Address,
-//   spenderAddress: Address,
-//   amount: bigint,
-// ) =>
-//   Effect.gen(function*() {
-//     const walletClient = yield* WalletClient
-
-//     return yield* writeContract({
-//       account: walletClient.account,
-//       chain: walletClient.chain,
-//       address: tokenAddress,
-//       abi: erc20Abi,
-//       functionName: "approve",
-//       args: [spenderAddress, amount],
-//     })
-//   })
-
-// /**
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const sendInstruction = (instruction: Ucs03.Instruction) =>
-//   Effect.gen(function*() {
-//     const walletClient = yield* WalletClient
-//     const sourceConfig = yield* ChannelSource
-
-//     const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
-//     const salt = yield* Utils.generateSalt("evm")
-
-//     const operand = yield* S.encode(Ucs03.InstructionFromHex)(instruction)
-
-//     return yield* writeContract({
-//       account: walletClient.account,
-//       abi: Ucs03.Abi,
-//       chain: walletClient.chain,
-//       functionName: "send",
-//       address: sourceConfig.ucs03address,
-//       args: [
-//         sourceConfig.channelId,
-//         0n,
-//         timeoutTimestamp,
-//         salt,
-//         {
-//           opcode: instruction.opcode,
-//           version: instruction.version,
-//           operand,
-//         },
-//       ],
-//       value: 10n,
 //     })
 //   })
