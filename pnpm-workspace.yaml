@@ -9,3 +9,4 @@ packages:
   - 'ts-sdk-evm'
   - 'typescript-sdk'
   - 'zkgm-dev'
+  - 'ts-sdk-sui'

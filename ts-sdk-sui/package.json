@@ -1,0 +1,74 @@
+{
+  "name": "@unionlabs/sdk-sui",
+  "version": "0.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "@unionlabs",
+  "homepage": "https://docs.union.build/typescript",
+  "description": "Union TypeScript SDK for Sui",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "ts-sdk-sui"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "directory": "dist",
+    "linkDirectory": false
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./examples/*": "./examples/*.ts",
+    "./internal/*": null
+  },
+  "scripts": {
+    "build": "pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v3",
+    "build-annotate": "babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps",
+    "build-cjs": "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",
+    "build-esm": "tsc -b tsconfig.build.json",
+    "check": "tsc -b tsconfig.json",
+    "check:circular": "dpdm -T src",
+    "check:examples": "tsc -p tsconfig.examples.json",
+    "codegen": "build-utils prepare-v3",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "@effect/platform": "^0.84",
+    "@unionlabs/sdk": "workspace:^",
+    "@safe-global/safe-apps-sdk": "^9",
+    "effect": "^3.16",
+    "viem": "^2"
+  },
+  "peerDependenciesMeta": {
+    "@safe-global/safe-apps-sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.27.2",
+    "@babel/core": "^7.27.1",
+    "@babel/plugin-transform-export-namespace-from": "^7.27.1",
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@cosmjs/math": "^0.33.1",
+    "@effect/build-utils": "^0.8.3",
+    "@effect/platform": "0.84.6",
+    "@safe-global/safe-apps-sdk": "~9.1.0",
+    "@types/node": "^22.13.1",
+    "@unionlabs/sdk": "workspace:^",
+    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "dpdm": "^3.14.0",
+    "effect": "3.16.3",
+    "madge": "^8.0.0",
+    "viem": "^2.33.3",
+    "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "@scure/base": "1.2.4",
+    "crc": "^4.3.2",
+    "@mysten/sui": "^1.38.0"
+  }
+}
