@@ -344,6 +344,31 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     return coins
   })
 
+  export const readTotalCoinBalance = (contractAddress: string, address: string) =>
+    Effect.gen(function*() {
+      const client = (yield* PublicClient).client
+      let params = {
+        owner: address,
+        coinType: contractAddress,
+      }
+
+      const coins = yield* Effect.tryPromise({
+        try: async () => {
+          const result = await client.getCoins(params)
+          return result.data
+        },
+        catch: err =>
+          new ReadCoinError({
+            cause: extractErrorDetails(err as ReadCoinError),
+          }),
+      })
+      // Calculate total balance
+      const totalBalance = coins.reduce((acc, coin) => acc + BigInt(coin.balance), BigInt(0))
+
+      return totalBalance
+    })
+
+
 // /**
 //  * Read the balance of an ERC20 token for a specific address
 //  *
