@@ -76,6 +76,10 @@ export class GetUnbonds
   }
 }
 
+/**
+ * @category services
+ * @since 2.0.0
+ */
 export class Staking extends Effect.Service<Staking>()("@unionlabs/sdk/Staking", {
   effect: Effect.gen(function*() {
     const client = yield* Indexer
