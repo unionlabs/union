@@ -387,6 +387,48 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
       })
       return coins
     })
+    
+  export const getAllCoinsUnique = (address: string) =>
+  Effect.gen(function*() {
+    const client = (yield* PublicClient).client
+
+    const params = {
+      owner: address,
+    }
+
+    const coins = yield* Effect.tryPromise({
+      try: async () => {
+        const result = await client.getAllCoins(params)
+        return result.data
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as ReadCoinError),
+        }),
+    })
+
+    // Group by coinType and sum balances
+    const coinMap: Record<string, bigint> = {}
+
+    for (const coin of coins) {
+      const coinType = coin.coinType
+      const balance = BigInt(coin.balance)
+
+      if (!coinMap[coinType]) {
+        coinMap[coinType] = balance
+      } else {
+        coinMap[coinType] += balance
+      }
+    }
+
+    // Convert to array of objects
+    const result = Object.entries(coinMap).map(([coinType, totalBalance]) => ({
+      coinType,
+      balance: totalBalance.toString(), // or keep as BigInt if preferred
+    }))
+
+    return result
+  })
 
 // /**
 //  * Read the balance of an ERC20 token for a specific address
