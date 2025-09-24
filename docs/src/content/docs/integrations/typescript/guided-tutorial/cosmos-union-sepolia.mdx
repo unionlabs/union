@@ -11,7 +11,7 @@ Relevant imports will be included with each step. Outside of libraries provided 
 
 This first section is a walk through of creating the program section of the send funds example.
 
-### 1. Program declaration
+### 1. Program Declaration
 
 Begin by using Effect to create a program function.
 
@@ -48,7 +48,7 @@ The ID's provided here are Universal Chain ID's as defined by [UCS04](/ucs/04).
 
 Now you can define the token order that will be responsible for the transfer. This example uses the `TokenOrderV2` TS interface.
 
-To construct the token order, you will need the token contract/denom on both the source chain (`baseToken`) and the destination chain (`quoteToken`). In this case, we are using the relevant contract addresses for U.
+To construct the token order, you will need the token contract/denom on both the source chain (`baseToken`) and the destination chain (`quoteToken`). In this case, we are using the relevant denom and contract address for U.
 
 We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `solve`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [UCS03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
 
@@ -127,6 +127,13 @@ const program = Effect.gen(function*() {
 ## Execution
 
 With the program ready, we can now use Effect to execute our transfer and listen for a response.
+
+Below, several items of note are provided to the program:
+
+- `Cosmos.SigningClient` connected to a Union Testnet RPC
+  - This contains a manually crated key pair (normally fetched from wallet)
+  - Network base gas price
+- `Cosmos.Client` connected to a Union Testnet RPC
 
 ```js
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"

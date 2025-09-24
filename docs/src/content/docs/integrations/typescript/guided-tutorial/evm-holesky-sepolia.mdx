@@ -11,7 +11,7 @@ Relevant imports will be included with each step. Outside of libraries provided 
 
 This first section is a walk through of creating the program section of the send funds example.
 
-### 1. Program declaration
+### 1. Program Declaration
 
 Begin by using Effect to create a program function.
 
@@ -146,6 +146,12 @@ In this example, it does not matter, as we manually provide the key and specify 
 ## Execution
 
 With the program ready, we can now use Effect to execute our transfer and listen for a response.
+
+Below, several items of note are provided to the program:
+
+- `Evm.WalletClient` connected to a Holesky RPC
+  - Contains a manually created key pair
+- `Evm.PublicClient` connected to a Holesky RPC
 
 ```js
 import { Evm, EvmZkgmClient } from "@unionlabs/sdk-evm"
