@@ -11,7 +11,7 @@ interface Props {
 let {
   value = 0.5,
   onchange,
-  class: className = ""
+  class: className = "",
 }: Props = $props()
 
 let isCustom = $state(![0.5, 1].includes(value))
@@ -47,22 +47,23 @@ const handleCustomClick = () => {
   }
 }
 
-const parseSlippage = (input: string): O.Option<number> => pipe(
-  BigDecimal.fromString(input),
-  O.map(BigDecimal.unsafeToNumber),
-  O.filter(num => num >= 0 && num <= 100)
-)
+const parseSlippage = (input: string): O.Option<number> =>
+  pipe(
+    BigDecimal.fromString(input),
+    O.map(BigDecimal.unsafeToNumber),
+    O.filter(num => num >= 0 && num <= 100),
+  )
 
 const handleCustomChange = (e: Event) => {
   const target = e.target as HTMLInputElement
   const inputValue = target.value
-  
+
   // Allow empty input while typing
   if (inputValue === "") {
     customInput = ""
     return
   }
-  
+
   pipe(
     parseSlippage(inputValue),
     O.match({
@@ -70,8 +71,8 @@ const handleCustomChange = (e: Event) => {
       onSome: (parsed) => {
         customInput = inputValue
         onchange(parsed)
-      }
-    })
+      },
+    }),
   )
 }
 
@@ -82,7 +83,7 @@ const handleCustomBlur = () => {
     onchange(value)
     return
   }
-  
+
   pipe(
     parseSlippage(customInput),
     O.match({
@@ -95,8 +96,8 @@ const handleCustomBlur = () => {
           customInput = value.toString()
           onchange(value)
         }
-      }
-    })
+      },
+    }),
   )
 }
 </script>
@@ -118,7 +119,7 @@ const handleCustomBlur = () => {
           {option.label}%
         </button>
       {/each}
-      
+
       <div class="relative">
         {#if showCustomInput}
           <div class="flex items-center">
@@ -140,26 +141,46 @@ const handleCustomBlur = () => {
           <button
             class={cn(
               "flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded transition-all",
-              "bg-accent/20 text-accent"
+              "bg-accent/20 text-accent",
             )}
             onclick={handleCustomClick}
           >
             {value}%
-            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <svg
+              class="w-2.5 h-2.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
             </svg>
           </button>
         {:else}
           <button
             class={cn(
-              "p-0.5 text-zinc-500 hover:text-zinc-400 transition-all"
+              "p-0.5 text-zinc-500 hover:text-zinc-400 transition-all",
             )}
             onclick={handleCustomClick}
             title="Custom slippage"
             aria-label="Set custom slippage"
           >
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            <svg
+              class="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
             </svg>
           </button>
         {/if}

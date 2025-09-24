@@ -193,10 +193,12 @@ export const readContract = Effect.fn("readContract")(<
  * @since 0.0.0
  */
 export const writeContract = Effect.fn("writeContract")(<
-  TAbi extends Abi,
-  TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable"> = ContractFunctionName<
-    TAbi,
-    "nonpayable" | "payable"
+  const abi extends Abi | readonly unknown[],
+  functionName extends ContractFunctionName<abi, "payable" | "nonpayable">,
+  args extends ContractFunctionArgs<
+    abi,
+    "payable" | "nonpayable",
+    functionName
   >,
   chainOverride extends ViemChain | undefined = undefined,
 >(

@@ -219,6 +219,10 @@ export class ClientResponseImpl extends IncomingMessageImpl<ClientError.Response
     return `0x${this.result.transactionHash}` as const
   }
 
+  get safeHash() {
+    return O.none()
+  }
+
   toString(): string {
     return `EvmZkgmClient::ClientResponseImpl::toString not implemented`
   }
