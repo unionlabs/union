@@ -31,6 +31,7 @@ import {
   Layer,
   Order,
   pipe,
+  Schedule,
   Schema,
 } from "effect"
 import * as A from "effect/Array"
@@ -65,53 +66,56 @@ const eUOnEvmToken = $derived(pipe(
 ))
 
 let selectedTab = $state<StakeTab>("bond")
-let refreshTrigger = $state<number>(0)
-
 let bondAmount = $state<O.Option<bigint>>(O.none())
 
-const refreshBondData = () => {
-  refreshTrigger = Date.now()
-}
+// State to hold the latest staking data
+let stakingData = $state<O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>>(O.none())
 
-const data = AppRuntime.runPromiseExit$(() => {
-  void WalletStore.evmAddress
-  void refreshTrigger
+// Start the polling effect that updates stakingData
+const stakingPoll = AppRuntime.runPromiseExit$(() => {
+  void WalletStore.evmAddress // React to wallet changes
 
-  return Effect.gen(function*() {
-    const staking = yield* Staking.Staking
-    const address = yield* WalletStore.evmAddress
-    return yield* pipe(
-      Effect.all([
-        staking.getBonds(Staking.GetBonds.make({ addresses: [address] })),
-        staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [address] })),
-      ], { concurrency: "unbounded" }),
-      Effect.map(A.getSomes),
-      Effect.map(A.flatten),
-      Effect.map(A.sort(pipe(
-        Order.mapInput<Date, Bond | Unbond>(
-          Order.Date,
-          (x) => DateTime.toDate(x.sortDate),
+  return pipe(
+    WalletStore.evmAddress,
+    Effect.flatMap(address =>
+      pipe(
+        Effect.gen(function*() {
+          const staking = yield* Staking.Staking
+          return yield* pipe(
+            Effect.all([
+              staking.getBonds(Staking.GetBonds.make({ addresses: [address] })),
+              staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [address] })),
+            ], { concurrency: "unbounded" }),
+            Effect.map(A.getSomes),
+            Effect.map(A.flatten),
+            Effect.map(A.sort(pipe(
+              Order.mapInput<Date, Bond | Unbond>(
+                Order.Date,
+                (x) => DateTime.toDate(x.sortDate),
+              ),
+              Order.reverse,
+            ))),
+            Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
+            Effect.map(x => x as O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>),
+          )
+        }).pipe(
+          Effect.provide(Layer.mergeAll(
+            Staking.Staking.DefaultWithoutDependencies,
+            Layer.fresh(Indexer.Default),
+            QlpConfigProvider,
+          )),
         ),
-        Order.reverse,
-      ))),
-      Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
-      Effect.map(x => x as O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>),
-      Effect.tap(result =>
-        Effect.sync(() => {
-          setTimeout(() => {
-            refreshTrigger = Date.now()
-          }, 10000)
-        })
-      ),
-    )
-  }).pipe(
-    Effect.provide(Layer.mergeAll(
-      Staking.Staking.DefaultWithoutDependencies,
-      Layer.fresh(Indexer.Default),
-      QlpConfigProvider,
-    )),
+        Effect.tap(result =>
+          Effect.sync(() => {
+            stakingData = result
+          })
+        ),
+        Effect.repeat(Schedule.addDelay(Schedule.repeatForever, () => "10 seconds")),
+        Effect.asVoid,
+      )
+    ),
   )
-})
+}, { onInterrupt: "ignore" })
 
 const incentives = AppRuntime.runPromiseExit$(() => {
   return Effect.gen(function*() {
@@ -251,7 +255,7 @@ const exchangeRate = $derived(pipe(
             { id: "withdraw", label: "Withdraw" },
           ]}
           activeId={selectedTab}
-          onTabChange={(id) => selectedTab = id as StakeTab}
+          onTabChange={(id: string) => selectedTab = id as StakeTab}
           class="text-xs"
         />
       </div>
@@ -264,7 +268,7 @@ const exchangeRate = $derived(pipe(
             {eUOnEvmToken}
             {uOnEvmBalance}
             bind:bondAmount
-            onBondSuccess={refreshBondData}
+            onBondSuccess={() => stakingPoll.interrupt()}
           />
         {:else if selectedTab === "unbond"}
           <UnbondComponent
@@ -272,13 +276,13 @@ const exchangeRate = $derived(pipe(
             {uOnEvmToken}
             {eUOnEvmToken}
             {eUOnEvmBalance}
-            onUnbondSuccess={refreshBondData}
+            onUnbondSuccess={() => stakingPoll.interrupt()}
           />
         {:else if selectedTab === "withdraw"}
           <WithdrawalComponent
             {evmChain}
             {uOnEvmToken}
-            onWithdrawSuccess={refreshBondData}
+            onWithdrawSuccess={() => stakingPoll.interrupt()}
           />
         {/if}
       </div>
@@ -317,7 +321,7 @@ const exchangeRate = $derived(pipe(
 
   <!-- Staking History (separate, below everything) -->
   <StakingHistoryCard
-    data={data.current}
+    data={O.some(Exit.succeed(stakingData))}
     walletConnected={O.isSome(WalletStore.evmAddress)}
   />
 </Sections>
