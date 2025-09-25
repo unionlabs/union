@@ -101,7 +101,7 @@ export const navigation: Array<NavSection> = [
       icon: EscherLogo,
       subroutes: [
         {
-          path: "/udrop/claim",
+          path: "/eudrop/claim",
           title: "eU claim",
           new: true,
         },

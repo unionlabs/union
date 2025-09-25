@@ -18,7 +18,7 @@ let claim = $derived(
 
 $effect(() => {
   if (Option.isNone(claim)) {
-    window.location.href = "/udrop/claim?step=1"
+    window.location.href = "/eudrop/claim?step=1"
   }
 })
 

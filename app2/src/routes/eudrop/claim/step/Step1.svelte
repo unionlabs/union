@@ -67,7 +67,7 @@ function handleLogin(provider: AuthProvider) {
 
   runPromise(
     Effect.gen(function*() {
-      yield* dashboard.login(provider.id, "/udrop/claim")
+      yield* dashboard.login(provider.id, "/eudrop/claim")
     }).pipe(
       Effect.tap(() => Effect.sync(() => loading = false)),
       Effect.catchAll(() => Effect.sync(() => loading = false)),
@@ -263,9 +263,9 @@ function handleContinue() {
         <span></span>
       </div>
       <img
-        src="/images/union-logo-glyph.svg"
+        src="https://app.escher.finance/images/token/e-union.svg"
         alt="Union Logo"
-        class="w-24 h-auto border border-zinc-700 bg-zinc-925 rounded-full p-4 pulse-logo relative z-50"
+        class="w-24 h-auto border border-zinc-700 bg-zinc-925 rounded-full pulse-logo relative z-50"
       />
     </div>
   {/snippet}

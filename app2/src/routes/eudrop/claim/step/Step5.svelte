@@ -1,6 +1,6 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
-import { EUDROP_ABI, EUDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
+import { EUDROP_ABI, EUDROP_CONTRACT_ADDRESS } from "$lib/constants/eudrop"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
