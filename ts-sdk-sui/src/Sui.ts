@@ -569,6 +569,159 @@ export const readCoinSymbol = (address: string) =>
   })
 
 
+  /**
+ * PTB: begin_send -> (send_with_coin<T> ...)* -> end_send
+ *
+ * Mirrors:
+ * sui client ptb \
+ *   --move-call "$PKG::$MOD::begin_send" $CHANNEL_ID $SALT \
+ *   --assign send_ctx1 \
+ *   --move-call "$PKG::$MOD::send_with_coin" "<$TYPE_T>" \
+ *       $RELAY_STORE $VAULT $IBC_STORE $COIN $VERSION $OPCODE $OPERAND send_ctx1 \
+ *   --assign send_ctx2 \
+ *   --move-call "$PKG::$MOD::end_send" $IBC_STORE $CLOCK $T_HEIGHT $T_TS send_ctx2 \
+ *   --gas-budget 150000000
+ */
+export const sendInstruction = (params: {
+  packageId: string
+
+  /** coin type, e.g. "0x2::sui::SUI" (used in typeArguments of send_with_coin) */
+  typeArg: string
+
+  relayStoreId: string        // $RELAY_STORE
+  vaultId: string             // $VAULT
+  ibcStoreId: string          // $IBC_STORE
+  coinObjectId: string        // $COIN
+
+  // extraSendCalls?: Array<{
+  //   relayStoreId?: string
+  //   vaultId?: string
+  //   ibcStoreId?: string
+  //   coinObjectId?: string
+  //   version?: number
+  //   opcode?: number
+  //   operandHex?: `0x${string}`
+  //   typeArg?: string
+  // }>
+
+  /** the instruction used purely for encoding operand just like EVM */
+  instruction: Ucs03.Instruction
+
+}) =>
+  Effect.gen(function* () {
+    const module = "zkgm"
+    const clockObjectId = "0x6" // Sui system clock object
+
+    const { client, signer } = yield* WalletClient
+    const channelId = (yield* ChannelSource).channelId
+
+    const salt = yield* Utils.generateSalt("evm") // TODO: check if evm will work here or not
+    const timeoutNs = Utils.getTimeoutInNanoseconds24HoursFromNow()
+    const tHeight = BigInt(0)
+
+    const operandHex = (yield* S.encode(Ucs03.InstructionFromHex)(params.instruction)) as `0x${string}`
+
+    // helpers
+    const hexToBytes = (hex: `0x${string}`): Uint8Array => {
+      const s = hex.slice(2)
+      const out = new Uint8Array(s.length / 2)
+      for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+      return out
+    }
+
+    const tx = new Transaction()
+    // if (params.gasBudget !== undefined) tx.setGasBudget(BigInt(params.gasBudget as any))
+
+    let sendCtx = tx.moveCall({
+      target: `${params.packageId}::${module}::begin_send`,
+      typeArguments: [],
+      arguments: [
+        tx.pure.u32(channelId), 
+        tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)), 
+      ],
+    })
+
+    const pushSendWithCoin = (cfg: {
+      relayStoreId: string
+      vaultId: string
+      ibcStoreId: string
+      coinObjectId: string
+      version: number
+      opcode: number
+      operandHex: `0x${string}`
+      typeArg: string
+    }) => {
+      sendCtx = tx.moveCall({
+        target: `${params.packageId}::${module}::send_with_coin`,
+        typeArguments: [cfg.typeArg],
+        arguments: [
+          tx.object(cfg.relayStoreId),
+          tx.object(cfg.vaultId),
+          tx.object(cfg.ibcStoreId),
+          tx.object(cfg.coinObjectId),
+          tx.pure.u8(cfg.version),
+          tx.pure.u8(cfg.opcode), 
+          tx.pure.vector("u8", hexToBytes(cfg.operandHex)),
+          sendCtx,
+        ],
+      })
+    }
+
+    pushSendWithCoin({
+      relayStoreId: params.relayStoreId,
+      vaultId: params.vaultId,
+      ibcStoreId: params.ibcStoreId,
+      coinObjectId: params.coinObjectId,
+      version: params.instruction.version,
+      opcode: params.instruction.opcode,
+      operandHex,
+      typeArg: params.typeArg,
+    })
+
+    // TODO: multiple send_with_coin calls if needed??? will this work?
+    // for (const extra of params.extraSendCalls ?? []) {
+    //   pushSendWithCoin({
+    //     relayStoreId: extra.relayStoreId ?? params.relayStoreId,
+    //     vaultId: extra.vaultId ?? params.vaultId,
+    //     ibcStoreId: extra.ibcStoreId ?? params.ibcStoreId,
+    //     coinObjectId: extra.coinObjectId ?? params.coinObjectId,
+    //     version: extra.version ?? params.version,
+    //     opcode: extra.opcode ?? params.opcode,
+    //     operandHex: (extra.operandHex ?? operandHex) as `0x${string}`,
+    //     typeArg: extra.typeArg ?? params.typeArg,
+    //   })
+    // }
+
+    tx.moveCall({
+      target: `${params.packageId}::${module}::end_send`,
+      typeArguments: [],
+      arguments: [
+        tx.object(params.ibcStoreId),
+        tx.object(clockObjectId),
+        tx.pure.u64(tHeight),
+        tx.pure.u64(BigInt(timeoutNs)), // ns
+        sendCtx,
+      ],
+    })
+
+    const res = yield* Effect.tryPromise({
+      try: async () =>
+        client.signAndExecuteTransaction({
+          signer,
+          transaction: tx,
+        }),
+      catch: (e) => new WriteContractError({ cause: extractErrorDetails(e as Error) }),
+    })
+
+    return res
+  })
+  
+// turn a hex string like "0xdeadbeef" into a number[] of bytes
+function hexToBytes(hex: string): number[] {
+  const h = hex.startsWith("0x") ? hex.slice(2) : hex
+  return h.match(/.{1,2}/g)!.map(b => parseInt(b, 16))
+}
+
 // // TODO: Decide the parameters here.
 // /**
 //  * @category utils
