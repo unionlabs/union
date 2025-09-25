@@ -1,5 +1,4 @@
 <script lang="ts">
-import { goto } from "$app/navigation"
 import Button from "$lib/components/ui/Button.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
@@ -23,17 +22,6 @@ function handleViewTransaction() {
     onNone: () => {},
     onSome: (hash) => window.open(`https://etherscan.io/tx/${hash}`, "_blank"),
   })
-}
-
-function handleStake() {
-  goto("/stake")
-}
-
-function handleUniswap() {
-  // Direct link to the Union/WETH pool on Uniswap
-  const uniswapPoolUrl =
-    "https://app.uniswap.org/explore/pools/ethereum/0x0801481ba598d86e221a5ff0ccb02c97d5b0fbd803c662c66af604aa35119fe0"
-  window.open(uniswapPoolUrl, "_blank")
 }
 </script>
 
@@ -79,7 +67,7 @@ function handleUniswap() {
           <Button
             variant="primary"
             class="flex items-center justify-center gap-3 w-full"
-            onclick={handleStake}
+            href="/stake"
           >
             <svg
               class="w-4 h-4"
@@ -100,7 +88,9 @@ function handleUniswap() {
           <Button
             variant="secondary"
             class="flex items-center justify-center gap-3 w-full"
-            onclick={handleUniswap}
+            href="https://app.uniswap.org/explore/pools/ethereum/0x0801481ba598d86e221a5ff0ccb02c97d5b0fbd803c662c66af604aa35119fe0"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <svg
               class="w-4 h-4"
