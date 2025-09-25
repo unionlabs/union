@@ -70,6 +70,8 @@ library INSTANCE_SALT {
         hex"96de8fc8c256fa1e1556d41af431cace7dca68707c78dd88c3acab8b17177504";
     bytes constant EU =
         hex"0dec0db7b56214f189bc3d33052145c6d7558c6a7ee0da79e34bdd8a29d569c2";
+    bytes constant EUDROP =
+        hex"e6cca786dc51eacd3fc44003a860ec4762ae8fb6a306a8ba6d38b54970acb1c2";
 }
 
 library LIB_SALT {
@@ -338,6 +340,26 @@ abstract contract UnionScript is UnionBase {
         return UDrop(
             deployIfNotExists(
                 string(INSTANCE_SALT.UDROP),
+                abi.encode(
+                    address(new UDrop(root, token)),
+                    abi.encodeCall(
+                        UDrop.initialize, (address(authority), active)
+                    )
+                ),
+                "UDrop"
+            )
+        );
+    }
+
+    function deployEUDrop(
+        Manager authority,
+        bytes32 root,
+        address token,
+        bool active
+    ) internal returns (UDrop) {
+        return UDrop(
+            deployIfNotExists(
+                string(INSTANCE_SALT.EUDROP),
                 abi.encode(
                     address(new UDrop(root, token)),
                     abi.encodeCall(
@@ -2254,6 +2276,31 @@ contract DeployUDrop is UnionScript, VersionedScript {
         vm.stopBroadcast();
 
         console.log("UDrop: ", address(udrop));
+    }
+}
+
+contract DeployEUDrop is UnionScript, VersionedScript {
+    using LibString for *;
+
+    bytes32 immutable root;
+    bool immutable active;
+
+    constructor() {
+        root = vm.envBytes32("MERKLE_ROOT");
+        active = vm.envBool("ACTIVE");
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        address token = getDeployed(string(INSTANCE_SALT.EU));
+
+        vm.startBroadcast(privateKey);
+        UDrop eudrop = deployEUDrop(manager, root, token, active);
+        vm.stopBroadcast();
+
+        console.log("EUDrop: ", address(eudrop));
     }
 }
 

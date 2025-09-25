@@ -1318,6 +1318,7 @@ _: {
                     u = "U";
                     eu = "EU";
                     udrop = "UDrop";
+                    eudrop = "EUDrop";
                   }
                 )
                 # other various deployment scripts
@@ -1374,6 +1375,7 @@ _: {
                         u = "U";
                         eu = "EU";
                         udrop = "UDrop";
+                        eudrop = "EUDrop";
                       }
                   )
                 ))
