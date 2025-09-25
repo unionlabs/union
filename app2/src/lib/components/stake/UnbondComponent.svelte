@@ -301,7 +301,7 @@ runPromiseExit$(() =>
 
       unbondState = UnbondState.SwitchingChain()
 
-      const VIEM_CHAIN = sepolia
+      const VIEM_CHAIN = mainnet
 
       const connectorClient = yield* getWagmiConnectorClient
 
