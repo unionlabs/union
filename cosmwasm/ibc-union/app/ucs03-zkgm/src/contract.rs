@@ -3463,7 +3463,7 @@ pub fn encode_call_calldata(path: U256, sender: Bytes, contract_calldata: Bytes)
     (path, sender, contract_calldata).abi_encode()
 }
 
-fn predict_call_proxy_account(
+pub fn predict_call_proxy_account(
     deps: Deps,
     env: &Env,
     call_proxy_salt: &CallProxySalt,
@@ -3478,7 +3478,7 @@ fn predict_call_proxy_account(
     Ok(deps.api.addr_humanize(&token_addr)?)
 }
 
-fn proxy_account_salt(
+pub fn proxy_account_salt(
     CallProxySalt {
         path,
         channel_id,
