@@ -9,18 +9,18 @@ interface Props {
 }
 
 let {
-  value = 0.5,
+  value = 1,
   onchange,
   class: className = "",
 }: Props = $props()
 
-let isCustom = $state(![0.5, 1].includes(value))
+let isCustom = $state(![1, 2].includes(value))
 let customInput = $state("")
 let showCustomInput = $state(false)
 
 // Initialize custom values if needed
 $effect(() => {
-  if (![0.5, 1].includes(value)) {
+  if (![1, 2].includes(value)) {
     isCustom = true
     customInput = value.toString()
     showCustomInput = false // Keep input hidden initially for custom values
@@ -28,8 +28,8 @@ $effect(() => {
 })
 
 const presetOptions = [
-  { label: "0.5", value: 0.5 },
   { label: "1", value: 1 },
+  { label: "2", value: 2 },
 ]
 
 const handlePresetClick = (presetValue: number) => {
