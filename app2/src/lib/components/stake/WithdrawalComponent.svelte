@@ -169,7 +169,7 @@ const withdrawalData = runPromiseExit$(() => {
           return { userBatches }
         }),
     }),
-    Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
+    Effect.provide(Cosmos.Client.Live("https://rpc.union.build")),
   )
 })
 
