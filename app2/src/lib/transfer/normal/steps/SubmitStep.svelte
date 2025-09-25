@@ -29,6 +29,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
+import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { ZkgmClientError, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import { ZkgmClient } from "@unionlabs/sdk"
 import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
@@ -138,7 +139,7 @@ export const submit = Effect.gen(function*() {
 
     const publicClient = Evm.PublicClient.Live({
       chain,
-      transport: custom(connectorClient),
+      transport: fallbackTransport(chain),
     })
     const walletClient = Evm.WalletClient.Live({
       account: connectorClient.account,
@@ -177,6 +178,7 @@ export const submit = Effect.gen(function*() {
                     response.waitFor(
                       ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
                     ),
+                    Effect.delay("2 seconds"),
                     Effect.flatMap(Effect.map(x => x.transactionHash)),
                   ),
                 onTrue: () =>
