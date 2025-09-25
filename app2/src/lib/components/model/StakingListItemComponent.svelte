@@ -34,12 +34,21 @@ const status = $derived(
     ? pipe(
       { bond: item.bond_success, delivery: item.delivery_success },
       ({ bond, delivery }) => {
-        const bondSuccess = pipe(bond, Option.getOrElse(() => false))
-        const deliverySuccess = pipe(delivery, Option.getOrElse(() => false))
+        // Check if either is explicitly false (error state)
+        if (Option.isSome(bond) && !bond.value) {
+          return "failure"
+        }
+        if (Option.isSome(delivery) && !delivery.value) {
+          return "failure"
+        }
 
-        return Option.isSome(bond) || Option.isSome(delivery)
-          ? bondSuccess && deliverySuccess ? "success" : "failure"
-          : "pending"
+        // Both are true = success
+        if (Option.isSome(bond) && bond.value && Option.isSome(delivery) && delivery.value) {
+          return "success"
+        }
+
+        // Otherwise pending (includes cases where bond is true and delivery is null)
+        return "pending"
       },
     )
     : pipe(

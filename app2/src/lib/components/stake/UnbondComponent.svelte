@@ -130,7 +130,7 @@ const isButtonDisabled = $derived(
         // When wallet is connected and we have data
         return isUnbonding
           || amount === 0n
-          || amount >= balance
+          || amount > balance
       },
     }),
   ),

@@ -127,7 +127,11 @@ const bondData = $derived(pipe(
         </div>
       </div>
     {:then bond}
-      {@const overallStatus = bond.bond_success && bond.delivery_success ? "success" : (bond.bond_success === false || bond.delivery_success === false) ? "failure" : "pending"}
+      {@const overallStatus = 
+        (bond.bond_success === false || bond.delivery_success === false) ? "failure" :
+        (bond.bond_success === true && bond.delivery_success === true) ? "success" : 
+        "pending"
+      }
         
         <div class="p-6">
           <h1 class="text-2xl font-bold mb-4">Stake</h1>
