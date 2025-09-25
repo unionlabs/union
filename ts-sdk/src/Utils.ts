@@ -224,3 +224,16 @@ export const formatBigDecimal = (n: BigDecimal.BigDecimal): string => {
   const complete = after === "" ? before : `${before}.${after}`
   return negative ? `-${complete}` : complete
 }
+
+/**
+ * Convert a BigDecimal to raw amount (smallest atomic units) for a given decimal precision
+ * @category utils
+ * @since 2.0.0
+ */
+export const toRawAmount = (bd: BigDecimal.BigDecimal, decimals: number = 18): bigint => {
+  const normalized = BigDecimal.normalize(bd)
+  const scaleFactor = BigInt(decimals) - BigInt(normalized.scale)
+  return scaleFactor >= 0n 
+    ? normalized.value * (10n ** scaleFactor)
+    : normalized.value / (10n ** (-scaleFactor))
+}
