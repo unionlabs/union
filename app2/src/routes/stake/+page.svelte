@@ -264,7 +264,7 @@ const exchangeRate = $derived(pipe(
         <a
           target="_blank"
           class="flex items-center gap-1.5 bg-[#0008ff] hover:bg-[#0006dd] transition-colors duration-200 rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md mt-4 md:mt-0"
-          href="https://app.escher.finance/"
+          href="https://www.escher.finance/"
         >
           <div class="flex items-center justify-center">
             <svg
