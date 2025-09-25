@@ -5,12 +5,9 @@ import { ChannelId, UniversalChainId } from "@unionlabs/sdk/schema"
 export const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.1")
 export const UNION_CHAIN_ID = UniversalChainId.make("union.union-1")
 
-// Channel configuration - ethereum.1 channel 2 ↔ union.union-1 channel 1
-export const SOURCE_CHANNEL_ID = ChannelId.make(2) // ethereum.1 side
-export const DESTINATION_CHANNEL_ID = ChannelId.make(1) // union.union-1 side
+export const SOURCE_CHANNEL_ID = ChannelId.make(2)
+export const DESTINATION_CHANNEL_ID = ChannelId.make(1)
 
-// Contract addresses
-// TODO: Move these to environment-based configuration
 
 // UCS03 on EVM
 // TESTNET (Sepolia): 0x5fbe74a283f7954f10aa04c2edf55578811aeb03

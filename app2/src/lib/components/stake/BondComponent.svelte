@@ -16,7 +16,7 @@ import {
   UNION_CHAIN_ID,
 } from "$lib/stake/config"
 import { predictProxy } from "$lib/stake/instantiate2"
-import { StakingHubStatusSchema } from "$lib/stake/schemas"
+import { type StakingRates } from "$lib/stake/schemas"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
@@ -77,6 +77,7 @@ interface Props {
   eUOnEvmToken: O.Option<TokenType>
   uOnEvmBalance: O.Option<bigint>
   bondAmount: O.Option<bigint>
+  stakingRates: O.Option<StakingRates>
   onBondSuccess?: () => void
 }
 
@@ -86,6 +87,7 @@ let {
   eUOnEvmToken,
   uOnEvmBalance,
   bondAmount = $bindable(),
+  stakingRates,
   onBondSuccess,
 }: Props = $props()
 
@@ -119,21 +121,6 @@ let bondState = $state<BondState>(BondState.Ready())
 let shouldBond = $state<boolean>(false)
 let slippage = $state<number>(0.5)
 
-const stakingRates = runPromiseExit$(() =>
-  Effect.gen(function*() {
-    return yield* pipe(
-      Cosmos.queryContract(
-        EU_STAKING_HUB,
-        {
-          accounting_state: {},
-        },
-      ),
-      Effect.flatMap(Schema.decodeUnknown(StakingHubStatusSchema)),
-      Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
-    )
-  })
-)
-
 const isBonding = $derived(
   !BondState.$is("Ready")(bondState)
     && !BondState.$is("Success")(bondState)
@@ -160,13 +147,7 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
 const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   O.Do,
   O.bind("input", () => inputAmount),
-  O.bind(
-    "rates",
-    () =>
-      O.isSome(stakingRates.current) && Exit.isSuccess(stakingRates.current.value)
-        ? O.some(stakingRates.current.value.value)
-        : O.none(),
-  ),
+  O.bind("rates", () => stakingRates),
   O.map(({ input, rates }) => {
     const inputNorm = BigDecimal.normalize(input)
     const rateNorm = BigDecimal.normalize(rates.purchase_rate)
@@ -175,11 +156,10 @@ const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
     // Apply slippage
     const slippageBasisPoints = Math.floor(slippage * 100)
     const minScaled = expectedScaled * BigInt(10000 - slippageBasisPoints) / 10000n
-    
+
     return BigDecimal.make(minScaled, inputNorm.scale + rateNorm.scale)
   }),
 ))
-
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   pipe(
@@ -242,7 +222,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, minMintAmount
 
     const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
     const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
-    const receiver = yield* predictProxy({
+    const proxy = yield* predictProxy({
       path: 0n,
       channel: DESTINATION_CHANNEL_ID,
       sender,
@@ -252,7 +232,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, minMintAmount
       source: ethereumChain,
       destination: unionChain,
       sender,
-      receiver,
+      receiver: proxy,
       baseToken: U_ERC20,
       baseAmount: sendAmount,
       quoteToken: U_BANK,
@@ -265,7 +245,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, minMintAmount
     const bondCall = yield* pipe(
       {
         bond: {
-          mint_to_address: receiver.address,
+          mint_to_address: proxy.address,
           min_mint_amount: minMintAmount,
         },
       } as const,
@@ -309,7 +289,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, minMintAmount
       TokenOrder.make({
         source: unionChain,
         destination: ethereumChain,
-        sender: receiver,
+        sender: proxy,
         receiver: sender,
         baseToken: Token.Cw20.make({ address: EU_LST.address }),
         baseAmount: minMintAmount,
@@ -353,7 +333,7 @@ const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, minMintAmount
         Call.make({
           sender,
           eureka: false,
-          contractAddress: receiver,
+          contractAddress: proxy,
           contractCalldata,
         })
       ),
@@ -443,7 +423,7 @@ runPromiseExit$(() =>
         bondState = BondState.Error({ message: "Unable to calculate minimum receive amount" })
         return yield* Effect.fail(new Error("Unable to calculate minimum receive amount"))
       }
-      
+
       const minMintAmountWei = Utils.toRawAmount(minimumReceiveAmount.value)
 
       const executeBondWithProviders = executeBond(sender, sendAmount, minMintAmountWei).pipe(
@@ -549,7 +529,6 @@ function handleButtonClick() {
 }
 </script>
 
-
 <div class="flex grow flex-col gap-4">
   <!-- Input Section with Balance -->
   <div class="space-y-3">
@@ -558,8 +537,8 @@ function handleButtonClick() {
         for="bondInput"
         class="text-xs font-medium text-zinc-400 uppercase tracking-wider"
       >Amount to Stake</label>
-      <div class="text-xs text-zinc-500">
-        Balance:
+      <div class="text-xs text-zinc-500 flex items-center gap-1">
+        <span>Balance:</span>
         {#if O.isNone(WalletStore.evmAddress)}
           <span class="text-zinc-400">—</span>
         {:else if O.isSome(evmChain) && O.isSome(uOnEvmToken) && O.isSome(uOnEvmBalance)}
@@ -572,7 +551,10 @@ function handleButtonClick() {
             showIcon={false}
           />
         {:else}
-          <Skeleton class="w-16 h-4" />
+          <div class="flex items-center gap-1 font-semibold">
+            <Skeleton class="w-20 h-4 inline-block" />
+            <Skeleton class="w-6 h-4 inline-block" />
+          </div>
         {/if}
       </div>
     </div>
@@ -605,14 +587,14 @@ function handleButtonClick() {
 
   <!-- Transaction Preview Card -->
   <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">
-    {#if O.isSome(stakingRates.current) && Exit.isSuccess(stakingRates.current.value)}
+    {#if O.isSome(stakingRates)}
       <!-- Exchange Rate -->
       <div class="flex justify-between items-center">
         <span class="text-xs text-zinc-500">Exchange Rate</span>
         <span class="text-sm font-medium text-zinc-200">
           1 U = {
             pipe(
-              stakingRates.current.value.value.purchase_rate,
+              stakingRates.value.purchase_rate,
               BigDecimal.round({ mode: "from-zero", scale: 6 }),
               Utils.formatBigDecimal,
             )
@@ -660,7 +642,9 @@ function handleButtonClick() {
       <!-- Loading state for Exchange Rate -->
       <div class="flex justify-between items-center">
         <span class="text-xs text-zinc-500">Exchange Rate</span>
-        <Skeleton class="w-20 h-5" />
+        <span class="text-sm font-medium">
+          <Skeleton class="inline-block w-24 h-5" />
+        </span>
       </div>
 
       <!-- Loading state for Slippage Settings -->
@@ -679,7 +663,12 @@ function handleButtonClick() {
       <div class="pt-2 border-t border-zinc-800">
         <div class="flex justify-between items-center">
           <span class="text-xs text-zinc-500">You'll Receive</span>
-          <Skeleton class="w-24 h-5" />
+          <div class="text-right">
+            <div class="flex items-center gap-1.5 justify-end">
+              <Skeleton class="w-5 h-5 rounded-full" />
+              <Skeleton class="w-20 h-5" />
+            </div>
+          </div>
         </div>
       </div>
     {/if}

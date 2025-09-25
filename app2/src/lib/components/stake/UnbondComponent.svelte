@@ -15,7 +15,7 @@ import {
   UNION_CHAIN_ID,
 } from "$lib/stake/config"
 import { predictProxy } from "$lib/stake/instantiate2"
-import { StakingHubStatusSchema } from "$lib/stake/schemas"
+import { type StakingRates, StakingRatesSchema } from "$lib/stake/schemas"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
@@ -30,8 +30,7 @@ import {
   Utils,
   ZkgmClient,
   ZkgmClientRequest,
-} from "@unionlabs/sdk"
-import { Cosmos } from "@unionlabs/sdk-cosmos"
+} from "@unionlabs/sdk" 
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
@@ -70,6 +69,7 @@ interface Props {
   uOnEvmToken: O.Option<TokenType>
   eUOnEvmToken: O.Option<TokenType>
   eUOnEvmBalance: O.Option<bigint>
+  stakingRates: O.Option<StakingRates>
   onUnbondSuccess?: () => void
 }
 
@@ -78,6 +78,7 @@ let {
   uOnEvmToken,
   eUOnEvmToken,
   eUOnEvmBalance,
+  stakingRates,
   onUnbondSuccess,
 }: Props = $props()
 
@@ -110,22 +111,6 @@ let unbondInput = $state<string>("")
 let unbondAmount = $state<O.Option<bigint>>(O.none())
 let unbondState = $state<UnbondState>(UnbondState.Ready())
 let shouldUnbond = $state<boolean>(false)
-
-// Fetch staking rates to show redemption rate
-const stakingRates = runPromiseExit$(() =>
-  Effect.gen(function*() {
-    return yield* pipe(
-      Cosmos.queryContract(
-        EU_STAKING_HUB,
-        {
-          accounting_state: {},
-        },
-      ),
-      Effect.flatMap(Schema.decodeUnknown(StakingHubStatusSchema)),
-      Effect.provide(Cosmos.Client.Live("https://rpc.union-testnet-10.union.chain.kitchen")),
-    )
-  })
-)
 
 const isUnbonding = $derived(
   !UnbondState.$is("Ready")(unbondState)
@@ -205,7 +190,7 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   Effect.gen(function*() {
     const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
     const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
-    const receiver = yield* predictProxy({
+    const proxy = yield* predictProxy({
       path: 0n,
       channel: DESTINATION_CHANNEL_ID,
       sender,
@@ -215,7 +200,7 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
       source: ethereumChain,
       destination: unionChain,
       sender,
-      receiver,
+      receiver: proxy,
       baseToken: EU_ERC20,
       baseAmount: sendAmount,
       quoteToken: Token.Cw20.make({ address: EU_LST.address }),
@@ -272,7 +257,7 @@ const executeUnbond = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
         Call.make({
           sender,
           eureka: false,
-          contractAddress: receiver,
+          contractAddress: proxy,
           contractCalldata,
         })
       ),
@@ -316,7 +301,7 @@ runPromiseExit$(() =>
 
       unbondState = UnbondState.SwitchingChain()
 
-      const VIEM_CHAIN = mainnet
+      const VIEM_CHAIN = sepolia
 
       const connectorClient = yield* getWagmiConnectorClient
 
@@ -466,8 +451,8 @@ function handleButtonClick() {
         for="unbondInput"
         class="text-xs font-medium text-zinc-400 uppercase tracking-wider"
       >Amount to Unstake</label>
-      <div class="text-xs text-zinc-500">
-        Balance:
+      <div class="text-xs text-zinc-500 flex items-center gap-1">
+        <span>Balance:</span>
         {#if O.isNone(WalletStore.evmAddress)}
           <span class="text-zinc-400">—</span>
         {:else if O.isSome(evmChain) && O.isSome(eUOnEvmToken) && O.isSome(eUOnEvmBalance)}
@@ -480,7 +465,10 @@ function handleButtonClick() {
             showIcon={false}
           />
         {:else}
-          <Skeleton class="w-16 h-4" />
+          <div class="flex items-center gap-1 font-semibold">
+            <Skeleton class="w-20 h-4 inline-block" />
+            <Skeleton class="w-6 h-4 inline-block" />
+          </div>
         {/if}
       </div>
     </div>
@@ -515,18 +503,20 @@ function handleButtonClick() {
   <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">
     <div class="flex justify-between items-center">
       <span class="text-xs text-zinc-500">Exchange Rate</span>
-      {#if O.isSome(stakingRates.current) && Exit.isSuccess(stakingRates.current.value)}
+      {#if O.isSome(stakingRates)}
         <span class="text-sm font-medium text-zinc-200">
           1 eU = {
             pipe(
-              stakingRates.current.value.value.redemption_rate,
+              stakingRates.value.redemption_rate,
               BigDecimal.round({ mode: "from-zero", scale: 6 }),
               Utils.formatBigDecimal,
             )
           } U
         </span>
       {:else}
-        <Skeleton class="w-20 h-5" />
+        <span class="text-sm font-medium">
+          <Skeleton class="inline-block w-24 h-5" />
+        </span>
       {/if}
     </div>
 

@@ -48,12 +48,14 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         {#if icon}
           {@render icon()}
         {/if}
-        <div class="text-xs text-zinc-500 font-medium uppercase tracking-wider">
+        <div class="text-xs text-zinc-500 font-medium tracking-wider">
           {label}
         </div>
       </div>
       {#if loading || O.isNone(value)}
-        <Skeleton class="h-5 sm:h-6 w-14" />
+        <div class="text-sm sm:text-lg font-semibold tabular-nums">
+          <Skeleton class="h-5 sm:h-6 w-20" />
+        </div>
       {:else if O.isSome(subtitle)}
         <div class="flex items-baseline gap-1.5">
           <span class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">
@@ -65,7 +67,7 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         </div>
       {:else}
         <div class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">
-{O.getOrElse(value, () => "")}
+          {O.getOrElse(value, () => "")}
         </div>
       {/if}
     </div>
@@ -88,7 +90,9 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         </div>
       </div>
       {#if loading || O.isNone(value)}
-        <Skeleton class="h-5 sm:h-6 w-14" />
+        <div class="text-sm sm:text-lg font-semibold tabular-nums">
+          <Skeleton class="h-5 sm:h-6 w-20" />
+        </div>
       {:else if O.isSome(subtitle)}
         <div class="flex items-baseline gap-1.5">
           <span class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">

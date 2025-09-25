@@ -110,6 +110,7 @@ let {
         label={showInverseRate ? "eU→U" : "U→eU"}
         value={exchangeRate}
         subtitle={O.none()}
+        loading={O.isNone(exchangeRate)}
         clickable={true}
         onclick={onToggleRate}
         class="font-mono"

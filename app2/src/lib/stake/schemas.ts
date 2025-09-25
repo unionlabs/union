@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 
-// Schema for the staking hub status query response
-export const StakingHubStatusSchema = Schema.Struct({
+// Schema for the staking rates query response
+export const StakingRatesSchema = Schema.Struct({
   total_assets: Schema.BigInt,
   total_shares: Schema.BigInt,
   total_reward_amount: Schema.BigInt,
@@ -9,7 +9,7 @@ export const StakingHubStatusSchema = Schema.Struct({
   purchase_rate: Schema.BigDecimal,
 })
 
-export type StakingHubStatus = Schema.Schema.Type<typeof StakingHubStatusSchema>
+export type StakingRates = Schema.Schema.Type<typeof StakingRatesSchema>
 
 // Schemas for unstake requests and batch data
 export const UnstakeRequestSchema = Schema.Struct({
