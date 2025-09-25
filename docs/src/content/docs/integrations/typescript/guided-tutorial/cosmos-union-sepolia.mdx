@@ -15,7 +15,7 @@ This first section is a walk through of creating the program section of the send
 
 Begin by using Effect to create a program function.
 
-```js
+```ts
 import { Effect, Logger } from "effect"
 
 const program = Effect.gen(function*() {})
@@ -25,7 +25,7 @@ const program = Effect.gen(function*() {})
 
 Using the `ChainRegistry` from the Union TS SDK, you can declare the source and destination chains used in this example. In this case, the source is Union Testnet (`union.union-testnet-10`) and the destination is Sepolia (`ethereum.11155111`).
 
-```js
+```ts
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { Effect, Logger } from "effect"
@@ -52,7 +52,7 @@ To construct the token order, you will need the token contract/denom on both the
 
 We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `solve`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [UCS03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
 
-```js
+```ts
 import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
 import { Effect, Logger } from "effect"
 
@@ -85,7 +85,7 @@ Solver metadata is supplied here in accordance with [UCS03](/ucs/03)
 
 Finally, the token order you've constructed can be used as an `instruction` to create a `ZkgmClientRequest`.
 
-```js
+```ts
 import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import { Effect, Logger } from "effect"
@@ -104,11 +104,15 @@ const program = Effect.gen(function*() {
 })
 ```
 
+:::note
+UCS03 addresses can be found on the [Deployments page](/protocol/deployments/)
+:::
+
 ### 5. zkgm Execution & Response
 
 Now that you've created a full zkgm request, you can execute it and wait on the response to close out the program.
 
-```js
+```ts
 import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
 import { Effect, Logger } from "effect"
 
@@ -135,7 +139,7 @@ Below, several items of note are provided to the program:
   - Network base gas price
 - `Cosmos.Client` connected to a Union Testnet RPC
 
-```js
+```ts
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
 import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
