@@ -8,7 +8,7 @@ use unionlabs::primitives::Bytes;
 pub mod com;
 pub mod contract;
 pub mod msg;
-mod state;
+pub mod state;
 #[cfg(test)]
 mod tests;
 pub mod token_bucket;
