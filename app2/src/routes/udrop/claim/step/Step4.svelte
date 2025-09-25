@@ -15,10 +15,10 @@ let { onNext, onBack }: Props = $props()
 
 let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
 
-const U_ADDRESS = "0xba5eD44733953d79717F6269357C77718C8Ba5ed"
-const U_SYMBOL = "U"
-const U_DECIMALS = 18
-const U_IMAGE = "https://app.escher.finance/images/token/e-union.svg"
+const eU_ADDRESS = "0xe5Cf13C84c0fEa3236C101Bd7d743d30366E5CF1"
+const eU_SYMBOL = "eU"
+const eU_DECIMALS = 18
+const eU_IMAGE = "https://app.escher.finance/images/token/e-union.svg"
 
 type AddTokenState = Data.TaggedEnum<{
   Ready: {}
@@ -53,10 +53,10 @@ runPromiseExit$(() =>
             params: {
               type: "ERC20",
               options: {
-                address: U_ADDRESS,
-                symbol: U_SYMBOL,
-                decimals: U_DECIMALS,
-                image: U_IMAGE,
+                address: eU_ADDRESS,
+                symbol: eU_SYMBOL,
+                decimals: eU_DECIMALS,
+                image: eU_IMAGE,
               },
             },
           })

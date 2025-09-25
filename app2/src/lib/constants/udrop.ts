@@ -1,8 +1,8 @@
 // UDrop contract configuration
 
-export const UDROP_CONTRACT_ADDRESS = "0xC0DEB405dd405Ee54F2Fc24E8E3DB5D417001631" as const
+export const EUDROP_CONTRACT_ADDRESS = "0xB055d055bfc0b1956a5D09a8358F8B5b924348E7" as const
 
-export const UDROP_ABI = [
+export const EUDROP_ABI = [
   {
     name: "active",
     type: "function",

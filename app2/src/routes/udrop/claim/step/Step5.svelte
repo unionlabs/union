@@ -1,6 +1,6 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
-import { UDROP_ABI, UDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
+import { EUDROP_ABI, EUDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
@@ -8,7 +8,7 @@ import { switchChain } from "$lib/services/transfer-ucs03-evm"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Evm } from "@unionlabs/sdk-evm"
 import { Data, Effect, Layer, Match, Option } from "effect"
-import { createPublicClient, custom, formatUnits } from "viem"
+import { custom, formatUnits } from "viem"
 import { mainnet } from "viem/chains"
 import StepLayout from "../StepLayout.svelte"
 
@@ -83,28 +83,11 @@ runPromiseExit$(() =>
       yield* Effect.log("Getting wallet connector client")
       const connectorClient = yield* getWagmiConnectorClient
 
-      // Get claim parameters
+      // Get claim parameters first
       const params = yield* Option.match(claimParams, {
         onNone: () => Effect.fail(new Error("No claim data available")),
         onSome: (p) => Effect.succeed(p),
       })
-
-      checkingClaimed = true
-      yield* Effect.log("Checking if already claimed")
-      const publicClientCheck = createPublicClient({
-        chain: mainnet,
-        transport: custom(connectorClient),
-      })
-
-      const isClaimed = yield* Effect.succeed(false)
-
-      checkingClaimed = false
-
-      if (isClaimed) {
-        alreadyClaimed = true
-        claimState = ClaimState.Ready()
-        return yield* Effect.fail(new Error("Tokens already claimed for this address"))
-      }
 
       yield* Effect.log("Switching to mainnet")
       yield* switchChain(mainnet)
@@ -121,16 +104,34 @@ runPromiseExit$(() =>
         transport: custom(connectorClient),
       })
 
+      checkingClaimed = true
+      yield* Effect.log("Checking if already claimed")
+      
+      const isClaimed = yield* Evm.readContract({
+        address: EUDROP_CONTRACT_ADDRESS,
+        abi: EUDROP_ABI,
+        functionName: "claimed",
+        args: [params.beneficiary],
+      }).pipe(Effect.provide(publicClient))
+
+      checkingClaimed = false
+
+      if (isClaimed) {
+        alreadyClaimed = true
+        claimState = ClaimState.Ready()
+        return yield* Effect.fail(new Error("Tokens already claimed for this address"))
+      }
+
       yield* Effect.log("Executing claim transaction", {
         beneficiary: params.beneficiary,
         amount: params.amount,
-        contract: UDROP_CONTRACT_ADDRESS,
+        contract: EUDROP_CONTRACT_ADDRESS,
       })
 
       // Execute claim transaction
       const txHash = yield* Evm.writeContract({
-        address: UDROP_CONTRACT_ADDRESS,
-        abi: UDROP_ABI,
+        address: EUDROP_CONTRACT_ADDRESS,
+        abi: EUDROP_ABI,
         functionName: "claim",
         account: connectorClient.account,
         chain: mainnet,
