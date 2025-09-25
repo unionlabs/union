@@ -35,7 +35,12 @@ const props = $derived(Struct.evolve(_props, {
 
 const placeholder = $derived(
   Match.value(props.type).pipe(
-    Match.when("sender", () => "bbn..."),
+    Match.when("sender", () =>
+      pipe(
+        props.chain,
+        O.map(x => `${x.addr_prefix}...`),
+        O.getOrElse(() => "..."),
+      )),
     Match.when("receiver", () =>
       pipe(
         props.chain,
@@ -47,34 +52,31 @@ const placeholder = $derived(
 )
 
 const transform = $derived(
-  Match.value(props.type).pipe(
+  Match.value({ chain: props.chain, type: props.type }).pipe(
     Match.when(
-      "sender",
-      () =>
-        O.some(
-          S.encodeUnknownEither(
-            Bech32FromAddressCanonicalBytesWithPrefix("bbn"),
-          ),
+      { chain: O.isSome, type: "sender" },
+      ({ chain }) =>
+        S.encodeUnknownEither(
+          Bech32FromAddressCanonicalBytesWithPrefix(chain.value.addr_prefix),
         ),
     ),
-    Match.when("receiver", () =>
-      O.map(
-        props.chain,
-        (chain) =>
-          pipe(
-            Match.value(chain.rpc_type),
-            Match.when("evm", () => S.validateEither(Address.ERC55)),
-            Match.when(
-              "cosmos",
-              () =>
-                S.encodeUnknownEither(
-                  Bech32FromAddressCanonicalBytesWithPrefix(chain.addr_prefix),
-                ),
-            ),
-            Match.orElseAbsurd,
+    Match.when(
+      { chain: O.isSome, type: "receiver" },
+      ({ chain }) =>
+        pipe(
+          Match.value(chain.value.rpc_type),
+          Match.when("evm", () => S.validateEither(Address.ERC55)),
+          Match.when(
+            "cosmos",
+            () =>
+              S.encodeUnknownEither(
+                Bech32FromAddressCanonicalBytesWithPrefix(chain.value.addr_prefix),
+              ),
           ),
-      )),
-    Match.exhaustive,
+          Match.orElseAbsurd,
+        ),
+    ),
+    Match.option,
   ),
 )
 
@@ -106,11 +108,22 @@ const disabled = $derived(pipe(
 
 const display = $derived(O.getOrElse(props.address, () => "" as const))
 
-const onInput: FormEventHandler<HTMLInputElement> = event =>
-  validateAddress(event.currentTarget.value)
+const onInput: FormEventHandler<HTMLInputElement> = event => {
+  if (O.isSome(props.chain)) {
+    validateAddress(event.currentTarget.value)
+  }
+}
 
 onMount(() => {
   if (O.isSome(props.address)) {
+    validateAddress(props.address.value)
+  }
+})
+
+$effect(() => {
+  void props.chain
+  console.log({ props })
+  if (O.isSome(props.chain) && O.isSome(props.address)) {
     validateAddress(props.address.value)
   }
 })

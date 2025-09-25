@@ -15,6 +15,7 @@ import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
 import {
   EU_ERC20,
   EU_LST,
+  EU_SOLVER_ON_ETH_METADATA,
   EU_SOLVER_ON_UNION_METADATA,
   U_BANK,
   U_ERC20,
@@ -26,7 +27,7 @@ import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct }
 import * as B from "effect/Boolean"
 import { constant, constFalse } from "effect/Function"
 import * as S from "effect/Schema"
-import { type Address, fromHex, type Hex } from "viem"
+import { type Address, fromHex, type Hex, toHex } from "viem"
 
 export class TransferData {
   raw = new RawTransferDataSvelte()
@@ -103,8 +104,10 @@ export class TransferData {
     Option.map((baseToken) =>
       pipe(
         [
-          "0x6175",
-          "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+          "0x6175", // au
+          "0xba5ed44733953d79717f6269357c77718c8ba5ed", // U
+          EU_ERC20.address.toLowerCase(), //
+          toHex(EU_LST.address),
           // TODO: add eU base
           // TODO: add eU quote
         ],
@@ -146,7 +149,15 @@ export class TransferData {
                 () => EU_ERC20,
               ),
               Match.when(
-                [EU_ERC20.address, "cosmos", Match.any],
+                [EU_ERC20.address.toLowerCase(), "cosmos", Match.any],
+                () => Token.Cw20.make({ address: EU_LST.address }),
+              ),
+              Match.when(
+                [toHex(EU_LST.address.toLowerCase()), "evm", Match.any],
+                () => Token.Erc20.make({ address: EU_ERC20.address }),
+              ),
+              Match.when(
+                [toHex(EU_LST.address.toLowerCase()), "cosmos", Match.any],
                 () => Token.Cw20.make({ address: EU_LST.address }),
               ),
               Match.option,
@@ -252,6 +263,18 @@ export class TransferData {
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
             () => Option.some(U_SOLVER_ON_UNION_METADATA),
+          ),
+          Match.when(
+            ["solve", EU_ERC20.address.toLowerCase(), "evm", Str.startsWith("union.")],
+            () => Option.some(EU_SOLVER_ON_ETH_METADATA),
+          ),
+          Match.when(
+            ["solve", EU_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
+            () => Option.some(EU_SOLVER_ON_UNION_METADATA),
+          ),
+          Match.when(
+            ["solve", toHex(EU_LST.address.toLowerCase()), "evm", Str.startsWith("ethereum.")],
+            () => Option.some(EU_SOLVER_ON_ETH_METADATA),
           ),
           Match.when(
             ["solve", Match.any, Match.any, Match.any],

@@ -118,6 +118,7 @@ export const getFillingState = (
       }
 
       if (Option.isNone(transferData.quoteToken)) {
+        console.log({ baseTokenMissing: transferData.baseToken })
         return FillingState.Generic({
           message: `No quote token`,
         })
