@@ -233,7 +233,7 @@ export const formatBigDecimal = (n: BigDecimal.BigDecimal): string => {
 export const toRawAmount = (bd: BigDecimal.BigDecimal, decimals: number = 18): bigint => {
   const normalized = BigDecimal.normalize(bd)
   const scaleFactor = BigInt(decimals) - BigInt(normalized.scale)
-  return scaleFactor >= 0n 
+  return scaleFactor >= 0n
     ? normalized.value * (10n ** scaleFactor)
     : normalized.value / (10n ** (-scaleFactor))
 }
