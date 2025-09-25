@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
 import StepperCard from "$lib/components/ui/StepperCard.svelte"
-import {EUDROP_ABI, EUDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
+import { EUDROP_ABI, EUDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { Effect, Option } from "effect"
