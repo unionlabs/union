@@ -1,4 +1,5 @@
 <script lang="ts">
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import * as O from "effect/Option"
 import type { Snippet } from "svelte"
 
@@ -52,10 +53,10 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         </div>
       </div>
       {#if loading || O.isNone(value)}
-        <div class="h-6 w-14 bg-zinc-800/50 rounded animate-pulse"></div>
+        <Skeleton class="h-5 sm:h-6 w-14" />
       {:else if O.isSome(subtitle)}
         <div class="flex items-baseline gap-1.5">
-          <span class="text-lg font-semibold text-zinc-100 tabular-nums">
+          <span class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">
             {O.getOrElse(value, () => "")}
           </span>
           <span class="text-xs text-zinc-500">
@@ -63,8 +64,8 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
           </span>
         </div>
       {:else}
-        <div class="text-lg font-semibold text-zinc-100 tabular-nums">
-          {O.getOrElse(value, () => "")}
+        <div class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">
+{O.getOrElse(value, () => "")}
         </div>
       {/if}
     </div>
@@ -87,10 +88,10 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
         </div>
       </div>
       {#if loading || O.isNone(value)}
-        <div class="h-6 w-14 bg-zinc-800/50 rounded animate-pulse"></div>
+        <Skeleton class="h-5 sm:h-6 w-14" />
       {:else if O.isSome(subtitle)}
         <div class="flex items-baseline gap-1.5">
-          <span class="text-lg font-semibold text-zinc-100 tabular-nums">
+          <span class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">
             {O.getOrElse(value, () => "")}
           </span>
           <span class="text-xs text-zinc-500">
@@ -98,7 +99,7 @@ const combinedClass = `${baseClass} ${interactiveClass} ${className}`
           </span>
         </div>
       {:else}
-        <div class="text-lg font-semibold text-zinc-100 tabular-nums">
+        <div class="text-sm sm:text-lg font-semibold text-zinc-100 tabular-nums">
           {O.getOrElse(value, () => "")}
         </div>
       {/if}

@@ -59,7 +59,7 @@ import {
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { custom } from "viem"
-import { sepolia } from "viem/chains"
+import { mainnet } from "viem/chains"
 import QuickAmountButtons from "./QuickAmountButtons.svelte"
 import StatusDisplay from "./StatusDisplay.svelte"
 
@@ -316,7 +316,7 @@ runPromiseExit$(() =>
 
       unbondState = UnbondState.SwitchingChain()
 
-      const VIEM_CHAIN = sepolia
+      const VIEM_CHAIN = mainnet
 
       const connectorClient = yield* getWagmiConnectorClient
 
@@ -346,23 +346,19 @@ runPromiseExit$(() =>
       console.log("sender", sender)
 
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
-        Effect.provide(Layer.mergeAll(
-          walletClient,
-          publicClient,
-          maybeSafe,
-        )),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(maybeSafe),
       )
 
       unbondState = UnbondState.ConfirmingUnbond()
 
       const executeBondWithProviders = executeUnbond(sender, sendAmount).pipe(
-        Effect.provide(Layer.mergeAll(
-          maybeSafe,
-          EvmZkgmClient.layerWithoutWallet,
-          walletClient,
-          publicClient,
-          ChainRegistry.Default,
-        )),
+        Effect.provide(EvmZkgmClient.layerWithoutWallet),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(ChainRegistry.Default),
+        Effect.provide(maybeSafe),
       )
 
       const { txHash, safeHash } = yield* executeBondWithProviders
@@ -403,10 +399,8 @@ runPromiseExit$(() =>
           times: 30,
           while: (error) => String(error.message || "").includes("is missing"),
         }),
-        Effect.provide(Layer.mergeAll(
-          Indexer.Indexer.Default,
-          QlpConfigProvider,
-        )),
+        Effect.provide(Indexer.Indexer.Default),
+        Effect.provide(QlpConfigProvider),
       )
 
       unbondState = UnbondState.Success({ txHash: txHash })

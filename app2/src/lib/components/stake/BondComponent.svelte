@@ -64,7 +64,7 @@ import {
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 import { custom } from "viem"
-import { sepolia } from "viem/chains"
+import { mainnet } from "viem/chains"
 import QuickAmountButtons from "./QuickAmountButtons.svelte"
 import SlippageSelector from "./SlippageSelector.svelte"
 import StatusDisplay from "./StatusDisplay.svelte"
@@ -156,6 +156,7 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   BigDecimal.fromString,
 ))
 
+// Minimum receive amount as BigDecimal (with rate and slippage applied)
 const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   O.Do,
   O.bind("input", () => inputAmount),
@@ -171,12 +172,14 @@ const minimumReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
     const rateNorm = BigDecimal.normalize(rates.purchase_rate)
 
     const expectedScaled = inputNorm.value * rateNorm.value
-    // Handle decimal slippage values properly
+    // Apply slippage
     const slippageBasisPoints = Math.floor(slippage * 100)
     const minScaled = expectedScaled * BigInt(10000 - slippageBasisPoints) / 10000n
+    
     return BigDecimal.make(minScaled, inputNorm.scale + rateNorm.scale)
   }),
 ))
+
 
 const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =>
   pipe(
@@ -233,11 +236,9 @@ const checkAndSubmitAllowance = (sender: Ucs05.EvmDisplay, sendAmount: bigint) =
     Effect.tap(() => Effect.sleep("500 millis")),
   )
 
-const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, slippagePercent: number) =>
+const executeBond = (sender: Ucs05.EvmDisplay, sendAmount: bigint, minMintAmount: bigint) =>
   Effect.gen(function*() {
-    // Handle decimal slippage values properly
-    const slippageBasisPoints = Math.floor(slippagePercent * 100) // Convert to basis points (0.5% = 50)
-    const minMintAmount = sendAmount * BigInt(10000 - slippageBasisPoints) / 10000n
+    // minMintAmount is already calculated with purchase rate and slippage applied
 
     const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
     const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
@@ -396,7 +397,7 @@ runPromiseExit$(() =>
 
       bondState = BondState.SwitchingChain()
 
-      const VIEM_CHAIN = sepolia
+      const VIEM_CHAIN = mainnet
 
       const connectorClient = yield* getWagmiConnectorClient
 
@@ -424,11 +425,9 @@ runPromiseExit$(() =>
       })
 
       yield* checkAndSubmitAllowance(sender, sendAmount).pipe(
-        Effect.provide(Layer.mergeAll(
-          walletClient,
-          publicClient,
-          maybeSafe,
-        )),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(maybeSafe),
       )
 
       bondState = BondState.CreatingTokenOrder()
@@ -439,14 +438,20 @@ runPromiseExit$(() =>
 
       bondState = BondState.ConfirmingBond()
 
-      const executeBondWithProviders = executeBond(sender, sendAmount, slippage).pipe(
-        Effect.provide(Layer.mergeAll(
-          maybeSafe,
-          EvmZkgmClient.layerWithoutWallet,
-          walletClient,
-          publicClient,
-          ChainRegistry.Default,
-        )),
+      // Get the minimum receive amount and convert to wei for contract call
+      if (O.isNone(minimumReceiveAmount)) {
+        bondState = BondState.Error({ message: "Unable to calculate minimum receive amount" })
+        return yield* Effect.fail(new Error("Unable to calculate minimum receive amount"))
+      }
+      
+      const minMintAmountWei = Utils.toRawAmount(minimumReceiveAmount.value)
+
+      const executeBondWithProviders = executeBond(sender, sendAmount, minMintAmountWei).pipe(
+        Effect.provide(EvmZkgmClient.layerWithoutWallet),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(ChainRegistry.Default),
+        Effect.provide(maybeSafe),
       )
 
       const { txHash } = yield* executeBondWithProviders
@@ -487,10 +492,8 @@ runPromiseExit$(() =>
           times: 30,
           while: (error) => String(error.message || "").includes("is missing"),
         }),
-        Effect.provide(Layer.mergeAll(
-          Indexer.Indexer.Default,
-          QlpConfigProvider,
-        )),
+        Effect.provide(Indexer.Indexer.Default),
+        Effect.provide(QlpConfigProvider),
       )
 
       bondState = BondState.Success({ txHash: txHash })
@@ -545,6 +548,7 @@ function handleButtonClick() {
   )
 }
 </script>
+
 
 <div class="flex grow flex-col gap-4">
   <!-- Input Section with Balance -->
@@ -632,14 +636,7 @@ function handleButtonClick() {
               <TokenComponent
                 chain={evmChain.value}
                 denom={eUOnEvmToken.value.denom}
-                amount={TokenRawAmount.make((() => {
-                  const bd = minimumReceiveAmount.value
-                  const result = BigDecimal.multiply(bd, BigDecimal.make(10n ** 18n, 0))
-                  const normalized = BigDecimal.normalize(result)
-                  return normalized.scale >= 0
-                    ? normalized.value / (10n ** BigInt(normalized.scale))
-                    : normalized.value * (10n ** BigInt(-normalized.scale))
-                })())}
+                amount={TokenRawAmount.make(Utils.toRawAmount(minimumReceiveAmount.value))}
                 showWrapping={false}
                 showSymbol={true}
                 showIcon={true}

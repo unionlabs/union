@@ -41,7 +41,7 @@ import { BigDecimal, Data, Effect, Layer, Match, pipe, Schema } from "effect"
 import * as A from "effect/Array"
 import * as O from "effect/Option"
 import { custom } from "viem"
-import { sepolia } from "viem/chains"
+import { mainnet } from "viem/chains"
 import StatusDisplay from "./StatusDisplay.svelte"
 
 const UCS03_EVM = Ucs05.EvmDisplay.make({ address: UCS03_EVM_ADDRESS })
@@ -245,14 +245,7 @@ const executeWithdraw = (
       BigDecimal.fromBigInt(0n),
     )
 
-    const totalAmount = pipe(
-      totalAmountBigDecimal,
-      BigDecimal.normalize,
-      (normalized) =>
-        normalized.scale >= 0
-          ? normalized.value / (10n ** BigInt(normalized.scale))
-          : normalized.value * (10n ** BigInt(-normalized.scale)),
-    )
+    const totalAmount = Utils.toRawAmount(totalAmountBigDecimal, 0)
 
     const tokenOrder = yield* TokenOrder.make({
       source: unionChain,
@@ -350,7 +343,7 @@ runPromiseExit$(() =>
 
       withdrawalState = WithdrawalState.Loading()
 
-      const VIEM_CHAIN = sepolia
+      const VIEM_CHAIN = mainnet
       const connectorClient = yield* getWagmiConnectorClient
       const isSafeWallet = getLastConnectedWalletId() === "safe"
 
@@ -376,13 +369,11 @@ runPromiseExit$(() =>
       })
 
       const { txHash } = yield* executeWithdraw(sender, batches).pipe(
-        Effect.provide(Layer.mergeAll(
-          maybeSafe,
-          EvmZkgmClient.layerWithoutWallet,
-          walletClient,
-          publicClient,
-          ChainRegistry.Default,
-        )),
+        Effect.provide(EvmZkgmClient.layerWithoutWallet),
+        Effect.provide(walletClient),
+        Effect.provide(publicClient),
+        Effect.provide(ChainRegistry.Default),
+        Effect.provide(maybeSafe),
       )
 
       withdrawalState = WithdrawalState.Success({ message: "Withdrawal submitted successfully" })
@@ -450,14 +441,7 @@ const handleWithdraw = () => {
               <TokenComponent
                 chain={evmChain.value}
                 denom={uOnEvmToken.value.denom}
-                amount={TokenRawAmount.make(pipe(
-                  totalWithdrawableAmount,
-                  BigDecimal.normalize,
-                  (normalized) =>
-                    normalized.scale >= 0
-                      ? normalized.value / (10n ** BigInt(normalized.scale))
-                      : normalized.value * (10n ** BigInt(-normalized.scale)),
-                ))}
+                amount={TokenRawAmount.make(Utils.toRawAmount(totalWithdrawableAmount, 0))}
                 showWrapping={false}
                 showSymbol={true}
                 showIcon={true}
@@ -509,14 +493,7 @@ const handleWithdraw = () => {
             <TokenComponent
               chain={evmChain.value}
               denom={uOnEvmToken.value.denom}
-              amount={TokenRawAmount.make(pipe(
-                totalWithdrawableAmount,
-                BigDecimal.normalize,
-                (normalized) =>
-                  normalized.scale >= 0
-                    ? normalized.value / (10n ** BigInt(normalized.scale))
-                    : normalized.value * (10n ** BigInt(-normalized.scale)),
-              ))}
+              amount={TokenRawAmount.make(Utils.toRawAmount(totalWithdrawableAmount, 0))}
               showWrapping={false}
               showSymbol={true}
               showIcon={true}
