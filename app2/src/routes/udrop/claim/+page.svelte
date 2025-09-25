@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
 import StepperCard from "$lib/components/ui/StepperCard.svelte"
-import { UDROP_ABI, UDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
+import {EUDROP_ABI, EUDROP_CONTRACT_ADDRESS } from "$lib/constants/udrop.ts"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { Effect, Option } from "effect"
@@ -40,8 +40,8 @@ runPromiseExit$(() =>
       const active = yield* Effect.tryPromise({
         try: () =>
           publicClient.readContract({
-            address: UDROP_CONTRACT_ADDRESS,
-            abi: UDROP_ABI,
+            address: EUDROP_CONTRACT_ADDRESS,
+            abi: EUDROP_ABI,
             functionName: "active",
             args: [],
           }),

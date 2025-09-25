@@ -3,6 +3,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
 import { formatUnits } from "viem"
+import { goto } from "$app/navigation"
 import StepLayout from "../StepLayout.svelte"
 
 interface Props {
@@ -24,8 +25,15 @@ function handleViewTransaction() {
   })
 }
 
-function handleDone() {
-  onRestart()
+function handleStake() {
+  goto("/stake")
+}
+
+function handleUniswap() {
+  // Union token on Ethereum mainnet (from token-whitelist.json)
+  const unionTokenAddress = "0xba5eD44733953d79717F6269357C77718C8Ba5ed"
+  const uniswapUrl = `https://app.uniswap.org/swap?outputCurrency=${unionTokenAddress}&chain=mainnet`
+  window.open(uniswapUrl, "_blank")
 }
 </script>
 
@@ -35,10 +43,11 @@ function handleDone() {
       <div class="space-y-4 hidden lg:block">
         <div>
           <h1 class="text-2xl font-semibold">
-            U Claimed
+            U Claimed Successfully!
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Your U has been successfully claimed. Thank you for being part of the Union.
+            Congratulations! Your U tokens have been successfully claimed. 
+            You can now stake them to earn rewards or trade them on Uniswap.
           </p>
         </div>
       </div>
@@ -66,13 +75,29 @@ function handleDone() {
         {/if}
 
         <!-- Action Buttons -->
-        <div class="flex gap-3">
+        <div class="flex flex-col gap-3">
+          <div class="text-sm text-zinc-400 mb-2">What would you like to do with your U tokens?</div>
+          
           <Button
             variant="primary"
-            class="flex flex-1 items-center justify-center gap-3"
-            onclick={handleDone}
+            class="flex items-center justify-center gap-3 w-full"
+            onclick={handleStake}
           >
-            Done
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Stake U Tokens
+          </Button>
+          
+          <Button
+            variant="secondary"
+            class="flex items-center justify-center gap-3 w-full"
+            onclick={handleUniswap}
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Trade on Uniswap
           </Button>
         </div>
       </div>
@@ -83,9 +108,9 @@ function handleDone() {
     <div class="relative w-full h-full flex flex-col p-4">
       <!-- Mobile Title -->
       <div class="block lg:hidden mb-4">
-        <h1 class="text-2xl font-semibold">Thank U!</h1>
+        <h1 class="text-2xl font-semibold">U Claimed Successfully!</h1>
         <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-          Your tokens have been successfully claimed.
+          Congratulations! Your U tokens have been successfully claimed.
         </p>
       </div>
 
