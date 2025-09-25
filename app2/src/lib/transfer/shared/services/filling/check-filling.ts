@@ -119,7 +119,7 @@ export const getFillingState = (
 
       if (Option.isNone(transferData.quoteToken)) {
         return FillingState.Generic({
-          message: `No quote token for ${transferData.baseToken.value.denom}`,
+          message: `No quote token`,
         })
       }
 
