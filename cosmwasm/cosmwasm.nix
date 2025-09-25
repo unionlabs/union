@@ -1019,6 +1019,8 @@ _: {
 
       lst = crane.buildWasmContract "cosmwasm/lst" { };
 
+      access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
+
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
       cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
@@ -1092,6 +1094,7 @@ _: {
             cw-escrow-vault
             cw-unionversal-token
             lst
+            access-manager
             ;
           cosmwasm-scripts =
             {

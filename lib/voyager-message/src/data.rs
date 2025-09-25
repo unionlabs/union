@@ -3,7 +3,7 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
-use unionlabs::{ibc::core::client::height::Height, primitives::H256, traits::Member};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId};
 
 use crate::PluginMessage;

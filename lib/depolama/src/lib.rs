@@ -361,6 +361,23 @@ pub trait StorageExt {
         self.delete::<S>(&());
     }
 
+    /// Take a value from the store, deleting and returning the value if it was present in the store.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value cannot be decoded.
+    fn take<S: Store>(&mut self, k: &S::Key) -> StdResult<Option<S::Value>>;
+
+    /// Take a value from the item store, deleting and returning the value if it was present in the store.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the value cannot be decoded.
+    #[inline]
+    fn take_item<S: Store>(&mut self, k: &S::Key) -> StdResult<Option<S::Value>> {
+        self.take::<S>(k)
+    }
+
     /// Iterate over all of the (key, value) pairs in the store.
     ///
     /// # Errors
@@ -402,6 +419,10 @@ impl<T: Storage> StorageExt for T {
         (self as &mut dyn Storage).delete::<S>(k);
     }
 
+    fn take<S: Store>(&mut self, k: &S::Key) -> StdResult<Option<S::Value>> {
+        (self as &mut dyn Storage).take::<S>(k)
+    }
+
     #[cfg(feature = "iterator")]
     fn iter<S: Store>(
         &self,
@@ -423,8 +444,13 @@ impl<T: Storage> StorageExt for T {
 impl StorageExt for dyn Storage + '_ {
     #[inline]
     fn read<S: Store>(&self, k: &S::Key) -> StdResult<S::Value> {
-        self.maybe_read::<S>(k)?
-            .ok_or_else(|| StdError::generic_err(format!("key {} not present", S::encode_key(k))))
+        self.maybe_read::<S>(k)?.ok_or_else(|| {
+            StdError::generic_err(format!(
+                "key {} {} not present",
+                S::PREFIX.iter_with_separator().collect::<Bytes>(),
+                S::encode_key(k)
+            ))
+        })
     }
 
     #[inline]
@@ -443,6 +469,15 @@ impl StorageExt for dyn Storage + '_ {
     #[inline]
     fn delete<S: Store>(&mut self, k: &S::Key) {
         self.remove(&raw_key::<S>(k));
+    }
+
+    #[inline]
+    fn take<S: Store>(&mut self, k: &S::Key) -> StdResult<Option<S::Value>> {
+        let v = self.maybe_read::<S>(k)?;
+        if v.is_some() {
+            self.remove(&raw_key::<S>(k));
+        }
+        Ok(v)
     }
 
     #[cfg(feature = "iterator")]

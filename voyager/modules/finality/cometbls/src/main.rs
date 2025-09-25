@@ -9,7 +9,6 @@ use tracing::{error, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bech32, H256},
-    traits::Member,
 };
 use voyager_sdk::{
     anyhow,

@@ -15,7 +15,6 @@ use tracing::{error, instrument};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::{Bech32, H256},
-    traits::Member,
     ErrorReporter,
 };
 use voyager_sdk::{

@@ -482,7 +482,7 @@ fn channel_open_ack_not_found() {
             ExecuteMsg::ChannelOpenAck(msg)
         ),
         Err(ContractError::Std(StdError::generic_err(
-            "key 0x00000001 not present"
+            "key 0x6368616e6e656c7300 0x00000001 not present"
         )))
     )
 }
@@ -724,7 +724,7 @@ fn channel_open_confirm_not_found() {
             ExecuteMsg::ChannelOpenConfirm(msg),
         ),
         Err(ContractError::Std(StdError::generic_err(
-            "key 0x00000001 not present"
+            "key 0x6368616e6e656c7300 0x00000001 not present"
         )))
     )
 }

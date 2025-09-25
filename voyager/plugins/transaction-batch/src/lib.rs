@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert,
+    fmt::Debug,
     future::Future,
     pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -15,9 +16,9 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace, warn};
-use unionlabs::{ibc::core::client::height::Height, id::ClientId, traits::Member, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, id::ClientId, ErrorReporter};
 use voyager_sdk::{
     anyhow,
     hook::simple_take_filter,
@@ -102,7 +103,12 @@ impl SpecificClientConfig {
 }
 
 pub trait IbcSpecExt: IbcSpec + Clone {
-    type BatchableEvent: TryFrom<Self::Event, Error = ()> + Eq + Member;
+    type BatchableEvent: TryFrom<Self::Event, Error = ()>
+        + Eq
+        + Serialize
+        + DeserializeOwned
+        + Debug
+        + Clone;
 
     fn proof_height(msg: &Self::Datagram) -> Height;
 

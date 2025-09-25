@@ -14,7 +14,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{self, never::Never, traits::Member, ErrorReporter};
+use unionlabs::{self, never::Never, ErrorReporter};
 use voyager_sdk::{
     anyhow,
     message::{

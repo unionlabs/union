@@ -38,6 +38,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "access-manager"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-std 2.2.2",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 0.4.1",
+ "itertools 0.13.0",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.9",
+ "strum 0.27.2",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "addchain"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -216,7 +238,7 @@ checksum = "5848366a4f08dca1caca0a6151294a4799fe2e59ba25df100491d92e0b921b1c"
 dependencies = [
  "alloy-primitives",
  "num_enum 0.7.3",
- "strum 0.27.1",
+ "strum 0.27.2",
 ]
 
 [[package]]
@@ -15106,9 +15128,9 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 dependencies = [
  "strum_macros 0.27.1",
 ]
@@ -15688,7 +15710,7 @@ dependencies = [
  "shared-crypto",
  "signature 1.6.4",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "strum 0.27.1",
+ "strum 0.27.2",
  "strum_macros 0.27.1",
  "sui-enum-compat-util",
  "sui-macros",

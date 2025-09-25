@@ -171,7 +171,7 @@ fn connection_open_try_client_not_found() {
             ExecuteMsg::ConnectionOpenTry(msg),
         ),
         Err(ContractError::Std(StdError::generic_err(
-            "key 0x00000001 not present"
+            "key 0x636c69656e745f696d706c7300 0x00000001 not present"
         )))
     );
 }
