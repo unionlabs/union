@@ -1,9 +1,9 @@
 <script lang="ts">
+import { goto } from "$app/navigation"
 import Button from "$lib/components/ui/Button.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
 import { formatUnits } from "viem"
-import { goto } from "$app/navigation"
 import StepLayout from "../StepLayout.svelte"
 
 interface Props {
@@ -30,10 +30,10 @@ function handleStake() {
 }
 
 function handleUniswap() {
-  // Union token on Ethereum mainnet (from token-whitelist.json)
-  const unionTokenAddress = "0xba5eD44733953d79717F6269357C77718C8Ba5ed"
-  const uniswapUrl = `https://app.uniswap.org/swap?outputCurrency=${unionTokenAddress}&chain=mainnet`
-  window.open(uniswapUrl, "_blank")
+  // Direct link to the Union/WETH pool on Uniswap
+  const uniswapPoolUrl =
+    "https://app.uniswap.org/explore/pools/ethereum/0x0801481ba598d86e221a5ff0ccb02c97d5b0fbd803c662c66af604aa35119fe0"
+  window.open(uniswapPoolUrl, "_blank")
 }
 </script>
 
@@ -43,11 +43,11 @@ function handleUniswap() {
       <div class="space-y-4 hidden lg:block">
         <div>
           <h1 class="text-2xl font-semibold">
-            U Claimed Successfully!
+            eU Claimed Successfully!
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Congratulations! Your U tokens have been successfully claimed. 
-            You can now stake them to earn rewards or trade them on Uniswap.
+            Congratulations! Your eU tokens have been successfully claimed. View your staking
+            position in the dashboard or explore the liquidity pool on Uniswap.
           </p>
         </div>
       </div>
@@ -76,28 +76,46 @@ function handleUniswap() {
 
         <!-- Action Buttons -->
         <div class="flex flex-col gap-3">
-          <div class="text-sm text-zinc-400 mb-2">What would you like to do with your U tokens?</div>
-          
           <Button
             variant="primary"
             class="flex items-center justify-center gap-3 w-full"
             onclick={handleStake}
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
             </svg>
-            Stake U Tokens
+            View Staking Dashboard
           </Button>
-          
+
           <Button
             variant="secondary"
             class="flex items-center justify-center gap-3 w-full"
             onclick={handleUniswap}
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+              />
             </svg>
-            Trade on Uniswap
+            View Uniswap Pool
           </Button>
         </div>
       </div>
@@ -108,14 +126,14 @@ function handleUniswap() {
     <div class="relative w-full h-full flex flex-col p-4">
       <!-- Mobile Title -->
       <div class="block lg:hidden mb-4">
-        <h1 class="text-2xl font-semibold">U Claimed Successfully!</h1>
+        <h1 class="text-2xl font-semibold">eU Claimed Successfully!</h1>
         <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-          Congratulations! Your U tokens have been successfully claimed.
+          Congratulations! Your eU tokens have been successfully claimed.
         </p>
       </div>
 
       <div class="w-full h-full bg-zinc-950 rounded-lg border border-zinc-800 overflow-hidden flex flex-col relative">
-        <!-- Thank U Video -->
+        <!-- Thank eU Video -->
         <div
           class="w-full h-full flex items-center justify-center"
           style="background-color: #0D2024;"
@@ -134,7 +152,7 @@ function handleUniswap() {
             <!-- Fallback for browsers that don't support the video -->
             <div class="w-full h-full flex items-center justify-center">
               <div class="text-center">
-                <div class="text-xl font-bold text-accent mb-2">Thank U!</div>
+                <div class="text-xl font-bold text-accent mb-2">Thank eU!</div>
               </div>
             </div>
           </video>

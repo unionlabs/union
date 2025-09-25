@@ -120,28 +120,28 @@ function handleRetry() {
       <div class="space-y-4 hidden lg:block">
         <div>
           <h1 class="text-2xl font-semibold">
-            Add U to Wallet
+            Add eU to Wallet
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
             {
               Match.value(addTokenState).pipe(
                 Match.when(
                   AddTokenState.$is("Adding"),
-                  () => "Adding U to your wallet...",
+                  () => "Adding eU to your wallet...",
                 ),
                 Match.when(
                   AddTokenState.$is("Success"),
-                  () => "U has been added to your wallet successfully!",
+                  () => "eU has been added to your wallet successfully!",
                 ),
                 Match.when(
                   AddTokenState.$is("Error"),
                   () =>
-                    "There was an error adding U. You can add it manually or skip this step.",
+                    "There was an error adding eU. You can add it manually or skip this step.",
                 ),
                 Match.when(
                   AddTokenState.$is("Ready"),
                   () =>
-                    "Add U to your wallet to easily view your balance and make transfers.",
+                    "Add eU to your wallet to easily view your balance and make transfers.",
                 ),
                 Match.exhaustive,
               )
@@ -206,12 +206,12 @@ function handleRetry() {
               <div class="text-sm font-medium text-white">
                 {
                   Match.value(addTokenState).pipe(
-                    Match.when(AddTokenState.$is("Ready"), () => "Ready to add U"),
-                    Match.when(AddTokenState.$is("Adding"), () => "Adding U"),
+                    Match.when(AddTokenState.$is("Ready"), () => "Ready to add eU"),
+                    Match.when(AddTokenState.$is("Adding"), () => "Adding eU"),
                     Match.when(AddTokenState.$is("Success"), () =>
-                      "U Added Successfully"),
+                      "eU Added Successfully"),
                     Match.when(AddTokenState.$is("Error"), () =>
-                      "Failed to Add U"),
+                      "Failed to Add eU"),
                     Match.exhaustive,
                   )
                 }
@@ -220,11 +220,11 @@ function handleRetry() {
                 {
                   Match.value(addTokenState).pipe(
                     Match.when(AddTokenState.$is("Ready"), () =>
-                      "Add U to your wallet for easy access"),
+                      "Add eU to your wallet for easy access"),
                     Match.when(AddTokenState.$is("Adding"), () =>
                       "Confirm in your wallet..."),
                     Match.when(AddTokenState.$is("Success"), () =>
-                      "You can now see U in your wallet"),
+                      "You can now see eU in your wallet"),
                     Match.when(AddTokenState.$is("Error"), ({ message }) =>
                       message),
                     Match.exhaustive,
@@ -278,7 +278,7 @@ function handleRetry() {
                 <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin">
                 </div>
               {/if}
-              Add U
+              Add eU
             </Button>
           {/if}
         </div>
@@ -301,7 +301,7 @@ function handleRetry() {
     <div class="relative w-full h-full flex flex-col p-4">
       <!-- Mobile Title -->
       <div class="block lg:hidden mb-4">
-        <h1 class="text-2xl font-semibold">Add U to Wallet</h1>
+        <h1 class="text-2xl font-semibold">Add eU to Wallet</h1>
         <p class="text-sm text-zinc-400 leading-relaxed mt-3">
           Add the token to your wallet for easy access.
         </p>
@@ -327,7 +327,7 @@ function handleRetry() {
             <!-- Fallback for browsers that don't support the video -->
             <div class="w-full h-full flex items-center justify-center">
               <div class="w-24 h-24 bg-accent/20 rounded-full flex items-center justify-center border-4 border-accent">
-                <span class="text-3xl font-bold text-accent">U</span>
+                <span class="text-3xl font-bold text-accent">eU</span>
               </div>
             </div>
           </video>

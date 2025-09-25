@@ -106,7 +106,7 @@ runPromiseExit$(() =>
 
       checkingClaimed = true
       yield* Effect.log("Checking if already claimed")
-      
+
       const isClaimed = yield* Evm.readContract({
         address: EUDROP_CONTRACT_ADDRESS,
         abi: EUDROP_ABI,
@@ -215,7 +215,7 @@ function handleRetry() {
       <div class="space-y-4 hidden lg:block">
         <div>
           <h1 class="text-2xl font-semibold">
-            Claim your U
+            Claim your eU
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
             {
@@ -227,7 +227,7 @@ function handleRetry() {
                 Match.when(ClaimState.$is("Error"), () =>
                   "There was an error processing your claim transaction. Please try again."),
                 Match.when(ClaimState.$is("Ready"), () =>
-                  "Execute the claim transaction on EVM mainnet to receive your allocated U."),
+                  "Execute the claim transaction on EVM mainnet to receive your allocated eU."),
                 Match.exhaustive,
               )
             }
@@ -256,9 +256,9 @@ function handleRetry() {
                 </svg>
               </div>
               <div class="flex-1">
-                <div class="text-sm font-medium text-orange-400 mb-2">U Already Claimed</div>
+                <div class="text-sm font-medium text-orange-400 mb-2">eU Already Claimed</div>
                 <div class="text-xs text-zinc-400">
-                  This address has already claimed {claimAmount} U from this airdrop. Each address
+                  This address has already claimed {claimAmount} eU from this airdrop. Each address
                   can only claim once.
                 </div>
               </div>
@@ -368,12 +368,12 @@ function handleRetry() {
                   {#if alreadyClaimed === null}
                     Verifying onchain status...
                   {:else if alreadyClaimed}
-                    This address has already claimed U
+                    This address has already claimed eU
                   {:else}
                     {
                       Match.value(claimState).pipe(
                         Match.when(ClaimState.$is("Ready"), () =>
-                          `${claimAmount} U to ${connectedAddress}`),
+                          `${claimAmount} eU to ${connectedAddress}`),
                         Match.when(ClaimState.$is("Claiming"), () =>
                           "Confirm transaction in your Ethereum wallet"),
                         Match.when(ClaimState.$is("Success"), () =>
@@ -418,7 +418,7 @@ function handleRetry() {
             {/if}
             {
               Match.value(claimState).pipe(
-                Match.when(ClaimState.$is("Ready"), () => `Claim ${claimAmount} U`),
+                Match.when(ClaimState.$is("Ready"), () => `Claim ${claimAmount} eU`),
                 Match.when(ClaimState.$is("Claiming"), () => "Claiming..."),
                 Match.when(ClaimState.$is("Success"), () => "Success!"),
                 Match.when(ClaimState.$is("Error"), () => "Try Again"),
@@ -447,7 +447,7 @@ function handleRetry() {
       <!-- Mobile Title -->
       <div class="block lg:hidden mb-4">
         <h1 class="text-2xl font-semibold">
-          Claim your U
+          Claim your eU
         </h1>
       </div>
 
@@ -471,7 +471,7 @@ function handleRetry() {
             <!-- Fallback for browsers that don't support the video -->
             <div class="w-full h-full flex items-center justify-center">
               <div class="w-24 h-24 bg-accent/20 rounded-full flex items-center justify-center border-4 border-accent">
-                <span class="text-3xl font-bold text-accent">U</span>
+                <span class="text-3xl font-bold text-accent">eU</span>
               </div>
             </div>
           </video>
