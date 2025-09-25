@@ -8,7 +8,6 @@ export const UNION_CHAIN_ID = UniversalChainId.make("union.union-1")
 export const SOURCE_CHANNEL_ID = ChannelId.make(2)
 export const DESTINATION_CHANNEL_ID = ChannelId.make(1)
 
-
 // UCS03 on EVM
 // TESTNET (Sepolia): 0x5fbe74a283f7954f10aa04c2edf55578811aeb03
 export const UCS03_EVM_ADDRESS = "0x5fbe74a283f7954f10aa04c2edf55578811aeb03"
