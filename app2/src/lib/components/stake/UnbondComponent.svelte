@@ -30,7 +30,7 @@ import {
   Utils,
   ZkgmClient,
   ZkgmClientRequest,
-} from "@unionlabs/sdk" 
+} from "@unionlabs/sdk"
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import {
@@ -119,6 +119,22 @@ const isUnbonding = $derived(
 )
 const isSuccess = $derived(UnbondState.$is("Success")(unbondState))
 const isError = $derived(UnbondState.$is("Error")(unbondState))
+
+// Derived state for button disabled logic
+const isButtonDisabled = $derived(
+  pipe(
+    O.all([WalletStore.evmAddress, unbondAmount, eUOnEvmBalance]),
+    O.match({
+      onNone: () => isUnbonding, // If wallet not connected or data not loaded, only disable if unbonding
+      onSome: ([_, amount, balance]) => {
+        // When wallet is connected and we have data
+        return isUnbonding
+          || amount === 0n
+          || amount >= balance
+      },
+    }),
+  ),
+)
 
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
@@ -559,7 +575,7 @@ function handleButtonClick() {
     <Button
       class="w-full relative z-30"
       variant={isError ? "secondary" : "primary"}
-      disabled={isUnbonding}
+      disabled={isButtonDisabled}
       onclick={handleButtonClick}
     >
       {#if isUnbonding}

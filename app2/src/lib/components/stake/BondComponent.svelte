@@ -129,6 +129,22 @@ const isBonding = $derived(
 const isSuccess = $derived(BondState.$is("Success")(bondState))
 const isError = $derived(BondState.$is("Error")(bondState))
 
+// Derived state for button disabled logic
+const isButtonDisabled = $derived(
+  pipe(
+    O.all([WalletStore.evmAddress, bondAmount, uOnEvmBalance]),
+    O.match({
+      onNone: () => isBonding, // If wallet not connected or data not loaded, only disable if bonding
+      onSome: ([_, amount, balance]) => {
+        // When wallet is connected and we have data
+        return isBonding
+          || amount === 0n
+          || amount >= balance
+      },
+    }),
+  ),
+)
+
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
     new Map([
@@ -684,7 +700,7 @@ function handleButtonClick() {
   <!-- Action Button -->
   <Button
     variant={isError ? "secondary" : "primary"}
-    disabled={isBonding || (O.isNone(bondAmount) && O.isSome(WalletStore.evmAddress))}
+    disabled={isButtonDisabled}
     onclick={handleButtonClick}
   >
     {#if isBonding}
