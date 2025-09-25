@@ -1,15 +1,15 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    entry_point, from_json, Addr, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Order,
-    Response, StdError,
+    from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo,
+    Order, Response, StdError,
 };
 use depolama::{self, StorageExt};
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 use ucs03_zkgmable::Zkgmable;
 
 use crate::{
-    msg::{ExecuteMsg, InitMsg, MigrateMsg},
+    msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
     state::{Admins, Zkgm},
     types::{Admin, LocalAdmin, RemoteAdmin},
 };
@@ -21,27 +21,35 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
-fn ensure_remote_admin(deps: Deps, info: &MessageInfo, admin: &RemoteAdmin) -> Result<(), Error> {
+pub fn ensure_remote_admin(
+    deps: Deps,
+    info: &MessageInfo,
+    admin: &RemoteAdmin,
+) -> Result<(), ContractError> {
     // for remote admins, first ensure that info.sender is zkgm
     if info.sender
         != deps
             .storage
             .maybe_read_item::<Zkgm>()?
-            .ok_or(Error::ZkgmNotConfigured)?
+            .ok_or(ContractError::ZkgmNotConfigured)?
     {
-        return Err(Error::OnlyZkgm {
+        return Err(ContractError::OnlyZkgm {
             sender: info.sender.clone(),
         });
     }
 
     deps.storage
         .maybe_read::<Admins>(&Admin::Remote(admin.clone()))?
-        .ok_or_else(|| Error::OnlyAdmin {
+        .ok_or_else(|| ContractError::OnlyAdmin {
             sender: Admin::Remote(admin.clone()),
         })
 }
 
-fn ensure_local_admin_or_self(deps: Deps, env: &Env, info: &MessageInfo) -> Result<String, Error> {
+pub fn ensure_local_admin_or_self(
+    deps: Deps,
+    env: &Env,
+    info: &MessageInfo,
+) -> Result<String, ContractError> {
     // allow reentrant calls into this contract
     if info.sender != env.contract.address {
         let local_admin = Admin::Local(LocalAdmin {
@@ -50,7 +58,7 @@ fn ensure_local_admin_or_self(deps: Deps, env: &Env, info: &MessageInfo) -> Resu
 
         deps.storage
             .maybe_read::<Admins>(&local_admin)?
-            .ok_or_else(|| Error::OnlyAdmin {
+            .ok_or_else(|| ContractError::OnlyAdmin {
                 sender: Admin::Local(LocalAdmin {
                     address: info.sender.to_string(),
                 }),
@@ -62,7 +70,7 @@ fn ensure_local_admin_or_self(deps: Deps, env: &Env, info: &MessageInfo) -> Resu
     }
 }
 
-fn init(deps: DepsMut, msg: InitMsg) -> Response {
+pub fn init(deps: DepsMut, msg: InitMsg) -> Response {
     match msg {
         InitMsg::Zkgm {
             zkgm,
@@ -93,25 +101,25 @@ fn init(deps: DepsMut, msg: InitMsg) -> Response {
     Response::default()
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
     _: Env,
     _: MessageInfo,
     msg: InitMsg,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     frissitheto::init_state_version(&mut deps, const { NonZeroU32::new(1).unwrap() })?;
 
     Ok(init(deps, msg))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::SetZkgm(zkgm) => {
             let actor = ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
@@ -155,7 +163,7 @@ pub fn execute(
                 .collect::<Result<Vec<_>, _>>()?
                 .is_empty()
             {
-                Err(Error::OneAdminRequired)
+                Err(ContractError::OneAdminRequired)
             } else {
                 Ok(Response::new().add_events(maybe_event))
             }
@@ -184,16 +192,29 @@ pub fn execute(
                 ]))
                 .add_messages(from_json::<Vec<CosmosMsg>>(&on_zkgm.message)?))
         }
-        ExecuteMsg::Zkgmable(Zkgmable::OnIntentZkgm(_)) => Err(Error::IntentsNotSupported),
+        ExecuteMsg::Zkgmable(Zkgmable::OnIntentZkgm(_)) => Err(ContractError::IntentsNotSupported),
     }
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    match msg {
+        QueryMsg::Admins {} => Ok(to_json_binary(
+            &deps
+                .storage
+                .iter::<Admins>(Order::Ascending)
+                .map(|r| r.map(|(admin, _)| admin))
+                .collect::<Result<Vec<_>, _>>()?,
+        )?),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     msg.run(
         deps,
         |deps, init_msg| {
@@ -205,7 +226,7 @@ pub fn migrate(
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
-pub enum Error {
+pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
 

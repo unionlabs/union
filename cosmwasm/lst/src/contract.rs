@@ -59,8 +59,7 @@
 // TITLE.
 
 use cosmwasm_std::{
-    ensure, entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    ensure, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
@@ -69,7 +68,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     execute::{
-        accept_ownership, bond, circuit_breaker, receive_rewards, receive_unstaked_tokens,
+        accept_ownership, bond, circuit_breaker, rebase, receive_rewards, receive_unstaked_tokens,
         resume_contract, revoke_ownership_transfer, slash_batches, submit_batch,
         transfer_ownership, unbond, update_config, withdraw, FEE_RATE_DENOMINATOR,
     },
@@ -85,7 +84,7 @@ use crate::{
     types::{AccountingState, BatchId, Config, PendingBatch},
 };
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
     panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
 }
@@ -178,7 +177,7 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
     ))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -215,6 +214,7 @@ pub fn execute(
             unbonding_period_seconds,
         ),
         ExecuteMsg::ReceiveRewards {} => receive_rewards(deps, info),
+        ExecuteMsg::Rebase {} => rebase(deps, info),
         ExecuteMsg::ReceiveUnstakedTokens { batch_id } => {
             receive_unstaked_tokens(deps, env, info, batch_id)
         }
@@ -236,7 +236,7 @@ pub fn execute(
     }
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     Ok(match msg {
         QueryMsg::Config {} => to_json_binary(&query_config(deps)?)?,
@@ -268,7 +268,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MigrateMsg {}
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn migrate(
     deps: DepsMut,
     env: Env,

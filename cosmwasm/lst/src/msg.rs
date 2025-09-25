@@ -162,6 +162,9 @@ pub enum ExecuteMsg {
     /// Receives rewards from the native chain.
     ReceiveRewards {},
 
+    /// Rebase the LST by claiming all current pending rewards and restaking them.
+    Rebase {},
+
     /// Receives unstaked tokens from the native chain.
     ReceiveUnstakedTokens {
         /// ID of the batch that originated the unstake request.
@@ -317,4 +320,18 @@ pub enum Batch {
     Pending(PendingBatch),
     Submitted(SubmittedBatch),
     Received(ReceivedBatch),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case", tag = "status")]
+pub enum StakerExecuteMsg {
+    /// Stake the tokens provided along with this call.
+    ///
+    /// This must only be callable by the LST hub itself.
+    Stake {},
+    /// Rebase the current rewards by restaking them through the LST hub.
+    ///
+    /// This must only be callable by the LST hub itself.
+    Rebase {},
 }

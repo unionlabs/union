@@ -61,7 +61,7 @@
 use cosmwasm_std::{
     coins,
     testing::{message_info, mock_env},
-    Addr, BankMsg, Coin, CosmosMsg, Event,
+    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, Event,
 };
 use depolama::StorageExt;
 
@@ -69,7 +69,7 @@ use super::test_helper::UNION1;
 use crate::{
     contract::execute,
     error::ContractError,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, StakerExecuteMsg},
     state::AccountingStateStore,
     tests::test_helper::{mock_init_msg, setup, FEE_RECIPIENT, NATIVE_TOKEN, STAKER_ADDRESS},
     types::AccountingState,
@@ -106,16 +106,17 @@ fn receive_rewards_works() {
     // fee will be 10 because our protocol fee config is 10%
     let fee = 10u128;
 
-    // amount - fee must be sent back to the staker
+    // amount - fee must be sent back to the staker to be restaked
     assert_eq!(
         res.messages[0].msg,
-        CosmosMsg::Bank(BankMsg::Send {
-            to_address: STAKER_ADDRESS.into(),
-            amount: vec![Coin {
-                denom: NATIVE_TOKEN.into(),
-                amount: (reward_amount - fee).into()
-            }]
-        })
+        CosmosMsg::Wasm(
+            wasm_execute(
+                STAKER_ADDRESS.to_owned(),
+                &StakerExecuteMsg::Stake {},
+                coins(90, NATIVE_TOKEN)
+            )
+            .unwrap()
+        ),
     );
 
     // fee must be sent to the recipient
@@ -177,11 +178,14 @@ fn receive_rewards_and_send_fees_to_fee_recipient() {
 
     assert_eq!(
         res.messages[0].msg,
-        CosmosMsg::from(BankMsg::Send {
-            // funds are sent to the staker no matter who sent the rewards
-            to_address: STAKER_ADDRESS.to_owned(),
-            amount: coins(90, NATIVE_TOKEN)
-        })
+        CosmosMsg::Wasm(
+            wasm_execute(
+                STAKER_ADDRESS.to_owned(),
+                &StakerExecuteMsg::Stake {},
+                coins(90, NATIVE_TOKEN)
+            )
+            .unwrap()
+        ),
     );
 
     assert_eq!(

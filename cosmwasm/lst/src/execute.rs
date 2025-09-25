@@ -69,6 +69,7 @@ use depolama::StorageExt;
 use crate::{
     error::{ContractError, ContractResult},
     helpers::{assets_to_shares, shares_to_assets, total_assets},
+    msg::StakerExecuteMsg,
     state::{
         AccountingStateStore, Admin, ConfigStore, CurrentPendingBatch, LstAddress, Monitors,
         PendingOwnerStore, ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped,
@@ -81,6 +82,7 @@ use crate::{
 };
 
 pub const FEE_RATE_DENOMINATOR: u32 = 100_000;
+
 /// 7 days
 pub const OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS: u64 = 60 * 60 * 24 * 7;
 
@@ -165,7 +167,6 @@ pub fn bond(
 
     ensure!(
         mint_amount >= min_mint_amount,
-        // slippage not met
         ContractError::SlippageNotMet {
             min_mint_amount,
             actual: mint_amount,
@@ -176,11 +177,12 @@ pub fn bond(
 
     // TODO: Emit staker hash
     let response = Response::new()
-        // transfer native token to staker address
-        .add_message(BankMsg::Send {
-            to_address: deps.storage.read_item::<StakerAddress>()?.to_string(),
-            amount: info.funds,
-        })
+        // transfer native token to staker address and stake them
+        .add_message(wasm_execute(
+            deps.storage.read_item::<StakerAddress>()?.to_string(),
+            &StakerExecuteMsg::Stake {},
+            info.funds,
+        )?)
         // send the minted lst tokens to recipient
         .add_message(wasm_execute(
             // eU address
@@ -493,13 +495,14 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
                 .add_attribute("protocol_fee", protocol_fee.to_string()),
         )
         // send amount after fees to the staker (we restake the received staking rewards)
-        .add_message(BankMsg::Send {
-            to_address: deps.storage.read_item::<StakerAddress>()?.to_string(),
-            amount: vec![Coin::new(
+        .add_message(wasm_execute(
+            deps.storage.read_item::<StakerAddress>()?.to_string(),
+            &StakerExecuteMsg::Stake {},
+            vec![Coin::new(
                 amount_after_protocol_fee,
                 &config.native_token_denom,
             )],
-        })
+        )?)
         // send fees to the fee recipient
         .add_message(BankMsg::Send {
             to_address: protocol_fee_config.fee_recipient.to_string(),
@@ -508,6 +511,19 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
                 config.native_token_denom,
             )],
         }))
+}
+
+pub fn rebase(deps: DepsMut, info: MessageInfo) -> ContractResult<Response> {
+    ensure_not_stopped(deps.as_ref())?;
+
+    Ok(Response::new()
+        .add_event(Event::new("rebase").add_attribute("caller", info.sender.clone()))
+        // call into the rebase method on the lst staker
+        .add_message(wasm_execute(
+            deps.storage.read_item::<StakerAddress>()?.to_string(),
+            &StakerExecuteMsg::Rebase {},
+            vec![],
+        )?))
 }
 
 /// Marks a batch as received
