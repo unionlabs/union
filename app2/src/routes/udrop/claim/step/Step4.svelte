@@ -18,7 +18,7 @@ let claim = $derived(Option.flatMap(dashboard.airdrop, (store) => store.claim))
 const U_ADDRESS = "0xba5eD44733953d79717F6269357C77718C8Ba5ed"
 const U_SYMBOL = "U"
 const U_DECIMALS = 18
-const U_IMAGE = "https://union.build/u.svg"
+const U_IMAGE = "https://app.escher.finance/images/token/e-union.svg"
 
 type AddTokenState = Data.TaggedEnum<{
   Ready: {}
