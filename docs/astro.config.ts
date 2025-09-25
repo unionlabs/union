@@ -297,6 +297,28 @@ export default defineConfig({
                   link: "/integrations/typescript",
                 },
                 {
+                  label: "Guides (EVM)",
+                  items: [
+                    {
+                      label: "Guide: Send Funds Holesky → Sepolia",
+                      link: "/integrations/typescript/guided-tutorial/evm-holesky-sepolia",
+                    },
+                  ],
+                },
+                {
+                  label: "Guides (Cosmos)",
+                  items: [
+                    {
+                      label: "Guide: Cross Chain Contract Call",
+                      link: "/integrations/typescript/guided-tutorial/cosmos-call",
+                    },
+                    {
+                      label: "Guide: Send Funds Union → Sepolia",
+                      link: "/integrations/typescript/guided-tutorial/cosmos-union-sepolia",
+                    },
+                  ],
+                },
+                {
                   label: "Examples (EVM)",
                   autogenerate: {
                     directory: "/integrations/typescript/examples/evm",
