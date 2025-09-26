@@ -9,10 +9,6 @@ use cosmwasm_std::Addr;
 use hex_literal::hex;
 use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
 use rand::RngCore as _;
-use rand_chacha::{
-    rand_core::{block::BlockRng, SeedableRng},
-    ChaChaCore,
-};
 use serde::Deserialize;
 use tokio::sync::{Mutex, OnceCell};
 use tracing::info;
@@ -52,7 +48,6 @@ pub struct UnionAddressBook {
 
 pub struct LstContext {
     pub union_address: UnionAddressBook,
-    pub staker: LocalSigner,
     pub ctx: TestContext<cosmos::Module, evm::Module>,
 }
 
@@ -90,7 +85,7 @@ async fn run_test_in_queue<
                 .finish();
             tracing::subscriber::set_global_default(subscriber)
                 .expect("setting default subscriber failed");
-            let cfg: Config = serde_json::from_str(include_str!("./config.json")).unwrap();
+            let cfg: Config = serde_json::from_str(include_str!("../config.json")).unwrap();
 
             let src = cosmos::Module::new(cfg.union).await.unwrap();
             let dst = evm::Module::new(cfg.evm).await.unwrap();
@@ -104,40 +99,6 @@ async fn run_test_in_queue<
             .await
             .unwrap();
 
-            let mut rng =
-                BlockRng::new(ChaChaCore::from_rng(rand_chacha::rand_core::OsRng).unwrap());
-
-            let staker = LocalSigner::new(SigningKey::random(&mut rng).to_bytes().into(), "union");
-
-            let k = ctx.src.keyring.with(async |k| k).await.unwrap();
-
-            if ctx
-                .src
-                .native_balance(Addr::unchecked(staker.address().to_string()), "muno")
-                .await
-                .unwrap()
-                < 90_000_000
-            {
-                let outcome = ctx
-                    .src
-                    .send_transaction(
-                        protos::cosmos::bank::v1beta1::MsgSend {
-                            from_address: k.address().to_string(),
-                            to_address: staker.address().to_string(),
-                            amount: vec![ProtoCoin {
-                                denom: "muno".to_string(),
-                                amount: 100_000_000.to_string(),
-                            }],
-                        },
-                        k,
-                    )
-                    .await
-                    .unwrap()
-                    .unwrap();
-
-                assert_eq!(outcome.tx_result.code, Code::Ok);
-            }
-
             (
                 Mutex::new(Queue {
                     tests: {
@@ -148,7 +109,6 @@ async fn run_test_in_queue<
                     shared_data: SharedData { stakers: vec![] },
                 }),
                 Arc::new(LstContext {
-                    staker,
                     union_address: UnionAddressBook {
                         zkgm: calculate_cosmos_contract_address(
                             &cfg.union_deployer_addr,
@@ -186,141 +146,6 @@ async fn run_test_in_queue<
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
-// async fn init_ctx<'a>(key: &str) -> Arc<LstContext> {
-//     let ctx = CTX
-//         .get_or_init(|| async {
-//             let subscriber = FmtSubscriber::builder()
-//                 .with_max_level(tracing::Level::INFO)
-//                 .finish();
-//             tracing::subscriber::set_global_default(subscriber)
-//                 .expect("setting default subscriber failed");
-//             let cfg: Config = serde_json::from_str(include_str!("./config.json")).unwrap();
-
-//             let src = cosmos::Module::new(cfg.union).await.unwrap();
-//             let dst = evm::Module::new(cfg.evm).await.unwrap();
-
-//             let ctx = TestContext::new(
-//                 src,
-//                 dst,
-//                 cfg.needed_channel_count as usize,
-//                 &cfg.voyager_config_file_path,
-//             )
-//             .await
-//             .unwrap();
-
-//             let mut rng =
-//                 BlockRng::new(ChaChaCore::from_rng(rand_chacha::rand_core::OsRng).unwrap());
-
-//             (
-//                 Arc::new(Mutex::new(Queue {
-//                     tests: vec!["first".into(), "second".into(), "third".into()],
-//                 })),
-//                 Arc::new(LstContext {
-//                     staker: LocalSigner::new(
-//                         SigningKey::random(&mut rng).to_bytes().into(),
-//                         "union",
-//                     ),
-//                     union_address: UnionAddressBook {
-//                         zkgm: calculate_cosmos_contract_address(
-//                             &cfg.union_deployer_addr,
-//                             SALT_ZKGM,
-//                         )
-//                         .unwrap(),
-//                         lst_hub: calculate_cosmos_contract_address(
-//                             &cfg.union_deployer_addr,
-//                             SALT_LST_HUB,
-//                         )
-//                         .unwrap(),
-//                         eu: calculate_cosmos_contract_address(&cfg.union_deployer_addr, SALT_EU)
-//                             .unwrap(),
-//                         escrow_vault: calculate_cosmos_contract_address(
-//                             &cfg.union_deployer_addr,
-//                             SALT_ESCROW_VAULT,
-//                         )
-//                         .unwrap(),
-//                     },
-//                     ctx,
-//                 }),
-//             )
-//         })
-//         .await;
-
-//     loop {
-//         {
-//             if ctx.0.lock().await.tests[0] == key {
-//                 return ctx.1.clone();
-//             }
-//         }
-
-//         tokio::time::sleep(Duration::from_secs(1)).await
-//     }
-// }
-
-// pub async fn ensure_channels_opened(channel_count: usize) {
-//     CHANNELS_OPENED
-//         .get_or_init(|| async move {
-//             let t = init_ctx().await;
-
-//             let (src_client, dst_client) = t
-//                 .ctx
-//                 .create_clients(
-//                     Duration::from_secs(60),
-//                     "ibc-cosmwasm",
-//                     "trusted/evm/mpt",
-//                     "ibc-solidity",
-//                     "cometbls",
-//                 )
-//                 .await
-//                 .unwrap();
-
-//             assert!(src_client.client_id > 0);
-//             assert!(dst_client.client_id > 0);
-
-//             let conn = t
-//                 .ctx
-//                 .open_connection::<cosmos::Module, evm::Module>(
-//                     &t.ctx.src,
-//                     src_client.client_id,
-//                     &t.ctx.dst,
-//                     dst_client.client_id,
-//                     Duration::from_secs(180),
-//                 )
-//                 .await
-//                 .unwrap();
-//             assert!(conn.connection_id > 0);
-//             assert!(conn.counterparty_connection_id > 0);
-
-//             let current_available_count = t.ctx.get_available_channel_count().await;
-
-//             let opened = t
-//                 .ctx
-//                 .open_channels(
-//                     true,
-//                     t.union_address.zkgm.as_bytes().into(),
-//                     ETH_ADDRESS_ZKGM.into_bytes(),
-//                     conn.counterparty_connection_id,
-//                     "ucs03-zkgm-0".into(),
-//                     channel_count,
-//                     Duration::from_secs(360 * channel_count as u64),
-//                 )
-//                 .await
-//                 .unwrap();
-//             assert_eq!(opened, channel_count);
-
-//             let available_count_after_open = t.ctx.get_available_channel_count().await;
-//             assert_eq!(
-//                 current_available_count + channel_count,
-//                 available_count_after_open
-//             );
-//             let pair = t.ctx.get_channel().await.expect("channel available");
-//             let available_count_after_get = t.ctx.get_available_channel_count().await;
-//             assert_eq!(available_count_after_open - 1, available_count_after_get);
-//             t.ctx.release_channel(pair).await;
-//             let available_count_after_release = t.ctx.get_available_channel_count().await;
-//             assert_eq!(available_count_after_open, available_count_after_release);
-//         })
-//         .await;
-// }
 
 pub async fn eth_set_fungible_counterparty(
     module: &evm::Module,

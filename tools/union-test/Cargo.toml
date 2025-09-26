@@ -44,8 +44,7 @@ once_cell          = "1.17"
 serial_test        = "0.5"
 tokio              = { version = "1", features = ["macros", "rt"] }
 tracing-subscriber = "0.3"
-rand                        = "0.6"
-rand_chacha                 = "0.3.1"
+rand               = "0.6"
 
 
 [lints]
