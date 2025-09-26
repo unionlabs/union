@@ -29,35 +29,25 @@ export const publicClientLayer = <
     ),
   )
 
+
 /** @internal */
-export const walletClientLayer = <
-  Id,
->(tag: Context.Tag<Id, Sui.Sui.WalletClient>) =>
-(
-  // interface unchanged
-  options: Parameters<typeof Object>[0] & {
-    account: Ed25519Keypair
-    chain: unknown
-  },
-): Layer.Layer<Id, Sui.CreateWalletClientError> =>
+export const walletClientLayer = <Id>(
+  tag: Context.Tag<Id, Sui.Sui.WalletClient>,
+) =>
+(opts: { url: string; signer: Ed25519Keypair }): Layer.Layer<Id, Sui.CreateWalletClientError> =>
   Layer.effect(
     tag,
-    pipe(
-      Effect.try({
-        try: () => ({
-          client: new SuiClient(options as unknown as SuiClientOptions),
-          signer: options.account as Ed25519Keypair,
+    Effect.try({
+      try: () => {
+        if (!opts?.signer || typeof opts.signer.getPublicKey !== "function") {
+          throw new Error("Invalid Sui signer: expected Ed25519Keypair")
+        }
+        const client = new SuiClient({ url: opts.url } satisfies SuiClientOptions)
+        return { client, signer: opts.signer } // <-- matches Sui.Sui.WalletClient interface
+      },
+      catch: (err) =>
+        new Sui.CreateWalletClientError({
+          cause: Utils.extractErrorDetails(err as Error),
         }),
-        catch: (err) =>
-          new Sui.CreateWalletClientError({
-            cause: Utils.extractErrorDetails(err as Sui.SuiCreateWalletClientErrorType),
-          }),
-      }),
-      // return the *same* payload shape you had before
-      Effect.map(({ client }) => ({
-        client,
-        account: options.account,
-        chain: options.chain,
-      })),
-    ),
+    }),
   )

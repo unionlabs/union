@@ -124,7 +124,7 @@ export const fromWallet = (
       const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // TODO: This should be fetched from somewhere
       const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // TODO: This should be fetched from somewhere
       const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // TODO: This should be fetched from somewhere
-      const coinObjectId = "0x3997d4c40cb190283291270d326401fd77320af42cd7a891ded2eba3e52f4b16" // TODO: This should be given by user
+      const coinObjectId = "0xc2c61b8de5aa6167dc744d6db61854fa29b53257d5e54a40c2f5b7dcc6f04d0b" // TODO: This should be given by user
       
       // helpers
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {

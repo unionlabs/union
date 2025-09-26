@@ -21,23 +21,30 @@ import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 
-const MNEMONIC = process.env.MNEMONIC ?? "fix auto gallery heart practice drip joke nice decline lift attend bread"
+const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
 const RECIPIENT = process.env.RECIPIENT ?? "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
 
 const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC)
 
 
 const program = Effect.gen(function* () {
+
+  // TODO: Source will be SUI testnet
   const source = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.17000"),
   )
 
   console.log("source", source)
+  
+  // TODO: Destination will be somewhere
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.11155111"),
   )
-  const { client } = yield* PublicClient
+  const wallet = yield* WalletClient
 
+  const sender = wallet.signer.toSuiAddress();
+
+  // TODO: Fix this tokenOrder and write something working
   const tokenOrder = yield* TokenOrder.make({
     source,
     destination,
@@ -56,10 +63,11 @@ const program = Effect.gen(function* () {
 
   yield* Effect.log("Token Order V2", tokenOrder)
 
+  // TODO: Fix this request too
   const request = ZkgmClientRequest.make({
     source,
     destination,
-    channelId: ChannelId.make(2),
+    channelId: ChannelId.make(1),
     ucs03Address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
     kind: "simulateAndExecute",
     instruction: tokenOrder,
@@ -67,20 +75,14 @@ const program = Effect.gen(function* () {
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
-  // NOTE: 1. switch chain is assumed
-  // NOTE: 2. write in progress
-
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
 
-  // NOTE: 3. write complete (with tx hash)
 
   yield* Effect.log("Submission Hash", response.txHash)
 
   const completion = yield* response.waitFor(
     ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
   )
-
-  // NOTE: 4. tx complete
 
   yield* Effect.log("Completion", completion)
 
@@ -90,14 +92,20 @@ const program = Effect.gen(function* () {
   Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),
   Effect.provide(
     WalletClient.Live({
-      url: getFullnodeUrl("testnet"),
-      account: keypair,              // signer
-      chain: "sui-testnet" as any,   // placeholder; not used internally
-    }),
+    url: getFullnodeUrl("testnet"),
+    signer: keypair,               // ✅ Sui signer
+  }),
   ),
 
   Effect.provide(ChainRegistry.Default),
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
-Effect.runPromise(program).catch(console.error)
+Effect.runPromise(program).catch((e: any) => {
+  console.error("\n--- TOP-LEVEL ERROR ---")
+  console.dir(e, { depth: 10 })
+  if (e?.cause) {
+    console.error("\n--- ORIGINAL CAUSE ---")
+    console.dir(e.cause, { depth: 10 })
+  }
+})
