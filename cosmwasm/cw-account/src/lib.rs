@@ -236,7 +236,7 @@ pub enum ContractError {
     #[error("init state version error: {0}")]
     InitStateVersion(#[from] InitStateVersionError),
 
-    #[error("sender {sender} is a configured admin")]
+    #[error("sender {sender} is not a configured admin")]
     OnlyAdmin { sender: Admin },
 
     #[error("sender {sender} is not zkgm")]

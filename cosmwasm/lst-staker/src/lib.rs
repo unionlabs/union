@@ -212,9 +212,10 @@ fn withdraw_all_rewards(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Validators {} => Ok(to_json_binary(&deps.storage.read_item::<Validators>()?)?),
+        QueryMsg::CwAccount(msg) => Ok(cw_account::query(deps, env, msg)?),
     }
 }
 

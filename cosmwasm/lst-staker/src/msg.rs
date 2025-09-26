@@ -20,6 +20,8 @@ pub enum ExecuteMsg {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     Validators {},
+    #[serde(untagged)]
+    CwAccount(cw_account::msg::QueryMsg),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
