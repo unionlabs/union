@@ -105,8 +105,8 @@ const buttonLabel = $derived(
       !hasDust
         ? "No Dust Available"
         : O.isNone(WalletStore.evmAddress)
-          ? "Connect Wallet"
-          : "Recover Dust to Wallet"),
+        ? "Connect Wallet"
+        : "Recover Dust to Wallet"),
     Match.when(DustWithdrawState.$is("SwitchingChain"), () => "Switching..."),
     Match.when(DustWithdrawState.$is("CheckingAllowance"), () => "Checking..."),
     Match.when(DustWithdrawState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
@@ -121,7 +121,7 @@ const buttonLabel = $derived(
     Match.when(DustWithdrawState.$is("Success"), () => "Recovery Pending"),
     Match.when(DustWithdrawState.$is("Error"), () => hasDust ? "Try Again" : "No Dust Available"),
     Match.exhaustive,
-  )
+  ),
 )
 
 // Execute dust withdrawal
@@ -362,12 +362,12 @@ const handleDustWithdraw = () => {
           O.map(([dust, rate]) => {
             const valueInU = BigDecimal.multiply(dust, rate)
             return `≈ ${
-              Utils.formatBigDecimal(BigDecimal.round({ mode: "from-zero", scale: 2 })(valueInU))
+              Utils.formatBigDecimal(
+                BigDecimal.round({ mode: "from-zero", scale: 2 })(valueInU),
+              )
             } U`
           }),
-          O.getOrElse(() =>
-            O.isSome(proxyEuDust) && O.isSome(redemptionRate) ? "loading" : ""
-          ),
+          O.getOrElse(() => O.isSome(proxyEuDust) && O.isSome(redemptionRate) ? "loading" : ""),
         )}
       />
     {:else}
@@ -402,7 +402,8 @@ const handleDustWithdraw = () => {
       class="w-full"
     >
       {#if isWithdrawing}
-        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
+        </div>
       {:else if isSuccess}
         <svg
           class="w-4 h-4 text-current mr-2"

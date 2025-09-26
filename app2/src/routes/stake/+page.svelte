@@ -2,11 +2,11 @@
 import BalanceCard from "$lib/components/stake/BalanceCard.svelte"
 import BondComponent from "$lib/components/stake/BondComponent.svelte"
 import EscherBanner from "$lib/components/stake/EscherBanner.svelte"
+import QuickWithdrawComponent from "$lib/components/stake/QuickWithdrawComponent.svelte"
 import StakingHistoryCard from "$lib/components/stake/StakingHistoryCard.svelte"
 import StakingStatsGrid from "$lib/components/stake/StakingStatsGrid.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
 import WithdrawalComponent from "$lib/components/stake/WithdrawalComponent.svelte"
-import QuickWithdrawComponent from "$lib/components/stake/QuickWithdrawComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
@@ -42,7 +42,7 @@ import { constVoid } from "effect/Function"
 import * as O from "effect/Option"
 import { onMount } from "svelte"
 
-type StakeTab = "bond" | "unbond" | "withdraw" | "quick-withdraw"
+type StakeTab = "bond" | "unbond" | "withdraw" | "instant-exit"
 type TableFilter = "all" | "bond" | "unbond"
 
 const EVM_UNIVERSAL_CHAIN_ID = ETHEREUM_CHAIN_ID
@@ -278,11 +278,13 @@ const exchangeRate = $derived(pipe(
             { id: "bond", label: "Stake" },
             { id: "unbond", label: "Unstake" },
             { id: "withdraw", label: "Withdraw" },
-            { id: "quick-withdraw", label: "Quick Withdraw" },
+            { id: "instant-exit", label: "Instant Exit" },
           ]}
           activeId={selectedTab}
           onTabChange={(id: string) => selectedTab = id as StakeTab}
           class="text-xs"
+          emphasizeId="instant-exit"
+          emphasizeClass="text-rose-500"
         />
       </div>
 
@@ -312,7 +314,7 @@ const exchangeRate = $derived(pipe(
             {uOnEvmToken}
             onWithdrawSuccess={refreshStakingData}
           />
-        {:else if selectedTab === "quick-withdraw"}
+        {:else if selectedTab === "instant-exit"}
           <QuickWithdrawComponent
             {evmChain}
             {uOnEvmToken}

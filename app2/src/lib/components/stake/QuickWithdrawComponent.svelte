@@ -10,36 +10,36 @@ import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
-import { Utils, Ucs05 } from "@unionlabs/sdk"
+import { Ucs05, Utils } from "@unionlabs/sdk"
 import { Evm, Safe } from "@unionlabs/sdk-evm"
-import { EU_ERC20, U_ERC20 } from "@unionlabs/sdk/Constants"
+import { EU_ERC20 } from "@unionlabs/sdk/Constants"
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
-import {
-  BigDecimal,
-  Data,
-  Effect,
-  Layer,
-  Match,
-  pipe,
-} from "effect"
+import { BigDecimal, Data, Effect, Layer, Match, pipe } from "effect"
 import * as O from "effect/Option"
-import { custom } from "viem"
+import { createPublicClient, custom, http } from "viem"
 import { mainnet } from "viem/chains"
 import QuickAmountButtons from "./QuickAmountButtons.svelte"
 import StatusDisplay from "./StatusDisplay.svelte"
 
-// TODO: Replace with actual contract address and ABI when provided
-const QUICK_WITHDRAW_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000" as const
-const QUICK_WITHDRAW_ABI = [] as const // Will be provided by user
-
-// TODO: When ABI is provided, update the following:
-// 1. Active check - read "active" or similar function from contract (line ~144)
-// 2. Fixed exchange rate - get the fixed eU to U conversion rate from contract
-// 3. Withdraw function - update function name and args (line ~244)
-//    - Since it's a fixed rate, no minAmount parameter is needed
-//    - Typical args might be just: (uint256 euAmount) or (uint256 euAmount, address recipient)
+const QUICK_WITHDRAW_CONTRACT_ADDRESS = "0xFADE236fAa8c35D721Aa01480497A07e23A29d19" as const
+const QUICK_WITHDRAW_ABI = [
+  {
+    name: "active",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    inputs: [{ name: "baseAmount", type: "uint256" }],
+    name: "withdraw",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+] as const
 
 interface Props {
   evmChain: O.Option<Chain>
@@ -89,18 +89,18 @@ const isWithdrawing = $derived(
 const isSuccess = $derived(QuickWithdrawState.$is("Success")(quickWithdrawState))
 const isError = $derived(QuickWithdrawState.$is("Error")(quickWithdrawState))
 
-// Derived state for button disabled logic
 const isButtonDisabled = $derived(
   pipe(
     O.all([WalletStore.evmAddress, withdrawAmount, eUOnEvmBalance]),
     O.match({
-      onNone: () => isWithdrawing || pipe(
-        isContractActive,
-        O.match({
-          onNone: () => false,
-          onSome: (active) => !active,
-        }),
-      ),
+      onNone: () =>
+        isWithdrawing || pipe(
+          isContractActive,
+          O.match({
+            onNone: () => false,
+            onSome: (active) => !active,
+          }),
+        ),
       onSome: ([_, amount, balance]) => {
         return isWithdrawing
           || amount === 0n
@@ -122,53 +122,50 @@ const inputAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   BigDecimal.fromString,
 ))
 
-// TODO: Get actual fixed exchange rate from contract
-const exchangeRate = $state<BigDecimal.BigDecimal>(BigDecimal.fromBigInt(1n)) // Placeholder 1:1 rate
+const exchangeRate = $state<BigDecimal.BigDecimal>(BigDecimal.make(9n, 1)) // 0.9 rate
 
-// Calculate exact U output based on fixed exchange rate (no slippage needed)
 const expectedUAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   inputAmount,
-  O.map(amount => {
-    // Apply fixed exchange rate
-    return BigDecimal.multiply(amount, exchangeRate)
-  }),
+  O.map(amount => BigDecimal.multiply(amount, exchangeRate)),
 ))
 
-// Check if the quick withdraw contract is active
 runPromiseExit$(() =>
-  shouldCheckActive && O.isSome(WalletStore.evmAddress)
+  shouldCheckActive
     ? Effect.gen(function*() {
-      const connectorClient = yield* getWagmiConnectorClient
-      
-      const publicClient = Evm.PublicClient.Live({
+      const publicClient = createPublicClient({
         chain: mainnet,
-        transport: custom(connectorClient),
+        transport: http("https://rpc.1.ethereum.chain.kitchen"),
       })
 
-      // TODO: Update with actual active check when ABI is provided
-      // For now, return true as placeholder
-      // When ABI is provided, use:
-      // const active = yield* Evm.readContract({
-      //   address: QUICK_WITHDRAW_CONTRACT_ADDRESS,
-      //   abi: QUICK_WITHDRAW_ABI,
-      //   functionName: "active",
-      //   args: [],
-      // }).pipe(Effect.provide(publicClient))
-      
-      const active = true // Placeholder - will read from contract
-      
+      const active = yield* pipe(
+        Effect.tryPromise({
+          try: () =>
+            publicClient.readContract({
+              address: QUICK_WITHDRAW_CONTRACT_ADDRESS,
+              abi: QUICK_WITHDRAW_ABI,
+              functionName: "active",
+              args: [],
+            }),
+          catch: (error) => new Error(`Failed to check active status: ${error}`),
+        }),
+        Effect.tap(result => Effect.log(`Contract active: ${result}`)),
+        Effect.catchAll(error =>
+          Effect.gen(function*() {
+            yield* Effect.logError(error)
+            return false
+          })
+        ),
+      )
+
       isContractActive = O.some(active)
       shouldCheckActive = false
       return active
     }).pipe(
-      Effect.provide(Evm.PublicClient.Live({
-        chain: mainnet, 
-        transport: custom({ request: async () => ({}) } as any),
-      })),
-      Effect.catchAll(() =>
+      Effect.catchAll((error) =>
         Effect.gen(function*() {
-          isContractActive = O.some(false)
+          yield* Effect.logError("Contract status check failed", error)
           shouldCheckActive = false
+          isContractActive = O.some(false)
           return yield* Effect.succeed(false)
         })
       ),
@@ -176,62 +173,51 @@ runPromiseExit$(() =>
     : Effect.void
 )
 
-// Check and approve eU token allowance for the quick withdraw contract
-// The contract needs permission to spend the user's eU tokens
-// In exchange, the contract will send U tokens from its pool back to the user at a fixed rate
 const checkAndSubmitAllowance = (sender: `0x${string}`, sendAmount: bigint) =>
   pipe(
-    Evm.readErc20Allowance(
-      EU_ERC20.address,  // Checking allowance for eU tokens (what user sends)
-      sender,
-      QUICK_WITHDRAW_CONTRACT_ADDRESS,  // Contract that will spend the eU
-    ),
+    Evm.readErc20Allowance(EU_ERC20.address, sender, QUICK_WITHDRAW_CONTRACT_ADDRESS),
     Effect.tap(() =>
-      Effect.sync(() => {
-        quickWithdrawState = QuickWithdrawState.CheckingAllowance()
-      })
+      Effect.sync(() => quickWithdrawState = QuickWithdrawState.CheckingAllowance())
     ),
     Effect.flatMap((amount) =>
       Effect.if(amount < sendAmount, {
         onTrue: () =>
           pipe(
-            Effect.log(`Approving ${sendAmount} eU for quick withdraw contract`),
+            Effect.log(`Insufficient allowance: ${amount} < ${sendAmount}, requesting approval`),
             Effect.andThen(() =>
-              Effect.sync(() => {
-                quickWithdrawState = QuickWithdrawState.ApprovingAllowance()
-              })
+              Effect.sync(() => quickWithdrawState = QuickWithdrawState.ApprovingAllowance())
             ),
             Effect.andThen(() =>
               pipe(
                 Evm.increaseErc20Allowance(
-      EU_ERC20.address,
-      Ucs05.EvmDisplay.make({ address: QUICK_WITHDRAW_CONTRACT_ADDRESS }),
+                  EU_ERC20.address,
+                  Ucs05.EvmDisplay.make({ address: QUICK_WITHDRAW_CONTRACT_ADDRESS }),
                   sendAmount,
                 ),
-                Effect.tap((hash) =>
-                  Effect.sync(() => {
-                    quickWithdrawState = QuickWithdrawState.AllowanceSubmitted({ txHash: hash })
-                  })
-                ),
+                Effect.tap((hash) => {
+                  quickWithdrawState = QuickWithdrawState.AllowanceSubmitted({ txHash: hash })
+                  return Effect.log(`Approval tx: ${hash}`)
+                }),
                 Effect.tap(() => Effect.sleep("500 millis")),
                 Effect.tap((hash) =>
-                  Effect.sync(() => {
+                  Effect.sync(() =>
                     quickWithdrawState = QuickWithdrawState.WaitingForAllowanceConfirmation({
                       txHash: hash,
                     })
-                  })
+                  )
                 ),
-                Effect.andThen((hash) => Evm.waitForTransactionReceipt(hash as `0x${string}`)),
+                Effect.andThen((hash) =>
+                  Evm.waitForTransactionReceipt(hash as `0x${string}`)
+                    .pipe(Effect.timeout("120 seconds"))
+                ),
               )
             ),
           ),
-        onFalse: () => Effect.log(`eU allowance already sufficient for quick withdraw`),
+        onFalse: () => Effect.log(`Allowance sufficient: ${amount} >= ${sendAmount}`),
       })
     ),
     Effect.tap(() =>
-      Effect.sync(() => {
-        quickWithdrawState = QuickWithdrawState.AllowanceApproved()
-      })
+      Effect.sync(() => quickWithdrawState = QuickWithdrawState.AllowanceApproved())
     ),
     Effect.tap(() => Effect.sleep("500 millis")),
   )
@@ -240,21 +226,17 @@ const executeQuickWithdraw = (sender: `0x${string}`, sendAmount: bigint) =>
   Effect.gen(function*() {
     quickWithdrawState = QuickWithdrawState.ConfirmingWithdraw()
 
-    // Get expected U amount for display (fixed rate, no slippage)
     const expectedAmount = O.match(expectedUAmount, {
       onNone: () => 0n,
       onSome: (amount) => Utils.toRawAmount(amount),
     })
 
-    // Step 2: Execute the withdraw transaction at fixed rate
-    // User sends eU to the contract, contract sends U back from its pool at a fixed rate
-    // TODO: Update with actual function name and arguments when ABI is provided
-    // Typical pattern might be: withdraw(uint256 euAmount) or withdraw(uint256 euAmount, address recipient)
+    yield* Effect.log(`Executing withdraw: ${sendAmount} eU for ~${expectedAmount} U`)
     const txHash = yield* Evm.writeContract({
       address: QUICK_WITHDRAW_CONTRACT_ADDRESS,
       abi: QUICK_WITHDRAW_ABI,
-      functionName: "withdraw", // Placeholder - update with actual function name
-      args: [sendAmount], // Update args based on actual contract (no minAmount needed for fixed rate)
+      functionName: "withdraw",
+      args: [sendAmount],
       account: sender,
       chain: mainnet,
     })
@@ -264,10 +246,12 @@ const executeQuickWithdraw = (sender: `0x${string}`, sendAmount: bigint) =>
 
     quickWithdrawState = QuickWithdrawState.WaitingForConfirmation({ txHash })
 
-    const receipt = yield* Evm.waitForTransactionReceipt(txHash)
+    const receipt = yield* Evm.waitForTransactionReceipt(txHash).pipe(
+      Effect.timeout("180 seconds"),
+    )
+    yield* Effect.log(`Transaction confirmed: ${txHash}`)
 
-    // TODO: Parse actual received amount from receipt logs if needed
-    const receivedAmount = expectedAmount // At fixed rate, received = expected
+    const receivedAmount = expectedAmount
 
     quickWithdrawState = QuickWithdrawState.Success({ txHash, receivedAmount })
 
@@ -324,34 +308,33 @@ runPromiseExit$(() =>
         Effect.provide(walletClient),
         Effect.provide(publicClient),
         Effect.provide(maybeSafe),
+        Effect.tapError((error) => Effect.logError("Approval flow failed", error)),
       )
 
-      const { txHash, receivedAmount } = yield* executeQuickWithdraw(sender.address, sendAmount).pipe(
-        Effect.provide(walletClient),
-        Effect.provide(publicClient),
-        Effect.provide(maybeSafe),
-      )
+      const { txHash, receivedAmount } = yield* executeQuickWithdraw(sender.address, sendAmount)
+        .pipe(
+          Effect.provide(walletClient),
+          Effect.provide(publicClient),
+          Effect.provide(maybeSafe),
+          Effect.tapError((error) => Effect.logError("Exit flow failed", error)),
+        )
 
       withdrawInput = ""
       shouldWithdraw = false
       onQuickWithdrawSuccess?.()
 
-      setTimeout(() => {
-        if (QuickWithdrawState.$is("Success")(quickWithdrawState)) {
-          quickWithdrawState = QuickWithdrawState.Ready()
-        }
-      }, 5000)
+      yield* Effect.sleep("5 seconds")
+      if (QuickWithdrawState.$is("Success")(quickWithdrawState)) {
+        quickWithdrawState = QuickWithdrawState.Ready()
+      }
     }).pipe(
       Effect.catchAll(error =>
         Effect.gen(function*() {
-          const errorDetails = extractErrorDetails(error) as any
-          const fullError = errorDetails?.cause?.cause?.shortMessage
-            || errorDetails?.cause?.message
-            || errorDetails?.message
-            || JSON.stringify(errorDetails)
-          const shortMessage = String(fullError).split(".")[0]
+          const errorDetails = extractErrorDetails(error)
+          const message = String(errorDetails?.message || error).split(".")[0]
 
-          quickWithdrawState = QuickWithdrawState.Error({ message: shortMessage })
+          yield* Effect.logError("Quick withdraw failed", { error: errorDetails, message })
+          quickWithdrawState = QuickWithdrawState.Error({ message })
           shouldWithdraw = false
           return yield* Effect.void
         })
@@ -384,13 +367,12 @@ function handleButtonClick() {
 </script>
 
 <div class="flex grow flex-col gap-4">
-  <!-- Input Section with Balance -->
   <div class="space-y-3">
     <div class="flex justify-between items-center">
       <label
         for="withdrawInput"
         class="text-xs font-medium text-zinc-400 uppercase tracking-wider"
-      >Amount to Quick Withdraw</label>
+      >Amount</label>
       <div class="text-xs text-zinc-500 flex items-center gap-1">
         <span>Balance:</span>
         {#if O.isNone(WalletStore.evmAddress)}
@@ -425,7 +407,6 @@ function handleButtonClick() {
         bind:weiValue={withdrawAmount}
       />
 
-      <!-- Quick Percentage Buttons -->
       <div class="mt-2">
         <QuickAmountButtons
           balance={eUOnEvmBalance}
@@ -441,35 +422,12 @@ function handleButtonClick() {
 
   <div class="flex-1"></div>
 
-  <!-- Transaction Preview Card -->
   <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">
-    <!-- Exchange Rate -->
-    <div class="flex justify-between items-center">
-      <span class="text-xs text-zinc-500">Exchange Rate</span>
-      <span class="text-sm font-medium text-zinc-200">
-        1 eU = {
-          pipe(
-            exchangeRate,
-            BigDecimal.round({ mode: "from-zero", scale: 6 }),
-            Utils.formatBigDecimal,
-          )
-        } U
-      </span>
+    <div class="text-xs text-zinc-400">
+      Instant Exit lets you withdraw your staked U for a 10% slashing fee. You will exit your
+      staking position and not receive staking rewards. This feature is intended for pre-stakers."
     </div>
 
-    <!-- Fixed Rate Info -->
-    <div class="flex justify-between items-center">
-      <span class="text-xs text-zinc-500">Rate Type</span>
-      <span class="text-sm font-medium text-zinc-200">Fixed (no slippage)</span>
-    </div>
-
-    <!-- Instant Withdrawal Info -->
-    <div class="flex justify-between items-center">
-      <span class="text-xs text-zinc-500">Withdrawal Type</span>
-      <span class="text-sm font-medium text-zinc-200">Instant (no waiting)</span>
-    </div>
-
-    <!-- You'll Receive -->
     <div class="pt-2 border-t border-zinc-800">
       <div class="flex justify-between items-center">
         <span class="text-xs text-zinc-500">You'll Receive</span>
@@ -500,45 +458,21 @@ function handleButtonClick() {
     </div>
   </div>
 
-  <!-- Contract Status Warning (only show if not active) -->
-  {#if pipe(isContractActive, O.match({ onNone: () => false, onSome: (active) => !active }))}
-    <div class="rounded-lg bg-orange-500/10 border border-orange-500/20 p-3">
-      <div class="flex items-start gap-2">
-        <svg
-          class="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-        <div class="text-xs text-zinc-400">
-          Quick withdraw is currently not active. Please use the regular withdraw process or check back later.
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Status Display -->
   <StatusDisplay
     state={quickWithdrawState}
     type="quick-withdraw"
     inputAmount={withdrawInput}
+    isContractActive={isContractActive}
   />
 
-  <!-- Action Button -->
   <Button
-    variant={isError ? "secondary" : "primary"}
+    variant={isError ? "secondary" : "danger"}
     disabled={isButtonDisabled}
     onclick={handleButtonClick}
   >
     {#if isWithdrawing}
-      <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+      <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
+      </div>
     {/if}
     {
       Match.value(quickWithdrawState).pipe(
@@ -546,30 +480,37 @@ function handleButtonClick() {
           pipe(
             isContractActive,
             O.match({
-              onNone: () => O.isNone(WalletStore.evmAddress)
-                ? "Connect Wallet"
-                : withdrawInput
-                ? "Quick Withdraw"
-                : "Enter Amount",
-              onSome: (active) => !active
-                ? "Quick Withdraw Not Active"
-                : O.isNone(WalletStore.evmAddress)
-                ? "Connect Wallet"
-                : withdrawInput
-                ? "Quick Withdraw"
-                : "Enter Amount",
+              onNone: () =>
+                O.isNone(WalletStore.evmAddress)
+                  ? "Connect Wallet"
+                  : withdrawInput
+                  ? "I understand, exit now."
+                  : "Enter Amount",
+              onSome: (active) =>
+                !active
+                  ? "Instant Exit Not Active"
+                  : O.isNone(WalletStore.evmAddress)
+                  ? "Connect Wallet"
+                  : withdrawInput
+                  ? "I understand, exit now."
+                  : "Enter Amount",
             }),
           )),
         Match.when(QuickWithdrawState.$is("SwitchingChain"), () => "Switching..."),
         Match.when(QuickWithdrawState.$is("CheckingAllowance"), () => "Checking..."),
         Match.when(QuickWithdrawState.$is("ApprovingAllowance"), () => "Approve in Wallet"),
         Match.when(QuickWithdrawState.$is("AllowanceSubmitted"), () => "Processing..."),
-        Match.when(QuickWithdrawState.$is("WaitingForAllowanceConfirmation"), () => "Confirming..."),
-        Match.when(QuickWithdrawState.$is("AllowanceApproved"), () => "Approved ✓"),
-        Match.when(QuickWithdrawState.$is("ConfirmingWithdraw"), () => "Confirm in Wallet"),
-        Match.when(QuickWithdrawState.$is("WithdrawSubmitted"), () => "Processing..."),
-        Match.when(QuickWithdrawState.$is("WaitingForConfirmation"), () => "Confirming..."),
-        Match.when(QuickWithdrawState.$is("Success"), () => "Withdraw Again"),
+        Match.when(QuickWithdrawState.$is("WaitingForAllowanceConfirmation"), () =>
+          "Confirming..."),
+        Match.when(QuickWithdrawState.$is("AllowanceApproved"), () =>
+          "Approved ✓"),
+        Match.when(QuickWithdrawState.$is("ConfirmingWithdraw"), () =>
+          "Confirm Exit in Wallet"),
+        Match.when(QuickWithdrawState.$is("WithdrawSubmitted"), () =>
+          "Processing..."),
+        Match.when(QuickWithdrawState.$is("WaitingForConfirmation"), () =>
+          "Confirming..."),
+        Match.when(QuickWithdrawState.$is("Success"), () => "Exit Again"),
         Match.when(QuickWithdrawState.$is("Error"), () => "Try Again"),
         Match.exhaustive,
       )

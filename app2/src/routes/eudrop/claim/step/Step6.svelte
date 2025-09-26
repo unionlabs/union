@@ -35,7 +35,7 @@ function handleViewTransaction() {
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
             Congratulations! Your eU tokens have been successfully claimed. View your staking
-            position in the dashboard or explore the liquidity pool on Uniswap.
+            position in the dashboard to manage your tokens.
           </p>
         </div>
       </div>
@@ -62,8 +62,8 @@ function handleViewTransaction() {
           </div>
         {/if}
 
-        <!-- Action Buttons -->
-        <div class="flex flex-col gap-3">
+        <!-- Action Button -->
+        <div>
           <Button
             variant="primary"
             class="flex items-center justify-center gap-3 w-full"
@@ -83,29 +83,6 @@ function handleViewTransaction() {
               />
             </svg>
             View Staking Dashboard
-          </Button>
-
-          <Button
-            variant="secondary"
-            class="flex items-center justify-center gap-3 w-full"
-            href="https://app.uniswap.org/explore/pools/ethereum/0x0801481ba598d86e221a5ff0ccb02c97d5b0fbd803c662c66af604aa35119fe0"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-              />
-            </svg>
-            View Uniswap Pool
           </Button>
         </div>
       </div>
