@@ -5,6 +5,7 @@ import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
+import StakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
@@ -73,11 +74,10 @@ export const navigation: Array<NavSection> = [
             path: "/explorer/find-packet",
             title: "Find Packet",
           },
-          {
-            path: "/explorer/orbital",
-            title: "Orbital",
-            new: true,
-          },
+          // {
+          //   path: "/explorer/orbital",
+          //   title: "Orbital",
+          // },
           // {
           //   path: "/explorer/connections",
           //   title: "Connections"
@@ -89,7 +89,6 @@ export const navigation: Array<NavSection> = [
           {
             path: "/explorer/clients",
             title: "Clients",
-            new: true,
           },
         ],
       },
@@ -97,16 +96,16 @@ export const navigation: Array<NavSection> = [
   },
   {
     items: [{
-      path: "/udrop/claim",
-      title: "U Claim",
-      icon: AirdropIcon,
-    }],
-  },
-  {
-    items: [{
-      path: "/liquid-staking",
+      path: "/stake",
       title: "Liquid Staking",
       icon: EscherLogo,
+      subroutes: [
+        {
+          path: "/eudrop/claim",
+          title: "eU claim",
+          new: true,
+        },
+      ],
     }],
   },
   {

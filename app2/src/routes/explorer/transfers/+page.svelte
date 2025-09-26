@@ -19,7 +19,7 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import Switch from "$lib/components/ui/Switch.svelte"
-    import type { AppContext } from "$lib/runtime";
+import type { AppContext } from "$lib/runtime";
 
 const initializeQuery = async () => {
   const pageParam = page.url.searchParams.get("page")

@@ -8,7 +8,7 @@ import { fromHex, toHex } from "viem"
  *
  * Note: To be used ineroperably with `viem`.
  */
-export const Hex = S.NonEmptyString.pipe(
+export const Hex = S.NonEmptyString.pipe( // TODO: add `Bytes` brand separately
   S.pattern(/^0x[0-9a-fA-F]+$/), // TODO: remove uppercase
   S.minLength(3),
   S.annotations({

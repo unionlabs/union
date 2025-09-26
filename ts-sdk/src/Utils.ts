@@ -4,7 +4,7 @@
  * @since 2.0.0
  */
 import crc32 from "crc/crc32"
-import { Data, Effect, String as Str } from "effect"
+import { BigDecimal, Data, Effect, Schema, SchemaAST, String as Str } from "effect"
 import { dual, LazyArg, pipe } from "effect/Function"
 import * as M from "effect/Match"
 import * as O from "effect/Option"
@@ -169,3 +169,71 @@ export const matchOptionBool: {
       }),
     ),
 )
+
+/**
+ * @see https://effect.website/docs/schema/basic-usage/#simplifying-tagged-structs-with-taggedstruct
+ * @category utils
+ * @since 2.0.0
+ */
+export const TaggedStruct = <
+  Tag extends SchemaAST.LiteralValue,
+  Fields extends Schema.Struct.Fields,
+>(
+  tag: Tag,
+  fields: Fields,
+) =>
+  Schema.Struct({
+    _tag: Schema.Literal(tag).pipe(
+      Schema.optional,
+      Schema.withDefaults({
+        constructor: () => tag, // Apply _tag during instance construction
+        decoding: () => tag, // Apply _tag during decoding
+      }),
+    ),
+    ...fields,
+  })
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const formatBigDecimal = (n: BigDecimal.BigDecimal): string => {
+  const normalized = BigDecimal.normalize(n)
+
+  const negative = normalized.value < BigInt(0)
+  const absolute = negative ? `${normalized.value}`.substring(1) : `${normalized.value}`
+
+  let before: string
+  let after: string
+
+  if (normalized.scale >= absolute.length) {
+    before = "0"
+    after = "0".repeat(normalized.scale - absolute.length) + absolute
+  } else {
+    const location = absolute.length - normalized.scale
+    if (location > absolute.length) {
+      const zeros = location - absolute.length
+      before = `${absolute}${"0".repeat(zeros)}`
+      after = ""
+    } else {
+      after = absolute.slice(location)
+      before = absolute.slice(0, location)
+    }
+  }
+
+  const complete = after === "" ? before : `${before}.${after}`
+  return negative ? `-${complete}` : complete
+}
+
+/**
+ * Convert a BigDecimal to raw amount (smallest atomic units) for a given decimal precision
+ * @category utils
+ * @since 2.0.0
+ */
+export const toRawAmount = (bd: BigDecimal.BigDecimal, decimals: number = 18): bigint => {
+  const normalized = BigDecimal.normalize(bd)
+  const scaleFactor = BigInt(decimals) - BigInt(normalized.scale)
+  return scaleFactor >= 0n
+    ? normalized.value * (10n ** scaleFactor)
+    : normalized.value / (10n ** (-scaleFactor))
+}

@@ -56,6 +56,7 @@ enum OrderBy {
 }
 
 type Query {
+  v2_bonds(args: v2_bonds_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_bond_type!]!
   v2_chains(args: v2_chains_args! = {p_comparison: lt, p_limit: null, p_sort_order: null, p_universal_chain_id: null}): [v2_chain_type!]!
   v2_channels(args: v2_channels_args! = {p_comparison: lt, p_destination_channel_id: null, p_destination_client_id: null, p_destination_connection_id: null, p_destination_port_id: null, p_destination_universal_chain_id: null, p_limit: null, p_recommended: null, p_sort_order: null, p_source_channel_id: null, p_source_client_id: null, p_source_connection_id: null, p_source_port_id: null, p_source_universal_chain_id: null, p_tags: null, p_version: null}): [v2_channel_type!]!
   v2_clients(args: v2_clients_args! = {p_client_id: null, p_comparison: lt, p_counterparty_universal_chain_id: null, p_limit: null, p_sort_order: null, p_universal_chain_id: null}): [v2_client_type!]!
@@ -66,6 +67,7 @@ type Query {
   v2_packets(args: v2_packets_args! = {p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_exceeding_sla: null, p_limit: null, p_network: null, p_packet_hash: null, p_packet_send_timestamp: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_packet_type!]!
   v2_transfers(args: v2_transfers_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null, p_transfer_index: null}): [v2_transfer_type!]!
   v2_tokens(args: v2_tokens_args! = {p_denom: null, p_universal_chain_id: null, p_whitelist: null}, order_by: v2_token_meta_order_by = null): [v2_token_meta!]!
+  v2_unbonds(args: v2_unbonds_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_unbond_type!]!
   v2_util_get_transfer_request_details(args: v2_util_get_transfer_request_details_args! = {p_source_universal_chain_id: null, p_destination_universal_chain_id: null, p_base_token: null}): [v2_util_get_transfer_request_details_type!]!
   v2_util_get_address_types_for_display_address(args: v2_util_get_address_types_for_display_address_args! = {p_display_address: null, p_chain_type: null}): [v2_util_get_address_types_for_display_address_type!]!
   v2_stats_count: [v2_stats_type!]!
@@ -132,6 +134,65 @@ input dashboard_days_by_chain_type_order_by {
 
 """Scalar implementation for GraphQL"""
 scalar jsonb
+
+type v2_bond_type {
+  packet_hash: String
+  bond_success: Boolean
+  delivery_success: Boolean
+  packet_shape: String
+  source_universal_chain_id: String
+  remote_universal_chain_id: String
+  destination_universal_chain_id: String
+  sender_canonical: String
+  sender_display: String
+  sender_zkgm: String
+  receiver_canonical: String
+  receiver_display: String
+  receiver_zkgm: String
+  base_token: String
+  base_amount: String
+  quote_token: String
+  quote_amount: String
+  remote_base_token: String
+  remote_base_amount: String
+  remote_quote_token: String
+  remote_quote_amount: String
+  bond_send_timestamp: DateTime
+  bond_send_transaction_hash: String
+  bond_recv_timestamp: DateTime
+  bond_recv_transaction_hash: String
+  bond_timeout_timestamp: DateTime
+  bond_timeout_transaction_hash: String
+  delivery_packet_hash: String
+  delivery_send_timestamp: DateTime
+  delivery_send_transaction_hash: String
+  delivery_recv_timestamp: DateTime
+  delivery_recv_transaction_hash: String
+  delivery_timeout_timestamp: DateTime
+  delivery_timeout_transaction_hash: String
+  sort_order: String
+  source_chain: v2_chain_type!
+  destination_chain: v2_chain_type!
+  bond_traces: [v2_traces_type!]!
+  delivery_traces: [v2_traces_type!]!
+  base_token_meta: v2_token_meta
+  quote_token_meta: v2_token_meta
+  remote_base_token_meta: v2_token_meta
+  remote_quote_token_meta: v2_token_meta
+}
+
+input v2_bonds_args {
+  p_addresses_canonical: jsonb
+  p_block_hash: String
+  p_comparison: ComparisonOp! = lt
+  p_destination_universal_chain_id: String
+  p_limit: Int
+  p_network: String
+  p_packet_hash: String
+  p_sort_order: String
+  p_source_universal_chain_id: String
+  p_transaction_hash: String
+}
 
 type v2_chain_edition {
   name: String
@@ -639,6 +700,44 @@ input v2_transfers_args {
   p_source_universal_chain_id: String
   p_transaction_hash: String
   p_transfer_index: Int
+}
+
+type v2_unbond_type {
+  packet_hash: String
+  success: Boolean
+  packet_shape: String
+  source_universal_chain_id: String
+  destination_universal_chain_id: String
+  sender_canonical: String
+  sender_display: String
+  sender_zkgm: String
+  base_token: String
+  base_amount: String
+  batch: String
+  unbond_send_timestamp: DateTime
+  unbond_send_transaction_hash: String
+  unbond_recv_timestamp: DateTime
+  unbond_recv_transaction_hash: String
+  unbond_timeout_timestamp: DateTime
+  unbond_timeout_transaction_hash: String
+  sort_order: String
+  source_chain: v2_chain_type!
+  destination_chain: v2_chain_type!
+  traces: [v2_traces_type!]!
+  base_token_meta: v2_token_meta
+}
+
+input v2_unbonds_args {
+  p_addresses_canonical: jsonb
+  p_block_hash: String
+  p_comparison: ComparisonOp! = lt
+  p_destination_universal_chain_id: String
+  p_limit: Int
+  p_network: String
+  p_packet_hash: String
+  p_sort_order: String
+  p_source_universal_chain_id: String
+  p_transaction_hash: String
 }
 
 input v2_util_get_address_types_for_display_address_args {

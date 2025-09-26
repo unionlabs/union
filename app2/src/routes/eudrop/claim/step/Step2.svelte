@@ -70,7 +70,7 @@ function handleContinue() {
             Connect Ethereum Wallet
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Connect your Ethereum wallet to claim your U on Ethereum.
+            Connect your Ethereum wallet to claim your eU on Ethereum.
           </p>
         </div>
       </div>

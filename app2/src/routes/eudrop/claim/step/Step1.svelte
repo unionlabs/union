@@ -67,7 +67,7 @@ function handleLogin(provider: AuthProvider) {
 
   runPromise(
     Effect.gen(function*() {
-      yield* dashboard.login(provider.id, "/udrop/claim")
+      yield* dashboard.login(provider.id, "/eudrop/claim")
     }).pipe(
       Effect.tap(() => Effect.sync(() => loading = false)),
       Effect.catchAll(() => Effect.sync(() => loading = false)),
@@ -88,7 +88,7 @@ function handleContinue() {
       <div class="space-y-4 hidden lg:block">
         <div>
           <h1 class="text-4xl font-semibold">
-            Claim Your U
+            Claim Your eU
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
             Authenticate to access your pre-generated claim proof and complete your token claim.
@@ -133,7 +133,7 @@ function handleContinue() {
                 </div>
                 <div>
                   <div class="text-sm font-medium text-accent">Claim Available!</div>
-                  <div class="text-xs text-zinc-400">You're eligible to claim U</div>
+                  <div class="text-xs text-zinc-400">You're eligible to claim eU</div>
                 </div>
               </div>
             </div>
@@ -198,7 +198,7 @@ function handleContinue() {
                 <div>
                   <div class="text-sm font-medium text-orange-400">No Claim Available</div>
                   <div class="text-xs text-zinc-400">
-                    You don't have any U to claim at this time
+                    You don't have any eU to claim at this time
                   </div>
                 </div>
               </div>
@@ -251,7 +251,7 @@ function handleContinue() {
       <!-- Mobile Title - shown above the content on mobile -->
       <div class="block lg:hidden absolute top-4 left-4 right-4 z-10">
         <h1 class="text-4xl font-semibold text-center">
-          Claim Your U
+          Claim Your eU
         </h1>
       </div>
       <div class="ball border-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0">
@@ -263,9 +263,9 @@ function handleContinue() {
         <span></span>
       </div>
       <img
-        src="/images/union-logo-glyph.svg"
+        src="https://app.escher.finance/images/token/e-union.svg"
         alt="Union Logo"
-        class="w-24 h-auto border border-zinc-700 bg-zinc-925 rounded-full p-4 pulse-logo relative z-50"
+        class="w-24 h-auto border border-zinc-700 bg-zinc-925 rounded-full pulse-logo relative z-50"
       />
     </div>
   {/snippet}

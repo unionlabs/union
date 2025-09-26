@@ -6,8 +6,10 @@
 import { GAS_DENOMS } from "@unionlabs/sdk/Constants"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import * as Ucs05 from "@unionlabs/sdk/Ucs05"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
+import * as O from "effect/Option"
 import { type Address, erc20Abi } from "viem"
 import {
   type Abi,
@@ -33,6 +35,7 @@ import type {
 } from "viem"
 import type { Hex } from "viem"
 import * as internal from "./internal/evm.js"
+import * as Safe from "./Safe.js"
 
 /**
  * @category models
@@ -71,40 +74,40 @@ export namespace Evm {
  * @category utils
  * @since 0.0.0
  */
-export const channelBalance = (path: bigint, token: Hex) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClientDestination).client
-    const config = yield* ChannelDestination
-
-    const result = yield* readContract(client, {
-      address: config.ucs03address,
-      abi: Ucs03.Abi,
-      functionName: "_deprecated_channelBalanceV1",
-      args: [config.channelId, path, token],
-    })
-
-    return result
-  })
+export const channelBalance = Effect.fn("channelBalance")((path: bigint, token: Hex) =>
+  pipe(
+    ChannelDestination,
+    Effect.andThen((config) =>
+      readContract({
+        address: config.ucs03address,
+        abi: Ucs03.Abi,
+        functionName: "_deprecated_channelBalanceV1",
+        args: [config.channelId, path, token],
+      })
+    ),
+  )
+)
 
 /**
  * @category utils
  * @since 0.0.0
  */
-export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: bigint) =>
-  Effect.gen(function*() {
+export const channelBalanceAtBlock = Effect.fn("channelBalanceAtBlock")(
+  function*(path: bigint, token: Hex, blockNumber: bigint) {
     const client = (yield* PublicClientDestination).client
     const config = yield* ChannelDestination
 
-    const result = yield* readContract(client, {
+    return yield* readContract({
       address: config.ucs03address,
       abi: Ucs03.Abi,
       functionName: "_deprecated_channelBalanceV1",
       args: [config.channelId, path, token],
       blockNumber: blockNumber,
-    })
-
-    return result
-  })
+    }).pipe(
+      Effect.provideService(PublicClient, { client }),
+    )
+  },
+)
 
 /**
  * @category errors
@@ -124,20 +127,20 @@ export class WaitForTransactionReceiptError extends Data.TaggedError(
  * @category utils
  * @since 0.0.0
  */
-export const waitForTransactionReceipt = (hash: Hash) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    const receipt = yield* Effect.tryPromise({
-      try: () => client.waitForTransactionReceipt({ hash }),
-      catch: err =>
-        new WaitForTransactionReceiptError({
-          cause: Utils.extractErrorDetails(err as WaitForTransactionReceiptTimeoutErrorType),
-        }),
-    })
-
-    return receipt
-  })
+export const waitForTransactionReceipt = Effect.fn("waitForTransactionReceipt")((hash: Hash) =>
+  pipe(
+    PublicClient,
+    Effect.andThen(({ client }) =>
+      Effect.tryPromise({
+        try: () => client.waitForTransactionReceipt({ hash }),
+        catch: err =>
+          new WaitForTransactionReceiptError({
+            cause: Utils.extractErrorDetails(err as WaitForTransactionReceiptTimeoutErrorType),
+          }),
+      })
+    ),
+  )
+)
 
 /**
  * A type-safe wrapper around viem's readContract that handles error cases
@@ -150,7 +153,7 @@ export const waitForTransactionReceipt = (hash: Hash) =>
  * @category utils
  * @since 0.0.0
  */
-export const readContract = <
+export const readContract = Effect.fn("readContract")(<
   TAbi extends Abi,
   TFunctionName extends ContractFunctionName<TAbi, "pure" | "view"> = ContractFunctionName<
     TAbi,
@@ -162,14 +165,21 @@ export const readContract = <
     TFunctionName
   >,
 >(
-  client: ViemPublicClient,
   params: ReadContractParameters<TAbi, TFunctionName, TArgs>,
 ) =>
-  Effect.tryPromise({
-    try: () => client.readContract(params),
-    catch: error =>
-      new ReadContractError({ cause: Utils.extractErrorDetails(error as ReadContractErrorType) }),
-  })
+  pipe(
+    PublicClient,
+    Effect.andThen(({ client }) =>
+      Effect.tryPromise({
+        try: () => client.readContract(params),
+        catch: error =>
+          new ReadContractError({
+            cause: Utils.extractErrorDetails(error as ReadContractErrorType),
+          }),
+      })
+    ),
+  )
+)
 
 /**
  * A type-safe wrapper around viem's writeContract that handles error cases
@@ -182,7 +192,7 @@ export const readContract = <
  * @category utils
  * @since 0.0.0
  */
-export const writeContract = <
+export const writeContract = Effect.fn("writeContract")(<
   const abi extends Abi | readonly unknown[],
   functionName extends ContractFunctionName<abi, "payable" | "nonpayable">,
   args extends ContractFunctionArgs<
@@ -206,6 +216,7 @@ export const writeContract = <
       })
     ),
   )
+)
 
 /**
  * @category utils
@@ -385,8 +396,8 @@ export class CreateWalletClientError
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) =>
-  Effect.gen(function*() {
+export const readErc20Meta = Effect.fn("readErc20Meta")(
+  function*(tokenAddress: Address, chainId: UniversalChainId) {
     // Check if this is a gas denomination token for the specific chain
     const gasTokenMeta = GAS_DENOMS[chainId]
 
@@ -404,7 +415,8 @@ export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) 
     const symbol = yield* readErc20Symbol(tokenAddress)
     const decimals = yield* readErc20Decimals(tokenAddress)
     return { name, symbol, decimals }
-  })
+  },
+)
 
 /**
  * Read the balance of an ERC20 token for a specific address
@@ -417,17 +429,17 @@ export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) 
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "balanceOf",
-      args: [ownerAddress],
-    })
+export const readErc20Balance = Effect.fn("readErc20Balance")((
+  tokenAddress: Hex,
+  ownerAddress: Ucs05.EvmDisplay,
+) =>
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [ownerAddress.address],
   })
+)
 
 /**
  * Read the balance of an ERC20 token for a specific address
@@ -439,22 +451,19 @@ export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =
  * @category utils
  * @since 0.0.0
  */
-export const readErc20BalanceAtBlock = (
+export const readErc20BalanceAtBlock = Effect.fn("readErc20BalanceAtBlock")((
   tokenAddress: Address,
   ownerAddress: Address,
   blockNumber: bigint,
 ) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "balanceOf",
-      args: [ownerAddress],
-      blockNumber: blockNumber,
-    })
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [ownerAddress],
+    blockNumber: blockNumber,
   })
+)
 
 /**
  * Read the name of an ERC20 token
@@ -464,16 +473,13 @@ export const readErc20BalanceAtBlock = (
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Name = (tokenAddress: Address) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "name",
-    })
+export const readErc20Name = Effect.fn("readErc20Name")((tokenAddress: Address) =>
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "name",
   })
+)
 
 /**
  * Read the symbol of an ERC20 token
@@ -483,16 +489,13 @@ export const readErc20Name = (tokenAddress: Address) =>
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Symbol = (tokenAddress: Address) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "symbol",
-    })
+export const readErc20Symbol = Effect.fn("readErc20Symbol")((tokenAddress: Address) =>
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "symbol",
   })
+)
 
 /**
  * Read the decimals of an ERC20 token
@@ -502,16 +505,13 @@ export const readErc20Symbol = (tokenAddress: Address) =>
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Decimals = (tokenAddress: Address) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "decimals",
-    })
+export const readErc20Decimals = Effect.fn("readErc20Decimals")((tokenAddress: Address) =>
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "decimals",
   })
+)
 
 /**
  * Read the TotalSupply of an ERC20 token
@@ -522,17 +522,17 @@ export const readErc20Decimals = (tokenAddress: Address) =>
  * @category utils
  * @since 0.0.0
  */
-export const readErc20TotalSupplyAtBlock = (tokenAddress: Address, blockNumber: bigint) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "totalSupply",
-      blockNumber: blockNumber,
-    })
+export const readErc20TotalSupplyAtBlock = Effect.fn("readErc20TotalSupplyAtBlock")((
+  tokenAddress: Address,
+  blockNumber: bigint,
+) =>
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "totalSupply",
+    blockNumber: blockNumber,
   })
+)
 
 /**
  * Read the TotalSupply of an ERC20 token
@@ -542,16 +542,13 @@ export const readErc20TotalSupplyAtBlock = (tokenAddress: Address, blockNumber: 
  * @category utils
  * @since 0.0.0
  */
-export const readErc20TotalSupply = (tokenAddress: Address) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "totalSupply",
-    })
+export const readErc20TotalSupply = Effect.fn("readErc20TotalSupply")((tokenAddress: Address) =>
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "totalSupply",
   })
+)
 
 /**
  * Read the allowance of an ERC20 token for a specific owner and spender
@@ -563,56 +560,66 @@ export const readErc20TotalSupply = (tokenAddress: Address) =>
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Allowance = (
+export const readErc20Allowance = Effect.fn("readErc20Allowance")((
   tokenAddress: Address,
   ownerAddress: Address,
   spenderAddress: Address,
 ) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    return yield* readContract(client, {
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "allowance",
-      args: [ownerAddress, spenderAddress],
-    })
+  readContract({
+    address: tokenAddress,
+    abi: erc20Abi,
+    functionName: "allowance",
+    args: [ownerAddress, spenderAddress],
   })
+)
 
 /**
  * Increase the allowance of an ERC20 token for a specific spender
  * @param tokenAddress The address of the ERC20 token
  * @param spenderAddress The address of the spender
  * @param amount The amount to increase the allowance by
- * @returns An Effect that resolves to the transaction hash
+ * @returns An Effect that resolves to the transaction hash (on-chain hash for Safe wallets)
  *
  * @category utils
  * @since 0.0.0
  */
-export const increaseErc20Allowance = (
-  tokenAddress: Address,
-  spenderAddress: Address,
+export const increaseErc20Allowance = Effect.fn("increaseErc20Allowance")((
+  tokenAddress: Hex,
+  spenderAddress: Ucs05.EvmDisplay,
   amount: bigint,
 ) =>
-  Effect.gen(function*() {
-    const walletClient = yield* WalletClient
-
-    return yield* writeContract({
-      account: walletClient.account,
-      chain: walletClient.chain,
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [spenderAddress, amount],
-    })
-  })
+  pipe(
+    WalletClient,
+    Effect.andThen(({ client, account }) =>
+      client.writeContract({
+        account: account,
+        chain: client.chain,
+        address: tokenAddress,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [spenderAddress.address, amount],
+      })
+    ),
+    Effect.flatMap((txHash) =>
+      pipe(
+        Effect.serviceOption(Safe.Safe),
+        Effect.flatMap(
+          O.match({
+            onNone: () => Effect.succeed(txHash),
+            onSome: (safe) => safe.resolveTxHash(txHash),
+          }),
+        ),
+      )
+    ),
+  )
+)
 
 /**
  * @category utils
  * @since 0.0.0
  */
-export const sendInstruction = (instruction: Ucs03.Instruction) =>
-  Effect.gen(function*() {
+export const sendInstruction = Effect.fn("sendInstruction")(
+  function*(instruction: Ucs03.Instruction) {
     const walletClient = yield* WalletClient
     const sourceConfig = yield* ChannelSource
 
@@ -640,4 +647,5 @@ export const sendInstruction = (instruction: Ucs03.Instruction) =>
       ],
       value: 10n,
     })
-  })
+  },
+)

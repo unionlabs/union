@@ -125,6 +125,10 @@ class InterruptibleResponse implements ClientResponse.ZkgmClientResponse {
     return this.original.txHash
   }
 
+  get safeHash() {
+    return this.original.safeHash
+  }
+
   get stream() {
     return Stream.suspend(() => {
       responseRegistry.unregister(this.original)

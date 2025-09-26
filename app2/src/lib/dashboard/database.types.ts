@@ -377,6 +377,30 @@ export type Database = {
         }
         Relationships: []
       }
+      claims_eu: {
+        Row: {
+          amount: string
+          beneficiary: string
+          created_at: string
+          proof: Json
+          user_id: string
+        }
+        Insert: {
+          amount: string
+          beneficiary: string
+          created_at?: string
+          proof: Json
+          user_id: string
+        }
+        Update: {
+          amount?: string
+          beneficiary?: string
+          created_at?: string
+          proof?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       crypto_influencers: {
         Row: {
           author_description: string | null
@@ -2359,18 +2383,21 @@ export type Database = {
         Row: {
           amount: string | null
           beneficiary: string | null
+          created_at: string | null
           proof: Json | null
           user_id: string | null
         }
         Insert: {
           amount?: never
           beneficiary?: string | null
+          created_at?: string | null
           proof?: Json | null
           user_id?: string | null
         }
         Update: {
           amount?: never
           beneficiary?: string | null
+          created_at?: string | null
           proof?: Json | null
           user_id?: string | null
         }

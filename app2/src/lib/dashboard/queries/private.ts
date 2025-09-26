@@ -453,7 +453,7 @@ export const createSnagUserDevice = (input: DeviceInsert) => {
 
 export const getUserClaim = (userId: string) =>
   withLocalStorageCacheStale(
-    "user_claim_v2",
+    "user_eu_claim",
     `${CACHE_VERSION}:${userId}`,
     TTL,
     STALE,
@@ -463,7 +463,7 @@ export const getUserClaim = (userId: string) =>
         Effect.tryPromise({
           try: () =>
             client
-              .from("claims_v2")
+              .from("claims_eu")
               .select("*")
               .eq("user_id", userId)
               .single(),

@@ -3,6 +3,7 @@
  *
  * @since 2.0.0
  */
+import * as O from "effect/Option"
 import * as internal from "./internal/zkgmClientResponse.js"
 import { Hex } from "./schema/hex.js"
 import type * as ClientError from "./ZkgmClientError.js"
@@ -31,4 +32,5 @@ export interface ZkgmClientResponse
   readonly [TypeId]: TypeId
   readonly request: ClientRequest.ZkgmClientRequest
   readonly txHash: Hex
+  readonly safeHash: O.Option<Hex>
 }

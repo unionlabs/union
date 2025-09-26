@@ -18,7 +18,7 @@ let claim = $derived(
 
 $effect(() => {
   if (Option.isNone(claim)) {
-    window.location.href = "/udrop/claim?step=1"
+    window.location.href = "/eudrop/claim?step=1"
   }
 })
 
@@ -43,7 +43,7 @@ function handleProceedToClaim() {
             Your Claim Details
           </h1>
           <p class="text-sm text-zinc-400 leading-relaxed mt-3">
-            Review your U allocation and claim proof before proceeding.
+            Review your eU allocation and claim proof before proceeding.
           </p>
         </div>
       </div>
@@ -115,7 +115,7 @@ function handleProceedToClaim() {
               </div>
               <div class="text-lg font-medium text-red-400 mb-2">No Claim Found</div>
               <div class="text-sm text-zinc-400">
-                You don't have any U available to claim at this time.
+                You don't have any eU available to claim at this time.
               </div>
             </div>
           </div>
@@ -178,7 +178,7 @@ function handleProceedToClaim() {
                       claim.value.amount
                       ? formatUnits(BigInt(claim.value.amount), 18)
                       : "0"
-                    } U
+                    } eU
                   </div>
                 </div>
 

@@ -21,7 +21,7 @@ export interface AuthGuardResult {
  * ```ts
  * // In +layout.ts
  * export const load: LayoutLoad = async ({ url }) => {
- *   return await requireAuth(url, '/udrop/check', ['/udrop/check'])
+ *   return await requireAuth(url, '/eudrop/check', ['/eudrop/check'])
  * }
  *
  * // With custom status code

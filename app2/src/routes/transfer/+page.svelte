@@ -6,6 +6,11 @@ import Transfer from "$lib/transfer/index.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { Ucs05 } from "@unionlabs/sdk"
 import { Option } from "effect"
+import { onMount } from "svelte"
+
+onMount(() => {
+  transferData.raw.initFromUrlParams()
+})
 
 $effect(() => {
   if (Option.isSome(transferData.sourceChain)) {
