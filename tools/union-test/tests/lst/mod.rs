@@ -1,5 +1,6 @@
-use std::{cell::RefCell, future::Future, sync::Arc, time::Duration};
+use std::{future::Future, sync::Arc, time::Duration};
 
+use alloy::{network::AnyNetwork, providers::DynProvider};
 use alloy_sol_types::SolValue as _;
 use bip32::secp256k1::ecdsa::SigningKey;
 use cometbft_rpc::types::code::Code;
@@ -29,7 +30,7 @@ use union_test::{
 };
 use unionlabs::{
     encoding::{EncodeAs, Json},
-    primitives::{H160, H256},
+    primitives::H160,
 };
 use voyager_sdk::{anyhow, serde_json};
 
@@ -64,11 +65,21 @@ pub struct Config {
     union_deployer_addr: String,
 }
 
-pub struct Queue {
-    tests: Vec<String>,
+#[derive(Clone)]
+pub struct SharedData {
+    stakers: Vec<(alloy::primitives::Address, DynProvider<AnyNetwork>)>,
 }
 
-async fn run_test_in_queue<'a, Fut: Future<Output = ()>, F: Fn(Arc<LstContext>) -> Fut>(
+pub struct Queue {
+    tests: Vec<String>,
+    shared_data: SharedData,
+}
+
+async fn run_test_in_queue<
+    'a,
+    Fut: Future<Output = SharedData>,
+    F: Fn(Arc<LstContext>, SharedData) -> Fut,
+>(
     key: &str,
     test_fn: F,
 ) {
@@ -130,10 +141,11 @@ async fn run_test_in_queue<'a, Fut: Future<Output = ()>, F: Fn(Arc<LstContext>) 
             (
                 Mutex::new(Queue {
                     tests: {
-                        let mut t = vec!["bond".into()];
+                        let mut t = vec!["bond".into(), "unbond".into(), "withdraw".into()];
                         t.reverse();
                         t
                     },
+                    shared_data: SharedData { stakers: vec![] },
                 }),
                 Arc::new(LstContext {
                     staker,
@@ -166,7 +178,7 @@ async fn run_test_in_queue<'a, Fut: Future<Output = ()>, F: Fn(Arc<LstContext>) 
         {
             let mut lock = ctx.0.lock().await;
             if lock.tests.last().unwrap() == key {
-                test_fn(ctx.1.clone()).await;
+                lock.shared_data = test_fn(ctx.1.clone(), lock.shared_data.clone()).await;
                 let _ = lock.tests.pop();
                 return;
             }

@@ -23,6 +23,7 @@ use protos::{
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tracing::info;
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
@@ -228,11 +229,9 @@ impl Module {
                                 let event = match CosmosSdkEvent::<ModuleEvent>::new(raw_ev) {
                                     Ok(event) => event,
                                     Err(cosmos_sdk_event::Error::Deserialize(_error)) => {
-                                        // println!("unable to parse event: {error}");
                                         continue;
                                     }
                                     Err(_err) => {
-                                        // println!("error parsing event: {}", ErrorReporter(err));
                                         continue;
                                     }
                                 };
@@ -342,12 +341,12 @@ impl Module {
         packet_hash_param: H256,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        println!("Waiting for packet recv event with hash: {packet_hash_param:?}");
+        info!("Waiting for packet recv event with hash: {packet_hash_param:?}");
         Ok(self
             .wait_for_event(
                 move |evt| {
                     if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
-                        println!("Packet recv event came with hash: {packet_hash:?}");
+                        info!("Packet recv event came with hash: {packet_hash:?}");
                         if packet_hash.as_ref() == packet_hash_param.as_ref() {
                             return Some(helpers::PacketRecv {
                                 packet_hash: *packet_hash,
@@ -398,12 +397,12 @@ impl Module {
         packet_hash_param: H256,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketTimeout> {
-        println!("Waiting for packet timeout event with hash: {packet_hash_param:?}");
+        info!("Waiting for packet timeout event with hash: {packet_hash_param:?}");
         Ok(self
             .wait_for_event(
                 move |evt| {
                     if let ModuleEvent::WasmPacketTimeout { packet_hash, .. } = evt {
-                        println!("Packet timeout event came with hash: {packet_hash:?}");
+                        info!("Packet timeout event came with hash: {packet_hash:?}");
                         if packet_hash.as_ref() == packet_hash_param.as_ref() {
                             return Some(helpers::PacketTimeout {
                                 packet_hash: *packet_hash,
@@ -427,7 +426,7 @@ impl Module {
         packet_hash_param: H256,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketAck> {
-        println!("Waiting for packet ack event with hash: {packet_hash_param:?}");
+        info!("Waiting for packet ack event with hash: {packet_hash_param:?}");
         Ok(self
             .wait_for_event(
                 move |evt| {
@@ -495,7 +494,6 @@ impl Module {
         Ok(self
             .wait_for_event(
                 move |evt| {
-                    println!("EVT is: {:?}", evt);
                     if let ModuleEvent::WithdrawRewards { validator, amount } = evt {
                         if validator == &validator_filter {
                             Some(helpers::WithdrawRewards {
@@ -705,6 +703,33 @@ impl Module {
         let outcome = tx_client
             .broadcast_tx_commit(
                 [mk_any(&protos::cosmos::staking::v1beta1::MsgDelegate {
+                    delegator_address: signer_address.to_string(),
+                    validator_address,
+                    amount: Some(Coin {
+                        denom: "muno".to_string(),
+                        amount: amount.to_string(),
+                    }),
+                })],
+                "memo",
+                true,
+            )
+            .await;
+
+        Some(outcome)
+    }
+
+    pub async fn unstake(
+        &self,
+        validator_address: String,
+        amount: u128,
+        signer: &LocalSigner,
+    ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
+        let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
+
+        let signer_address = signer.address();
+        let outcome = tx_client
+            .broadcast_tx_commit(
+                [mk_any(&protos::cosmos::staking::v1beta1::MsgUndelegate {
                     delegator_address: signer_address.to_string(),
                     validator_address,
                     amount: Some(Coin {
