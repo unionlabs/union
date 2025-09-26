@@ -1,35 +1,45 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
-import StatusDisplay from "./StatusDisplay.svelte"
-import TokenBalanceRow from "./TokenBalanceRow.svelte"
-import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
-import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
-import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
-import { uiStore } from "$lib/stores/ui.svelte"
-import { predictProxy } from "$lib/stake/instantiate2"
-import { 
-  DESTINATION_CHANNEL_ID, 
-  SOURCE_CHANNEL_ID,
+import {
+  DESTINATION_CHANNEL_ID,
   ETHEREUM_CHAIN_ID,
-  UNION_CHAIN_ID,
+  SOURCE_CHANNEL_ID,
   UCS03_EVM_ADDRESS,
-  UCS03_ZKGM,
   UCS03_MINTER_ON_UNION,
+  UCS03_ZKGM,
+  UNION_CHAIN_ID,
 } from "$lib/stake/config"
-import { Batch, Call, Token, TokenOrder, Ucs03, Ucs05, Utils, ZkgmClient, ZkgmClientRequest } from "@unionlabs/sdk"
-import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { predictProxy } from "$lib/stake/instantiate2"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
+import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
+import {
+  Batch,
+  Call,
+  Token,
+  TokenOrder,
+  Ucs03,
+  Ucs05,
+  Utils,
+  ZkgmClient,
+  ZkgmClientRequest,
+} from "@unionlabs/sdk"
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
-import { EU_LST, EU_ERC20, EU_SOLVER_ON_ETH_METADATA } from "@unionlabs/sdk/Constants"
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { EU_ERC20, EU_LST, EU_SOLVER_ON_ETH_METADATA } from "@unionlabs/sdk/Constants"
 import type { Chain, Token as TokenType } from "@unionlabs/sdk/schema"
 import { HexFromJson } from "@unionlabs/sdk/schema/hex"
 import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
-import { BigDecimal, pipe, Data, Effect, Schema, Match, Layer } from "effect"
+import { BigDecimal, Data, Effect, Layer, Match, pipe, Schema } from "effect"
 import * as O from "effect/Option"
 import { custom } from "viem"
 import { mainnet } from "viem/chains"
+import StatusDisplay from "./StatusDisplay.svelte"
+import TokenBalanceRow from "./TokenBalanceRow.svelte"
 
 interface Props {
   evmChain: O.Option<Chain>
@@ -86,7 +96,7 @@ const isSuccess = $derived(DustWithdrawState.$is("Success")(dustWithdrawState))
 const isError = $derived(DustWithdrawState.$is("Error")(dustWithdrawState))
 
 const hasDust = $derived(
-  O.isSome(proxyEuDust) && BigDecimal.greaterThan(proxyEuDust.value, BigDecimal.make(0n, 18))
+  O.isSome(proxyEuDust) && BigDecimal.greaterThan(proxyEuDust.value, BigDecimal.make(0n, 18)),
 )
 const isButtonDisabled = $derived(!hasDust || isWithdrawing || isSuccess)
 
@@ -99,7 +109,7 @@ const executeDustWithdrawal = (
   Effect.gen(function*() {
     const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
     const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
-    
+
     // For dust withdrawal, we need to transfer eU from proxy to user's wallet on Union
     // then send it to Ethereum
     const proxy = yield* predictProxy({
@@ -252,9 +262,9 @@ runPromiseExit$(() =>
       dustWithdrawState = DustWithdrawState.ConfirmingWithdrawal()
 
       const { txHash } = yield* executeDustWithdrawal(
-        sender, 
+        sender,
         proxyEuDust.value,
-        proxyAddress.value
+        proxyAddress.value,
       ).pipe(
         Effect.provide(EvmZkgmClient.layerWithoutWallet),
         Effect.provide(walletClient),
@@ -327,11 +337,11 @@ const handleDustWithdraw = () => {
         O.all([proxyEuDust, redemptionRate]),
         O.map(([dust, rate]) => {
           const valueInU = BigDecimal.multiply(dust, rate)
-          return `≈ ${Utils.formatBigDecimal(BigDecimal.round({ mode: "from-zero", scale: 2 })(valueInU))} U`
+          return `≈ ${
+            Utils.formatBigDecimal(BigDecimal.round({ mode: "from-zero", scale: 2 })(valueInU))
+          } U`
         }),
-        O.getOrElse(() => 
-          O.isSome(proxyEuDust) && O.isSome(redemptionRate) ? "loading" : ""
-        )
+        O.getOrElse(() => O.isSome(proxyEuDust) && O.isSome(redemptionRate) ? "loading" : ""),
       )}
     />
 
@@ -369,7 +379,8 @@ const handleDustWithdraw = () => {
     class="w-full"
   >
     {#if isWithdrawing}
-      <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+      <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
+      </div>
     {:else if isSuccess}
       <svg
         class="w-4 h-4 text-current mr-2"
@@ -391,14 +402,16 @@ const handleDustWithdraw = () => {
           !hasDust
             ? "No Dust Available"
             : O.isNone(WalletStore.evmAddress)
-              ? "Connect Wallet"
-              : "Recover Dust to Wallet"),
+            ? "Connect Wallet"
+            : "Recover Dust to Wallet"),
         Match.when(DustWithdrawState.$is("SwitchingChain"), () => "Switching..."),
         Match.when(DustWithdrawState.$is("CheckingAllowance"), () => "Checking..."),
         Match.when(DustWithdrawState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
         Match.when(DustWithdrawState.$is("AllowanceSubmitted"), () => "Submitted"),
-        Match.when(DustWithdrawState.$is("WaitingForAllowanceConfirmation"), () => "Confirming..."),
-        Match.when(DustWithdrawState.$is("AllowanceApproved"), () => "Approved ✓"),
+        Match.when(DustWithdrawState.$is("WaitingForAllowanceConfirmation"), () =>
+          "Confirming..."),
+        Match.when(DustWithdrawState.$is("AllowanceApproved"), () =>
+          "Approved ✓"),
         Match.when(DustWithdrawState.$is("PreparingTransaction"), () => "Preparing..."),
         Match.when(DustWithdrawState.$is("ConfirmingWithdrawal"), () => "Confirm in Wallet"),
         Match.when(DustWithdrawState.$is("WithdrawalSubmitted"), () => "Submitted"),

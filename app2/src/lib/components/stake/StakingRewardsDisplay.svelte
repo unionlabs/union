@@ -2,7 +2,7 @@
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { Utils } from "@unionlabs/sdk"
 import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
-import { BigDecimal, pipe, Array as A } from "effect"
+import { Array as A, BigDecimal, pipe } from "effect"
 import * as O from "effect/Option"
 
 interface Props {
@@ -43,7 +43,7 @@ const totalUValue = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
       {
         onNone: () => BigDecimal.make(0n, 18),
         onSome: ([dust, rate]) => BigDecimal.multiply(dust, rate),
-      }
+      },
     )
     // Add current value + eU dust value
     return BigDecimal.sum(current, euDustInU)
@@ -56,17 +56,19 @@ const totalUStaked = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
   O.map(history => {
     // Sum all bonds (U invested) - only successful ones
     const bonds = history.filter((tx): tx is Bond => {
-      if (tx._tag !== "Bond") return false
+      if (tx._tag !== "Bond") {
+        return false
+      }
       // Check if bond_success is Some(true)
       return O.isSome(tx.bond_success) && tx.bond_success.value === true
     })
-    
+
     // Bond base_amount is in U
     const totalBonded = bonds.reduce((acc, bond) => {
       const amount = BigDecimal.make(BigInt(bond.base_amount), 18)
       return BigDecimal.sum(acc, amount)
     }, BigDecimal.fromBigInt(0n))
-    
+
     return totalBonded
   }),
 ))
@@ -88,8 +90,10 @@ const percentageGain = $derived<O.Option<string>>(
     O.all([rewardsEarned, totalUStaked]),
     ([rewards, invested]) => {
       // If no investment, return 0
-      if (BigDecimal.isZero(invested)) return O.some("0")
-      
+      if (BigDecimal.isZero(invested)) {
+        return O.some("0")
+      }
+
       // Calculate percentage: (rewards / invested) * 100
       const percentage = pipe(
         rewards,
@@ -97,9 +101,9 @@ const percentageGain = $derived<O.Option<string>>(
         O.map(rate => BigDecimal.multiply(rate, BigDecimal.fromBigInt(100n))),
         O.map(pct => BigDecimal.round({ mode: "from-zero", scale: 2 })(pct)),
         O.map(Utils.formatBigDecimal),
-        O.getOrElse(() => "0")
+        O.getOrElse(() => "0"),
       )
-      
+
       return O.some(percentage)
     },
   ),
@@ -123,7 +127,7 @@ const formatRewards = (rewards: O.Option<BigDecimal.BigDecimal>) => {
       const isPositive = BigDecimal.greaterThan(r, BigDecimal.fromBigInt(0n))
       return isPositive ? `+${formatted}` : formatted
     }),
-    O.getOrElse(() => "—")
+    O.getOrElse(() => "—"),
   )
 }
 </script>
@@ -150,16 +154,25 @@ const formatRewards = (rewards: O.Option<BigDecimal.BigDecimal>) => {
     {#if O.isSome(eUBalance)}
       {@const balanceDecimal = BigDecimal.make(eUBalance.value, 18)}
       <span class="text-sm font-medium text-zinc-200">
-        {Utils.formatBigDecimal(BigDecimal.round({ mode: "from-zero", scale: 4 })(balanceDecimal))} eU
+        {
+          Utils.formatBigDecimal(
+            BigDecimal.round({ mode: "from-zero", scale: 4 })(balanceDecimal),
+          )
+        } eU
       </span>
     {:else}
       <Skeleton class="w-16 h-3.5" />
     {/if}
 
-    {#if O.isSome(proxyEuDust) && BigDecimal.greaterThan(proxyEuDust.value, BigDecimal.make(0n, 18))}
+    {#if O.isSome(proxyEuDust)
+        && BigDecimal.greaterThan(proxyEuDust.value, BigDecimal.make(0n, 18))}
       <span class="text-zinc-500">Proxy eU (dust)</span>
       <span class="text-sm font-medium text-amber-300">
-        {Utils.formatBigDecimal(BigDecimal.round({ mode: "from-zero", scale: 4 })(proxyEuDust.value))} eU
+        {
+          Utils.formatBigDecimal(
+            BigDecimal.round({ mode: "from-zero", scale: 4 })(proxyEuDust.value),
+          )
+        } eU
       </span>
     {/if}
 
@@ -167,18 +180,20 @@ const formatRewards = (rewards: O.Option<BigDecimal.BigDecimal>) => {
     {#if O.isSome(rewardsEarned)}
       {@const isPositive = BigDecimal.greaterThan(rewardsEarned.value, BigDecimal.fromBigInt(0n))}
       <div class="flex items-baseline gap-2">
-        <span class={isPositive
+        <span
+          class={isPositive
           ? "text-sm font-semibold text-emerald-400"
-          : "text-sm font-semibold text-red-400"
-        }>
+          : "text-sm font-semibold text-red-400"}
+        >
           {formatRewards(rewardsEarned)} U
         </span>
         {#if O.isSome(percentageGain)}
-          <span class={isPositive
+          <span
+            class={isPositive
             ? "text-[11px] font-medium text-emerald-300"
-            : "text-[11px] font-medium text-red-400"
-          }>
-            {isPositive ? '+' : ''}{percentageGain.value}%
+            : "text-[11px] font-medium text-red-400"}
+          >
+            {isPositive ? "+" : ""}{percentageGain.value}%
           </span>
         {/if}
       </div>

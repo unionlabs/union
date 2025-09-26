@@ -26,7 +26,15 @@ const CTA_LABEL = "Visit Escher"
       class="inline-flex items-center gap-2 rounded-md border border-[#0015ff]/30 bg-[#0015ff] px-4 py-2 text-xs font-semibold tracking-wide text-white transition hover:bg-[#000dd8]"
     >
       <span>{CTA_LABEL}</span>
-      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+      <svg
+        class="h-3.5 w-3.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
         <path d="M7 17L17 7M7 7h10v10" />
       </svg>
     </a>
