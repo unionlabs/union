@@ -28,7 +28,7 @@ export function raise(error: unknown): never {
 
 /**
  * generates salts to be used on transfer submission
- * used to prevent transfer hash colissions
+ * used to prevent transfer hash collisions
  */
 export function generateSalt(): Hex {
   const rawSalt = new Uint8Array(32)
