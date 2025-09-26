@@ -1,5 +1,5 @@
 [package]
-name    = "cw-account"
+name    = "lst-staker"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -16,15 +16,16 @@ workspace = true
 
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
-cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0", "staking", "stargate"] } # enable all features so that any message is dispatchable
+cosmwasm-std         = { workspace = true }
+cw-account           = { workspace = true, features = ["library"] }
+cw-utils             = { version = "2.0" }
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }
-ibc-union-spec       = { workspace = true, features = ["bincode"] }
+lst                  = { workspace = true, features = ["library"] }
 schemars             = { workspace = true, optional = true, features = ["derive"] }
 serde                = { workspace = true, features = ["derive"] }
 thiserror            = { workspace = true }
-ucs03-zkgmable       = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
 unionlabs-primitives = { workspace = true, features = ["bincode"] }
 
@@ -33,5 +34,4 @@ hex-literal = { workspace = true }
 
 [features]
 default  = []
-library  = []
 schemars = ["dep:schemars"]
