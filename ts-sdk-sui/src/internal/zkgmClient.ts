@@ -58,7 +58,7 @@ export const fromWallet = (
                 (v1) =>
                   Effect.gen(function*() {
                     const meta = yield* pipe(
-                      Sui.readCoinMetadata(
+                      Sui.readCoinMeta(
                         v1.baseToken.address as unknown as any
                       ),
                       Effect.provideService(Sui.PublicClient, client),
@@ -136,32 +136,32 @@ export const fromWallet = (
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { args })
 
-      // // TODO: Fix writecontract calling, decide parameters etc.
-      // const sendInstruction = Sui.writeContract({
-      //   client: client,
-      //   account: wallet.signer,
-      //   abi: Ucs03.Abi,
-      //   chain: wallet.chain,
-      //   functionName: "send",
-      //   address: request.ucs03Address as unknown as any,
-      //   args,
-      //   value: funds,
-      // }).pipe(
-      //   Effect.mapError((cause) =>
-      //     new ClientError.RequestError({
-      //       reason: "Transport",
-      //       request,
-      //       cause,
-      //       description: "writeContract",
-      //     })
-      //   ),
-      //   Effect.provideService(Evm.WalletClient, wallet),
-      // )
+      // TODO: Fix writecontract calling, decide parameters etc.
+      const sendInstruction = Sui.writeContract({
+        client: client,
+        account: wallet.signer,
+        abi: Ucs03.Abi,
+        chain: wallet.chain,
+        functionName: "send",
+        address: request.ucs03Address as unknown as any,
+        args,
+        value: funds,
+      }).pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "writeContract",
+          })
+        ),
+        Effect.provideService(Evm.WalletClient, wallet),
+      )
 
-      // return yield* pipe(
-      //   sendInstruction,
-      //   Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
-      // )
+      return yield* pipe(
+        sendInstruction,
+        Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
+      )
     })
   )
 
