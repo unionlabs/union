@@ -1,10 +1,17 @@
 use std::time::Duration;
 
 use alloy::{network::AnyNetwork, primitives::Address, providers::DynProvider};
-use cosmwasm_std::{to_json_binary, Addr, Coin as CwCoin, CosmosMsg, Decimal, WasmMsg};
-use lst::msg::{AccountingStateResponse, ExecuteMsg as LstExecuteMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Coin as CwCoin, CosmosMsg, Decimal, Uint128, WasmMsg,
+};
+use cw20::Cw20ExecuteMsg;
+use lst::{
+    msg::{AccountingStateResponse, Batch, BatchesResponse, ExecuteMsg as LstExecuteMsg},
+    types::{BatchId, PendingBatch},
+};
 use rand::RngCore;
-use tracing::info;
+use serde::{de::DeserializeOwned, Serialize};
+use tracing::{info, warn};
 use union_test::{
     cosmos::{self},
     cosmos_helpers::calculate_proxy_address,
@@ -15,6 +22,7 @@ use union_test::{
     zkgm_helper,
 };
 use unionlabs::primitives::U256;
+use voyager_sdk::serde_json;
 
 use crate::lst::*;
 
@@ -23,6 +31,21 @@ use crate::lst::*;
 // u: union1pntx7gm7shsp6slef74ae7wvcc35t3wdmanh7wrg4xkq95m24qds5atmcp
 // lst: union1fdg764zzxwvwyqkx3fuj0236l9ddh5xmutgvj2mv9cduffy82z9sp62ygc
 
+fn make_proxy_call(funded_msgs: &[(&str, Binary, Vec<CwCoin>)]) -> Vec<u8> {
+    let wasm_msgs: Vec<CosmosMsg> = funded_msgs
+        .into_iter()
+        .map(|(contract, msg, funds)| {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: contract.to_string(),
+                msg: msg.clone(),
+                funds: funds.clone(),
+            })
+        })
+        .collect();
+
+    serde_json::to_vec(&wasm_msgs).expect("vec cosmosmsg json")
+}
+
 fn make_zkgm_bond_payload_via_call(
     lst_hub: &str,
     mint_to: &str,
@@ -30,20 +53,57 @@ fn make_zkgm_bond_payload_via_call(
     funds_denom: &str,
     funds_amount: u128,
 ) -> Vec<u8> {
-    let wasm_exec: CosmosMsg = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: lst_hub.to_string(),
-        msg: to_json_binary(&LstExecuteMsg::Bond {
+    make_proxy_call(&[(
+        lst_hub,
+        to_json_binary(&LstExecuteMsg::Bond {
             mint_to_address: Addr::unchecked(mint_to),
             min_mint_amount: min_mint_amount.into(),
         })
         .unwrap(),
-        funds: vec![CwCoin {
+        vec![CwCoin {
             denom: funds_denom.to_string(),
             amount: funds_amount.into(),
         }],
-    });
+    )])
+}
 
-    voyager_sdk::serde_json::to_vec(&vec![wasm_exec]).expect("vec cosmosmsg json")
+fn make_zkgm_unbond_payload_via_call(cw20_token: &str, lst_hub: &str, amount: u128) -> Vec<u8> {
+    make_proxy_call(&[
+        (
+            cw20_token,
+            to_json_binary(&Cw20ExecuteMsg::IncreaseAllowance {
+                spender: lst_hub.to_string(),
+                amount: amount.into(),
+                expires: None,
+            })
+            .unwrap(),
+            Vec::new(),
+        ),
+        (
+            lst_hub,
+            to_json_binary(&LstExecuteMsg::Unbond {
+                amount: amount.into(),
+            })
+            .unwrap(),
+            Vec::new(),
+        ),
+    ])
+}
+
+fn make_zkgm_withdraw_payload_via_call(
+    lst_hub: &str,
+    withdraw_to_address: Addr,
+    batch_id: BatchId,
+) -> Vec<u8> {
+    make_proxy_call(&[(
+        lst_hub,
+        to_json_binary(&LstExecuteMsg::Withdraw {
+            withdraw_to_address,
+            batch_id,
+        })
+        .unwrap(),
+        Vec::new(),
+    )])
 }
 
 async fn bond(
@@ -132,19 +192,161 @@ async fn bond(
     assert_eq!(ack.tag, TAG_ACK_SUCCESS);
 }
 
-async fn get_accounting_state(t: &LstContext) -> anyhow::Result<AccountingStateResponse> {
-    t.ctx
-        .src
-        .query_wasm_smart::<_, AccountingStateResponse>(
-            t.union_address.lst_hub.clone(),
-            lst::msg::QueryMsg::AccountingState {},
+async fn unbond(
+    t: &LstContext,
+    channel_id_on_eth: u32,
+    channel_id_on_union: u32,
+    sender_on_evm: Address,
+    sender_evm_provider: DynProvider<AnyNetwork>,
+    unbond_amount: u128,
+) {
+    let proxy_address_on_union = calculate_proxy_address(
+        &t.union_address.zkgm,
+        alloy::primitives::U256::ZERO,
+        channel_id_on_union,
+        sender_on_evm.as_ref(),
+    );
+
+    let mut salt_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
+
+    let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), sender_evm_provider.clone());
+
+    let call = ucs03_zkgm
+        .send(
+            channel_id_on_eth,
+            0u64,
+            4294967295000000000u64,
+            salt_bytes.into(),
+            InstructionEvm::from(zkgm_helper::make_call(
+                sender_on_evm.to_vec().into(),
+                proxy_address_on_union.as_bytes().to_vec().into(),
+                make_zkgm_unbond_payload_via_call(
+                    t.union_address.eu.as_str(),
+                    t.union_address.lst_hub.as_str(),
+                    unbond_amount,
+                )
+                .into(),
+            )),
+        )
+        .clear_decoder()
+        .with_cloned_provider();
+
+    let (_, ack) = t
+        .ctx
+        .send_and_recv_and_ack_with_retry::<evm::Module, cosmos::Module>(
+            &t.ctx.dst,
+            ETH_ADDRESS_ZKGM.into(),
+            call,
+            &t.ctx.src,
+            6,
+            Duration::from_secs(10),
+            Duration::from_secs(720),
+            &sender_evm_provider,
         )
         .await
+        .unwrap();
+
+    assert_eq!(ack.tag, TAG_ACK_SUCCESS);
+}
+
+async fn withdraw(
+    t: &LstContext,
+    channel_id_on_eth: u32,
+    channel_id_on_union: u32,
+    sender_on_evm: Address,
+    sender_evm_provider: DynProvider<AnyNetwork>,
+    batch_id: BatchId,
+) {
+    let proxy_address_on_union = calculate_proxy_address(
+        &t.union_address.zkgm,
+        alloy::primitives::U256::ZERO,
+        channel_id_on_union,
+        sender_on_evm.as_ref(),
+    );
+
+    let mut salt_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
+
+    let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), sender_evm_provider.clone());
+
+    let call = ucs03_zkgm
+        .send(
+            channel_id_on_eth,
+            0u64,
+            4294967295000000000u64,
+            salt_bytes.into(),
+            InstructionEvm::from(zkgm_helper::make_call(
+                sender_on_evm.to_vec().into(),
+                proxy_address_on_union.as_bytes().to_vec().into(),
+                make_zkgm_withdraw_payload_via_call(
+                    t.union_address.lst_hub.as_str(),
+                    proxy_address_on_union.clone(),
+                    batch_id,
+                )
+                .into(),
+            )),
+        )
+        .clear_decoder()
+        .with_cloned_provider();
+
+    let (_, ack) = t
+        .ctx
+        .send_and_recv_and_ack_with_retry::<evm::Module, cosmos::Module>(
+            &t.ctx.dst,
+            ETH_ADDRESS_ZKGM.into(),
+            call,
+            &t.ctx.src,
+            6,
+            Duration::from_secs(10),
+            Duration::from_secs(720),
+            &sender_evm_provider,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(ack.tag, TAG_ACK_SUCCESS);
+}
+
+async fn query_lst_hub<Q: Clone + Serialize, Res: DeserializeOwned>(
+    t: &LstContext,
+    query: Q,
+) -> anyhow::Result<Res> {
+    loop {
+        match t
+            .ctx
+            .src
+            .query_wasm_smart::<_, Res>(t.union_address.lst_hub.clone(), query.clone())
+            .await
+        {
+            Ok(state) => break Ok(state),
+            Err(_) => {
+                warn!("the query didn't work for some reason, will retry in a sec.");
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+        }
+    }
+}
+
+async fn get_batch_by_id(t: &LstContext, id: BatchId) -> anyhow::Result<Batch> {
+    Ok(
+        query_lst_hub::<_, Option<Batch>>(t, lst::msg::QueryMsg::Batch { batch_id: id })
+            .await?
+            .unwrap(),
+    )
+}
+
+async fn get_pending_batch(t: &LstContext) -> anyhow::Result<PendingBatch> {
+    query_lst_hub(t, lst::msg::QueryMsg::PendingBatch {}).await
+}
+
+async fn get_accounting_state(t: &LstContext) -> anyhow::Result<AccountingStateResponse> {
+    query_lst_hub(t, lst::msg::QueryMsg::AccountingState {}).await
 }
 
 #[tokio::test]
 async fn test_bond_success() {
-    run_test_in_queue("bond", async |t| {
+    run_test_in_queue("bond", async |t, mut shared_data| {
         // ensure_channels_opened(ctx.channel_count).await;
         // let available_channel = ctx.get_available_channel_count().await;
         // assert!(available_channel > 0);
@@ -169,6 +371,8 @@ async fn test_bond_success() {
             t.ctx.dst.get_provider().await,
             t.ctx.dst.get_provider().await,
         ];
+
+        shared_data.stakers = evm_signers.to_vec();
 
         for (bond_amount, evm_signer) in bonds.into_iter().zip(evm_signers) {
             let (evm_address, evm_provider): (Address, DynProvider<AnyNetwork>) = evm_signer;
@@ -238,17 +442,211 @@ async fn test_bond_success() {
             assert_eq!(outcome.tx_result.code, Code::Ok);
         }
 
+        // we are making sure that the 2 mins ubonding time passes, while making sure that the
+        // rate continues to go down since more and more rewards will be earned with new blocks.
         let mut prev_rate = Decimal::MAX;
-        for i in 1..10 {
-            tokio::time::sleep(Duration::from_secs(10)).await;
-
+        for i in 1..8 {
             let new_rate = get_accounting_state(&t).await.unwrap().purchase_rate;
+
+            tokio::time::sleep(Duration::from_secs(15)).await;
+
             info!("checking the rate ({i}).. new_rate: {new_rate} prev_rate: {prev_rate}");
 
             assert!(new_rate < prev_rate);
 
             prev_rate = new_rate;
         }
+
+        shared_data
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn test_unbond_success() {
+    run_test_in_queue("unbond", async |t, shared_data| {
+        let dst_channel_id = 1;
+        let src_channel_id = 1;
+
+        let unbond_amounts = [30, 40];
+
+        let mut total_unbond_amount = 0;
+
+        for (amount, staker) in unbond_amounts.into_iter().zip(&shared_data.stakers) {
+            unbond(
+                &t,
+                dst_channel_id,
+                src_channel_id,
+                staker.0,
+                staker.1.clone(),
+                amount,
+            )
+            .await;
+
+            // we are unbonding twice so that the `is_new_request` can be triggered
+            // and we test that case as well
+            unbond(
+                &t,
+                dst_channel_id,
+                src_channel_id,
+                staker.0,
+                staker.1.clone(),
+                amount,
+            )
+            .await;
+
+            total_unbond_amount += amount * 2;
+        }
+
+        let k = t
+            .ctx
+            .src
+            .privileged_acc_keyring
+            .with(async |k| k)
+            .await
+            .unwrap();
+
+        let outcome = t
+            .ctx
+            .src
+            .unstake(
+                "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej".to_string(),
+                total_unbond_amount,
+                k,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(outcome.tx_result.code, Code::Ok);
+
+        let (_, signer) = t.ctx.src.get_signer().await;
+
+        let state = get_accounting_state(&t).await.unwrap();
+        let outcome = t
+            .ctx
+            .src
+            .send_cosmwasm_transaction(
+                t.union_address.lst_hub.clone(),
+                (
+                    to_json_binary(&LstExecuteMsg::SubmitBatch {})
+                        .unwrap()
+                        .into(),
+                    vec![],
+                ),
+                &signer,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(outcome.tx_result.code, Code::Ok);
+
+        let new_state = get_accounting_state(&t).await.unwrap();
+
+        // We burned exactly the `total_unbond_amount` of eU's
+        assert_eq!(
+            total_unbond_amount,
+            state.total_shares.u128() - new_state.total_shares.u128()
+        );
+
+        shared_data
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn test_withdraw_success() {
+    run_test_in_queue("withdraw", async |t, shared_data| {
+        let dst_channel_id = 1;
+        let src_channel_id = 1;
+
+        let unbond_amounts = [60u128, 80];
+
+        let (_, signer) = t.ctx.src.get_signer().await;
+
+        let pending_batch = get_pending_batch(&t).await.unwrap();
+        let submitted_batch_id = BatchId::from_raw(pending_batch.batch_id.get().get() - 1).unwrap();
+
+        let Batch::Submitted(submitted_batch) =
+            get_batch_by_id(&t, submitted_batch_id).await.unwrap()
+        else {
+            panic!("expected submitted batch");
+        };
+
+        let fund_amount = submitted_batch.expected_native_unstaked;
+
+        let outcome = t
+            .ctx
+            .src
+            .send_cosmwasm_transaction(
+                t.union_address.lst_hub.clone(),
+                (
+                    to_json_binary(&LstExecuteMsg::ReceiveUnstakedTokens {
+                        batch_id: submitted_batch_id,
+                    })
+                    .unwrap()
+                    .into(),
+                    vec![ProtoCoin {
+                        denom: "muno".to_string(),
+                        amount: fund_amount.to_string(),
+                    }],
+                ),
+                &signer,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(outcome.tx_result.code, Code::Ok);
+
+        // Now the batch turns into `Received` since we actually received it
+        let Batch::Received(received_batch) =
+            get_batch_by_id(&t, submitted_batch_id).await.unwrap()
+        else {
+            panic!("expected received batch");
+        };
+
+        for (amount, staker) in unbond_amounts.into_iter().zip(&shared_data.stakers) {
+            let proxy_address = calculate_proxy_address(
+                &t.union_address.zkgm,
+                alloy::primitives::U256::ZERO,
+                src_channel_id,
+                staker.0.as_ref(),
+            );
+            let u_balance_before = t
+                .ctx
+                .src
+                .native_balance(proxy_address.clone(), "muno")
+                .await
+                .unwrap();
+
+            withdraw(
+                &t,
+                dst_channel_id,
+                src_channel_id,
+                staker.0,
+                staker.1.clone(),
+                submitted_batch_id,
+            )
+            .await;
+
+            let u_balance_after = t
+                .ctx
+                .src
+                .native_balance(proxy_address, "muno")
+                .await
+                .unwrap();
+
+            assert_eq!(
+                u_balance_after - u_balance_before,
+                Uint128::new(received_batch.received_native_unstaked)
+                    .multiply_ratio(amount, 140u128)
+                    .u128()
+            );
+        }
+
+        shared_data
     })
     .await;
 }

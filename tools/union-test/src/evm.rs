@@ -178,9 +178,7 @@ impl Module {
                     };
                     for log in logs {
                         if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
-                            println!("Decoded IBC event: {:?}", ibc_event);
                             if let Some(event) = filter_fn(ibc_event.data) {
-                                println!("Event found: {:?}", event);
                                 events.push(event);
                             }
                         }
@@ -538,7 +536,6 @@ impl Module {
 
     fn is_nonce_too_low(&self, e: &Error) -> bool {
         if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
-            println!("Nonce is too low, error entered here.: {:?}", rpc);
             rpc.message.contains("nonce too low")
                 || rpc.message.contains("replacement transaction underpriced")
         } else {
@@ -582,13 +579,10 @@ impl Module {
             match pending {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
-                    println!("pending: {:?}", pending);
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -616,13 +610,10 @@ impl Module {
             match pending {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
-                    println!("pending: {:?}", pending);
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("Approved spender: {spender:?} for token_id: {token_id:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -707,7 +698,6 @@ impl Module {
                     return Ok(address.into());
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -799,14 +789,10 @@ impl Module {
                     price: gas_price,
                 });
             } else {
-                println!("gas price: {}", gas_price);
             }
         }
 
-        println!("submitting evm tx");
-
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
-            println!("error estimating gas: {:?}", e);
             if ErrorReporter(&e)
                 .to_string()
                 .contains("gas required exceeds")
@@ -818,10 +804,6 @@ impl Module {
         })?;
 
         let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
-        println!(
-            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
-            self.gas_multiplier
-        );
 
         if let Some(fixed) = self.fixed_gas_price {
             call = call.gas_price(fixed);
@@ -832,7 +814,6 @@ impl Module {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
                     self.wait_for_tx_inclusion(&self.provider, tx_hash).await?;
-                    println!("tx included: {:?}", tx_hash);
 
                     Ok(tx_hash)
                 }
@@ -887,11 +868,9 @@ impl Module {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("migrateV1ToV2 executed, tx_hash = {tx_hash:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("nonce too low – retrying ({attempts}/5)");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -966,18 +945,14 @@ impl Module {
             match pending {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
-                    println!("pending: {:?}", pending);
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("Registered governance token on channel {channel_id} with metadata image {metadata_image:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 10 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
                 Err(err) => {
-                    println!("Failed to register governance token: {:?}", err);
                     return Err(err.into());
                 }
             }
