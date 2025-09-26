@@ -136,6 +136,20 @@ const isButtonDisabled = $derived(
   ),
 )
 
+// Expected U received = eU amount * redemption_rate
+const expectedReceiveAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
+  O.Do,
+  O.bind("amount", () => unbondAmount),
+  O.bind("rates", () => stakingRates),
+  O.map(({ amount, rates }) => {
+    const amountDecimal = BigDecimal.make(amount, 18)
+    const amountNorm = BigDecimal.normalize(amountDecimal)
+    const rateNorm = BigDecimal.normalize(rates.redemption_rate)
+    const resultScaled = amountNorm.value * rateNorm.value
+    return BigDecimal.make(resultScaled, amountNorm.scale + rateNorm.scale)
+  }),
+))
+
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
     new Map([
@@ -515,7 +529,7 @@ function handleButtonClick() {
     </div>
   </div>
 
-  <div class="flex-1" />
+  <div class="flex-1"></div>
 
   <!-- Transaction Preview Card -->
   <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">
@@ -547,18 +561,25 @@ function handleButtonClick() {
       <div class="flex justify-between items-center">
         <span class="text-xs text-zinc-500">You'll Receive</span>
         <div class="text-right">
-          {#if O.isSome(evmChain) && O.isSome(uOnEvmToken) && O.isSome(unbondAmount)}
+          {#if O.isSome(evmChain) && O.isSome(uOnEvmToken)
+              && O.isSome(expectedReceiveAmount)}
             <TokenComponent
               chain={evmChain.value}
               denom={uOnEvmToken.value.denom}
-              amount={TokenRawAmount.make(unbondAmount.value)}
+              amount={TokenRawAmount.make(Utils.toRawAmount(expectedReceiveAmount.value))}
               showWrapping={false}
               showSymbol={true}
               showIcon={true}
               maxDecimals={4}
             />
           {:else}
-            <span class="text-sm font-medium text-zinc-300">0 U</span>
+            <span class="text-sm font-medium text-zinc-300">
+              {#if O.isSome(expectedReceiveAmount)}
+                {Utils.formatBigDecimal(expectedReceiveAmount.value)} U
+              {:else}
+                0 U
+              {/if}
+            </span>
             <div class="text-xs text-zinc-500 mt-0.5">Enter amount</div>
           {/if}
         </div>
