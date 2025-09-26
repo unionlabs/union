@@ -20,6 +20,8 @@ import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import * as Sui from "../Sui.js"
 import * as Safe from "../Safe.js"
+import { Transaction } from "@mysten/sui/transactions"
+
 // import { Sui } from "../index.js"
 
 export const fromWallet = (
@@ -96,7 +98,6 @@ export const fromWallet = (
       )
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { salt, timeoutTimestamp })
-
       const operand = yield* pipe(
         encodeInstruction(request.instruction),
         Effect.flatMap(S.encode(Ucs03.Ucs03FromHex)),
@@ -112,58 +113,91 @@ export const fromWallet = (
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { operand })
 
-      const funds = ClientRequest.requiredFunds(request).pipe(
-        O.map(A.filter(([x]) => Token.isNative(x))),
-        O.flatMap(O.liftPredicate(A.isNonEmptyReadonlyArray)),
-        O.map(A.map(flow(Tuple.getSecond))),
-        O.map(A.reduce(0n, (acc, n) => acc + n)),
-        O.getOrUndefined,
-      )
+      // ---- Sui PTB: begin_send -> send_with_coin -> end_send ----
 
-      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { funds })
+      const tx = new Transaction()
+      const CLOCK_OBJECT_ID = "0x6" // Sui system clock
+      const tHeight = 0n
+      const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" //zkgm package id TODO: This should be fetched from somewhere
+      const module = "zkgm" //zkgm module name
+      const typeArg = "0x2::sui::SUI" // TODO: This should be dynamic based on the token sent
+      const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // TODO: This should be fetched from somewhere
+      const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // TODO: This should be fetched from somewhere
+      const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // TODO: This should be fetched from somewhere
+      const coinObjectId = "0x3997d4c40cb190283291270d326401fd77320af42cd7a891ded2eba3e52f4b16" // TODO: This should be given by user
+      
+      // helpers
+      const hexToBytes = (hex: `0x${string}`): Uint8Array => {
+        const s = hex.slice(2)
+        const out = new Uint8Array(s.length / 2)
+        for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+        return out
+      }
 
-      const args = [
-        request.channelId,
-        0n,
-        timeoutTimestamp,
-        salt,
-        {
-          opcode: request.instruction.opcode,
-          version: request.instruction.version,
-          operand,
-        },
-      ] as const
+      // 1) begin_send(channel_id: u32, salt: vector<u8>) -> SendCtx
+      let sendCtx = tx.moveCall({
+        target: `${packageId}::${module}::begin_send`,
+        typeArguments: [],
+        arguments: [
+          tx.pure.u32(Number(request.channelId)),          // channel id (u32)
+          tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)), // salt bytes
+        ],
+      })
 
-      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { args })
+      // 2) send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
+      sendCtx = tx.moveCall({
+        target: `${packageId}::${module}::send_with_coin`,
+        typeArguments: [typeArg],
+        arguments: [
+          tx.object(relayStoreId),
+          tx.object(vaultId),
+          tx.object(ibcStoreId),
+          tx.object(coinObjectId),
+          tx.pure.u8(Number(request.instruction.version)),
+          tx.pure.u8(Number(request.instruction.opcode)),
+          tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
+          sendCtx,
+        ],
+      })
 
-      // TODO: Fix writecontract calling, decide parameters etc.
-      const sendInstruction = Sui.writeContract({
-        client: client,
-        account: wallet.signer,
-        abi: Ucs03.Abi,
-        chain: wallet.chain,
-        functionName: "send",
-        address: request.ucs03Address as unknown as any,
-        args,
-        value: funds,
-      }).pipe(
-        Effect.mapError((cause) =>
+      // 3) end_send(ibc_store, clock, t_height: u64, timeout_ns: u64, ctx)
+      tx.moveCall({
+        target: `${packageId}::${module}::end_send`,
+        typeArguments: [],
+        arguments: [
+          tx.object(ibcStoreId),
+          tx.object(CLOCK_OBJECT_ID),
+          tx.pure.u64(tHeight),
+          tx.pure.u64(BigInt(timeoutTimestamp)),
+          sendCtx,
+        ],
+      })
+
+      // sign & execute
+      const submit = Effect.tryPromise({
+        try: async () =>
+          wallet.client.signAndExecuteTransaction({
+            signer: wallet.signer,
+            transaction: tx,
+          }),
+        catch: (cause) =>
           new ClientError.RequestError({
             reason: "Transport",
             request,
             cause,
-            description: "writeContract",
-          })
-        ),
-        Effect.provideService(Evm.WalletClient, wallet),
-      )
+            description: "signAndExecuteTransaction",
+          }),
+      })
 
-      return yield* pipe(
-        sendInstruction,
-        Effect.map((txHash) => new ClientResponseImpl(request, client, txHash)),
-      )
-    })
+      const res = yield* submit
+
+      console.log("Res.transaction:", res.transaction)
+      const txHash = (res.digest ?? res.transaction?.txSignatures[0] ?? "") as Hex
+
+      return new ClientResponseImpl(request, client, txHash)
+    }),
   )
+
 
 /** @internal */
 export abstract class IncomingMessageImpl<E> extends Inspectable.Class
