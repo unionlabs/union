@@ -391,7 +391,7 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
-access-manager       = { path = "cosmwasm/access-manager", default-features = false }
+access-manager = { path = "cosmwasm/access-manager", default-features = false }
 
 lst = { path = "cosmwasm/lst", default-features = false }
 

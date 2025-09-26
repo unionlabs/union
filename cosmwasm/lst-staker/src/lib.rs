@@ -178,7 +178,6 @@ fn withdraw_all_rewards(
 
     // NOTE: Sum the individual rewards, *NOT* the total rewards
     // if there are rewards of 1.5 and 0.5, the total will be 2.0 (even after flooring it), but the *actual* claimable amount is floor(1.5) + floor(0.5), which is 1
-    // TODO: Add a test for this
     let total_pending_rewards = delegation_total_rewards
         .rewards
         .iter()
