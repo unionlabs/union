@@ -13,7 +13,7 @@
 import { HttpClient, HttpClientResponse } from "@effect/platform"
 import { BigDecimal, Data, Effect, pipe, Schema } from "effect"
 
-const REST_BASE_URL = import.meta.env.DEV ? "/api/union" : "https://rest.union.build"
+const REST_BASE_URL = "https://rest.union.build"
 
 export class IncentiveError extends Data.TaggedError("IncentiveError")<{
   message: string
@@ -64,46 +64,70 @@ export const IncentiveResult = Schema.Struct({
 export type IncentiveResult = Schema.Schema.Type<typeof IncentiveResult>
 
 const getInflation = pipe(
-  HttpClient.get(`${REST_BASE_URL}/cosmos/mint/v1beta1/inflation`),
-  Effect.flatMap(HttpClientResponse.schemaBodyJson(InflationResponse)),
-  Effect.mapError((cause) =>
-    new IncentiveError({
-      message: "Failed to fetch inflation rate",
-      cause,
-    })
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) =>
+    pipe(
+      client.get(`${REST_BASE_URL}/cosmos/mint/v1beta1/inflation`),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(InflationResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch inflation rate",
+          cause,
+        })
+      ),
+    )
   ),
 )
 
 const getStakingPool = pipe(
-  HttpClient.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/pool`),
-  Effect.flatMap(HttpClientResponse.schemaBodyJson(StakingPoolResponse)),
-  Effect.mapError((cause) =>
-    new IncentiveError({
-      message: "Failed to fetch staking pool",
-      cause,
-    })
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) =>
+    pipe(
+      client.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/pool`),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(StakingPoolResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch staking pool",
+          cause,
+        })
+      ),
+    )
   ),
 )
 
 const getDistributionParams = pipe(
-  HttpClient.get(`${REST_BASE_URL}/cosmos/distribution/v1beta1/params`),
-  Effect.flatMap(HttpClientResponse.schemaBodyJson(DistributionParamsResponse)),
-  Effect.mapError((cause) =>
-    new IncentiveError({
-      message: "Failed to fetch distribution params",
-      cause,
-    })
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) =>
+    pipe(
+      client.get(`${REST_BASE_URL}/cosmos/distribution/v1beta1/params`),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(DistributionParamsResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch distribution params",
+          cause,
+        })
+      ),
+    )
   ),
 )
 
 const getCirculatingSupply = pipe(
-  HttpClient.get(`${REST_BASE_URL}/cosmos/bank/v1beta1/supply/by_denom?denom=au`),
-  Effect.flatMap(HttpClientResponse.schemaBodyJson(CirculatingSupplyResponse)),
-  Effect.mapError((cause) =>
-    new IncentiveError({
-      message: "Failed to fetch circulating supply",
-      cause,
-    })
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) =>
+    pipe(
+      client.get(`${REST_BASE_URL}/cosmos/bank/v1beta1/supply/by_denom?denom=au`),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(CirculatingSupplyResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch circulating supply",
+          cause,
+        })
+      ),
+    )
   ),
 )
 
