@@ -24,6 +24,7 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   "",
 )
 
+// @ts-ignore
 export default defineConfig({
   site: SITE_URL,
   output: "static",
@@ -297,16 +298,38 @@ export default defineConfig({
                   link: "/integrations/typescript",
                 },
                 {
-                  label: "Examples (EVM)",
-                  autogenerate: {
-                    directory: "/integrations/typescript/examples/evm",
-                  },
+                  label: "Guides (EVM)",
+                  items: [
+                    {
+                      label: "Guide: Send Funds Holesky → Sepolia",
+                      link: "/integrations/typescript/guided-tutorial/evm-holesky-sepolia",
+                    },
+                    {
+                      label: "Example: Send Funds Holesky → Sepolia",
+                      link: "/integrations/typescript/examples/evm/send-funds-holesky-to-sepolia/",
+                    },
+                  ],
                 },
                 {
-                  label: "Examples (Cosmos)",
-                  autogenerate: {
-                    directory: "/integrations/typescript/examples/cosmos",
-                  },
+                  label: "Guides (Cosmos)",
+                  items: [
+                    {
+                      label: "Guide: Cross Chain Contract Call",
+                      link: "/integrations/typescript/guided-tutorial/cosmos-call",
+                    },
+                    {
+                      label: "Example: Cross Chain Contract Call",
+                      link: "/integrations/typescript/examples/cosmos/call/",
+                    },
+                    {
+                      label: "Guide: Send Funds Union → Sepolia",
+                      link: "/integrations/typescript/guided-tutorial/cosmos-union-sepolia",
+                    },
+                    {
+                      label: "Example: Send Funds Union → Sepolia",
+                      link: "/integrations/typescript/examples/cosmos/send-funds-union-to-sepolia/",
+                    },
+                  ],
                 },
               ],
             },
