@@ -167,12 +167,15 @@ export const submit = Effect.gen(function*() {
       Effect.andThen((response) =>
         pipe(
           Effect.sync(() => {
-            ctaCopy = "Confirming Transaction..."
+            ctaCopy = usingSafe
+              ? "Waiting for Safe..."
+              : "Confirming Transaction..."
           }),
           Effect.andThen(() =>
             Effect.if(
               usingSafe,
               {
+                onTrue: () => response.safeHash,
                 onFalse: () =>
                   pipe(
                     response.waitFor(
@@ -180,20 +183,6 @@ export const submit = Effect.gen(function*() {
                     ),
                     Effect.delay("2 seconds"),
                     Effect.flatMap(Effect.map(x => x.transactionHash)),
-                  ),
-                onTrue: () =>
-                  pipe(
-                    Effect.sync(() => {
-                      ctaCopy = "Waiting for Safe..."
-                    }),
-                    Effect.andThen(() =>
-                      pipe(
-                        response.waitFor(
-                          ZkgmIncomingMessage.LifecycleEvent.$is("WaitForSafeWalletHash"),
-                        ),
-                        Effect.flatMap(Effect.map(x => x.hash)),
-                      )
-                    ),
                   ),
               },
             )
