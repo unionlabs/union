@@ -12,18 +12,6 @@ export default defineConfig({
   build: { sourcemap: true },
   server: {
     allowedHosts: true,
-    proxy: {
-      "/api/union": {
-        target: "https://rest.union.build",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/union/, ""),
-        configure: (proxy) => {
-          proxy.on("proxyReq", (proxyReq) => {
-            proxyReq.setHeader("origin", "https://rest.union.build")
-          })
-        },
-      },
-    },
   },
   test: {
     workspace: [
