@@ -123,7 +123,7 @@ const proxyAddress = $derived(
     <Tabs
       items={[
         { id: "balances", label: "Balances" },
-        { id: "rewards", label: "Rewards" },
+        // { id: "rewards", label: "Rewards" },
         { id: "dust", label: "Dust" },
       ]}
       activeId={selectedTab}
@@ -188,7 +188,7 @@ const proxyAddress = $derived(
           Transfer U →
         </Button>
       </div>
-    {:else if selectedTab === "rewards"}
+      <!-- {:else if selectedTab === "rewards"}
       <div class="flex-1">
         <StakingRewardsDisplay
           eUBalance={eUOnEvmBalance}
@@ -196,7 +196,7 @@ const proxyAddress = $derived(
           {stakingHistory}
           {proxyEuDust}
         />
-      </div>
+      </div> -->
     {:else if selectedTab === "dust"}
       <div class="flex-1 flex min-h-0">
         <ProxyDustRecovery
