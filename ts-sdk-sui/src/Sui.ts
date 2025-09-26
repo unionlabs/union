@@ -331,6 +331,47 @@ export const readCoinMetadata = (tokenAddress: Address) =>
   })
 
 /**
+ * Read Sui coin metadata (name, symbol, decimals) for a given `coinType`.
+ *
+ * Example:
+ * ```ts
+ * const meta = yield* readCoinMeta("0x2::sui::SUI")
+ * // -> { name: "Sui", symbol: "SUI", decimals: 9 }
+ * ```
+ *
+ * @param coinType Canonical coin type string (e.g., "0x2::sui::SUI")
+ * @returns Effect resolving to `{ name, symbol, decimals }`
+ * @throws ReadCoinError on RPC failure
+ *
+ * @category utils
+ * @since 0.0.0
+ */
+export const readCoinMeta = (coinType: string) =>
+  Effect.gen(function* () {
+    const client = (yield* PublicClient).client
+
+    const out = yield* Effect.tryPromise({
+      try: async () => {
+        const meta = await client.getCoinMetadata({ coinType })
+        // meta can be null if the type has no metadata published
+        if (!meta) {
+          // normalize to a typed error consistent with your pattern
+          throw new ReadCoinError({ cause: `No CoinMetadata found for ${coinType}` })
+        }
+        const { name, symbol, decimals } = meta
+        return { name, symbol, decimals }
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as Error),
+        }),
+    })
+
+    return out
+  })
+
+
+/**
  * Read all coin objects for a given `coinType` and owner address.
  *
  * Note:
@@ -604,7 +645,6 @@ export const sendInstruction = (params: {
   //   typeArg?: string
   // }>
 
-  /** the instruction used purely for encoding operand just like EVM */
   instruction: Ucs03.Instruction
 
 }) =>
@@ -631,7 +671,7 @@ export const sendInstruction = (params: {
 
     const tx = new Transaction()
     // if (params.gasBudget !== undefined) tx.setGasBudget(BigInt(params.gasBudget as any))
-
+    // adress: 0x1234
     let sendCtx = tx.moveCall({
       target: `${params.packageId}::${module}::begin_send`,
       typeArguments: [],
