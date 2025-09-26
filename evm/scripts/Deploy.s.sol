@@ -34,6 +34,7 @@ import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../contracts/apps/ucs/06-funded-dispatch/FundedDispatch.sol";
 import "../contracts/tge/Vesting.sol";
 import "../contracts/tge/UDrop.sol";
+import "../contracts/tge/QuickWithdrawal.sol";
 
 import "./Deployer.sol";
 
@@ -72,6 +73,8 @@ library INSTANCE_SALT {
         hex"0dec0db7b56214f189bc3d33052145c6d7558c6a7ee0da79e34bdd8a29d569c2";
     bytes constant EUDROP =
         hex"e6cca786dc51eacd3fc44003a860ec4762ae8fb6a306a8ba6d38b54970acb1c2";
+    bytes constant QUICKWITHDRAWAL =
+        hex"a82872b96246dac512ddf0515f5da862a92ecebebcb92537b6e3e73199696753";
 }
 
 library LIB_SALT {
@@ -367,6 +370,28 @@ abstract contract UnionScript is UnionBase {
                     )
                 ),
                 "UDrop"
+            )
+        );
+    }
+
+    function deployQuickWithdrawal(
+        Manager authority,
+        address baseToken,
+        address quoteToken,
+        bool active,
+        uint256 rate
+    ) internal returns (QuickWithdrawal) {
+        return QuickWithdrawal(
+            deployIfNotExists(
+                string(INSTANCE_SALT.QUICKWITHDRAWAL),
+                abi.encode(
+                    address(new QuickWithdrawal(baseToken, quoteToken)),
+                    abi.encodeCall(
+                        QuickWithdrawal.initialize,
+                        (address(authority), active, rate)
+                    )
+                ),
+                "QuickWithdrawal"
             )
         );
     }
@@ -2338,6 +2363,33 @@ contract UpgradeUDrop is VersionedScript {
             address(new UDrop(udrop.ROOT(), udrop.TOKEN()));
         udrop.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
+    }
+}
+
+contract DeployQuickWithdrawal is UnionScript, VersionedScript {
+    using LibString for *;
+
+    bool immutable active;
+    uint256 immutable rate;
+
+    constructor() {
+        active = vm.envBool("ACTIVE");
+        rate = vm.envUint("RATE");
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        address baseToken = getDeployed(string(INSTANCE_SALT.EU));
+        address quoteToken = getDeployed(string(INSTANCE_SALT.U));
+
+        vm.startBroadcast(privateKey);
+        QuickWithdrawal quickWithdrawal =
+            deployQuickWithdrawal(manager, baseToken, quoteToken, active, rate);
+        vm.stopBroadcast();
+
+        console.log("quickWithdrawal: ", address(quickWithdrawal));
     }
 }
 

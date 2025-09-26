@@ -1319,6 +1319,7 @@ _: {
                     eu = "EU";
                     udrop = "UDrop";
                     eudrop = "EUDrop";
+                    quick-withdrawal = "QuickWithdrawal";
                   }
                 )
                 # other various deployment scripts
@@ -1376,6 +1377,7 @@ _: {
                         eu = "EU";
                         udrop = "UDrop";
                         eudrop = "EUDrop";
+                        quick-withdrawal = "QuickWithdrawal";
                       }
                   )
                 ))
