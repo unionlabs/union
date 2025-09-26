@@ -119,7 +119,7 @@ const BondState = Data.taggedEnum<BondState>()
 let bondInput = $state<string>("")
 let bondState = $state<BondState>(BondState.Ready())
 let shouldBond = $state<boolean>(false)
-let slippage = $state<number>(0.5)
+let slippage = $state<number>(1)
 
 const isBonding = $derived(
   !BondState.$is("Ready")(bondState)
@@ -600,6 +600,8 @@ function handleButtonClick() {
       </div>
     </div>
   </div>
+
+  <div class="flex-1" />
 
   <!-- Transaction Preview Card -->
   <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">

@@ -515,6 +515,8 @@ function handleButtonClick() {
     </div>
   </div>
 
+  <div class="flex-1" />
+
   <!-- Transaction Preview Card -->
   <div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3 space-y-3">
     <div class="flex justify-between items-center">
