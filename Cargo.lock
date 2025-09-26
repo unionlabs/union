@@ -17377,6 +17377,7 @@ name = "union-test"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "alloy-sol-types",
  "axum 0.6.20",
  "bip32 0.5.3",
  "cometbft-rpc",
@@ -17391,9 +17392,10 @@ dependencies = [
  "ibc-union-msg",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
+ "lst",
  "once_cell",
  "protos",
- "rand 0.9.1",
+ "rand 0.6.5",
  "regex",
  "serde",
  "serde-utils",
@@ -17401,6 +17403,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "trusted-mpt-light-client-types",
  "ucs03-zkgm",
  "unionlabs",
