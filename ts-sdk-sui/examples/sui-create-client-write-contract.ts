@@ -19,6 +19,16 @@ const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC)
 
 const program = Effect.gen(function* () {
   const { client } = yield* PublicClient
+  yield* Effect.log("Sui public client initialized", client.network )
+  const meta = yield* readCoinMetadata("0x2::sui::SUI" as any)
+  yield* Effect.log("SUI metadata", meta)
+
+  yield* Effect.log("keypair.getPublicKey().toSuiAddress()", keypair.getPublicKey().toSuiAddress())
+  const balances = yield* readCoinBalances("0x2::sui::SUI" as any, keypair.getPublicKey().toSuiAddress() as any)
+  yield* Effect.log("SUI balances", balances)
+
+
+  const wallet = yield* WalletClient
   const amountMist = 10_000_000n // 0.01 SUI
 
   const tx = new Transaction()
@@ -43,10 +53,9 @@ const program = Effect.gen(function* () {
   Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),
   Effect.provide(
     WalletClient.Live({
-      url: getFullnodeUrl("testnet"),
-      account: keypair,              // signer
-      chain: "sui-testnet" as any,   // placeholder; not used internally
-    }),
+    url: getFullnodeUrl("testnet"),
+    signer: keypair,               // ✅ Sui signer
+  }),
   ),
 
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
