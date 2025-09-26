@@ -61,7 +61,7 @@
 use cosmwasm_std::{
     coins,
     testing::{message_info, mock_env},
-    to_json_binary, Addr, BankMsg, CosmosMsg, Decimal, Event, StdError, WasmMsg,
+    to_json_binary, wasm_execute, Addr, CosmosMsg, Decimal, Event, StdError, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -69,7 +69,7 @@ use depolama::StorageExt;
 use crate::{
     contract::execute,
     error::ContractError,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, StakerExecuteMsg},
     query::query_state,
     state::AccountingStateStore,
     tests::test_helper::{
@@ -92,13 +92,17 @@ fn bond_without_pending_rewards() {
 
     let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap();
 
-    // the native funds are sent to the staker
+    // the native funds are staked
     assert_eq!(
         res.messages[0].msg,
-        CosmosMsg::Bank(BankMsg::Send {
-            to_address: STAKER_ADDRESS.into(),
-            amount: info.funds.clone()
-        })
+        CosmosMsg::Wasm(
+            wasm_execute(
+                STAKER_ADDRESS.to_owned(),
+                &StakerExecuteMsg::Stake {},
+                coins(1000, NATIVE_TOKEN)
+            )
+            .unwrap()
+        ),
     );
 
     // 1000 LST token is minted to the `mint_to` address.
