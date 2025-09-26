@@ -6,6 +6,7 @@ import StakingHistoryCard from "$lib/components/stake/StakingHistoryCard.svelte"
 import StakingStatsGrid from "$lib/components/stake/StakingStatsGrid.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
 import WithdrawalComponent from "$lib/components/stake/WithdrawalComponent.svelte"
+import QuickWithdrawComponent from "$lib/components/stake/QuickWithdrawComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
@@ -41,7 +42,7 @@ import { constVoid } from "effect/Function"
 import * as O from "effect/Option"
 import { onMount } from "svelte"
 
-type StakeTab = "bond" | "unbond" | "withdraw"
+type StakeTab = "bond" | "unbond" | "withdraw" | "quick-withdraw"
 type TableFilter = "all" | "bond" | "unbond"
 
 const EVM_UNIVERSAL_CHAIN_ID = ETHEREUM_CHAIN_ID
@@ -277,6 +278,7 @@ const exchangeRate = $derived(pipe(
             { id: "bond", label: "Stake" },
             { id: "unbond", label: "Unstake" },
             { id: "withdraw", label: "Withdraw" },
+            { id: "quick-withdraw", label: "Quick Withdraw" },
           ]}
           activeId={selectedTab}
           onTabChange={(id: string) => selectedTab = id as StakeTab}
@@ -309,6 +311,14 @@ const exchangeRate = $derived(pipe(
             {evmChain}
             {uOnEvmToken}
             onWithdrawSuccess={refreshStakingData}
+          />
+        {:else if selectedTab === "quick-withdraw"}
+          <QuickWithdrawComponent
+            {evmChain}
+            {uOnEvmToken}
+            {eUOnEvmToken}
+            {eUOnEvmBalance}
+            onQuickWithdrawSuccess={refreshStakingData}
           />
         {/if}
       </div>

@@ -198,7 +198,7 @@ const proxyAddress = $derived(
         />
       </div>
     {:else if selectedTab === "dust"}
-      <div class="flex-1">
+      <div class="flex-1 flex min-h-0">
         <ProxyDustRecovery
           {evmChain}
           {eUOnEvmToken}

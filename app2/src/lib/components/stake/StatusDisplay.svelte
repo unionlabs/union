@@ -63,11 +63,27 @@ type DustWithdrawState = Data.TaggedEnum<{
   Error: { message: string }
 }>
 
+type QuickWithdrawState = Data.TaggedEnum<{
+  Ready: {}
+  SwitchingChain: {}
+  CheckingAllowance: {}
+  ApprovingAllowance: {}
+  AllowanceSubmitted: { txHash: string }
+  WaitingForAllowanceConfirmation: { txHash: string }
+  AllowanceApproved: {}
+  ConfirmingWithdraw: {}
+  WithdrawSubmitted: { txHash: string }
+  WaitingForConfirmation: { txHash: string }
+  Success: { txHash: string; receivedAmount: bigint }
+  Error: { message: string }
+}>
+
 interface Props {
-  state: BondState | UnbondState | WithdrawalState | DustWithdrawState
-  type: "bond" | "unbond" | "withdrawal" | "dust"
+  state: BondState | UnbondState | WithdrawalState | DustWithdrawState | QuickWithdrawState
+  type: "bond" | "unbond" | "withdrawal" | "dust" | "quick-withdraw"
   inputAmount?: string
   class?: string
+  size?: "default" | "compact"
 }
 
 let {
@@ -75,6 +91,7 @@ let {
   type,
   inputAmount = "",
   class: className = "",
+  size = "default",
 }: Props = $props()
 
 const isReady = $derived(state._tag === "Ready")
@@ -359,6 +376,76 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
         subtitle: errorMessage,
         txHash: O.none()
       }
+    },
+    "quick-withdraw": {
+      Ready: {
+        title: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet for quick withdrawal"
+          : inputAmount
+          ? `Ready to quick withdraw ${inputAmount} eU`
+          : "Enter amount for instant withdrawal",
+        subtitle: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet to use quick withdrawal"
+          : inputAmount
+          ? "Click withdraw button to begin instant conversion"
+          : "Quick withdraw converts eU to U instantly",
+        txHash: O.none()
+      },
+      SwitchingChain: {
+        title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
+        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
+        txHash: O.none()
+      },
+      CheckingAllowance: {
+        title: "Checking eU Allowance",
+        subtitle: "Verifying token permissions for quick withdrawal...",
+        txHash: O.none()
+      },
+      ApprovingAllowance: {
+        title: `Approving ${inputAmount || "0"} eU`,
+        subtitle: "Confirm token approval transaction in your wallet",
+        txHash: O.none()
+      },
+      AllowanceSubmitted: {
+        title: "Approval submitted",
+        subtitle: "Allowance transaction submitted",
+        txHash
+      },
+      WaitingForAllowanceConfirmation: {
+        title: "Confirming approval",
+        subtitle: "Waiting for allowance confirmation",
+        txHash
+      },
+      AllowanceApproved: {
+        title: `Approved ${inputAmount || "0"} eU`,
+        subtitle: "Token spending approved, proceeding...",
+        txHash: O.none()
+      },
+      ConfirmingWithdraw: {
+        title: "Confirm quick withdrawal",
+        subtitle: "Confirm withdrawal transaction in your wallet",
+        txHash: O.none()
+      },
+      WithdrawSubmitted: {
+        title: "Quick withdrawal submitted",
+        subtitle: "Transaction submitted",
+        txHash
+      },
+      WaitingForConfirmation: {
+        title: "Processing withdrawal",
+        subtitle: "Waiting for confirmation",
+        txHash
+      },
+      Success: {
+        title: "Quick withdrawal successful",
+        subtitle: "Your U tokens have been sent to your wallet!",
+        txHash
+      },
+      Error: {
+        title: "Quick withdrawal failed",
+        subtitle: errorMessage,
+        txHash: O.none()
+      }
     }
   }
   
@@ -367,11 +454,17 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
 }
 
 const currentMessage = $derived(getMessage(type, state, inputAmount))
+
+const containerPadding = $derived(size === "compact" ? "p-3" : "p-3.5")
+const contentGap = $derived(size === "compact" ? "gap-2.5" : "gap-3")
+const badgeSize = $derived(size === "compact" ? "size-6" : "size-7")
+const titleClass = $derived(size === "compact" ? "text-[12px]" : "text-[13px]")
+const subtitleSize = $derived(size === "compact" ? "text-[10px]" : "text-[11px]")
 </script>
 
-<div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3.5 {className}">
-  <div class="flex items-center gap-3">
-    <div class="size-7 rounded-md {isError ? 'bg-red-500/10 border border-red-500/20' : isSuccess ? 'bg-accent/10 border border-accent/20' : isReady ? 'bg-zinc-800' : 'bg-accent/10 border border-accent/20'} flex items-center justify-center flex-shrink-0">
+<div class="rounded-lg bg-zinc-900 border border-zinc-800/50 {containerPadding} {className}">
+  <div class="flex items-center {contentGap}">
+    <div class="{badgeSize} rounded-md {isError ? 'bg-red-500/10 border border-red-500/20' : isSuccess ? 'bg-accent/10 border border-accent/20' : isReady ? 'bg-zinc-800' : 'bg-accent/10 border border-accent/20'} flex items-center justify-center flex-shrink-0">
       {#if isReady}
         <svg
           class="w-3.5 h-3.5 text-zinc-400"
@@ -418,10 +511,10 @@ const currentMessage = $derived(getMessage(type, state, inputAmount))
       {/if}
     </div>
     <div class="flex-1">
-      <div class="text-[13px] font-medium text-white">
+      <div class="{titleClass} font-medium text-white">
         {currentMessage.title}
       </div>
-      <div class="text-[11px] {isReady ? 'text-zinc-500' : isError ? 'text-red-400/80' : isSuccess ? 'text-accent/80' : 'text-accent/60'} mt-0.5">
+      <div class="{subtitleSize} {isReady ? 'text-zinc-500' : isError ? 'text-red-400/80' : isSuccess ? 'text-accent/80' : 'text-accent/60'} mt-0.5">
         {currentMessage.subtitle}
         {#if O.isSome(currentMessage.txHash)}
           {" "}
