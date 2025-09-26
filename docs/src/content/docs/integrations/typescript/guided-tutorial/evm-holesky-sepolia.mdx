@@ -3,7 +3,7 @@ title: "Send Funds Holesky → Sepolia"
 description: Guide for transfers from Holesky to Sepolia.
 ---
 
-This guide walk's you through writing our example ["Send Funds Holesky -> Sepolia"](/integrations/typescript/examples/evm/send-funds-holesky-to-sepolia/). The goal of this guide it to show you how to create a token order and submit it to the [UCS03 - ZKGM](/ucs/04) interface.
+This guide walks you through writing our example ["Send Funds Holesky -> Sepolia"](/integrations/typescript/examples/evm/send-funds-holesky-to-sepolia/). The goal of this guide it to show you how to create a token order and submit it to the [ucs03-zkgm](/ucs/03) interface.
 
 Relevant imports will be included with each step. Outside of libraries provided by Union, this guide uses [viem](https://viem.sh/) and [Effect](https://effect.website/).
 
@@ -40,7 +40,7 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-The ID's provided here are Universal Chain ID's as defined by [UCS04](/ucs/04).
+The IDs provided here are Universal Chain IDs as defined by [ucs04](/ucs/04).
 :::
 
 ### 3. Token Order
@@ -49,7 +49,7 @@ Now you can define the token order that will be responsible for the transfer. Th
 
 To construct the token order, you will need the token contract/denom on both the source chain (`baseToken`) and the destination chain (`quoteToken`). In this case, we are using the relevant contract addresses for LINK.
 
-We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `esccrow`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [UCS03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
+We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `esccrow`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [ucs03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
 
 ```ts
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
@@ -102,7 +102,7 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-UCS03 addresses can be found on the [Deployments page](/protocol/deployments/)
+ucs03 addresses can be found on the [Deployments page](/protocol/deployments/)
 :::
 
 ### 5. zkgm Execution & Response
@@ -144,7 +144,7 @@ const program = Effect.gen(function*() {
 
 :::note
 ***NOTE #1*** -
-In this example, it does not matter, as we manually provide the key and specify the transport in [Execution](#execution). If you were developing a web app with a wallet client - you would need to switch the chains here.
+In this example, it does not matter, as we manually provide the key and specify the transport in [Execution](#execution). If you were developing a web app with a wallet client, you would need to switch the chains here.
 :::
 
 ## Execution

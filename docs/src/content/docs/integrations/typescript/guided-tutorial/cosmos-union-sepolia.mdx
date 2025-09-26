@@ -3,7 +3,7 @@ title: Send Funds Union → Sepolia
 description: Example transfer from Union to Sepolia.
 ---
 
-This guide walk's you through writing our example ["Send Funds Union -> Sepolia"](/integrations/typescript/examples/cosmos/send-funds-union-to-sepolia/). The goal of this guide it to show you how to create a token order and submit it to the [UCS03 - ZKGM](/ucs/04) interface.
+This guide walks you through writing our example ["Send Funds Union -> Sepolia"](/integrations/typescript/examples/cosmos/send-funds-union-to-sepolia/). The goal of this guide it to show you how to create a token order and submit it to the [ucs03-zkgm](/ucs/03) interface.
 
 Relevant imports will be included with each step. Outside of libraries provided by Union, this guide uses [Effect](https://effect.website/).
 
@@ -41,7 +41,7 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-The ID's provided here are Universal Chain ID's as defined by [UCS04](/ucs/04).
+The ID's provided here are Universal Chain ID's as defined by [ucs04](/ucs/04).
 :::
 
 ### 3. Token Order
@@ -50,7 +50,7 @@ Now you can define the token order that will be responsible for the transfer. Th
 
 To construct the token order, you will need the token contract/denom on both the source chain (`baseToken`) and the destination chain (`quoteToken`). In this case, we are using the relevant denom and contract address for U.
 
-We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `solve`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [UCS03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
+We also need to determine the `Kind` for the `TokenOrder`. In this case, we use `solve`. Though kind can be `initialize`, `escrow`, `unescrow`, or `solve`. To understand which kind of token order to use, refer to the [ucs03 EVM Token Order Examples docs](/ucs/03/#evm-token-order-examples).
 
 ```ts
 import { TokenOrder, ZkgmClient, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
@@ -78,7 +78,7 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-Solver metadata is supplied here in accordance with [UCS03](/ucs/03)
+Solver metadata is supplied here in accordance with [ucs03](/ucs/03)
 :::
 
 ### 4. zkgm Request
@@ -105,7 +105,7 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-UCS03 addresses can be found on the [Deployments page](/protocol/deployments/)
+ucs03 addresses can be found on the [Deployments page](/protocol/deployments/)
 :::
 
 ### 5. zkgm Execution & Response

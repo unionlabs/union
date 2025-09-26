@@ -3,7 +3,7 @@ title: Cross Chain Contract Calls
 description: Example call on Babylon to Ethereum contract.
 ---
 
-This guide walk's you through writing our example ["Call"](/integrations/typescript/examples/cosmos/call/). The goal of this guide is to show you how to conduct a cross chain contract call using [USC03 - ZKGM](/ucs/03/). In this case we will be calling a contract on Ethereum from Babylon.
+This guide walks you through writing our example ["Call"](/integrations/typescript/examples/cosmos/call/). The goal of this guide is to show you how to conduct a cross chain contract call using [ucs03-zkgm](/ucs/03/). In this case we will be calling a contract on Ethereum from Babylon.
 
 Relevant imports will be included with each step. Outside of libraries provided by Union, this guide uses [Effect](https://effect.website/).
 
@@ -50,14 +50,14 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-The ID's provided here are Universal Chain ID's as defined by [UCS04](/ucs/04).
+The IDs provided here are Universal Chain IDs as defined by [ucs04](/ucs/04).
 :::
 
 ### 3. Call
 
 To create a `Call`, we supply the `sender`, `contractAddress`, and `contractCalldata`.
 
-More information about `Call` and its fields can be found in the [UCS03 - 0x01 Call Docs](/ucs/03/#0x01---call).
+More information about `Call` and its fields can be found in the [Call](/ucs/03/#0x01---call) docs.
 
 ```ts
 import { Call, Ucs05, ZkgmClientRequest, ZkgmClientResponse } from "@unionlabs/sdk"
@@ -103,7 +103,7 @@ const program = Effect.gen(function*() {
 ```
 
 :::note
-UCS03 addresses can be found on the [Deployments page](/protocol/deployments/)
+ucs03 addresses can be found on the [Deployments page](/protocol/deployments/)
 :::
 
 ### 5. zkgm Execution and Response
