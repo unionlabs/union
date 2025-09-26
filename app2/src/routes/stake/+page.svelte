@@ -1,7 +1,7 @@
 <script lang="ts">
-import EscherTextLogo from "$lib/components/icons/EscherTextLogo.svelte"
 import BalanceCard from "$lib/components/stake/BalanceCard.svelte"
 import BondComponent from "$lib/components/stake/BondComponent.svelte"
+import EscherBanner from "$lib/components/stake/EscherBanner.svelte"
 import StakingHistoryCard from "$lib/components/stake/StakingHistoryCard.svelte"
 import StakingStatsGrid from "$lib/components/stake/StakingStatsGrid.svelte"
 import UnbondComponent from "$lib/components/stake/UnbondComponent.svelte"
@@ -81,7 +81,7 @@ const refreshStakingData = () => {
 let stakingData = $state<O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>>(O.none())
 
 // Start the polling effect that updates stakingData
-const stakingPoll = AppRuntime.runPromiseExit$(() => {
+AppRuntime.runPromiseExit$(() => {
   void WalletStore.evmAddress // React to wallet changes
   void refreshTrigger // React to refresh triggers
 
@@ -223,6 +223,11 @@ const purchaseRate = $derived(pipe(
   O.map(rates => rates.purchase_rate),
 ))
 
+const redemptionRate = $derived(pipe(
+  stakingRatesData,
+  O.map(rates => rates.redemption_rate),
+))
+
 const exchangeRate = $derived(pipe(
   purchaseRate,
   O.map(rate =>
@@ -243,49 +248,7 @@ const exchangeRate = $derived(pipe(
 </script>
 
 <Sections>
-  <!-- Escher Banner Card -->
-  <Card class="bg-white p-0 overflow-hidden shadow-sm border-0">
-    <div class="relative px-6 py-4 md:px-8 md:py-5">
-      <!-- Background gradient - subtle and refined -->
-      <div class="absolute inset-0 bg-gradient-to-r from-[#0008ff]/8 via-[#0008ff]/3 to-transparent">
-      </div>
-
-      <!-- Content container -->
-      <div class="relative z-10 flex flex-col md:flex-row items-center md:justify-between text-center md:text-left gap-3 md:gap-0">
-        <!-- Heading with logo -->
-        <div class="flex flex-col md:flex-row items-center gap-1.5 md:gap-2.5">
-          <h1 class="text-base md:text-lg font-medium text-gray-800 tracking-tight">
-            Powered by
-          </h1>
-          <EscherTextLogo class="h-6 w-auto text-gray-800" />
-        </div>
-
-        <!-- CTA Button -->
-        <a
-          target="_blank"
-          class="flex items-center gap-1.5 bg-[#0008ff] hover:bg-[#0006dd] transition-colors duration-200 rounded-md px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md mt-4 md:mt-0"
-          href="https://www.escher.finance/"
-        >
-          <div class="flex items-center justify-center">
-            <svg
-              class="w-3.5 h-3.5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
-          </div>
-          <span>Visit Escher App</span>
-        </a>
-      </div>
-    </div>
-  </Card>
+  <EscherBanner />
 
   <!-- Mobile: Balance Card first -->
   <div class="lg:hidden">
@@ -296,13 +259,18 @@ const exchangeRate = $derived(pipe(
       {uOnEvmBalance}
       {eUOnEvmBalance}
       {purchaseRate}
+      {redemptionRate}
+      stakingHistory={stakingData}
     />
   </div>
 
   <!-- Main grid with actions on left, balance+stats on right (desktop) -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Left Column: Staking Actions Card -->
-    <Card divided>
+    <Card
+      divided
+      class="flex flex-col"
+    >
       <div class="px-4 py-2.5 border-b border-zinc-800">
         <Tabs
           items={[
@@ -316,7 +284,7 @@ const exchangeRate = $derived(pipe(
         />
       </div>
 
-      <div class="p-4">
+      <div class="p-4 flex flex-1">
         {#if selectedTab === "bond"}
           <BondComponent
             {evmChain}
@@ -356,6 +324,8 @@ const exchangeRate = $derived(pipe(
         {uOnEvmBalance}
         {eUOnEvmBalance}
         {purchaseRate}
+        {redemptionRate}
+        stakingHistory={stakingData}
       />
 
       <!-- Stats Grid -->
