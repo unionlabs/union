@@ -113,7 +113,6 @@ let {
         loading={O.isNone(exchangeRate)}
         clickable={true}
         onclick={onToggleRate}
-        class="font-mono"
       >
         {#snippet icon()}
           <RotateLeftIcon class="w-3 h-3 text-zinc-500" />
