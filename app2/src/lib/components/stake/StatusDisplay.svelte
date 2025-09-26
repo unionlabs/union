@@ -46,9 +46,26 @@ type WithdrawalState = Data.TaggedEnum<{
   Error: { message: string }
 }>
 
+type DustWithdrawState = Data.TaggedEnum<{
+  Ready: {}
+  SwitchingChain: {}
+  CheckingAllowance: {}
+  ApprovingAllowance: {}
+  AllowanceSubmitted: { txHash: string }
+  WaitingForAllowanceConfirmation: { txHash: string }
+  AllowanceApproved: {}
+  PreparingTransaction: {}
+  ConfirmingWithdrawal: {}
+  WithdrawalSubmitted: { txHash: string }
+  WaitingForConfirmation: { txHash: string }
+  WaitingForIndexer: { txHash: string }
+  Success: { txHash: string }
+  Error: { message: string }
+}>
+
 interface Props {
-  state: BondState | UnbondState | WithdrawalState
-  type: "bond" | "unbond" | "withdrawal"
+  state: BondState | UnbondState | WithdrawalState | DustWithdrawState
+  type: "bond" | "unbond" | "withdrawal" | "dust"
   inputAmount?: string
   class?: string
 }
@@ -263,6 +280,82 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
       },
       Error: {
         title: "Withdrawal failed",
+        subtitle: errorMessage,
+        txHash: O.none()
+      }
+    },
+    dust: {
+      Ready: {
+        title: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet to recover dust"
+          : "Ready to recover dust",
+        subtitle: O.isNone(WalletStore.evmAddress)
+          ? "Connect wallet to recover your proxy dust"
+          : "Recover eU tokens from your proxy contract",
+        txHash: O.none()
+      },
+      SwitchingChain: {
+        title: "Switching to Ethereum",
+        subtitle: "Please confirm the network switch",
+        txHash: O.none()
+      },
+      CheckingAllowance: {
+        title: "Checking eU allowance",
+        subtitle: "Verifying token permissions",
+        txHash: O.none()
+      },
+      ApprovingAllowance: {
+        title: "Approve eU spending",
+        subtitle: "Confirm the approval in your wallet",
+        txHash: O.none()
+      },
+      AllowanceSubmitted: {
+        title: "Approval submitted",
+        subtitle: "Transaction submitted",
+        txHash
+      },
+      WaitingForAllowanceConfirmation: {
+        title: "Confirming approval",
+        subtitle: "Waiting for confirmation",
+        txHash
+      },
+      AllowanceApproved: {
+        title: "Approval confirmed",
+        subtitle: "eU spending approved",
+        txHash: O.none()
+      },
+      PreparingTransaction: {
+        title: "Preparing dust recovery",
+        subtitle: "Setting up the transaction",
+        txHash: O.none()
+      },
+      ConfirmingWithdrawal: {
+        title: "Confirm dust recovery",
+        subtitle: "Confirm transaction in your wallet",
+        txHash: O.none()
+      },
+      WithdrawalSubmitted: {
+        title: "Dust recovery submitted",
+        subtitle: "Transaction submitted",
+        txHash
+      },
+      WaitingForConfirmation: {
+        title: "Confirming recovery",
+        subtitle: "Waiting for confirmation",
+        txHash
+      },
+      WaitingForIndexer: {
+        title: "Indexing recovery",
+        subtitle: "Transaction confirmed, indexing data...",
+        txHash
+      },
+      Success: {
+        title: "Dust recovered successfully",
+        subtitle: "Your eU tokens have been recovered to your wallet!",
+        txHash
+      },
+      Error: {
+        title: "Dust recovery failed",
         subtitle: errorMessage,
         txHash: O.none()
       }
