@@ -14,37 +14,41 @@ let {
   class: className = "",
 }: Props = $props()
 
-let isCustom = $state(![1, 2].includes(value))
-let customInput = $state("")
-let showCustomInput = $state(false)
+type SlippageKey = "1" | "2" | "custom"
 
-// Initialize custom values if needed
-$effect(() => {
-  if (![1, 2].includes(value)) {
-    isCustom = true
-    customInput = value.toString()
-    showCustomInput = false // Keep input hidden initially for custom values
-  }
-})
-
-const presetOptions = [
-  { label: "1", value: 1 },
-  { label: "2", value: 2 },
+const presetOptions: Array<{ key: SlippageKey; label: string; value?: number }> = [
+  { key: "1", label: "1", value: 1 },
+  { key: "2", label: "2", value: 2 },
+  { key: "custom", label: "Custom" },
 ]
 
-const handlePresetClick = (presetValue: number) => {
-  isCustom = false
-  showCustomInput = false
-  customInput = ""
-  onchange(presetValue)
-}
+const getKeyFromValue = (incoming: number): SlippageKey =>
+  incoming === 1 || incoming === 2 ? String(incoming) as SlippageKey : "custom"
 
-const handleCustomClick = () => {
-  isCustom = true
-  showCustomInput = true
-  if (!customInput) {
+let selectedKey = $state<SlippageKey>(getKeyFromValue(value))
+let customInput = $state(selectedKey === "custom" ? value.toString() : "")
+
+$effect(() => {
+  const nextKey = getKeyFromValue(value)
+  selectedKey = nextKey
+  customInput = nextKey === "custom" ? value.toString() : ""
+})
+
+const handleSegmentClick = (key: SlippageKey) => {
+  if (key === "custom") {
+    selectedKey = "custom"
     customInput = value.toString()
+    return
   }
+
+  const preset = presetOptions.find(option => option.key === key)?.value
+  if (preset == null) {
+    return
+  }
+
+  selectedKey = key
+  customInput = ""
+  onchange(preset)
 }
 
 const parseSlippage = (input: string): O.Option<number> =>
@@ -69,6 +73,7 @@ const handleCustomChange = (e: Event) => {
     O.match({
       onNone: () => {},
       onSome: (parsed) => {
+        selectedKey = "custom"
         customInput = inputValue
         onchange(parsed)
       },
@@ -103,88 +108,40 @@ const handleCustomBlur = () => {
 </script>
 
 <div class={cn("space-y-1.5", className)}>
-  <div class="flex justify-between items-center">
+  <div class="flex items-center justify-between">
     <span class="text-[11px] text-zinc-500 font-medium">Slippage</span>
-    <div class="flex items-center gap-0.5">
+    <div class="flex items-center gap-1">
       {#each presetOptions as option}
-        <button
-          class={cn(
-            "px-1.5 py-0.5 text-[11px] font-medium rounded transition-all",
-            !isCustom && value === option.value
-              ? "bg-accent/20 text-accent"
-              : "text-zinc-500 hover:text-zinc-400",
-          )}
-          onclick={() => handlePresetClick(option.value)}
-        >
-          {option.label}%
-        </button>
-      {/each}
-
-      <div class="relative">
-        {#if showCustomInput}
-          <div class="flex items-center">
+        {#if option.key === "custom" && selectedKey === "custom"}
+          <div class="relative w-[60px]">
             <input
               type="text"
               value={customInput}
               oninput={handleCustomChange}
               onblur={handleCustomBlur}
-              class={cn(
-                "w-12 px-1 py-0.5 text-[11px] font-medium rounded transition-all",
-                "bg-zinc-800 text-zinc-100 border border-zinc-700",
-                "focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/20",
-              )}
+              inputmode="decimal"
+              class="h-7 w-full rounded border border-accent/30 bg-transparent px-2 text-[11px] font-medium text-zinc-100 placeholder:text-zinc-500 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
               placeholder="1.5"
             />
-            <span class="ml-0.5 text-[11px] text-zinc-500">%</span>
+            <span
+              class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[10px] text-zinc-500"
+            >%</span>
           </div>
-        {:else if isCustom}
-          <button
-            class={cn(
-              "flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded transition-all",
-              "bg-accent/20 text-accent",
-            )}
-            onclick={handleCustomClick}
-          >
-            {value}%
-            <svg
-              class="w-2.5 h-2.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
-          </button>
         {:else}
           <button
+            type="button"
             class={cn(
-              "p-0.5 text-zinc-500 hover:text-zinc-400 transition-all",
+              "h-7 min-w-[48px] cursor-pointer px-2 text-[11px] font-medium rounded border border-transparent transition-all",
+              option.key === selectedKey
+                ? "border-accent/30 bg-accent/10 text-accent"
+                : "text-zinc-500 hover:text-zinc-300 hover:border-zinc-700",
             )}
-            onclick={handleCustomClick}
-            title="Custom slippage"
-            aria-label="Set custom slippage"
+            onclick={() => handleSegmentClick(option.key)}
           >
-            <svg
-              class="w-3 h-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
+            {option.key === "custom" ? option.label : `${option.label}%`}
           </button>
         {/if}
-      </div>
+      {/each}
     </div>
   </div>
 </div>
