@@ -99,6 +99,30 @@ const hasDust = $derived(
   O.isSome(proxyEuDust) && BigDecimal.greaterThan(proxyEuDust.value, BigDecimal.make(0n, 18)),
 )
 const isButtonDisabled = $derived(!hasDust || isWithdrawing || isSuccess)
+const buttonLabel = $derived(
+  Match.value(dustWithdrawState).pipe(
+    Match.when(DustWithdrawState.$is("Ready"), () =>
+      !hasDust
+        ? "No Dust Available"
+        : O.isNone(WalletStore.evmAddress)
+        ? "Connect Wallet"
+        : "Recover Dust to Wallet"),
+    Match.when(DustWithdrawState.$is("SwitchingChain"), () => "Switching..."),
+    Match.when(DustWithdrawState.$is("CheckingAllowance"), () => "Checking..."),
+    Match.when(DustWithdrawState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
+    Match.when(DustWithdrawState.$is("AllowanceSubmitted"), () => "Submitted"),
+    Match.when(DustWithdrawState.$is("WaitingForAllowanceConfirmation"), () => "Confirming..."),
+    Match.when(DustWithdrawState.$is("AllowanceApproved"), () => "Approved ✓"),
+    Match.when(DustWithdrawState.$is("PreparingTransaction"), () => "Preparing..."),
+    Match.when(DustWithdrawState.$is("ConfirmingWithdrawal"), () => "Confirm in Wallet"),
+    Match.when(DustWithdrawState.$is("WithdrawalSubmitted"), () => "Submitted"),
+    Match.when(DustWithdrawState.$is("WaitingForConfirmation"), () => "Confirming..."),
+    Match.when(DustWithdrawState.$is("WaitingForIndexer"), () => "Indexing..."),
+    Match.when(DustWithdrawState.$is("Success"), () => "Recovery Pending"),
+    Match.when(DustWithdrawState.$is("Error"), () => hasDust ? "Try Again" : "No Dust Available"),
+    Match.exhaustive,
+  ),
+)
 
 // Execute dust withdrawal
 const executeDustWithdrawal = (
@@ -324,104 +348,78 @@ const handleDustWithdraw = () => {
 }
 </script>
 
-<div class="flex flex-col gap-3 flex-1">
-  {#if hasDust}
-    <!-- Dust Balance -->
-    <TokenBalanceRow
-      chain={evmChain}
-      token={eUOnEvmToken}
-      balance={O.map(proxyEuDust, dust => Utils.toRawAmount(dust))}
-      symbol="eU"
-      title="Proxy Dust (eU)"
-      subtitle={pipe(
-        O.all([proxyEuDust, redemptionRate]),
-        O.map(([dust, rate]) => {
-          const valueInU = BigDecimal.multiply(dust, rate)
-          return `≈ ${
-            Utils.formatBigDecimal(BigDecimal.round({ mode: "from-zero", scale: 2 })(valueInU))
-          } U`
-        }),
-        O.getOrElse(() => O.isSome(proxyEuDust) && O.isSome(redemptionRate) ? "loading" : ""),
-      )}
-    />
+<div class="flex flex-1 flex-col gap-2">
+  <div class="space-y-2">
+    {#if hasDust}
+      <TokenBalanceRow
+        chain={evmChain}
+        token={eUOnEvmToken}
+        balance={O.map(proxyEuDust, dust => Utils.toRawAmount(dust))}
+        symbol="eU"
+        title="Proxy Dust (eU)"
+        subtitle={pipe(
+          O.all([proxyEuDust, redemptionRate]),
+          O.map(([dust, rate]) => {
+            const valueInU = BigDecimal.multiply(dust, rate)
+            return `≈ ${
+              Utils.formatBigDecimal(
+                BigDecimal.round({ mode: "from-zero", scale: 2 })(valueInU),
+              )
+            } U`
+          }),
+          O.getOrElse(() => O.isSome(proxyEuDust) && O.isSome(redemptionRate) ? "loading" : ""),
+        )}
+      />
+    {:else}
+      <TokenBalanceRow
+        chain={evmChain}
+        token={eUOnEvmToken}
+        balance={O.some(0n)}
+        symbol="eU"
+        title="Proxy Dust"
+        subtitle="No dust available"
+      />
 
-    <!-- Status Display -->
-    <StatusDisplay
-      state={dustWithdrawState}
-      type="dust"
-      class="mb-4"
-    />
-
-    <div class="flex-1"></div>
-  {:else}
-    <!-- No dust message using TokenBalanceRow for consistency -->
-    <TokenBalanceRow
-      chain={evmChain}
-      token={eUOnEvmToken}
-      balance={O.some(0n)}
-      symbol="eU"
-      title="Proxy Dust"
-      subtitle="No dust available"
-    />
-
-    <div class="flex-1 flex items-center justify-center">
-      <p class="text-xs text-zinc-600">
+      <div class="rounded-lg border border-dashed border-zinc-700/60 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-500">
         Dust appears here when you stake with slippage protection
-      </p>
-    </div>
-  {/if}
-
-  <!-- Recovery Button -->
-  <Button
-    variant={isError || !hasDust ? "secondary" : "primary"}
-    disabled={isButtonDisabled}
-    onclick={handleDustWithdraw}
-    class="w-full"
-  >
-    {#if isWithdrawing}
-      <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
       </div>
-    {:else if isSuccess}
-      <svg
-        class="w-4 h-4 text-current mr-2"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M5 13l4 4L19 7"
-        />
-      </svg>
     {/if}
-    {
-      Match.value(dustWithdrawState).pipe(
-        Match.when(DustWithdrawState.$is("Ready"), () =>
-          !hasDust
-            ? "No Dust Available"
-            : O.isNone(WalletStore.evmAddress)
-            ? "Connect Wallet"
-            : "Recover Dust to Wallet"),
-        Match.when(DustWithdrawState.$is("SwitchingChain"), () => "Switching..."),
-        Match.when(DustWithdrawState.$is("CheckingAllowance"), () => "Checking..."),
-        Match.when(DustWithdrawState.$is("ApprovingAllowance"), () => "Confirm in Wallet"),
-        Match.when(DustWithdrawState.$is("AllowanceSubmitted"), () => "Submitted"),
-        Match.when(DustWithdrawState.$is("WaitingForAllowanceConfirmation"), () =>
-          "Confirming..."),
-        Match.when(DustWithdrawState.$is("AllowanceApproved"), () =>
-          "Approved ✓"),
-        Match.when(DustWithdrawState.$is("PreparingTransaction"), () => "Preparing..."),
-        Match.when(DustWithdrawState.$is("ConfirmingWithdrawal"), () => "Confirm in Wallet"),
-        Match.when(DustWithdrawState.$is("WithdrawalSubmitted"), () => "Submitted"),
-        Match.when(DustWithdrawState.$is("WaitingForConfirmation"), () => "Confirming..."),
-        Match.when(DustWithdrawState.$is("WaitingForIndexer"), () => "Indexing..."),
-        Match.when(DustWithdrawState.$is("Success"), () => "Recovery Pending"),
-        Match.when(DustWithdrawState.$is("Error"), () =>
-          hasDust ? "Try Again" : "No Dust Available"),
-        Match.exhaustive,
-      )
-    }
-  </Button>
+  </div>
+
+  <div class="mt-auto space-y-2">
+    {#if hasDust}
+      <StatusDisplay
+        state={dustWithdrawState}
+        type="dust"
+        size="compact"
+      />
+    {/if}
+
+    <Button
+      variant={isError || !hasDust ? "secondary" : "primary"}
+      disabled={isButtonDisabled}
+      onclick={handleDustWithdraw}
+      class="w-full"
+    >
+      {#if isWithdrawing}
+        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2">
+        </div>
+      {:else if isSuccess}
+        <svg
+          class="w-4 h-4 text-current mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      {/if}
+      {buttonLabel}
+    </Button>
+  </div>
 </div>

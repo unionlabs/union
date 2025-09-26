@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Match, Option as O, Data } from "effect"
+import { Match, Option as O, Data, pipe } from "effect"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 
@@ -63,11 +63,28 @@ type DustWithdrawState = Data.TaggedEnum<{
   Error: { message: string }
 }>
 
+type QuickWithdrawState = Data.TaggedEnum<{
+  Ready: {}
+  SwitchingChain: {}
+  CheckingAllowance: {}
+  ApprovingAllowance: {}
+  AllowanceSubmitted: { txHash: string }
+  WaitingForAllowanceConfirmation: { txHash: string }
+  AllowanceApproved: {}
+  ConfirmingWithdraw: {}
+  WithdrawSubmitted: { txHash: string }
+  WaitingForConfirmation: { txHash: string }
+  Success: { txHash: string; receivedAmount: bigint }
+  Error: { message: string }
+}>
+
 interface Props {
-  state: BondState | UnbondState | WithdrawalState | DustWithdrawState
-  type: "bond" | "unbond" | "withdrawal" | "dust"
+  state: BondState | UnbondState | WithdrawalState | DustWithdrawState | QuickWithdrawState
+  type: "bond" | "unbond" | "withdrawal" | "dust" | "quick-withdraw"
   inputAmount?: string
   class?: string
+  size?: "default" | "compact"
+  isContractActive?: O.Option<boolean>
 }
 
 let {
@@ -75,6 +92,8 @@ let {
   type,
   inputAmount = "",
   class: className = "",
+  size = "default",
+  isContractActive = O.none(),
 }: Props = $props()
 
 const isReady = $derived(state._tag === "Ready")
@@ -359,6 +378,100 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
         subtitle: errorMessage,
         txHash: O.none()
       }
+    },
+    "quick-withdraw": {
+      Ready: {
+        title: pipe(
+          isContractActive,
+          O.match({
+            onNone: () => O.isNone(WalletStore.evmAddress)
+              ? "Connect wallet for instant exit"
+              : inputAmount
+              ? "Ready to exit?"
+              : "Enter amount to exit",
+            onSome: (active) => !active
+              ? "Instant Exit Not Active"
+              : O.isNone(WalletStore.evmAddress)
+              ? "Connect wallet for instant exit"
+              : inputAmount
+              ? "Ready to exit?"
+              : "Enter amount to exit",
+          }),
+        ),
+        subtitle: pipe(
+          isContractActive,
+          O.match({
+            onNone: () => O.isNone(WalletStore.evmAddress)
+              ? "Connect wallet to use instant exit"
+              : inputAmount
+              ? "Click exit button to proceed"
+              : "Instant exit converts eU to U instantly",
+            onSome: (active) => !active
+              ? "Please use the regular withdraw process or check back later"
+              : O.isNone(WalletStore.evmAddress)
+              ? "Connect wallet to use instant exit"
+              : inputAmount
+              ? "Click exit button to proceed"
+              : "Instant exit converts eU to U instantly",
+          }),
+        ),
+        txHash: O.none()
+      },
+      SwitchingChain: {
+        title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
+        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
+        txHash: O.none()
+      },
+      CheckingAllowance: {
+        title: "Checking eU Allowance",
+        subtitle: "Verifying token permissions for quick withdrawal...",
+        txHash: O.none()
+      },
+      ApprovingAllowance: {
+        title: `Approving ${inputAmount || "0"} eU`,
+        subtitle: "Confirm token approval transaction in your wallet",
+        txHash: O.none()
+      },
+      AllowanceSubmitted: {
+        title: "Approval submitted",
+        subtitle: "Allowance transaction submitted",
+        txHash
+      },
+      WaitingForAllowanceConfirmation: {
+        title: "Confirming approval",
+        subtitle: "Waiting for allowance confirmation",
+        txHash
+      },
+      AllowanceApproved: {
+        title: `Approved ${inputAmount || "0"} eU`,
+        subtitle: "Token spending approved, proceeding...",
+        txHash: O.none()
+      },
+      ConfirmingWithdraw: {
+        title: "Confirm exit",
+        subtitle: "Confirm exit transaction in your wallet",
+        txHash: O.none()
+      },
+      WithdrawSubmitted: {
+        title: "Exit submitted",
+        subtitle: "Transaction submitted",
+        txHash
+      },
+      WaitingForConfirmation: {
+        title: "Processing exit",
+        subtitle: "Waiting for confirmation",
+        txHash
+      },
+      Success: {
+        title: "Exit successful",
+        subtitle: "Your U tokens have been sent to your wallet!",
+        txHash
+      },
+      Error: {
+        title: "Exit failed",
+        subtitle: errorMessage,
+        txHash: O.none()
+      }
     }
   }
   
@@ -367,12 +480,43 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
 }
 
 const currentMessage = $derived(getMessage(type, state, inputAmount))
+
+// Check if contract is not active (for quick-withdraw)
+const isContractNotActive = $derived(
+  type === "quick-withdraw" && isReady && pipe(
+    isContractActive,
+    O.match({
+      onNone: () => false,
+      onSome: (active) => !active,
+    }),
+  )
+)
+
+const containerPadding = $derived(size === "compact" ? "p-3" : "p-3.5")
+const contentGap = $derived(size === "compact" ? "gap-2.5" : "gap-3")
+const badgeSize = $derived(size === "compact" ? "size-6" : "size-7")
+const titleClass = $derived(size === "compact" ? "text-[12px]" : "text-[13px]")
+const subtitleSize = $derived(size === "compact" ? "text-[10px]" : "text-[11px]")
 </script>
 
-<div class="rounded-lg bg-zinc-900 border border-zinc-800/50 p-3.5 {className}">
-  <div class="flex items-center gap-3">
-    <div class="size-7 rounded-md {isError ? 'bg-red-500/10 border border-red-500/20' : isSuccess ? 'bg-accent/10 border border-accent/20' : isReady ? 'bg-zinc-800' : 'bg-accent/10 border border-accent/20'} flex items-center justify-center flex-shrink-0">
-      {#if isReady}
+<div class="rounded-lg bg-zinc-900 border border-zinc-800/50 {containerPadding} {className}">
+  <div class="flex items-center {contentGap}">
+    <div class="{badgeSize} rounded-md {isError ? 'bg-red-500/10 border border-red-500/20' : isSuccess ? 'bg-accent/10 border border-accent/20' : isContractNotActive ? 'bg-orange-500/10 border border-orange-500/20' : isReady ? 'bg-zinc-800' : 'bg-accent/10 border border-accent/20'} flex items-center justify-center flex-shrink-0">
+      {#if isContractNotActive}
+        <svg
+          class="w-3.5 h-3.5 text-orange-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      {:else if isReady}
         <svg
           class="w-3.5 h-3.5 text-zinc-400"
           fill="none"
@@ -418,10 +562,10 @@ const currentMessage = $derived(getMessage(type, state, inputAmount))
       {/if}
     </div>
     <div class="flex-1">
-      <div class="text-[13px] font-medium text-white">
+      <div class="{titleClass} font-medium {isContractNotActive ? 'text-orange-400' : 'text-white'}">
         {currentMessage.title}
       </div>
-      <div class="text-[11px] {isReady ? 'text-zinc-500' : isError ? 'text-red-400/80' : isSuccess ? 'text-accent/80' : 'text-accent/60'} mt-0.5">
+      <div class="{subtitleSize} {isContractNotActive ? 'text-orange-400/80' : isReady ? 'text-zinc-500' : isError ? 'text-red-400/80' : isSuccess ? 'text-accent/80' : 'text-accent/60'} mt-0.5">
         {currentMessage.subtitle}
         {#if O.isSome(currentMessage.txHash)}
           {" "}
