@@ -7,6 +7,7 @@
       proto,
       ensureAtRepositoryRoot,
       mkCi,
+      dbg,
       ...
     }:
     let
@@ -210,11 +211,13 @@
               pkgs.runCommand "galoisd-circuit-${circuit.name}-unpacked" { buildInputs = [ pkgs.unzip ]; } ''
                 unzip ${circuit} -d $out
               '';
-            unpacked-circuit = unpackCircuit (
-              pkgs.fetchurl {
-                url = "https://circuit.cryptware.io/circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
-                hash = "sha256-4cExiem1lKrQlDIsrArfQPTuTvpABzi/rNra17R/md4=";
-              }
+            unpacked-circuit = dbg (
+              unpackCircuit (
+                pkgs.fetchurl {
+                  url = "https://circuit.cryptware.io/circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
+                  hash = "sha256-4cExiem1lKrQlDIsrArfQPTuTvpABzi/rNra17R/md4=";
+                }
+              )
             );
           in
           mkCi false (

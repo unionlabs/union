@@ -204,6 +204,7 @@
         ./evm/evm.nix
         ./tools/rust-proto.nix
         ./tools/tools.nix
+        ./tools/scarb.nix
         ./tools/wasm-light-client.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
