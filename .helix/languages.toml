@@ -13,6 +13,10 @@ config  = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "e
 args    = ["lsp-proxy"]
 command = "biome"
 
+[language-server.cairo-language-server]
+args    = []
+command = "cairo-language-server"
+
 [language-server.emmet-lsp]
 args    = ["--stdio"]
 command = "emmet-language-server"
@@ -51,6 +55,11 @@ roots            = ["package.json", "astro.config.ts", "tsconfig.json", "tailwin
 scope            = "source.astro"
 # not yet released
 # block-comment-tokens = { start = "<!--", end = "-->" }
+
+[[language]]
+auto-format      = true
+formatter        = { command = "cairo-format", args = ["-"] }
+name             = "cairo"
 
 [[language]]
 auto-format = true

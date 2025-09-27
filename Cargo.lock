@@ -7146,6 +7146,7 @@ dependencies = [
  "alloy-sol-types",
  "bincode 2.0.1",
  "enumorph",
+ "hex-literal 0.4.1",
  "ibc-union-spec",
  "num-traits",
  "schemars",

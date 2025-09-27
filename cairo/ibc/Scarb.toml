@@ -1,0 +1,57 @@
+[package]
+name = "ibc"
+version = "0.1.0"
+edition = "2024_07"
+experimental-features = ["associated_item_constraints", "safe_dispatcher", "user_defined_inline_macros"]
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+[lib]
+
+[dependencies]
+alexandria_bytes = { workspace = true }
+alexandria_encoding = { workspace = true }
+alexandria_evm = { workspace = true }
+starknet = { workspace = true }
+
+[dev-dependencies]
+snforge_std = "0.51.1"
+assert_macros = "2.12.2"
+
+[[target.starknet-contract]]
+sierra = true
+
+[scripts]
+test = "snforge test"
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
+
+# Visit https://foundry-rs.github.io/starknet-foundry/appendix/scarb-toml.html for more information
+
+# [tool.snforge]                                             # Define `snforge` tool section
+# exit_first = true                                          # Stop tests execution immediately upon the first failure
+# fuzzer_runs = 1234                                         # Number of runs of the random fuzzer
+# fuzzer_seed = 1111                                         # Seed for the random fuzzer
+
+# [[tool.snforge.fork]]                                      # Used for fork testing
+# name = "SOME_NAME"                                         # Fork name
+# url = "http://your.rpc.url"                                # Url of the RPC provider
+# block_id.tag = "latest"                                    # Block to fork from (block tag)
+
+# [[tool.snforge.fork]]
+# name = "SOME_SECOND_NAME"
+# url = "http://your.second.rpc.url"                         
+# block_id.number = "123"                                    # Block to fork from (block number)
+
+# [[tool.snforge.fork]]
+# name = "SOME_THIRD_NAME"
+# url = "http://your.third.rpc.url"
+# block_id.hash = "0x123"                                    # Block to fork from (block hash)
+
+# [profile.dev.cairo]                                        # Configure Cairo compiler
+# unstable-add-statements-code-locations-debug-info = true   # Should be used if you want to use coverage
+# unstable-add-statements-functions-debug-info = true        # Should be used if you want to use coverage/profiler
+# inlining-strategy = "avoid"                                # Should be used if you want to use coverage
+
+# [features]                                                 # Used for conditional compilation
+# enable_for_tests = []                                      # Feature name and list of other features that should be enabled with it

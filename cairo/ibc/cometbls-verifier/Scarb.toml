@@ -1,0 +1,20 @@
+[package]
+name = "cometbls_verifier"
+version = "0.1.0"
+edition = "2024_07"
+
+[dependencies]
+garaga = { git = "https://github.com/keep-starknet-strange/garaga.git", tag = "v0.18.2" }
+starknet = "2.11.4"
+
+[cairo]
+sierra-replace-ids = false
+inlining-strategy = 2
+
+[dev-dependencies]
+snforge_std = "0.51.1"
+assert_macros = "2.11.4"
+
+[[target.starknet-contract]]
+casm = true
+casm-add-pythonic-hints = true

@@ -208,6 +208,7 @@
         ./evm/evm.nix
         ./tools/rust-proto.nix
         ./tools/tools.nix
+        ./tools/scarb.nix
         ./tools/wasm-light-client.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
@@ -585,6 +586,11 @@
                     pkgs.foundry-bin
                     pkgs.sqlx-cli
                     self'.packages.ignite-cli
+                    self'.packages.scarb
+                    self'.packages.snforge
+                    self'.packages.sncast
+                    self'.packages.cairo-language-server
+                    self'.packages.cairo-format
                   ]
                 else
                   [ ]

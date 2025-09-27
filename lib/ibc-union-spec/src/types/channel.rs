@@ -83,6 +83,7 @@ pub mod ethabi {
         SolStruct, SolType, SolValue,
         sol_data::{Bytes as SolBytes, String as SolString, Uint},
     };
+    use unionlabs::impl_ethabi_via_try_from_into;
 
     use super::*;
 
@@ -210,10 +211,18 @@ pub mod ethabi {
             .concat()
         }
     }
+
+    impl_ethabi_via_try_from_into!(Channel => Channel);
 }
 
 #[cfg(test)]
 mod tests {
+    use hex_literal::hex;
+    use unionlabs::{
+        encoding::{Bincode, EthAbi},
+        test_utils::assert_codec_iso_bytes,
+    };
+
     use super::*;
 
     // NOTE: Explicit type annotations are intentional, to ensure the intended impls are called
@@ -231,5 +240,29 @@ mod tests {
         // ayutoref coercion
         let borrowed_u8: &u8 = connection_state.borrow();
         assert_eq!(&(**connection_state as u8), borrowed_u8);
+    }
+
+    #[test]
+    fn ethabi() {
+        assert_codec_iso_bytes::<_, EthAbi>(
+            &Channel {
+                state: ChannelState::Init,
+                connection_id: ConnectionId::new(1.try_into().unwrap()),
+                counterparty_channel_id: Some(ChannelId::new(1.try_into().unwrap())),
+                counterparty_port_id: hex!("deadbeef").into(),
+                version: "version".into(),
+            },
+            &hex!(
+                "0000000000000000000000000000000000000000000000000000000000000001" // state
+                "0000000000000000000000000000000000000000000000000000000000000001" // connection id
+                "0000000000000000000000000000000000000000000000000000000000000001" // counterparty_channel_id
+                "00000000000000000000000000000000000000000000000000000000000000a0" // counterparty port id (offset)
+                "00000000000000000000000000000000000000000000000000000000000000e0" // version (offset)
+                "0000000000000000000000000000000000000000000000000000000000000004" // counterparty port id (length)
+                "deadbeef00000000000000000000000000000000000000000000000000000000" // counterparty port id
+                "0000000000000000000000000000000000000000000000000000000000000007" // version (len)
+                "76657273696f6e00000000000000000000000000000000000000000000000000" // version
+            ),
+        );
     }
 }

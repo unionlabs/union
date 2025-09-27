@@ -118,7 +118,12 @@ _: {
       );
 
       _module.args.rust = {
-        inherit mkBuildStdToolchain mkNightly rustSrc;
+        inherit
+          mkToolchain
+          mkBuildStdToolchain
+          mkNightly
+          rustSrc
+          ;
 
         toolchains = {
           nightly = mkNightly { };
