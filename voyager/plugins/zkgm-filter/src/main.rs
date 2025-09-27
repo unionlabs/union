@@ -810,7 +810,7 @@ fn valid_checksum_cosmos(tx_bytes: &[u8]) -> (bool, Option<Bech32<Bytes>>) {
 
     match execute_msg {
         ucs03_zkgm::msg::ExecuteMsg::Send { salt, .. } => (valid_checksum(salt), Some(msg.sender)),
-        _ => panic!("????? {execute_msg:?}"),
+        _ => panic!("unexpected ExecuteMsg variant: {execute_msg:?}"),а
     }
 }
 
