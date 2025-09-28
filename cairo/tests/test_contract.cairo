@@ -1,4 +1,4 @@
-use cairo::{
+use ibc::{
     IHelloStarknetDispatcher, IHelloStarknetDispatcherTrait, IHelloStarknetSafeDispatcher,
     IHelloStarknetSafeDispatcherTrait, to_be_bytes,
 };

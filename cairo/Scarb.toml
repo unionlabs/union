@@ -1,5 +1,8 @@
+[workspace]
+members = ["cometbls-verifier"]
+
 [package]
-name = "cairo"
+name = "ibc"
 version = "0.1.0"
 edition = "2024_07"
 experimental-features = ["associated_item_constraints"]
@@ -7,7 +10,7 @@ experimental-features = ["associated_item_constraints"]
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
-groth16_example_bn254 = { git = "https://github.com/keep-starknet-strange/garaga" }
+# groth16_example_bn254 = { git = "https://github.com/keep-starknet-strange/garaga" }
 starknet = "2.12.2"
 
 [dev-dependencies]
