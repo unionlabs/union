@@ -18,7 +18,8 @@ use ibc_union_msg::{
     msg::{
         ExecuteMsg, InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelCloseConfirm,
         MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit,
-        MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+        MsgChannelOpenTry, MsgCommitMembershipProof, MsgCommitNonMembershipProof,
+        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
         MsgConnectionOpenTry, MsgCreateClient, MsgForceUpdateClient, MsgIntentPacketRecv,
         MsgMigrateState, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
         MsgRegisterClient, MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
@@ -28,7 +29,8 @@ use ibc_union_msg::{
 use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        ConnectionPath, ConsensusStatePath, MembershipProofPath, NonMembershipProofPath,
+        COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK, NON_MEMBERSHIP_COMMITMENT_VALUE,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     MustBeZero, Packet, Status, Timestamp,
@@ -80,6 +82,10 @@ pub mod events {
         pub const BATCH_ACKS: &str = "batch_acks";
         pub const WRITE_ACK: &str = "write_ack";
     }
+    pub mod proof {
+        pub const COMMIT_MEMBERSHIP: &str = "commit_membership_proof";
+        pub const COMMIT_NON_MEMBERSHIP: &str = "commit_non_membership_proof";
+    }
     pub mod attribute {
         pub const CLIENT_ID: &str = "client_id";
         pub const CONNECTION_ID: &str = "connection_id";
@@ -105,6 +111,9 @@ pub mod events {
         pub const PORT_ID: &str = "port_id";
         pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
         pub const VERSION: &str = "version";
+        pub const PATH: &str = "path";
+        pub const VALUE: &str = "value";
+        pub const PROOF_HEIGHT: &str = "proof_height";
     }
 }
 
@@ -622,6 +631,25 @@ pub fn execute(
                     .add_attribute("action", "revoke")
                     .add_attribute("relayer", relayer),
             ))
+        }
+        ExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
+            client_id,
+            proof_height,
+            proof,
+            path,
+            value,
+        }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            commit_membership_proof(deps, client_id, proof_height, proof, path, value)
+        }
+        ExecuteMsg::CommitNonMembershipProof(MsgCommitNonMembershipProof {
+            client_id,
+            proof_height,
+            proof,
+            path,
+        }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            commit_non_membership_proof(deps, client_id, proof_height, proof, path)
         }
     }
 }
@@ -2206,6 +2234,45 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             let commit = read_commit(deps, &BatchReceiptsPath { batch_hash }.key());
             Ok(to_json_binary(&commit)?)
         }
+        QueryMsg::GetCommittedMembershipProof {
+            client_id,
+            proof_height,
+            path,
+        } => {
+            let commit = read_commit(
+                deps,
+                &MembershipProofPath {
+                    client_id,
+                    proof_height,
+                    path,
+                }
+                .key(),
+            );
+            Ok(to_json_binary(&commit)?)
+        }
+        QueryMsg::GetCommittedNonMembershipProof {
+            client_id,
+            proof_height,
+            path,
+        } => {
+            let commit = read_commit(
+                deps,
+                &NonMembershipProofPath {
+                    client_id,
+                    proof_height,
+                    path,
+                }
+                .key(),
+            );
+
+            if commit.is_none() {
+                Ok(to_json_binary(&false)?)
+            } else if commit == Some(NON_MEMBERSHIP_COMMITMENT_VALUE) {
+                Ok(to_json_binary(&true)?)
+            } else {
+                unreachable!()
+            }
+        }
     }
 }
 
@@ -2236,6 +2303,87 @@ fn make_verify_creation_event(client_id: ClientId, event: VerifyCreationResponse
             ("l2_chain_id", l2_chain_id),
         ]),
     }
+}
+
+fn commit_membership_proof(
+    deps: DepsMut,
+    client_id: ClientId,
+    proof_height: u64,
+    proof: Bytes,
+    path: Bytes,
+    value: Bytes,
+) -> Result<Response, ContractError> {
+    let client_impl = client_impl(deps.as_ref(), client_id)?;
+
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
+            client_id,
+            height: proof_height,
+            proof: proof.to_vec().into(),
+            path: path.clone(),
+            value: value.clone(),
+        },
+    )?;
+
+    store_commit(
+        deps,
+        &MembershipProofPath {
+            client_id,
+            proof_height,
+            path: path.clone(),
+        }
+        .key(),
+        &commit(&value),
+    );
+
+    Ok(Response::new().add_event(
+        Event::new(events::proof::COMMIT_MEMBERSHIP)
+            .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
+            .add_attribute(events::attribute::PROOF_HEIGHT, proof_height.to_string())
+            .add_attribute(events::attribute::PATH, path.to_string())
+            .add_attribute(events::attribute::VALUE, value.to_string()),
+    ))
+}
+
+fn commit_non_membership_proof(
+    deps: DepsMut,
+    client_id: ClientId,
+    proof_height: u64,
+    proof: Bytes,
+    path: Bytes,
+) -> Result<Response, ContractError> {
+    let client_impl = client_impl(deps.as_ref(), client_id)?;
+
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyNonMembership {
+            client_id,
+            height: proof_height,
+            proof: proof.to_vec().into(),
+            path: path.clone(),
+        },
+    )?;
+
+    store_commit(
+        deps,
+        &NonMembershipProofPath {
+            client_id,
+            proof_height,
+            path: path.clone(),
+        }
+        .key(),
+        &commit(NON_MEMBERSHIP_COMMITMENT_VALUE),
+    );
+
+    Ok(Response::new().add_event(
+        Event::new(events::proof::COMMIT_NON_MEMBERSHIP)
+            .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
+            .add_attribute(events::attribute::PROOF_HEIGHT, proof_height.to_string())
+            .add_attribute(events::attribute::PATH, path.to_string()),
+    ))
 }
 
 #[cfg(test)]

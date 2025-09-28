@@ -642,7 +642,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                                         if matches!(
                                             failed_msg,
-                                            IbcMessage::IbcV1(
+                                            IbcMessage::IbcClassic(
                                                 ibc_classic_spec::Datagram::UpdateClient(_)
                                             ) | IbcMessage::IbcUnion(
                                                 ibc_union_spec::datagram::Datagram::UpdateClient(_)
@@ -731,7 +731,7 @@ fn process_msgs(
     msgs: Vec<IbcMessage>,
     signer: &LocalSigner,
     ibc_host_contract_address: Bech32<H256>,
-    gas_station_config: Vec<Coin>,
+    _gas_station_config: Vec<Coin>,
     fee_recipient: Option<&Bech32<Bytes>>,
 ) -> Vec<RpcResult<(IbcMessage, protos::google::protobuf::Any)>> {
     msgs.into_iter()
@@ -739,18 +739,19 @@ fn process_msgs(
             let signer = signer.address().to_string();
 
             let encoded = match msg.clone() {
-                IbcMessage::IbcV1(msg) => match msg {
-                    ibc_classic_spec::Datagram::ConnectionOpenInit(message) => {
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+                IbcMessage::IbcClassic(msg) => {
+                    use ibc_classic_spec::Datagram;
+                    use protos::ibc::core::{channel::v1::*, client::v1::*, connection::v1::*};
+
+                    match msg {
+                        Datagram::ConnectionOpenInit(message) => mk_any(&MsgConnectionOpenInit {
                             client_id: message.client_id.to_string(),
                             counterparty: Some(message.counterparty.into()),
                             version: Some(message.version.into()),
                             signer,
                             delay_period: message.delay_period,
-                        })
-                    }
-                    ibc_classic_spec::Datagram::ConnectionOpenTry(message) => {
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+                        }),
+                        Datagram::ConnectionOpenTry(message) => mk_any(&MsgConnectionOpenTry {
                             client_id: message.client_id.to_string(),
                             counterparty: Some(message.counterparty.into()),
                             delay_period: message.delay_period,
@@ -763,11 +764,9 @@ fn process_msgs(
                             proof_init: message.proof_init.into(),
                             signer,
                             ..Default::default()
-                        })
-                    }
-                    #[allow(deprecated)]
-                    ibc_classic_spec::Datagram::ConnectionOpenAck(message) => {
-                        mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+                        }),
+                        #[allow(deprecated)]
+                        Datagram::ConnectionOpenAck(message) => mk_any(&MsgConnectionOpenAck {
                             client_state: Some(
                                 protos::google::protobuf::Any::decode(&*message.client_state)
                                     .expect("value should be encoded as an `Any`"),
@@ -784,25 +783,21 @@ fn process_msgs(
                                 .to_string(),
                             version: Some(message.version.into()),
                             proof_try: message.proof_try.into(),
-                        })
-                    }
-                    ibc_classic_spec::Datagram::ConnectionOpenConfirm(message) => mk_any(
-                        &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
-                            connection_id: message.connection_id.to_string(),
-                            proof_ack: message.proof_ack.into(),
-                            proof_height: Some(message.proof_height.into()),
-                            signer,
-                        },
-                    ),
-                    ibc_classic_spec::Datagram::ChannelOpenInit(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
+                        }),
+                        Datagram::ConnectionOpenConfirm(message) => {
+                            mk_any(&MsgConnectionOpenConfirm {
+                                connection_id: message.connection_id.to_string(),
+                                proof_ack: message.proof_ack.into(),
+                                proof_height: Some(message.proof_height.into()),
+                                signer,
+                            })
+                        }
+                        Datagram::ChannelOpenInit(message) => mk_any(&MsgChannelOpenInit {
                             port_id: message.port_id.to_string(),
                             channel: Some(message.channel.into()),
                             signer,
-                        })
-                    }
-                    ibc_classic_spec::Datagram::ChannelOpenTry(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
+                        }),
+                        Datagram::ChannelOpenTry(message) => mk_any(&MsgChannelOpenTry {
                             port_id: message.port_id.to_string(),
                             channel: Some(message.channel.into()),
                             counterparty_version: message.counterparty_version,
@@ -810,10 +805,8 @@ fn process_msgs(
                             proof_height: Some(message.proof_height.into()),
                             signer,
                             ..Default::default()
-                        })
-                    }
-                    ibc_classic_spec::Datagram::ChannelOpenAck(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
+                        }),
+                        Datagram::ChannelOpenAck(message) => mk_any(&MsgChannelOpenAck {
                             port_id: message.port_id.to_string(),
                             channel_id: message.channel_id.to_string(),
                             counterparty_version: message.counterparty_version,
@@ -821,45 +814,35 @@ fn process_msgs(
                             proof_try: message.proof_try.into(),
                             proof_height: Some(message.proof_height.into()),
                             signer,
-                        })
-                    }
-                    ibc_classic_spec::Datagram::ChannelOpenConfirm(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+                        }),
+                        Datagram::ChannelOpenConfirm(message) => mk_any(&MsgChannelOpenConfirm {
                             port_id: message.port_id.to_string(),
                             channel_id: message.channel_id.to_string(),
                             proof_height: Some(message.proof_height.into()),
                             signer,
                             proof_ack: message.proof_ack.into(),
-                        })
-                    }
-                    ibc_classic_spec::Datagram::RecvPacket(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
+                        }),
+                        Datagram::RecvPacket(message) => mk_any(&MsgRecvPacket {
                             packet: Some(message.packet.into()),
                             proof_height: Some(message.proof_height.into()),
                             signer,
                             proof_commitment: message.proof_commitment.into(),
-                        })
-                    }
-                    ibc_classic_spec::Datagram::AcknowledgePacket(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
+                        }),
+                        Datagram::AcknowledgePacket(message) => mk_any(&MsgAcknowledgement {
                             packet: Some(message.packet.into()),
                             acknowledgement: message.acknowledgement.into(),
                             proof_acked: message.proof_acked.into(),
                             proof_height: Some(message.proof_height.into()),
                             signer,
-                        })
-                    }
-                    ibc_classic_spec::Datagram::TimeoutPacket(message) => {
-                        mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
+                        }),
+                        Datagram::TimeoutPacket(message) => mk_any(&MsgTimeout {
                             packet: Some(message.packet.into()),
                             proof_unreceived: message.proof_unreceived,
                             proof_height: Some(message.proof_height.into()),
                             next_sequence_recv: message.next_sequence_recv.get(),
                             signer,
-                        })
-                    }
-                    ibc_classic_spec::Datagram::CreateClient(message) => {
-                        mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
+                        }),
+                        Datagram::CreateClient(message) => mk_any(&MsgCreateClient {
                             client_state: Some(
                                 protos::google::protobuf::Any::decode(&*message.msg.client_state)
                                     .expect("value should be encoded as an `Any`"),
@@ -871,149 +854,94 @@ fn process_msgs(
                                 .expect("value should be encoded as an `Any`"),
                             ),
                             signer,
-                        })
-                    }
-                    ibc_classic_spec::Datagram::UpdateClient(message) => {
-                        mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
+                        }),
+                        Datagram::UpdateClient(message) => mk_any(&MsgUpdateClient {
                             signer,
                             client_id: message.client_id.to_string(),
                             client_message: Some(
                                 protos::google::protobuf::Any::decode(&*message.client_message)
                                     .expect("value should be encoded as an `Any`"),
                             ),
-                        })
+                        }),
                     }
-                },
-                IbcMessage::IbcUnion(msg) => match msg {
-                    ibc_union_spec::datagram::Datagram::CreateClient(msg_create_client) => {
+                }
+                IbcMessage::IbcUnion(msg) => {
+                    use ibc_union_msg::msg::*;
+                    use ibc_union_spec::datagram::Datagram;
+
+                    let mk_msg = |msg| {
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&ibc_union_msg::msg::ExecuteMsg::CreateClient(
-                                ibc_union_msg::msg::MsgCreateClient {
-                                    client_type: msg_create_client.client_type.to_string(),
-                                    client_state_bytes: msg_create_client.client_state_bytes,
-                                    consensus_state_bytes: msg_create_client.consensus_state_bytes,
-                                    relayer: fee_recipient
-                                        .map_or(signer.to_string(), |s| s.to_string()),
-                                },
-                            ))
-                            .unwrap(),
+                            msg: serde_json::to_vec(&msg).unwrap(),
                             funds: vec![],
                         })
-                    }
-                    ibc_union_spec::datagram::Datagram::UpdateClient(msg_update_client) => {
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&ibc_union_msg::msg::ExecuteMsg::UpdateClient(
-                                ibc_union_msg::msg::MsgUpdateClient {
-                                    client_id: msg_update_client.client_id,
-                                    client_message: msg_update_client.client_message,
-                                    relayer: fee_recipient
-                                        .map_or(signer.to_string(), |s| s.to_string()),
-                                },
-                            ))
-                            .unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::ConnectionOpenInit(
-                        msg_connection_open_init,
-                    ) => mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                        sender: signer.to_string(),
-                        contract: ibc_host_contract_address.to_string(),
-                        msg: serde_json::to_vec(
-                            &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenInit(
-                                ibc_union_msg::msg::MsgConnectionOpenInit {
-                                    client_id: msg_connection_open_init.client_id,
-                                    counterparty_client_id: msg_connection_open_init
-                                        .counterparty_client_id,
-                                },
-                            ),
-                        )
-                        .unwrap(),
-                        funds: vec![],
-                    }),
-                    ibc_union_spec::datagram::Datagram::ConnectionOpenTry(
-                        msg_connection_open_try,
-                    ) => mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                        sender: signer.to_string(),
-                        contract: ibc_host_contract_address.to_string(),
-                        msg: serde_json::to_vec(
-                            &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenTry(
-                                ibc_union_msg::msg::MsgConnectionOpenTry {
-                                    counterparty_client_id: msg_connection_open_try
-                                        .counterparty_client_id,
-                                    counterparty_connection_id: msg_connection_open_try
-                                        .counterparty_connection_id,
-                                    client_id: msg_connection_open_try.client_id,
-                                    proof_init: msg_connection_open_try.proof_init,
-                                    proof_height: msg_connection_open_try.proof_height,
-                                },
-                            ),
-                        )
-                        .unwrap(),
-                        funds: vec![],
-                    }),
-                    ibc_union_spec::datagram::Datagram::ConnectionOpenAck(
-                        msg_connection_open_ack,
-                    ) => mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                        sender: signer.to_string(),
-                        contract: ibc_host_contract_address.to_string(),
-                        msg: serde_json::to_vec(
-                            &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenAck(
-                                ibc_union_msg::msg::MsgConnectionOpenAck {
-                                    connection_id: msg_connection_open_ack.connection_id,
-                                    counterparty_connection_id: msg_connection_open_ack
-                                        .counterparty_connection_id,
-                                    proof_try: msg_connection_open_ack.proof_try,
-                                    proof_height: msg_connection_open_ack.proof_height,
-                                },
-                            ),
-                        )
-                        .unwrap(),
-                        funds: vec![],
-                    }),
-                    ibc_union_spec::datagram::Datagram::ConnectionOpenConfirm(
-                        msg_connection_open_confirm,
-                    ) => mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                        sender: signer.to_string(),
-                        contract: ibc_host_contract_address.to_string(),
-                        msg: serde_json::to_vec(
-                            &ibc_union_msg::msg::ExecuteMsg::ConnectionOpenConfirm(
-                                ibc_union_msg::msg::MsgConnectionOpenConfirm {
-                                    connection_id: msg_connection_open_confirm.connection_id,
-                                    proof_ack: msg_connection_open_confirm.proof_ack,
-                                    proof_height: msg_connection_open_confirm.proof_height,
-                                },
-                            ),
-                        )
-                        .unwrap(),
-                        funds: vec![],
-                    }),
-                    ibc_union_spec::datagram::Datagram::ChannelOpenInit(msg_channel_open_init) => {
-                        let channel_open_init = ibc_union_msg::msg::ExecuteMsg::ChannelOpenInit(
-                            ibc_union_msg::msg::MsgChannelOpenInit {
+                    };
+
+                    match msg {
+                        Datagram::CreateClient(msg_create_client) => {
+                            mk_msg(ExecuteMsg::CreateClient(MsgCreateClient {
+                                client_type: msg_create_client.client_type.to_string(),
+                                client_state_bytes: msg_create_client.client_state_bytes,
+                                consensus_state_bytes: msg_create_client.consensus_state_bytes,
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
+                            }))
+                        }
+                        Datagram::UpdateClient(msg_update_client) => {
+                            mk_msg(ExecuteMsg::UpdateClient(MsgUpdateClient {
+                                client_id: msg_update_client.client_id,
+                                client_message: msg_update_client.client_message,
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
+                            }))
+                        }
+                        Datagram::ConnectionOpenInit(msg_connection_open_init) => {
+                            mk_msg(ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
+                                client_id: msg_connection_open_init.client_id,
+                                counterparty_client_id: msg_connection_open_init
+                                    .counterparty_client_id,
+                            }))
+                        }
+                        Datagram::ConnectionOpenTry(msg_connection_open_try) => {
+                            mk_msg(ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
+                                counterparty_client_id: msg_connection_open_try
+                                    .counterparty_client_id,
+                                counterparty_connection_id: msg_connection_open_try
+                                    .counterparty_connection_id,
+                                client_id: msg_connection_open_try.client_id,
+                                proof_init: msg_connection_open_try.proof_init,
+                                proof_height: msg_connection_open_try.proof_height,
+                            }))
+                        }
+                        Datagram::ConnectionOpenAck(msg_connection_open_ack) => {
+                            mk_msg(ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
+                                connection_id: msg_connection_open_ack.connection_id,
+                                counterparty_connection_id: msg_connection_open_ack
+                                    .counterparty_connection_id,
+                                proof_try: msg_connection_open_ack.proof_try,
+                                proof_height: msg_connection_open_ack.proof_height,
+                            }))
+                        }
+                        Datagram::ConnectionOpenConfirm(msg_connection_open_confirm) => mk_msg(
+                            ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
+                                connection_id: msg_connection_open_confirm.connection_id,
+                                proof_ack: msg_connection_open_confirm.proof_ack,
+                                proof_height: msg_connection_open_confirm.proof_height,
+                            }),
+                        ),
+                        Datagram::ChannelOpenInit(msg_channel_open_init) => {
+                            mk_msg(ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
                                 port_id: parse_port_id(msg_channel_open_init.port_id.to_vec())?,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
                                 counterparty_port_id: msg_channel_open_init.counterparty_port_id,
                                 connection_id: msg_channel_open_init.connection_id,
                                 version: msg_channel_open_init.version,
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&channel_open_init).unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::ChannelOpenTry(msg_channel_open_try) => {
-                        let channel_open_try = ibc_union_msg::msg::ExecuteMsg::ChannelOpenTry(
-                            ibc_union_msg::msg::MsgChannelOpenTry {
+                            }))
+                        }
+                        Datagram::ChannelOpenTry(msg_channel_open_try) => {
+                            mk_msg(ExecuteMsg::ChannelOpenTry(MsgChannelOpenTry {
                                 port_id: parse_port_id(msg_channel_open_try.port_id.to_vec())?,
                                 channel: msg_channel_open_try.channel,
                                 counterparty_version: msg_channel_open_try.counterparty_version,
@@ -1021,19 +949,10 @@ fn process_msgs(
                                 proof_height: msg_channel_open_try.proof_height,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&channel_open_try).unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::ChannelOpenAck(msg_channel_open_ack) => {
-                        let channel_open_ack = ibc_union_msg::msg::ExecuteMsg::ChannelOpenAck(
-                            ibc_union_msg::msg::MsgChannelOpenAck {
+                            }))
+                        }
+                        Datagram::ChannelOpenAck(msg_channel_open_ack) => {
+                            mk_msg(ExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
                                 channel_id: msg_channel_open_ack.channel_id,
                                 counterparty_version: msg_channel_open_ack.counterparty_version,
                                 counterparty_channel_id: msg_channel_open_ack
@@ -1042,152 +961,85 @@ fn process_msgs(
                                 proof_height: msg_channel_open_ack.proof_height,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&channel_open_ack).unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::ChannelOpenConfirm(
-                        msg_channel_open_confirm,
-                    ) => {
-                        let channel_open_confirm =
-                            ibc_union_msg::msg::ExecuteMsg::ChannelOpenConfirm(
-                                ibc_union_msg::msg::MsgChannelOpenConfirm {
-                                    channel_id: msg_channel_open_confirm.channel_id,
-                                    proof_ack: msg_channel_open_confirm.proof_ack,
-                                    proof_height: msg_channel_open_confirm.proof_height,
-                                    relayer: fee_recipient
-                                        .map_or(signer.to_string(), |s| s.to_string()),
-                                },
-                            );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&channel_open_confirm).unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::ChannelCloseInit(
-                        _msg_channel_close_init,
-                    ) => todo!(),
-                    ibc_union_spec::datagram::Datagram::ChannelCloseConfirm(
-                        _msg_channel_close_confirm,
-                    ) => {
-                        todo!()
-                    }
-                    ibc_union_spec::datagram::Datagram::PacketRecv(msg_packet_recv) => {
-                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketRecv(
-                            ibc_union_msg::msg::MsgPacketRecv {
+                            }))
+                        }
+                        Datagram::ChannelOpenConfirm(msg_channel_open_confirm) => {
+                            mk_msg(ExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
+                                channel_id: msg_channel_open_confirm.channel_id,
+                                proof_ack: msg_channel_open_confirm.proof_ack,
+                                proof_height: msg_channel_open_confirm.proof_height,
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
+                            }))
+                        }
+                        Datagram::ChannelCloseInit(_msg_channel_close_init) => todo!(),
+                        Datagram::ChannelCloseConfirm(_msg_channel_close_confirm) => {
+                            todo!()
+                        }
+                        Datagram::PacketRecv(msg_packet_recv) => {
+                            mk_msg(ExecuteMsg::PacketRecv(MsgPacketRecv {
                                 packets: msg_packet_recv.packets.into_iter().collect(),
                                 relayer_msgs: msg_packet_recv.relayer_msgs,
                                 proof: msg_packet_recv.proof,
                                 proof_height: msg_packet_recv.proof_height,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&packet_recv).unwrap(),
-                            funds: gas_station_config
-                                .clone()
-                                .into_iter()
-                                .map(|coin| protos::cosmos::base::v1beta1::Coin {
-                                    denom: coin.denom,
-                                    amount: coin.amount.to_string(),
-                                })
-                                .collect(),
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::PacketAcknowledgement(
-                        msg_packet_acknowledgement,
-                    ) => {
-                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketAck(
-                            ibc_union_msg::msg::MsgPacketAcknowledgement {
+                            }))
+                        }
+                        Datagram::PacketAcknowledgement(msg_packet_acknowledgement) => {
+                            mk_msg(ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
                                 packets: msg_packet_acknowledgement.packets.into_iter().collect(),
                                 acknowledgements: msg_packet_acknowledgement.acknowledgements,
                                 proof: msg_packet_acknowledgement.proof,
                                 proof_height: msg_packet_acknowledgement.proof_height,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&packet_recv).unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::PacketTimeout(msg_packet_timeout) => {
-                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketTimeout(
-                            ibc_union_msg::msg::MsgPacketTimeout {
+                            }))
+                        }
+                        Datagram::PacketTimeout(msg_packet_timeout) => {
+                            mk_msg(ExecuteMsg::PacketTimeout(MsgPacketTimeout {
                                 packet: msg_packet_timeout.packet,
                                 proof: msg_packet_timeout.proof,
                                 proof_height: msg_packet_timeout.proof_height,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&packet_recv).unwrap(),
-                            funds: vec![],
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::IntentPacketRecv(
-                        msg_intent_packet_recv,
-                    ) => {
-                        let packet_intent_recv = ibc_union_msg::msg::ExecuteMsg::IntentPacketRecv(
-                            ibc_union_msg::msg::MsgIntentPacketRecv {
+                            }))
+                        }
+                        Datagram::IntentPacketRecv(msg_intent_packet_recv) => {
+                            mk_msg(ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
                                 packets: msg_intent_packet_recv.packets.into_iter().collect(),
                                 market_maker_msgs: msg_intent_packet_recv.market_maker_messages,
                                 market_maker: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&packet_intent_recv).unwrap(),
-                            funds: gas_station_config
-                                .clone()
-                                .into_iter()
-                                .map(|coin| protos::cosmos::base::v1beta1::Coin {
-                                    denom: coin.denom,
-                                    amount: coin.amount.to_string(),
-                                })
-                                .collect(),
-                        })
-                    }
-                    ibc_union_spec::datagram::Datagram::BatchSend(msg_batch_send) => {
-                        let batch_send = ibc_union_msg::msg::ExecuteMsg::BatchSend(
-                            ibc_union_msg::msg::MsgBatchSend {
+                            }))
+                        }
+                        Datagram::BatchSend(msg_batch_send) => {
+                            mk_msg(ExecuteMsg::BatchSend(MsgBatchSend {
                                 packets: msg_batch_send.packets,
-                            },
-                        );
-
-                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                            sender: signer.to_string(),
-                            contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&batch_send).unwrap(),
-                            funds: vec![],
-                        })
+                            }))
+                        }
+                        Datagram::BatchAcks(_msg_batch_acks) => todo!(),
+                        Datagram::CommitMembershipProof(msg_commit_membership_proof) => mk_msg(
+                            ExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
+                                client_id: msg_commit_membership_proof.client_id,
+                                proof_height: msg_commit_membership_proof.proof_height,
+                                proof: msg_commit_membership_proof.proof,
+                                path: msg_commit_membership_proof.path,
+                                value: msg_commit_membership_proof.value,
+                            }),
+                        ),
+                        Datagram::CommitNonMembershipProof(msg_commit_non_membership_proof) => {
+                            mk_msg(ExecuteMsg::CommitNonMembershipProof(
+                                MsgCommitNonMembershipProof {
+                                    client_id: msg_commit_non_membership_proof.client_id,
+                                    proof_height: msg_commit_non_membership_proof.proof_height,
+                                    proof: msg_commit_non_membership_proof.proof,
+                                    path: msg_commit_non_membership_proof.path,
+                                },
+                            ))
+                        }
                     }
-                    ibc_union_spec::datagram::Datagram::BatchAcks(_msg_batch_acks) => todo!(),
-                },
+                }
             };
 
             Ok((msg, encoded))

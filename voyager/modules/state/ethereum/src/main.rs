@@ -16,7 +16,10 @@ use ibc_solidity::{
     Ibc::{self, IbcInstance},
 };
 use ibc_union_spec::{
-    path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
+    path::{
+        BatchPacketsPath, BatchReceiptsPath, MembershipProofPath, NonMembershipProofPath,
+        StorePath, NON_MEMBERSHIP_COMMITMENT_VALUE,
+    },
     query::{PacketAckByHashResponse, PacketByHashResponse, PacketsByBatchHashResponse, Query},
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     IbcUnion, Status,
@@ -38,7 +41,10 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{types::StateModuleInfo, StateModuleServer, MISSING_STATE_ERROR_CODE},
+    rpc::{
+        types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE,
+        MISSING_STATE_ERROR_CODE,
+    },
     ExtensionsExt,
 };
 
@@ -430,6 +436,117 @@ impl Module {
         }
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+            %proof_height,
+            %path,
+        )
+    )]
+    async fn query_membership_proof(
+        &self,
+        height: Height,
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    ) -> RpcResult<Option<H256>> {
+        let execution_height = height.height();
+
+        let ibc_handler = self.ibc_handler();
+
+        let raw = ibc_handler
+            .commitments(
+                MembershipProofPath {
+                    client_id,
+                    proof_height,
+                    path,
+                }
+                .key()
+                .into(),
+            )
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!(
+                        "error fetching committed membership proof: {}",
+                        ErrorReporter(err)
+                    ),
+                    None::<()>,
+                )
+            })?;
+
+        if <H256>::from(raw) == <H256>::default() {
+            Ok(None)
+        } else {
+            Ok(Some(raw.into()))
+        }
+    }
+
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+            %proof_height,
+            %path,
+        )
+    )]
+    async fn query_non_membership_proof(
+        &self,
+        height: Height,
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    ) -> RpcResult<bool> {
+        let execution_height = height.height();
+
+        let ibc_handler = self.ibc_handler();
+
+        let raw: H256 = ibc_handler
+            .commitments(
+                NonMembershipProofPath {
+                    client_id,
+                    proof_height,
+                    path,
+                }
+                .key()
+                .into(),
+            )
+            .block(execution_height.into())
+            .call()
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    format!(
+                        "error fetching committed non membership proof: {}",
+                        ErrorReporter(err)
+                    ),
+                    None::<()>,
+                )
+            })?
+            .into();
+
+        if raw == <H256>::EMPTY {
+            Ok(false)
+        } else if raw == NON_MEMBERSHIP_COMMITMENT_VALUE {
+            Ok(true)
+        } else {
+            Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!("invalid non membership proof commitment: {raw}",),
+                None::<()>,
+            ))
+        }
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
     async fn packet_by_packet_hash(
         &self,
@@ -816,6 +933,14 @@ impl StateModuleServer<IbcUnion> for Module {
                 .map(into_value),
             StorePath::BatchPackets(path) => self
                 .query_batch_packets(at, path.batch_hash)
+                .await
+                .map(into_value),
+            StorePath::MembershipProof(path) => self
+                .query_membership_proof(at, path.client_id, path.proof_height, path.path)
+                .await
+                .map(into_value),
+            StorePath::NonMembershipProof(path) => self
+                .query_non_membership_proof(at, path.client_id, path.proof_height, path.path)
                 .await
                 .map(into_value),
         }

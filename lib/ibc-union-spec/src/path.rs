@@ -26,7 +26,12 @@ pub const COMMITMENT_MAGIC_ACK: H256 = {
     H256::new(bz)
 };
 
-pub const COMMITMENT_NULL: H256 = H256::new([0; 32]);
+/// 0x0000000000000000000000000000000000000000000000000000000000000001
+pub const NON_MEMBERSHIP_COMMITMENT_VALUE: H256 = {
+    let mut bz = [0; 32];
+    bz[31] = 1;
+    H256::new(bz)
+};
 
 pub const CLIENT_STATE: U256 = U256::from_limbs([0, 0, 0, 0]);
 pub const CONSENSUS_STATE: U256 = U256::from_limbs([1, 0, 0, 0]);
@@ -34,6 +39,8 @@ pub const CONNECTIONS: U256 = U256::from_limbs([2, 0, 0, 0]);
 pub const CHANNELS: U256 = U256::from_limbs([3, 0, 0, 0]);
 pub const PACKETS: U256 = U256::from_limbs([4, 0, 0, 0]);
 pub const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
+pub const MEMBERSHIP_PROOF: U256 = U256::from_limbs([6, 0, 0, 0]);
+pub const NON_MEMBERSHIP_PROOF: U256 = U256::from_limbs([7, 0, 0, 0]);
 
 #[cfg(feature = "ethabi")]
 #[must_use]
@@ -60,18 +67,22 @@ pub enum StorePath {
     Channel(ChannelPath),
     BatchReceipts(BatchReceiptsPath),
     BatchPackets(BatchPacketsPath),
+    MembershipProof(MembershipProofPath),
+    NonMembershipProof(NonMembershipProofPath),
 }
 
 impl StorePath {
     #[must_use]
     pub fn key(&self) -> H256 {
         match self {
-            StorePath::ClientState(path) => path.key(),
-            StorePath::ConsensusState(path) => path.key(),
-            StorePath::Connection(path) => path.key(),
-            StorePath::Channel(path) => path.key(),
-            StorePath::BatchReceipts(path) => path.key(),
-            StorePath::BatchPackets(path) => path.key(),
+            Self::ClientState(path) => path.key(),
+            Self::ConsensusState(path) => path.key(),
+            Self::Connection(path) => path.key(),
+            Self::Channel(path) => path.key(),
+            Self::BatchReceipts(path) => path.key(),
+            Self::BatchPackets(path) => path.key(),
+            Self::MembershipProof(path) => path.key(),
+            Self::NonMembershipProof(path) => path.key(),
         }
     }
 }
@@ -264,4 +275,68 @@ impl IbcStorePathKey for BatchPacketsPath {
     type Spec = IbcUnion;
 
     type Value = H256;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct MembershipProofPath {
+    pub client_id: ClientId,
+    pub proof_height: u64,
+    pub path: Bytes,
+}
+
+impl MembershipProofPath {
+    #[must_use]
+    pub fn key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update(MEMBERSHIP_PROOF.to_be_bytes())
+            .chain_update(U256::from(self.client_id.get()).to_be_bytes())
+            .chain_update(U256::from(self.proof_height).to_be_bytes())
+            .chain_update(&self.path)
+            .finalize()
+            .into()
+    }
+}
+
+impl IbcStorePathKey for MembershipProofPath {
+    type Spec = IbcUnion;
+
+    type Value = Bytes;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct NonMembershipProofPath {
+    pub client_id: ClientId,
+    pub proof_height: u64,
+    pub path: Bytes,
+}
+
+impl NonMembershipProofPath {
+    #[must_use]
+    pub fn key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update(NON_MEMBERSHIP_PROOF.to_be_bytes())
+            .chain_update(U256::from(self.client_id.get()).to_be_bytes())
+            .chain_update(U256::from(self.proof_height).to_be_bytes())
+            .chain_update(&self.path)
+            .finalize()
+            .into()
+    }
+}
+
+impl IbcStorePathKey for NonMembershipProofPath {
+    type Spec = IbcUnion;
+
+    type Value = ();
 }
