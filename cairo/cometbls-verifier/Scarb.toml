@@ -1,5 +1,5 @@
 [package]
-name = "cometbls-verifier"
+name = "cometbls_verifier"
 version = "0.1.0"
 edition = "2024_07"
 
@@ -12,7 +12,7 @@ sierra-replace-ids = false
 inlining-strategy = 2
 
 [dev-dependencies]
-snforge_std = "0.44.0"
+snforge_std = "0.49.0"
 assert_macros = "2.11.4"
 
 [[target.starknet-contract]]

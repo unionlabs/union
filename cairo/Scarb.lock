@@ -2,7 +2,20 @@
 version = 1
 
 [[package]]
-name = "cairo"
+name = "cometbls_verifier"
+version = "0.1.0"
+dependencies = [
+ "garaga",
+ "snforge_std",
+]
+
+[[package]]
+name = "garaga"
+version = "0.18.2"
+source = "git+https://github.com/keep-starknet-strange/garaga.git?tag=v0.18.2#ffb90e533497121ffa5284c7362dc56fa10b18c6"
+
+[[package]]
+name = "ibc"
 version = "0.1.0"
 dependencies = [
  "snforge_std",

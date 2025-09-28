@@ -43,8 +43,6 @@ pub fn to_be_bytes<
 ) -> ByteArray {
     let modulus = (One::<N>::one() + One::<N>::one()).pow(8);
 
-    ecdsa
-
     let mut bz: ByteArray = "";
 
     let mut len = BitSize::<N>::bits() / 8;
