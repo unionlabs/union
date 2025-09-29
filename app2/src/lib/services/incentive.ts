@@ -13,7 +13,8 @@ import { Array, BigDecimal, Data, Effect, pipe, Schema } from "effect"
 const REST_BASE_URL = "https://rest.union.build"
 
 // Staker address that delegates to validators on behalf of liquid stakers
-const LIQUID_STAKING_STAKER_ADDRESS = "union19ydrfy0d80vgpvs6p0cljlahgxwrkz54ps8455q7jfdfape7ld7quaq69v"
+const LIQUID_STAKING_STAKER_ADDRESS =
+  "union19ydrfy0d80vgpvs6p0cljlahgxwrkz54ps8455q7jfdfape7ld7quaq69v"
 
 export class IncentiveError extends Data.TaggedError("IncentiveError")<{
   message: string
@@ -179,29 +180,37 @@ const getValidators = pipe(
   ),
 )
 
-const getDelegatorDelegations = (delegatorAddress: string) => pipe(
-  HttpClient.HttpClient,
-  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
-  Effect.andThen((client) =>
-    pipe(
-      client.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/delegations/${delegatorAddress}`),
-      Effect.flatMap(HttpClientResponse.schemaBodyJson(DelegatorDelegationsResponse)),
-      Effect.mapError((cause) =>
-        new IncentiveError({
-          message: "Failed to fetch delegator delegations",
-          cause,
-        })
-      ),
-    )
-  ),
-)
+const getDelegatorDelegations = (delegatorAddress: string) =>
+  pipe(
+    HttpClient.HttpClient,
+    Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+    Effect.andThen((client) =>
+      pipe(
+        client.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/delegations/${delegatorAddress}`),
+        Effect.flatMap(HttpClientResponse.schemaBodyJson(DelegatorDelegationsResponse)),
+        Effect.mapError((cause) =>
+          new IncentiveError({
+            message: "Failed to fetch delegator delegations",
+            cause,
+          })
+        ),
+      )
+    ),
+  )
 
 export const calculateIncentive: Effect.Effect<
   IncentiveResult,
   IncentiveError,
   HttpClient.HttpClient
 > = Effect.gen(function*() {
-  const [inflationData, stakingPoolData, distributionData, circulatingSupplyData, validatorsData, delegationsData] = yield* Effect
+  const [
+    inflationData,
+    stakingPoolData,
+    distributionData,
+    circulatingSupplyData,
+    validatorsData,
+    delegationsData,
+  ] = yield* Effect
     .all([
       getInflation,
       getStakingPool,
@@ -263,7 +272,7 @@ export const calculateIncentive: Effect.Effect<
 
   // Calculate weighted average validator commission
   const validatorMap = new Map(validatorsData.validators.map(v => [v.operator_address, v]))
-  
+
   const validDelegations = pipe(
     delegationsData.delegation_responses,
     Array.filter(delegation => {
@@ -272,8 +281,9 @@ export const calculateIncentive: Effect.Effect<
     }),
     Array.map(delegation => ({
       amount: delegation.balance.amount,
-      commission: validatorMap.get(delegation.delegation.validator_address)!.commission.commission_rates.rate
-    }))
+      commission:
+        validatorMap.get(delegation.delegation.validator_address)!.commission.commission_rates.rate,
+    })),
   )
 
   const { totalAmount, weightedSum } = pipe(
@@ -282,22 +292,25 @@ export const calculateIncentive: Effect.Effect<
       { totalAmount: BigDecimal.fromBigInt(0n), weightedSum: BigDecimal.fromBigInt(0n) },
       (acc, { amount, commission }) => ({
         totalAmount: BigDecimal.sum(acc.totalAmount, amount),
-        weightedSum: BigDecimal.sum(acc.weightedSum, BigDecimal.multiply(amount, commission))
-      })
-    )
+        weightedSum: BigDecimal.sum(acc.weightedSum, BigDecimal.multiply(amount, commission)),
+      }),
+    ),
   )
 
   const weightedAverageCommission = BigDecimal.isZero(totalAmount)
     ? BigDecimal.fromBigInt(0n)
     : yield* BigDecimal.divide(weightedSum, totalAmount).pipe(
-        Effect.mapError(() =>
-          new IncentiveError({
-            message: "Could not calculate weighted average commission",
-          })
-        ),
-      )
+      Effect.mapError(() =>
+        new IncentiveError({
+          message: "Could not calculate weighted average commission",
+        })
+      ),
+    )
 
-  const validatorCommissionAmount = BigDecimal.multiply(incentiveAfterTax, weightedAverageCommission)
+  const validatorCommissionAmount = BigDecimal.multiply(
+    incentiveAfterTax,
+    weightedAverageCommission,
+  )
   const incentiveAfterCommission = BigDecimal.subtract(incentiveAfterTax, validatorCommissionAmount)
 
   const bondedRatio = yield* BigDecimal.divide(bondedTokens, totalSupply).pipe(
