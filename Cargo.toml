@@ -92,6 +92,7 @@ members = [
   "lib/movement-light-client-types",
   "lib/parlia-light-client-types",
   "lib/trusted-mpt-light-client-types",
+  "lib/attested-light-client-types",
   "lib/linea-light-client-types",
   "lib/scroll-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
@@ -112,6 +113,7 @@ members = [
   # "cosmwasm/ibc-union/lightclient/movement",
   "cosmwasm/ibc-union/lightclient/parlia",
   "cosmwasm/ibc-union/lightclient/trusted-mpt",
+  "cosmwasm/ibc-union/lightclient/attested",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
   # "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-ics23",
@@ -391,13 +393,12 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
-access-manager = { path = "cosmwasm/access-manager", default-features = false }
-
 lst = { path = "cosmwasm/lst", default-features = false }
 
-cw-account           = { path = "cosmwasm/cw-account", default-features = false }
-cw-escrow-vault      = { path = "cosmwasm/cw-escrow-vault", default-features = false }
-cw-unionversal-token = { path = "cosmwasm/cw-unionversal-token", default-features = false }
+access-manager = { path = "cosmwasm/access-manager", default-features = false }
+
+cw-account      = { path = "cosmwasm/cw-account", default-features = false }
+cw-escrow-vault = { path = "cosmwasm/cw-escrow-vault", default-features = false }
 
 cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
 cw20-ctx                          = { path = "lib/cw20-ctx", default-features = false }
@@ -426,6 +427,7 @@ reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", 
 ibc-classic-spec = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-union-spec   = { path = "lib/ibc-union-spec", default-features = false }
 
+attested-light-client-types    = { path = "lib/attested-light-client-types", default-features = false }
 movement-light-client-types    = { path = "lib/movement-light-client-types", default-features = false }
 trusted-mpt-light-client-types = { path = "lib/trusted-mpt-light-client-types", default-features = false }
 

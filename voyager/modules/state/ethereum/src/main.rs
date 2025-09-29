@@ -534,7 +534,7 @@ impl Module {
             })?
             .into();
 
-        if raw == <H256>::EMPTY {
+        if raw == <H256>::MIN {
             Ok(false)
         } else if raw == NON_MEMBERSHIP_COMMITMENT_VALUE {
             Ok(true)

@@ -1,0 +1,38 @@
+[package]
+name    = "attested-light-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+attested-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+bincode                     = { workspace = true, features = ["derive"] }
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+depolama                    = { workspace = true }
+embed-commit                = { workspace = true }
+frissitheto                 = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+base64        = { workspace = true }
+ed25519-dalek = "2.2.0"
+hex           = { workspace = true }
+hex-literal   = { workspace = true }
+serde_json    = { workspace = true }
+
+[features]
+library = []
