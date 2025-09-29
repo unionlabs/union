@@ -51,6 +51,8 @@ pub enum ExecuteMsg {
     PacketSend(MsgSendPacket),
     WriteAcknowledgement(MsgWriteAcknowledgement),
     MigrateState(MsgMigrateState),
+    CommitMembershipProof(MsgCommitMembershipProof),
+    CommitNonMembershipProof(MsgCommitNonMembershipProof),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -242,4 +244,23 @@ pub struct MsgSendPacket {
     pub source_channel_id: ChannelId,
     pub timeout_timestamp: Timestamp,
     pub data: Bytes,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsgCommitMembershipProof {
+    pub client_id: ClientId,
+    pub proof_height: u64,
+    pub proof: Bytes,
+    pub path: Bytes,
+    pub value: Bytes,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsgCommitNonMembershipProof {
+    pub client_id: ClientId,
+    pub proof_height: u64,
+    pub proof: Bytes,
+    pub path: Bytes,
 }

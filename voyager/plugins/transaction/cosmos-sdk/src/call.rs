@@ -15,7 +15,7 @@ pub enum ModuleCall {
 #[model]
 #[derive(Enumorph)]
 pub enum IbcMessage {
-    IbcV1(ibc_classic_spec::Datagram),
+    IbcClassic(ibc_classic_spec::Datagram),
     IbcUnion(ibc_union_spec::datagram::Datagram),
 }
 
@@ -46,7 +46,7 @@ impl IbcMessage {
 
     pub fn name(&self) -> &'static str {
         match self {
-            IbcMessage::IbcV1(datagram) => datagram.name(),
+            IbcMessage::IbcClassic(datagram) => datagram.name(),
             IbcMessage::IbcUnion(datagram) => datagram.name(),
         }
     }

@@ -1,5 +1,5 @@
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId};
-use unionlabs_primitives::H256;
+use unionlabs_primitives::{Bytes, H256};
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -30,6 +30,18 @@ pub enum QueryMsg {
     GetBatchPackets { batch_hash: H256 },
     #[cfg_attr(feature = "cw-orch-interface", returns(Option<H256>))]
     GetBatchReceipts { batch_hash: H256 },
+    #[cfg_attr(feature = "cw-orch-interface", returns(Option<H256>))]
+    GetCommittedMembershipProof {
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    },
+    #[cfg_attr(feature = "cw-orch-interface", returns(bool))]
+    GetCommittedNonMembershipProof {
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    },
     #[cfg_attr(feature = "cw-orch-interface", returns(cosmwasm_std::Addr))]
     GetClientImpl { client_id: ClientId },
     #[cfg_attr(feature = "cw-orch-interface", returns(String))]

@@ -432,6 +432,68 @@ impl Module {
 
         Ok(commitment.flatten())
     }
+
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+            %proof_height,
+            %path,
+        )
+    )]
+    async fn query_membership_proof(
+        &self,
+        height: Height,
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    ) -> RpcResult<Option<H256>> {
+        let commitment = self
+            .query_smart::<_, Option<H256>>(
+                &ibc_union_msg::query::QueryMsg::GetCommittedMembershipProof {
+                    client_id,
+                    proof_height,
+                    path,
+                },
+                Some(height),
+            )
+            .await?;
+
+        Ok(commitment.flatten())
+    }
+
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+            %proof_height,
+            %path,
+        )
+    )]
+    async fn query_non_membership_proof(
+        &self,
+        height: Height,
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    ) -> RpcResult<bool> {
+        let commitment = self
+            .query_smart::<_, bool>(
+                &ibc_union_msg::query::QueryMsg::GetCommittedNonMembershipProof {
+                    client_id,
+                    proof_height,
+                    path,
+                },
+                Some(height),
+            )
+            .await?;
+
+        Ok(commitment.unwrap_or_default())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -611,6 +673,14 @@ impl StateModuleServer<IbcUnion> for Module {
                 .map(into_value),
             StorePath::BatchReceipts(path) => self
                 .query_batch_receipts(at, path.batch_hash)
+                .await
+                .map(into_value),
+            StorePath::MembershipProof(path) => self
+                .query_membership_proof(at, path.client_id, path.proof_height, path.path)
+                .await
+                .map(into_value),
+            StorePath::NonMembershipProof(path) => self
+                .query_non_membership_proof(at, path.client_id, path.proof_height, path.path)
                 .await
                 .map(into_value),
         }

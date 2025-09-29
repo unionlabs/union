@@ -34,6 +34,8 @@ pub enum Datagram {
     IntentPacketRecv(MsgIntentPacketRecv),
     BatchSend(MsgBatchSend),
     BatchAcks(MsgBatchAcks),
+    CommitMembershipProof(MsgCommitMembershipProof),
+    CommitNonMembershipProof(MsgCommitNonMembershipProof),
 }
 
 impl Datagram {
@@ -59,6 +61,8 @@ impl Datagram {
             Self::IntentPacketRecv(_msg) => todo!(),
             Self::BatchSend(_msg) => todo!(),
             Self::BatchAcks(_msg) => todo!(),
+            Self::CommitMembershipProof(msg) => Some(Height::new(msg.proof_height)),
+            Self::CommitNonMembershipProof(msg) => Some(Height::new(msg.proof_height)),
         }
     }
 
@@ -82,6 +86,8 @@ impl Datagram {
             Self::IntentPacketRecv(_) => "intent_packet_recv",
             Self::BatchSend(_) => "batch_send",
             Self::BatchAcks(_) => "batch_acks",
+            Self::CommitMembershipProof(_) => "commit_membership_proof",
+            Self::CommitNonMembershipProof(_) => "commit_non_membership_proof",
         }
     }
 }
@@ -318,4 +324,33 @@ pub struct MsgBatchAcks {
     pub packets: Vec<Packet>,
     // TODO: Ensure same length as packets somehow (maybe zip the lists into one field?)
     pub acks: Vec<Bytes>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct MsgCommitMembershipProof {
+    pub client_id: ClientId,
+    pub proof_height: u64,
+    pub proof: Bytes,
+    pub path: Bytes,
+    pub value: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct MsgCommitNonMembershipProof {
+    pub client_id: ClientId,
+    pub proof_height: u64,
+    pub proof: Bytes,
+    pub path: Bytes,
 }
