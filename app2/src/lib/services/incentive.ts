@@ -9,7 +9,7 @@
 
 import { HttpClient, HttpClientResponse } from "@effect/platform"
 import { EU_STAKING_HUB } from "@unionlabs/sdk/Constants"
-import { Array, BigDecimal, Data, Effect, pipe, Schema } from "effect"
+import { Array, BigDecimal, Data, Effect, Option as O, pipe, Schema } from "effect"
 
 const REST_BASE_URL = "https://rest.union.build"
 
@@ -309,19 +309,23 @@ export const calculateIncentive: Effect.Effect<
   const incentiveAfterTax = BigDecimal.subtract(incentiveNominal, communityTaxAmount)
 
   // Calculate weighted average validator commission
-  const validatorMap = new Map(validatorsData.validators.map(v => [v.operator_address, v]))
-
   const validDelegations = pipe(
     delegationsData.delegation_responses,
-    Array.filter(delegation => {
-      const validator = validatorMap.get(delegation.delegation.validator_address)
-      return Boolean(validator && !validator.jailed && validator.status === "BOND_STATUS_BONDED")
+    Array.filterMap(delegation => {
+      const validator = pipe(
+        validatorsData.validators,
+        Array.findFirst(v => v.operator_address === delegation.delegation.validator_address),
+      )
+
+      return pipe(
+        validator,
+        O.filter(v => !v.jailed && v.status === "BOND_STATUS_BONDED"),
+        O.map(v => ({
+          amount: delegation.balance.amount,
+          commission: v.commission.commission_rates.rate,
+        })),
+      )
     }),
-    Array.map(delegation => ({
-      amount: delegation.balance.amount,
-      commission:
-        validatorMap.get(delegation.delegation.validator_address)!.commission.commission_rates.rate,
-    })),
   )
 
   const { totalAmount, weightedSum } = pipe(
