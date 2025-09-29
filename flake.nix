@@ -8,6 +8,9 @@
     nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     # Track a separate nixpkgs for JS/TS toolchains
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # Track a separate nixpkgs for JS/TS toolchains
+    nixpkgs-unstable-solana.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
     process-compose.url = "github:F1bonacc1/process-compose";
@@ -229,6 +232,7 @@
         ./sentinel2/sentinel.nix
         ./lib/embed-commit
         ./networks/services/voyager.nix
+        ./solana/solana.nix
         treefmt-nix.flakeModule
       ];
 
@@ -263,6 +267,7 @@
           };
 
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
+          pkgsUnstableSolana = import inputs.nixpkgs-unstable-solana { inherit system; };
         in
         {
           _module = {
@@ -277,7 +282,7 @@
                 get-flake
                 uniondBundleVersions
                 pkgsUnstable
-                pkgsSolanaUnstable
+                pkgsUnstableSolana
                 mkCi
                 ;
 
@@ -552,6 +557,8 @@
                 nodePackages_latest."@tailwindcss/language-server"
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
+              ])
+              ++ (with pkgsUnstableSolana; [
                 solana-cli
               ])
               ++ (with pkgs; [
