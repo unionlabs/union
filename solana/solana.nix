@@ -10,7 +10,7 @@ _: {
 
       platform-tools = pkgs.stdenv.mkDerivation {
         pname = "platform-tols";
-        version = "1.48";
+        version = "1.51";
         src = platform-tools-stripped;
         nativeBuildInputs = [ pkgs.autoPatchelfHook ];
         buildInputs = with pkgs; [
@@ -20,11 +20,13 @@ _: {
           python310
           ncurses
           libxml2
-          editline
+          libedit
           xz
         ];
-
-        dontAutoPatchelf = true;
+        
+        postFixup = ''
+          patchelf --replace-needed libedit.so.2 libedit.so $out/llvm/lib/liblldb.so.19.1.7-rust-dev
+        '';
 
         installPhase = ''
           mkdir -p $out;
@@ -32,27 +34,20 @@ _: {
           cp -r $src/rust $out;
           chmod 0755 -R $out;
         '';
-        
-        postFixup = ''
-          for bin in $out/rust/bin/cargo $out/rust/bin/rustc; do
-            echo "Patching $bin"
-            patchelf --set-interpreter $(cat $NIX_CC/nix-support/dynamic-linker) $bin
-            patchelf --set-rpath ${pkgs.glibc}/lib:${pkgs.zlib}/lib:${pkgs.openssl}/lib:$out/rust/lib $bin
-          done
-        '';
+
       };
       
       platform-tools-stripped = pkgs.runCommand "platform-tools-stripped" {} ''
         mkdir -p $out
         tar --strip-components=0 -xjf ${
         pkgs.fetchurl {
-          url = "https://github.com/anza-xyz/platform-tools/releases/download/v1.48/platform-tools-linux-x86_64.tar.bz2";
+          url = "https://github.com/anza-xyz/platform-tools/releases/download/v1.51/platform-tools-linux-x86_64.tar.bz2";
           sha256 = "sha256-qdMVf5N9X2+vQyGjWoA14PgnEUpmOwFQ20kuiT7CdZc=";
         }
         } -C $out;
 
         
-      '';
+      # '';
 
       cargo-solana = pkgs.stdenv.mkDerivation {
         pname = "cargo-solana";
@@ -70,8 +65,9 @@ _: {
           mkdir -p $out
           cp -r $src/* $out
           chmod -R +w $out
-          cp -r ${platform-tools}/llvm $out/bin/platform-tools-sdk/sbf/llvm
-          cp -r ${platform-tools}/rust $out/bin/platform-tools-sdk/sbf/rust
+          mkdir -p $out/bin/platform-tools-sdk/sbf/dependencies/platform-tools
+          cp -r ${platform-tools}/llvm $out/bin/platform-tools-sdk/sbf/dependencies/platform-tools/llvm
+          cp -r ${platform-tools}/rust $out/bin/platform-tools-sdk/sbf/dependencies/platform-tools/rust
         '';
       };
 
