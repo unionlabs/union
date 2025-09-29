@@ -3,7 +3,7 @@
   perSystem =
     {
       pkgs,
-      pkgsGoUnstable,
+      pkgsUnstable,
       self',
       crane,
       system,
@@ -13,7 +13,7 @@
     }:
     {
       packages = {
-        xiond = pkgsGoUnstable.pkgsStatic.buildGoModule (
+        xiond = pkgsUnstable.pkgsStatic.buildGoModule (
           {
             name = "xiond";
             src = inputs.xion;
