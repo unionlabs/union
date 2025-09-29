@@ -320,6 +320,9 @@ module_name_repetitions = "allow" # dumb lint
 [workspace.lints.rustdoc]
 broken-intra-doc-links = "deny"
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))', 'cfg(feature, values("custom-panic", "custom-heap"))'] }
+
 [profile.release]
 lto       = "thin"
 opt-level = 3
