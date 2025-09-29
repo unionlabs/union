@@ -129,7 +129,6 @@ AppRuntime.runPromiseExit$(() => {
 const incentives = AppRuntime.runPromiseExit$(() => {
   return Effect.gen(function*() {
     const incentive = yield* calculateIncentive
-    console.log("Incentive data loaded:", incentive)
     return incentive
   }).pipe(
     Effect.provide(FetchHttpClient.layer),
