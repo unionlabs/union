@@ -1,0 +1,10 @@
+[package]
+name = "ibc-union-solana"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+solana-program = "2.2.0"

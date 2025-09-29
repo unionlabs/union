@@ -460,6 +460,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-unstable-solana": {
+      "locked": {
+        "lastModified": 1759036355,
+        "narHash": "sha256-0m27AKv6ka+q270dw48KflE0LwQYrO7Fm4/2//KCVWg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e9f00bd893984bc8ce46c895c3bf7cac95331127",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1742816840,
@@ -601,6 +617,7 @@
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-lnav": "nixpkgs-lnav",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "nixpkgs-unstable-solana": "nixpkgs-unstable-solana",
         "osmosis": "osmosis",
         "process-compose": "process-compose",
         "public-awesome-launchpad": "public-awesome-launchpad",
