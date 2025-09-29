@@ -306,6 +306,7 @@ _: {
             "state-lens-ics23-ics23"
           ];
           u = "bbn1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqnrn5rr";
+          eu = "bbn1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hqscechf";
         }
         {
           chain-id = "bbn-1";

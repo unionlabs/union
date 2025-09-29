@@ -406,7 +406,8 @@ pub fn init(
                 }]
                 .into_iter()
                 .chain((msg.decimals != 0).then(|| DenomUnit {
-                    denom: msg.symbol.clone(),
+                    // tokenfactory/{self_address}/{symbol}
+                    denom: format!("{denom}{}", msg.symbol),
                     exponent: msg.decimals.into(),
                     aliases: vec![],
                 }))
