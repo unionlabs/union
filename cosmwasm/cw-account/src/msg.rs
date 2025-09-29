@@ -34,4 +34,10 @@ pub enum ExecuteMsg {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum QueryMsg {
+    Admins {},
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}

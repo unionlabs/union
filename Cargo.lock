@@ -9498,6 +9498,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "lst-staker"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-std 2.2.2",
+ "cw-account",
+ "cw-utils 2.0.0",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 0.4.1",
+ "lst",
+ "schemars",
+ "serde",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "lz4_flex"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -133,7 +133,7 @@ fn only_admin() {
             ExecuteMsg::Dispatch(vec![]),
         )
         .unwrap_err(),
-        Error::OnlyAdmin {
+        ContractError::OnlyAdmin {
             sender: Admin::Local(LocalAdmin {
                 address: non_admin.to_string()
             })
@@ -150,7 +150,7 @@ fn only_admin() {
             })),
         )
         .unwrap_err(),
-        Error::OnlyAdmin {
+        ContractError::OnlyAdmin {
             sender: Admin::Local(LocalAdmin {
                 address: non_admin.to_string()
             })
@@ -167,7 +167,7 @@ fn only_admin() {
             })),
         )
         .unwrap_err(),
-        Error::OnlyAdmin {
+        ContractError::OnlyAdmin {
             sender: Admin::Local(LocalAdmin {
                 address: non_admin.to_string()
             })
@@ -182,7 +182,7 @@ fn only_admin() {
             ExecuteMsg::SetZkgm(Addr::unchecked(ZKGM)),
         )
         .unwrap_err(),
-        Error::OnlyAdmin {
+        ContractError::OnlyAdmin {
             sender: Admin::Local(LocalAdmin {
                 address: non_admin.to_string()
             })
@@ -383,7 +383,7 @@ fn require_one_admin() {
             }))
         )
         .unwrap_err(),
-        Error::OneAdminRequired
+        ContractError::OneAdminRequired
     );
 }
 
@@ -411,7 +411,7 @@ fn only_zkgm() {
             })),
         )
         .unwrap_err(),
-        Error::OnlyZkgm {
+        ContractError::OnlyZkgm {
             sender: relayer.clone()
         }
     );
@@ -435,7 +435,7 @@ fn only_zkgm() {
             })),
         )
         .unwrap_err(),
-        Error::OnlyAdmin {
+        ContractError::OnlyAdmin {
             sender: Admin::Remote(RemoteAdmin {
                 address: b"uhoh".into(),
                 channel_id: ChannelId!(1),
@@ -462,7 +462,7 @@ fn only_zkgm() {
             })),
         )
         .unwrap_err(),
-        Error::IntentsNotSupported
+        ContractError::IntentsNotSupported
     );
 }
 
@@ -534,7 +534,7 @@ fn zkgmable_invalid_message() {
 
     assert_eq!(
         res,
-        Error::Std(StdError::parse_err(
+        ContractError::Std(StdError::parse_err(
             "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::CosmosMsg>",
             "EOF while parsing a JSON value."
         ))
@@ -636,6 +636,6 @@ fn ensure_remote_admin_fails_if_zkgm_not_set() {
             })),
         )
         .unwrap_err(),
-        Error::ZkgmNotConfigured
+        ContractError::ZkgmNotConfigured
     );
 }

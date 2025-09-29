@@ -1018,6 +1018,7 @@ _: {
       cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" { };
 
       lst = crane.buildWasmContract "cosmwasm/lst" { };
+      lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };
 
       access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
 
@@ -1095,6 +1096,7 @@ _: {
             cw-unionversal-token
             lst
             access-manager
+            lst-staker
             ;
           cosmwasm-scripts =
             {

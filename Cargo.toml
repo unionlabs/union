@@ -9,6 +9,7 @@ members = [
   "cosmwasm/ibc-union/app/ucs06-funded-dispatch",
   "cosmwasm/multicall",
   "cosmwasm/lst",
+  "cosmwasm/lst-staker",
 
   "cosmwasm/ibc-union/core",
   "cosmwasm/ibc-union/core/msg",
@@ -390,7 +391,10 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
-access-manager       = { path = "cosmwasm/access-manager", default-features = false }
+access-manager = { path = "cosmwasm/access-manager", default-features = false }
+
+lst = { path = "cosmwasm/lst", default-features = false }
+
 cw-account           = { path = "cosmwasm/cw-account", default-features = false }
 cw-escrow-vault      = { path = "cosmwasm/cw-escrow-vault", default-features = false }
 cw-unionversal-token = { path = "cosmwasm/cw-unionversal-token", default-features = false }
