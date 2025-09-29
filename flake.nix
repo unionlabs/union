@@ -10,7 +10,6 @@
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
-    nixpkgs-go-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     process-compose.url = "github:F1bonacc1/process-compose";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
@@ -264,7 +263,6 @@
           };
 
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
-          pkgsGoUnstable = import inputs.nixpkgs-go-unstable { inherit system; };
         in
         {
           _module = {
@@ -279,7 +277,7 @@
                 get-flake
                 uniondBundleVersions
                 pkgsUnstable
-                pkgsGoUnstable
+                pkgsSolanaUnstable
                 mkCi
                 ;
 
@@ -554,6 +552,7 @@
                 nodePackages_latest."@tailwindcss/language-server"
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
+                solana-cli
               ])
               ++ (with pkgs; [
                 wasm-tools
