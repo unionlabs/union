@@ -1,19 +1,19 @@
 /**
- * Incentive Service (WORK IN PROGRESS)
+ * Incentive Service
  *
- * Calculates staking incentives using:
- * - Total supply from cosmos bank module
- * - Inflation rate from cosmos mint module
- * - Bonded token supply from staking pool
- * - Community tax from distribution params
- *
- * Formula: Incentive = ((1 + [(inflation × total_supply ÷ bonded) × (1 − tax)] ÷ 365) ^ 365) − 1
+ * Calculates liquid staking incentives including:
+ * - Base staking rewards (inflation × total_supply ÷ bonded_tokens)
+ * - Community tax deduction
+ * - Validator commission deduction (weighted average from delegated validators)
  */
 
 import { HttpClient, HttpClientResponse } from "@effect/platform"
-import { BigDecimal, Data, Effect, pipe, Schema } from "effect"
+import { Array, BigDecimal, Data, Effect, pipe, Schema } from "effect"
 
 const REST_BASE_URL = "https://rest.union.build"
+
+// Staker address that delegates to validators on behalf of liquid stakers
+const LIQUID_STAKING_STAKER_ADDRESS = "union19ydrfy0d80vgpvs6p0cljlahgxwrkz54ps8455q7jfdfape7ld7quaq69v"
 
 export class IncentiveError extends Data.TaggedError("IncentiveError")<{
   message: string
@@ -47,13 +47,44 @@ const CirculatingSupplyResponse = Schema.Struct({
   }),
 })
 
-// Schema for the incentive calculation result
+const ValidatorsResponse = Schema.Struct({
+  validators: Schema.Array(Schema.Struct({
+    operator_address: Schema.String,
+    tokens: Schema.BigDecimal,
+    commission: Schema.Struct({
+      commission_rates: Schema.Struct({
+        rate: Schema.BigDecimal,
+      }),
+    }),
+    status: Schema.String,
+    jailed: Schema.Boolean,
+  })),
+})
+
+const DelegatorDelegationsResponse = Schema.Struct({
+  delegation_responses: Schema.Array(Schema.Struct({
+    delegation: Schema.Struct({
+      delegator_address: Schema.String,
+      validator_address: Schema.String,
+      shares: Schema.BigDecimal,
+    }),
+    balance: Schema.Struct({
+      denom: Schema.String,
+      amount: Schema.BigDecimal,
+    }),
+  })),
+})
+
 export const IncentiveResult = Schema.Struct({
   rates: Schema.Struct({
     yearly: Schema.BigDecimalFromSelf,
   }),
   incentiveNominal: Schema.BigDecimalFromSelf,
   incentiveAfterTax: Schema.BigDecimalFromSelf,
+  incentiveAfterCommission: Schema.BigDecimalFromSelf,
+  communityTaxAmount: Schema.BigDecimalFromSelf,
+  validatorCommissionAmount: Schema.BigDecimalFromSelf,
+  weightedAverageCommission: Schema.BigDecimalFromSelf,
   inflation: Schema.BigDecimalFromSelf,
   totalSupply: Schema.BigDecimalFromSelf,
   bondedTokens: Schema.BigDecimalFromSelf,
@@ -131,17 +162,53 @@ const getCirculatingSupply = pipe(
   ),
 )
 
+const getValidators = pipe(
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) =>
+    pipe(
+      client.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/validators?status=BOND_STATUS_BONDED`),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(ValidatorsResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch validators",
+          cause,
+        })
+      ),
+    )
+  ),
+)
+
+const getDelegatorDelegations = (delegatorAddress: string) => pipe(
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) =>
+    pipe(
+      client.get(`${REST_BASE_URL}/cosmos/staking/v1beta1/delegations/${delegatorAddress}`),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(DelegatorDelegationsResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch delegator delegations",
+          cause,
+        })
+      ),
+    )
+  ),
+)
+
 export const calculateIncentive: Effect.Effect<
   IncentiveResult,
   IncentiveError,
   HttpClient.HttpClient
 > = Effect.gen(function*() {
-  const [inflationData, stakingPoolData, distributionData, circulatingSupplyData] = yield* Effect
+  const [inflationData, stakingPoolData, distributionData, circulatingSupplyData, validatorsData, delegationsData] = yield* Effect
     .all([
       getInflation,
       getStakingPool,
       getDistributionParams,
       getCirculatingSupply,
+      getValidators,
+      getDelegatorDelegations(LIQUID_STAKING_STAKER_ADDRESS),
     ], { concurrency: "unbounded" })
 
   const inflation = inflationData.inflation
@@ -181,7 +248,6 @@ export const calculateIncentive: Effect.Effect<
     )
   }
 
-  // Step 1: Calculate nominal incentive rate
   const incentiveNominal = yield* pipe(
     BigDecimal.multiply(inflation, totalSupply),
     BigDecimal.divide(bondedTokens),
@@ -192,11 +258,47 @@ export const calculateIncentive: Effect.Effect<
     ),
   )
 
-  // Step 2: Apply community tax
-  const incentiveAfterTax = BigDecimal.multiply(
-    incentiveNominal,
-    BigDecimal.subtract(BigDecimal.fromBigInt(1n), communityTax),
+  const communityTaxAmount = BigDecimal.multiply(incentiveNominal, communityTax)
+  const incentiveAfterTax = BigDecimal.subtract(incentiveNominal, communityTaxAmount)
+
+  // Calculate weighted average validator commission
+  const validatorMap = new Map(validatorsData.validators.map(v => [v.operator_address, v]))
+  
+  const validDelegations = pipe(
+    delegationsData.delegation_responses,
+    Array.filter(delegation => {
+      const validator = validatorMap.get(delegation.delegation.validator_address)
+      return Boolean(validator && !validator.jailed && validator.status === "BOND_STATUS_BONDED")
+    }),
+    Array.map(delegation => ({
+      amount: delegation.balance.amount,
+      commission: validatorMap.get(delegation.delegation.validator_address)!.commission.commission_rates.rate
+    }))
   )
+
+  const { totalAmount, weightedSum } = pipe(
+    validDelegations,
+    Array.reduce(
+      { totalAmount: BigDecimal.fromBigInt(0n), weightedSum: BigDecimal.fromBigInt(0n) },
+      (acc, { amount, commission }) => ({
+        totalAmount: BigDecimal.sum(acc.totalAmount, amount),
+        weightedSum: BigDecimal.sum(acc.weightedSum, BigDecimal.multiply(amount, commission))
+      })
+    )
+  )
+
+  const weightedAverageCommission = BigDecimal.isZero(totalAmount)
+    ? BigDecimal.fromBigInt(0n)
+    : yield* BigDecimal.divide(weightedSum, totalAmount).pipe(
+        Effect.mapError(() =>
+          new IncentiveError({
+            message: "Could not calculate weighted average commission",
+          })
+        ),
+      )
+
+  const validatorCommissionAmount = BigDecimal.multiply(incentiveAfterTax, weightedAverageCommission)
+  const incentiveAfterCommission = BigDecimal.subtract(incentiveAfterTax, validatorCommissionAmount)
 
   const bondedRatio = yield* BigDecimal.divide(bondedTokens, totalSupply).pipe(
     Effect.mapError(() =>
@@ -208,10 +310,14 @@ export const calculateIncentive: Effect.Effect<
 
   return {
     rates: {
-      yearly: incentiveAfterTax,
+      yearly: incentiveAfterCommission,
     },
     incentiveNominal,
     incentiveAfterTax,
+    incentiveAfterCommission,
+    communityTaxAmount,
+    validatorCommissionAmount,
+    weightedAverageCommission,
     inflation,
     totalSupply,
     bondedTokens,
