@@ -1,10 +1,11 @@
 [package]
-name = "ibc-union-solana"
-version = "0.0.0"
 edition = "2021"
+name    = "ibc-union-solana"
+version = "0.0.0"
 
 [lib]
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
+embed-commit   = { workspace = true }
 solana-program = "2.2.0"
