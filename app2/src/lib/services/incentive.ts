@@ -8,13 +8,10 @@
  */
 
 import { HttpClient, HttpClientResponse } from "@effect/platform"
+import { EU_STAKING_HUB } from "@unionlabs/sdk/Constants"
 import { Array, BigDecimal, Data, Effect, pipe, Schema } from "effect"
 
 const REST_BASE_URL = "https://rest.union.build"
-
-// Staker address that delegates to validators on behalf of liquid stakers
-const LIQUID_STAKING_STAKER_ADDRESS =
-  "union19ydrfy0d80vgpvs6p0cljlahgxwrkz54ps8455q7jfdfape7ld7quaq69v"
 
 export class IncentiveError extends Data.TaggedError("IncentiveError")<{
   message: string
@@ -74,6 +71,23 @@ const DelegatorDelegationsResponse = Schema.Struct({
       amount: Schema.BigDecimal,
     }),
   })),
+})
+
+const LstConfigResponse = Schema.Struct({
+  data: Schema.Struct({
+    staker_address: Schema.String,
+    native_token_denom: Schema.String,
+    minimum_liquid_stake_amount: Schema.String,
+    protocol_fee_config: Schema.Struct({
+      fee_rate: Schema.String,
+      fee_recipient: Schema.String,
+    }),
+    monitors: Schema.Array(Schema.String),
+    lst_address: Schema.String,
+    batch_period_seconds: Schema.Number,
+    unbonding_period_seconds: Schema.Number,
+    stopped: Schema.Boolean,
+  }),
 })
 
 export const IncentiveResult = Schema.Struct({
@@ -180,6 +194,26 @@ const getValidators = pipe(
   ),
 )
 
+const getLstConfig = pipe(
+  HttpClient.HttpClient,
+  Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+  Effect.andThen((client) => {
+    const queryMsg = btoa(JSON.stringify({ config: {} }))
+    return pipe(
+      client.get(
+        `${REST_BASE_URL}/cosmwasm/wasm/v1/contract/${EU_STAKING_HUB.address}/smart/${queryMsg}`,
+      ),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(LstConfigResponse)),
+      Effect.mapError((cause) =>
+        new IncentiveError({
+          message: "Failed to fetch LST contract config",
+          cause,
+        })
+      ),
+    )
+  }),
+)
+
 const getDelegatorDelegations = (delegatorAddress: string) =>
   pipe(
     HttpClient.HttpClient,
@@ -203,6 +237,10 @@ export const calculateIncentive: Effect.Effect<
   IncentiveError,
   HttpClient.HttpClient
 > = Effect.gen(function*() {
+  // First get the LST config to find the staker address
+  const lstConfig = yield* getLstConfig
+  const stakerAddress = lstConfig.data.staker_address
+
   const [
     inflationData,
     stakingPoolData,
@@ -217,7 +255,7 @@ export const calculateIncentive: Effect.Effect<
       getDistributionParams,
       getCirculatingSupply,
       getValidators,
-      getDelegatorDelegations(LIQUID_STAKING_STAKER_ADDRESS),
+      getDelegatorDelegations(stakerAddress),
     ], { concurrency: "unbounded" })
 
   const inflation = inflationData.inflation
