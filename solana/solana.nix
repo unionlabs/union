@@ -82,7 +82,7 @@ _: {
       solana-ibc =
         (crane.buildWorkspaceMember "solana/ibc" {
           cargoBuildRustToolchain = "${platform-tools}/rust";
-          cargoBuildExtraArgs = "--target sbpf-solana-solana";
+          cargoBuildExtraArgs = "--target sbpfv4-solana-solana";
         }).ibc-union-solana;
 
       # solana-ibc = pkgs.stdenv.mkDerivation {
