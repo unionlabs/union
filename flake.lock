@@ -428,22 +428,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-go-unstable": {
-      "locked": {
-        "lastModified": 1755615617,
-        "narHash": "sha256-HMwfAJBdrr8wXAkbGhtcby1zGFvs+StOp19xNsbqdOg=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "20075955deac2583bb12f07151c2df830ef346b4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-lnav": {
       "locked": {
         "lastModified": 1713467351,
@@ -615,7 +599,6 @@
         "interchain-security": "interchain-security",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs_2",
-        "nixpkgs-go-unstable": "nixpkgs-go-unstable",
         "nixpkgs-lnav": "nixpkgs-lnav",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "osmosis": "osmosis",
