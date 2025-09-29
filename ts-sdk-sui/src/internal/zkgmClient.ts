@@ -113,20 +113,28 @@ export const fromWallet = (
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { operand })
 
-      // ---- Sui PTB: begin_send -> send_with_coin -> end_send ----
 
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
-      const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" //zkgm package id TODO: This should be fetched from somewhere
       const module = "zkgm" //zkgm module name
+
+
+      // These will be fetched from hubble or from deployments.json
+      const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" //zkgm package id 
+      // TODO: packageId can be changed when zkgm updated
+      const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // This won't be changed for a while
+      const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // This won't be changed for a while
+      const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // This won't be changed
+
+
+      // This 2 will be get by user all the time
       const typeArg = "0x2::sui::SUI" // TODO: This should be dynamic based on the token sent
-      const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // TODO: This should be fetched from somewhere
-      const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // TODO: This should be fetched from somewhere
-      const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // TODO: This should be fetched from somewhere
-      const coinObjectId = "0xc2c61b8de5aa6167dc744d6db61854fa29b53257d5e54a40c2f5b7dcc6f04d0b" // TODO: This should be given by user
-      
-      // helpers
+      const coinObjectId = "0xfdb7b5b54d61ed21373f2785c7583c1ff6fd85e9b04fa289da50bba563190b62" // TODO: This should be given by user
+      // Note: There can be multiple coins, for simplicity we are using one coin here
+      // User should be able to provide typeArgs and coinObjectIds array
+
+
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
         const out = new Uint8Array(s.length / 2)
@@ -139,8 +147,8 @@ export const fromWallet = (
         target: `${packageId}::${module}::begin_send`,
         typeArguments: [],
         arguments: [
-          tx.pure.u32(Number(request.channelId)),          // channel id (u32)
-          tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)), // salt bytes
+          tx.pure.u32(Number(request.channelId)),          
+          tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
         ],
       })
 

@@ -38,40 +38,40 @@ const program = Effect.gen(function* () {
   
   // TODO: Destination will be somewhere
   const destination = yield* ChainRegistry.byUniversalId(
-    UniversalChainId.make("ethereum.11155111"),
+    UniversalChainId.make("union.union-1"),
   )
   const wallet = yield* WalletClient
 
   const sender = wallet.signer.toSuiAddress();
 
-  // TODO: Fix this tokenOrder and write something working
+
+  // deployed contract: union1l0rpy8yauy7nzv4vu6mgz6kjpqzvws85l8mgzm6eansasx90t57sc7k4ue
+
+  console.log("sender:", sender)
+
   const tokenOrder = yield* TokenOrder.make({
     source,
     destination,
     sender: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
-    receiver: "0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302",
-    // LINK on Holesky
-    baseToken: "0x685ce6742351ae9b618f383883d6d1e0c5a31b4b",
-    baseAmount: 10n,
-    // Holesky LINK on Sepolia
-    quoteToken: "0x80fdbf104ec58a527ec40f7b03f88c404ef4ba63",
-    quoteAmount: 10n,
-    kind: "escrow",
-    metadata: undefined,
+    receiver: "0x756E696F6E317779637938673876357366663667736A6C3979686A73343371393878706C30357033676E3273",
+    baseToken: "0x3078323A3A7375693A3A535549",
+    baseAmount: 100000n,
+    quoteToken: "0x756E696F6E316C307270793879617579376E7A76347675366D677A366B6A70717A76777338356C386D677A6D3665616E7361737839307435377363376B347565",
+    quoteAmount: 10000n,
+    kind: "solve",
+    metadata:
+      "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31736b673532343468706b61643630337a7a37376b64656b7a77366666677066726465336c646b387270647a30366e36326b34687163743077346a",
     version: 2,
   })
 
-  yield* Effect.log("Token Order V2", tokenOrder)
-
-  // TODO: Fix this request too
   const request = ZkgmClientRequest.make({
     source,
     destination,
     channelId: ChannelId.make(1),
-    ucs03Address: "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-    kind: "simulateAndExecute",
+    ucs03Address: "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c",
     instruction: tokenOrder,
   })
+
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
@@ -93,7 +93,7 @@ const program = Effect.gen(function* () {
   Effect.provide(
     WalletClient.Live({
     url: getFullnodeUrl("testnet"),
-    signer: keypair,               // ✅ Sui signer
+    signer: keypair,   
   }),
   ),
 
