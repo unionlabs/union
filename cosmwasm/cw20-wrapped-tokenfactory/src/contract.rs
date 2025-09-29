@@ -402,7 +402,7 @@ pub fn init(
                 denom_units: [DenomUnit {
                     denom: denom.clone(),
                     exponent: 0,
-                    aliases: vec![msg.symbol.clone()],
+                    aliases: vec![],
                 }]
                 .into_iter()
                 .chain((msg.decimals != 0).then(|| DenomUnit {
@@ -412,7 +412,7 @@ pub fn init(
                 }))
                 .collect(),
                 base: Some(denom.clone()),
-                display: Some(msg.symbol.clone()),
+                display: Some(denom),
                 name: Some(msg.name),
                 symbol: Some(msg.symbol),
                 uri: None,
