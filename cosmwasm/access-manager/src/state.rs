@@ -1,3 +1,4 @@
+use access_manager_types::{Access, Role, RoleId, Schedule, Selector, TargetConfig};
 use cosmwasm_std::{Addr, StdError, StdResult};
 use depolama::{
     key::KeyCodecViaEncoding, value::ValueCodecViaEncoding, Bytes, KeyCodec, Prefix,
@@ -5,8 +6,6 @@ use depolama::{
 };
 use unionlabs_encoding::{Bincode, DecodeAs, EncodeAs};
 use unionlabs_primitives::H256;
-
-use crate::types::{Access, Role, RoleId, Schedule, Selector, TargetConfig};
 
 /// The admin of this manager contract. This is the only address that is able to add or remove role
 /// permissions.
@@ -45,18 +44,18 @@ pub enum TargetAllowedRoles {}
 impl Store for TargetAllowedRoles {
     const PREFIX: Prefix = Prefix::new(b"target_allowed_roles");
     // target address, method
-    type Key = (Addr, Selector);
+    type Key = (Addr, Box<Selector>);
     type Value = RoleId;
 }
-impl KeyCodec<(Addr, Selector)> for TargetAllowedRoles {
-    fn encode_key((addr, method): &(Addr, Selector)) -> Bytes {
+impl KeyCodec<(Addr, Box<Selector>)> for TargetAllowedRoles {
+    fn encode_key((addr, method): &(Addr, Box<Selector>)) -> Bytes {
         (addr.clone().into_string(), method)
             .encode_as::<Bincode>()
             .into()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<(Addr, Selector)> {
-        let (addr, method) = <(String, Selector)>::decode_as::<Bincode>(raw)
+    fn decode_key(raw: &Bytes) -> StdResult<(Addr, Box<Selector>)> {
+        let (addr, method) = <(String, Box<Selector>)>::decode_as::<Bincode>(raw)
             .map_err(|e| StdError::generic_err(format!("unable to decode: {e:?}")))?;
 
         Ok((Addr::unchecked(addr), method))

@@ -83,6 +83,10 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![cfg_attr(test, allow(clippy::too_many_lines))]
 
+use access_manager_types::{
+    manager::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
+    RoleId,
+};
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, SubMsg,
 };
@@ -101,19 +105,14 @@ use crate::{
         set_target_closed, set_target_function_role, update_authority,
     },
     error::ContractError,
-    msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
     state::ExecutionIdStack,
-    types::RoleId,
 };
 
 pub mod context;
 pub mod contract;
 pub mod error;
-pub mod event;
-pub mod managed;
 pub mod msg;
 pub mod state;
-pub mod time;
 pub mod types;
 
 #[cfg(test)]
@@ -199,7 +198,7 @@ pub fn execute(
             selectors,
             role_id,
         } => {
-            set_target_function_role(&mut ctx, target, selectors, *role_id)?;
+            set_target_function_role(&mut ctx, target, selectors.iter().map(|e| &**e), *role_id)?;
         }
         ExecuteMsg::UpdateAuthority {
             target,

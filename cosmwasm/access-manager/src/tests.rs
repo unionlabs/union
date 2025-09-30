@@ -1,15 +1,21 @@
-use cosmwasm_std::{testing::message_info, Addr};
+use access_manager_types::{
+    manager::{
+        error::AccessManagerError,
+        event::{
+            RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleRevoked, TargetClosed,
+            TargetFunctionRoleUpdated,
+        },
+        msg::{ExecuteMsg, QueryMsg},
+    },
+    CanCall, HasRole, RoleId, Selector,
+};
+use cosmwasm_std::{testing::message_info, Addr, Response};
 use serde_json::value::to_raw_value;
 
-use super::*;
 use crate::{
-    contract::{CanCall, HasRole},
-    event::{
-        RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleRevoked, TargetClosed,
-        TargetFunctionRoleUpdated,
-    },
+    error::ContractError,
+    execute, min_setback,
     tests::utils::{assert_query_result, setup, ACCOUNT_1, ACCOUNT_2, ADMIN, TARGET_1, TARGET_2},
-    types::Selector,
 };
 
 pub mod utils;
@@ -256,7 +262,7 @@ fn renounce_role_works() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerBadConfirmation,
+        ContractError::AccessManager(AccessManagerError::AccessManagerBadConfirmation),
     );
 
     assert_eq!(
@@ -360,10 +366,10 @@ fn grant_revoke_role_requires_role_admin() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerUnauthorizedAccount {
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
             msg_sender: ACCOUNT_1.clone(),
             required_role_id: RoleId::new(0)
-        }
+        })
     );
 
     // role 2 is now admin of role 1
@@ -404,10 +410,10 @@ fn grant_revoke_role_requires_role_admin() {
 
     assert_eq!(
         res,
-        ContractError::AccessManagerUnauthorizedAccount {
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
             msg_sender: ACCOUNT_1.clone(),
             required_role_id: RoleId::new(2)
-        }
+        })
     );
 
     // grant role 2 to non-admin
@@ -465,10 +471,10 @@ fn grant_revoke_role_requires_role_admin() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerUnauthorizedAccount {
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
             msg_sender: ACCOUNT_2.clone(),
             required_role_id: RoleId::new(2)
-        }
+        })
     );
 
     // granter is role admin, able to revoke role
@@ -516,7 +522,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::PUBLIC_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        ))
     );
 
     assert_eq!(
@@ -531,7 +539,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::PUBLIC_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        ))
     );
 
     assert_eq!(
@@ -546,7 +556,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::PUBLIC_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        ))
     );
 
     assert_eq!(
@@ -561,7 +573,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::ADMIN_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::ADMIN_ROLE
+        ))
     );
 
     assert_eq!(
@@ -576,7 +590,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::PUBLIC_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        ))
     );
 
     assert_eq!(
@@ -591,7 +607,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::ADMIN_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::ADMIN_ROLE
+        ))
     );
 
     assert_eq!(
@@ -606,7 +624,9 @@ fn public_role_locked() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerLockedRole(RoleId::PUBLIC_ROLE)
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        ))
     );
 }
 
@@ -913,10 +933,10 @@ fn role_guardian_works() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerUnauthorizedAccount {
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
             msg_sender: ACCOUNT_1.clone(),
             required_role_id: RoleId::new(0)
-        }
+        })
     );
     assert_eq!(
         execute(
@@ -930,10 +950,10 @@ fn role_guardian_works() {
             .unwrap(),
         )
         .unwrap_err(),
-        ContractError::AccessManagerUnauthorizedAccount {
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
             msg_sender: ACCOUNT_1.clone(),
             required_role_id: RoleId::new(0)
-        }
+        })
     );
 }
 
@@ -1006,7 +1026,7 @@ fn target_function_role_works() {
             message_info(&ADMIN, &[]),
             to_raw_value(&ExecuteMsg::SetTargetFunctionRole {
                 target: TARGET_1.clone(),
-                selectors: vec![Selector::new("a"), Selector::new("b")],
+                selectors: vec![Selector::new("a").to_owned(), Selector::new("b").to_owned()],
                 role_id: RoleId::new(1),
             })
             .unwrap(),
@@ -1015,12 +1035,12 @@ fn target_function_role_works() {
         Response::new().add_events([
             TargetFunctionRoleUpdated {
                 target: &TARGET_1,
-                selector: &Selector::new("a"),
+                selector: Selector::new("a"),
                 role_id: RoleId::new(1)
             },
             TargetFunctionRoleUpdated {
                 target: &TARGET_1,
-                selector: &Selector::new("b"),
+                selector: Selector::new("b"),
                 role_id: RoleId::new(1)
             },
         ]),
@@ -1031,7 +1051,7 @@ fn target_function_role_works() {
         &env,
         QueryMsg::GetTargetFunctionRole {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
         },
         &RoleId::new(1),
     );
@@ -1041,7 +1061,7 @@ fn target_function_role_works() {
         &env,
         QueryMsg::GetTargetFunctionRole {
             target: TARGET_1.clone(),
-            selector: Selector::new("b"),
+            selector: Selector::new("b").to_owned(),
         },
         &RoleId::new(1),
     );
@@ -1053,7 +1073,7 @@ fn target_function_role_works() {
         QueryMsg::GetTargetFunctionRole {
             // target not configured yet
             target: TARGET_2.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
         },
         &RoleId::new(0),
     );
@@ -1063,7 +1083,7 @@ fn target_function_role_works() {
         QueryMsg::GetTargetFunctionRole {
             target: TARGET_1.clone(),
             // target configured with other selectors but not this one
-            selector: Selector::new("c"),
+            selector: Selector::new("c").to_owned(),
         },
         &RoleId::new(0),
     );
@@ -1080,7 +1100,7 @@ fn can_call_works() {
         message_info(&ADMIN, &[]),
         to_raw_value(&ExecuteMsg::SetTargetFunctionRole {
             target: TARGET_1.clone(),
-            selectors: vec![Selector::new("a")],
+            selectors: vec![Selector::new("a").to_owned()],
             role_id: RoleId::new(1),
         })
         .unwrap(),
@@ -1093,7 +1113,7 @@ fn can_call_works() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
         &CanCall {
@@ -1122,7 +1142,7 @@ fn can_call_works() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
         &CanCall {
@@ -1151,7 +1171,7 @@ fn can_call_works() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
         &CanCall {
@@ -1166,7 +1186,7 @@ fn can_call_works() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("b"),
+            selector: Selector::new("b").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
         &CanCall {
@@ -1179,7 +1199,7 @@ fn can_call_works() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("b"),
+            selector: Selector::new("b").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
         &CanCall {
@@ -1200,7 +1220,7 @@ fn closed_target_not_callable() {
         message_info(&ADMIN, &[]),
         to_raw_value(&ExecuteMsg::SetTargetFunctionRole {
             target: TARGET_1.clone(),
-            selectors: vec![Selector::new("a")],
+            selectors: vec![Selector::new("a").to_owned()],
             role_id: RoleId::new(1),
         })
         .unwrap(),
@@ -1213,7 +1233,7 @@ fn closed_target_not_callable() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
         &CanCall {
@@ -1242,7 +1262,7 @@ fn closed_target_not_callable() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
         &CanCall {
@@ -1289,7 +1309,7 @@ fn closed_target_not_callable() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("a"),
+            selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
         &CanCall {
@@ -1302,7 +1322,7 @@ fn closed_target_not_callable() {
         &env,
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
-            selector: Selector::new("b"),
+            selector: Selector::new("b").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
         &CanCall {
@@ -1316,7 +1336,7 @@ fn closed_target_not_callable() {
         QueryMsg::CanCall {
             target: TARGET_1.clone(),
             // unconfigured selector, must be uncallable when target is closed
-            selector: Selector::new("c"),
+            selector: Selector::new("c").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
         &CanCall {

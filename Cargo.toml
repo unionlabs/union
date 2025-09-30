@@ -253,6 +253,7 @@ members = [
   "cosmwasm/cw20-token-minter",
   "cosmwasm/cw-account",
   "cosmwasm/access-manager",
+  "cosmwasm/access-managed",
   "cosmwasm/cw-escrow-vault",
   "cosmwasm/cw-unionversal-token",
   "cosmwasm/ucs03-zkgm-token-minter-api",
@@ -288,6 +289,7 @@ members = [
   "lib/cw20-ctx",
   "lib/ucs03-zkgmable",
   "lib/ucs03-solvable",
+  "lib/access-manager-types",
 ]
 
 [workspace.package]
@@ -394,10 +396,11 @@ frissitheto = { path = "lib/frissitheto", default-features = false }
 
 lst = { path = "cosmwasm/lst", default-features = false }
 
+access-manager-types = { path = "lib/access-manager-types", default-features = false }
 access-manager = { path = "cosmwasm/access-manager", default-features = false }
 
-cw-account      = { path = "cosmwasm/cw-account", default-features = false }
-cw-escrow-vault = { path = "cosmwasm/cw-escrow-vault", default-features = false }
+cw-account           = { path = "cosmwasm/cw-account", default-features = false }
+cw-escrow-vault      = { path = "cosmwasm/cw-escrow-vault", default-features = false }
 
 cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
 cw20-ctx                          = { path = "lib/cw20-ctx", default-features = false }

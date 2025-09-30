@@ -1,4 +1,4 @@
-use access_manager_types::manager::error::AccessManagerError;
+use access_manager_types::managed::error::AccessManagedError;
 use cosmwasm_std::StdError;
 use frissitheto::UpgradeError;
 
@@ -11,5 +11,5 @@ pub enum ContractError {
     Migrate(#[from] UpgradeError),
 
     #[error(transparent)]
-    AccessManager(#[from] AccessManagerError),
+    AccessManaged(#[from] AccessManagedError),
 }

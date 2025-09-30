@@ -17,7 +17,7 @@ pub mod token_bucket;
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
-    #[error("migration error")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
     #[error("invalid ibc version, got {version}")]
     InvalidIbcVersion { version: String },
