@@ -286,7 +286,7 @@ members = [
   "lib/cw20-ctx",
   "lib/ucs03-zkgmable",
   "lib/ucs03-solvable",
-  "lib/access-manager-types",
+  "lib/access-manager-types", "e2e/access-manager-tests",
 ]
 
 [workspace.package]

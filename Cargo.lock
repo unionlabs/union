@@ -84,6 +84,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "access-manager-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.39",
+ "cometbft-rpc",
+ "cosmos-client",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "access-manager-types"
 version = "0.1.0"
 dependencies = [
