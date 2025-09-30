@@ -2,15 +2,16 @@ use access_manager_types::{
     manager::{
         error::AccessManagerError,
         event::{
-            RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleRevoked, TargetClosed,
-            TargetFunctionRoleUpdated,
+            OperationScheduled, RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged,
+            RoleRevoked, TargetClosed, TargetFunctionRoleUpdated,
         },
         msg::{ExecuteMsg, QueryMsg},
     },
     CanCall, HasRole, RoleId, Selector,
 };
 use cosmwasm_std::{testing::message_info, Addr, Response};
-use serde_json::value::to_raw_value;
+use hex_literal::hex;
+use unionlabs_primitives::H256;
 
 use crate::{
     error::ContractError,
@@ -33,12 +34,11 @@ fn grant_revoke_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -84,12 +84,11 @@ fn grant_revoke_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(2),
                 account: grantee.clone(),
                 execution_delay: 10,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -120,11 +119,10 @@ fn grant_revoke_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::RevokeRole {
+            ExecuteMsg::RevokeRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleRevoked {
@@ -152,11 +150,10 @@ fn grant_revoke_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::RevokeRole {
+            ExecuteMsg::RevokeRole {
                 role_id: RoleId::new(2),
                 account: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleRevoked {
@@ -185,11 +182,10 @@ fn grant_revoke_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::RevokeRole {
+            ExecuteMsg::RevokeRole {
                 role_id: RoleId::new(2),
                 account: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new()
@@ -209,12 +205,11 @@ fn renounce_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -232,12 +227,11 @@ fn renounce_role_works() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(2),
                 account: grantee.clone(),
                 execution_delay: 10,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -255,11 +249,10 @@ fn renounce_role_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&grantee, &[]),
-            to_raw_value(&ExecuteMsg::RenounceRole {
+            ExecuteMsg::RenounceRole {
                 role_id: RoleId::new(1),
                 caller_confirmation: ADMIN.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerBadConfirmation),
@@ -270,11 +263,10 @@ fn renounce_role_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&grantee, &[]),
-            to_raw_value(&ExecuteMsg::RenounceRole {
+            ExecuteMsg::RenounceRole {
                 role_id: RoleId::new(1),
                 caller_confirmation: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleRevoked {
@@ -302,11 +294,10 @@ fn renounce_role_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&grantee, &[]),
-            to_raw_value(&ExecuteMsg::RenounceRole {
+            ExecuteMsg::RenounceRole {
                 role_id: RoleId::new(2),
                 caller_confirmation: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleRevoked {
@@ -335,11 +326,10 @@ fn renounce_role_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&grantee, &[]),
-            to_raw_value(&ExecuteMsg::RenounceRole {
+            ExecuteMsg::RenounceRole {
                 role_id: RoleId::new(2),
                 caller_confirmation: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new()
@@ -358,12 +348,11 @@ fn grant_revoke_role_requires_role_admin() {
             deps.as_mut(),
             env.clone(),
             message_info(&ACCOUNT_1, &[]).clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
@@ -377,11 +366,10 @@ fn grant_revoke_role_requires_role_admin() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::SetRoleAdmin {
+        ExecuteMsg::SetRoleAdmin {
             role_id: RoleId::new(1),
             admin: RoleId::new(2),
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -399,12 +387,11 @@ fn grant_revoke_role_requires_role_admin() {
         deps.as_mut(),
         env.clone(),
         message_info(&ACCOUNT_1, &[]).clone(),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: grantee.clone(),
             execution_delay: 0,
-        })
-        .unwrap(),
+        },
     )
     .unwrap_err();
 
@@ -421,12 +408,11 @@ fn grant_revoke_role_requires_role_admin() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]).clone(),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(2),
             account: ACCOUNT_1.clone(),
             execution_delay: 0,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -435,12 +421,11 @@ fn grant_revoke_role_requires_role_admin() {
         deps.as_mut(),
         env.clone(),
         message_info(&ACCOUNT_1, &[]).clone(),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: grantee.clone(),
             execution_delay: 0,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -464,11 +449,10 @@ fn grant_revoke_role_requires_role_admin() {
             deps.as_mut(),
             env.clone(),
             message_info(&ACCOUNT_2, &[]).clone(),
-            to_raw_value(&ExecuteMsg::RevokeRole {
+            ExecuteMsg::RevokeRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
@@ -482,11 +466,10 @@ fn grant_revoke_role_requires_role_admin() {
         deps.as_mut(),
         env.clone(),
         message_info(&ACCOUNT_1, &[]).clone(),
-        to_raw_value(&ExecuteMsg::RevokeRole {
+        ExecuteMsg::RevokeRole {
             role_id: RoleId::new(1),
             account: grantee.clone(),
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -514,12 +497,11 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::PUBLIC_ROLE,
                 account: ACCOUNT_1.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -532,11 +514,10 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::RevokeRole {
+            ExecuteMsg::RevokeRole {
                 role_id: RoleId::PUBLIC_ROLE,
                 account: ACCOUNT_1.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -549,11 +530,10 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::SetRoleGuardian {
+            ExecuteMsg::SetRoleGuardian {
                 role_id: RoleId::PUBLIC_ROLE,
                 guardian: RoleId::new(1)
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -566,11 +546,10 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::SetRoleGuardian {
+            ExecuteMsg::SetRoleGuardian {
                 role_id: RoleId::ADMIN_ROLE,
                 guardian: RoleId::new(1)
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -583,11 +562,10 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::SetRoleAdmin {
+            ExecuteMsg::SetRoleAdmin {
                 role_id: RoleId::PUBLIC_ROLE,
                 admin: RoleId::new(1)
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -600,11 +578,10 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::SetRoleAdmin {
+            ExecuteMsg::SetRoleAdmin {
                 role_id: RoleId::ADMIN_ROLE,
                 admin: RoleId::new(1)
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -617,11 +594,10 @@ fn public_role_locked() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]).clone(),
-            to_raw_value(&ExecuteMsg::SetGrantDelay {
+            ExecuteMsg::SetGrantDelay {
                 role_id: RoleId::PUBLIC_ROLE,
                 grant_delay: 0
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
@@ -644,12 +620,11 @@ fn re_grant_role() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -680,12 +655,11 @@ fn re_grant_role() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -716,12 +690,11 @@ fn re_grant_role() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 10,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -752,12 +725,11 @@ fn re_grant_role() {
             deps.as_mut(),
             env.clone(),
             info.clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: grantee.clone(),
                 execution_delay: 6,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGranted {
@@ -827,11 +799,10 @@ fn grant_delay_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]),
-            to_raw_value(&ExecuteMsg::SetGrantDelay {
+            ExecuteMsg::SetGrantDelay {
                 role_id: RoleId::new(1),
                 grant_delay: 10
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGrantDelayChanged {
@@ -882,11 +853,10 @@ fn role_guardian_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]),
-            to_raw_value(&ExecuteMsg::SetRoleGuardian {
+            ExecuteMsg::SetRoleGuardian {
                 role_id: RoleId::new(1),
                 guardian: RoleId::new(2),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(RoleGuardianChanged {
@@ -910,12 +880,11 @@ fn role_guardian_works() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]).clone(),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(2),
             account: ACCOUNT_1.clone(),
             execution_delay: 0,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -925,12 +894,11 @@ fn role_guardian_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ACCOUNT_1, &[]).clone(),
-            to_raw_value(&ExecuteMsg::GrantRole {
+            ExecuteMsg::GrantRole {
                 role_id: RoleId::new(1),
                 account: ACCOUNT_2.clone(),
                 execution_delay: 0,
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
@@ -943,11 +911,10 @@ fn role_guardian_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ACCOUNT_1, &[]).clone(),
-            to_raw_value(&ExecuteMsg::RevokeRole {
+            ExecuteMsg::RevokeRole {
                 role_id: RoleId::new(1),
                 account: ACCOUNT_2.clone(),
-            })
-            .unwrap(),
+            },
         )
         .unwrap_err(),
         ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
@@ -1024,12 +991,11 @@ fn target_function_role_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]),
-            to_raw_value(&ExecuteMsg::SetTargetFunctionRole {
+            ExecuteMsg::SetTargetFunctionRole {
                 target: TARGET_1.clone(),
                 selectors: vec![Selector::new("a").to_owned(), Selector::new("b").to_owned()],
                 role_id: RoleId::new(1),
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_events([
@@ -1098,12 +1064,11 @@ fn can_call_works() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::SetTargetFunctionRole {
+        ExecuteMsg::SetTargetFunctionRole {
             target: TARGET_1.clone(),
             selectors: vec![Selector::new("a").to_owned()],
             role_id: RoleId::new(1),
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1127,12 +1092,11 @@ fn can_call_works() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: ACCOUNT_1.clone(),
             execution_delay: 0,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1156,12 +1120,11 @@ fn can_call_works() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: ACCOUNT_2.clone(),
             execution_delay: 10,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1218,12 +1181,11 @@ fn closed_target_not_callable() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::SetTargetFunctionRole {
+        ExecuteMsg::SetTargetFunctionRole {
             target: TARGET_1.clone(),
             selectors: vec![Selector::new("a").to_owned()],
             role_id: RoleId::new(1),
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1247,12 +1209,11 @@ fn closed_target_not_callable() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: ACCOUNT_1.clone(),
             execution_delay: 0,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1276,12 +1237,11 @@ fn closed_target_not_callable() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::GrantRole {
+        ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: ACCOUNT_2.clone(),
             execution_delay: 10,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1290,11 +1250,10 @@ fn closed_target_not_callable() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]),
-            to_raw_value(&ExecuteMsg::SetTargetClosed {
+            ExecuteMsg::SetTargetClosed {
                 target: TARGET_1.clone(),
                 closed: true,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(TargetClosed {
@@ -1354,11 +1313,10 @@ fn set_target_closed_works() {
         deps.as_mut(),
         env.clone(),
         message_info(&ADMIN, &[]),
-        to_raw_value(&ExecuteMsg::SetTargetClosed {
+        ExecuteMsg::SetTargetClosed {
             target: TARGET_1.clone(),
             closed: true,
-        })
-        .unwrap(),
+        },
     )
     .unwrap();
 
@@ -1368,11 +1326,10 @@ fn set_target_closed_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]),
-            to_raw_value(&ExecuteMsg::SetTargetClosed {
+            ExecuteMsg::SetTargetClosed {
                 target: TARGET_1.clone(),
                 closed: true,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(TargetClosed {
@@ -1386,16 +1343,68 @@ fn set_target_closed_works() {
             deps.as_mut(),
             env.clone(),
             message_info(&ADMIN, &[]),
-            to_raw_value(&ExecuteMsg::SetTargetClosed {
+            ExecuteMsg::SetTargetClosed {
                 target: TARGET_1.clone(),
                 closed: false,
-            })
-            .unwrap(),
+            },
         )
         .unwrap(),
         Response::new().add_event(TargetClosed {
             target: &TARGET_1,
             closed: false,
+        }),
+    );
+}
+
+#[test]
+fn schedule_works() {
+    let (mut deps, env) = setup();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 1,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned(),
+                when: env.block.time.seconds() + 5
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(OperationScheduled {
+            operation_id: H256::new(hex!(
+                "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
+            )),
+            nonce: 1,
+            schedule: env.block.time.seconds() + 5,
+            caller: &ACCOUNT_1,
+            target: &TARGET_1,
+            data: r#"{"a":{}}"#,
         }),
     );
 }

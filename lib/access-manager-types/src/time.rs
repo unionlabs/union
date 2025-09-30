@@ -197,7 +197,6 @@ mod tests {
     #[test]
     fn get_and_get_full() {
         let timepoint = now();
-        dbg!(timepoint);
 
         let value_before = 24_194;
         let value_after = 4_214_143;

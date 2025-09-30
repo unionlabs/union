@@ -1,6 +1,6 @@
 use access_manager_types::manager::error::AccessManagerError;
 use cosmwasm_std::StdError;
-use frissitheto::UpgradeError;
+use frissitheto::{InitStateVersionError, UpgradeError};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum ContractError {
@@ -9,6 +9,9 @@ pub enum ContractError {
 
     #[error(transparent)]
     Migrate(#[from] UpgradeError),
+
+    #[error(transparent)]
+    InitStateVersion(#[from] InitStateVersionError),
 
     #[error(transparent)]
     AccessManager(#[from] AccessManagerError),

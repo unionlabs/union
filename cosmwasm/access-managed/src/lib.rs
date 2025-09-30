@@ -40,7 +40,6 @@ use crate::{
 
 pub mod contract;
 pub mod error;
-pub mod managed;
 mod restricted;
 pub mod state;
 
@@ -51,8 +50,6 @@ pub use restricted::{
 // #[cfg(test)]
 // mod tests;
 
-pub const EXECUTE_REPLY_ID: u64 = 1;
-
 /// Initializes the contract connected to an initial authority.
 ///
 /// ```solidity
@@ -61,7 +58,7 @@ pub const EXECUTE_REPLY_ID: u64 = 1;
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManaged.sol#L27>
 #[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
-pub fn init(deps: DepsMut, _: &Env, msg: InitMsg) -> Result<Response, ContractError> {
+pub fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, ContractError> {
     let InitMsg { initial_authority } = msg;
 
     deps.storage.write_item::<Authority>(&initial_authority);
@@ -98,8 +95,22 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
-#[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
 pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
+    }
+}
+
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "DepsMut should be passed by value"
+)]
+pub fn handle_consume_scheduled_op_reply(
+    deps: DepsMut<'_>,
+    reply: Reply,
+) -> Result<Option<Reply>, ContractError> {
     match reply {
         Reply {
             id: ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
@@ -110,23 +121,22 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
 
             deps.storage.write_item::<ConsumingSchedule>(&false);
 
-            Ok(Response::new())
+            Ok(None)
         }
-        _ => Err(StdError::generic_err("unknown reply: {reply:?}").into()),
+        _ => Ok(Some(reply)),
     }
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
-#[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
 pub fn migrate(
     deps: DepsMut,
-    env: Env,
+    _: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, ContractError> {
     msg.run(
         deps,
         |deps, msg| {
-            let res = init(deps, &env, msg)?;
+            let res = init(deps, msg)?;
             Ok((res, None))
         },
         |_, _, _| Ok((Response::default(), None)),

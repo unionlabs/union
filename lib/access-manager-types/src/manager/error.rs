@@ -36,7 +36,7 @@ pub enum AccessManagerError {
         selector: Box<Selector>,
     },
 
-    #[error("unaothorized op consume on {target}")]
+    #[error("unauthorized op consume on {target}")]
     AccessManagerUnauthorizedConsume { target: Addr },
 
     #[error(

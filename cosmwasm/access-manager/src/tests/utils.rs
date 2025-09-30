@@ -33,7 +33,7 @@ pub fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
     let res = init(
         deps.as_mut(),
         &env,
-        InitMsg {
+        &InitMsg {
             initial_admin: ADMIN.clone(),
         },
     )
