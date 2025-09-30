@@ -316,11 +316,6 @@
         postgres = {
           postgres = import ./services/postgres.nix { inherit lib pkgs; };
         };
-
-        # hasura = import ./services/hasura.nix {
-        #   inherit lib pkgs;
-        # };
-        # hubble = { hubble = import ./services/hubble.nix { inherit lib; image = self'.packages.hubble-image; }; };
       };
 
       mkNamedModule = name: {
