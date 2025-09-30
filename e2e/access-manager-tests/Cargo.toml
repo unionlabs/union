@@ -1,21 +1,30 @@
 [package]
-name = "access-manager-tests"
-version = "0.1.0"
-authors.workspace = true
-edition.workspace = true
+authors.workspace      = true
+edition.workspace      = true
 license-file.workspace = true
-publish.workspace = true
-repository.workspace = true
+name                   = "access-manager-tests"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-anyhow.workspace = true
-clap.workspace = true
-cometbft-rpc.workspace = true
-cosmos-client.workspace = true
-tokio = { workspace = true, features = ["full"] }
-tracing.workspace = true
-tracing-subscriber.workspace = true
-unionlabs.workspace = true
+access-managed-example.workspace = true
+access-manager-types.workspace = true
+anyhow.workspace               = true
+bip39                          = "2.2.0"
+clap                           = { workspace = true, features = ["color", "derive", "env", "error-context", "help", "suggestions"] }
+cometbft-rpc.workspace         = true
+cosmos-client.workspace        = true
+cosmwasm-std.workspace         = true
+k256                           = "0.13.4"
+protos.workspace               = true
+serde.workspace = true
+serde_json.workspace           = true
+tiny-hderive                   = "0.3.0"
+tokio                          = { workspace = true, features = ["full"] }
+tracing.workspace              = true
+tracing-subscriber.workspace   = true
+unionlabs.workspace            = true
 
 [lints]
 workspace = true

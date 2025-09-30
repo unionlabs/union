@@ -102,8 +102,7 @@
 
             access-manager =
               let
-                access-manager-tests =
-                  (crane.buildWorkspaceMember "e2e/access-manager-tests" { }).access-manager-tests;
+                inherit ((crane.buildWorkspaceMember "e2e/access-manager-tests" { })) access-manager-tests;
               in
               e2e.mkTest {
                 name = "access-manager";

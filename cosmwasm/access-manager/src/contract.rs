@@ -763,14 +763,16 @@ pub(crate) fn update_authority(
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L598>
 fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
+    let msg_data = ctx.msg_data();
+
     let CanCall {
         allowed: immediate,
         delay,
-    } = _can_call_self(ctx, ctx.msg_sender(), ctx.msg_data())?;
+    } = _can_call_self(ctx, ctx.msg_sender(), &msg_data)?;
 
     if !immediate {
         if delay == 0 {
-            let (_, required_role, _) = _get_admin_restrictions(ctx, ctx.msg_data())?;
+            let (_, required_role, _) = _get_admin_restrictions(ctx, &msg_data)?;
             return Err(AccessManagerError::AccessManagerUnauthorizedAccount {
                 msg_sender: ctx.msg_sender().clone(),
                 required_role_id: required_role,
@@ -780,7 +782,7 @@ fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
 
         _consume_scheduled_op(
             ctx,
-            hash_operation(ctx.msg_sender(), ctx.address_this(), ctx.msg_data()),
+            hash_operation(ctx.msg_sender(), ctx.address_this(), &msg_data),
         )?;
     }
 
@@ -852,7 +854,7 @@ fn _get_admin_restrictions(
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L730>
 fn _check_selector(data: &str) -> Result<&Selector, ContractError> {
-    Selector::extract(data)
+    Selector::extract_from_data(data)
         .map_err(|e| StdError::generic_err(format!("error extracting selector: {e}")).into())
 }
 

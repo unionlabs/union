@@ -1021,6 +1021,7 @@ _: {
       lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };
 
       access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
+      access-managed-example = crane.buildWasmContract "e2e/access-managed-example" { };
 
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
@@ -1097,6 +1098,7 @@ _: {
             lst
             access-manager
             lst-staker
+            access-managed-example
             ;
           cosmwasm-scripts =
             {
