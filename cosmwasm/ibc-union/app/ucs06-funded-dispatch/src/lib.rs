@@ -12,7 +12,7 @@ use unionlabs::primitives::Bytes;
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
-    #[error("migration error")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
     #[error(transparent)]
     Alloy(#[from] alloy_sol_types::Error),

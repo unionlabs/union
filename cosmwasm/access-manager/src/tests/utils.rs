@@ -1,5 +1,13 @@
 use std::{fmt::Debug, sync::LazyLock};
 
+use access_manager_types::{
+    manager::{
+        event::RoleGranted,
+        msg::{InitMsg, QueryMsg},
+    },
+    time::Delay,
+    Access, RoleId,
+};
 use cosmwasm_std::{
     from_json,
     testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
@@ -8,15 +16,7 @@ use cosmwasm_std::{
 use depolama::StorageExt;
 use serde::de::DeserializeOwned;
 
-use crate::{
-    event::RoleGranted,
-    init,
-    msg::{InitMsg, QueryMsg},
-    query,
-    state::RoleMembers,
-    time::Delay,
-    types::{Access, RoleId},
-};
+use crate::{init, query, state::RoleMembers};
 
 pub static ADMIN: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("admin"));
 

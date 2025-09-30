@@ -38,9 +38,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "access-manager"
+name = "access-managed"
 version = "0.0.0"
 dependencies = [
+ "access-manager-types",
  "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
  "depolama",
@@ -53,6 +54,47 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.9",
+ "strum 0.27.2",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
+]
+
+[[package]]
+name = "access-manager"
+version = "0.0.0"
+dependencies = [
+ "access-manager-types",
+ "bincode 2.0.1",
+ "cosmwasm-std 2.2.2",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 0.4.1",
+ "itertools 0.13.0",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.9",
+ "strum 0.27.2",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
+]
+
+[[package]]
+name = "access-manager-types"
+version = "0.1.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-std 2.2.2",
+ "hex-literal 0.4.1",
+ "itertools 0.13.0",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
  "strum 0.27.2",
  "thiserror 2.0.12",
  "unionlabs-encoding",

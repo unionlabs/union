@@ -230,10 +230,10 @@ pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
 
-    #[error("migration error: {0}")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
 
-    #[error("init state version error: {0}")]
+    #[error(transparent)]
     InitStateVersion(#[from] InitStateVersionError),
 
     #[error("sender {sender} is not a configured admin")]
