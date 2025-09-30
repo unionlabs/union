@@ -8,6 +8,41 @@ import { constFalse, constTrue } from "effect/Function"
 import * as Chain from "./schema/chain.js"
 import * as Hex from "./schema/hex.js"
 import * as Utils from "./Utils.js"
+import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
+
+/**
+ * @category schemas
+ * @since 2.0.0
+ */
+export class SuiCoin extends S.TaggedClass<SuiCoin>()("SuiCoin", {
+  address: S.String.pipe(
+    S.filter((value) => {
+      const parts = value.split("::")
+      if (parts.length !== 3) return false
+      const [addr, module, name] = parts
+
+      const ident = /^[A-Za-z_][A-Za-z0-9_]*$/
+      if (!ident.test(module) || !ident.test(name)) return false
+
+      const norm = normalizeSuiAddress(addr)
+      return isValidSuiAddress(norm)
+    }, {
+      description:
+        "Sui coin type in the form 0x<hex>::<Module>::<Name> with a valid Sui address and Move identifiers",
+    }),
+    S.annotations({
+      examples: [
+        "0x2::sui::SUI",
+        "0x9003c05db750fe8fb33d8e9a7de814b2ca1af024dc67e06f8529260b03d86fdd::usdt_faucet::USDT_FAUCET",
+      ],
+    }),
+  ),
+}) {
+  [Hash.symbol](): number {
+    return Hash.string(this.address)
+  }
+}
+
 
 /**
  * @category schemas
@@ -133,6 +168,7 @@ export const Any = S.Union(
   CosmosTokenFactory,
   CosmosBank,
   CosmosIbcClassic,
+  SuiCoin,
 )
 /**
  * @category models
@@ -155,6 +191,7 @@ export const TokenFromString = S.transformOrFail(
           S.decodeEither(CosmosIbcClassic)({ _tag: "CosmosIbcClassic", address }),
           S.decodeEither(CosmosTokenFactory)({ _tag: "CosmosTokenFactory", address }),
           S.decodeEither(Cw20)({ _tag: "Cw20", address }),
+          S.decodeEither(SuiCoin)({ _tag: "SuiCoin", address }),
         ]),
         Effect.orElse(() => S.decodeEither(Erc20)({ _tag: "Erc20", address })),
         Effect.orElse(() => S.decodeEither(CosmosBank)({ _tag: "CosmosBank", address })),
@@ -185,6 +222,8 @@ export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
             )),
           Match.when("aptos", (fromA) =>
             Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported."))),
+          Match.when("sui",   () =>
+            pipe(fromA, S.decode(S.compose(Hex.StringFromHex, TokenFromString)))),
           Match.exhaustive,
           Effect.catchTag("ParseError", (error) =>
             ParseResult.fail(error.issue)),
@@ -196,6 +235,17 @@ export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
       },
     },
   )
+
+export const normalizeSuiTypeTag = (t: string): string => {
+  const [addr, mod, name] = t.split("::")
+  return `${normalizeSuiAddress(addr)}::${mod}::${name}`
+}
+
+const isNativeSui = (t: string): boolean => {
+  // compare on normalized address to avoid short/long mismatch
+  const norm = normalizeSuiTypeTag(t)
+  return norm === "0x2::sui::SUI"
+}
 
 /**
  * @category predicates
@@ -209,5 +259,6 @@ export const isNative = Match.type<Any>().pipe(
     Cw20: constFalse,
     Erc20: constFalse,
     EvmGas: constTrue,
+    SuiCoin: (t) => isNativeSui(t.address),
   }),
 )
