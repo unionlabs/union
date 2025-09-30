@@ -29,6 +29,7 @@ const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC)
 
 const program = Effect.gen(function* () {
 
+  
   // TODO: Source will be SUI testnet
   const source = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.17000"),
@@ -44,30 +45,27 @@ const program = Effect.gen(function* () {
 
   const sender = wallet.signer.toSuiAddress();
 
-
-  // deployed contract: union1l0rpy8yauy7nzv4vu6mgz6kjpqzvws85l8mgzm6eansasx90t57sc7k4ue
-
   console.log("sender:", sender)
 
   const tokenOrder = yield* TokenOrder.make({
     source,
     destination,
-    sender: "0x06627714f3F17a701f7074a12C02847a5D2Ca487",
-    receiver: "0x756E696F6E317779637938673876357366663667736A6C3979686A73343371393878706C30357033676E3273",
-    baseToken: "0x3078323A3A7375693A3A535549",
-    baseAmount: 100000n,
-    quoteToken: "0x756E696F6E316C307270793879617579376E7A76347675366D677A366B6A70717A76777338356C386D677A6D3665616E7361737839307435377363376B347565",
-    quoteAmount: 10000n,
+    sender: sender,
+    receiver: "union1wycy8g8v5sff6gsjl9yhjs43q98xpl05p3gn2s",
+    baseToken: "0x2::sui::SUI",
+    baseAmount: 10000000n,
+    quoteToken: "union1y05e0p2jcvhjzf7kcqsrqx93d4g3u93hc2hykaq8hrvkqrp5ltrssagzyd",
+    quoteAmount: 10000000n,
     kind: "solve",
     metadata:
-      "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31736b673532343468706b61643630337a7a37376b64656b7a77366666677066726465336c646b387270647a30366e36326b34687163743077346a",
+      "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31793035653070326a6376686a7a66376b63717372717839336434673375393368633268796b6171386872766b717270356c7472737361677a7964",
     version: 2,
   })
 
   const request = ZkgmClientRequest.make({
     source,
     destination,
-    channelId: ChannelId.make(1),
+    channelId: ChannelId.make(5),
     ucs03Address: "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c",
     instruction: tokenOrder,
   })
@@ -76,7 +74,6 @@ const program = Effect.gen(function* () {
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
-
 
   yield* Effect.log("Submission Hash", response.txHash)
 
