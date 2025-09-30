@@ -130,10 +130,9 @@ export const fromWallet = (
 
       // This 2 will be get by user all the time
       const typeArg = "0x2::sui::SUI" // TODO: This should be dynamic based on the token sent
-      const coinObjectId = "0xfdb7b5b54d61ed21373f2785c7583c1ff6fd85e9b04fa289da50bba563190b62" // TODO: This should be given by user
+      const coinObjectId = "0x89c430d35fa9f2778b0a635027b178146eb26d70d16292c289304d476ecf76cd" // TODO: This should be given by user
       // Note: There can be multiple coins, for simplicity we are using one coin here
       // User should be able to provide typeArgs and coinObjectIds array
-
 
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
