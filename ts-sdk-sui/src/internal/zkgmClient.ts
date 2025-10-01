@@ -1,8 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions"
-import { Indexer, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
-import * as Token from "@unionlabs/sdk/Token"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as Utils from "@unionlabs/sdk/Utils"
@@ -12,17 +10,14 @@ import * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import * as ZkgmInstruction from "@unionlabs/sdk/ZkgmInstruction"
-import { Brand, Chunk, flow, Match, ParseResult, pipe, Predicate, Tuple } from "effect"
+import { Match, ParseResult, pipe, Predicate } from "effect"
 import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
-import * as O from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
-import * as Safe from "../Safe.js"
 import * as Sui from "../Sui.js"
 
-// import { Sui } from "../index.js"
 
 export const fromWallet = (
   opts: { client: Sui.Sui.PublicClient; wallet: Sui.Sui.WalletClient },
@@ -84,6 +79,8 @@ export const fromWallet = (
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { wallet, client })
 
+
+
       const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
       const salt = yield* Utils.generateSalt("sui").pipe(
         Effect.mapError((cause) =>
@@ -117,18 +114,36 @@ export const fromWallet = (
       const tHeight = 0n
       const module = "zkgm" // zkgm module name
 
-      // These will be fetched from hubble or from deployments.json
-      const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" // zkgm package id
-      // TODO: packageId can be changed when zkgm updated
-      const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // This won't be changed for a while
-      const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // This won't be changed for a while
-      const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // This won't be changed
 
-      // This 2 will be get by user all the time
-      const typeArg = "0x2::sui::SUI" // TODO: This should be dynamic based on the token sent
-      const coinObjectId = "0x89c430d35fa9f2778b0a635027b178146eb26d70d16292c289304d476ecf76cd" // TODO: This should be given by user
-      // Note: There can be multiple coins, for simplicity we are using one coin here
-      // User should be able to provide typeArgs and coinObjectIds array
+
+      const suiParams = request.transport?.sui
+      console.log("request.transport:", request.transport)
+      if (!suiParams) {
+        return yield* Effect.fail(
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause: new Error("Missing Sui transport params on ZkgmClientRequest.transport.sui"),
+            description: "Provide relayStoreId/vaultId/ibcStoreId and coins[]",
+          }),
+        )
+      }
+
+      const { relayStoreId, vaultId, ibcStoreId, coins } = suiParams
+
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { relayStoreId, vaultId, ibcStoreId, coins })
+      // // These will be fetched from hubble or from deployments.json
+      // const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" // zkgm package id
+      // // TODO: packageId can be changed when zkgm updated
+      // const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // This won't be changed for a while
+      // const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // This won't be changed for a while
+      // const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // This won't be changed
+
+      // // This 2 will be get by user all the time
+      // const typeArg = "0x2::sui::SUI" // TODO: This should be dynamic based on the token sent
+      // const coinObjectId = "0x89c430d35fa9f2778b0a635027b178146eb26d70d16292c289304d476ecf76cd" // TODO: This should be given by user
+      // // Note: There can be multiple coins, for simplicity we are using one coin here
+      // // User should be able to provide typeArgs and coinObjectIds array
 
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
@@ -141,7 +156,7 @@ export const fromWallet = (
 
       // 1) begin_send(channel_id: u32, salt: vector<u8>) -> SendCtx
       let sendCtx = tx.moveCall({
-        target: `${packageId}::${module}::begin_send`,
+        target: `${request.ucs03Address}::${module}::begin_send`,
         typeArguments: [],
         arguments: [
           tx.pure.u32(Number(request.channelId)),
@@ -149,25 +164,28 @@ export const fromWallet = (
         ],
       })
 
-      // 2) send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
-      sendCtx = tx.moveCall({
-        target: `${packageId}::${module}::send_with_coin`,
-        typeArguments: [typeArg],
-        arguments: [
-          tx.object(relayStoreId),
-          tx.object(vaultId),
-          tx.object(ibcStoreId),
-          tx.object(coinObjectId),
-          tx.pure.u8(Number(request.instruction.version)),
-          tx.pure.u8(Number(request.instruction.opcode)),
-          tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
-          sendCtx,
-        ],
-      })
+      // 2) For each coin: send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
+      for (const { typeArg, objectId } of coins) {
+        sendCtx = tx.moveCall({
+          target: `${request.ucs03Address}::${module}::send_with_coin`,
+          typeArguments: [typeArg],
+          arguments: [
+            tx.object(relayStoreId),
+            tx.object(vaultId),
+            tx.object(ibcStoreId),
+            tx.object(objectId),
+            tx.pure.u8(Number(request.instruction.version)),
+            tx.pure.u8(Number(request.instruction.opcode)),
+            tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
+            sendCtx,
+          ],
+        })
+      }
+
 
       // 3) end_send(ibc_store, clock, t_height: u64, timeout_ns: u64, ctx)
       tx.moveCall({
-        target: `${packageId}::${module}::end_send`,
+        target: `${request.ucs03Address}::${module}::end_send`,
         typeArguments: [],
         arguments: [
           tx.object(ibcStoreId),
