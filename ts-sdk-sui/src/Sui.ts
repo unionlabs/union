@@ -3,18 +3,18 @@
  *
  * @since 0.0.0
  */
+import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import { Transaction } from "@mysten/sui/transactions"
 import { GAS_DENOMS } from "@unionlabs/sdk/Constants"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
-import { extractErrorDetails} from "@unionlabs/sdk/Utils"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import { extractErrorDetails } from "@unionlabs/sdk/Utils"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe, Schema as S } from "effect"
 import { type Address, erc20Abi } from "viem"
 import type { Hex } from "viem"
 import * as internal from "./internal/sui.js"
-import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
-import { Transaction } from "@mysten/sui/transactions"
 
 /**
  * @category models
@@ -96,7 +96,6 @@ export class WaitForTransactionReceiptError extends Data.TaggedError(
 )<{
   cause: unknown
 }> {}
-
 
 export class ReadCoinError extends Data.TaggedError("ReadCoinError")<{
   cause: unknown
@@ -347,7 +346,7 @@ export const readCoinMetadata = (tokenAddress: Address) =>
  * @since 0.0.0
  */
 export const readCoinMeta = (coinType: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* PublicClient).client
 
     const out = yield* Effect.tryPromise({
@@ -369,7 +368,6 @@ export const readCoinMeta = (coinType: string) =>
 
     return out
   })
-
 
 /**
  * Read all coin objects for a given `coinType` and owner address.
@@ -406,7 +404,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     return coins
   })
 
-  /**
+/**
  * Read and sum all coin object balances for a given `coinType` and owner.
  *
  * @param contractAddress Canonical coin type
@@ -416,30 +414,29 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
  * @category utils
  * @since 0.0.0
  */
-  export const readTotalCoinBalance = (contractAddress: string, address: string) =>
-    Effect.gen(function*() {
-      const client = (yield* PublicClient).client
-      let params = {
-        owner: address,
-        coinType: contractAddress,
-      }
+export const readTotalCoinBalance = (contractAddress: string, address: string) =>
+  Effect.gen(function*() {
+    const client = (yield* PublicClient).client
+    let params = {
+      owner: address,
+      coinType: contractAddress,
+    }
 
-      const coins = yield* Effect.tryPromise({
-        try: async () => {
-          const result = await client.getCoins(params)
-          return result.data
-        },
-        catch: err =>
-          new ReadCoinError({
-            cause: extractErrorDetails(err as ReadCoinError),
-          }),
-      })
-      // Calculate total balance
-      const totalBalance = coins.reduce((acc, coin) => acc + BigInt(coin.balance), BigInt(0))
-
-      return totalBalance
+    const coins = yield* Effect.tryPromise({
+      try: async () => {
+        const result = await client.getCoins(params)
+        return result.data
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as ReadCoinError),
+        }),
     })
+    // Calculate total balance
+    const totalBalance = coins.reduce((acc, coin) => acc + BigInt(coin.balance), BigInt(0))
 
+    return totalBalance
+  })
 
 /**
  * Fetch *all* coin objects (any coin type) for an owner.
@@ -450,27 +447,27 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
  * @category utils
  * @since 0.0.0
  */
-  export const getAllCoins = (address: string) =>
-    Effect.gen(function*() {
-      const client = (yield* PublicClient).client
-      let params = {
-        owner: address,
-      }
+export const getAllCoins = (address: string) =>
+  Effect.gen(function*() {
+    const client = (yield* PublicClient).client
+    let params = {
+      owner: address,
+    }
 
-      const coins = yield* Effect.tryPromise({
-        try: async () => {
-          const result = await client.getAllCoins(params)
-          return result.data
-        },
-        catch: err =>
-          new ReadCoinError({
-            cause: extractErrorDetails(err as ReadCoinError),
-          }),
-      })
-      return coins
+    const coins = yield* Effect.tryPromise({
+      try: async () => {
+        const result = await client.getAllCoins(params)
+        return result.data
+      },
+      catch: err =>
+        new ReadCoinError({
+          cause: extractErrorDetails(err as ReadCoinError),
+        }),
     })
+    return coins
+  })
 
-    /**
+/**
  * Fetch all coins for an owner and return a unique list grouped by `coinType`,
  * with balances summed across coin objects.
  *
@@ -488,7 +485,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
  * @category utils
  * @since 0.0.0
  */
-  export const getAllCoinsUnique = (address: string) =>
+export const getAllCoinsUnique = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
 
@@ -530,7 +527,6 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     return result
   })
 
-
 /**
  * Convenience: read coin **name** for a given `coinType`.
  *
@@ -540,7 +536,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
  * @category utils
  * @since 0.0.0
  */
-  export const getCoinName = (address: string) =>
+export const getCoinName = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
 
@@ -566,7 +562,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
  * @category utils
  * @since 0.0.0
  */
-  export const getCoinDecimals = (address: string) =>
+export const getCoinDecimals = (address: string) =>
   Effect.gen(function*() {
     const client = (yield* PublicClient).client
 
@@ -582,7 +578,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
     })
     return decimals
   })
-  
+
 /**
  * Convenience: read coin **symbol** for a given `coinType`.
  *
@@ -609,8 +605,7 @@ export const readCoinSymbol = (address: string) =>
     return symbol
   })
 
-
-  /**
+/**
  * PTB: begin_send -> (send_with_coin<T> ...)* -> end_send
  *
  * Mirrors:
@@ -629,10 +624,10 @@ export const sendInstruction = (params: {
   /** coin type, e.g. "0x2::sui::SUI" (used in typeArguments of send_with_coin) */
   typeArg: string
 
-  relayStoreId: string        // $RELAY_STORE
-  vaultId: string             // $VAULT
-  ibcStoreId: string          // $IBC_STORE
-  coinObjectId: string        // $COIN
+  relayStoreId: string // $RELAY_STORE
+  vaultId: string // $VAULT
+  ibcStoreId: string // $IBC_STORE
+  coinObjectId: string // $COIN
 
   // extraSendCalls?: Array<{
   //   relayStoreId?: string
@@ -646,9 +641,8 @@ export const sendInstruction = (params: {
   // }>
 
   instruction: Ucs03.Instruction
-
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const module = "zkgm"
     const clockObjectId = "0x6" // Sui system clock object
 
@@ -659,13 +653,16 @@ export const sendInstruction = (params: {
     const timeoutNs = Utils.getTimeoutInNanoseconds24HoursFromNow()
     const tHeight = BigInt(0)
 
-    const operandHex = (yield* S.encode(Ucs03.InstructionFromHex)(params.instruction)) as `0x${string}`
+    const operandHex =
+      (yield* S.encode(Ucs03.InstructionFromHex)(params.instruction)) as `0x${string}`
 
     // helpers
     const hexToBytes = (hex: `0x${string}`): Uint8Array => {
       const s = hex.slice(2)
       const out = new Uint8Array(s.length / 2)
-      for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+      for (let i = 0; i < out.length; i++) {
+        out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+      }
       return out
     }
 
@@ -676,8 +673,8 @@ export const sendInstruction = (params: {
       target: `${params.packageId}::${module}::begin_send`,
       typeArguments: [],
       arguments: [
-        tx.pure.u32(channelId), 
-        tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)), 
+        tx.pure.u32(channelId),
+        tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
       ],
     })
 
@@ -700,7 +697,7 @@ export const sendInstruction = (params: {
           tx.object(cfg.ibcStoreId),
           tx.object(cfg.coinObjectId),
           tx.pure.u8(cfg.version),
-          tx.pure.u8(cfg.opcode), 
+          tx.pure.u8(cfg.opcode),
           tx.pure.vector("u8", hexToBytes(cfg.operandHex)),
           sendCtx,
         ],
@@ -755,7 +752,7 @@ export const sendInstruction = (params: {
 
     return res
   })
-  
+
 // turn a hex string like "0xdeadbeef" into a number[] of bytes
 function hexToBytes(hex: string): number[] {
   const h = hex.startsWith("0x") ? hex.slice(2) : hex
@@ -781,7 +778,7 @@ function hexToBytes(hex: string): number[] {
 //       client: walletClient.client,
 //       signer: walletClient.signer,
 //       account: walletClient.account,
-//       abi: Ucs03.Abi, 
+//       abi: Ucs03.Abi,
 //       // chain: walletClient.chain, TODO: Do we need this?
 //       fn: "send",
 //       address: sourceConfig.ucs03address,

@@ -3,6 +3,7 @@
  *
  * @since 2.0.0
  */
+import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
 import { bech32, bytes } from "@scure/base"
 import {
   absurd,
@@ -18,10 +19,8 @@ import {
 import { isAddress, toHex } from "viem"
 import { AddressCanonicalBytes } from "./schema/address.js"
 import { Hex, HexFromString } from "./schema/hex.js"
-import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
 
 // const AddressFromChain = (chain: Chain) =>
-
 
 /**
  * @category models
@@ -29,8 +28,7 @@ import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
  */
 export const SuiAddress = S.NonEmptyString.pipe(
   S.filter((a) => isValidSuiAddress(a), {
-    description:
-      "Sui address (32-byte hex). Accepts with/without 0x; even length; hex only.",
+    description: "Sui address (32-byte hex). Accepts with/without 0x; even length; hex only.",
   }),
 )
 /**
@@ -262,7 +260,7 @@ export const AnyDisplayFromString = S.transformOrFail(
         Effect.raceAll([
           S.decodeUnknownEither(EvmDisplay)({ _tag: "EvmDisplay", address }),
           S.decodeUnknownEither(CosmosDisplay)({ _tag: "CosmosDisplay", address }),
-          S.decodeUnknownEither(SuiDisplay)({ _tag: "SuiDisplay", address }), 
+          S.decodeUnknownEither(SuiDisplay)({ _tag: "SuiDisplay", address }),
         ]),
         Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
       ),
@@ -300,7 +298,7 @@ export const ZkgmFromAnyDisplay = S.transform(
         Match.tagsExhaustive({
           CosmosDisplay: ({ address }) => toHex(address),
           EvmDisplay: ({ address }) => identity<Hex>(address),
-          SuiDisplay: ({ address }) => identity<Hex>(normalizeSuiAddress(address) as Hex)
+          SuiDisplay: ({ address }) => identity<Hex>(normalizeSuiAddress(address) as Hex),
         }),
       ),
     encode: (_) => absurd<AnyDisplay>(void 0 as never),
@@ -315,7 +313,7 @@ export const anyDisplayToZkgm = Match.type<AnyDisplay>().pipe(
   Match.tagsExhaustive({
     CosmosDisplay: ({ address }) => S.decode(HexFromString)(address),
     EvmDisplay: ({ address }) => Effect.succeed<Hex>(address),
-    SuiDisplay:  ({ address }) => S.decode(HexFromString)(normalizeSuiAddress(address)),
+    SuiDisplay: ({ address }) => S.decode(HexFromString)(normalizeSuiAddress(address)),
   }),
 )
 
@@ -334,7 +332,7 @@ export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
       console.log("bytes", { result })
     },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
-    SuiDisplay: ({ address }) => AddressCanonicalBytes.make(normalizeSuiAddress(address))
+    SuiDisplay: ({ address }) => AddressCanonicalBytes.make(normalizeSuiAddress(address)),
   }),
 )
 /**

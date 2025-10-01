@@ -3,12 +3,12 @@
  *
  * @since 2.0.0
  */
+import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
 import { Effect, flow, Hash, Match, ParseResult, pipe, Schema as S, Struct } from "effect"
 import { constFalse, constTrue } from "effect/Function"
 import * as Chain from "./schema/chain.js"
 import * as Hex from "./schema/hex.js"
 import * as Utils from "./Utils.js"
-import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
 
 /**
  * @category schemas
@@ -18,11 +18,15 @@ export class SuiCoin extends S.TaggedClass<SuiCoin>()("SuiCoin", {
   address: S.String.pipe(
     S.filter((value) => {
       const parts = value.split("::")
-      if (parts.length !== 3) return false
+      if (parts.length !== 3) {
+        return false
+      }
       const [addr, module, name] = parts
 
       const ident = /^[A-Za-z_][A-Za-z0-9_]*$/
-      if (!ident.test(module) || !ident.test(name)) return false
+      if (!ident.test(module) || !ident.test(name)) {
+        return false
+      }
 
       const norm = normalizeSuiAddress(addr)
       return isValidSuiAddress(norm)
@@ -42,7 +46,6 @@ export class SuiCoin extends S.TaggedClass<SuiCoin>()("SuiCoin", {
     return Hash.string(this.address)
   }
 }
-
 
 /**
  * @category schemas
@@ -222,7 +225,7 @@ export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
             )),
           Match.when("aptos", (fromA) =>
             Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported."))),
-          Match.when("sui",   () =>
+          Match.when("sui", () =>
             pipe(fromA, S.decode(S.compose(Hex.StringFromHex, TokenFromString)))),
           Match.exhaustive,
           Effect.catchTag("ParseError", (error) =>

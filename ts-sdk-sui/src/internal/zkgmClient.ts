@@ -1,3 +1,4 @@
+import { Transaction } from "@mysten/sui/transactions"
 import { Indexer, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
@@ -18,9 +19,8 @@ import * as Inspectable from "effect/Inspectable"
 import * as O from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
-import * as Sui from "../Sui.js"
 import * as Safe from "../Safe.js"
-import { Transaction } from "@mysten/sui/transactions"
+import * as Sui from "../Sui.js"
 
 // import { Sui } from "../index.js"
 
@@ -61,7 +61,7 @@ export const fromWallet = (
                   Effect.gen(function*() {
                     const meta = yield* pipe(
                       Sui.readCoinMeta(
-                        v1.baseToken.address as unknown as any
+                        v1.baseToken.address as unknown as any,
                       ),
                       Effect.provideService(Sui.PublicClient, client),
                     )
@@ -79,8 +79,7 @@ export const fromWallet = (
               Match.exhaustive,
             ),
           Call: Call.encode,
-        }
-      ),
+        }),
       )
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { wallet, client })
@@ -113,20 +112,17 @@ export const fromWallet = (
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { operand })
 
-
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
-      const module = "zkgm" //zkgm module name
-
+      const module = "zkgm" // zkgm module name
 
       // These will be fetched from hubble or from deployments.json
-      const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" //zkgm package id 
+      const packageId = "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830" // zkgm package id
       // TODO: packageId can be changed when zkgm updated
       const relayStoreId = "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924" // This won't be changed for a while
       const vaultId = "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3" // This won't be changed for a while
       const ibcStoreId = "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175" // This won't be changed
-
 
       // This 2 will be get by user all the time
       const typeArg = "0x2::sui::SUI" // TODO: This should be dynamic based on the token sent
@@ -137,7 +133,9 @@ export const fromWallet = (
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
         const out = new Uint8Array(s.length / 2)
-        for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+        for (let i = 0; i < out.length; i++) {
+          out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+        }
         return out
       }
 
@@ -146,7 +144,7 @@ export const fromWallet = (
         target: `${packageId}::${module}::begin_send`,
         typeArguments: [],
         arguments: [
-          tx.pure.u32(Number(request.channelId)),          
+          tx.pure.u32(Number(request.channelId)),
           tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
         ],
       })
@@ -202,9 +200,8 @@ export const fromWallet = (
       const txHash = (res.digest ?? res.transaction?.txSignatures[0] ?? "") as Hex
 
       return new ClientResponseImpl(request, client, txHash)
-    }),
+    })
   )
-
 
 /** @internal */
 export abstract class IncomingMessageImpl<E> extends Inspectable.Class
