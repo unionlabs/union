@@ -20,3 +20,13 @@ impl Store for IncrementInReplyValue {
 impl ValueCodecViaEncoding for IncrementInReplyValue {
     type Encoding = Bincode;
 }
+
+pub enum Executing {}
+impl Store for Executing {
+    const PREFIX: Prefix = Prefix::new(b"executing");
+    type Key = ();
+    type Value = ();
+}
+impl ValueCodecViaEncoding for Executing {
+    type Encoding = Bincode;
+}

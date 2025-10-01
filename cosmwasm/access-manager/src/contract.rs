@@ -16,7 +16,7 @@ use access_manager_types::{
     time::{Delay, UnpackedDelay},
     Access, CanCall, FullAccess, HasRole, Role, RoleId, Schedule, Selector, TargetConfig,
 };
-use cosmwasm_std::{from_json, wasm_execute, Addr, StdError, SubMsg};
+use cosmwasm_std::{from_json, wasm_execute, Addr, StdError, SubMsg, WasmMsg};
 use depolama::StorageExt;
 use sha2::{Digest, Sha256};
 use unionlabs_primitives::H256;
@@ -552,7 +552,7 @@ pub(crate) fn schedule(
 }
 
 /// See [`ExecuteMsg::Execute`].
-// NOTE: Reentrancy is not an issue because permissions are checked on info.sender.p Additionally,
+// NOTE: Reentrancy is not an issue because permissions are checked on info.sender. Additionally,
 // _consume_scheduled_op guarantees a scheduled operation is only executed once.
 pub(crate) fn execute(
     ctx: &mut ExecCtx,
@@ -596,8 +596,12 @@ pub(crate) fn execute(
         })?;
 
     Ok((
-        SubMsg::reply_always(
-            wasm_execute(target, &data, ctx.value().to_vec())?,
+        SubMsg::reply_on_success(
+            WasmMsg::Execute {
+                contract_addr: target.to_string(),
+                msg: data.as_bytes().into(),
+                funds: ctx.value().to_vec(),
+            },
             EXECUTE_REPLY_ID,
         ),
         nonce,
@@ -699,7 +703,10 @@ pub(crate) fn consume_scheduled_op(
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L563>
 fn _consume_scheduled_op(ctx: &mut ExecCtx, operation_id: H256) -> Result<u32, ContractError> {
-    let Schedule { timepoint, nonce } = ctx.storage().read::<Schedules>(&operation_id)?;
+    let Schedule { timepoint, nonce } = ctx
+        .storage()
+        .maybe_read::<Schedules>(&operation_id)?
+        .unwrap_or_default();
 
     if timepoint == 0 {
         return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
@@ -728,7 +735,7 @@ fn _consume_scheduled_op(ctx: &mut ExecCtx, operation_id: H256) -> Result<u32, C
 
 /// See [`QueryMsg::HashOperation`].
 pub(crate) fn hash_operation(caller: &Addr, target: &Addr, data: &str) -> H256 {
-    Sha256::digest(format!("{caller}/{target}/{data}",)).into()
+    Sha256::digest(format!("{caller}/{target}/{data}")).into()
 }
 
 // ============================================ OTHERS ============================================

@@ -16,10 +16,12 @@ clap                           = { workspace = true, features = ["color", "deriv
 cometbft-rpc.workspace         = true
 cosmos-client.workspace        = true
 cosmwasm-std.workspace         = true
+hex-literal.workspace = true
 k256                           = "0.13.4"
 protos.workspace               = true
 serde.workspace = true
 serde_json.workspace           = true
+sha2.workspace = true
 tiny-hderive                   = "0.3.0"
 tokio                          = { workspace = true, features = ["full"] }
 tracing.workspace              = true

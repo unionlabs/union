@@ -13,7 +13,7 @@ use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 
 use crate::{
     msg::{ExecuteMsg, QueryMsg},
-    state::{Counter, IncrementInReplyValue},
+    state::{Counter, Executing, IncrementInReplyValue},
 };
 
 pub mod msg;
@@ -71,11 +71,10 @@ pub fn execute(
         ExecuteMsg::IncrementInReply { by } => {
             deps.storage.write_item::<IncrementInReplyValue>(&by);
 
-            Ok(Response::new().add_message(wasm_execute(
-                env.contract.address,
-                &ExecuteMsg::Noop {},
-                vec![],
-            )?))
+            Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+                wasm_execute(env.contract.address, &ExecuteMsg::Noop {}, vec![])?,
+                INCREMENT_IN_REPLY_REPLY_ID,
+            )))
         }
         ExecuteMsg::Decrement { by, in_sub_msg } => {
             if in_sub_msg {
@@ -90,17 +89,18 @@ pub fn execute(
                     .add_event(Event::new("decrement").add_attribute("by", by.to_string()))
                     .add_event(Event::new("counter").add_attribute("value", new_value.to_string())))
             } else {
-                Ok(Response::new().add_submessage(SubMsg::reply_always(
-                    wasm_execute(
-                        env.contract.address,
-                        &ExecuteMsg::DecrementInSubMsg { by },
-                        vec![],
-                    )?,
-                    INCREMENT_IN_REPLY_REPLY_ID,
-                )))
+                deps.storage.write_item::<Executing>(&());
+                Ok(Response::new().add_message(wasm_execute(
+                    env.contract.address,
+                    &ExecuteMsg::DecrementInSubMsg { by },
+                    vec![],
+                )?))
             }
         }
         ExecuteMsg::DecrementInSubMsg { by } => {
+            if deps.storage.take_item::<Executing>()?.is_none() {
+                return Err(ContractError::NotExecuting);
+            }
             let new_value = deps
                 .storage
                 .update_item::<Counter, ContractError, _>(|counter| {
@@ -181,4 +181,7 @@ pub enum ContractError {
 
     #[error(transparent)]
     AccessManaged(#[from] access_managed::error::ContractError),
+
+    #[error("not executing")]
+    NotExecuting,
 }

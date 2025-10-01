@@ -2,14 +2,16 @@ use access_manager_types::{
     manager::{
         error::AccessManagerError,
         event::{
-            RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleRevoked, TargetClosed,
-            TargetFunctionRoleUpdated,
+            OperationScheduled, RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged,
+            RoleRevoked, TargetClosed, TargetFunctionRoleUpdated,
         },
         msg::{ExecuteMsg, QueryMsg},
     },
     CanCall, HasRole, RoleId, Selector,
 };
 use cosmwasm_std::{testing::message_info, Addr, Response};
+use hex_literal::hex;
+use unionlabs_primitives::H256;
 
 use crate::{
     error::ContractError,
@@ -1350,6 +1352,59 @@ fn set_target_closed_works() {
         Response::new().add_event(TargetClosed {
             target: &TARGET_1,
             closed: false,
+        }),
+    );
+}
+
+#[test]
+fn schedule_works() {
+    let (mut deps, env) = setup();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 1,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned(),
+                when: env.block.time.seconds() + 5
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(OperationScheduled {
+            operation_id: H256::new(hex!(
+                "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
+            )),
+            nonce: 1,
+            schedule: env.block.time.seconds() + 5,
+            caller: &ACCOUNT_1,
+            target: &TARGET_1,
+            data: r#"{"a":{}}"#,
         }),
     );
 }

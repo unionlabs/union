@@ -96,7 +96,9 @@ pub struct Role {
 ///     uint32 nonce;
 /// }
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+#[derive(
+    Debug, Clone, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
+)]
 pub struct Schedule {
     /// Moment at which the operation can be executed.
     pub timepoint: u64,
