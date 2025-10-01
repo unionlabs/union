@@ -1,5 +1,5 @@
 use cosmwasm_std::{Addr, Coin, Deps, DepsMut, Env, Event, MessageInfo, QuerierWrapper, Storage};
-use serde_json::value::RawValue;
+use serde::Serialize;
 
 #[must_use]
 pub(crate) struct ExecCtx<'info, 'deps> {
@@ -7,7 +7,7 @@ pub(crate) struct ExecCtx<'info, 'deps> {
     deps: DepsMut<'deps>,
     env: &'info Env,
     info: &'info MessageInfo,
-    data: &'info RawValue,
+    data: String,
 }
 
 #[derive(Clone, Copy)]
@@ -27,14 +27,14 @@ impl<'info, 'deps> ExecCtx<'info, 'deps> {
         deps: DepsMut<'deps>,
         env: &'info Env,
         info: &'info MessageInfo,
-        data: &'info RawValue,
+        data: &impl Serialize,
     ) -> Self {
         Self {
             events: vec![],
             deps,
             info,
             env,
-            data,
+            data: serde_json_wasm::to_string(data).expect("infallible"),
         }
     }
 
@@ -52,7 +52,7 @@ pub(crate) trait IQueryCtx<'info> {
 pub(crate) trait IExecCtx<'info> {
     fn emit(&mut self, event: impl Into<Event>);
     fn msg_sender(&self) -> &'info Addr;
-    fn msg_data(&self) -> &'info str;
+    fn msg_data(&self) -> String;
     fn value(&self) -> &[Coin];
     fn query_ctx<'a>(&'a self) -> QueryCtx<'info, 'a>;
 }
@@ -80,8 +80,8 @@ impl<'info> IExecCtx<'info> for ExecCtx<'info, '_> {
         &self.info.sender
     }
 
-    fn msg_data(&self) -> &'info str {
-        self.data.get()
+    fn msg_data(&self) -> String {
+        self.data.clone()
     }
 
     fn value(&self) -> &[Coin] {

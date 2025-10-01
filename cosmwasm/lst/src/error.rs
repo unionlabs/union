@@ -71,7 +71,7 @@ pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
 
-    #[error("migration error")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
 
     #[error(transparent)]

@@ -2,7 +2,7 @@ use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::H256;
 
-use crate::types::{RoleId, Selector};
+use crate::{RoleId, Selector};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InitMsg {
@@ -10,7 +10,7 @@ pub struct InitMsg {
 }
 
 #[cfg(doc)]
-use crate::event::*;
+use crate::manager::event::*;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -78,7 +78,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L139>
     CanCall {
-        selector: Selector,
+        selector: Box<Selector>,
         target: Addr,
         caller: Addr,
     },
@@ -101,7 +101,10 @@ pub enum QueryMsg {
     /// ```
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L173>
-    GetTargetFunctionRole { target: Addr, selector: Selector },
+    GetTargetFunctionRole {
+        target: Addr,
+        selector: Box<Selector>,
+    },
     /// Get the admin delay for a target contract. Changes to contract configuration are subject to
     /// this delay.
     ///
@@ -380,7 +383,7 @@ pub enum ExecuteMsg {
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L374-L378>
     SetTargetFunctionRole {
         target: Addr,
-        selectors: Vec<Selector>,
+        selectors: Vec<Box<Selector>>,
         role_id: RoleId,
     },
 
@@ -521,7 +524,7 @@ pub enum AccessManagedQueryMsg {
 }
 
 impl AccessManagedQueryMsg {
-    pub(crate) fn selector(&self) -> Selector {
+    pub fn selector(&self) -> &'static Selector {
         Selector::new(<&'static str>::from(self))
     }
 }
