@@ -1,5 +1,10 @@
 <script lang="ts">
-import { LST_CONFIG_LABELS, LST_CONFIGS, type LSTConfig, lstConfig } from "$lib/stake/config.svelte.ts"
+import {
+  LST_CONFIG_LABELS,
+  LST_CONFIGS,
+  type LSTConfig,
+  lstConfig,
+} from "$lib/stake/config.svelte.ts"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "./ui/Button.svelte"

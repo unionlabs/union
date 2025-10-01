@@ -31,10 +31,14 @@ class LSTConfigState {
   // UCS03 Minter on Union
   // MAINNET: union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy
   // TESTNET: union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0
-  ucs03MinterOnUnion = $state<`${string}1${string}`>("union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy")
+  ucs03MinterOnUnion = $state<`${string}1${string}`>(
+    "union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy",
+  )
 
   // ZKGM Contract on Union
-  ucs03Zkgm = $state<`${string}1${string}`>("union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh")
+  ucs03Zkgm = $state<`${string}1${string}`>(
+    "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+  )
 
   // Derived getters that return the proper typed values
   get ETHEREUM_CHAIN_ID() {
