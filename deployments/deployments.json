@@ -103,6 +103,18 @@
           "code_id": 753
         }
       }
+    },
+    "u": {
+      "address": "bbn1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqnrn5rr",
+      "height": 2086743,
+      "commit": "dirty",
+      "code_id": 1101
+    },
+    "eu": {
+      "address": "bbn1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hqscechf",
+      "height": 2087077,
+      "commit": "dirty",
+      "code_id": 1102
     }
   },
   "base.8453": {

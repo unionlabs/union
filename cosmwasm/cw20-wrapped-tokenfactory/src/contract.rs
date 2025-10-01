@@ -402,17 +402,18 @@ pub fn init(
                 denom_units: [DenomUnit {
                     denom: denom.clone(),
                     exponent: 0,
-                    aliases: vec![msg.symbol.clone()],
+                    aliases: vec![],
                 }]
                 .into_iter()
                 .chain((msg.decimals != 0).then(|| DenomUnit {
-                    denom: msg.symbol.clone(),
+                    // tokenfactory/{self_address}/{symbol}
+                    denom: format!("{denom}{}", msg.symbol),
                     exponent: msg.decimals.into(),
                     aliases: vec![],
                 }))
                 .collect(),
                 base: Some(denom.clone()),
-                display: Some(msg.symbol.clone()),
+                display: Some(denom),
                 name: Some(msg.name),
                 symbol: Some(msg.symbol),
                 uri: None,
