@@ -5,8 +5,8 @@
  */
 import type * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import type * as Layer from "effect/Layer"
-import type * as Sui from "./Sui.js"
 import * as internal from "./internal/zkgmClient.js"
+import type * as Sui from "./Sui.js"
 
 /**
  * @category layers

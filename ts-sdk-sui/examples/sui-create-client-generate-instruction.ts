@@ -1,49 +1,54 @@
 // @ts-ignore
 if (typeof BigInt.prototype.toJSON !== "function") {
   // @ts-ignore
-  BigInt.prototype.toJSON = function () {
+  BigInt.prototype.toJSON = function() {
     return this.toString()
   }
 }
-import { Effect, Logger } from "effect"
 import { getFullnodeUrl } from "@mysten/sui/client"
-import { PublicClient, WalletClient, writeContract, readCoinMetadata, readCoinBalances, sendInstruction } from "../src/Sui.js"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
-import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import * as ZkgmIncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
-import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
+import { Effect, Logger } from "effect"
+import {
+  PublicClient,
+  readCoinBalances,
+  readCoinMetadata,
+  sendInstruction,
+  WalletClient,
+  writeContract,
+} from "../src/Sui.js"
 import { layerWithoutWallet } from "../src/SuiZkgmClient.js"
 
 import { Transaction } from "@mysten/sui/transactions"
-import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
-import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
+import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 
 const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
-const RECIPIENT = process.env.RECIPIENT ?? "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
+const RECIPIENT = process.env.RECIPIENT
+  ?? "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
 
 const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC)
 
-
-const program = Effect.gen(function* () {
-
-  
+const program = Effect.gen(function*() {
   // TODO: Source will be SUI testnet
   const source = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("ethereum.17000"),
   )
 
   console.log("source", source)
-  
+
   // TODO: Destination will be somewhere
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("union.union-1"),
   )
   const wallet = yield* WalletClient
 
-  const sender = wallet.signer.toSuiAddress();
+  const sender = wallet.signer.toSuiAddress()
 
   console.log("sender:", sender)
 
@@ -70,7 +75,6 @@ const program = Effect.gen(function* () {
     instruction: tokenOrder,
   })
 
-
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
@@ -82,18 +86,15 @@ const program = Effect.gen(function* () {
   )
 
   yield* Effect.log("Completion", completion)
-
-  
 }).pipe(
   Effect.provide(layerWithoutWallet),
   Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),
   Effect.provide(
     WalletClient.Live({
-    url: getFullnodeUrl("testnet"),
-    signer: keypair,   
-  }),
+      url: getFullnodeUrl("testnet"),
+      signer: keypair,
+    }),
   ),
-
   Effect.provide(ChainRegistry.Default),
   Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )

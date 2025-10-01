@@ -1,32 +1,31 @@
 // @ts-ignore
 if (typeof BigInt.prototype.toJSON !== "function") {
   // @ts-ignore
-  BigInt.prototype.toJSON = function () {
+  BigInt.prototype.toJSON = function() {
     return this.toString()
   }
 }
 
-import { Effect, Logger } from "effect"
 import { getFullnodeUrl } from "@mysten/sui/client"
+import { Effect, Logger } from "effect"
 
 import {
-  PublicClient,
-  readCoinMetadata,
-  readCoinBalances,
-  readTotalCoinBalance,
   getAllCoinsUnique,
-  getCoinName,
   getCoinDecimals,
+  getCoinName,
+  PublicClient,
+  readCoinBalances,
+  readCoinMetadata,
   readCoinSymbol,
+  readTotalCoinBalance,
 } from "../src/Sui.js"
 
-const ADDRESS =
-  process.env.ADDRESS ??
-  "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
+const ADDRESS = process.env.ADDRESS
+  ?? "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
 
 const COIN_TYPE = "0x2::sui::SUI" as any
 
-const program = Effect.gen(function* () {
+const program = Effect.gen(function*() {
   const { client } = yield* PublicClient
   yield* Effect.log("Sui public client initialized", client.network)
 
@@ -46,7 +45,6 @@ const program = Effect.gen(function* () {
 
   const total = yield* readTotalCoinBalance(COIN_TYPE, ADDRESS as any)
   yield* Effect.log("SUI total balance (mist as BigInt)", total.toString())
-
 
   const unique = yield* getAllCoinsUnique(ADDRESS as any)
 
