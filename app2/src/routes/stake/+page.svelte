@@ -12,7 +12,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { calculateIncentive } from "$lib/services/incentive"
-import { ETHEREUM_CHAIN_ID } from "$lib/stake/config"
+import { lstConfig } from "$lib/stake/config.svelte.ts"
 import { StakingRatesSchema } from "$lib/stake/schemas"
 import { balancesStore as BalanceStore } from "$lib/stores/balances.svelte"
 import { chains as ChainStore } from "$lib/stores/chains.svelte"
@@ -45,8 +45,6 @@ import { onMount } from "svelte"
 type StakeTab = "bond" | "unbond" | "withdraw" | "instant-exit"
 type TableFilter = "all" | "bond" | "unbond" | "withdrawal"
 
-const EVM_UNIVERSAL_CHAIN_ID = ETHEREUM_CHAIN_ID
-
 let showInverseRate = $state(false)
 
 const QlpConfigProvider = pipe(
@@ -59,12 +57,12 @@ const QlpConfigProvider = pipe(
 )
 
 const uOnEvmToken = $derived(pipe(
-  TokenStore.getData(EVM_UNIVERSAL_CHAIN_ID),
+  TokenStore.getData(lstConfig.ETHEREUM_CHAIN_ID),
   O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === U_ERC20.address.toLowerCase())),
 ))
 
 const eUOnEvmToken = $derived(pipe(
-  TokenStore.getData(EVM_UNIVERSAL_CHAIN_ID),
+  TokenStore.getData(lstConfig.ETHEREUM_CHAIN_ID),
   O.flatMap(A.findFirst(xs => Brand.unbranded(xs.denom) === EU_ERC20.address.toLowerCase())),
 ))
 
@@ -153,8 +151,10 @@ const incentives = AppRuntime.runPromiseExit$(() => {
   )
 })
 
-const stakingRates = AppRuntime.runPromiseExit$(() =>
-  Effect.gen(function*() {
+const stakingRates = AppRuntime.runPromiseExit$(() => {
+  const rpcEndpoint = lstConfig.UNION_RPC_ENDPOINT
+
+  return Effect.gen(function*() {
     return yield* pipe(
       Cosmos.queryContract(
         EU_STAKING_HUB,
@@ -163,19 +163,23 @@ const stakingRates = AppRuntime.runPromiseExit$(() =>
         },
       ),
       Effect.flatMap(Schema.decodeUnknown(StakingRatesSchema)),
-      Effect.provide(Cosmos.Client.Live("https://rpc.union.build")),
+      Effect.provide(Cosmos.Client.Live(rpcEndpoint)),
     )
   })
-)
+})
 
 const evmChain = $derived(pipe(
   ChainStore.data,
-  O.flatMap(A.findFirst(x => x.universal_chain_id === EVM_UNIVERSAL_CHAIN_ID)),
+  O.flatMap(A.findFirst(x => x.universal_chain_id === lstConfig.ETHEREUM_CHAIN_ID)),
 ))
 
 onMount(() => {
   BalanceStore.interruptBalanceFetching()
-  TokenStore.fetchTokens(EVM_UNIVERSAL_CHAIN_ID)
+})
+
+$effect(() => {
+  void lstConfig.ETHEREUM_CHAIN_ID // Track reactivity
+  TokenStore.fetchTokens(lstConfig.ETHEREUM_CHAIN_ID)
 })
 
 $effect(() => {

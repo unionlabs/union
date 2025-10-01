@@ -79,7 +79,7 @@ const internalOnClose = () => {
       <Card
         transition={false}
         class={cn(
-          "flex-1 h-full max-h-[600px] min-h-[375px] max-w-md relative flex flex-col z-20",
+          "flex-1 h-full max-h-[600px] min-h-[375px] max-w-md relative flex flex-col z-20 overflow-y-auto",
           className,
         )}
         {divided}
