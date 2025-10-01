@@ -152,7 +152,7 @@ let isMoreUnionFirst = $derived(
       {#if section.title === "More Union"}
         <!-- Spacer to push social icons to bottom -->
         <div class="flex-1"></div>
-        <YapAd />
+        <!-- <YapAd /> -->
         <!-- Special rendering for More Union section - just icons in a row -->
         <section class="px-4 py-4 flex flex-col justify-end {!isMoreUnionFirst && index > 0 ? 'border-t border-zinc-800/50' : ''}">
           <div class="flex items-center justify-center gap-4">
