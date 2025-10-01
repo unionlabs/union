@@ -30,7 +30,7 @@ import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 
 const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
 const RECIPIENT = process.env.RECIPIENT
-  ?? "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
+  ?? "union1wycy8g8v5sff6gsjl9yhjs43q98xpl05p3gn2s"
 
 const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC)
 
@@ -56,7 +56,7 @@ const program = Effect.gen(function*() {
     source,
     destination,
     sender: sender,
-    receiver: "union1wycy8g8v5sff6gsjl9yhjs43q98xpl05p3gn2s",
+    receiver: RECIPIENT,
     baseToken: "0x2::sui::SUI",
     baseAmount: 10000000n,
     quoteToken: "union1y05e0p2jcvhjzf7kcqsrqx93d4g3u93hc2hykaq8hrvkqrp5ltrssagzyd",
@@ -71,8 +71,27 @@ const program = Effect.gen(function*() {
     source,
     destination,
     channelId: ChannelId.make(5),
-    ucs03Address: "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c",
+    ucs03Address: "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830",
     instruction: tokenOrder,
+  
+    // NEW — only read by the Sui client
+    transport: {
+      sui: {
+        relayStoreId:
+          "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924",
+        vaultId:
+          "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3",
+        ibcStoreId:
+          "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175",
+        coins: [
+          {
+            typeArg: "0x2::sui::SUI",
+            objectId:
+              "0xab70523198047a482febffab381a2a564002459bdcfa98991c747a013b3fd3e4",
+          },
+        ],
+      },
+    },
   })
 
   const zkgmClient = yield* ZkgmClient.ZkgmClient

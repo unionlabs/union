@@ -9,6 +9,7 @@ import { Hex } from "../schema/hex.js"
 import type * as Token from "../Token.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"
 import { ZkgmInstruction } from "../ZkgmInstruction.js"
+import type { Transport } from "../ZkgmClientRequest.js"
 
 /** @internal */
 export const TypeId: ClientRequest.TypeId = Symbol.for(
@@ -44,6 +45,7 @@ function makeProto(
   ucs03Address: string,
   instruction: ZkgmInstruction,
   kind: "execute" | "simulateAndExecute",
+  transport?: Transport.Params | undefined
 ): ClientRequest.ZkgmClientRequest {
   const self = Object.create(Proto)
   self.source = source
@@ -52,6 +54,7 @@ function makeProto(
   self.ucs03Address = ucs03Address
   self.instruction = instruction
   self.kind = kind
+  self.transport = transport  
   return self
 }
 
@@ -67,6 +70,7 @@ export const empty: ClientRequest.ZkgmClientRequest = makeProto(
   void 0 as unknown as Hex,
   void 0 as unknown as ZkgmInstruction,
   "execute",
+  undefined,
 )
 
 /** @internal */
@@ -77,6 +81,7 @@ export const make = (options: {
   ucs03Address: string
   instruction: ZkgmInstruction
   kind?: "execute" | "simulateAndExecute" | undefined
+  transport?: Transport.Params | undefined
 }) => modify(empty, options)
 
 /** @internal */
@@ -110,6 +115,8 @@ export const modify = dual<
     result = setKind(result, options.kind)
   }
 
+  if (options.transport) result = setTransport(result, options.transport) 
+
   return result
 })
 
@@ -127,6 +134,7 @@ export const setSource = dual<
     self.ucs03Address,
     self.instruction,
     self.kind,
+    self.transport,
   ))
 
 /** @internal */
@@ -143,7 +151,25 @@ export const setDestination = dual<
     self.ucs03Address,
     self.instruction,
     self.kind,
+    self.transport,
   ))
+
+export const setTransport = dual<
+  (transport: Transport.Params) =>
+    (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
+  (self: ClientRequest.ZkgmClientRequest, transport: Transport.Params) =>
+    ClientRequest.ZkgmClientRequest
+>(2, (self, transport) =>
+  makeProto(
+    self.source,
+    self.destination,
+    self.channelId,
+    self.ucs03Address,
+    self.instruction,
+    self.kind,
+    transport,                                 
+  ))
+
 
 /** @internal */
 export const setChannelId = dual<
@@ -159,6 +185,7 @@ export const setChannelId = dual<
     self.ucs03Address,
     self.instruction,
     self.kind,
+    self.transport,
   ))
 /** @internal */
 export const setUcs03Address = dual<
@@ -174,6 +201,7 @@ export const setUcs03Address = dual<
     ucs03Address,
     self.instruction,
     self.kind,
+    self.transport,
   ))
 
 /** @internal */
@@ -193,6 +221,7 @@ export const setInstruction = dual<
     self.ucs03Address,
     instruction,
     self.kind,
+    self.transport,
   ))
 
 /** @internal */
@@ -212,6 +241,7 @@ export const setKind = dual<
     self.ucs03Address,
     self.instruction,
     kind,
+    self.transport,
   ))
 
 /** @internal */
