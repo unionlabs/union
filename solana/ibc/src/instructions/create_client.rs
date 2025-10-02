@@ -5,7 +5,11 @@ use pinocchio::{
 };
 use unionlabs_primitives::Bytes;
 
-use crate::helper::{parse_bytes, parse_client_id, parse_string, write_client_id};
+use crate::{
+    helper::{parse_bytes, parse_string},
+    latest_client_id::LatestClientId,
+    TypedAccount,
+};
 
 pub struct CreateClient<'a> {
     pub accounts: CreateClientAccounts<'a>,
@@ -16,12 +20,10 @@ impl<'a> CreateClient<'a> {
     pub const DISCRIMINATOR: &'a u8 = &0;
 
     pub fn process(&mut self) -> ProgramResult {
-        let mut current_client_id_data = self.accounts.client_id.try_borrow_mut_data()?;
-        pinocchio::msg!("1");
-        let current_client_id = parse_client_id(&current_client_id_data)?;
-        pinocchio::msg!("2");
+        let mut latest_client_id = TypedAccount::<LatestClientId>::load(self.accounts.client_id)?;
 
-        self.accounts.validate_accounts(current_client_id)?;
+        self.accounts
+            .validate_accounts(latest_client_id.as_ref().0)?;
 
         let _client_state_bytes = self.accounts.client_state.try_borrow_data()?;
         let _consensus_state_bytes = self.accounts.consensus_state.try_borrow_data()?;
@@ -31,12 +33,8 @@ impl<'a> CreateClient<'a> {
         // TODO(aeryz): i don't think the client and consensus state commitments are needed
         // for solana. So im thinking no need to bother with more accounts.
 
-        pinocchio::msg!("hello world brotha");
-
-        write_client_id(
-            current_client_id_data.as_mut(),
-            current_client_id.checked_add(1).unwrap(),
-        );
+        latest_client_id.as_mut().increment();
+        latest_client_id.save()?;
 
         Ok(())
     }
