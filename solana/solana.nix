@@ -10,11 +10,12 @@ _: {
       ...
     }:
     let
+      platformToolsVersion = "1.51";
 
       platform-tools = dbg (
         pkgs.stdenv.mkDerivation {
           pname = "platform-tools";
-          version = "1.51";
+          version = platformToolsVersion;
           src = platform-tools-stripped;
           nativeBuildInputs = [ pkgs.autoPatchelfHook ];
           buildInputs = with pkgs; [
@@ -81,12 +82,28 @@ _: {
 
       solana-ibc =
         (crane.buildWorkspaceMember "solana/ibc" {
-          cargoBuildRustToolchain = "${platform-tools}/rust";
-          cargoBuildExtraArgs = "--target sbpfv3-solana-solana";
+          cargoBuildRustToolchain = dbg "${platform-tools}/rust";
+          extraBuildInputs = [ cargo-solana ];
+          extraArgs = {
+            buildPhaseCargoCommand = ''
+              cargoBuildLog=$(mktemp cargoBuildLogXXXX.json)
+              cargo build-sbf \
+                --arch v2 \
+                --skip-tools-install \
+                --tools-version ${platformToolsVersion} \
+                --no-rustup-override \
+                --offline \
+                -- \
+                -p ibc-union-solana
+            '';
+          };
+          cargoBuildInstallPhase = ''
+            mkdir -p $out
+            cp --no-preserve=mode target/deploy/* $out
+          '';
         }).ibc-union-solana;
 
-      solana-ibc-for-tests =
-        (crane.buildWorkspaceMember "solana/ibc" {}).ibc-union-solana;
+      solana-ibc-for-tests = (crane.buildWorkspaceMember "solana/ibc" { }).ibc-union-solana;
 
     in
     {
@@ -96,7 +113,8 @@ _: {
 
       checks = {
         solana-ibc = crane.lib.cargoTest (
-          solana-ibc-for-tests.passthru.craneAttrs // {
+          solana-ibc-for-tests.passthru.craneAttrs
+          // {
             doCheck = true;
           }
         );

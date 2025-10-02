@@ -5,6 +5,8 @@
 **/target
 **/.env
 
+test-ledger/
+
 # Dependencies
 **/node_modules
 
