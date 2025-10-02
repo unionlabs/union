@@ -10,5 +10,16 @@ crate-type = ["cdylib", "lib"]
 workspace = true
 
 [dependencies]
-embed-commit   = { workspace = true }
-solana-program = "2.2.0"
+# embed-commit   = { workspace = true }
+unionlabs-primitives = { workspace = true }
+solana-account-info = "2.2.0"
+pinocchio = "0.9.2"
+pinocchio-system = "0.3.0"
+pinocchio-token = "0.4.0"
+pinocchio-associated-token-account = "0.2.0"
+pinocchio-pubkey = "0.3.0"
+ibc-union-spec = { workspace = true }
+
+[dev-dependencies]
+mollusk-svm = "0.6.1"
+solana-sdk = "3.0.0"

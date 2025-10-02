@@ -1,7 +1,10 @@
 use core::{convert::Infallible, fmt, str::FromStr};
 
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize, de};
+use {
+    core::marker::PhantomData,
+    serde::{Deserialize, Serialize, de},
+};
 
 use crate::Bytes;
 

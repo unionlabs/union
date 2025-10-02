@@ -27,6 +27,7 @@ serde_bytes      = { version = "0.11.17", optional = true }
 subtle-encoding  = { workspace = true, features = ["bech32-preview"] }
 thiserror        = { workspace = true }
 typenum          = { workspace = true, optional = true }
+borsh = { workspace = true, optional = true }
 
 # TODO: This is only used for uint, replace with ruint
 uint = "0.9.5"
@@ -42,6 +43,7 @@ default = ["serde", "base64"]
 base58   = ["dep:bs58"]
 base64   = ["dep:base64"]
 bincode  = ["dep:bincode"]
+borsh    = ["dep:borsh"]
 rlp      = ["dep:rlp", "primitive-types/rlp"]
 schemars = ["dep:schemars"]
 serde    = ["dep:serde", "dep:serde_bytes"]

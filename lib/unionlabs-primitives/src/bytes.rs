@@ -8,6 +8,10 @@ use crate::{
     fixed_bytes::{FixedBytes, FixedBytesError},
 };
 
+#[cfg_attr(
+    feature = "borsh",
+    derive(borsh::BorshSerialize, borsh::BorshDeserialize)
+)]
 pub struct Bytes<E: Encoding = HexPrefixed> {
     bytes: Cow<'static, [u8]>,
     __marker: PhantomData<fn() -> E>,
