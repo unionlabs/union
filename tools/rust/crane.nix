@@ -365,6 +365,9 @@
               extraBuildInputs ? [ ],
               extraNativeBuildInputs ? [ ],
 
+              extraVendorPaths ? [ ],
+              overrideVendorGitCheckout ? ps: drv: drv,
+
               # this builder will by default remove dev-dependencies from the Cargo.toml of all crates in the filtered source of the packages being built. set this to true to disable this behaviour.
               dontRemoveDevDeps ? false,
 
@@ -499,9 +502,11 @@
 
                     cargoVendorDir = craneLib.vendorMultipleCargoDeps {
                       inherit (craneLib.findCargoFiles crateRepoSource) cargoConfigs;
-                      cargoLockList = lib.optionals (buildStdTarget != null) [
-                        ./rust-std-Cargo.lock
-                      ];
+                      cargoLockList =
+                        extraVendorPaths
+                        ++ (lib.optionals (buildStdTarget != null) [
+                          ./rust-std-Cargo.lock
+                        ]);
                       cargoLockParsedList = [
                         patchedCargoLock
                       ];
@@ -517,8 +522,8 @@
                             '';
                           })
                         else
-                          # Nothing to change, leave the derivations as is
-                          drv;
+                          # nothing to change, run the provided hook
+                          overrideVendorGitCheckout ps drv;
                     };
 
                     PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";

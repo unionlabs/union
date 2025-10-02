@@ -84,9 +84,41 @@ _: {
         (crane.buildWorkspaceMember "solana/ibc" {
           cargoBuildRustToolchain = dbg "${platform-tools}/rust";
           extraBuildInputs = [ cargo-solana ];
+          # NOTE: Only used for build-std
+          extraVendorPaths = [
+            "${platform-tools}/rust/lib/rustlib/src/rust/library/Cargo.lock"
+          ];
+          # NOTE: Only used for build-std
+          overrideVendorGitCheckout =
+            ps: drv:
+            # libm isn't vendored correctly when vendoring the solana fork of compiler-builtins, override it's installPhase to make sure that libm is included in the vendored sources
+            if
+              pkgs.lib.any (
+                p:
+                (pkgs.lib.hasInfix "https://github.com/anza-xyz/compiler-builtins?tag=solana-tools-v1.51" p.source)
+              ) ps
+            then
+              drv.overrideAttrs (
+                old:
+                old
+                // {
+                  installPhase = ''
+                    cargoToml=$(realpath Cargo.toml)
+                    crate=$(
+                      cargo metadata --format-version 1 --no-deps --manifest-path "$cargoToml" | jq -r '.packages[] | select(.manifest_path == "'"$cargoToml"'") | "\(.name)-\(.version)"'
+                    )
+                    mkdir -p "$out/$crate"
+                    cp -r . "$out/$crate"
+                    echo '{"files":{}, "package":null}' > "$out/$crate/.cargo-checksum.json"
+                  '';
+                }
+              )
+            else
+              drv;
+          rustflags = "-Zlocation-detail=none";
           extraArgs = {
+            doNotPostBuildInstallCargoBinaries = true;
             buildPhaseCargoCommand = ''
-              cargoBuildLog=$(mktemp cargoBuildLogXXXX.json)
               cargo build-sbf \
                 --arch v2 \
                 --skip-tools-install \
@@ -95,10 +127,17 @@ _: {
                 --offline \
                 -- \
                 -p ibc-union-solana
+
+                # TODO: Have a .release builder that doe -j1 for reproducible builds
+                # -j1 \
+                # NOTE: Only used for build-std
+                # -Z build-std=panic_abort,std,core,alloc
             '';
           };
           cargoBuildInstallPhase = ''
             mkdir -p $out
+            ls -alh target/
+            ls -alh target/deploy
             cp --no-preserve=mode target/deploy/* $out
           '';
         }).ibc-union-solana;
@@ -109,6 +148,9 @@ _: {
     {
       packages = {
         inherit cargo-solana solana-ibc;
+        # fetchSolanaRustStdCargoLock = pkgs.writeShellScript "fetch-solana-rust-std-cargo-lock" ''
+
+        # '';
       };
 
       checks = {
