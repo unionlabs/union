@@ -17,9 +17,9 @@ impl<'a> CreateClient<'a> {
 
     pub fn process(&mut self) -> ProgramResult {
         let mut current_client_id_data = self.accounts.client_id.try_borrow_mut_data()?;
-        let current_client_id = parse_client_id(&current_client_id_data)?
-            .checked_add(1)
-            .unwrap();
+        pinocchio::msg!("1");
+        let current_client_id = parse_client_id(&current_client_id_data)?;
+        pinocchio::msg!("2");
 
         self.accounts.validate_accounts(current_client_id)?;
 
@@ -31,7 +31,12 @@ impl<'a> CreateClient<'a> {
         // TODO(aeryz): i don't think the client and consensus state commitments are needed
         // for solana. So im thinking no need to bother with more accounts.
 
-        write_client_id(current_client_id_data.as_mut(), current_client_id);
+        pinocchio::msg!("hello world brotha");
+
+        write_client_id(
+            current_client_id_data.as_mut(),
+            current_client_id.checked_add(1).unwrap(),
+        );
 
         Ok(())
     }
@@ -102,6 +107,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for CreateClientAccounts<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct CreateClientData {
     pub client_type: String,
     pub client_state_bytes: Bytes,
@@ -122,7 +128,8 @@ impl TryFrom<&[u8]> for CreateClientData {
         cursor += n_read;
         let (n_read, consensus_state_bytes) = parse_bytes(&data[cursor..]);
 
-        let (_, relayer) = parse_string(data)?;
+        cursor += n_read;
+        let (_, relayer) = parse_string(&data[cursor..])?;
 
         Ok(Self {
             client_type,
@@ -130,5 +137,25 @@ impl TryFrom<&[u8]> for CreateClientData {
             consensus_state_bytes,
             relayer,
         })
+    }
+}
+
+impl Into<Vec<u8>> for CreateClientData {
+    fn into(self) -> Vec<u8> {
+        let mut buf = Vec::new();
+
+        buf.extend_from_slice(&(self.client_type.len() as u32).to_le_bytes());
+        buf.extend_from_slice(self.client_type.as_bytes());
+
+        buf.extend_from_slice(&(self.client_state_bytes.len() as u32).to_le_bytes());
+        buf.extend_from_slice(&self.client_state_bytes);
+
+        buf.extend_from_slice(&(self.consensus_state_bytes.len() as u32).to_le_bytes());
+        buf.extend_from_slice(&self.consensus_state_bytes);
+
+        buf.extend_from_slice(&(self.relayer.len() as u32).to_le_bytes());
+        buf.extend_from_slice(self.relayer.as_bytes());
+
+        buf
     }
 }
