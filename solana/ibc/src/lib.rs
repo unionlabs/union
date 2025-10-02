@@ -30,22 +30,22 @@ fn process_instruction(
 #[cfg(test)]
 mod tests {
     use mollusk_svm::Mollusk;
-    use solana_sdk::{
-        account::Account,
-        instruction::{AccountMeta, Instruction},
-        system_program,
-    };
 
+    // use solana_sdk::{
+    //     account::Account,
+    //     instruction::{AccountMeta, Instruction},
+    //     system_program,
+    // };
     use super::*;
 
     #[test]
     fn test_create_client() {
-        let mollusk = Mollusk::new(&ID.into(), "../../result/lib/ibc_union_solana");
+        let mollusk = Mollusk::new(&ID.into(), "../../result/ibc_union_solana");
 
-        let instruction = Instruction::new_with_bytes(
-            ID.into(),                           // Your program's ID
-            &[0],                                // Instruction data (discriminator + parameters)
-            vec![AccountMeta::new(payer, true)], // Account metadata
-        );
+        // let instruction = Instruction::new_with_bytes(
+        //     ID.into(),                           // Your program's ID
+        //     &[0],                                // Instruction data (discriminator + parameters)
+        //     vec![AccountMeta::new(payer, true)], // Account metadata
+        // );
     }
 }

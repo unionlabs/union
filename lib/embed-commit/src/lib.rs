@@ -30,26 +30,26 @@ impl core::fmt::Display for Rev {
     }
 }
 
-#[cfg_attr(
-    any(target_arch = "x86_64", target_arch = "aarch64"),
-    no_mangle,
-    used,
-    link_section = ".note.embed_commit.GIT_REV"
-)]
-#[cfg_attr(target_os = "solana", no_mangle, used)]
-pub static GIT_REV: Rev = match option_env!("GIT_REV") {
-    None => Rev::Unknown,
-    Some(hash) => match hash.as_bytes() {
-        b"dirty" => Rev::Dirty,
-        hash => Rev::Hash(match const_hex::const_decode_to_array(hash) {
-            Ok(ok) => ok,
-            Err(_) => panic!(
-                "invalid GIT_REV env var, value must be either \
-                unset, \"dirty\" or a 20-byte hex string (commit)"
-            ),
-        }),
-    },
-};
+// #[cfg_attr(
+//     any(target_arch = "x86_64", target_arch = "aarch64"),
+//     no_mangle,
+//     used,
+//     link_section = ".note.embed_commit.GIT_REV"
+// )]
+// #[cfg_attr(target_os = "solana", no_mangle, used)]
+// pub static GIT_REV: Rev = match option_env!("GIT_REV") {
+//     None => Rev::Unknown,
+//     Some(hash) => match hash.as_bytes() {
+//         b"dirty" => Rev::Dirty,
+//         hash => Rev::Hash(match const_hex::const_decode_to_array(hash) {
+//             Ok(ok) => ok,
+//             Err(_) => panic!(
+//                 "invalid GIT_REV env var, value must be either \
+//                 unset, \"dirty\" or a 20-byte hex string (commit)"
+//             ),
+//         }),
+//     },
+// };
 
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]

@@ -13,7 +13,7 @@
         #   partitions = 1;
         #   partitionType = "count";
         # };
-        extraEnv = {
+        extraArgs = {
           SQLX_OFFLINE = "1";
         };
       };
