@@ -1,28 +1,11 @@
 #![warn(clippy::pedantic, clippy::unwrap_used)]
 
-use std::{path::PathBuf, sync::Arc};
-
-use anyhow::{Context, Result, anyhow};
-use clap::Parser;
-use elf::{ElfBytes, endian::AnyEndian};
+use anyhow::{anyhow, Context, Result};
+use elf::{endian::AnyEndian, ElfBytes};
 use embed_commit::Rev;
-use solana_sbpf::{
-    aligned_memory::AlignedMemory,
-    ebpf,
-    elf::Executable,
-    elf_parser::consts::EM_SBPF,
-    memory_region::{MemoryMapping, MemoryRegion},
-    program::{BuiltinProgram, FunctionRegistry, SBPFVersion},
-    verifier::RequisiteVerifier,
-    vm::{ContextObject, EbpfVm},
-};
 use wasmtime::{Engine, Linker, Module, Store};
 
-#[derive(Parser)]
-enum App {
-    /// Extract the commit information embedded in the artifact.
-    Extract { path: PathBuf },
-}
+const EM_SBPF: u16 = 263;
 
 /// Parse the git rev embedded in the `GIT_REV` note section of the provided elf binary bytes.
 ///
@@ -33,7 +16,28 @@ pub fn extract_elf(bz: &[u8]) -> Result<Option<Rev>> {
     let file = ElfBytes::<AnyEndian>::minimal_parse(bz).context("parsing elf file")?;
 
     if file.ehdr.e_machine == EM_SBPF {
-        extract_solana(bz)
+        let Some(dynsym) = file
+            .dynamic_symbol_table()
+            .context("reading dynamic symbol table")?
+        else {
+            return Ok(None);
+        };
+
+        let Some(res) = dynsym.0.iter().find(|s| {
+            dynsym
+                .1
+                .get(s.st_name as usize)
+                .is_ok_and(|s| s == "GIT_REV")
+        }) else {
+            return Ok(None);
+        };
+
+        bytemuck::checked::try_from_bytes::<Rev>(
+            &bz[res.st_value.try_into()?..(res.st_value + res.st_size).try_into()?],
+        )
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("parsing rev")
+        .map(|rev| Some(*rev))
     } else {
         let Some(section) = file
             .section_header_by_name(".note.embed_commit.GIT_REV")
@@ -90,69 +94,4 @@ pub fn extract_wasm(bz: &[u8]) -> Result<Option<Rev>> {
         .map_err(|e| anyhow!(e.to_string()))
         .context("parsing rev")
         .map(|rev| Some(*rev))
-}
-
-/// Parse the git rev embedded in the `GIT_REV` symbol of the provided solana sbpf binary.
-///
-/// # Errors
-///
-/// This function will error if the elf binary bytes provided cannot be parsed, or if the embedded git rev cannot be parsed. If there is no embedded git rev then `Ok(None)` will be returned.
-pub fn extract_solana(bz: &[u8]) -> Result<Option<Rev>> {
-    struct DummyContextObject;
-    impl ContextObject for DummyContextObject {
-        fn consume(&mut self, _amount: u64) {}
-
-        fn get_remaining(&self) -> u64 {
-            0
-        }
-    }
-
-    let loader = Arc::new(BuiltinProgram::new_mock());
-    let executable =
-        Executable::<DummyContextObject>::load_with_strict_parser(bz, loader.clone()).unwrap();
-    executable.verify::<RequisiteVerifier>().unwrap();
-
-    const X: u64 = 3069975057;
-
-    let mut stack =
-        AlignedMemory::<{ ebpf::HOST_ALIGN }>::zero_filled(executable.get_config().stack_size());
-    let stack_len = stack.len();
-    let mut heap = AlignedMemory::<{ ebpf::HOST_ALIGN }>::with_capacity(0);
-
-    let mut mem = &mut vec![];
-
-    let regions: Vec<MemoryRegion> = vec![
-        executable.get_ro_region(),
-        MemoryRegion::new_writable(stack.as_slice_mut(), ebpf::MM_STACK_START),
-        MemoryRegion::new_writable(heap.as_slice_mut(), ebpf::MM_HEAP_START),
-        MemoryRegion::new_writable(mem, ebpf::MM_INPUT_START),
-    ];
-
-    let memory_mapping = MemoryMapping::new(
-        regions,
-        executable.get_config(),
-        executable.get_sbpf_version(),
-    )
-    .unwrap();
-
-    let mut ctx = DummyContextObject;
-
-    let mut vm = EbpfVm::new(
-        loader,
-        executable.get_sbpf_version(),
-        &mut ctx,
-        memory_mapping,
-        stack_len,
-    );
-
-    let res = vm.execute_program(&executable, true);
-
-    dbg!(res);
-
-    // bytemuck::checked::try_from_bytes::<Rev>(&bytes[0..std::mem::size_of::<Rev>()])
-    //     .map_err(|e| anyhow!(e.to_string()))
-    //     .context("parsing rev")
-    //     .map(|rev| Some(*rev))
-
-    todo!()
 }
