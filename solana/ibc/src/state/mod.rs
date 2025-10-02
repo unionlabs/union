@@ -1,6 +1,8 @@
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
 
 pub mod latest_client_id;
+pub mod latest_connection_id;
+pub mod spec;
 
 /// Binds an account to a type that is serializable to make io operations easier, and well-typed.
 pub struct TypedAccount<'a, T: Serializable> {
@@ -9,6 +11,11 @@ pub struct TypedAccount<'a, T: Serializable> {
 }
 
 impl<'a, T: Serializable> TypedAccount<'a, T> {
+    #[must_use]
+    pub fn create(data: T, account: &'a AccountInfo) -> Self {
+        Self { data, account }
+    }
+
     pub fn load(account: &'a AccountInfo) -> Result<Self, ProgramError> {
         let data = T::deserialize(account.try_borrow_data()?.as_ref())?;
 
