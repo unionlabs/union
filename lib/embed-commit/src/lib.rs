@@ -31,11 +31,12 @@ impl core::fmt::Display for Rev {
 }
 
 #[cfg_attr(
-    not(target_arch = "wasm32"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
     unsafe(no_mangle),
     used,
     unsafe(link_section = ".note.embed_commit.GIT_REV")
 )]
+#[cfg_attr(target_os = "solana", unsafe(no_mangle), used)]
 pub static GIT_REV: Rev = match option_env!("GIT_REV") {
     None => Rev::Unknown,
     Some(hash) => match hash.as_bytes() {
