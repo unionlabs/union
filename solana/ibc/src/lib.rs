@@ -30,22 +30,78 @@ fn process_instruction(
 #[cfg(test)]
 mod tests {
     use mollusk_svm::Mollusk;
+    use solana_sdk::{
+        account::Account,
+        instruction::{AccountMeta, Instruction},
+    };
 
-    // use solana_sdk::{
-    //     account::Account,
-    //     instruction::{AccountMeta, Instruction},
-    //     system_program,
-    // };
     use super::*;
+    use crate::create_client::CreateClientData;
 
     #[test]
     fn test_create_client() {
         let mollusk = Mollusk::new(&ID.into(), "../../result/ibc_union_solana");
 
-        // let instruction = Instruction::new_with_bytes(
-        //     ID.into(),                           // Your program's ID
-        //     &[0],                                // Instruction data (discriminator + parameters)
-        //     vec![AccountMeta::new(payer, true)], // Account metadata
-        // );
+        let create_client: Vec<u8> = CreateClientData {
+            client_type: "cometbls".into(),
+            client_state_bytes: b"helloworld".into(),
+            consensus_state_bytes: b"helloworld2".into(),
+            relayer: "idunnomate".into(),
+        }
+        .into();
+
+        let account_addresses = [
+            solana_sdk::pubkey::Pubkey::find_program_address(&[b"client_id"], &ID.into()).0,
+            solana_sdk::pubkey::Pubkey::find_program_address(
+                &[b"client_state", &1u32.to_le_bytes()],
+                &ID.into(),
+            )
+            .0,
+            solana_sdk::pubkey::Pubkey::find_program_address(
+                &[b"consensus_state", &1u32.to_le_bytes()],
+                &ID.into(),
+            )
+            .0,
+            solana_sdk::pubkey::Pubkey::find_program_address(&[b"bs"], &ID.into()).0,
+        ];
+
+        let instruction = Instruction::new_with_bytes(
+            ID.into(),                                                  // Your program's ID
+            &[0].into_iter().chain(create_client).collect::<Vec<u8>>(), // Instruction data (discriminator + parameters)
+            account_addresses
+                .iter()
+                .map(|a| AccountMeta::new(a.to_owned().into(), true))
+                .collect(),
+        );
+
+        let lamports = mollusk.sysvars.rent.minimum_balance(instruction.data.len());
+
+        let client_id_account = Account {
+            lamports,
+            data: 1u32.to_le_bytes().into(),
+            owner: ID.into(),
+            executable: false,
+            rent_epoch: 0,
+        };
+
+        panic!(
+            "res: {:?}",
+            mollusk.process_instruction(
+                &instruction,
+                [(
+                    Into::<solana_sdk::pubkey::Pubkey>::into(account_addresses[0]),
+                    client_id_account
+                )]
+                .into_iter()
+                .chain(
+                    account_addresses
+                        .iter()
+                        .skip(1)
+                        .map(|a| (a.to_owned().into(), Account::new(lamports, 10, &ID.into())))
+                )
+                .collect::<Vec<(solana_sdk::pubkey::Pubkey, Account)>>()
+                .as_slice()
+            )
+        );
     }
 }
