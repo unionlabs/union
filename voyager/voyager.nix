@@ -18,7 +18,7 @@
       ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
       voyager = crane.buildWorkspaceMember "voyager" {
-        extraEnv = {
+        extraArgs = {
           SQLX_OFFLINE = "1";
         };
       };

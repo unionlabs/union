@@ -357,10 +357,10 @@
               # standard postInstall phase.
               postInstall ? null,
 
-              # extra environment variables to pass to the derivation.
-              extraEnv ? { },
-              # extra environment variables to pass to the derivation, only for crane.buildPackage.
-              extraBuildEnv ? { },
+              # extra args to pass to the derivation. this can include environment variables.
+              extraArgs ? { },
+              # extra args to pass to the derivation, only for crane.buildPackage. this can include environment variables.
+              extraBuildArgs ? { },
 
               extraBuildInputs ? [ ],
               extraNativeBuildInputs ? [ ],
@@ -371,7 +371,7 @@
               # the root Cargo.toml may require patching when building certain packages in the monorepo. this hook can be used to arbitrarily modify the patched Cargo.toml before writing it into the source root derivation.
               rootCargoTomlHook ? x: x,
             }:
-            assert builtins.isAttrs extraEnv;
+            assert builtins.isAttrs extraArgs;
             assert lib.assertMsg
               (
                 (buildStdTarget != null -> cargoBuildRustToolchain == null)
@@ -475,7 +475,7 @@
                     dir: "-p ${(crateCargoToml dir).package.name}"
                   ) crateDirsFromRoot';
 
-                  crateAttrs = extraEnv // {
+                  crateAttrs = {
                     pname = pname';
                     version = version';
 
@@ -557,13 +557,13 @@
 
                         echo "$RUSTFLAGS"
                       '';
-                  };
+                  } // extraArgs;
 
                   cargoArtifacts = cargoBuild.buildDepsOnly crateAttrs;
                 in
 
                 (cargoBuild.buildPackage (
-                  extraBuildEnv
+                  extraBuildArgs
                   // crateAttrs
                   // {
                     src = crateRepoSource;
