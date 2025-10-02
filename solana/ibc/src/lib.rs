@@ -6,6 +6,7 @@ pub mod helper;
 pub mod instructions;
 pub mod state;
 pub use instructions::*;
+pub use state::*;
 
 use crate::create_client::CreateClient;
 
