@@ -1,3 +1,4 @@
+use instructions::connection_open_init::ConnectionOpenInit;
 use pinocchio::{
     account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
@@ -23,6 +24,9 @@ fn process_instruction(
     match instruction_data.split_first() {
         Some((CreateClient::DISCRIMINATOR, data)) => {
             CreateClient::try_from((data, accounts))?.process()
+        }
+        Some((ConnectionOpenInit::DISCRIMINATOR, data)) => {
+            ConnectionOpenInit::try_from((data, accounts))?.process()
         }
         _ => Err(ProgramError::InvalidInstructionData),
     }

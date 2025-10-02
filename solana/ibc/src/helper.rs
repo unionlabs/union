@@ -1,4 +1,3 @@
-use ibc_union_spec::ClientId;
 use pinocchio::program_error::ProgramError;
 use unionlabs_primitives::Bytes;
 
