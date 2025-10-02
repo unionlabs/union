@@ -44,7 +44,7 @@ _: {
       platform-tools-versions = {
         "x86_64-linux" = pkgs.fetchurl {
           url = "https://github.com/anza-xyz/platform-tools/releases/download/v1.51/platform-tools-linux-x86_64.tar.bz2";
-          sha256 = "sha256-qdMVf5N9X2+vQyGjWoA14PgnEUpmOwFQ20kuiT7CdZc=";
+          sha256 = "sha256-CTPgXdlkgm6OLbXFjDSuJV47rwzhcRVoVS3KgbVAems=";
         };
         "aarch64-linux" = pkgs.fetchurl {
           url = "https://github.com/anza-xyz/platform-tools/releases/download/v1.51/platform-tools-linux-aarch64.tar.bz2";
@@ -82,28 +82,24 @@ _: {
       solana-ibc =
         (crane.buildWorkspaceMember "solana/ibc" {
           cargoBuildRustToolchain = "${platform-tools}/rust";
-          cargoBuildExtraArgs = "--target sbpfv4-solana-solana";
+          cargoBuildExtraArgs = "--target sbpfv3-solana-solana";
         }).ibc-union-solana;
 
-      # solana-ibc = pkgs.stdenv.mkDerivation {
-      #   name = "cargo-solana";
-      #   buildInputs = [
-      #     pkgs.makeWrapper
-      #     rust.toolchains.dev
-      #   ];
-      #   src = ./ibc;
-      #   installPhase = ''
-      #     mkdir -p $out
-      #     cp -r ${pkgsUnstableSolana.solana-cli}/* $out
-      #     ls -la
-      #     $out/bin/cargo-build-sbf --sbf-sdk $out/bin/platform-tools-sdk/sbf
-      #   '';
-      # };
+      solana-ibc-for-tests =
+        (crane.buildWorkspaceMember "solana/ibc" {}).ibc-union-solana;
 
     in
     {
       packages = {
         inherit cargo-solana solana-ibc;
+      };
+
+      checks = {
+        solana-ibc = crane.lib.cargoTest (
+          solana-ibc-for-tests.passthru.craneAttrs // {
+            doCheck = true;
+          }
+        );
       };
 
     };
