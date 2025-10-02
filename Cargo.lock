@@ -8568,6 +8568,7 @@ dependencies = [
 name = "ibc-union-solana"
 version = "0.0.0"
 dependencies = [
+ "embed-commit",
  "ibc-union-spec",
  "mollusk-svm",
  "pinocchio",
