@@ -100,7 +100,7 @@ dependencies = [
 
 [[package]]
 name = "access-manager-tests"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "access-managed-example",
  "access-manager-types",
@@ -110,6 +110,7 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-client",
  "cosmwasm-std 2.2.2",
+ "embed-commit",
  "hex-literal 0.4.1",
  "k256 0.13.4",
  "protos",

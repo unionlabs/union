@@ -100,7 +100,7 @@
               };
             };
 
-            access-manager =
+            access-manager-e2e =
               let
                 inherit ((crane.buildWorkspaceMember "e2e/access-manager-tests" { })) access-manager-tests;
               in
@@ -116,7 +116,7 @@
                   devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
 
 
-                  devnetUnion.succeed("RUST_LOG=info ${access-manager-tests} ws://union:26657/websocket ws://devnetEth:8546 |& tee output.txt")
+                  devnetUnion.wait_until_succeeds("RUST_LOG=info ${pkgs.lib.getExe access-manager-tests} --manager-bytecode ${self'.packages.access-manager.release} --managed-bytecode ${self'.packages.access-managed-example.release} -r http://localhost:26660 --gas feemarket --gas-multiplier 2 |& tee output.txt")
 
                   devnetUnion.copy_from_vm("output.txt", "")
                 '';
