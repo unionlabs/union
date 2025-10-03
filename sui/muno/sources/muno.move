@@ -58,19 +58,19 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module u::u {
+module muno::muno {
     use sui::coin::{Self};
 
     // one time witness
-    public struct U has drop {}
+    public struct MUNO has drop {}
 
-    fun init(witness: U, ctx: &mut TxContext) {
+    fun init(witness: MUNO, ctx: &mut TxContext) {
         let (treasury_cap, metadata) =
-            coin::create_currency<U>(
+            coin::create_currency<MUNO>(
                 witness,
                 6,
-                b"au",
-                b"au",
+                b"muno",
+                b"muno",
                 b"U",
                 option::none(),
                 ctx
