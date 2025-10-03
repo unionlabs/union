@@ -1,6 +1,6 @@
 [package]
-edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-name    = "ibc"
+edition      = "2024.beta"                                                          # edition = "legacy" to use legacy (pre-2024) Move
+name         = "ibc"
 published-at = "0xf36048b090671467af3d6a6109403d179aaa0a699307ff9df218b893b8f6bd98"
 # original = 0xf7afcb48d53dcd8f1b75bd73779a23fb80e0750e3db7a9fd7e59fe22bb7cd7d4
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"

@@ -1,6 +1,6 @@
 [package]
-name = "vault"
-edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+edition      = "2024.beta"                                                          # edition = "legacy" to use legacy (pre-2024) Move
+name         = "vault"
 published-at = "0x3dd0287ae5f29902b4a2d00988d4b3d69f29ea431811df7b9dd5b4f13d829d2e"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
@@ -9,12 +9,12 @@ published-at = "0x3dd0287ae5f29902b4a2d00988d4b3d69f29ea431811df7b9dd5b4f13d829d
 ibc = { local = "../ibc" }
 
 [addresses]
+ibc   = "0xd5b50a4b934303c39baf1999ddf84cfcd65b4c6f73b2226bfea77987c21fbff8"
 vault = "0x0"
-ibc = "0xd5b50a4b934303c39baf1999ddf84cfcd65b4c6f73b2226bfea77987c21fbff8"
 # vault = "_"
 # ibc = "_"
 
 [dev-dependencies]
 [dev-addresses]
+ibc   = "0x222"
 vault = "0x111"
-ibc = "0x222"

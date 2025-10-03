@@ -5,11 +5,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -76,24 +76,17 @@ module vault::metadata {
         decimals: u8,
         icon_url: Option<String>,
         description: String,
-        owner: address   
+        owner: address
     ): Metadata {
-        Metadata {
-            name,
-            symbol,
-            decimals,
-            icon_url,
-            description,
-            owner,
-        }
+        Metadata { name, symbol, decimals, icon_url, description, owner }
     }
 
     public fun name(metadata: &Metadata): &String {
-        &metadata.name        
+        &metadata.name
     }
 
     public fun symbol(metadata: &Metadata): &String {
-        &metadata.symbol        
+        &metadata.symbol
     }
 
     public fun decimals(metadata: &Metadata): u8 {
@@ -101,11 +94,11 @@ module vault::metadata {
     }
 
     public fun icon_url(metadata: &Metadata): &Option<String> {
-        &metadata.icon_url        
+        &metadata.icon_url
     }
 
     public fun description(metadata: &Metadata): &String {
-        &metadata.description        
+        &metadata.description
     }
 
     public fun owner(metadata: &Metadata): address {
