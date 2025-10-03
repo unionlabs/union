@@ -63,7 +63,7 @@ use cosmwasm_std::{
     Uint128,
 };
 use cw20::Cw20ExecuteMsg;
-use cw_utils::must_pay;
+use cw_utils::{must_pay, nonpayable};
 use depolama::StorageExt;
 
 use crate::{
@@ -225,6 +225,7 @@ pub fn unbond(
     info: MessageInfo,
     unbond_amount: u128,
 ) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_not_stopped(deps.as_ref())?;
 
     let staker_hash = staker_hash(&info.sender);
@@ -312,7 +313,8 @@ pub fn unbond(
 ///
 /// TODO: Withdraw unstaked tokens in this function
 /// TODO: Incentivize this call
-pub fn submit_batch(deps: DepsMut, env: Env) -> ContractResult<Response> {
+pub fn submit_batch(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_not_stopped(deps.as_ref())?;
 
     let config = deps.storage.read_item::<ConfigStore>()?;
@@ -514,6 +516,7 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
 }
 
 pub fn rebase(deps: DepsMut, info: MessageInfo) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_not_stopped(deps.as_ref())?;
 
     Ok(Response::new()
@@ -547,9 +550,8 @@ pub fn receive_unstaked_tokens(
         expected_native_unstaked,
     } = deps
         .storage
-        .maybe_read::<SubmittedBatches>(&batch_id)?
+        .take::<SubmittedBatches>(&batch_id)?
         .ok_or(ContractError::BatchNotFound { batch_id })?;
-    deps.storage.delete::<SubmittedBatches>(&batch_id);
 
     ensure!(
         receive_time <= env.block.time.seconds(),
@@ -590,6 +592,7 @@ pub fn withdraw(
     batch_id: BatchId,
     withdraw_to_address: Addr,
 ) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_not_stopped(deps.as_ref())?;
 
     let config = deps.storage.read_item::<ConfigStore>()?;
@@ -652,6 +655,7 @@ pub fn transfer_ownership(
     info: MessageInfo,
     new_owner: String,
 ) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_admin(deps.as_ref(), &info)?;
 
     deps.storage.write_item::<PendingOwnerStore>(&PendingOwner {
@@ -673,6 +677,7 @@ pub fn transfer_ownership(
 
 // Revoke transfer ownership, callable by the owner
 pub fn revoke_ownership_transfer(deps: DepsMut, info: MessageInfo) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_admin(deps.as_ref(), &info)?;
 
     deps.storage.delete_item::<PendingOwnerStore>();
@@ -681,25 +686,27 @@ pub fn revoke_ownership_transfer(deps: DepsMut, info: MessageInfo) -> ContractRe
 }
 
 pub fn accept_ownership(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    nonpayable(&info)?;
+
     let PendingOwner {
         address: pending_owner,
         owner_transfer_min_time_seconds,
     } = deps
         .storage
-        .maybe_read_item::<PendingOwnerStore>()?
+        .take_item::<PendingOwnerStore>()?
         .ok_or(ContractError::NoPendingOwner)?;
 
-    ensure!(
-        owner_transfer_min_time_seconds <= env.block.time.seconds(),
-        ContractError::OwnershipTransferNotReady {
-            claimable_at_seconds: owner_transfer_min_time_seconds,
-            now_seconds: env.block.time.seconds()
-        }
-    );
-
     if pending_owner == info.sender.as_str() {
-        deps.storage.delete_item::<PendingOwnerStore>();
+        ensure!(
+            owner_transfer_min_time_seconds <= env.block.time.seconds(),
+            ContractError::OwnershipTransferNotReady {
+                claimable_at_seconds: owner_transfer_min_time_seconds,
+                now_seconds: env.block.time.seconds()
+            }
+        );
+
         deps.storage.write_item::<Admin>(&info.sender);
+
         Ok(Response::new()
             .add_event(Event::new("accept_ownership").add_attribute("new_owner", info.sender)))
     } else {
@@ -715,6 +722,7 @@ pub fn update_config(
     batch_period_seconds: Option<u64>,
     unbonding_period_seconds: Option<u64>,
 ) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_admin(deps.as_ref(), &info)?;
 
     let mut event = Event::new("update_config");
@@ -773,6 +781,7 @@ pub fn update_config(
 }
 
 pub fn circuit_breaker(deps: DepsMut, info: MessageInfo) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_not_stopped(deps.as_ref())?;
 
     // must either be admin or a monitor to halt the contract
@@ -798,6 +807,7 @@ pub fn resume_contract(
     info: MessageInfo,
     new_accounting_state: AccountingState,
 ) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_admin(deps.as_ref(), &info)?;
     ensure_stopped(deps.as_ref())?;
 
@@ -828,8 +838,8 @@ pub fn slash_batches(
     info: MessageInfo,
     expected_amounts: Vec<BatchExpectedAmount>,
 ) -> ContractResult<Response> {
+    nonpayable(&info)?;
     ensure_admin(deps.as_ref(), &info)?;
-
     // ensure the contract is stopped before slashing the batches
     ensure_stopped(deps.as_ref())?;
 

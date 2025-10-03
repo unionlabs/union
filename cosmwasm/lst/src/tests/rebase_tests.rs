@@ -59,77 +59,76 @@
 // TITLE.
 
 use cosmwasm_std::{
-    coins,
     testing::{message_info, mock_env},
-    Addr, Uint128,
+    to_json_binary, Addr, Coin, CosmosMsg, Event, Order, Storage, WasmMsg,
 };
-use cw_utils::PaymentError;
+use itertools::assert_equal;
 
 use crate::{
-    error::ContractError,
-    msg::ExecuteMsg,
-    tests::test_helper::{ensure_execute_error, setup, ADMIN, NATIVE_TOKEN, UNION1},
-    types::BatchId,
+    contract::execute,
+    msg::{ExecuteMsg, StakerExecuteMsg},
+    tests::test_helper::{setup, NATIVE_TOKEN, STAKER_ADDRESS, UNION1, UNION2},
 };
 
-mod bond_tests;
-mod circuit_breaker_tests;
-mod helper_tests;
-mod instantiate_tests;
-mod ownership_tests;
-mod query_tests;
-mod rebase_tests;
-mod reward_tests;
-mod submit_batch_tests;
-mod test_helper;
-mod unbond_tests;
-mod withdraw_tests;
-
 #[test]
-fn nonpayable() {
-    let deps = setup();
-    let env = mock_env();
-    let info = message_info(&Addr::unchecked(ADMIN), &coins(1, NATIVE_TOKEN));
+fn rebase_works() {
+    let mut deps = setup();
 
-    let nonpayable_msgs = [
-        ExecuteMsg::Unbond {
-            amount: Uint128::new(100),
+    // UNION1 bonds 1000 tokens
+    let union1_bond_amount = 1000_u128;
+    let union1_shares = 1000_u128;
+    execute(
+        deps.as_mut(),
+        mock_env(),
+        message_info(
+            &Addr::unchecked(UNION1),
+            &[Coin {
+                denom: NATIVE_TOKEN.into(),
+                amount: union1_bond_amount.into(),
+            }],
+        ),
+        ExecuteMsg::Bond {
+            mint_to_address: Addr::unchecked(UNION1),
+            min_mint_amount: union1_shares.into(),
         },
-        ExecuteMsg::Withdraw {
-            withdraw_to_address: Addr::unchecked(UNION1),
-            batch_id: BatchId::ONE,
-        },
-        ExecuteMsg::SubmitBatch {},
-        ExecuteMsg::TransferOwnership {
-            new_owner: UNION1.to_owned(),
-        },
-        ExecuteMsg::AcceptOwnership {},
-        ExecuteMsg::RevokeOwnershipTransfer {},
-        ExecuteMsg::UpdateConfig {
-            protocol_fee_config: None,
-            monitors: None,
-            batch_period_seconds: None,
-            unbonding_period_seconds: None,
-        },
+    )
+    .unwrap();
+
+    let storage_before_rebase = deps
+        .storage
+        .range(None, None, Order::Ascending)
+        .collect::<Vec<_>>();
+
+    let res = execute(
+        deps.as_mut(),
+        mock_env(),
+        message_info(&Addr::unchecked(UNION2), &[]),
         ExecuteMsg::Rebase {},
-        ExecuteMsg::CircuitBreaker {},
-        ExecuteMsg::ResumeContract {
-            total_bonded_native_tokens: Uint128::new(100),
-            total_issued_lst: Uint128::new(100),
-            total_reward_amount: Uint128::new(100),
-        },
-        ExecuteMsg::SlashBatches {
-            new_amounts: vec![],
-        },
-    ];
+    )
+    .unwrap();
 
-    for msg in nonpayable_msgs {
-        ensure_execute_error(
-            deps.as_ref(),
-            &env,
-            &info,
-            msg,
-            ContractError::Payment(PaymentError::NonPayable {}),
-        );
-    }
+    // delegates directly to the staker
+    assert_eq!(
+        res.messages[0].msg,
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: STAKER_ADDRESS.into(),
+            msg: to_json_binary(&StakerExecuteMsg::Rebase {}).unwrap(),
+            funds: vec![]
+        })
+    );
+
+    // no further messages
+    assert_eq!(res.messages.len(), 1);
+
+    // event is emitted correctly
+    assert_eq!(
+        res.events,
+        [Event::new("rebase").add_attribute("caller", UNION2)],
+    );
+
+    // no storage changes after the call to rebase on the lst hub, since all it does is directly delegate to the staker
+    assert_equal(
+        storage_before_rebase,
+        deps.storage.range(None, None, Order::Ascending),
+    );
 }

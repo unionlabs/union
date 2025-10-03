@@ -23,7 +23,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
+ "cw-utils",
  "cw20-ics20",
  "hex",
  "itertools 0.13.0",
@@ -4311,7 +4311,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
+ "cw-utils",
  "schemars",
  "serde",
  "thiserror 1.0.69",
@@ -4341,25 +4341,6 @@ dependencies = [
 
 [[package]]
 name = "cw-multi-test"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d818f5323c80ed4890db7f89d65eda3f0261fe21878e628c27ea2d8de4b7ba4"
-dependencies = [
- "anyhow",
- "cosmwasm-std 1.5.11",
- "cw-storage-plus 1.2.0",
- "cw-utils 1.0.3",
- "derivative",
- "itertools 0.11.0",
- "prost 0.12.6",
- "schemars",
- "serde",
- "sha2 0.10.9",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-multi-test"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1dbb5533fff9a5c3d78c963f4f97a01f485062af5f00458fd4ec97bc4669a32a"
@@ -4369,7 +4350,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
+ "cw-utils",
  "itertools 0.14.0",
  "prost 0.13.5",
  "schemars",
@@ -4391,7 +4372,7 @@ dependencies = [
  "cw-orch-fns-derive",
  "cw-orch-mock",
  "cw-orch-traits",
- "cw-utils 2.0.0",
+ "cw-utils",
  "hex",
  "log",
  "schemars",
@@ -4421,7 +4402,7 @@ dependencies = [
  "cosmos-sdk-proto",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
+ "cw-utils",
  "dirs 5.0.1",
  "log",
  "serde",
@@ -4451,7 +4432,7 @@ dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-std 2.2.2",
  "cw-orch-core",
- "cw-utils 2.0.0",
+ "cw-utils",
  "log",
  "serde",
  "sha2 0.10.9",
@@ -4517,21 +4498,6 @@ dependencies = [
 
 [[package]]
 name = "cw-utils"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c4a657e5caacc3a0d00ee96ca8618745d050b8f757c709babafb81208d4239c"
-dependencies = [
- "cosmwasm-schema 1.5.11",
- "cosmwasm-std 1.5.11",
- "cw2 1.1.2",
- "schemars",
- "semver 1.0.26",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-utils"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07dfee7f12f802431a856984a32bce1cb7da1e6c006b5409e3981035ce562dec"
@@ -4539,21 +4505,6 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "schemars",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw2"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6c120b24fbbf5c3bedebb97f2cc85fbfa1c3287e09223428e7e597b5293c1fa"
-dependencies = [
- "cosmwasm-schema 1.5.11",
- "cosmwasm-std 1.5.11",
- "cw-storage-plus 1.2.0",
- "schemars",
- "semver 1.0.26",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -4581,7 +4532,7 @@ checksum = "a42212b6bf29bbdda693743697c621894723f35d3db0d5df930be22903d0e27c"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
- "cw-utils 2.0.0",
+ "cw-utils",
  "schemars",
  "serde",
 ]
@@ -4592,10 +4543,10 @@ version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
- "cw-multi-test 2.4.0",
+ "cw-multi-test",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw2 2.0.0",
+ "cw-utils",
+ "cw2",
  "cw20",
  "cw20-ctx",
  "embed-commit",
@@ -4625,8 +4576,8 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-controllers",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw2 2.0.0",
+ "cw-utils",
+ "cw2",
  "cw20",
  "schemars",
  "semver 1.0.26",
@@ -8982,23 +8933,19 @@ dependencies = [
  "bincode 2.0.1",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
- "cw-multi-test 0.17.0",
- "cw-utils 2.0.0",
+ "cw-utils",
  "cw20",
  "depolama",
  "embed-commit",
  "frissitheto",
  "hex-literal 1.0.0",
- "ibc-union-spec",
  "itertools 0.13.0",
- "prost 0.12.6",
  "schemars",
  "serde",
  "serde-json-wasm 1.0.1",
  "serde-utils",
  "sha2 0.10.9",
  "thiserror 2.0.12",
- "ucs03-zkgm",
  "unionlabs-encoding",
  "unionlabs-primitives",
 ]
@@ -9010,7 +8957,7 @@ dependencies = [
  "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
  "cw-account",
- "cw-utils 2.0.0",
+ "cw-utils",
  "depolama",
  "embed-commit",
  "frissitheto",
@@ -16487,7 +16434,7 @@ dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-account",
- "cw-multi-test 2.4.0",
+ "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw20",
  "cw20-base",
