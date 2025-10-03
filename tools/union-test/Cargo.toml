@@ -9,6 +9,7 @@ version                = "0.0.0"
 
 [dependencies]
 alloy                          = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+alloy-sol-types                = { workspace = true }
 axum                           = { workspace = true, features = ["macros", "tokio", "json"] }
 bip32                          = { workspace = true }
 cometbft-rpc                   = { workspace = true }
@@ -23,8 +24,8 @@ ibc-solidity                   = { workspace = true, features = ["serde", "rpc"]
 ibc-union-msg                  = { workspace = true }
 ibc-union-spec                 = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
+lst                            = { workspace = true, features = ["library"] }
 protos                         = { workspace = true }
-rand                           = { version = "0.9.0" }
 regex                          = "1"
 serde                          = { workspace = true }
 serde-utils                    = { workspace = true }
@@ -36,11 +37,12 @@ ucs03-zkgm                     = { workspace = true, features = ["library"] }
 unionlabs                      = { workspace = true }
 voyager-sdk                    = { workspace = true }
 
-
 [dev-dependencies]
-once_cell   = "1.17"
-serial_test = "0.5"
-tokio       = { version = "1", features = ["macros", "rt"] }
+once_cell          = "1.17"
+serial_test        = "0.5"
+tokio              = { version = "1", features = ["macros", "rt"] }
+tracing-subscriber = "0.3"
+rand               = "0.6"
 
 
 [lints]

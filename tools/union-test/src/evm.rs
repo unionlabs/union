@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, panic::AssertUnwindSafe, str::FromStr, time::Duration};
+use std::{panic::AssertUnwindSafe, str::FromStr, time::Duration};
 
 use alloy::{
     contract::{Error, RawCallBuilder, Result},
@@ -23,7 +23,7 @@ use ibc_solidity::Ibc::IbcEvents;
 use ibc_union_spec::{datagram::Datagram, ChannelId};
 use jsonrpsee::{core::RpcResult, types::ErrorObjectOwned};
 use serde::{Deserialize, Serialize};
-use tracing::{error, info_span, warn, Instrument};
+use tracing::{debug, error, info_span, warn, Instrument};
 use unionlabs::{
     primitives::{FixedBytes, H160, H256, U256},
     ErrorReporter,
@@ -36,7 +36,7 @@ use voyager_sdk::{
 use crate::helpers;
 
 #[derive(Debug)]
-pub struct Module<'a> {
+pub struct Module {
     pub chain_id: ChainId,
 
     pub ibc_handler_address: H160,
@@ -53,8 +53,6 @@ pub struct Module<'a> {
     pub fixed_gas_price: Option<u128>,
 
     pub gas_multiplier: f64,
-
-    pub _marker: PhantomData<&'a ()>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,7 +77,7 @@ pub struct Config {
     pub gas_multiplier: f64,
 }
 
-impl<'a> Module<'a> {
+impl Module {
     pub async fn new(config: Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
@@ -142,7 +140,6 @@ impl<'a> Module<'a> {
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
             gas_multiplier: config.gas_multiplier,
-            _marker: PhantomData,
         })
     }
 
@@ -181,9 +178,7 @@ impl<'a> Module<'a> {
                     };
                     for log in logs {
                         if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
-                            println!("Decoded IBC event: {:?}", ibc_event);
                             if let Some(event) = filter_fn(ibc_event.data) {
-                                println!("Event found: {:?}", event);
                                 events.push(event);
                             }
                         }
@@ -343,16 +338,9 @@ impl<'a> Module<'a> {
                     {
                         let ack_bytes: &[u8] = ev.acknowledgement.as_ref();
 
-                        // Grab the first 32 bytes — this is the uint256 in ABI encoding
-                        let mut tag_be = [0u8; 32];
-                        tag_be.copy_from_slice(&ack_bytes[..32]);
-
-                        // If you want it as u128 (will fail if > u128::MAX)
-                        let tag_u128 = u128::from_be_bytes(tag_be[16..].try_into().ok()?);
-
                         Some(helpers::PacketAck {
                             packet_hash: ev.packet_hash.into(),
-                            tag: tag_u128,
+                            tag: alloy::primitives::U256::from_be_slice(&ack_bytes[..32]),
                         })
                     }
                     _ => None,
@@ -533,12 +521,12 @@ impl<'a> Module<'a> {
                 .map_err(|_rpc_err| TxSubmitError::InclusionError)?;
 
             if let Some(rcpt) = maybe_rcpt {
-                println!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
+                debug!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
                 return Ok(());
             }
             if attempts <= 5 {
                 attempts += 1;
-                println!("receipt not yet available, retry {attempts}/5…");
+                debug!("receipt not yet available, retry {attempts}/5…");
                 tokio::time::sleep(Duration::from_secs(4)).await;
                 continue;
             }
@@ -548,7 +536,6 @@ impl<'a> Module<'a> {
 
     fn is_nonce_too_low(&self, e: &Error) -> bool {
         if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
-            println!("Nonce is too low, error entered here.: {:?}", rpc);
             rpc.message.contains("nonce too low")
                 || rpc.message.contains("replacement transaction underpriced")
         } else {
@@ -592,13 +579,10 @@ impl<'a> Module<'a> {
             match pending {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
-                    println!("pending: {:?}", pending);
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -626,13 +610,10 @@ impl<'a> Module<'a> {
             match pending {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
-                    println!("pending: {:?}", pending);
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("Approved spender: {spender:?} for token_id: {token_id:?} on contract: {contract:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -717,7 +698,6 @@ impl<'a> Module<'a> {
                     return Ok(address.into());
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -730,9 +710,7 @@ impl<'a> Module<'a> {
 
     pub async fn send_ibc_transaction(
         &self,
-        _contract: H160,
-        msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
-        _provider: &DynProvider<AnyNetwork>,
+        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> RpcResult<(FixedBytes<32>, u64)> {
         let res = self
             .keyring
@@ -794,7 +772,7 @@ impl<'a> Module<'a> {
     pub async fn submit_transaction(
         &self,
         _wallet: &LocalSigner<SigningKey>,
-        mut call: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
+        mut call: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
         if let Some(max_gas_price) = self.max_gas_price {
             let gas_price = self
@@ -811,14 +789,10 @@ impl<'a> Module<'a> {
                     price: gas_price,
                 });
             } else {
-                println!("gas price: {}", gas_price);
             }
         }
 
-        println!("submitting evm tx");
-
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
-            println!("error estimating gas: {:?}", e);
             if ErrorReporter(&e)
                 .to_string()
                 .contains("gas required exceeds")
@@ -830,10 +804,6 @@ impl<'a> Module<'a> {
         })?;
 
         let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
-        println!(
-            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
-            self.gas_multiplier
-        );
 
         if let Some(fixed) = self.fixed_gas_price {
             call = call.gas_price(fixed);
@@ -844,7 +814,6 @@ impl<'a> Module<'a> {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
                     self.wait_for_tx_inclusion(&self.provider, tx_hash).await?;
-                    println!("tx included: {:?}", tx_hash);
 
                     Ok(tx_hash)
                 }
@@ -899,11 +868,9 @@ impl<'a> Module<'a> {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("migrateV1ToV2 executed, tx_hash = {tx_hash:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
-                    println!("nonce too low – retrying ({attempts}/5)");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
@@ -978,18 +945,14 @@ impl<'a> Module<'a> {
             match pending {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
-                    println!("pending: {:?}", pending);
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-                    println!("Registered governance token on channel {channel_id} with metadata image {metadata_image:?}");
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 10 && self.is_nonce_too_low(&err) => {
-                    println!("Nonce too low, retrying... Attempt: {attempts}");
                     tokio::time::sleep(Duration::from_secs(10)).await;
                     continue;
                 }
                 Err(err) => {
-                    println!("Failed to register governance token: {:?}", err);
                     return Err(err.into());
                 }
             }
@@ -998,6 +961,17 @@ impl<'a> Module<'a> {
 }
 
 pub mod zkgm {
+
+    impl From<ucs03_zkgm::com::Instruction> for Instruction {
+        fn from(value: ucs03_zkgm::com::Instruction) -> Self {
+            Self {
+                version: value.version,
+                opcode: value.opcode,
+                operand: value.operand,
+            }
+        }
+    }
+
     alloy::sol! {
         #![sol(rpc)]
         struct GovernanceToken {
