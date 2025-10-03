@@ -42,7 +42,7 @@ export const walletClientLayer = <Id>(
           throw new Error("Invalid Sui signer: expected Ed25519Keypair")
         }
         const client = new SuiClient({ url: opts.url } satisfies SuiClientOptions)
-        return { client, signer: opts.signer } // <-- matches Sui.Sui.WalletClient interface
+        return { client, signer: opts.signer }
       },
       catch: (err) =>
         new Sui.CreateWalletClientError({

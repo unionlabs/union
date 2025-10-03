@@ -13,10 +13,8 @@ import { ChannelId } from "./schema/channel.js"
 import type * as Token from "./Token.js"
 import type * as ZkgmInstruction from "./ZkgmInstruction.js"
 
-
 /** @since 2.0.0 */
 export namespace Transport {
-  
   export interface Sui {
     readonly relayStoreId: string
     readonly vaultId: string
@@ -104,7 +102,6 @@ export const make: (options: {
   kind?: "execute" | "simulateAndExecute" | undefined
   transport?: Transport.Params | undefined
 }) => ZkgmClientRequest = internal.make
-
 
 /**
  * @category combinators

@@ -8,8 +8,8 @@ import { ChannelId } from "../schema/channel.js"
 import { Hex } from "../schema/hex.js"
 import type * as Token from "../Token.js"
 import type * as ClientRequest from "../ZkgmClientRequest.js"
-import { ZkgmInstruction } from "../ZkgmInstruction.js"
 import type { Transport } from "../ZkgmClientRequest.js"
+import { ZkgmInstruction } from "../ZkgmInstruction.js"
 
 /** @internal */
 export const TypeId: ClientRequest.TypeId = Symbol.for(
@@ -45,7 +45,7 @@ function makeProto(
   ucs03Address: string,
   instruction: ZkgmInstruction,
   kind: "execute" | "simulateAndExecute",
-  transport?: Transport.Params | undefined
+  transport?: Transport.Params | undefined,
 ): ClientRequest.ZkgmClientRequest {
   const self = Object.create(Proto)
   self.source = source
@@ -54,7 +54,7 @@ function makeProto(
   self.ucs03Address = ucs03Address
   self.instruction = instruction
   self.kind = kind
-  self.transport = transport  
+  self.transport = transport
   return self
 }
 
@@ -115,7 +115,9 @@ export const modify = dual<
     result = setKind(result, options.kind)
   }
 
-  if (options.transport) result = setTransport(result, options.transport) 
+  if (options.transport) {
+    result = setTransport(result, options.transport)
+  }
 
   return result
 })
@@ -155,10 +157,13 @@ export const setDestination = dual<
   ))
 
 export const setTransport = dual<
-  (transport: Transport.Params) =>
-    (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
-  (self: ClientRequest.ZkgmClientRequest, transport: Transport.Params) =>
-    ClientRequest.ZkgmClientRequest
+  (
+    transport: Transport.Params,
+  ) => (self: ClientRequest.ZkgmClientRequest) => ClientRequest.ZkgmClientRequest,
+  (
+    self: ClientRequest.ZkgmClientRequest,
+    transport: Transport.Params,
+  ) => ClientRequest.ZkgmClientRequest
 >(2, (self, transport) =>
   makeProto(
     self.source,
@@ -167,9 +172,8 @@ export const setTransport = dual<
     self.ucs03Address,
     self.instruction,
     self.kind,
-    transport,                                 
+    transport,
   ))
-
 
 /** @internal */
 export const setChannelId = dual<

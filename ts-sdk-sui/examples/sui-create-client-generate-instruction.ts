@@ -42,7 +42,6 @@ const program = Effect.gen(function*() {
 
   console.log("source", source)
 
-  // TODO: Destination will be somewhere
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("union.union-1"),
   )
@@ -73,38 +72,30 @@ const program = Effect.gen(function*() {
     channelId: ChannelId.make(5),
     ucs03Address: "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830",
     instruction: tokenOrder,
-  
+
     // NEW — only read by the Sui client
     transport: {
       sui: {
-        relayStoreId:
-          "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924",
-        vaultId:
-          "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3",
-        ibcStoreId:
-          "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175",
+        relayStoreId: "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924",
+        vaultId: "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3",
+        ibcStoreId: "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175",
         coins: [
           {
             typeArg: "0x2::sui::SUI",
-            objectId:
-              "0xab70523198047a482febffab381a2a564002459bdcfa98991c747a013b3fd3e4",
+            objectId: "0x266d00c4b329111255339c041cc57a1b616cfeddafdae47df8f814002578e95b",
           },
         ],
       },
     },
   })
 
+  yield* Effect.log("ZKGM Client Request", request)
+
   const zkgmClient = yield* ZkgmClient.ZkgmClient
 
   const response: ZkgmClientResponse.ZkgmClientResponse = yield* zkgmClient.execute(request)
 
   yield* Effect.log("Submission Hash", response.txHash)
-
-  const completion = yield* response.waitFor(
-    ZkgmIncomingMessage.LifecycleEvent.$is("EvmTransactionReceiptComplete"),
-  )
-
-  yield* Effect.log("Completion", completion)
 }).pipe(
   Effect.provide(layerWithoutWallet),
   Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),

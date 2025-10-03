@@ -17,8 +17,7 @@ import {
   writeContract,
 } from "../src/Sui.js"
 
-const MNEMONIC = process.env.MNEMONIC
-  ?? "fix auto gallery heart practice drip joke nice decline lift attend bread"
+const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
 const RECIPIENT = process.env.RECIPIENT
   ?? "0x03ff9dd9e093387bdd4432c6a3eb6a1bd5a8f39a530042ac7efe576f18d3232b"
 
