@@ -24,7 +24,7 @@ let
          }
         }
        ],
-       "deposit": "15000000muno",
+       "deposit": "15000000au",
        "title": "${version}",
        "summary": "Upgrade to ${version}"
       }' > proposal-${version}.json
@@ -41,14 +41,14 @@ let
   upgradeTo = version: height: ''
     union.succeed('docker cp ${mkUpgradeProposal version height}/proposal-${version}.json devnet-union-minimal-union-minimal-0-1:/proposal-${version}.json')
 
-    print(union.succeed('docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx gov submit-proposal proposal-${version}.json --from valoper-0 --keyring-backend test -y --gas auto --gas-adjustment 1.4 --gas-prices 1muno'))
+    print(union.succeed('docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx gov submit-proposal proposal-${version}.json --from valoper-0 --keyring-backend test -y --gas auto --gas-adjustment 1.4 --gas-prices 1au'))
 
     print(union.succeed("docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query gov proposal ${toString (height / 10)} --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.proposal.status == \"PROPOSAL_STATUS_VOTING_PERIOD\"'"))
     union.wait_until_succeeds("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query gov proposal ${toString (height / 10)} --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.proposal.status == \"PROPOSAL_STATUS_VOTING_PERIOD\"') == true ]]", timeout=30)
 
     ${forEachNode (
       id:
-      "print(union.succeed('docker exec devnet-union-minimal-union-minimal-${id}-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx gov vote ${toString (height / 10)} yes --keyring-backend test --from valoper-${id} -y --gas auto --gas-adjustment 1.8 --gas-prices 1muno'))"
+      "print(union.succeed('docker exec devnet-union-minimal-union-minimal-${id}-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx gov vote ${toString (height / 10)} yes --keyring-backend test --from valoper-${id} -y --gas auto --gas-adjustment 1.8 --gas-prices 1au'))"
     )}
 
     union.wait_until_succeeds("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query gov proposal ${toString (height / 10)} --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.proposal.status == \"PROPOSAL_STATUS_PASSED\"') == true ]]", timeout=60)
@@ -80,7 +80,7 @@ in
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1fktal7292h36h7glff5edq59vpdfn7504duw5m --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.delegation_responses') == null ]]")
 
       # Ensure legacy tokens are burnt
-      union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners muno --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
+      union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners au --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners ugas --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners upoa --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
     '';

@@ -47,7 +47,7 @@
         node = self'.packages.uniond;
         chainId = "union-devnet-1";
         chainName = "union";
-        denom = "muno";
+        denom = "au";
         keyType = "bn254";
         validatorCount = 4;
         sdkVersion = 50;
@@ -185,7 +185,7 @@
         node = (get-flake inputs.v1_0_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
         chainName = "union-minimal";
-        denom = "muno";
+        denom = "au";
         keyType = "bn254";
         validatorCount = 4;
         portIncrease = 0;
@@ -199,7 +199,7 @@
             tokenfactory.params = {
               denom_creation_fee = [
                 {
-                  denom = "muno";
+                  denom = "au";
                   amount = "10000000";
                 }
               ];
@@ -232,7 +232,7 @@
             --api.rpc-max-body-bytes 100000000 \
             --grpc.address 0.0.0.0:9090 \
             --log_level rpc-server:warn,x/wasm:debug,*:info \
-            --minimum-gas-prices     "0muno" \
+            --minimum-gas-prices     "0au" \
             --rpc.laddr tcp://0.0.0.0:26657 \
             --rpc.pprof_laddr        0.0.0.0:6060 \
             --rpc.unsafe 
