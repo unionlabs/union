@@ -211,7 +211,7 @@ impl Module {
                     move_api::channel_open_ack(
                         &mut ptb_builder,
                         self,
-                        try_parse_port(&self.graphql_url, &port_id.as_bytes()).await?,
+                        try_parse_port(&self.graphql_url, port_id.as_bytes()).await?,
                         port_id,
                         data,
                     )?
@@ -221,9 +221,8 @@ impl Module {
                     self,
                     try_parse_port(
                         &self.graphql_url,
-                        &move_api::get_port_id(self, data.channel_id)
+                        move_api::get_port_id(self, data.channel_id)
                             .await?
-                            .as_str()
                             .as_bytes(),
                     )
                     .await?,
@@ -233,8 +232,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packets[0].destination_channel_id).await?;
 
-                    let module_info =
-                        try_parse_port(&self.graphql_url, &port_id.as_bytes()).await?;
+                    let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -287,8 +285,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packets[0].source_channel_id).await?;
 
-                    let module_info =
-                        try_parse_port(&self.graphql_url, &port_id.as_bytes()).await?;
+                    let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -397,7 +394,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await
                             .unwrap();
 
-                        let _ = send_transactions(&self.sui_client, &pk, ptb).await?;
+                        let _ = send_transactions(&self.sui_client, pk, ptb).await?;
                         Ok(noop())
                     })
                 })

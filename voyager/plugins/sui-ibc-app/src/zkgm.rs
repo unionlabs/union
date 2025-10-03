@@ -55,7 +55,7 @@ pub fn begin_recv_call(
                 p.source_channel_id,
                 p.destination_channel_id,
                 p.data.clone(),
-                0 as u64,
+                0,
                 p.timeout_timestamp,
             )
         })
@@ -176,7 +176,7 @@ pub fn begin_ack_call(
                 p.source_channel_id,
                 p.destination_channel_id,
                 p.data.clone(),
-                0 as u64,
+                0,
                 p.timeout_timestamp,
             )
         })
@@ -345,7 +345,7 @@ pub async fn publish_new_coin(
             bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
         ))
         .unwrap();
-    let _ = ptb.command(Command::TransferObjects(vec![res.clone()], arg));
+    let _ = ptb.command(Command::TransferObjects(vec![res], arg));
 
     let transaction_response =
         voyager_transaction_plugin_sui::send_transactions(&module.sui_client, pk, ptb.finish())
@@ -414,7 +414,7 @@ pub async fn get_registered_wrapped_token(
             module.zkgm_config.wrapped_token_to_t,
             DynamicFieldName {
                 type_: TypeTag::Vector(Box::new(TypeTag::U8)),
-                value: serde_json::to_value(&wrapped_token).expect("serde will work"),
+                value: serde_json::to_value(wrapped_token).expect("serde will work"),
             },
         )
         .await
@@ -440,7 +440,7 @@ pub async fn get_registered_wrapped_token(
                     );
                 }
 
-                return Ok(Some(
+                Ok(Some(
                     StructTag {
                         address: AccountAddress::from_str(fields[0]).expect("address is valid"),
                         module: Identifier::new(fields[1]).expect("module name is valid"),
@@ -448,7 +448,7 @@ pub async fn get_registered_wrapped_token(
                         type_params: vec![],
                     }
                     .into(),
-                ));
+                ))
             }
             SuiParsedData::Package(_) => panic!("this should never be a package"),
         }
@@ -524,6 +524,7 @@ struct SuiFungibleAssetMetadata {
     description: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Deploy and register the token if needed in `ZKGM`
 pub async fn register_token_if_zkgm(
     module: &Module,
