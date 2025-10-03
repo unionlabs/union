@@ -260,7 +260,7 @@ module ibc::ibc {
     }
 
     public struct TimeoutPacket has drop, store, copy {
-        packet: Packet
+        packet_hash: vector<u8>
     }
 
     public struct WriteAck has drop, store, copy {
@@ -1423,7 +1423,7 @@ module ibc::ibc {
                 commitment::batch_packets_commitment_key(
                     packet_hash
                 );
-            set_packet_acknowledged(ibc_store, commitment_key);
+            ibc_store.set_packet_acknowledged(commitment_key);
             
             event::emit(
                 PacketAck {
@@ -1491,32 +1491,37 @@ module ibc::ibc {
         *commitment = commitment::commit_ack(acknowledgement);
     }
 
-    public fun timeout_packet(
+    public fun timeout_packet<T: drop>(
         ibc_store: &mut IBCStore,
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
+        witness: T,
     ) {
-        let source_channel = packet::source_channel_id(&packet);
-        let destination_channel = packet::destination_channel_id(&packet);
+        let source_channel = packet.source_channel_id();
+
+        let port_id = *ibc_store.channel_to_port.borrow(source_channel);
+        validate_port(port_id, witness);
+
+        let destination_channel = packet.destination_channel_id();
 
         if(!ibc_store.channels.contains(source_channel)) {
             abort E_CHANNEL_NOT_FOUND
         };
         let channel = ibc_store.channels.borrow(source_channel);
-        assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
-        let connection_id = channel::connection_id(channel);
+        let connection_id = channel.connection_id();
 
         if(!ibc_store.connections.contains(connection_id)) {
             abort E_CONNECTION_NOT_FOUND
         };
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
+            connection.state() == CONN_STATE_OPEN,
             E_INVALID_CONNECTION_STATE
         );
-        let client_id = connection_end::client_id(connection);
+        let client_id = connection.client_id();
 
         if(!ibc_store.client_mgr.exists(client_id)) {
             abort E_CLIENT_NOT_FOUND
@@ -1525,36 +1530,30 @@ module ibc::ibc {
             ibc_store.client_mgr.get_timestamp_at_height(client_id, proof_height);
         assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
 
+        let packet_hash = commitment::commit_packet(&packet);
+        let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
 
-        let commitment_key =
-                commitment::batch_receipts_commitment_key(
-                    commitment::commit_packet(&packet)
-                );
-        let err = ibc_store.client_mgr.verify_non_membership(client_id, proof_height, proof, commitment_key);
+        let err = ibc_store.client_mgr.verify_non_membership(
+            client_id, proof_height, proof, commitment_key);
+
         assert!(err == 0, err);
 
-        if (packet::timeout_timestamp(&packet) != 0) {
+        if (packet.timeout_timestamp() == 0) {
+            abort E_TIMEOUT_MUST_BE_SET
+        } else {
             assert!(
-                packet::timeout_timestamp(&packet) < proof_timestamp,
+                packet.timeout_timestamp() < proof_timestamp,
                 E_TIMESTAMP_TIMEOUT_NOT_REACHED
             );
         };
-        let height = packet::timeout_height(&packet);
-        if (height != 0) {
-            assert!(
-                height < proof_height,
-                E_TIMEOUT_HEIGHT_NOT_REACHED
-            );
-        };
 
-        let commitment_key =
+        ibc_store.set_packet_acknowledged(
             commitment::batch_packets_commitment_key(
-                commitment::commit_packet(&packet)
-            );
-        
-        ibc_store.commitments.remove(commitment_key);
+                packet_hash
+            )
+        );
 
-        event::emit(TimeoutPacket { packet });
+        event::emit(TimeoutPacket { packet_hash });
     }
 
     // #[test]

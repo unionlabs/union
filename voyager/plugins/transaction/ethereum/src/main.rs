@@ -413,7 +413,7 @@ impl PluginServer<ModuleCall, Never> for Module {
             .map_err(|e| match e {
                 MethodsError::Parse(error) => ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    ErrorReporter(error).with_message("error parsing ergs"),
+                    ErrorReporter(error).with_message("error parsing args"),
                     None::<()>,
                 ),
                 MethodsError::JsonRpc(error_object) => error_object,
