@@ -333,7 +333,6 @@ export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
     },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
     SuiDisplay: ({ address }) => AddressCanonicalBytes.make(normalizeSuiAddress(address) as Hex),
-
   }),
 )
 /**

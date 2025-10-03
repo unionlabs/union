@@ -1,5 +1,5 @@
 /**
- * This module defines a concrete {@link ZkgmClient} for EVM source chain usage.
+ * This module defines a concrete {@link ZkgmClient} for Sui source chain usage.
  *
  * @since 0.0.0
  */
