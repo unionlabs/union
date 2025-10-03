@@ -41,6 +41,10 @@
       packages =
         voyager
         // (crane.buildWorkspaceMember "voyager/plugins/zkgm-filter" { })
+        // (crane.buildWorkspaceMember voy-modules-list {
+          pname = "voyager-modules-plugins-single-build";
+          version = "v0.0.0";
+        })
         // schema.packages
         // {
           voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (
@@ -50,6 +54,7 @@
               ) voy-modules-list
             )
           );
+
           voyager-modules-plugins =
             let
               builder =
