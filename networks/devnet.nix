@@ -181,11 +181,11 @@
         portIncrease = 300;
       };
 
-      devnet-union-minimal = mkCosmosDevnet {
+      union-v1 = mkCosmosDevnet {
         node = (get-flake inputs.v1_0_0).packages.${system}.uniond;
-        chainId = "union-minimal-devnet-1";
-        chainName = "union-minimal";
-        denom = "au";
+        chainId = "union-v1-1";
+        chainName = "union-v1";
+        denom = "muno";
         keyType = "bn254";
         validatorCount = 4;
         portIncrease = 0;
@@ -199,7 +199,7 @@
             tokenfactory.params = {
               denom_creation_fee = [
                 {
-                  denom = "au";
+                  denom = "muno";
                   amount = "10000000";
                 }
               ];
@@ -217,8 +217,8 @@
           export UNIONVISOR_BUNDLE=${self'.packages.bundle-union-1-next}
 
           ${pkgs.lib.getExe self'.packages.unionvisor} init \
-            --moniker union-devnet-minimal \
-            --network union-minimal-devnet-1 \
+            --moniker union-v1 \
+            --network union-v1-1 \
             --seeds "" \
 
           cp --no-preserve=mode -RL home/* .unionvisor/home
@@ -232,7 +232,7 @@
             --api.rpc-max-body-bytes 100000000 \
             --grpc.address 0.0.0.0:9090 \
             --log_level rpc-server:warn,x/wasm:debug,*:info \
-            --minimum-gas-prices     "0au" \
+            --minimum-gas-prices     "0muno,0au" \
             --rpc.laddr tcp://0.0.0.0:26657 \
             --rpc.pprof_laddr        0.0.0.0:6060 \
             --rpc.unsafe 
@@ -252,7 +252,7 @@
         devnet-stargaze = devnet-stargaze.services;
         devnet-osmosis = devnet-osmosis.services;
 
-        devnet-union-minimal = devnet-union-minimal.services;
+        union-v1 = union-v1.services;
 
         devnet-eth =
           {
@@ -337,7 +337,7 @@
         // mkNamedModule "devnet-stargaze"
         // mkNamedModule "devnet-osmosis"
         // mkNamedModule "devnet-simd"
-        // mkNamedModule "devnet-union-minimal"
+        // mkNamedModule "union-v1"
         // mkNamedModule "devnet-union";
 
       mkNamedSpec = name: {
@@ -357,7 +357,7 @@
         // mkNamedSpec "devnet-stargaze"
         // mkNamedSpec "devnet-osmosis"
         // mkNamedSpec "devnet-simd"
-        // mkNamedSpec "devnet-union-minimal"
+        // mkNamedSpec "union-v1"
         // mkNamedSpec "devnet-union";
 
       mkNamedBuild = name: {
@@ -371,7 +371,7 @@
         // mkNamedBuild "devnet-stargaze"
         // mkNamedBuild "devnet-osmosis"
         // mkNamedBuild "devnet-simd"
-        // mkNamedBuild "devnet-union-minimal"
+        // mkNamedBuild "union-v1"
         // mkNamedBuild "devnet-union";
 
       mkArionBuild = name: ciCondition: {
@@ -452,7 +452,7 @@
         // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
-        // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"))
+        // (mkArionBuild "union-v1" (system == "x86_64-linux"))
         // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
 
       _module.args.networks.modules = modules;

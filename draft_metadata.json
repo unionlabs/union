@@ -1,0 +1,10 @@
+{
+ "title": "Update Slashing Params",
+ "authors": [
+  "Union Foundation"
+ ],
+ "summary": "Update slashing params",
+ "details": "Updates slashing params to enforce more strict uptime and punish double slashing",
+ "proposal_forum_url": ".",
+ "vote_option_context": "yes/no"
+}

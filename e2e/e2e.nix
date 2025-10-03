@@ -96,7 +96,7 @@
               memorySize = 4 * 1024;
               arion = {
                 backend = "docker";
-                projects.union-devnet.settings = networks.modules.devnet-union-minimal;
+                projects.union-devnet.settings = networks.modules.union-v1;
               };
             };
           };
