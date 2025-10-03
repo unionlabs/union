@@ -70,7 +70,7 @@ use crate::{
     execute::OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS,
     msg::ExecuteMsg,
     state::{Admin, PendingOwnerStore},
-    tests::test_helper::{setup, ADMIN, UNION1, UNION2, UNION_MONITOR_1},
+    tests::test_helper::{ensure_execute_error, setup, ADMIN, UNION1, UNION2, UNION_MONITOR_1},
     types::PendingOwner,
 };
 
@@ -178,37 +178,31 @@ fn ownership_transfer_overwrites() {
 
 #[test]
 fn requires_admin() {
-    let mut deps = setup();
+    let deps = setup();
 
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            mock_env(),
-            message_info(&Addr::unchecked(UNION1), &[]),
-            ExecuteMsg::TransferOwnership {
-                new_owner: UNION2.to_owned(),
-            },
-        )
-        .unwrap_err(),
+    ensure_execute_error(
+        deps.as_ref(),
+        &mock_env(),
+        &message_info(&Addr::unchecked(UNION1), &[]),
+        ExecuteMsg::TransferOwnership {
+            new_owner: UNION2.to_owned(),
+        },
         ContractError::Unauthorized {
-            sender: Addr::unchecked(UNION1)
-        }
+            sender: Addr::unchecked(UNION1),
+        },
     );
 
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            mock_env(),
-            // monitor is also not allowed to transfer ownership, *only* admin
-            message_info(&Addr::unchecked(UNION_MONITOR_1), &[]),
-            ExecuteMsg::TransferOwnership {
-                new_owner: UNION2.to_owned(),
-            },
-        )
-        .unwrap_err(),
+    ensure_execute_error(
+        deps.as_ref(),
+        &mock_env(),
+        // monitor is also not allowed to transfer ownership, *only* admin
+        &message_info(&Addr::unchecked(UNION_MONITOR_1), &[]),
+        ExecuteMsg::TransferOwnership {
+            new_owner: UNION2.to_owned(),
+        },
         ContractError::Unauthorized {
-            sender: Addr::unchecked(UNION_MONITOR_1)
-        }
+            sender: Addr::unchecked(UNION_MONITOR_1),
+        },
     );
 }
 
@@ -226,17 +220,14 @@ fn revoke_requires_admin() {
     )
     .unwrap();
 
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            mock_env(),
-            message_info(&Addr::unchecked(UNION1), &[]),
-            ExecuteMsg::RevokeOwnershipTransfer {},
-        )
-        .unwrap_err(),
+    ensure_execute_error(
+        deps.as_ref(),
+        &mock_env(),
+        &message_info(&Addr::unchecked(UNION1), &[]),
+        ExecuteMsg::RevokeOwnershipTransfer {},
         ContractError::Unauthorized {
-            sender: Addr::unchecked(UNION1)
-        }
+            sender: Addr::unchecked(UNION1),
+        },
     );
 }
 
@@ -342,19 +333,25 @@ fn claim_ownership_works() {
     )
     .unwrap();
 
+    // not pending owner
+    ensure_execute_error(
+        deps.as_ref(),
+        &env,
+        &message_info(&Addr::unchecked(UNION1), &[]),
+        ExecuteMsg::AcceptOwnership {},
+        ContractError::CallerIsNotPendingOwner,
+    );
+
     // can't claim yet
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            message_info(&Addr::unchecked(NEW_OWNER), &[]),
-            ExecuteMsg::AcceptOwnership {},
-        )
-        .unwrap_err(),
+    ensure_execute_error(
+        deps.as_ref(),
+        &env,
+        &message_info(&Addr::unchecked(NEW_OWNER), &[]),
+        ExecuteMsg::AcceptOwnership {},
         ContractError::OwnershipTransferNotReady {
             claimable_at_seconds: OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS,
-            now_seconds: 0
-        }
+            now_seconds: 0,
+        },
     );
 
     env.block.time = env

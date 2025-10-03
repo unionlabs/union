@@ -62,10 +62,16 @@ use core::fmt;
 
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    Addr, DecCoin, Decimal256, OwnedDeps,
+    Addr, DecCoin, Decimal256, Deps, DepsMut, Env, MessageInfo, OwnedDeps, Storage,
 };
+use frissitheto::UpgradeMsg;
 
-use crate::{contract::init, msg::InitMsg, types::ProtocolFeeConfig};
+use crate::{
+    contract::{execute, migrate},
+    error::ContractError,
+    msg::{ExecuteMsg, InitMsg},
+    types::ProtocolFeeConfig,
+};
 
 pub const NATIVE_TOKEN: &str = "au";
 
@@ -100,7 +106,7 @@ pub fn mock_init_msg() -> InitMsg {
             fee_recipient: FEE_RECIPIENT.to_string(),
         },
         admin: Addr::unchecked(ADMIN),
-        native_token_denom: "au".to_owned(),
+        native_token_denom: NATIVE_TOKEN.to_owned(),
     }
 }
 
@@ -109,7 +115,7 @@ pub fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier> {
     let mut deps = mock_dependencies();
     let msg = mock_init_msg();
 
-    init(deps.as_mut(), mock_env(), msg).unwrap();
+    migrate(deps.as_mut(), mock_env(), UpgradeMsg::Init(msg)).unwrap();
 
     deps
 }
@@ -128,6 +134,34 @@ pub fn set_rewards(
             )],
         );
     }
+}
+
+#[track_caller]
+pub fn ensure_execute_error(
+    deps: Deps,
+    env: &Env,
+    info: &MessageInfo,
+    msg: ExecuteMsg,
+    err: ContractError,
+) {
+    let mut storage = MockStorage::new();
+    for (k, v) in deps
+        .storage
+        .range(None, None, cosmwasm_std::Order::Ascending)
+    {
+        storage.set(&k, &v);
+    }
+
+    let deps = DepsMut {
+        storage: &mut storage,
+        api: deps.api,
+        querier: deps.querier,
+    };
+
+    assert_eq!(
+        execute(deps, env.clone(), info.clone(), msg).unwrap_err(),
+        err
+    );
 }
 
 // NOTE: Unused for now, once the unbonding period is queried from the chain directly instead of
