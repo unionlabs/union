@@ -1,33 +1,16 @@
-use alloy::{primitives::Keccak256, sol_types::SolValue};
+use alloy::sol_types::SolValue;
 use anyhow::Result;
 use clap::{Args, Subcommand};
-use serde::Serialize;
 use ucs03_zkgm::com::{
-    Batch, Instruction, TokenMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_0,
-    INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_INITIALIZE,
+    Instruction, SolverMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_1, INSTR_VERSION_2,
+    OP_TOKEN_ORDER, TOKEN_ORDER_KIND_SOLVE,
 };
-use unionlabs::primitives::{Bytes, H256, U256};
+use unionlabs::primitives::{Bytes, U256};
 
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
     V1(TokenOrderV1V1Args),
     V2Sui(TokenOrderV2ArgsSui),
-}
-
-#[derive(Debug, Serialize, Clone, Args)]
-pub struct SuiMetadata {
-    #[arg(long)]
-    name: String,
-    #[arg(long)]
-    symbol: String,
-    #[arg(long)]
-    decimals: u8,
-    #[arg(long, default_value_t = Default::default())]
-    owner: H256,
-    #[arg(long)]
-    icon_url: Option<String>,
-    #[arg(long)]
-    description: String,
 }
 
 #[derive(Debug, Args)]
@@ -50,10 +33,10 @@ pub struct TokenOrderV2Base {
 pub struct TokenOrderV2ArgsSui {
     #[arg(long)]
     channel: u32,
+    #[arg(long)]
+    solver_address: Bytes,
     #[clap(flatten)]
     base: TokenOrderV2Base,
-    #[clap(flatten)]
-    metadata: SuiMetadata,
 }
 
 #[derive(Debug, Args)]
@@ -108,29 +91,14 @@ impl Cmd {
                 println!("{instruction}");
             }
             Cmd::V2Sui(fao) => {
-                let metadata = TokenMetadata {
-                    implementation: Default::default(),
-                    initializer: bcs::to_bytes(&fao.metadata).unwrap().into(),
+                let metadata = SolverMetadata {
+                    solverAddress: fao.solver_address.into(),
+                    metadata: Default::default(),
                 }
                 .abi_encode_params()
                 .into();
 
-                let quote_token = match fao.base.quote_token {
-                    Some(qt) => qt.into(),
-                    None => {
-                        let mut h = Keccak256::new();
-                        h.update(&metadata);
-                        predict_wrapped_token_sui(
-                            U256::ZERO,
-                            fao.channel,
-                            fao.base.base_token.clone().into(),
-                            h.finalize().to_vec(),
-                        )
-                        .into()
-                    }
-                };
-
-                let instruction = Instruction {
+                let instruction: Bytes = Instruction {
                     version: INSTR_VERSION_2,
                     opcode: OP_TOKEN_ORDER,
                     operand: TokenOrderV2 {
@@ -138,20 +106,10 @@ impl Cmd {
                         receiver: fao.base.receiver.into(),
                         base_token: fao.base.base_token.into(),
                         base_amount: fao.base.base_amount.into(),
-                        quote_token,
+                        quote_token: fao.base.quote_token.unwrap().into(),
                         quote_amount: fao.base.quote_amount.into(),
-                        kind: TOKEN_ORDER_KIND_INITIALIZE,
+                        kind: TOKEN_ORDER_KIND_SOLVE,
                         metadata,
-                    }
-                    .abi_encode_params()
-                    .into(),
-                };
-
-                let batch: Bytes = Instruction {
-                    version: INSTR_VERSION_0,
-                    opcode: OP_BATCH,
-                    operand: Batch {
-                        instructions: vec![instruction.clone(), instruction],
                     }
                     .abi_encode_params()
                     .into(),
@@ -159,24 +117,10 @@ impl Cmd {
                 .abi_encode_params()
                 .into();
 
-                println!("{batch}");
+                println!("{instruction}");
             }
         }
 
         Ok(())
     }
-}
-
-fn predict_wrapped_token_sui(
-    path: U256,
-    channel: u32,
-    base_token: Vec<u8>,
-    metadata_image: Vec<u8>,
-) -> Vec<u8> {
-    let mut h = Keccak256::new();
-    h.update(bcs::to_bytes(&path.to_le_bytes()).unwrap());
-    h.update(bcs::to_bytes(&channel).unwrap());
-    h.update(base_token);
-    h.update(metadata_image);
-    h.finalize().to_vec()
 }

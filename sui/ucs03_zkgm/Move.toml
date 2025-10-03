@@ -5,15 +5,19 @@ name    = "zkgm"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-ibc = { local = "../ibc" }
+ibc   = { local = "../ibc" }
+vault = { local = "../vault" }
 
 [addresses]
-# ibc      = "0x25763a037769c4783ee2414110302b69b52060c87cf763a4fae56337b296c4f3"
-# zkgm     = "0x0"
-#
-ibc  = "_"
-zkgm = "_"
+ibc   = "0xd5b50a4b934303c39baf1999ddf84cfcd65b4c6f73b2226bfea77987c21fbff8"
+vault = "0xc113302f2d081c65299ac245ce043c124368af79b5a9ce38d86855841b64d386"
+zkgm  = "0x0"
+
+# ibc  = "_"
+# zkgm = "_"
+# vault = "_"
 
 [dev-addresses]
-ibc  = "0x22222"
-zkgm = "0x4444444444444"
+ibc   = "0x22222"
+vault = "0x2334"
+zkgm  = "0x4444444444444"

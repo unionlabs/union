@@ -1,13 +1,10 @@
 [package]
-edition      = "2024.beta"                                                          # edition = "legacy" to use legacy (pre-2024) Move
-name         = "ibc"
-published-at = "0xf36048b090671467af3d6a6109403d179aaa0a699307ff9df218b893b8f6bd98"
-# original = 0xf7afcb48d53dcd8f1b75bd73779a23fb80e0750e3db7a9fd7e59fe22bb7cd7d4
+edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+name    = "u"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
@@ -21,9 +18,7 @@ published-at = "0xf36048b090671467af3d6a6109403d179aaa0a699307ff9df218b893b8f6bd
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc = "0x0"
-
-# ibc = "_"
+u = "0x0"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -35,7 +30,6 @@ ibc = "0x0"
 # Local = { local = "../path/to/dev-build" }
 
 [dev-addresses]
-ibc = "0x22222"
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"

@@ -60,12 +60,11 @@
 
 module zkgm::zkgm {
     use std::string::{Self, String};
-    use std::type_name::{Self};
+    use std::type_name;
 
-    use sui::balance::{Self};
     use sui::bcs;
     use sui::clock::Clock; 
-    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
+    use sui::coin::{Self, Coin};
     use sui::object_bag::{Self, ObjectBag};
     use sui::table::{Self, Table};
 
@@ -73,8 +72,10 @@ module zkgm::zkgm {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
 
+    use vault::vault::{Vault, VaultCap};
+
     use zkgm::ack::{Self, Ack};
-    use zkgm::batch::{Self, Batch};
+    use zkgm::batch;
     use zkgm::batch_ack;
     use zkgm::forward::{Self, Forward};
     use zkgm::token_metadata::{Self, TokenMetadata};
@@ -117,10 +118,8 @@ module zkgm::zkgm {
     const E_UNKNOWN_SYSCALL: u64 = 6;
     const E_INVALID_AMOUNT: u64 = 10;
     const E_INVALID_FILL_TYPE: u64 = 12;
-    const E_ONLY_MAKER: u64 = 15;
     const E_NO_CALL_OPERATION: u64 = 17;
     const E_INVALID_FORWARD_INSTRUCTION: u64 = 18;
-    const E_NO_TREASURY_CAPABILITY: u64 = 20;
     const E_NO_COIN_IN_BAG: u64 = 23;
     const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
     const E_ANOTHER_TOKEN_IS_REGISTERED: u64 = 26;
@@ -129,53 +128,29 @@ module zkgm::zkgm {
     const E_INVALID_TOKEN_ORDER_KIND: u64 = 31;
     const E_UNWRAP_BASE_AMOUNT_SMALLER_THAN_QUOTE_AMOUNT: u64 = 32;
     const E_UNWRAP_METADATA_INVALID: u64 = 33;
-    const E_UNAUTHORIZED: u64 = 34;
+    // const E_UNAUTHORIZED: u64 = 34;
     const E_INVALID_METADATA: u64 = 35;
     const E_INVALID_UNESCROW: u64 = 38;
-    const E_INTENT_WHITELISTED_ONLY: u64 = 39;
     const E_ACK_SIZE_MISMATCHING: u64 = 42;
     const E_EXECUTION_NOT_COMPLETE: u64 = 43;
-    const E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT: u64 = 44;
     const E_INVALID_SOLVER_ADDRESS: u64 = 45;
     const E_INVALID_QUOTE_TOKEN: u64 = 46;
+    const E_EXECUTION_ALREADY_COMPLETE: u64 = 47;
+    const E_VAULT_MISMATCH: u64 = 48;
+    // const E_ONLY_MAKER: u64 = 0xdeadc0de;
+
+    const VAULT_CAP_OBJECT_KEY: vector<u8> = b"VAULT_CAP";
 
     public struct IbcAppWitness has drop {}
 
     public struct RelayStore has key {
         id: UID,
+        vault_id: ID,
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
         token_origin: Table<vector<u8>, u256>,
-        type_name_t_to_capability: ObjectBag,
-        bag_to_coin: ObjectBag,
         wrapped_denom_to_t: Table<vector<u8>, String>,
-        // solver + channel to beneficiary
-        fungible_counterparties: Table<FungibleLane, vector<u8>>,
-
-        intent_whitelist: Table<IntentWhitelistKey, bool>,
-    }
-
-    public struct TreasuryCapWithMetadata<phantom T> has key, store {
-        id: UID,
-        cap: TreasuryCap<T>,
-        name: String,
-        symbol: String,
-        decimals: u8,
-        icon_url: Option<String>,
-        description: String,
-        owner: address
-    }
-
-    public struct IntentWhitelistKey has copy, drop, store {
-        coin: vector<u8>,
-        packet_hash: vector<u8>,
-    }
-
-    public struct FungibleLane has copy, drop, store {
-        coin: vector<u8>,
-        path: u256,
-        channel: u32,
-        base_token: vector<u8>,
+        object_store: ObjectBag,
     }
 
     public struct ChannelBalancePair has copy, drop, store {
@@ -210,6 +185,12 @@ module zkgm::zkgm {
         salt: vector<u8>,        
     }
 
+    public struct SendCtx {
+        channel_id: u32,
+        salt: vector<u8>,
+        instructions: vector<Instruction>
+    }
+
     public struct AckCtx {
         packet_ctxs: vector<ZkgmPacketAckCtx>,
         packets: vector<Packet>,
@@ -218,20 +199,30 @@ module zkgm::zkgm {
         raw_acks: vector<vector<u8>>,
     }
 
+    public struct TimeoutCtx {
+        packet_ctx: ZkgmPacketAckCtx,
+        packet: Packet,
+    }
+
     fun init(ctx: &mut TxContext) {
         let id = object::new(ctx);
 
         transfer::share_object(RelayStore {
             id: id,
+            vault_id: object::id_from_address(@vault),
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
-            type_name_t_to_capability: object_bag::new(ctx),
-            bag_to_coin: object_bag::new(ctx),
+            object_store: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
-            fungible_counterparties: table::new(ctx),
-            intent_whitelist: table::new(ctx),
         });
+    }
+
+    public fun register_vault_cap(
+        zkgm: &mut RelayStore,
+        vault_cap: VaultCap,
+    ) {
+        zkgm.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
     }
 
     public fun channel_open_init(
@@ -327,27 +318,36 @@ module zkgm::zkgm {
         );
     }
 
+    public fun begin_send(
+        channel_id: u32,
+        salt: vector<u8>,
+    ): SendCtx {
+        SendCtx {
+            channel_id,
+            salt,
+            instructions: vector::empty()
+        }
+    }
+
     public fun send_with_coin<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_store: &mut ibc::IBCStore,
-        clock: &Clock,
         coin: Coin<T>,
-        channel_id: u32,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: vector<u8>,
         version: u8,
         opcode: u8,
         operand: vector<u8>,
+        mut send_ctx: SendCtx,
         ctx: &mut TxContext
-    ) {
+    ): SendCtx {
         let instruction = instruction::new(version, opcode, operand);
         let sender = ctx.sender();
         let coin = zkgm.verify_internal<T>(
+            vault,
             ibc_store,
             option::some(coin),
             sender,
-            channel_id,
+            send_ctx.channel_id,
             0,
             instruction,
             ctx
@@ -355,13 +355,36 @@ module zkgm::zkgm {
         // This guarantees that the coin is used by some instruction
         coin.destroy_none();
 
-        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
+        send_ctx.instructions.push_back(instruction);
+
+        send_ctx
+    }
+
+    public fun end_send(
+        ibc_store: &mut ibc::IBCStore,
+        clock: &Clock,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        send_ctx: SendCtx,
+        ctx: &mut TxContext,
+    ) {
+        let SendCtx { channel_id, salt, instructions } = send_ctx;
+
+        let instruction = if (instructions.length() > 1) {
+            instructions.do_ref!(|instr| {
+                assert!(helper::is_allowed_batch_instruction(instr.opcode()), E_INVALID_BATCH_INSTRUCTION);
+            });
+            instruction::new(INSTR_VERSION_0, OP_BATCH, batch::new(instructions).encode())
+        } else {
+            instructions[0]
+        };
+
         ibc_store.send_packet(
             clock,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack),
+            zkgm_packet::encode(&zkgm_packet::new(salt, 0, instruction)),
             IbcAppWitness {},
             ctx
         );
@@ -434,12 +457,15 @@ module zkgm::zkgm {
     public fun recv_packet<T>(
         ibc: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         clock: &Clock,
         relayer: address,
         relayer_msg: vector<u8>,
         mut exec_ctx: RecvCtx,
         ctx: &mut TxContext
     ): RecvCtx {
+        // assert!(object::id(vault) == zkgm.vault_id, E_VAULT_MISMATCH);
+
         // aborts if there is not a session
         let packet_cursor = exec_ctx.cursor;
         let packet = exec_ctx.packets[exec_ctx.cursor];
@@ -461,6 +487,7 @@ module zkgm::zkgm {
             };
             
             let (ack, err) = zkgm.execute_internal<T>(
+                vault,
                 ibc,
                 packet,
                 zkgm_packet,
@@ -473,7 +500,7 @@ module zkgm::zkgm {
             );
             // TODO(aeryz): should we abort here?
             if (err != 0) {
-                abort 1
+                abort err
             };
             zkgm_packet.acks.push_back(ack);
 
@@ -537,6 +564,7 @@ module zkgm::zkgm {
 
     fun execute_internal<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc: &mut ibc::IBCStore,
         packet: Packet,
         packet_ctx: &ZkgmPacketCtx,
@@ -555,6 +583,7 @@ module zkgm::zkgm {
                     return (vector::empty(), E_UNSUPPORTED_VERSION)  
                 };
                 zkgm.execute_token_order<T>(
+                    vault,
                     packet,
                     relayer,
                     relayer_msg,
@@ -634,6 +663,7 @@ module zkgm::zkgm {
 
     public fun acknowledge_packet<T>(
         ibc: &mut ibc::IBCStore,
+        vault: &mut Vault,
         zkgm: &mut RelayStore,
         relayer: address,
         mut ack_ctx: AckCtx,
@@ -680,6 +710,7 @@ module zkgm::zkgm {
             };
 
             zkgm.acknowledge_internal<T>(
+                vault,
                 packet,
                 relayer,
                 zkgm_packet.path,
@@ -734,102 +765,105 @@ module zkgm::zkgm {
         let AckCtx { .. } = ack_ctx;
     }
 
-    // public fun acknowledge_packet<T>(
-    //     ibc: &mut ibc::IBCStore,
-    //     zkgm: &mut RelayStore,
-    //     packet_source_channels: vector<u32>,
-    //     packet_destination_channels: vector<u32>,
-    //     packet_data: vector<vector<u8>>,
-    //     packet_timeout_heights: vector<u64>,
-    //     packet_timeout_timestamps: vector<u64>,
-    //     acknowledgements: vector<vector<u8>>,
-    //     relayer: address,
-    //     proof: vector<u8>,
-    //     proof_height: u64,
-    //     ctx: &mut TxContext
-    // ) {
-    //     assert!(acknowledgements.length() == packet_source_channels.length(), E_ACK_AND_PACKET_LENGTH_MISMATCH);
-
-    //     let mut packets: vector<Packet> = vector::empty();
-    //     let mut i = 0;
-    //     while (i < packet_source_channels.length()) {
-    //         packets.push_back(packet::new(
-    //             packet_source_channels[i],
-    //             packet_destination_channels[i],
-    //             packet_data[i],
-    //             packet_timeout_heights[i],
-    //             packet_timeout_timestamps[i],
-    //         ));
-    //         zkgm.on_acknowledge_packet<T>(
-    //             ibc,
-    //             packets[i],
-    //             acknowledgements[i],
-    //             relayer,
-    //             ctx
-    //         );
-    //         i = i + 1;
-    //     };
-        
-    //     ibc.acknowledge_packet(
-    //         packets,
-    //         acknowledgements,
-    //         proof,
-    //         proof_height,
-    //         relayer,
-    //         IbcAppWitness {}
-    //     );
-    // }
-
-    public fun timeout_packet<T>(
-        ibc_store: &mut ibc::IBCStore,
-        zkgm: &mut RelayStore,
+    
+    public fun begin_timeout(
         packet_source_channel: u32,
         packet_destination_channel: u32,
         packet_data: vector<u8>,
         packet_timeout_height: u64,
         packet_timeout_timestamp: u64,
-        proof: vector<u8>,
-        proof_height: u64,
-        relayer: address,
-        ctx: &mut TxContext
-    ) {
-        let ibc_packet =
-            packet::new(
+    ): TimeoutCtx {
+        let zkgm_packet = zkgm_packet::decode(&packet_data);
+        TimeoutCtx {
+            packet_ctx: ZkgmPacketAckCtx {
+                instruction_set: extract_batch(zkgm_packet.instruction()),
+                cursor: 0,
+                path: zkgm_packet.path(),
+                salt: zkgm_packet.salt(),
+            },
+            packet: packet::new(
                 packet_source_channel,
                 packet_destination_channel,
                 packet_data,
                 packet_timeout_height,
-                packet_timeout_timestamp
-            );
+                packet_timeout_timestamp,
+            ),
+        }
+    }
 
-        let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+    public fun timeout_packet<T>(
+        ibc: &mut ibc::IBCStore,
+        vault: &mut Vault,
+        zkgm: &mut RelayStore,
+        relayer: address,
+        mut timeout_ctx: TimeoutCtx,
+        ctx: &mut TxContext
+    ): TimeoutCtx {
+        let packet = timeout_ctx.packet;
+        let zkgm_packet = &mut timeout_ctx.packet_ctx;
+        let instr_len = zkgm_packet.instruction_set.length();
 
-        if (helper::is_forwarded_packet(zkgm_packet.salt())) {
-            let packet_hash = commitment::commit_packet(&ibc_packet)  ;
-            if (zkgm.in_flight_packet.contains(packet_hash)) {
-                let parent = zkgm.in_flight_packet.remove(packet_hash);
-                ibc_store.write_acknowledgement(
-                    parent,
-                    ack::failure(ACK_EMPTY).encode(),
-                    IbcAppWitness {}
-                );
-                return
+        assert!(zkgm_packet.cursor < instr_len, E_EXECUTION_ALREADY_COMPLETE);
+
+        let mut type_is_exhausted = false;
+
+        while (zkgm_packet.cursor < instr_len) {
+            let instruction = zkgm_packet.instruction_set[zkgm_packet.cursor];
+
+            // if we previously run an instruction where type type `T` is used, we should
+            // return timeout_ctx and expect to be called with the appropriate type again.
+            if (instruction.opcode() == OP_TOKEN_ORDER) {
+                if (type_is_exhausted) {
+                    return timeout_ctx
+                } else {
+                    type_is_exhausted = true;
+                };
             };
+
+            if (helper::is_forwarded_packet(zkgm_packet.salt)) {
+                let packet_hash = commitment::commit_packet(&packet);
+
+                if (zkgm.in_flight_packet.contains(packet_hash)) {
+                    let parent = zkgm.in_flight_packet.remove(packet_hash);
+                    ibc.write_acknowledgement(parent, ack::failure(ACK_EMPTY).encode(), IbcAppWitness {});
+                    zkgm_packet.cursor = zkgm_packet.cursor + 1;
+                    continue
+                };
+            };
+
+            zkgm.timeout_internal<T>(
+                vault,
+                packet,
+                relayer,
+                zkgm_packet.path,
+                instruction,
+                ctx,
+            );
+            
+            zkgm_packet.cursor = zkgm_packet.cursor + 1;
         };
 
-        ibc_store.timeout_packet(
-            ibc_packet,
+        timeout_ctx
+    }
+    
+    public fun end_timeout(
+        ibc: &mut ibc::IBCStore,
+        proof: vector<u8>,
+        proof_height: u64,
+        timeout_ctx: TimeoutCtx,
+    ) {
+        // make sure all instructions in the packet are run
+        assert!(timeout_ctx.packet_ctx.cursor == timeout_ctx.packet_ctx.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+
+        ibc.timeout_packet(
+            timeout_ctx.packet,
             proof,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
 
-        zkgm.timeout_internal<T>(
-            ibc_packet,
-            relayer,
-            zkgm_packet.path(),
-            zkgm_packet.instruction(),
-            ctx,
-        );
+        // dropping the ctx by decontstructing it
+        let TimeoutCtx { .. } = timeout_ctx;
     }
 
     public fun channel_close_init(_channel_id: u32) {
@@ -840,37 +874,9 @@ module zkgm::zkgm {
         abort E_INFINITE_GAME
     }
 
-    public fun register_capability<T>(
-        zkgm: &mut RelayStore,
-        mut capability: TreasuryCap<T>,
-        metadata: &CoinMetadata<T>,
-        owner: address,
-        ctx: &mut TxContext,
-    ) {
-        if (owner != @0x0) {
-            assert!(ctx.sender() == owner, E_UNAUTHORIZED);
-        };
-    
-        let supply = coin::supply(&mut capability);
-        if (balance::supply_value(supply) != 0 ) {
-            abort 0
-        };
-
-        let typename_t = type_name::get<T>();
-        zkgm.type_name_t_to_capability.add(string::from_ascii(typename_t.into_string()), TreasuryCapWithMetadata {
-            id: object::new(ctx),
-            cap: capability,
-            name: coin::get_name(metadata),
-            symbol: string::from_ascii(coin::get_symbol(metadata)),
-            decimals: coin::get_decimals(metadata),
-            icon_url: coin::get_icon_url(metadata).map!(|url| string::utf8(url.inner_url().into_bytes())),
-            description: coin::get_description(metadata),
-            owner
-        });
-    }
-
     fun market_maker_fill<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -882,6 +888,7 @@ module zkgm::zkgm {
     ): (vector<u8>, u64) {
         if (order.kind() == TOKEN_ORDER_KIND_SOLVE) {
             return zkgm.solver_fill<T>(
+                vault,
                 ibc_packet,
                 order,
                 path,
@@ -905,7 +912,8 @@ module zkgm::zkgm {
     }
 
     fun solver_fill<T>(
-        zkgm: &mut RelayStore,
+        zkgm: &RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         order: TokenOrderV2,
         path: u256,
@@ -917,7 +925,7 @@ module zkgm::zkgm {
 
         let solver = bcs::new(*metadata.solver_address()).peel_address();
 
-        if (solver != @zkgm) {
+        if (solver != @vault) {
             return (vector::empty(), E_INVALID_SOLVER_ADDRESS)
         };
 
@@ -927,47 +935,20 @@ module zkgm::zkgm {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
 
-        if (intent) {
-            let packet_hash = commitment::commit_packet(&ibc_packet);
-            if (!zkgm.intent_whitelist.contains(IntentWhitelistKey {
-                coin: quote_token,
-                packet_hash
-            })) {
-                return (vector::empty(), E_INTENT_WHITELISTED_ONLY)
-            };
-        };
-
-        let fungibility = FungibleLane {
-            coin: quote_token,
+        vault.solve<T>(
+            zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+            ibc_packet,
+            *order.base_token(),
+            quote_token,
+            order.base_amount(),
+            order.quote_amount(),
+            *order.receiver(),
             path,
-            channel: ibc_packet.destination_channel_id(),
-            base_token: *order.base_token(),
-        };
-
-        if (zkgm.fungible_counterparties.contains(fungibility)) {
-            return (vector::empty(), E_ONLY_MAKER)
-        };
-
-        let counterparty_beneficiary = *zkgm.fungible_counterparties.borrow(fungibility);       
-
-        if (order.quote_amount() > order.base_amount()) {
-            return (vector::empty(), E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT)
-        };
-
-        let (base_amount, quote_amount) = (order.base_amount(), order.quote_amount());
-
-        let capability = zkgm.get_treasury_cap<T>();
-        let fee = base_amount - quote_amount;
-        if (fee > 0) {
-            coin::mint_and_transfer<T>(capability, fee as u64, relayer, ctx);
-        };
-
-        if (quote_amount > 0) {
-            let receiver = bcs::new(*order.receiver()).peel_address();
-            coin::mint_and_transfer<T>(capability, quote_amount as u64, receiver, ctx);
-        };
-
-        (counterparty_beneficiary, 0)
+            relayer,
+            vector::empty(),
+            intent,
+            ctx
+        )
     }
 
     fun distribute_coin<T>(
@@ -978,10 +959,10 @@ module zkgm::zkgm {
     ) {
         let typename_t = type_name::get<T>();
         let key = typename_t.into_string();
-        if(!relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+        if(!relay_store.object_store.contains(string::from_ascii(key))) {
             abort E_NO_COIN_IN_BAG
         };
-        let coin = relay_store.bag_to_coin.borrow_mut<String, Coin<T>>(string::from_ascii(key));
+        let coin = relay_store.object_store.borrow_mut<String, Coin<T>>(string::from_ascii(key));
 
         let transferred_coin = coin.split<T>(amount, ctx);
         transfer::public_transfer(transferred_coin, receiver);
@@ -989,6 +970,7 @@ module zkgm::zkgm {
 
     fun protocol_fill_mint<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         _channel_id: u32,
         _path: u256,
         wrapped_token: vector<u8>,
@@ -1002,15 +984,24 @@ module zkgm::zkgm {
 
         let fee = (order.base_amount() - order.quote_amount()) as u64;
         // if this token is minted for the first time, then we need to ensure that its always minting the same T
-        if (!zkgm.claim_wrapped_denom<T>(wrapped_token, metadata)) {
+        if (!zkgm.claim_wrapped_denom<T>(vault, wrapped_token, metadata)) {
             return (vector::empty(), E_ANOTHER_TOKEN_IS_REGISTERED)
         };
-        let capability = zkgm.get_treasury_cap<T>();
         if (quote_amount > 0) {
-            coin::mint_and_transfer<T>(capability, quote_amount as u64, receiver, ctx);
+            vault.mint_and_transfer_with_cap<T>(
+                zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                quote_amount as u64,
+                receiver,
+                ctx
+            );
         };
         if (fee > 0){
-            coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
+            vault.mint_and_transfer_with_cap<T>(
+                zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                fee,
+                relayer,
+                ctx
+            );
         };
 
         (token_order_ack::new(
@@ -1140,6 +1131,7 @@ module zkgm::zkgm {
 
     fun execute_token_order<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -1158,6 +1150,7 @@ module zkgm::zkgm {
         // the source. In other words, the market maker is unable to lie.
         if (intent || order.kind() == TOKEN_ORDER_KIND_SOLVE) {
             return zkgm.market_maker_fill<T>(
+                vault,
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -1223,6 +1216,7 @@ module zkgm::zkgm {
             
             // We expect the token to be deployed already here and the treasury cap is registered previously with type T
             zkgm.protocol_fill_mint<T>(
+                vault,
                 ibc_packet.destination_channel_id(), 
                 path, 
                 wrapped_token, 
@@ -1237,6 +1231,7 @@ module zkgm::zkgm {
             // allow orders that combines protocol and mm filling (wrapped vs
             // non wrapped assets).
             zkgm.market_maker_fill<T>(
+                vault,
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -1318,6 +1313,7 @@ module zkgm::zkgm {
 
     fun verify_internal<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_store: &mut ibc::IBCStore,
         coin: Option<Coin<T>>,
         sender: address,
@@ -1331,6 +1327,7 @@ module zkgm::zkgm {
             OP_TOKEN_ORDER => {
                 if (version == INSTR_VERSION_2) {
                     zkgm.verify_token_order<T>(
+                        vault,
                         coin.destroy_some(),
                         sender,
                         channel_id,
@@ -1343,21 +1340,10 @@ module zkgm::zkgm {
                     abort E_UNSUPPORTED_VERSION
                 }
             },
-            OP_BATCH => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-                zkgm.verify_batch<T>(
-                    ibc_store,
-                    coin,
-                    sender,
-                    channel_id,
-                    path,
-                    batch::decode(instruction.operand()),
-                    ctx,
-                )
-            },
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
                 zkgm.verify_forward<T>(
+                    vault,
                     ibc_store,
                     coin,
                     sender,
@@ -1373,12 +1359,13 @@ module zkgm::zkgm {
 
     fun verify_token_order<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         coin: Coin<T>,
         _sender: address,
         channel_id: u32,
         path: u256,
         order: TokenOrderV2,
-        _ctx: &mut TxContext
+        ctx: &TxContext
     ) {
         let base_token = *order.base_token();
 
@@ -1414,8 +1401,11 @@ module zkgm::zkgm {
             // We don't have to verify that metadataImage matches the stored one
             // because the prediction would fail otherwise and we would fall
             // back in the else branch.
-            let capability = zkgm.get_treasury_cap<T>();
-            coin::burn<T>(capability, coin);
+            vault.burn_with_cap<T>(
+                zkgm.object_store.borrow<_, VaultCap>(VAULT_CAP_OBJECT_KEY),
+                coin,
+                ctx
+            );
         } else {
             
             zkgm.increase_outstanding(
@@ -1433,6 +1423,7 @@ module zkgm::zkgm {
 
     fun verify_forward<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_store: &mut ibc::IBCStore,
         coin: Option<Coin<T>>,
         sender: address,
@@ -1446,6 +1437,7 @@ module zkgm::zkgm {
             abort E_INVALID_FORWARD_INSTRUCTION
         };
         zkgm.verify_internal<T>(
+            vault,
             ibc_store,
             coin,
             sender,
@@ -1456,40 +1448,9 @@ module zkgm::zkgm {
         )
     }
 
-    fun verify_batch<T>(
-        zkgm: &mut RelayStore,
-        ibc_store: &mut ibc::IBCStore,
-        mut coin: Option<Coin<T>>,
-        sender: address,
-        channel_id: u32,
-        path: u256,
-        batch: Batch,
-        ctx: &mut TxContext
-    ): Option<Coin<T>> {
-        let l = batch.instructions().length();
-        let mut i = 0;
-        while (i < l) {
-            let instruction = batch.instructions()[i];
-            assert!(helper::is_allowed_batch_instruction(instruction.opcode()), E_INVALID_BATCH_INSTRUCTION);
-
-            coin = zkgm.verify_internal<T>(
-                ibc_store,
-                coin,
-                sender,
-                channel_id,
-                path,
-                instruction,
-                ctx
-            );
-
-            i = i + 1;
-        };
-
-        coin
-    }
-
     fun acknowledge_internal<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         relayer: address,
         path: u256,
@@ -1507,6 +1468,7 @@ module zkgm::zkgm {
                     let order = token_order::decode(instruction.operand());
                     
                     zkgm.acknowledge_token_order<T>(
+                        vault,
                         ibc_packet,
                         relayer,
                         path,
@@ -1523,6 +1485,7 @@ module zkgm::zkgm {
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
                 zkgm.acknowledge_forward<T>(
+                    vault,
                     ibc_packet,
                     relayer,
                     salt,
@@ -1541,6 +1504,7 @@ module zkgm::zkgm {
 
     fun acknowledge_token_order<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         _relayer: address,
         path: u256,
@@ -1560,8 +1524,12 @@ module zkgm::zkgm {
                 let market_maker = bcs::new(*asset_order_ack.market_maker()).peel_address();
 
                 if (order.kind() == TOKEN_ORDER_KIND_UNESCROW) {
-                    let capability = zkgm.get_treasury_cap<T>();
-                    coin::mint_and_transfer<T>(capability, order.base_amount() as u64, market_maker, ctx);
+                    vault.mint_and_transfer_with_cap<T>(
+                        zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                        order.base_amount() as u64,
+                        market_maker,
+                        ctx
+                    );
                 } else {
                     let res = zkgm.decrease_outstanding(
                         ibc_packet.source_channel_id(), 
@@ -1573,12 +1541,16 @@ module zkgm::zkgm {
                     assert!(res == 0, res);
                     if (market_maker == @0x0) {
                         let coin = {
-                            let coin: &mut Coin<T> = zkgm.bag_to_coin.borrow_mut(
+                            let coin: &mut Coin<T> = zkgm.object_store.borrow_mut(
                                 string::from_ascii(type_name::get<T>().into_string())
                             );
                             coin.split<T>(order.base_amount() as u64, ctx)
                         };
-                        coin::burn<T>(zkgm.get_treasury_cap<T>(), coin);
+                        vault.burn_with_cap<T>(
+                            zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                            coin,
+                            ctx
+                        );
                     } else {
                         zkgm.distribute_coin<T>(market_maker, order.base_amount() as u64, ctx);
                     };
@@ -1589,6 +1561,7 @@ module zkgm::zkgm {
             };
         } else {
             zkgm.refund<T>(
+                vault,
                 ibc_packet.source_channel_id(), 
                 path, 
                 order,
@@ -1600,6 +1573,7 @@ module zkgm::zkgm {
 
     fun acknowledge_forward<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         relayer: address,
         salt: vector<u8>,
@@ -1609,6 +1583,7 @@ module zkgm::zkgm {
         ctx: &mut TxContext
     ) {
         zkgm.acknowledge_internal<T>(
+            vault,
             ibc_packet,
             relayer,
             forward_packet.path(),
@@ -1622,18 +1597,20 @@ module zkgm::zkgm {
 
     fun timeout_internal<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         ibc_packet: Packet,
         relayer: address,
         path: u256,
         instruction: Instruction,
         ctx: &mut TxContext
     ) {
-        let version = instruction::version(&instruction);
+        let version = instruction.version();
 
         match (instruction.opcode()) {
             OP_TOKEN_ORDER => {
                 if (version == INSTR_VERSION_2) {
                     zkgm.timeout_token_order<T>(
+                        vault,
                         ibc_packet,
                         path,
                         token_order::decode(instruction.operand()),
@@ -1644,19 +1621,10 @@ module zkgm::zkgm {
                 };
                       
             },
-            OP_BATCH => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-                zkgm.timeout_batch<T>(
-                    ibc_packet,
-                    relayer,
-                    path,
-                    batch::decode(instruction.operand()),
-                    ctx
-                );
-            },
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
                 zkgm.timeout_forward<T>(
+                    vault,
                     ibc_packet,
                     relayer,
                     path,
@@ -1671,36 +1639,16 @@ module zkgm::zkgm {
         };
     }
 
-    fun timeout_batch<T>(
-        zkgm: &mut RelayStore,
-        packet: Packet,
-        relayer: address,
-        path: u256,
-        batch: Batch,
-        ctx: &mut TxContext
-    ) {
-        let l = batch.instructions().length();
-        let mut i = 0;
-        while (i < l) {
-            zkgm.timeout_internal<T>(
-                packet,
-                relayer,
-                path,
-                batch.instructions()[i],
-                ctx
-            );
-            i = i + 1;
-        }
-    }
-
     fun timeout_token_order<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         packet: Packet,
         path: u256,
         order: TokenOrderV2,
         ctx: &mut TxContext
     ) {
         zkgm.refund<T>(
+            vault,
             packet.source_channel_id(), 
             path,
             order,
@@ -1710,16 +1658,16 @@ module zkgm::zkgm {
 
     fun refund<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         source_channel: u32,
         path: u256,
         order: TokenOrderV2,
         ctx: &mut TxContext
     ) {
         let sender = bcs::new(*order.sender()).peel_address();
-        let capability = zkgm.get_treasury_cap<T>();
 
         if (order.kind() == TOKEN_ORDER_KIND_UNESCROW) {
-            coin::mint_and_transfer<T>(capability, order.base_amount() as u64, sender, ctx);
+            vault.mint_and_transfer<T>(order.base_amount() as u64, sender, ctx);
         } else {
             zkgm.decrease_outstanding(
                 source_channel,
@@ -1735,6 +1683,7 @@ module zkgm::zkgm {
 
     fun timeout_forward<T>(
         zkgm: &mut RelayStore,
+        vault: &mut Vault,
         packet: Packet,
         relayer: address,
         path: u256,
@@ -1742,6 +1691,7 @@ module zkgm::zkgm {
         ctx: &mut TxContext
     ) {
         zkgm.timeout_internal<T>(
+            vault,
             packet, 
             relayer, 
             path, 
@@ -1750,19 +1700,9 @@ module zkgm::zkgm {
         )
     }
 
-    fun get_treasury_cap<T>(
-        zkgm: &mut RelayStore
-    ): &mut TreasuryCap<T> {
-        let typename_t = type_name::get<T>();
-        let key = string::from_ascii(typename_t.into_string());
-        if (!zkgm.type_name_t_to_capability.contains(key)) {
-            abort E_NO_TREASURY_CAPABILITY             
-        };
-        &mut zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(key).cap
-    }
-
     fun claim_wrapped_denom<T>(
         zkgm: &mut RelayStore,
+        vault: &Vault,
         wrapped_denom: vector<u8>,
         metadata: Option<TokenMetadata>,
     ): bool {
@@ -1778,14 +1718,14 @@ module zkgm::zkgm {
             let metadata = metadata.destroy_some();
             let sui_metadata = sui_token_metadata::decode(*metadata.initializer());
         
-            let t = zkgm.type_name_t_to_capability.borrow<String, TreasuryCapWithMetadata<T>>(key);
+            let m = vault.get_metadata<T>();
 
-            if (t.name != sui_metadata.name()
-                || t.symbol != sui_metadata.symbol()
-                || t.decimals != sui_metadata.decimals()
-                || t.owner != sui_metadata.owner()
-                || &t.icon_url != sui_metadata.icon_url()
-                || &t.description != sui_metadata.description()) {
+            if (m.name() != sui_metadata.name()
+                || m.symbol() != sui_metadata.symbol()
+                || m.decimals() != sui_metadata.decimals()
+                || m.owner() != sui_metadata.owner()
+                || m.icon_url() != sui_metadata.icon_url()
+                || m.description() != sui_metadata.description()) {
                 return false
             };
             
@@ -1803,11 +1743,11 @@ module zkgm::zkgm {
     ) {
         let typename_t = type_name::get<T>();
         let key = type_name::into_string(typename_t);
-        if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
-            let self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+        if(relay_store.object_store.contains(string::from_ascii(key))) {
+            let self_coin = relay_store.object_store.borrow_mut(string::from_ascii(key));
             coin::join(self_coin, coin)
         } else{
-            relay_store.bag_to_coin.add(string::from_ascii(key), coin)
+            relay_store.object_store.add(string::from_ascii(key), coin)
         }
     }
 
@@ -1825,42 +1765,5 @@ module zkgm::zkgm {
         if (!zkgm.token_origin.contains(wrapped_token)) {
             zkgm.token_origin.add(wrapped_token, updated_channel_path);
         };
-    }
-
-    /// Coin admin functions
-    public fun mint<T>(
-        zkgm: &mut RelayStore,
-        value: u64,
-        ctx: &mut TxContext
-    ): Coin<T> {
-        let typename_t = type_name::get<T>();
-        let cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
-
-        assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
-        
-        coin::mint<T>(&mut cap.cap, value, ctx)
-    }
-
-    public fun mint_and_transfer<T>(
-        zkgm: &mut RelayStore,
-        amount: u64,
-        recipient: address,
-        ctx: &mut TxContext
-    ) {
-        let typename_t = type_name::get<T>();
-        let cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
-
-        assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
-        
-        coin::mint_and_transfer<T>(&mut cap.cap, amount, recipient, ctx);
-    }
-
-    public fun burn<T>(zkgm: &mut RelayStore, c: Coin<T>, ctx: &mut TxContext): u64 {
-        let typename_t = type_name::get<T>();
-        let cap = zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(string::from_ascii(typename_t.into_string()));
-
-        assert!(ctx.sender() == cap.owner, E_UNAUTHORIZED);
-        
-        coin::burn<T>(&mut cap.cap, c)
     }
 }
