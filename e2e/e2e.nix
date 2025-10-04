@@ -121,29 +121,6 @@
           networking.hostName = "devnetUnion";
         };
       };
-
-      galoisNode = {
-        wait_for_console_text = "Serving...";
-        wait_for_open_port = 9999;
-        node = _: {
-          imports = [
-            inputs.arion.nixosModules.arion
-          ];
-          virtualisation = {
-            diskSize = 16 * 1024;
-            memorySize = 32 * 1024;
-            # TODO(aeryz): remove this
-            cores = 32;
-            arion = {
-              backend = "docker";
-              projects.galois.settings = galois-arion-project;
-            };
-            vlans = [ 1 ];
-          };
-          networking.hostName = "galois";
-        };
-      };
-
     in
     {
       _module.args.e2e = {
@@ -205,7 +182,6 @@
             inherit name;
 
             testScript = ''
-              galois.start()
               devnetUnion.wait_for_open_port(${toString unionNode.wait_for_open_port})
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
@@ -218,16 +194,17 @@
               devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
               devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
 
-              galois.wait_for_console_text('${galoisNode.wait_for_console_text}')
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} index union-devnet-1 -e')
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} index 32382 -e')
 
-              devnetVoyager.succeed('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on union-devnet-1 --tracking 32382 --ibc-interface ibc-cosmwasm --ibc-spec-id ibc-union --client-type trusted/evm/mpt -e')
-              devnetVoyager.succeed('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on 32382 --tracking union-devnet-1 --ibc-interface ibc-solidity --ibc-spec-id ibc-union --client-type cometbls -e')
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on union-devnet-1 --tracking 32382 --ibc-interface ibc-cosmwasm --ibc-spec-id ibc-union --client-type trusted/evm/mpt -e')
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on 32382 --tracking union-devnet-1 --ibc-interface ibc-solidity --ibc-spec-id ibc-union --client-type cometbls -e')
 
               devnetVoyager.succeed(
                 "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"union-devnet-1\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"connection_open_init\",\"@value\":{\"client_id\":1,\"counterparty_client_id\":1}}}]}}}' > /tmp/payload.json"
               )
 
-              devnetVoyager.succeed("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
+              devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
 
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 200000") == "true" ]]')
             '';
@@ -236,13 +213,11 @@
               (pkgs.lib.throwIf (builtins.hasAttr "devnetUnion" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "voyager" nodes) "voyager node already exists; use a different name")
-                (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
                 (
                   {
                     devnetUnion = unionNode.node;
                     devnetEth = devnetEthNode.node;
                     devnetVoyager = voyagerNode.node;
-                    galois = galoisNode.node;
                   }
                   // nodes
                 );
