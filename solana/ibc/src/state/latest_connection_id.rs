@@ -35,4 +35,8 @@ impl Serializable for LatestConnectionId {
     fn deserialize(data: &[u8]) -> Result<Self, ProgramError> {
         Self::try_from(data)
     }
+
+    fn serialized_size(&self) -> usize {
+        4
+    }
 }
