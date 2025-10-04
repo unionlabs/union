@@ -3,17 +3,6 @@
     "state": [
       {
         "enabled": true,
-        "path": "/bin/voyager-state-module-cosmos-sdk",
-        "info": {
-          "chain_id": "union-devnet-1",
-          "ibc_spec_id": "1.0.0"
-        },
-        "config": {
-          "rpc_url": "http://devnetUnion:26657"
-        }
-      },
-      {
-        "enabled": true,
         "path": "/bin/voyager-state-module-cosmos-sdk-union",
         "info": {
           "chain_id": "union-devnet-1",
@@ -87,19 +76,6 @@
           "finality_lag": 1
         }
       }
-      // {
-      //   "enabled": true,
-      //   "path": "/bin/voyager-consensus-module-ethereum",
-      //   "info": {
-      //     "chain_id": "32382",
-      //     "consensus_type": "ethereum"
-      //   },
-      //   "config": {
-      //     "chain_spec": "minimal",
-      //     "rpc_url": "http://devnetEth:8545",
-      //     "beacon_rpc_url": "http://localhost:9596"
-      //   }
-      // }
     ],
     "client": [
       {
@@ -118,36 +94,6 @@
         "info": {
           "client_type": "trusted/evm/mpt",
           "consensus_type": "trusted/evm",
-          "ibc_interface": "ibc-cosmwasm",
-          "ibc_spec_id": "ibc-union"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "/bin/voyager-client-module-cometbls",
-        "info": {
-          "client_type": "cometbls",
-          "consensus_type": "cometbls",
-          "ibc_interface": "ibc-move/aptos",
-          "ibc_spec_id": "ibc-union"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "/bin/voyager-client-module-cometbls",
-        "info": {
-          "client_type": "cometbls",
-          "consensus_type": "cometbls",
-          "ibc_interface": "ibc-go-v8/08-wasm",
-          "ibc_spec_id": "ibc-union"
-        }
-      },
-      {
-        "enabled": true,
-        "path": "/bin/voyager-client-module-ethereum",
-        "info": {
-          "client_type": "ethereum",
-          "consensus_type": "ethereum",
           "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
         }
@@ -300,7 +246,9 @@
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://devnetUnion:26657",
-        "prover_endpoints": ["https://galois.testnet-9.union.build:443"]
+        "prover_endpoints": [
+          "https://galois.testnet-9.union.build:443"
+        ]
       }
     },
     {
