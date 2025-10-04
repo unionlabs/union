@@ -63,8 +63,6 @@ pub enum IbcClientError<T: IbcClient> {
     ClientSpecific(T::Error),
     #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
     InvalidClientMessage(Vec<u8>),
-    #[error("caller `{0}` is not a whitelisted relayer")]
-    UnauthorizedCaller(String),
 }
 
 impl<T: IbcClient + 'static> From<IbcClientError<T>> for StdError {

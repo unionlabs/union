@@ -76,7 +76,8 @@ impl<const BYTES: usize, E: Encoding> FixedBytes<BYTES, E> {
     pub const BITS_LEN: usize = BYTES * 8;
     pub const BYTES_LEN: usize = BYTES;
 
-    pub const EMPTY: Self = Self::new([0; BYTES]);
+    pub const MIN: Self = Self::new([0; BYTES]);
+    pub const MAX: Self = Self::new([0xFF; BYTES]);
 
     #[must_use = "constructing a Hash has no effect"]
     pub const fn new(arr: [u8; BYTES]) -> Self {
