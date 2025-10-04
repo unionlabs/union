@@ -1,6 +1,8 @@
 use ibc_union_spec::ClientId;
 use pinocchio::{
-    account_info::AccountInfo, program_error::ProgramError, pubkey::find_program_address,
+    account_info::AccountInfo,
+    program_error::ProgramError,
+    pubkey::{create_program_address, find_program_address},
     ProgramResult,
 };
 use unionlabs_primitives::Bytes;
@@ -20,7 +22,12 @@ impl<'a> CreateClient<'a> {
     pub const DISCRIMINATOR: &'a u8 = &0;
 
     pub fn process(&mut self) -> ProgramResult {
-        let mut latest_client_id = TypedAccount::<LatestClientId>::load(self.accounts.client_id)?;
+        let mut latest_client_id = TypedAccount::<LatestClientId>::init_if_needed(
+            LatestClientId(ClientId!(1)),
+            self.accounts.client_id,
+            self.accounts.payer,
+            &[b"client_id"],
+        )?;
 
         self.accounts
             .validate_accounts(latest_client_id.as_ref().0)?;
@@ -55,6 +62,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CreateClient<'a> {
 }
 
 pub struct CreateClientAccounts<'a> {
+    pub payer: &'a AccountInfo,
     pub client_id: &'a AccountInfo,
     pub client_state: &'a AccountInfo,
     pub consensus_state: &'a AccountInfo,
@@ -72,10 +80,10 @@ impl<'a> CreateClientAccounts<'a> {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        let (account, _) = find_program_address(
+        let account = create_program_address(
             &[b"consensus_state", &client_id.raw().to_le_bytes()],
             &crate::ID,
-        );
+        )?;
         if self.consensus_state.key() != &account {
             return Err(ProgramError::InvalidAccountData);
         }
@@ -88,16 +96,17 @@ impl<'a> TryFrom<&'a [AccountInfo]> for CreateClientAccounts<'a> {
     type Error = ProgramError;
 
     fn try_from(accounts: &'a [AccountInfo]) -> Result<Self, Self::Error> {
-        let [client_id, client_state, consensus_state, _] = accounts else {
+        let [payer, client_id, client_state, consensus_state, _] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        let (account, _) = find_program_address(&[b"client_id"], &crate::ID);
+        let account = create_program_address(&[b"client_id"], &crate::ID)?;
         if client_id.key() != &account {
             return Err(ProgramError::InvalidAccountData);
         }
 
         Ok(Self {
+            payer,
             client_id,
             client_state,
             consensus_state,

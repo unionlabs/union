@@ -15,13 +15,17 @@ impl<'a> ConnectionOpenInit<'a> {
     pub const DISCRIMINATOR: &'a u8 = &1;
 
     pub fn process(&mut self) -> ProgramResult {
-        let mut latest_connection_id =
-            TypedAccount::<LatestConnectionId>::load(self.accounts.latest_connection_id)?;
+        let mut latest_connection_id = TypedAccount::<LatestConnectionId>::init_if_needed(
+            LatestConnectionId(ConnectionId!(1)),
+            self.accounts.latest_connection_id,
+            self.accounts.payer,
+            &[b"client_id"],
+        )?;
 
         self.accounts
             .validate_accounts(latest_connection_id.as_ref().0)?;
 
-        TypedAccount::<Connection>::create(
+        TypedAccount::<Connection>::init(
             Connection {
                 state: ConnectionState::Init,
                 client_id: self.instruction_data.client_id,
@@ -29,7 +33,12 @@ impl<'a> ConnectionOpenInit<'a> {
                 counterparty_connection_id: None,
             },
             self.accounts.connection,
-        )
+            self.accounts.payer,
+            &[
+                b"connection",
+                &latest_connection_id.data.0.raw().to_le_bytes(),
+            ],
+        )?
         .save()?;
 
         latest_connection_id.as_mut().increment();
@@ -54,6 +63,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for ConnectionOpenInit<'a> {
 }
 
 pub struct ConnectionOpenInitAccounts<'a> {
+    pub payer: &'a AccountInfo,
     pub latest_connection_id: &'a AccountInfo,
     pub connection: &'a AccountInfo,
 }
@@ -78,7 +88,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for ConnectionOpenInitAccounts<'a> {
     type Error = ProgramError;
 
     fn try_from(accounts: &'a [AccountInfo]) -> Result<Self, Self::Error> {
-        let [latest_connection_id, connection, _] = accounts else {
+        let [payer, latest_connection_id, connection, _] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
@@ -88,6 +98,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for ConnectionOpenInitAccounts<'a> {
         }
 
         Ok(Self {
+            payer,
             latest_connection_id,
             connection,
         })

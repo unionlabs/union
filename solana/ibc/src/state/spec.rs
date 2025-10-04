@@ -1,5 +1,6 @@
 use ibc_union_spec::{ClientId, Connection, ConnectionId};
 use pinocchio::program_error::ProgramError;
+use unionlabs_primitives::Bytes;
 
 use super::Serializable;
 
@@ -37,5 +38,23 @@ impl Serializable for Connection {
                 )
             },
         })
+    }
+
+    fn serialized_size(&self) -> usize {
+        16
+    }
+}
+
+impl Serializable for Bytes {
+    fn serialized_size(&self) -> usize {
+        self.len()
+    }
+
+    fn serialize_into(&self, data: &mut [u8]) {
+        data[..self.len()].copy_from_slice(self.as_ref());
+    }
+
+    fn deserialize(data: &[u8]) -> Result<Self, ProgramError> {
+        Ok(Bytes::new(data.to_vec()))
     }
 }
