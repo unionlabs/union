@@ -1408,3 +1408,100 @@ fn schedule_works() {
         }),
     );
 }
+
+#[test]
+fn schedule_reentrant_works() {
+    const GRANT_ROLE: RoleId = RoleId::new(6);
+
+    let (mut deps, env) = setup();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            target: env.contract.address.clone(),
+            selectors: vec![Selector::new("grant_role").to_owned()],
+            role_id: GRANT_ROLE,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            account: ACCOUNT_1.clone(),
+            role_id: GRANT_ROLE,
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            account: ACCOUNT_1.clone(),
+            role_id: RoleId::new(11),
+            execution_delay: 20,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetRoleAdmin {
+            role_id: RoleId::new(10),
+            admin: RoleId::new(11),
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: GRANT_ROLE,
+            target: env.contract.address.clone(),
+            selectors: vec![Selector::new("grant_role").to_owned()],
+        },
+    )
+    .unwrap();
+
+    eprintln!("NOW\n\n\n");
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: env.contract.address.clone(),
+                data: serde_json::to_string(&ExecuteMsg::GrantRole {
+                    role_id: RoleId::new(10),
+                    account: ACCOUNT_2.clone(),
+                    execution_delay: 0
+                })
+                .unwrap(),
+                when: env.block.time.seconds() + 20
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(OperationScheduled {
+            operation_id: H256::new(hex!(
+                "8851fd1669d010b077f22bf956ea2ae240fe964d0f9d30e46f702b6e950278b5"
+            )),
+            nonce: 1,
+            schedule: env.block.time.seconds() + 20,
+            caller: &ACCOUNT_1,
+            target: &env.contract.address,
+            data: r#"{"grant_role":{"role_id":"10","account":"account-2","execution_delay":0}}"#,
+        }),
+    );
+}

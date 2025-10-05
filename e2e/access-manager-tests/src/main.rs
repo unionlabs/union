@@ -56,6 +56,9 @@ const DECREMENT: RoleId = RoleId::new(2);
 const INCREMENT_GUARDIAN: RoleId = RoleId::new(4);
 const DECREMENT_GUARDIAN: RoleId = RoleId::new(5);
 
+const GRANT_ROLE: RoleId = RoleId::new(6);
+const GRANT_ROLE_ADMIN: RoleId = RoleId::new(7);
+
 fn mk_wallet(mnemonic: &str, bech32_prefix: &str) -> LocalSigner {
     LocalSigner::new(
         tiny_hderive::bip32::ExtendedPrivKey::derive(
@@ -220,11 +223,13 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    schedule_increment(&alice_client, &bob_client, &manager, &managed).await?;
+    // schedule_increment(&alice_client, &bob_client, &manager, &managed).await?;
 
-    schedule_decrement_in_sub_msg(&alice_client, &bob_client, &manager, &managed).await?;
+    // schedule_decrement_in_sub_msg(&alice_client, &bob_client, &manager, &managed).await?;
 
-    schedule_increment_in_reply(&alice_client, &bob_client, &manager, &managed).await?;
+    // schedule_increment_in_reply(&alice_client, &bob_client, &manager, &managed).await?;
+
+    schedule_reentrant(&alice_client, &bob_client, &charlie_client, &manager).await?;
 
     Ok(())
 }
@@ -544,6 +549,144 @@ async fn schedule_increment_in_reply(
     Ok(())
 }
 
+#[instrument(skip_all)]
+async fn schedule_reentrant(
+    alice_client: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    bob_client: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    charlie_client: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    manager: &Bech32<H256>,
+) -> Result<()> {
+    execute(
+        alice_client,
+        manager,
+        [
+            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(manager.to_string()),
+                selectors: vec![Selector::new("grant_role").to_owned()],
+                role_id: GRANT_ROLE,
+            },
+            &manager::msg::ExecuteMsg::GrantRole {
+                account: Addr::unchecked(charlie_client.wallet().address().to_string()),
+                role_id: GRANT_ROLE,
+                execution_delay: 10,
+            },
+            &manager::msg::ExecuteMsg::GrantRole {
+                account: Addr::unchecked(charlie_client.wallet().address().to_string()),
+                role_id: RoleId::new(11),
+                execution_delay: 20,
+            },
+            &manager::msg::ExecuteMsg::SetRoleAdmin {
+                role_id: RoleId::new(10),
+                admin: RoleId::new(11),
+            },
+            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
+                role_id: GRANT_ROLE,
+                target: Addr::unchecked(manager.to_string()),
+                selectors: vec![Selector::new("grant_role").to_owned()],
+            },
+        ],
+    )
+    .await?;
+
+    // let msg = manager::msg::ExecuteMsg::Schedule {
+    //     target: Addr::unchecked(manager.to_string()),
+    //     data: serde_json::to_string(&manager::msg::ExecuteMsg::GrantRole {
+    //         account: Addr::unchecked(bob_client.wallet().address().to_string()),
+    //         role_id: RoleId::new(7),
+    //         execution_delay: 10,
+    //     })
+    //     .unwrap(),
+    //     when: now() + 10,
+    // };
+    let msg = manager::msg::ExecuteMsg::GrantRole {
+        role_id: RoleId::new(10),
+        account: Addr::unchecked(bob_client.wallet().address().to_string()),
+        execution_delay: 0,
+    };
+    let data = to_json_string(&msg).unwrap();
+    let operation_id = hash_operation(charlie_client.wallet().address(), manager, &msg);
+
+    info!(
+        "charlie can't call grant_role since they have an execution delay, they must schedule the call"
+    );
+    execute_expect_error(
+        charlie_client,
+        manager,
+        &msg,
+        AccessManagerError::AccessManagerNotScheduled(operation_id),
+    )
+    .await?;
+
+    info!("schedule grant_role call too soon");
+    execute_expect_error(
+        charlie_client,
+        manager,
+        &manager::msg::ExecuteMsg::Schedule {
+            target: Addr::unchecked(manager.to_string()),
+            data: data.clone(),
+            when: now() + 5,
+        },
+        AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: Addr::unchecked(charlie_client.wallet().address().to_string()),
+            target: Addr::unchecked(manager.to_string()),
+            selector: Selector::new("grant_role").to_owned(),
+        },
+    )
+    .await?;
+
+    info!("schedule grant_role call with correct delay");
+    let when = now() + 25;
+    execute(
+        charlie_client,
+        manager,
+        [manager::msg::ExecuteMsg::Schedule {
+            target: Addr::unchecked(manager.to_string()),
+            data: data.clone(),
+            when,
+        }],
+    )
+    .await?;
+
+    info!("execute scheduled call too soon");
+    execute_expect_error(
+        charlie_client,
+        manager,
+        &manager::msg::ExecuteMsg::Execute {
+            target: Addr::unchecked(manager.to_string()),
+            data: data.clone(),
+        },
+        AccessManagerError::AccessManagerNotReady(operation_id),
+    )
+    .await?;
+
+    info!("scheduled op not ready");
+    execute_expect_error(
+        charlie_client,
+        manager,
+        &msg,
+        AccessManagerError::AccessManagerNotReady(operation_id),
+    )
+    .await?;
+
+    wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
+        block.block.header.time.seconds.inner() as u64 > when
+    })
+    .await?;
+
+    info!("execute scheduled call once ready");
+    execute(
+        charlie_client,
+        manager,
+        [manager::msg::ExecuteMsg::Execute {
+            target: Addr::unchecked(manager.to_string()),
+            data: data.clone(),
+        }],
+    )
+    .await?;
+
+    Ok(())
+}
+
 fn now() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -668,6 +811,7 @@ async fn execute(
     Ok(())
 }
 
+// #[track_caller]
 async fn execute_expect_error(
     signer: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
     contract: &Bech32<H256>,

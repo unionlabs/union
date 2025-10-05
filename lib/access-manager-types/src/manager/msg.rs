@@ -24,6 +24,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L104>
     AdminRole {},
+
     /// The identifier of the public role. Automatically granted to all addresses with no delay.
     ///
     /// ```solidity
@@ -32,6 +33,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L109>
     PublicRole {},
+
     /// Expiration delay for scheduled proposals. Defaults to 1 week.
     ///
     /// IMPORTANT: Avoid overriding the expiration with 0. Otherwise every contract proposal will
@@ -43,6 +45,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L158>
     Expiration {},
+
     /// Minimum setback for all delay updates, with the exception of execution delays. It can be
     /// increased without setback (and reset via [`ExecuteMsg::RevokeRole`] in the case event of an
     /// accidental increase). Defaults to 5 days.
@@ -53,6 +56,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L163>
     MinSetback {},
+
     /// Check if an address (`caller`) is authorized to call a given function on a given contract
     /// directly (with no restriction). Additionally, it returns the delay needed to perform the
     /// call indirectly through the [`ExecuteMsg::Schedule`] & [`ExecuteMsg::Execute`] workflow.
@@ -82,6 +86,7 @@ pub enum QueryMsg {
         target: Addr,
         caller: Addr,
     },
+
     /// Get whether the contract is closed disabling any access. Otherwise role permissions are
     /// applied.
     ///
@@ -94,6 +99,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L168>
     IsTargetClosed { target: Addr },
+
     /// Get the role required to call a function.
     ///
     /// ```solidity
@@ -105,6 +111,7 @@ pub enum QueryMsg {
         target: Addr,
         selector: Box<Selector>,
     },
+
     /// Get the admin delay for a target contract. Changes to contract configuration are subject to
     /// this delay.
     ///
@@ -114,6 +121,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L178>
     GetTargetAdminDelay { target: Addr },
+
     /// Get the id of the role that acts as an admin for the given role.
     ///
     /// The admin permission is required to grant the role, revoke the role and update the
@@ -125,6 +133,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L183>
     GetRoleAdmin { role_id: RoleId },
+
     /// Get the role that acts as a guardian for a given role.
     ///
     /// The guardian permission allows canceling operations that have been scheduled under the
@@ -136,6 +145,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L188>
     GetRoleGuardian { role_id: RoleId },
+
     /// Get the role current grant delay.
     ///
     /// Its value may change at any point without an event emitted following a call to
@@ -148,6 +158,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L193>
     GetRoleGrantDelay { role_id: RoleId },
+
     /// Get the access details for a given account for a given role. These details include the
     /// timepoint at which membership becomes active, and the delay applied to all operation by
     /// this user that requires this permission level.
@@ -161,9 +172,10 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L198>
     GetAccess { role_id: RoleId, account: Addr },
+
     /// Check if a given account currently has the permission level corresponding to a given role.
-    /// Note that this permission might be associated with an execution delay. {getAccess} can
-    /// provide more details.
+    /// Note that this permission might be associated with an execution delay.
+    /// [`QueryMsg::GetAccess`] can provide more details.
     ///
     /// ```solidity
     /// function hasRole(
@@ -174,6 +186,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L211>
     HasRole { role_id: RoleId, account: Addr },
+
     /// Return the timepoint at which a scheduled operation will be ready for execution. This
     /// returns 0 if the operation is not yet scheduled, has expired, was executed, or was
     /// canceled.
@@ -182,8 +195,9 @@ pub enum QueryMsg {
     /// function getSchedule(bytes32 id) public view virtual returns (uint48)
     /// ```
     ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L429C5-L429C74>
+    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L429>
     GetSchedule { id: H256 },
+
     /// Return the nonce for the latest scheduled operation with a given id. Returns 0 if the
     /// operation has never been scheduled.
     ///
@@ -193,6 +207,7 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L435>
     GetNonce { id: H256 },
+
     /// Hashing function for execute protection.
     ///
     /// ```solidity
@@ -224,6 +239,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L225>
     LabelRole { role_id: RoleId, label: String },
+
     /// Add `account` to `role_id`, or change its execution delay.
     ///
     /// This gives the account the authorization to call any function that is restricted to this
@@ -256,6 +272,7 @@ pub enum ExecuteMsg {
         account: Addr,
         execution_delay: u32,
     },
+
     /// Remove an account from a role, with immediate effect. If the account does not have the
     /// role, this call has no effect.
     ///
@@ -272,6 +289,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L238>
     RevokeRole { role_id: RoleId, account: Addr },
+
     /// Renounce role permissions for the calling account with immediate effect. If the sender is
     /// not in the role this call has no effect.
     ///
@@ -290,6 +308,7 @@ pub enum ExecuteMsg {
         role_id: RoleId,
         caller_confirmation: Addr,
     },
+
     /// Change admin role for a given role.
     ///
     /// Requirements:
@@ -304,6 +323,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L251>
     SetRoleAdmin { role_id: RoleId, admin: RoleId },
+
     /// Change guardian role for a given role.
     ///
     /// Requirements:
@@ -318,6 +338,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L256>
     SetRoleGuardian { role_id: RoleId, guardian: RoleId },
+
     /// Update the delay for granting a `roleId`.
     ///
     /// Requirements:
@@ -332,6 +353,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L261>
     SetGrantDelay { role_id: RoleId, grant_delay: u32 },
+
     /// Set the delay for changing the configuration of a given target contract.
     ///
     /// Requirements:
@@ -346,6 +368,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L395>
     SetTargetAdminDelay { target: Addr, new_delay: u32 },
+
     /// Set the closed flag for a contract.
     ///
     /// Closing the manager itself won't disable access to admin methods to avoid locking the
@@ -363,6 +386,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L413>
     SetTargetClosed { target: Addr, closed: bool },
+
     /// Set the role required to call functions identified by the `selectors` in the `target`
     /// contract.
     ///
@@ -380,7 +404,7 @@ pub enum ExecuteMsg {
     /// ) public virtual onlyAuthorized {
     /// ```
     ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L374-L378>
+    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L374>
     SetTargetFunctionRole {
         target: Addr,
         selectors: Vec<Box<Selector>>,
@@ -399,6 +423,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L588>
     UpdateAuthority { target: Addr, new_authority: Addr },
+
     /// Schedule a delayed operation for future execution, and return the operation identifier. It
     /// is possible to choose the timestamp at which the operation becomes executable as long as it
     /// satisfies the execution delays required for the caller. The special value zero will
@@ -429,6 +454,7 @@ pub enum ExecuteMsg {
         data: String,
         when: u64,
     },
+
     /// Cancel a scheduled (delayed) operation. Returns the nonce that identifies the previously
     /// scheduled operation that is cancelled.
     ///
@@ -448,6 +474,7 @@ pub enum ExecuteMsg {
         target: Addr,
         data: String,
     },
+
     /// Execute a function that is delay restricted, provided it was properly scheduled beforehand,
     /// or the execution delay is 0.
     ///
@@ -463,6 +490,7 @@ pub enum ExecuteMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L492>
     Execute { target: Addr, data: String },
+
     /// Consume a scheduled operation targeting the caller. If such an operation exists, mark it as
     /// consumed (emit an [`OperationExecuted`] event and clean the state). Otherwise, throw an
     /// error.
@@ -482,49 +510,3 @@ pub enum ExecuteMsg {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MigrateMsg {}
-
-/// Interface mirroring the executable calls from [`IAccessManaged.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol).
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum AccessManagedExecuteMsg {
-    /// Transfers control to a new authority. The caller must be the current authority.
-
-    ///
-    /// ```solidity
-    /// function setAuthority(address) external
-    /// ```
-    ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManaged.sol#L66>
-    SetAuthority { new_authority: Addr },
-}
-
-/// Interface mirroring the queries from [`IAccessManaged.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol).
-#[derive(Debug, PartialEq, Serialize, Deserialize, strum::IntoStaticStr)]
-#[serde(rename_all = "snake_case")]
-pub enum AccessManagedQueryMsg {
-    /// Returns the current authority.
-    ///
-    /// ```solidity
-    /// function authority() external view returns (address)
-    /// ```
-    ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol#L19>
-    Authority {},
-
-    /// Returns true only in the context of a delayed restricted call, at the moment that the
-    /// scheduled operation is being consumed. Prevents denial of service for delayed restricted
-    /// calls in the case that the contract performs attacker controlled calls.
-    ///
-    /// ```solidity
-    /// function isConsumingScheduledOp() external view returns (bytes4)
-    /// ```
-    ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol#L31>
-    IsConsumingScheduledOp {},
-}
-
-impl AccessManagedQueryMsg {
-    pub fn selector(&self) -> &'static Selector {
-        Selector::new(<&'static str>::from(self))
-    }
-}

@@ -13,7 +13,6 @@ pub struct InitMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Transfers control to a new authority. The caller must be the current authority.
-
     ///
     /// ```solidity
     /// function setAuthority(address) external

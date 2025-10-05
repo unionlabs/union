@@ -15,7 +15,8 @@
 //!
 //! For each target contract, admins can configure the following without any delay:
 //!
-//! - The target's {AccessManaged-authority} via [`ExecuteMsg::UpdateAuthority`].
+//! - The target's [`QueryMsg::Authority`][access_manager_types::managed::msg::QueryMsg::Authority]
+//!   via [`ExecuteMsg::UpdateAuthority`].
 //! - Close or open a target via [`ExecuteMsg::SetTargetClosed`] keeping the permissions intact.
 //! - The roles that are allowed (or disallowed) to call a given function (identified by its
 //!   selector) through [`ExecuteMsg::SetTargetAdminDelay`].

@@ -36,6 +36,7 @@ use crate::{
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L123>
+#[inline]
 fn only_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
     _check_authorized(ctx)
 }
@@ -144,7 +145,7 @@ pub(crate) fn set_grant_delay(
 /// ) internal virtual returns (bool)
 /// ```
 ///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L270-L275>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L270>
 pub(crate) fn _grant_role(
     ctx: &mut ExecCtx,
     role_id: RoleId,
@@ -446,7 +447,7 @@ pub(crate) fn set_target_closed(
 /// function _setTargetClosed(address target, bool closed) internal virtual
 /// ```
 ///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L422C5-L422C76>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L422>
 fn _set_target_closed(ctx: &mut ExecCtx, target: &Addr, closed: bool) -> Result<(), ContractError> {
     ctx.storage()
         .upsert::<Targets, ContractError>(target, |maybe_target_config| {
@@ -496,11 +497,13 @@ pub(crate) fn schedule(
 ) -> Result<(H256, u32), ContractError> {
     let caller = ctx.msg_sender();
 
+    dbg!(data);
+
     // Fetch restrictions that apply to the caller on the targeted function
     let CanCall {
         allowed: _,
         delay: setback,
-    } = _can_call_extended(ctx, caller, target, data)?;
+    } = dbg!(_can_call_extended(ctx, caller, target, data)?);
 
     let min_when = ctx.timestamp() + u64::from(setback);
 
@@ -769,6 +772,7 @@ pub(crate) fn update_authority(
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L598>
+#[inline]
 fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
     let msg_data = ctx.msg_data();
 
@@ -811,7 +815,7 @@ fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
 /// ) private view returns (bool adminRestricted, uint64 roleAdminId, uint32 executionDelay)
 /// ```
 ///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L619-L621>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L619>
 fn _get_admin_restrictions(
     ctx: &mut ExecCtx,
     data: &str,
@@ -840,9 +844,11 @@ fn _get_admin_restrictions(
 
         // Restricted to that role's admin with no delay beside any execution delay the caller may
         // have.
-        Ok(GrantRole { role_id, .. } | RevokeRole { role_id, .. }) => {
-            Ok((true, get_role_admin(ctx.query_ctx(), role_id)?, 0))
-        }
+        Ok(GrantRole { role_id, .. } | RevokeRole { role_id, .. }) => Ok((
+            true,
+            dbg!(get_role_admin(ctx.query_ctx(), dbg!(role_id))?),
+            0,
+        )),
 
         _ => Ok((
             false,
@@ -890,7 +896,7 @@ fn _can_call_extended(
     data: &str,
 ) -> Result<CanCall, ContractError> {
     if target == ctx.address_this() {
-        _can_call_self(ctx, caller, data)
+        dbg!(_can_call_self(ctx, caller, data))
     } else {
         can_call(ctx.query_ctx(), caller, target, _check_selector(data)?)
     }
@@ -905,7 +911,7 @@ fn _can_call_extended(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L685>
 fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCall, ContractError> {
     if caller == ctx.address_this() {
-        // Caller is AccessManager, this means the call was sent through {execute} and it already
+        // Caller is AccessManager, this means the call was sent through `execute` and it already
         // checked permissions. We verify that the call "identifier", which is set during
         // `execute`, is correct.
         return Ok(CanCall {
@@ -915,6 +921,8 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
     }
 
     let (admin_restricted, role_id, operation_delay) = _get_admin_restrictions(ctx, data)?;
+
+    dbg!((admin_restricted, role_id, operation_delay));
 
     // isTargetClosed apply to non-admin-restricted function
     if !admin_restricted && is_target_closed(ctx.query_ctx(), ctx.address_this())? {
@@ -927,7 +935,7 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
     let HasRole {
         is_member,
         execution_delay,
-    } = has_role(ctx.query_ctx(), role_id, caller)?;
+    } = dbg!(has_role(ctx.query_ctx(), role_id, caller)?);
 
     if !is_member {
         return Ok(CanCall {
