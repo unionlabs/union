@@ -2,15 +2,13 @@
 
 [move]
 version = 3
-manifest_digest = "DF305505D1BD454D06F76B50B91A59B2412D941077A405A86CBCE0D1CAE49898"
-deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
+manifest_digest = "8C972825465DD7FF963AD3E385007C2FCC1AC85CC2F78691F3CA1A2E4E225286"
+deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
   { id = "SuiSystem", name = "SuiSystem" },
-  { id = "ibc", name = "ibc" },
-  { id = "vault", name = "vault" },
 ]
 
 [[move.package]]
@@ -44,31 +42,8 @@ dependencies = [
   { id = "Sui", name = "Sui" },
 ]
 
-[[move.package]]
-id = "ibc"
-source = { local = "../ibc" }
-
-dependencies = [
-  { id = "Bridge", name = "Bridge" },
-  { id = "MoveStdlib", name = "MoveStdlib" },
-  { id = "Sui", name = "Sui" },
-  { id = "SuiSystem", name = "SuiSystem" },
-]
-
-[[move.package]]
-id = "vault"
-source = { local = "../vault" }
-
-dependencies = [
-  { id = "Bridge", name = "Bridge" },
-  { id = "MoveStdlib", name = "MoveStdlib" },
-  { id = "Sui", name = "Sui" },
-  { id = "SuiSystem", name = "SuiSystem" },
-  { id = "ibc", name = "ibc" },
-]
-
 [move.toolchain-version]
-compiler-version = "1.56.3"
+compiler-version = "1.53.2"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -76,6 +51,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0xb95c4d079ccf43f88ea026d08e6a51877ef65e62a984ce7cd0cbc2c30cbb223a"
-latest-published-id = "0xdf41172eb239faff899124672404d6f8e38f5280105e8fdb170029ddbe825d34"
-published-version = "5"
+original-published-id = "0x9f2da79979c0bf626e81cdb834ca92f16dc677bce9f36fc2c28c38315840ef4f"
+latest-published-id = "0x9f2da79979c0bf626e81cdb834ca92f16dc677bce9f36fc2c28c38315840ef4f"
+published-version = "1"

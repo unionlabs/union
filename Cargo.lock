@@ -18592,6 +18592,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-sui-ibc-app-plugin-zkgm"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bcs",
+ "concurrent-keyring",
+ "embed-commit",
+ "hex-literal 0.4.1",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "move-core-types",
+ "serde",
+ "sha3",
+ "sui-sdk",
+ "tokio",
+ "ucs03-zkgm",
+ "unionlabs",
+ "voyager-sdk",
+ "voyager-transaction-plugin-sui",
+]
+
+[[package]]
 name = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
