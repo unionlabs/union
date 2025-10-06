@@ -17,7 +17,7 @@ beacon-api       = { workspace = true }
 beacon-api-types = { workspace = true, features = ["serde"] }
 embed-commit     = { workspace = true }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
-moka             = { version = "0.12.10", features = ["future"] }
+moka             = { workspace = true, features = ["future"] }
 serde            = { workspace = true, features = ["derive"] }
 tokio            = { workspace = true }
 tracing          = { workspace = true }

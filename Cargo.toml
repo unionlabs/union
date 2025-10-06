@@ -3,8 +3,6 @@ resolver = "2"
 # NOTE: All paths must be listed out (i.e. no globs) since ifd is still broken in nix (still can't import the output of `cargo metadata` :( ). See crane.nix for where this is used.
 members = [
   "cosmwasm/token-factory-api",
-  "cosmwasm/ucs00-pingpong",
-  "cosmwasm/ibc-union/app/ucs00-pingpong",
   "cosmwasm/ibc-union/app/ucs03-zkgm",
   "cosmwasm/ibc-union/app/ucs06-funded-dispatch",
   "cosmwasm/multicall",
@@ -37,7 +35,7 @@ members = [
   "lib/linea-zktrie",
   "lib/macros",
   "lib/pg-queue",
-  "lib/poseidon-rs",
+  # "lib/poseidon-rs",
   "lib/subset-of-derive",
   "lib/scroll-api",
   "lib/scroll-codec",
@@ -54,7 +52,7 @@ members = [
   "lib/unionlabs",
   "lib/unionlabs-primitives",
   "lib/unionlabs-encoding",
-  "lib/zktrie-rs",
+  # "lib/zktrie-rs",
   "lib/galois-rpc",
   "lib/cosmos-sdk-event",
   "lib/frissitheto",
@@ -76,7 +74,7 @@ members = [
   "lib/ethereum-sync-protocol-types",
   "lib/evm-storage-verifier",
   "lib/parlia-verifier",
-  "lib/scroll-verifier",
+  # "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
   "lib/base-light-client-types",
@@ -320,202 +318,160 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-# aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
-# aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
-
-cometbft-rpc       = { path = "lib/cometbft-rpc", default-features = false }
-cometbft-types     = { path = "lib/cometbft-types", default-features = false }
-concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
-cosmos-client      = { path = "lib/cosmos-client", default-features = false }
-
-voyager-plugin-transaction-batch = { path = "voyager/plugins/transaction-batch", default-features = false }
-
-beacon-api       = { path = "lib/beacon-api", default-features = false }
-beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
-fork-schedules   = { path = "lib/fork-schedules", default-features = false }
-
-depolama = { path = "lib/depolama", default-features = false }
-
-move-core-types-sui           = { package = "move-core-types", git = "https://github.com/mystenlabs/sui", default-features = false }
-state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
-sui-light-client-types        = { path = "lib/sui-light-client-types", default-features = false }
-sui-sdk                       = { git = "https://github.com/mystenlabs/sui", default-features = false }
-sui-verifier                  = { path = "lib/sui-verifier", default-features = false }
-
-parlia-light-client-types = { path = "lib/parlia-light-client-types", default-features = false }
-parlia-types              = { path = "lib/parlia-types", default-features = false }
-parlia-verifier           = { path = "lib/parlia-verifier", default-features = false }
-
-base-client             = { path = "lib/base-client", default-features = false }
-base-light-client-types = { path = "lib/base-light-client-types", default-features = false }
-base-verifier           = { path = "lib/base-verifier", default-features = false }
-
-bob-client             = { path = "lib/bob-client", default-features = false }
-bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
-bob-types              = { path = "lib/bob-types", default-features = false }
-bob-verifier           = { path = "lib/bob-verifier", default-features = false }
-
-arbitrum-client             = { path = "lib/arbitrum-client", default-features = false }
-arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", default-features = false }
-arbitrum-types              = { path = "lib/arbitrum-types", default-features = false }
-arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
-
-cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
-cometbls-light-client       = { path = "cosmwasm/ibc-union/lightclient/cometbls", default-features = false }
-cometbls-light-client-types = { path = "lib/cometbls-light-client-types", default-features = false }
-
-scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
-
-ethereum-light-client        = { path = "cosmwasm/ibc-union/lightclient/ethereum", default-features = false }
-ethereum-light-client-types  = { path = "lib/ethereum-light-client-types", default-features = false }
-ethereum-sync-protocol       = { path = "lib/ethereum-sync-protocol", default-features = false }
-ethereum-sync-protocol-types = { path = "lib/ethereum-sync-protocol-types", default-features = false }
-evm-storage-verifier         = { path = "lib/evm-storage-verifier", default-features = false }
-
-berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
-scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
-scroll-types                 = { path = "lib/scroll-types", default-features = false }
-
+access-managed                            = { path = "cosmwasm/access-managed", default-features = false }
+access-managed-example                    = { path = "e2e/access-managed-example", default-features = false }
+access-manager-types                      = { path = "lib/access-manager-types", default-features = false }
+arbitrum-client                           = { path = "lib/arbitrum-client", default-features = false }
+arbitrum-light-client-types               = { path = "lib/arbitrum-light-client-types", default-features = false }
+arbitrum-types                            = { path = "lib/arbitrum-types", default-features = false }
+arbitrum-verifier                         = { path = "lib/arbitrum-verifier", default-features = false }
+attested-light-client-types               = { path = "lib/attested-light-client-types", default-features = false }
+base-client                               = { path = "lib/base-client", default-features = false }
+base-light-client-types                   = { path = "lib/base-light-client-types", default-features = false }
+base-verifier                             = { path = "lib/base-verifier", default-features = false }
+beacon-api                                = { path = "lib/beacon-api", default-features = false }
+beacon-api-types                          = { path = "lib/beacon-api-types", default-features = false }
+berachain-light-client-types              = { path = "lib/berachain-light-client-types", default-features = false }
+bob-client                                = { path = "lib/bob-client", default-features = false }
+bob-light-client-types                    = { path = "lib/bob-light-client-types", default-features = false }
+bob-types                                 = { path = "lib/bob-types", default-features = false }
+bob-verifier                              = { path = "lib/bob-verifier", default-features = false }
+cometbft-rpc                              = { path = "lib/cometbft-rpc", default-features = false }
+cometbft-types                            = { path = "lib/cometbft-types", default-features = false }
+cometbls-groth16-verifier                 = { path = "lib/cometbls-groth16-verifier", default-features = false }
+cometbls-light-client                     = { path = "cosmwasm/ibc-union/lightclient/cometbls", default-features = false }
+cometbls-light-client-types               = { path = "lib/cometbls-light-client-types", default-features = false }
+concurrent-keyring                        = { path = "lib/concurrent-keyring", default-features = false }
+consensus-primitives                      = { path = "lib/consensus-primitives", default-features = false }
+cosmos-client                             = { path = "lib/cosmos-client", default-features = false }
+cosmos-sdk-event                          = { path = "lib/cosmos-sdk-event", default-features = false }
+create3                                   = { path = "lib/create3", default-features = false }
+cw-account                                = { path = "cosmwasm/cw-account", default-features = false }
+cw-escrow-vault                           = { path = "cosmwasm/cw-escrow-vault", default-features = false }
+cw20-base                                 = { path = "cosmwasm/cw20-base", default-features = false }
+cw20-ctx                                  = { path = "lib/cw20-ctx", default-features = false }
+cw20-token-minter                         = { path = "cosmwasm/cw20-token-minter", default-features = false }
+cw20-wrapped-tokenfactory                 = { path = "cosmwasm/cw20-wrapped-tokenfactory", default-features = false }
+deployments                               = { path = "lib/deployments", default-features = false }
+depolama                                  = { path = "lib/depolama", default-features = false }
+embed-commit                              = { path = "lib/embed-commit", default-features = false }
+embed-commit-verifier                     = { path = "lib/embed-commit/verifier", default-features = false }
+ethereum-light-client                     = { path = "cosmwasm/ibc-union/lightclient/ethereum", default-features = false }
+ethereum-light-client-types               = { path = "lib/ethereum-light-client-types", default-features = false }
+ethereum-sync-protocol                    = { path = "lib/ethereum-sync-protocol", default-features = false }
+ethereum-sync-protocol-types              = { path = "lib/ethereum-sync-protocol-types", default-features = false }
+ethermint-light-client-types              = { path = "lib/ethermint-light-client-types", default-features = false }
+evm-storage-verifier                      = { path = "lib/evm-storage-verifier", default-features = false }
+fork-schedules                            = { path = "lib/fork-schedules", default-features = false }
+frissitheto                               = { path = "lib/frissitheto", default-features = false }
+galois-rpc                                = { path = "lib/galois-rpc", default-features = false }
+gnark-key-parser                          = { path = "lib/gnark-key-parser", default-features = false }
+gnark-mimc                                = { path = "lib/gnark-mimc", default-features = false }
+ibc-classic-spec                          = { path = "lib/ibc-classic-spec", default-features = false }
+ibc-solidity                              = { path = "lib/ibc-solidity", default-features = false }
+ibc-union                                 = { path = "cosmwasm/ibc-union/core", default-features = false }
+ibc-union-light-client                    = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
+ibc-union-msg                             = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
+ibc-union-spec                            = { path = "lib/ibc-union-spec", default-features = false }
+ics23                                     = { path = "lib/ics23", default-features = false }
+linea-light-client-types                  = { path = "lib/linea-light-client-types", default-features = false }
+linea-types                               = { path = "lib/linea-types", default-features = false }
+linea-zktrie                              = { path = "lib/linea-zktrie", default-features = false }
+lst                                       = { path = "cosmwasm/lst", default-features = false }
+macros                                    = { path = "lib/macros", default-features = false }
+move-core-types-sui                       = { package = "move-core-types", git = "https://github.com/mystenlabs/sui", default-features = false }
+movement-light-client-types               = { path = "lib/movement-light-client-types", default-features = false }
+mpc-shared                                = { path = "mpc/shared", default-features = false }
+on-zkgm-call-proxy                        = { path = "cosmwasm/on-zkgm-call-proxy", default-features = false }
+osmosis-tokenfactory-token-minter         = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
+parlia-light-client-types                 = { path = "lib/parlia-light-client-types", default-features = false }
+parlia-types                              = { path = "lib/parlia-types", default-features = false }
+parlia-verifier                           = { path = "lib/parlia-verifier", default-features = false }
+pg-queue                                  = { path = "lib/pg-queue", default-features = false }
+protos                                    = { path = "generated/rust/protos", default-features = false }
+reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
+scroll-codec                              = { path = "lib/scroll-codec", default-features = false }
+scroll-light-client-types                 = { path = "lib/scroll-light-client-types", default-features = false }
+scroll-types                              = { path = "lib/scroll-types", default-features = false }
+serde-utils                               = { path = "lib/serde-utils", default-features = false }
+solidity-slot                             = { path = "lib/solidity-slot", default-features = false }
+ssz                                       = { path = "lib/ssz", default-features = false }
+ssz-derive                                = { path = "lib/ssz-derive", default-features = false }
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
+state-lens-ics23-mpt-light-client         = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
 state-lens-ics23-smt-light-client-types   = { path = "lib/state-lens-ics23-smt-light-client-types", default-features = false }
+state-lens-light-client-types             = { path = "lib/state-lens-light-client-types", default-features = false }
+subset-of                                 = { path = "lib/subset-of", default-features = false }
+subset-of-derive                          = { path = "lib/subset-of-derive", default-features = false }
+sui-light-client-types                    = { path = "lib/sui-light-client-types", default-features = false }
+sui-sdk                                   = { git = "https://github.com/mystenlabs/sui", default-features = false }
+sui-verifier                              = { path = "lib/sui-verifier", default-features = false }
+tendermint-light-client                   = { path = "cosmwasm/ibc-union/lightclient/tendermint", default-features = false }
+tendermint-light-client-types             = { path = "lib/tendermint-light-client-types", default-features = false }
+tendermint-verifier                       = { path = "lib/tendermint-verifier", default-features = false }
+token-factory-api                         = { path = "cosmwasm/token-factory-api", default-features = false }
+trusted-mpt-light-client-types            = { path = "lib/trusted-mpt-light-client-types", default-features = false }
+ucs03-solvable                            = { path = "lib/ucs03-solvable", default-features = false }
+ucs03-zkgm                                = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
+ucs03-zkgm-packet                         = { path = "lib/ucs03-zkgm-packet", default-features = false }
+ucs03-zkgm-token-minter-api               = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
+ucs03-zkgmable                            = { path = "lib/ucs03-zkgmable", default-features = false }
+ucs04                                     = { path = "lib/ucs04", default-features = false }
+unionlabs                                 = { path = "lib/unionlabs", default-features = false, features = ["proto"] }                           # TODO: Properly feature gate proto in unionlabs
+unionlabs-encoding                        = { path = "lib/unionlabs-encoding", default-features = false }
+unionlabs-primitives                      = { path = "lib/unionlabs-primitives", default-features = false }
+voyager-client                            = { path = "lib/voyager-client", default-features = false }
+voyager-core                              = { path = "lib/voyager-core", default-features = false }
+voyager-message                           = { path = "lib/voyager-message", default-features = false }
+voyager-plugin                            = { path = "lib/voyager-plugin", default-features = false }
+voyager-plugin-protocol                   = { path = "lib/voyager-plugin-protocol", default-features = false }
+voyager-plugin-transaction-batch          = { path = "voyager/plugins/transaction-batch", default-features = false }
+voyager-primitives                        = { path = "lib/voyager-primitives", default-features = false }
+voyager-rpc                               = { path = "lib/voyager-rpc", default-features = false }
+voyager-sdk                               = { path = "lib/voyager-sdk", default-features = false }
+voyager-sui-ibc-app-plugin                = { path = "voyager/plugins/sui-ibc-app", default-features = false }
+voyager-transaction-plugin-sui            = { path = "voyager/plugins/transaction/sui", default-features = false }
+voyager-types                             = { path = "lib/voyager-types", default-features = false }
+voyager-vm                                = { path = "lib/voyager-vm", default-features = false }
+wasm-client-type                          = { path = "lib/wasm-client-type", default-features = false }
 
-ethermint-light-client-types  = { path = "lib/ethermint-light-client-types", default-features = false }
-tendermint-light-client       = { path = "cosmwasm/ibc-union/lightclient/tendermint", default-features = false }
-tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
-tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
-
-linea-light-client-types = { path = "lib/linea-light-client-types", default-features = false }
-linea-types              = { path = "lib/linea-types", default-features = false }
-linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
-
-ibc-solidity           = { path = "lib/ibc-solidity", default-features = false }
-ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = false }
-ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
-ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
-
-access-managed         = { path = "cosmwasm/access-managed", default-features = false }
-access-managed-example = { path = "e2e/access-managed-example", default-features = false }
-access-manager-types   = { path = "lib/access-manager-types", default-features = false }
-
-frissitheto = { path = "lib/frissitheto", default-features = false }
-
-lst = { path = "cosmwasm/lst", default-features = false }
-
-cw-account      = { path = "cosmwasm/cw-account", default-features = false }
-cw-escrow-vault = { path = "cosmwasm/cw-escrow-vault", default-features = false }
-
-cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
-cw20-ctx                          = { path = "lib/cw20-ctx", default-features = false }
-cw20-token-minter                 = { path = "cosmwasm/cw20-token-minter", default-features = false }
-cw20-wrapped-tokenfactory         = { path = "cosmwasm/cw20-wrapped-tokenfactory", default-features = false }
-on-zkgm-call-proxy                = { path = "cosmwasm/on-zkgm-call-proxy", default-features = false }
-osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
-ucs03-solvable                    = { path = "lib/ucs03-solvable", default-features = false }
-ucs03-zkgm                        = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
-ucs03-zkgm-packet                 = { path = "lib/ucs03-zkgm-packet", default-features = false }
-ucs03-zkgm-token-minter-api       = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
-ucs03-zkgmable                    = { path = "lib/ucs03-zkgmable", default-features = false }
-
-gnark-key-parser = { path = "lib/gnark-key-parser", default-features = false }
-gnark-mimc       = { path = "lib/gnark-mimc", default-features = false }
-ics23            = { path = "lib/ics23", default-features = false }
-macros           = { path = "lib/macros", default-features = false }
+# aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
+# aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
 # move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
 # move-bindgen-derive            = { path = "lib/move-bindgen-derive", default-features = false }
-mpc-shared                     = { path = "mpc/shared", default-features = false }
-pg-queue                       = { path = "lib/pg-queue", default-features = false }
-poseidon-rs                    = { path = "lib/poseidon-rs", default-features = false }
-protos                         = { path = "generated/rust/protos", default-features = false }
-reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
-
-ibc-classic-spec = { path = "lib/ibc-classic-spec", default-features = false }
-ibc-union-spec   = { path = "lib/ibc-union-spec", default-features = false }
-
-attested-light-client-types    = { path = "lib/attested-light-client-types", default-features = false }
-movement-light-client-types    = { path = "lib/movement-light-client-types", default-features = false }
-trusted-mpt-light-client-types = { path = "lib/trusted-mpt-light-client-types", default-features = false }
-
-cosmos-sdk-event = { path = "lib/cosmos-sdk-event", default-features = false }
-
-serde-utils      = { path = "lib/serde-utils", default-features = false }
-ssz              = { path = "lib/ssz", default-features = false }
-ssz-derive       = { path = "lib/ssz-derive", default-features = false }
-subset-of        = { path = "lib/subset-of", default-features = false }
-subset-of-derive = { path = "lib/subset-of-derive", default-features = false }
-
-token-factory-api    = { path = "cosmwasm/token-factory-api", default-features = false }
-unionlabs            = { path = "lib/unionlabs", default-features = false, features = ["proto"] } # TODO: Properly feature gate proto in unionlabs
-unionlabs-encoding   = { path = "lib/unionlabs-encoding", default-features = false }
-unionlabs-primitives = { path = "lib/unionlabs-primitives", default-features = false }
-zktrie               = { path = "lib/zktrie-rs", default-features = false }
-
-galois-rpc = { path = "lib/galois-rpc", default-features = false }
-
-voyager-client          = { path = "lib/voyager-client", default-features = false }
-voyager-core            = { path = "lib/voyager-core", default-features = false }
-voyager-message         = { path = "lib/voyager-message", default-features = false }
-voyager-plugin          = { path = "lib/voyager-plugin", default-features = false }
-voyager-plugin-protocol = { path = "lib/voyager-plugin-protocol", default-features = false }
-voyager-primitives      = { path = "lib/voyager-primitives", default-features = false }
-voyager-rpc             = { path = "lib/voyager-rpc", default-features = false }
-voyager-sdk             = { path = "lib/voyager-sdk", default-features = false }
-voyager-types           = { path = "lib/voyager-types", default-features = false }
-voyager-vm              = { path = "lib/voyager-vm", default-features = false }
-
-voyager-sui-ibc-app-plugin     = { path = "voyager/plugins/sui-ibc-app", default-features = false }
-voyager-transaction-plugin-sui = { path = "voyager/plugins/transaction/sui", default-features = false }
-
-embed-commit          = { path = "lib/embed-commit", default-features = false }
-embed-commit-verifier = { path = "lib/embed-commit/verifier", default-features = false }
-
-consensus-primitives = { path = "lib/consensus-primitives", default-features = false }
-
-state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
-
-create3          = { path = "lib/create3", default-features = false }
-deployments      = { path = "lib/deployments", default-features = false }
-solidity-slot    = { path = "lib/solidity-slot", default-features = false }
-ucs04            = { path = "lib/ucs04", default-features = false }
-wasm-client-type = { path = "lib/wasm-client-type", default-features = false }
+# poseidon-rs                               = { path = "lib/poseidon-rs", default-features = false }
+# zktrie                                    = { path = "lib/zktrie-rs", default-features = false }
 
 # =====================
 # external dependencies
 # =====================
 
-tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
-
-alloy            = { version = "1.0.9", default-features = false }
-alloy-primitives = { version = "1.1.2", default-features = false }
-alloy-sol-types  = { version = "1.1.2", default-features = true }
-
-anyhow    = { version = "1" }
-itertools = { version = "0.13" }
-syn       = { version = "2", default-features = false }
-
-# aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
-# aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
-# aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
-# move-core-types          = { git = "https://github.com/unionlabs/aptos-core" }
-
-axum                     = { version = "0.6.20", default-features = false }
+alloy                    = { version = "1.0.9", default-features = false }
+alloy-primitives         = { version = "1.1.2", default-features = false }
+alloy-sol-types          = { version = "1.1.2", default-features = true }
+anyhow                   = { version = "1" }
+axum                     = { version = "0.8", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }
-bincode                  = { version = "2.0.1", default-features = false, features = ["std"] }     # std is used by all dependants
+bincode                  = { version = "2.0.1", default-features = false, features = ["std"] }       # std is used by all dependants
 bip32                    = { version = "0.5.3", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.7", default-features = false }
 bs58                     = { version = "0.5.1", default-features = false }
 chrono                   = { version = "0.4.41", default-features = false }
-clap                     = { version = "4.5.39", default-features = false, features = ["std"] }    # clap has a fake std feature that is required to be enabled by default
+clap                     = { version = "4.5.39", default-features = false, features = ["std"] }      # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.5", default-features = false }
 cosmwasm-schema          = { version = "2.2.2", default-features = false }
-cosmwasm-std             = { version = "2.2.2", default-features = false, features = ["std"] }     # cosmwasm-std has a fake std feature that is requried to be enabled by default
+cosmwasm-std             = { version = "2.2.2", default-features = false, features = ["std"] }       # cosmwasm-std has a fake std feature that is requried to be enabled by default
 crossbeam-queue          = { version = "0.3.12", default-features = false }
 cw-orch                  = { version = "0.27.0", default-features = false }
 cw-storage-plus          = { version = "2.0.0", default-features = false }
+cw-utils                 = { version = "2.0.0", default-features = true }
+cw20                     = { version = "2.0.0", default-features = true }
 dashmap                  = { version = "5.5.3", default-features = false }
 derive_more              = { version = "0.99.20", default-features = false }
+ed25519-dalek            = { version = "2.1.1", default-features = false }
 either                   = { version = "1.15.0", default-features = false }
 enumorph                 = { version = "0.1.2", default-features = false }
 ethabi                   = { version = "18.0.0", default-features = false }
@@ -524,40 +480,55 @@ futures                  = { version = "0.3.31", default-features = false }
 generic-array            = { version = "0.14.7", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
+itertools                = { version = "0.13" }
 jsonrpsee                = { version = "0.25.1", default-features = false }
 lazy_static              = { version = "1.5.0", default-features = false }
+moka                     = { version = "0.12.10", default-features = false }
 near-sdk                 = { version = "5.14.0", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
 opentelemetry            = { version = "0.29.1", default-features = false }
 opentelemetry-otlp       = { version = "0.29.0", default-features = false }
 opentelemetry_sdk        = { version = "0.29.0", default-features = false }
 primitive-types          = { version = "0.12.2", default-features = false }
+proc-macro2              = { version = "1.0.95", default-features = true }
 prost                    = { version = "0.12.6", default-features = false }
+quote                    = { version = "1.0.40" }
+rand                     = { version = "0.8", default-features = false }
 reqwest                  = { version = "0.11.27", default-features = false }
+reth-ipc                 = { git = "https://github.com/paradigmxyz/reth", default-features = false }
 ripemd                   = { version = "0.1.3", default-features = false }
 rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.22", default-features = false }
 serde                    = { version = "1.0.219", default-features = false }
-serde_json               = { version = "1.0.140", default-features = false, features = ["alloc"] } # serde-json requires one of "std" or "alloc"
+serde-json-wasm          = { version = "1.0.1", default-features = false }
+serde_json               = { version = "1.0.140", default-features = false, features = ["alloc"] }   # serde-json requires one of "std" or "alloc"
 serde_with               = { version = "3.12.0", default-features = false, features = ["macros"] }
 sha2                     = { version = "0.10.9", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.4", default-features = false }
-static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                  # https://github.com/nvzqz/static-assertions/pull/28
+static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
+strum                    = { version = "0.26.3", default-features = false }
 subtle-encoding          = { version = "0.5.1", default-features = false }
+syn                      = { version = "2", default-features = false }
 thiserror                = { version = "2.0.12", default-features = false }
-time                     = { version = "0.3.41", default-features = false }                        # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
+time                     = { version = "0.3.41", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
 tokio                    = { version = "1.45.1", default-features = false }
 tokio-util               = { version = "0.7.15", default-features = false }
 toml                     = { version = "0.8.22", default-features = false }
 tonic                    = { version = "0.10", default-features = false }
+tower                    = { version = "0.5", default-features = false }
+tower-http               = { version = "0.6.4", default-features = false }
 tracing                  = { version = "0.1.41", default-features = false }
-# tracing-opentelemetry    = { version = "0.30.0", default-features = false }
-quote              = { version = "1.0.40" }
-tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
-typenum            = { version = "1.18.0", default-features = false }
+tracing-subscriber       = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
+typenum                  = { version = "1.18.0", default-features = false }
 
-[patch."crates-io"]
+# tracing-opentelemetry    = { version = "0.30.0", default-features = false }
+# aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# move-core-types          = { git = "https://github.com/unionlabs/aptos-core" }
+
+[patch.crates-io]
 # arbitrary       = { git = "https://github.com/unionlabs/arbitrary" }
 serde-json-wasm = { git = "https://github.com/benluelo/serde-json-wasm", branch = "impl-collect-str" }
 # parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }

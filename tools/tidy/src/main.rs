@@ -9,7 +9,8 @@ use cargo_util_schemas::manifest::{
     InheritableDependency, InheritableField, TomlInheritedDependency, TomlManifest,
 };
 use clap::Parser;
-use tracing::{error, info, warn};
+use regex::RegexBuilder;
+use tracing::{error, info};
 
 #[derive(Parser)]
 struct App {
@@ -42,7 +43,27 @@ fn main() -> ExitCode {
 
     let mut is_err = false;
 
-    for (member, member_manifest) in &workspace_member_manifests {
+    let invalid_workspace_member_regex =
+        RegexBuilder::new(r"^([a-zA-Z][a-zA-Z-_0-9]+?)\s*\.workspace.*$")
+            .multi_line(true)
+            .build()
+            .unwrap();
+
+    for member in metadata.workspace_packages() {
+        let raw = std::fs::read_to_string(&member.manifest_path).unwrap();
+
+        for captures in invalid_workspace_member_regex.captures_iter(&raw) {
+            is_err = true;
+
+            error!(
+                member = %member.name,
+                "use \"{} = {{ workspace = true }}\"",
+                &captures[1],
+            );
+        }
+
+        let member_manifest = toml::from_str::<TomlManifest>(&raw).unwrap();
+
         if member_manifest
             .lints
             .as_ref()
@@ -88,17 +109,6 @@ fn main() -> ExitCode {
         for (dep_name, dep) in deps {
             match dep {
                 InheritableDependency::Value(_) => {
-                    if dep_name.as_ref() == "cosmwasm-schema"
-                        || dep_name.as_ref() == "cosmwasm-std"
-                        || dep_name.as_ref() == "cw-storage-plus"
-                        || dep_name.as_ref() == "axum"
-                    {
-                        warn!(
-                            member = %member.name,
-                            "{dep_name} is being ignored for deduplication checks as there are currently multiple incompatible versions being used in the repo"
-                        );
-                        continue;
-                    }
                     if workspace_dependencies.contains_key(dep_name) {
                         is_err = true;
 
@@ -119,6 +129,8 @@ fn main() -> ExitCode {
                             ..
                         }
                     ) {
+                        is_err = true;
+
                         error!(
                             member = %member.name,
                             "specifying `default-features = false` for `{dep_name}` has no effect as it is a workspace dependency",

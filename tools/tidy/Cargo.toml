@@ -16,6 +16,7 @@ cargo-util-schemas = "0.1.0"
 cargo_metadata     = "0.18.1"
 clap               = { workspace = true, features = ["derive", "default"] }
 embed-commit       = { workspace = true }
+regex              = "1.11.3"
 toml               = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt"] }

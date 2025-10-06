@@ -1,7 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{future::Future, sync::Arc, time::Duration};
 
 use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
-use axum::async_trait;
+// use axum::async_trait;
 use cosmos_client::wallet::LocalSigner;
 use ibc_union_spec::{
     path::{BatchPacketsPath, StorePath},
@@ -31,7 +31,7 @@ use crate::{
     evm::zkgm::FungibleAssetMetadata,
 };
 
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait ChainEndpoint: Send + Sync {
     type Msg: Clone;
     type Contract: Clone;
@@ -77,11 +77,11 @@ pub trait ChainEndpoint: Send + Sync {
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm>;
 
-    async fn wait_for_open_channel(
+    fn wait_for_open_channel(
         &self,
         timeout: Duration,
         expected_event_count: usize,
-    ) -> anyhow::Result<Vec<helpers::ChannelOpenConfirm>>;
+    ) -> impl Future<Output = anyhow::Result<Vec<helpers::ChannelOpenConfirm>>> + Send;
 
     async fn send_ibc_transaction(
         &self,
@@ -140,7 +140,6 @@ pub trait IbcEventHash {
     type Hash;
 }
 
-#[async_trait]
 impl<'a> ChainEndpoint for evm::Module<'a> {
     type Msg = RawCallBuilder<&'a DynProvider<AnyNetwork>, AnyNetwork>;
     type Contract = H160;
@@ -325,7 +324,6 @@ impl IbcEventHash for ibc_solidity::Ibc::PacketRecv {
     type Hash = H256;
 }
 
-#[async_trait]
 impl ChainEndpoint for cosmos::Module {
     type Msg = (Vec<u8>, Vec<Coin>);
     type Contract = Bech32<H256>;

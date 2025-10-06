@@ -19,7 +19,7 @@ embed-commit        = { workspace = true }
 move-bindgen-derive = { workspace = true }
 move-core-types     = { workspace = true }
 prettyplease        = "0.2.33"
-proc-macro2         = "*"
+proc-macro2         = { workspace = true, features = ["default"] }
 quote               = { workspace = true }
 serde               = { workspace = true, features = ["derive"] }
 serde_json          = { workspace = true }

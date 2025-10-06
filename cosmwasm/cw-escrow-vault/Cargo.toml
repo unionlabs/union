@@ -18,7 +18,7 @@ workspace = true
 bincode              = { workspace = true }
 cosmwasm-schema      = { workspace = true }
 cosmwasm-std         = { workspace = true, features = ["cosmwasm_1_3"] }
-cw20                 = "2.0.0"
+cw20                 = { workspace = true }
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }

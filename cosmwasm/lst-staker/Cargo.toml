@@ -18,7 +18,7 @@ workspace = true
 bincode              = { workspace = true, features = ["derive"] }
 cosmwasm-std         = { workspace = true }
 cw-account           = { workspace = true, features = ["library"] }
-cw-utils             = { version = "2.0" }
+cw-utils             = { workspace = true }
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }

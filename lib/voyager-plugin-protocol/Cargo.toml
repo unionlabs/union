@@ -19,13 +19,13 @@ jsonrpsee                      = { workspace = true, features = ["server", "clie
 opentelemetry                  = { workspace = true }
 opentelemetry_sdk              = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
-reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
+reth-ipc                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }
 thiserror                      = { workspace = true }
 tokio                          = { workspace = true, features = ["fs", "signal"] }
 tokio-util                     = { workspace = true }
-tower                          = "0.5"
+tower                          = { workspace = true }
 tracing                        = { workspace = true }
 unionlabs                      = { workspace = true }
 voyager-client                 = { workspace = true }

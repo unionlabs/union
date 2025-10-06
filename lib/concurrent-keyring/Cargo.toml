@@ -15,7 +15,7 @@ workspace = true
 bip32           = { workspace = true, features = ["secp256k1"] }
 crossbeam-queue = { workspace = true, features = ["std"] }
 futures         = { workspace = true, features = ["std"] }
-rand            = "0.8.5"
+rand            = { workspace = true, features = ["default"] }
 serde           = { workspace = true, features = ["derive"] }
 serde-utils     = { workspace = true }
 tracing         = { workspace = true }

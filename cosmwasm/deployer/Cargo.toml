@@ -28,7 +28,7 @@ ibc-union-msg               = { workspace = true }
 num-rational                = "0.4.2"
 on-zkgm-call-proxy          = { workspace = true, features = ["library"] }
 protos                      = { workspace = true }
-rand                        = "0.6"
+rand                        = { workspace = true }
 rand_chacha                 = "0.3.1"
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
