@@ -1,32 +1,13 @@
 use ibc_union_spec::ClientId;
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError};
 
-use super::{Serializable, TypedAccount2};
+use super::{Serializable, StaticInit};
 
-pub struct LatestClientId(pub ClientId);
+pub struct NextClientId(pub ClientId);
 
 pub struct LatestClientId2<'a> {
     pub client_id: ClientId,
     pub account_info: &'a AccountInfo,
-}
-
-impl<'a> TypedAccount2<'a> for LatestClientId2<'a> {
-    type Data = ClientId;
-
-    fn new(data: Self::Data, account: &'a AccountInfo) -> Self {
-        Self {
-            client_id: data,
-            account_info: account,
-        }
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.client_id
-    }
-
-    fn account_info(&self) -> &'a AccountInfo {
-        self.account_info
-    }
 }
 
 impl Serializable for ClientId {
@@ -49,13 +30,23 @@ impl Serializable for ClientId {
     }
 }
 
-impl LatestClientId {
+impl NextClientId {
+    pub const fn seed<'a>() -> &'a [&'a [u8]] {
+        &[b"next_client_id"]
+    }
+
     pub fn increment(&mut self) {
         self.0 = self.0.checked_add(1).unwrap();
     }
 }
 
-impl TryFrom<&[u8]> for LatestClientId {
+impl StaticInit for NextClientId {
+    fn static_init() -> Self {
+        NextClientId(ClientId!(1))
+    }
+}
+
+impl TryFrom<&[u8]> for NextClientId {
     type Error = ProgramError;
 
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
@@ -71,7 +62,7 @@ impl TryFrom<&[u8]> for LatestClientId {
     }
 }
 
-impl Serializable for LatestClientId {
+impl Serializable for NextClientId {
     fn serialized_size(&self) -> usize {
         4
     }
