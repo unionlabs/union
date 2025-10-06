@@ -57,7 +57,9 @@ const INCREMENT_GUARDIAN: RoleId = RoleId::new(4);
 const DECREMENT_GUARDIAN: RoleId = RoleId::new(5);
 
 const GRANT_ROLE: RoleId = RoleId::new(6);
-const GRANT_ROLE_ADMIN: RoleId = RoleId::new(7);
+
+const DELEGATE_SCHEDULE: RoleId = RoleId::new(7);
+const DELEGATE_EXECUTE: RoleId = RoleId::new(8);
 
 fn mk_wallet(mnemonic: &str, bech32_prefix: &str) -> LocalSigner {
     LocalSigner::new(
@@ -71,6 +73,101 @@ fn mk_wallet(mnemonic: &str, bech32_prefix: &str) -> LocalSigner {
         .into(),
         bech32_prefix.to_owned(),
     )
+}
+
+async fn execute(
+    signer: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    contract: &Bech32<H256>,
+    msgs: impl IntoIterator<Item: Serialize>,
+) -> Result<()> {
+    signer
+        .broadcast_tx_commit(
+            msgs.into_iter()
+                .map(|msg| {
+                    Any(MsgExecuteContract {
+                        sender: signer.wallet().address().map_data(|d| d.into_bytes()),
+                        contract: contract.clone(),
+                        msg: serde_json::to_vec(&msg).unwrap().into(),
+                        funds: vec![],
+                    })
+                })
+                .collect::<Vec<_>>(),
+            "",
+            true,
+        )
+        .await?;
+
+    Ok(())
+}
+
+// #[track_caller]
+async fn execute_expect_error(
+    signer: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    contract: &Bech32<H256>,
+    msg: &impl Serialize,
+    expected_error: impl Display,
+) -> Result<()> {
+    let err = signer
+        .simulate_tx(
+            [Any(MsgExecuteContract {
+                sender: signer.wallet().address().map_data(|d| d.into_bytes()),
+                contract: contract.clone(),
+                msg: serde_json::to_vec(msg).unwrap().into(),
+                funds: vec![],
+            })],
+            "",
+        )
+        .await
+        .unwrap_err();
+
+    match &err {
+        BroadcastTxCommitError::Query(GrpcAbciQueryError { log, .. })
+        | BroadcastTxCommitError::TxFailed { log, .. } => {
+            if log.contains(&expected_error.to_string()) {
+                Ok(())
+            } else {
+                Err(anyhow!(err).context(format!(
+                    "failed with unexpected error: expected log to contain '{expected_error}'"
+                )))
+            }
+        }
+        _ => bail!(err),
+    }
+}
+
+fn hash_operation(caller: impl Display, target: impl Display, data: impl Serialize) -> H256 {
+    use sha2::Digest;
+
+    sha2::Sha256::digest(format!(
+        "{caller}/{target}/{}",
+        serde_json::to_string(&data).unwrap()
+    ))
+    .into()
+}
+
+async fn wait_for_finalized_block_with(
+    rpc: &cometbft_rpc::Client,
+    f: impl Fn(BlockResponse) -> bool,
+) -> Result<()> {
+    loop {
+        let commit = rpc.commit(None).await?;
+        let block = rpc
+            .block(Some(
+                commit
+                    .signed_header
+                    .header
+                    .height
+                    .add(&if commit.canonical { 0 } else { -1 })
+                    .inner()
+                    .try_into()
+                    .unwrap(),
+            ))
+            .await?;
+
+        if f(block) {
+            return Ok(());
+        }
+    }
 }
 
 #[tokio::main]
@@ -229,7 +326,16 @@ async fn main() -> Result<()> {
 
     // schedule_increment_in_reply(&alice_client, &bob_client, &manager, &managed).await?;
 
-    schedule_reentrant(&alice_client, &bob_client, &charlie_client, &manager).await?;
+    // schedule_reentrant(&alice_client, &bob_client, &charlie_client, &manager).await?;
+
+    execute_reentrant(
+        &alice_client,
+        &bob_client,
+        &charlie_client,
+        &manager,
+        &managed,
+    )
+    .await?;
 
     Ok(())
 }
@@ -579,25 +685,10 @@ async fn schedule_reentrant(
                 role_id: RoleId::new(10),
                 admin: RoleId::new(11),
             },
-            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
-                role_id: GRANT_ROLE,
-                target: Addr::unchecked(manager.to_string()),
-                selectors: vec![Selector::new("grant_role").to_owned()],
-            },
         ],
     )
     .await?;
 
-    // let msg = manager::msg::ExecuteMsg::Schedule {
-    //     target: Addr::unchecked(manager.to_string()),
-    //     data: serde_json::to_string(&manager::msg::ExecuteMsg::GrantRole {
-    //         account: Addr::unchecked(bob_client.wallet().address().to_string()),
-    //         role_id: RoleId::new(7),
-    //         execution_delay: 10,
-    //     })
-    //     .unwrap(),
-    //     when: now() + 10,
-    // };
     let msg = manager::msg::ExecuteMsg::GrantRole {
         role_id: RoleId::new(10),
         account: Addr::unchecked(bob_client.wallet().address().to_string()),
@@ -680,6 +771,152 @@ async fn schedule_reentrant(
         [manager::msg::ExecuteMsg::Execute {
             target: Addr::unchecked(manager.to_string()),
             data: data.clone(),
+        }],
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[instrument(skip_all)]
+async fn execute_reentrant(
+    alice_client: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    bob_client: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    charlie_client: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
+    manager: &Bech32<H256>,
+    managed: &Bech32<H256>,
+) -> Result<()> {
+    execute(
+        alice_client,
+        manager,
+        [
+            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(managed.to_string()),
+                selectors: vec![Selector::new("delegate_schedule").to_owned()],
+                role_id: DELEGATE_SCHEDULE,
+            },
+            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(managed.to_string()),
+                selectors: vec![Selector::new("delegate_execute").to_owned()],
+                role_id: DELEGATE_EXECUTE,
+            },
+            &manager::msg::ExecuteMsg::GrantRole {
+                account: Addr::unchecked(charlie_client.wallet().address().to_string()),
+                role_id: DELEGATE_SCHEDULE,
+                execution_delay: 0,
+            },
+            &manager::msg::ExecuteMsg::GrantRole {
+                account: Addr::unchecked(charlie_client.wallet().address().to_string()),
+                role_id: DELEGATE_EXECUTE,
+                execution_delay: 10,
+            },
+            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(manager.to_string()),
+                selectors: vec![Selector::new("grant_role").to_owned()],
+                role_id: GRANT_ROLE,
+            },
+            &manager::msg::ExecuteMsg::GrantRole {
+                account: Addr::unchecked(managed.to_string()),
+                role_id: GRANT_ROLE,
+                execution_delay: 10,
+            },
+            &manager::msg::ExecuteMsg::GrantRole {
+                account: Addr::unchecked(managed.to_string()),
+                role_id: RoleId::new(11),
+                execution_delay: 20,
+            },
+            &manager::msg::ExecuteMsg::SetRoleAdmin {
+                role_id: RoleId::new(10),
+                admin: RoleId::new(11),
+            },
+        ],
+    )
+    .await?;
+
+    let grant_role_msg = manager::msg::ExecuteMsg::GrantRole {
+        role_id: RoleId::new(10),
+        account: Addr::unchecked(bob_client.wallet().address().to_string()),
+        execution_delay: 0,
+    };
+    let grant_role_data = to_json_string(&grant_role_msg).unwrap();
+    let _grant_role_operation_id = hash_operation(managed, manager, &grant_role_msg);
+
+    let execute_call_msg = access_managed_example::msg::ExecuteMsg::DelegateExecute {
+        target: Addr::unchecked(manager.to_string()),
+        data: grant_role_data.clone(),
+    };
+    let execute_call_data = to_json_string(&execute_call_msg).unwrap();
+    let execute_call_operation_id = hash_operation(
+        charlie_client.wallet().address(),
+        managed,
+        &execute_call_msg,
+    );
+
+    info!("schedule grant_role call too soon");
+    execute_expect_error(
+        charlie_client,
+        managed,
+        &access_managed_example::msg::ExecuteMsg::DelegateSchedule {
+            target: Addr::unchecked(manager.to_string()),
+            data: grant_role_data.clone(),
+            when: now() + 5,
+        },
+        AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: Addr::unchecked(managed.to_string()),
+            target: Addr::unchecked(manager.to_string()),
+            selector: Selector::new("grant_role").to_owned(),
+        },
+    )
+    .await?;
+
+    info!("schedule grant_role call with correct delay");
+    let grant_role_schedule_when = now() + 25;
+    execute(
+        charlie_client,
+        managed,
+        [&access_managed_example::msg::ExecuteMsg::DelegateSchedule {
+            target: Addr::unchecked(manager.to_string()),
+            data: grant_role_data.clone(),
+            when: grant_role_schedule_when,
+        }],
+    )
+    .await?;
+
+    info!("schedule execute call");
+    let execute_schedule_when = now() + 25;
+    execute(
+        charlie_client,
+        manager,
+        [&manager::msg::ExecuteMsg::Schedule {
+            target: Addr::unchecked(managed.to_string()),
+            data: execute_call_data.clone(),
+            when: execute_schedule_when,
+        }],
+    )
+    .await?;
+
+    info!("scheduled op not ready");
+    execute_expect_error(
+        charlie_client,
+        managed,
+        &execute_call_msg,
+        AccessManagerError::AccessManagerNotReady(execute_call_operation_id),
+    )
+    .await?;
+
+    wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
+        block.block.header.time.seconds.inner() as u64 > grant_role_schedule_when
+            && block.block.header.time.seconds.inner() as u64 > execute_schedule_when
+    })
+    .await?;
+
+    info!("execute scheduled call once ready");
+    execute(
+        charlie_client,
+        manager,
+        [manager::msg::ExecuteMsg::Execute {
+            target: Addr::unchecked(managed.to_string()),
+            data: execute_call_data.clone(),
         }],
     )
     .await?;
@@ -784,99 +1021,4 @@ async fn setup_contracts(
     info!(%managed_address, %manager_address, "contracts set up");
 
     Ok((manager_address, managed_address))
-}
-
-async fn execute(
-    signer: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
-    contract: &Bech32<H256>,
-    msgs: impl IntoIterator<Item: Serialize>,
-) -> Result<()> {
-    signer
-        .broadcast_tx_commit(
-            msgs.into_iter()
-                .map(|msg| {
-                    Any(MsgExecuteContract {
-                        sender: signer.wallet().address().map_data(|d| d.into_bytes()),
-                        contract: contract.clone(),
-                        msg: serde_json::to_vec(&msg).unwrap().into(),
-                        funds: vec![],
-                    })
-                })
-                .collect::<Vec<_>>(),
-            "",
-            true,
-        )
-        .await?;
-
-    Ok(())
-}
-
-// #[track_caller]
-async fn execute_expect_error(
-    signer: &TxClient<impl WalletT, impl RpcT, impl GasFillerT>,
-    contract: &Bech32<H256>,
-    msg: &impl Serialize,
-    expected_error: impl Display,
-) -> Result<()> {
-    let err = signer
-        .simulate_tx(
-            [Any(MsgExecuteContract {
-                sender: signer.wallet().address().map_data(|d| d.into_bytes()),
-                contract: contract.clone(),
-                msg: serde_json::to_vec(msg).unwrap().into(),
-                funds: vec![],
-            })],
-            "",
-        )
-        .await
-        .unwrap_err();
-
-    match &err {
-        BroadcastTxCommitError::Query(GrpcAbciQueryError { log, .. })
-        | BroadcastTxCommitError::TxFailed { log, .. } => {
-            if log.contains(&expected_error.to_string()) {
-                Ok(())
-            } else {
-                Err(anyhow!(err).context(format!(
-                    "failed with unexpected error: expected log to contain '{expected_error}'"
-                )))
-            }
-        }
-        _ => bail!(err),
-    }
-}
-
-fn hash_operation(caller: impl Display, target: impl Display, data: impl Serialize) -> H256 {
-    use sha2::Digest;
-
-    sha2::Sha256::digest(format!(
-        "{caller}/{target}/{}",
-        serde_json::to_string(&data).unwrap()
-    ))
-    .into()
-}
-
-async fn wait_for_finalized_block_with(
-    rpc: &cometbft_rpc::Client,
-    f: impl Fn(BlockResponse) -> bool,
-) -> Result<()> {
-    loop {
-        let commit = rpc.commit(None).await?;
-        let block = rpc
-            .block(Some(
-                commit
-                    .signed_header
-                    .header
-                    .height
-                    .add(&if commit.canonical { 0 } else { -1 })
-                    .inner()
-                    .try_into()
-                    .unwrap(),
-            ))
-            .await?;
-
-        if f(block) {
-            return Ok(());
-        }
-    }
 }

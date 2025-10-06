@@ -1,3 +1,4 @@
+use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -17,6 +18,15 @@ pub enum ExecuteMsg {
         by: u32,
     },
     Noop {},
+    DelegateExecute {
+        target: Addr,
+        data: String,
+    },
+    DelegateSchedule {
+        target: Addr,
+        data: String,
+        when: u64,
+    },
     #[serde(untagged)]
     AccessManaged(access_manager_types::managed::msg::ExecuteMsg),
 }

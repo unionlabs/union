@@ -3,7 +3,10 @@ use std::num::NonZero;
 use access_managed::{
     handle_consume_scheduled_op_reply, state::Authority, EnsureCanCallResult, Restricted,
 };
-use access_manager_types::managed::msg::{InitMsg, MigrateMsg};
+use access_manager_types::{
+    managed::msg::{InitMsg, MigrateMsg},
+    manager,
+};
 use cosmwasm_std::{
     entry_point, to_json_binary, wasm_execute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
     Reply, Response, StdError, SubMsg,
@@ -114,6 +117,20 @@ pub fn execute(
                 .add_event(Event::new("counter").add_attribute("value", new_value.to_string())))
         }
         ExecuteMsg::Noop {} => Ok(Response::new().add_event(Event::new("noop"))),
+        ExecuteMsg::DelegateExecute { target, data } => {
+            Ok(Response::new().add_message(wasm_execute(
+                deps.storage.read_item::<Authority>()?,
+                &manager::msg::ExecuteMsg::Execute { target, data },
+                vec![],
+            )?))
+        }
+        ExecuteMsg::DelegateSchedule { target, data, when } => {
+            Ok(Response::new().add_message(wasm_execute(
+                deps.storage.read_item::<Authority>()?,
+                &manager::msg::ExecuteMsg::Schedule { target, data, when },
+                vec![],
+            )?))
+        }
         ExecuteMsg::AccessManaged(msg) => {
             access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }

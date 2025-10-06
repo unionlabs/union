@@ -54,7 +54,7 @@ impl Delay {
     /// ) private pure returns (uint32 valueBefore, uint32 valueAfter, uint48 effect)
     /// ```
     ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L74-L77>
+    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L74>
     fn _get_full_at(&self, timepoint: u64) -> UnpackedDelay {
         let &Delay {
             effect_date,
@@ -114,7 +114,7 @@ impl Delay {
     /// ) internal view returns (Delay updatedDelay, uint48 effect)
     /// ```
     ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L103-L107>
+    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L103>
     #[must_use]
     pub fn with_update(&self, timestamp: u64, new_value: u32, min_setback: u32) -> (Delay, u64) {
         let value = self.get(timestamp);
