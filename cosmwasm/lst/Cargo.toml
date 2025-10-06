@@ -11,17 +11,17 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-bincode              = { workspace = true, features = ["derive"] }
-cosmwasm-schema      = { workspace = true, optional = true }
-cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0"] }
-cw-utils             = { version = "2.0.0" }
-cw20                 = { version = "2.0.0" }
-depolama             = { workspace = true, features = ["iterator"] }
-embed-commit         = { workspace = true }
-frissitheto          = { workspace = true }
-ibc-union-spec       = { workspace = true, features = ["serde", "bincode"] }
-itertools            = { workspace = true }
-prost                = { workspace = true, features = ["prost-derive"] }
+bincode         = { workspace = true, features = ["derive"] }
+cosmwasm-schema = { workspace = true, optional = true }
+cosmwasm-std    = { workspace = true, features = ["cosmwasm_2_0"] }
+cw-utils        = { version = "2.0.0" }
+cw20            = { version = "2.0.0" }
+depolama        = { workspace = true, features = ["iterator"] }
+embed-commit    = { workspace = true }
+frissitheto     = { workspace = true }
+itertools       = { workspace = true }
+# TODO: Add back when the unbonding period is queryable from the chain
+# prost                = { workspace = true, features = ["prost-derive"] }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true }
 serde-json-wasm      = "1.0"
@@ -29,12 +29,10 @@ serde-utils          = { workspace = true }
 sha2                 = { workspace = true }
 thiserror            = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
-unionlabs-primitives = { workspace = true, features = ["bincode"] }
+unionlabs-primitives = { workspace = true, features = ["serde", "bincode", "generic-array-compat"] }
 
 [dev-dependencies]
-cw-multi-test = "0.17.0"
-hex-literal   = { version = "1.0" }
-ucs03-zkgm    = { workspace = true, features = ["library"] }
+hex-literal = { version = "1.0" }
 
 [features]
 default  = []

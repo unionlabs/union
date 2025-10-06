@@ -60,7 +60,7 @@
 
 use cosmwasm_std::{
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Coin, CosmosMsg, Event, Timestamp, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Event, Timestamp, Uint128, WasmMsg,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -74,7 +74,7 @@ use crate::{
         AccountingStateStore, CurrentPendingBatch, ReceivedBatches, SubmittedBatches,
         UnstakeRequests,
     },
-    tests::test_helper::{setup, LST_ADDRESS, UNION1, UNION2},
+    tests::test_helper::{ensure_execute_error, setup, LST_ADDRESS, UNION1, UNION2},
     types::{staker_hash, BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey},
 };
 
@@ -316,9 +316,65 @@ fn receive_unstaked_tokens_works() {
 
     let batch_submitted = deps.storage.read::<SubmittedBatches>(&batch_id).unwrap();
 
+    let total_unbond_amount = union1_unbond_amount + union2_unbond_amount + union3_unbond_amount;
+
+    ensure_execute_error(
+        deps.as_ref(),
+        &env,
+        &message_info(
+            &Addr::unchecked(UNION1),
+            &[Coin {
+                denom: NATIVE_TOKEN.into(),
+                amount: total_unbond_amount,
+            }],
+        ),
+        ExecuteMsg::ReceiveUnstakedTokens { batch_id },
+        ContractError::BatchNotReady {
+            now: env.block.time.seconds(),
+            ready_at: batch_submitted.receive_time,
+        },
+    );
+
     env.block.time = Timestamp::from_seconds(batch_submitted.receive_time + 1);
 
-    let total_unbond_amount = union1_unbond_amount + union2_unbond_amount + union3_unbond_amount;
+    // too much received
+    ensure_execute_error(
+        deps.as_ref(),
+        &env,
+        &message_info(
+            &Addr::unchecked(UNION1),
+            &[Coin {
+                denom: NATIVE_TOKEN.into(),
+                amount: total_unbond_amount + Uint128::new(1),
+            }],
+        ),
+        ExecuteMsg::ReceiveUnstakedTokens { batch_id },
+        ContractError::ReceivedWrongBatchAmount {
+            batch_id,
+            expected: total_unbond_amount.u128(),
+            received: total_unbond_amount.u128() + 1,
+        },
+    );
+
+    // not enough received
+    ensure_execute_error(
+        deps.as_ref(),
+        &env,
+        &message_info(
+            &Addr::unchecked(UNION1),
+            &[Coin {
+                denom: NATIVE_TOKEN.into(),
+                amount: total_unbond_amount - Uint128::new(1),
+            }],
+        ),
+        ExecuteMsg::ReceiveUnstakedTokens { batch_id },
+        ContractError::ReceivedWrongBatchAmount {
+            batch_id,
+            expected: total_unbond_amount.u128(),
+            received: total_unbond_amount.u128() - 1,
+        },
+    );
+
     let res = execute(
         deps.as_mut(),
         env,

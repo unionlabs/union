@@ -69,7 +69,7 @@ use crate::{
     error::ContractError,
     msg::ExecuteMsg,
     state::Stopped,
-    tests::test_helper::{setup, ADMIN, UNION1, UNION_MONITOR_1},
+    tests::test_helper::{ensure_execute_error, setup, ADMIN, UNION1, UNION_MONITOR_1},
     types::BatchId,
 };
 
@@ -141,21 +141,16 @@ fn stop_when_already_stopped_fails() {
 
 #[test]
 fn stop_non_admin_or_monitor_fails() {
-    let mut deps = setup();
+    let deps = setup();
 
-    let err = execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&Addr::unchecked(UNION1), &[]),
+    ensure_execute_error(
+        deps.as_ref(),
+        &mock_env(),
+        &message_info(&Addr::unchecked(UNION1), &[]),
         ExecuteMsg::CircuitBreaker {},
-    )
-    .unwrap_err();
-
-    assert_eq!(
-        err,
         ContractError::Unauthorized {
-            sender: Addr::unchecked(UNION1)
-        }
+            sender: Addr::unchecked(UNION1),
+        },
     );
 }
 
@@ -175,51 +170,56 @@ fn stop_prevents_execution() {
 
     let info = message_info(&Addr::unchecked(UNION1), &[]);
 
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            ExecuteMsg::Bond {
-                mint_to_address: Addr::unchecked(UNION1),
-                min_mint_amount: Uint128::zero()
-            }
-        )
-        .unwrap_err(),
-        ContractError::Stopped
-    );
+    let stoppable_msgs = [
+        ExecuteMsg::Bond {
+            mint_to_address: Addr::unchecked(UNION1),
+            min_mint_amount: Uint128::zero(),
+        },
+        ExecuteMsg::Unbond {
+            amount: Uint128::zero(),
+        },
+        ExecuteMsg::SubmitBatch {},
+        ExecuteMsg::ReceiveRewards {},
+        ExecuteMsg::Rebase {},
+        ExecuteMsg::ReceiveUnstakedTokens {
+            batch_id: BatchId::ONE,
+        },
+        ExecuteMsg::Withdraw {
+            withdraw_to_address: Addr::unchecked(UNION1),
+            batch_id: BatchId::ONE,
+        },
+        // can't stop again if already stopped
+        ExecuteMsg::CircuitBreaker {},
+    ];
 
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            ExecuteMsg::Unbond {
-                amount: Uint128::zero()
-            }
-        )
-        .unwrap_err(),
-        ContractError::Stopped
-    );
-
-    assert_eq!(
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info,
-            ExecuteMsg::Withdraw {
-                withdraw_to_address: Addr::unchecked(UNION1),
-                batch_id: BatchId::ONE
-            }
-        )
-        .unwrap_err(),
-        ContractError::Stopped
-    );
+    for msg in stoppable_msgs {
+        ensure_execute_error(
+            deps.as_ref(),
+            &env.clone(),
+            &info,
+            msg,
+            ContractError::Stopped,
+        );
+    }
 }
 
 #[test]
 fn resume_resumes() {
     let mut deps = setup();
+
+    let msg = ExecuteMsg::ResumeContract {
+        total_bonded_native_tokens: 1_u128.into(),
+        total_issued_lst: 2_u128.into(),
+        total_reward_amount: 3_u128.into(),
+    };
+
+    ensure_execute_error(
+        deps.as_ref(),
+        &mock_env(),
+        &message_info(&Addr::unchecked(ADMIN), &[]),
+        msg.clone(),
+        ContractError::NotStopped,
+    );
 
     execute(
         deps.as_mut(),
@@ -231,15 +231,21 @@ fn resume_resumes() {
 
     assert!(deps.storage.read_item::<Stopped>().unwrap());
 
+    ensure_execute_error(
+        deps.as_ref(),
+        &mock_env(),
+        &message_info(&Addr::unchecked(UNION1), &[]),
+        msg.clone(),
+        ContractError::Unauthorized {
+            sender: Addr::unchecked(UNION1),
+        },
+    );
+
     let res = execute(
         deps.as_mut(),
         mock_env(),
         message_info(&Addr::unchecked(ADMIN), &[]),
-        ExecuteMsg::ResumeContract {
-            total_bonded_native_tokens: 1_u128.into(),
-            total_issued_lst: 2_u128.into(),
-            total_reward_amount: 3_u128.into(),
-        },
+        msg,
     )
     .unwrap();
 
