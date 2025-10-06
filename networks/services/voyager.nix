@@ -16,7 +16,7 @@ _: {
             pkgs.jq
             self'.packages.voyager
             voyagerConfig
-            self'.packages.voyager-modules-plugins
+            self'.packages.voyager-modules-plugins-single-build
           ];
         };
 

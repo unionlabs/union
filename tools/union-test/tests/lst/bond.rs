@@ -6,7 +6,7 @@ use cosmwasm_std::{
 };
 use cw20::Cw20ExecuteMsg;
 use lst::{
-    msg::{AccountingStateResponse, Batch, BatchesResponse, ExecuteMsg as LstExecuteMsg},
+    msg::{AccountingStateResponse, Batch, ExecuteMsg as LstExecuteMsg},
     types::{BatchId, PendingBatch},
 };
 use rand::RngCore;
@@ -25,11 +25,6 @@ use unionlabs::primitives::U256;
 use voyager_sdk::serde_json;
 
 use crate::lst::*;
-
-// static ERC20: OnceCell<H160> = OnceCell::const_new();
-
-// u: union1pntx7gm7shsp6slef74ae7wvcc35t3wdmanh7wrg4xkq95m24qds5atmcp
-// lst: union1fdg764zzxwvwyqkx3fuj0236l9ddh5xmutgvj2mv9cduffy82z9sp62ygc
 
 fn make_proxy_call(funded_msgs: &[(&str, Binary, Vec<CwCoin>)]) -> Vec<u8> {
     let wasm_msgs: Vec<CosmosMsg> = funded_msgs
@@ -347,11 +342,6 @@ async fn get_accounting_state(t: &LstContext) -> anyhow::Result<AccountingStateR
 #[tokio::test]
 async fn test_bond_success() {
     run_test_in_queue("bond", async |t, mut shared_data| {
-        // ensure_channels_opened(ctx.channel_count).await;
-        // let available_channel = ctx.get_available_channel_count().await;
-        // assert!(available_channel > 0);
-        // let pair = ctx.get_channel().await.expect("channel available");
-
         let dst_channel_id = 1;
         let src_channel_id = 1;
 
