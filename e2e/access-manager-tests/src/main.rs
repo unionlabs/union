@@ -320,13 +320,13 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    // schedule_increment(&alice_client, &bob_client, &manager, &managed).await?;
+    schedule_increment(&alice_client, &bob_client, &manager, &managed).await?;
 
-    // schedule_decrement_in_sub_msg(&alice_client, &bob_client, &manager, &managed).await?;
+    schedule_decrement_in_sub_msg(&alice_client, &bob_client, &manager, &managed).await?;
 
-    // schedule_increment_in_reply(&alice_client, &bob_client, &manager, &managed).await?;
+    schedule_increment_in_reply(&alice_client, &bob_client, &manager, &managed).await?;
 
-    // schedule_reentrant(&alice_client, &bob_client, &charlie_client, &manager).await?;
+    schedule_reentrant(&alice_client, &bob_client, &charlie_client, &manager).await?;
 
     execute_reentrant(
         &alice_client,

@@ -1474,8 +1474,6 @@ fn schedule_reentrant_works() {
     )
     .unwrap();
 
-    eprintln!("NOW\n\n\n");
-
     assert_eq!(
         execute(
             deps.as_mut(),
@@ -1483,7 +1481,7 @@ fn schedule_reentrant_works() {
             message_info(&ACCOUNT_1, &[]),
             ExecuteMsg::Schedule {
                 target: env.contract.address.clone(),
-                data: serde_json::to_string(&ExecuteMsg::GrantRole {
+                data: serde_json_wasm::to_string(&ExecuteMsg::GrantRole {
                     role_id: RoleId::new(10),
                     account: ACCOUNT_2.clone(),
                     execution_delay: 0

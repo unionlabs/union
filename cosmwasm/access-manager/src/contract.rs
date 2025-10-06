@@ -497,13 +497,11 @@ pub(crate) fn schedule(
 ) -> Result<(H256, u32), ContractError> {
     let caller = ctx.msg_sender();
 
-    dbg!(data);
-
     // Fetch restrictions that apply to the caller on the targeted function
     let CanCall {
         allowed: _,
         delay: setback,
-    } = dbg!(_can_call_extended(ctx, caller, target, data)?);
+    } = _can_call_extended(ctx, caller, target, data)?;
 
     let min_when = ctx.timestamp() + u64::from(setback);
 
@@ -844,11 +842,9 @@ fn _get_admin_restrictions(
 
         // Restricted to that role's admin with no delay beside any execution delay the caller may
         // have.
-        Ok(GrantRole { role_id, .. } | RevokeRole { role_id, .. }) => Ok((
-            true,
-            dbg!(get_role_admin(ctx.query_ctx(), dbg!(role_id))?),
-            0,
-        )),
+        Ok(GrantRole { role_id, .. } | RevokeRole { role_id, .. }) => {
+            Ok((true, get_role_admin(ctx.query_ctx(), role_id)?, 0))
+        }
 
         _ => Ok((
             false,
@@ -896,7 +892,7 @@ fn _can_call_extended(
     data: &str,
 ) -> Result<CanCall, ContractError> {
     if target == ctx.address_this() {
-        dbg!(_can_call_self(ctx, caller, data))
+        _can_call_self(ctx, caller, data)
     } else {
         can_call(ctx.query_ctx(), caller, target, _check_selector(data)?)
     }
@@ -922,8 +918,6 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
 
     let (admin_restricted, role_id, operation_delay) = _get_admin_restrictions(ctx, data)?;
 
-    dbg!((admin_restricted, role_id, operation_delay));
-
     // isTargetClosed apply to non-admin-restricted function
     if !admin_restricted && is_target_closed(ctx.query_ctx(), ctx.address_this())? {
         return Ok(CanCall {
@@ -935,7 +929,7 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
     let HasRole {
         is_member,
         execution_delay,
-    } = dbg!(has_role(ctx.query_ctx(), role_id, caller)?);
+    } = has_role(ctx.query_ctx(), role_id, caller)?;
 
     if !is_member {
         return Ok(CanCall {
