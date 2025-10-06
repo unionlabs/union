@@ -7,6 +7,7 @@ class WalletsStore {
   evmAddress: Option.Option<Ucs05.EvmDisplay> = $state(Option.none())
   cosmosAddress: Option.Option<Ucs05.CosmosDisplay> = $state(Option.none())
   aptosAddress: Option.Option<Ucs05.AnyDisplay> = $state(Option.none())
+  suiAddress: Option.Option<Ucs05.AnyDisplay> = $state(Option.none())
   inputAddress: Option.Option<Ucs05.AnyDisplay> = $state(Option.none())
 
   hasAnyWallet() {
@@ -14,6 +15,7 @@ class WalletsStore {
       Option.isSome(this.evmAddress)
       || Option.isSome(this.cosmosAddress)
       || Option.isSome(this.aptosAddress)
+      || Option.isSome(this.suiAddress)
       || Option.isSome(this.inputAddress)
     )
   }
@@ -34,6 +36,7 @@ class WalletsStore {
         this.evmAddress,
         this.cosmosAddress,
         this.aptosAddress,
+        this.suiAddress,
       ]),
       A.map(Ucs05.anyDisplayToCanonical),
     )
@@ -52,6 +55,7 @@ class WalletsStore {
           Option.map((address) => Ucs05.CosmosDisplay.make({ address })),
         )),
       Match.when("aptos", () => this.aptosAddress),
+      Match.when("sui", () => this.suiAddress),
       Match.exhaustive,
     )
   }

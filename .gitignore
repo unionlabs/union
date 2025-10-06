@@ -113,6 +113,9 @@ ts-sdk-evm/docs
 ts-sdk-cosmos/build
 ts-sdk-cosmos/dist
 ts-sdk-cosmos/docs
+ts-sdk-sui/build
+ts-sdk-sui/dist
+ts-sdk-sui/docs
 sentinel2/build
 docs/src/content/docs/reference/@unionlabs/sdk
 docs/src/content/docs/reference/@unionlabs/sdk-evm

@@ -247,7 +247,6 @@ export const normalizeSuiTypeTag = (t: string): string => {
   return `${normalizeSuiAddress(addr)}::${mod}::${name}`
 }
 
-
 /**
  * @since 2.0.0
  */

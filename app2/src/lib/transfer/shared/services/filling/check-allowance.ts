@@ -52,6 +52,10 @@ export const checkAllowances = Effect.fn((
             sender,
             chain,
           ),
+        SuiDisplay: (sender) =>
+          Effect.fail(
+            new AllowanceCheckError({ message: "Sui allowance check not implemented" }),
+          ),
       }),
       Effect.map(A.map(({ token, allowance }) => [token, allowance] as const)),
       Effect.map(HashMap.fromIterable),
