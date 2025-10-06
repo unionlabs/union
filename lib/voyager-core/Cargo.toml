@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 anyhow                  = { workspace = true }
-axum                    = { workspace = true, features = ["macros", "tokio", "json"] }
+axum                    = { workspace = true, features = ["macros", "tokio", "json", "http2"] }
 derive_builder          = "0.20.2"
 futures                 = { workspace = true }
 indexmap                = "2.9.0"

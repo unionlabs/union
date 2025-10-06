@@ -19,14 +19,13 @@ cosmos-client                  = { workspace = true }
 cosmos-sdk-event               = { workspace = true }
 cosmwasm-std                   = { workspace = true }
 cw20                           = { workspace = true }
-ethers                         = { version = "1.0.2", default-features = true, features = ["ethers-solc"] }
 hex-literal                    = { workspace = true }
 ibc-solidity                   = { workspace = true, features = ["serde", "rpc"] }
 ibc-union-msg                  = { workspace = true }
 ibc-union-spec                 = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 protos                         = { workspace = true }
-rand                           = { workspace = true }
+rand                           = { workspace = true, features = ["default"] }
 regex                          = "1"
 serde                          = { workspace = true }
 serde-utils                    = { workspace = true }

@@ -452,7 +452,7 @@ alloy-primitives         = { version = "1.1.2", default-features = false }
 alloy-sol-types          = { version = "1.1.2", default-features = true }
 anyhow                   = { version = "1" }
 axum                     = { version = "0.8", default-features = false }
-base64                   = { version = "0.21", default-features = false }
+base64                   = { version = "0.22", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }
 bincode                  = { version = "2.0.1", default-features = false, features = ["std"] }       # std is used by all dependants
 bip32                    = { version = "0.5.3", default-features = false }
@@ -507,11 +507,11 @@ sha2                     = { version = "0.10.9", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.4", default-features = false }
 static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
-strum                    = { version = "0.26.3", default-features = false }
+strum                    = { version = "0.27", default-features = false }
 subtle-encoding          = { version = "0.5.1", default-features = false }
 syn                      = { version = "2", default-features = false }
 thiserror                = { version = "2.0.12", default-features = false }
-time                     = { version = "0.3.41", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
+time                     = { version = "0.3.41", default-features = false }
 tokio                    = { version = "1.45.1", default-features = false }
 tokio-util               = { version = "0.7.15", default-features = false }
 toml                     = { version = "0.8.22", default-features = false }

@@ -356,7 +356,7 @@ async fn test_send_vault_success() {
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
@@ -493,7 +493,7 @@ async fn test_send_vault_success_with_fee() {
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
@@ -616,7 +616,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
     let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
 
     let instruction_cosmos = Instruction {
@@ -670,7 +670,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         recv_packet_data.err()
     );
 
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -771,7 +771,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     println!("Quote token address: {:?}", quote_token_addr);
     println!("deployed_erc20 address: {:?}", deployed_erc20);
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -942,7 +942,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     println!("Quote token address: {:?}", quote_token_addr);
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
     let contract: Bech32<FixedBytes<32>> = Bech32::from_str(UNION_ZKGM_ADDRESS).unwrap();
     let sending_amount = "9999999999999999999999";
     let instruction_cosmos = Instruction {
@@ -1093,7 +1093,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
     println!("Quote token address: {:?}", quote_token_addr);
     println!("deployed_erc20 address: {:?}", deployed_erc20);
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -1217,7 +1217,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
     let (zkgm_deployer_address, zkgm_deployer_provider) = ctx.dst.get_provider_privileged().await;
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
@@ -1402,7 +1402,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     // );
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
     let quote_token_addr = ctx
         .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
             &ctx.dst,
@@ -1492,7 +1492,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     );
 
     let mut buf: [u8; 32] = [0u8; 32];
-    rand::rng().fill_bytes(&mut buf);
+    rand::thread_rng().fill_bytes(&mut buf);
 
     let random_token_id: U256 = U256::from_be_bytes(buf);
     println!("✅ random_token_id: {:?}", random_token_id);
@@ -1516,7 +1516,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
 
     let ucs03_zkgm = UCS03Zkgm::new(EVM_ZKGM_BYTES.into(), evm_provider.clone());
 
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
         .send(
             pair.dest,
@@ -1575,7 +1575,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
     .abi_encode_params();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let quote_token_addr = ctx
         .predict_wrapped_token::<evm::Module>(
@@ -1669,7 +1669,7 @@ async fn test_from_evm_to_union_batch_err_invalid_batch_instruction() {
         .expect("failed to deploy ERC20");
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let inner_token_order_inst = ucs03_zkgm::com::Instruction {
         version: INSTR_VERSION_1,
@@ -1756,7 +1756,7 @@ async fn test_from_evm_to_union_batch_err_invalid_forward_instruction() {
         .expect("failed to deploy ERC20");
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let inner_token_order_inst = ucs03_zkgm::com::Instruction {
         version: INSTR_VERSION_1,
@@ -1897,7 +1897,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
@@ -2073,7 +2073,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
@@ -2249,7 +2249,7 @@ async fn test_send_vault_unhappy_u_fool() {
         .unwrap();
 
     let mut salt_bytes = [0u8; 32];
-    rand::rng().fill_bytes(&mut salt_bytes);
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),

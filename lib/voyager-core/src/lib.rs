@@ -124,7 +124,7 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
 
     #[allow(clippy::too_many_lines)]
     pub fn run(&self) -> impl Future<Output = ()> + use<'_, Q> {
-        let queue_rx = api::run(self.rest_laddr.clone());
+        let queue_rx = api::run(self.rest_laddr);
 
         let mut tasks = FuturesUnordered::<BoxFuture<Result<Result<(), BoxDynError>, _>>>::new();
 
