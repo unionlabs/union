@@ -42,6 +42,7 @@ export class SuiCoin extends S.TaggedClass<SuiCoin>()("SuiCoin", {
     }),
   ),
 }) {
+  /** @since 2.0.0 */
   [Hash.symbol](): number {
     return Hash.string(this.address)
   }

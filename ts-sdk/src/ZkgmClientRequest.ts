@@ -15,6 +15,10 @@ import type * as ZkgmInstruction from "./ZkgmInstruction.js"
 
 /** @since 2.0.0 */
 export namespace Transport {
+  /**
+   * Sui client request params.
+   * @since 2.0.0
+   */
   export interface Sui {
     readonly relayStoreId: string
     readonly vaultId: string
@@ -28,14 +32,26 @@ export namespace Transport {
     }>
   }
 
+  /**
+   * EVM client request params.
+   * @since 2.0.0
+   */
   export interface Evm {
     readonly _?: never
   }
 
+  /**
+   * Cosmos client request params.
+   * @since 2.0.0
+   */
   export interface Cosmos {
     readonly _?: never
   }
 
+  /**
+   * Common request params.
+   * @since 2.0.0
+   */
   export interface Params {
     readonly sui?: Sui | undefined
     readonly evm?: Evm | undefined
