@@ -126,7 +126,7 @@ dependencies = [
 
 [[package]]
 name = "access-manager-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
