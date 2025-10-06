@@ -2,9 +2,6 @@ use std::{future::Future, sync::Arc, time::Duration};
 
 use alloy::{network::AnyNetwork, providers::DynProvider};
 use alloy_sol_types::SolValue as _;
-use bip32::secp256k1::ecdsa::SigningKey;
-use cometbft_rpc::types::code::Code;
-use cosmos_client::wallet::{LocalSigner, WalletT as _};
 use cosmwasm_std::Addr;
 use hex_literal::hex;
 use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
@@ -30,11 +27,7 @@ use unionlabs::{
 };
 use voyager_sdk::{anyhow, serde_json};
 
-pub mod bond;
-
 pub static CTX: OnceCell<(Mutex<Queue>, Arc<LstContext>)> = OnceCell::const_new();
-
-pub static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
 
 pub const ETH_ADDRESS_U: H160 = H160::new(hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836"));
 pub const ETH_ADDRESS_ZKGM: H160 = H160::new(hex!("05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5"));
@@ -62,7 +55,7 @@ pub struct Config {
 
 #[derive(Clone)]
 pub struct SharedData {
-    stakers: Vec<(alloy::primitives::Address, DynProvider<AnyNetwork>)>,
+    pub stakers: Vec<(alloy::primitives::Address, DynProvider<AnyNetwork>)>,
 }
 
 pub struct Queue {
@@ -70,7 +63,7 @@ pub struct Queue {
     shared_data: SharedData,
 }
 
-async fn run_test_in_queue<
+pub async fn run_test_in_queue<
     'a,
     Fut: Future<Output = SharedData>,
     F: Fn(Arc<LstContext>, SharedData) -> Fut,
@@ -78,6 +71,7 @@ async fn run_test_in_queue<
     key: &str,
     test_fn: F,
 ) {
+    println!("[1] LST: BEFORE ANYTHING");
     let ctx = CTX
         .get_or_init(|| async {
             let subscriber = FmtSubscriber::builder()
@@ -87,8 +81,10 @@ async fn run_test_in_queue<
                 .expect("setting default subscriber failed");
             let cfg: Config = serde_json::from_str(include_str!("../config.json")).unwrap();
 
+            println!("[1] LST: BEFORE PARSING CONFIG");
             let src = cosmos::Module::new(cfg.union).await.unwrap();
             let dst = evm::Module::new(cfg.evm).await.unwrap();
+            println!("[2] LST: AFTER PARSING CONFIG");
 
             let ctx = TestContext::new(
                 src,
@@ -136,8 +132,10 @@ async fn run_test_in_queue<
 
     loop {
         {
+            println!("LST RUNNING TEST BRO????");
             let mut lock = ctx.0.lock().await;
             if lock.tests.last().unwrap() == key {
+                println!("LST RUNNING SPECIFIC TEST: {key}");
                 lock.shared_data = test_fn(ctx.1.clone(), lock.shared_data.clone()).await;
                 let _ = lock.tests.pop();
                 return;

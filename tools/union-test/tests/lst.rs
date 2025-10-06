@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use alloy::{network::AnyNetwork, primitives::Address, providers::DynProvider};
+use cometbft_rpc::types::code::Code;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Coin as CwCoin, CosmosMsg, Decimal, Uint128, WasmMsg,
 };
@@ -9,9 +10,11 @@ use lst::{
     msg::{AccountingStateResponse, Batch, ExecuteMsg as LstExecuteMsg},
     types::{BatchId, PendingBatch},
 };
+use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::{info, warn};
+use ucs03_zkgm::com::TAG_ACK_SUCCESS;
 use union_test::{
     cosmos::{self},
     cosmos_helpers::calculate_proxy_address,
@@ -22,9 +25,11 @@ use union_test::{
     zkgm_helper,
 };
 use unionlabs::primitives::U256;
-use voyager_sdk::serde_json;
+use voyager_sdk::{anyhow, serde_json};
 
-use crate::lst::*;
+mod lst_common;
+
+use lst_common::*;
 
 fn make_proxy_call(funded_msgs: &[(&str, Binary, Vec<CwCoin>)]) -> Vec<u8> {
     let wasm_msgs: Vec<CosmosMsg> = funded_msgs

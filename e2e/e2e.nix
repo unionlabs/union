@@ -167,7 +167,6 @@
                 );
           };
 
-        # TODO: This is poorly named, it only starts devnet-union and devnet-eth
         mkE2eTestEthUnion =
           {
             name,
@@ -189,7 +188,7 @@
 
               # match non-zero blocks
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 30\') == "true" ]]')
+              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 20\') == "true" ]]')
 
               devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
               devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
@@ -199,6 +198,8 @@
 
               devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on union-devnet-1 --tracking 32382 --ibc-interface ibc-cosmwasm --ibc-spec-id ibc-union --client-type trusted/evm/mpt -e')
               devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on 32382 --tracking union-devnet-1 --ibc-interface ibc-solidity --ibc-spec-id ibc-union --client-type cometbls -e')
+
+              devnetVoyager.wait_until_succeeds('sleep 10')
 
               devnetVoyager.succeed(
                 "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"union-devnet-1\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"connection_open_init\",\"@value\":{\"client_id\":1,\"counterparty_client_id\":1}}}]}}}' > /tmp/payload.json"
@@ -216,7 +217,7 @@
               devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
 
               # wait until the channel is opened
-              devnetVoyager.wait_until_succeeds("[[ $({voyagerBin} rpc ibc-state 32382 '{ \"channel\": { \"channel_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+              devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"channel\": { \"channel_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
 
               ${testScript}
             '';
