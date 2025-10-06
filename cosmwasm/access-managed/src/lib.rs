@@ -47,9 +47,6 @@ pub use restricted::{
     EnsureCanCallResult, Restricted, ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
 };
 
-// #[cfg(test)]
-// mod tests;
-
 /// Initializes the contract connected to an initial authority.
 ///
 /// ```solidity
