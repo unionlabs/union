@@ -1,17 +1,27 @@
 use ibc_union_spec::ConnectionId;
 use pinocchio::program_error::ProgramError;
 
-use super::Serializable;
+use super::{Serializable, StaticInit};
 
-pub struct LatestConnectionId(pub ConnectionId);
+pub struct NextConnectionId(pub ConnectionId);
 
-impl LatestConnectionId {
+impl NextConnectionId {
+    pub const fn seed<'a>() -> &'a [&'a [u8]] {
+        &[b"next_connection_id"]
+    }
+
     pub fn increment(&mut self) {
         self.0 = self.0.checked_add(1).unwrap();
     }
 }
 
-impl TryFrom<&[u8]> for LatestConnectionId {
+impl StaticInit for NextConnectionId {
+    fn static_init() -> Self {
+        NextConnectionId(ConnectionId!(1))
+    }
+}
+
+impl TryFrom<&[u8]> for NextConnectionId {
     type Error = ProgramError;
 
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
@@ -27,7 +37,7 @@ impl TryFrom<&[u8]> for LatestConnectionId {
     }
 }
 
-impl Serializable for LatestConnectionId {
+impl Serializable for NextConnectionId {
     fn serialize_into(&self, data: &mut [u8]) {
         data.copy_from_slice(self.0.raw().to_le_bytes().as_slice())
     }

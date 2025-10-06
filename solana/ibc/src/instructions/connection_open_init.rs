@@ -4,7 +4,7 @@ use pinocchio::{
     ProgramResult,
 };
 
-use crate::{latest_connection_id::LatestConnectionId, TypedAccount};
+use crate::{next_connection_id::NextConnectionId, TypedAccount};
 
 pub struct ConnectionOpenInit<'a> {
     pub accounts: ConnectionOpenInitAccounts<'a>,
@@ -15,11 +15,10 @@ impl<'a> ConnectionOpenInit<'a> {
     pub const DISCRIMINATOR: &'a u8 = &1;
 
     pub fn process(&mut self) -> ProgramResult {
-        let mut latest_connection_id = TypedAccount::<LatestConnectionId>::init_if_needed(
-            LatestConnectionId(ConnectionId!(1)),
+        let mut latest_connection_id = TypedAccount::<NextConnectionId>::init_if_needed(
             self.accounts.latest_connection_id,
             self.accounts.payer,
-            &[b"client_id"],
+            NextConnectionId::seed(),
         )?;
 
         self.accounts

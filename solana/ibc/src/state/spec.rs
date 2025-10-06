@@ -10,12 +10,11 @@ impl Serializable for Connection {
         data[1..5].copy_from_slice(&self.client_id.raw().to_le_bytes());
         data[5..9].copy_from_slice(&self.counterparty_client_id.raw().to_le_bytes());
 
-        if let Some(counterparty_connection_id) = self.counterparty_connection_id {
-            data[10] = 1;
-            data[11..15].copy_from_slice(&counterparty_connection_id.raw().to_le_bytes());
-        } else {
-            data[10] = 0;
-        }
+        let counterparty_connection_id = self
+            .counterparty_connection_id
+            .map_or(0, |x| x.raw())
+            .to_le_bytes();
+        data[9..13].copy_from_slice(&counterparty_connection_id);
     }
 
     fn deserialize(data: &[u8]) -> Result<Self, ProgramError> {
@@ -41,7 +40,7 @@ impl Serializable for Connection {
     }
 
     fn serialized_size(&self) -> usize {
-        16
+        13
     }
 }
 

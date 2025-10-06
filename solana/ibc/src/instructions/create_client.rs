@@ -9,7 +9,7 @@ use unionlabs_primitives::Bytes;
 
 use crate::{
     helper::{parse_bytes, parse_string},
-    latest_client_id::LatestClientId,
+    next_client_id::NextClientId,
     TypedAccount,
 };
 
@@ -22,11 +22,10 @@ impl<'a> CreateClient<'a> {
     pub const DISCRIMINATOR: &'a u8 = &0;
 
     pub fn process(&mut self) -> ProgramResult {
-        let mut latest_client_id = TypedAccount::<LatestClientId>::init_if_needed(
-            LatestClientId(ClientId!(1)),
+        let mut latest_client_id = TypedAccount::<NextClientId>::init_if_needed(
             self.accounts.client_id,
             self.accounts.payer,
-            &[b"client_id"],
+            NextClientId::seed(),
         )?;
 
         self.accounts
