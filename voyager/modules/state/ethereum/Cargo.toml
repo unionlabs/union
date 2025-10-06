@@ -18,7 +18,7 @@ futures        = { workspace = true }
 ibc-solidity   = { workspace = true, features = ["rpc", "serde"] }
 ibc-union-spec = { workspace = true, features = ["serde", "ethabi"] }
 jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }
-moka           = { version = "0.12.10", features = ["future"] }
+moka           = { workspace = true, features = ["future"] }
 serde          = { workspace = true, features = ["derive"] }
 serde_json     = { workspace = true }
 tokio          = { workspace = true }

@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 alloy              = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 clap               = { workspace = true, features = ["default", "derive"] }
+cometbft-rpc       = { workspace = true }
 futures            = { workspace = true }
-tendermint-rpc     = { workspace = true, features = ["http-client", "websocket-client"] }
 tokio              = { workspace = true, features = ["full"] }
 tracing-subscriber = { workspace = true }

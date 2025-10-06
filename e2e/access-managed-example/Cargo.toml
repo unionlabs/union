@@ -15,12 +15,12 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-access-managed         = { workspace = true, features = ["library"] }
-access-manager-types   = { workspace = true }
-cosmwasm-std           = { workspace = true }
-depolama               = { workspace = true }
-embed-commit.workspace = true
-frissitheto            = { workspace = true }
-serde                  = { workspace = true, features = ["derive"] }
-thiserror.workspace    = true
-unionlabs-encoding     = { workspace = true, features = ["bincode"] }
+access-managed       = { workspace = true, features = ["library"] }
+access-manager-types = { workspace = true }
+cosmwasm-std         = { workspace = true }
+depolama             = { workspace = true }
+embed-commit         = { workspace = true }
+frissitheto          = { workspace = true }
+serde                = { workspace = true, features = ["derive"] }
+thiserror            = { workspace = true }
+unionlabs-encoding   = { workspace = true, features = ["bincode"] }

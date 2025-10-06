@@ -22,7 +22,7 @@ library = []
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true, features = ["iterator", "cosmwasm_1_3"] }
 cw-storage-plus   = { workspace = true, features = ["iterator"] }
-cw20              = "2.0.0"
+cw20              = { workspace = true }
 cw20-ctx          = { workspace = true }
 embed-commit      = { workspace = true }
 frissitheto       = { workspace = true }

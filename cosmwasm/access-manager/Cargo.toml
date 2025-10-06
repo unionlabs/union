@@ -22,10 +22,10 @@ depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }
 serde                = { workspace = true, features = ["derive"] }
-serde-json-wasm      = "1.0.0"
+serde-json-wasm      = { workspace = true }
 serde-utils          = { workspace = true }
 sha2                 = { workspace = true }
-strum                = { version = "0.27.2", features = ["derive"] }
+strum                = { workspace = true, features = ["derive"] }
 thiserror            = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
 unionlabs-primitives = { workspace = true, features = ["bincode", "serde", "generic-array-compat"] }

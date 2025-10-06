@@ -36,12 +36,12 @@ static_assertions        = { workspace = true }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 
-base64               = { workspace = true }
-bcs                  = { workspace = true }
-bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
-borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
-bs58                 = { workspace = true }
-near-primitives-core = { version = "0.21", optional = true }
+base64  = { workspace = true }
+bcs     = { workspace = true }
+bincode = { workspace = true, features = ["alloc", "derive"], optional = true }
+borsh   = { workspace = true, features = ["borsh-derive"], optional = true }
+bs58    = { workspace = true }
+# near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.17"
@@ -63,7 +63,7 @@ ethabi = [
   "unionlabs-primitives/alloy-sol-types-compat",
   "unionlabs-encoding/ethabi",
 ]
-near = ["borsh", "near-sdk", "near-primitives-core"]
+# near = ["borsh", "near-sdk", "near-primitives-core"]
 std = ["sha2/std", "unionlabs-encoding/std"]
 
 fuzzing    = []

@@ -31,7 +31,7 @@ jsonrpsee          = { workspace = true, features = ["client", "full", "tracing"
 keccak-asm         = "0.1.4"
 num_cpus           = "1.16"
 protos             = { workspace = true, features = ["proto_full", "serde"] }
-rand               = "0.8"
+rand               = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 sha2               = { workspace = true, features = ["asm", "asm-aarch64"] }

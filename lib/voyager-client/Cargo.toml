@@ -20,12 +20,12 @@ indexmap                       = "2.9.0"
 itertools                      = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 macros                         = { workspace = true }
-moka                           = { version = "0.12.10", features = ["future"] }
+moka                           = { workspace = true, features = ["future"] }
 opentelemetry                  = { workspace = true }
 opentelemetry-otlp             = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
 opentelemetry_sdk              = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
-reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
+reth-ipc                       = { workspace = true }
 schemars                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }

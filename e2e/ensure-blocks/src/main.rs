@@ -1,10 +1,9 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Duration};
 
 use alloy::providers::{Provider, ProviderBuilder};
 use clap::Parser;
-use futures::StreamExt;
-use tendermint_rpc::{query::EventType, SubscriptionClient, WebSocketClient};
-use tokio::join;
+use futures::{stream::unfold, StreamExt};
+use tokio::{join, time::sleep};
 
 const BLOCKS_TO_WAIT_FOR: usize = 10;
 
@@ -27,12 +26,7 @@ async fn main() {
 async fn do_main(args: Args) {
     let provider = ProviderBuilder::new().connect(&args.sepolia).await.unwrap();
 
-    let (tm_client, driver) = WebSocketClient::builder(args.union.parse().unwrap())
-        .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-        .build()
-        .await
-        .unwrap();
-    tokio::spawn(async move { driver.run().await });
+    let tm_client = cometbft_rpc::Client::new(args.union).await.unwrap();
 
     let sepolia_blocks = fetch_blocks(
         "sepolia",
@@ -40,10 +34,15 @@ async fn do_main(args: Args) {
     );
     let union_blocks = fetch_blocks(
         "union",
-        tm_client
-            .subscribe(EventType::NewBlock.into())
-            .await
-            .unwrap(),
+        unfold((1, tm_client), |(block_number, tm_client)| async move {
+            let latest_block = tm_client.block(None).await.unwrap();
+            if latest_block.block.header.height.inner() > block_number {
+                Some((Some(latest_block), (block_number + 1, tm_client)))
+            } else {
+                sleep(Duration::from_secs(1)).await;
+                Some((None, (block_number, tm_client)))
+            }
+        }),
     );
 
     join!(union_blocks, sepolia_blocks);

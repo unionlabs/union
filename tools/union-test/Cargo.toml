@@ -1,11 +1,13 @@
 [package]
-authors.workspace      = true
-edition.workspace      = true
-license-file.workspace = true
-name                   = "union-test"
-publish.workspace      = true
-repository.workspace   = true
-version                = "0.0.0"
+name    = "union-test"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
 
 [dependencies]
 alloy                          = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
@@ -16,15 +18,14 @@ concurrent-keyring             = { workspace = true }
 cosmos-client                  = { workspace = true }
 cosmos-sdk-event               = { workspace = true }
 cosmwasm-std                   = { workspace = true }
-cw20                           = "2.0.0"
-ethers                         = { version = "1.0.2", default-features = true, features = ["ethers-solc"] }
+cw20                           = { workspace = true }
 hex-literal                    = { workspace = true }
 ibc-solidity                   = { workspace = true, features = ["serde", "rpc"] }
 ibc-union-msg                  = { workspace = true }
 ibc-union-spec                 = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 protos                         = { workspace = true }
-rand                           = { version = "0.9.0" }
+rand                           = { workspace = true, features = ["default"] }
 regex                          = "1"
 serde                          = { workspace = true }
 serde-utils                    = { workspace = true }

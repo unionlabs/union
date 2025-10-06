@@ -29,7 +29,7 @@ unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 base64        = { workspace = true }
-ed25519-dalek = "2.2.0"
+ed25519-dalek = { workspace = true, features = ["default"] }
 hex           = { workspace = true }
 hex-literal   = { workspace = true }
 serde_json    = { workspace = true }

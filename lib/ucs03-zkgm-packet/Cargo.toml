@@ -24,4 +24,4 @@ default = ["serde"]
 serde   = ["dep:serde", "unionlabs-primitives/serde"]
 
 [dev-dependencies]
-serde_json.workspace = true
+serde_json = { workspace = true }

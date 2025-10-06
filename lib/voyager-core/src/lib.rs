@@ -124,7 +124,7 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
 
     #[allow(clippy::too_many_lines)]
     pub fn run(&self) -> impl Future<Output = ()> + use<'_, Q> {
-        let queue_rx = api::run(&self.rest_laddr);
+        let queue_rx = api::run(self.rest_laddr);
 
         let mut tasks = FuturesUnordered::<BoxFuture<Result<Result<(), BoxDynError>, _>>>::new();
 
@@ -1376,15 +1376,19 @@ pub mod api {
     use voyager_message::VoyagerMessage;
     use voyager_vm::Op;
 
-    pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
+    pub fn run(laddr: SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
         let (queue_tx, queue_rx) = unbounded::<Op<VoyagerMessage>>();
 
-        let app = axum::Router::new()
-            .route("/enqueue", post(enqueue))
-            .route("/health", get(async || StatusCode::OK))
-            .with_state(queue_tx.clone());
+        tokio::spawn(async move {
+            let app = axum::Router::new()
+                .route("/enqueue", post(enqueue))
+                .route("/health", get(async || StatusCode::OK))
+                .with_state(queue_tx.clone());
 
-        tokio::spawn(axum::Server::bind(laddr).serve(app.into_make_service()));
+            let listener = tokio::net::TcpListener::bind(laddr).await.unwrap();
+
+            axum::serve(listener, app)
+        });
 
         queue_rx
     }
