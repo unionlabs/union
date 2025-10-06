@@ -374,8 +374,8 @@ pub trait StorageExt {
     ///
     /// This will return an error if the value cannot be decoded.
     #[inline]
-    fn take_item<S: Store>(&mut self, k: &S::Key) -> StdResult<Option<S::Value>> {
-        self.take::<S>(k)
+    fn take_item<S: Store<Key = ()>>(&mut self) -> StdResult<Option<S::Value>> {
+        self.take::<S>(&())
     }
 
     /// Iterate over all of the (key, value) pairs in the store.

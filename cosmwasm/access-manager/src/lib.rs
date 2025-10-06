@@ -15,7 +15,8 @@
 //!
 //! For each target contract, admins can configure the following without any delay:
 //!
-//! - The target's {AccessManaged-authority} via [`ExecuteMsg::UpdateAuthority`].
+//! - The target's [`QueryMsg::Authority`][access_manager_types::managed::msg::QueryMsg::Authority]
+//!   via [`ExecuteMsg::UpdateAuthority`].
 //! - Close or open a target via [`ExecuteMsg::SetTargetClosed`] keeping the permissions intact.
 //! - The roles that are allowed (or disallowed) to call a given function (identified by its
 //!   selector) through [`ExecuteMsg::SetTargetAdminDelay`].
@@ -83,12 +84,17 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![cfg_attr(test, allow(clippy::too_many_lines))]
 
+use std::num::NonZero;
+
+use access_manager_types::{
+    manager::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
+    RoleId,
+};
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, SubMsg,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use serde_json::value::RawValue;
 
 use crate::{
     context::{ExecCtx, HasStorage, QueryCtx},
@@ -101,20 +107,13 @@ use crate::{
         set_target_closed, set_target_function_role, update_authority,
     },
     error::ContractError,
-    msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
     state::ExecutionIdStack,
-    types::RoleId,
 };
 
 pub mod context;
 pub mod contract;
 pub mod error;
-pub mod event;
-pub mod managed;
-pub mod msg;
 pub mod state;
-pub mod time;
-pub mod types;
 
 #[cfg(test)]
 mod tests;
@@ -126,7 +125,7 @@ pub const EXECUTE_REPLY_ID: u64 = 1;
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L128>
-pub fn init(deps: DepsMut, env: &Env, msg: InitMsg) -> Result<Response, ContractError> {
+pub fn init(deps: DepsMut, env: &Env, msg: &InitMsg) -> Result<Response, ContractError> {
     let InitMsg { initial_admin } = msg;
 
     let info = MessageInfo {
@@ -134,13 +133,31 @@ pub fn init(deps: DepsMut, env: &Env, msg: InitMsg) -> Result<Response, Contract
         funds: vec![],
     };
 
-    let mut ctx = ExecCtx::new(deps, env, &info, RawValue::NULL);
+    let mut ctx = ExecCtx::new(
+        deps, env, &info,
+        // this can technically be whatever, just needs to be passed through
+        &msg,
+    );
 
     ctx.storage().write_item::<ExecutionIdStack>(&vec![]);
 
-    _grant_role(&mut ctx, RoleId::ADMIN_ROLE, &initial_admin, 0, 0)?;
+    _grant_role(&mut ctx, RoleId::ADMIN_ROLE, initial_admin, 0, 0)?;
 
     Ok(Response::new().add_events(ctx.events()))
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+#[expect(clippy::missing_panics_doc, reason = "it's in a const bro")]
+#[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
+pub fn instantiate(
+    mut deps: DepsMut,
+    env: Env,
+    _: MessageInfo,
+    msg: InitMsg,
+) -> Result<Response, ContractError> {
+    frissitheto::init_state_version(&mut deps, const { <NonZero<u32>>::new(1).unwrap() })?;
+
+    init(deps, &env, &msg)
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
@@ -149,12 +166,10 @@ pub fn execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    data: Box<RawValue>,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     let mut msgs: Vec<SubMsg> = vec![];
-    let mut ctx = ExecCtx::new(deps, &env, &info, &data);
-
-    let msg = cosmwasm_std::from_json::<ExecuteMsg>(data.get())?;
+    let mut ctx = ExecCtx::new(deps, &env, &info, &msg);
 
     match &msg {
         ExecuteMsg::LabelRole { role_id, label } => {
@@ -199,7 +214,7 @@ pub fn execute(
             selectors,
             role_id,
         } => {
-            set_target_function_role(&mut ctx, target, selectors, *role_id)?;
+            set_target_function_role(&mut ctx, target, selectors.iter().map(|e| &**e), *role_id)?;
         }
         ExecuteMsg::UpdateAuthority {
             target,
@@ -292,7 +307,9 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
             result,
             ..
         } => {
-            result.unwrap();
+            result
+                .into_result()
+                .map_err(|why| StdError::generic_err(format!("execution failed: {why}")))?;
 
             deps.storage
                 .update_item::<ExecutionIdStack, ContractError, _>(|stack| {
@@ -302,7 +319,7 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
 
             Ok(Response::new())
         }
-        _ => Err(StdError::generic_err("unknown reply: {reply:?}").into()),
+        _ => Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into()),
     }
 }
 
@@ -316,7 +333,7 @@ pub fn migrate(
     msg.run(
         deps,
         |deps, msg| {
-            let res = init(deps, &env, msg)?;
+            let res = init(deps, &env, &msg)?;
             Ok((res, None))
         },
         |_, _, _| Ok((Response::default(), None)),

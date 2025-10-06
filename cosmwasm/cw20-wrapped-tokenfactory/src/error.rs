@@ -4,10 +4,10 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
-    #[error("{0}")]
+    #[error(transparent)]
     Std(#[from] StdError),
 
-    #[error("migration error")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
 
     #[error("Unauthorized")]

@@ -1,28 +1,32 @@
 use std::cmp;
 
-use cosmwasm_std::{from_json, wasm_execute, Addr, StdError, SubMsg};
+#[cfg(doc)]
+use access_manager_types::manager::{event::*, msg::QueryMsg};
+use access_manager_types::{
+    managed,
+    manager::{
+        error::AccessManagerError,
+        event::{
+            OperationCanceled, OperationExecuted, OperationScheduled, RoleAdminChanged,
+            RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleLabel, RoleRevoked,
+            TargetAdminDelayUpdated, TargetClosed, TargetFunctionRoleUpdated,
+        },
+        msg::ExecuteMsg,
+    },
+    time::{Delay, UnpackedDelay},
+    Access, CanCall, FullAccess, HasRole, Role, RoleId, Schedule, Selector, TargetConfig,
+};
+use cosmwasm_std::{from_json, wasm_execute, Addr, StdError, SubMsg, WasmMsg};
 use depolama::StorageExt;
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use unionlabs_primitives::H256;
 
 use crate::{
     context::{ExecCtx, HasStorage, IExecCtx, IQueryCtx, QueryCtx},
     error::ContractError,
-    event::{
-        OperationCanceled, OperationExecuted, OperationScheduled, RoleAdminChanged,
-        RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleLabel, RoleRevoked,
-        TargetAdminDelayUpdated, TargetClosed, TargetFunctionRoleUpdated,
-    },
-    managed::Managed,
-    msg::{AccessManagedExecuteMsg, AccessManagedQueryMsg, ExecuteMsg},
     state::{ExecutionIdStack, RoleMembers, Roles, Schedules, TargetAllowedRoles, Targets},
-    time::{Delay, UnpackedDelay},
-    types::{Access, Role, RoleId, Schedule, Selector, TargetConfig},
     EXECUTE_REPLY_ID,
 };
-#[cfg(doc)]
-use crate::{event::*, msg::QueryMsg};
 
 /// Check that the caller is authorized to perform the operation.
 /// See [`access-manager`][crate] description for a detailed breakdown of the authorization logic.
@@ -32,6 +36,7 @@ use crate::{event::*, msg::QueryMsg};
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L123>
+#[inline]
 fn only_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
     _check_authorized(ctx)
 }
@@ -89,7 +94,7 @@ pub(crate) fn renounce_role(
 
         Ok(())
     } else {
-        Err(ContractError::AccessManagerBadConfirmation)
+        Err(AccessManagerError::AccessManagerBadConfirmation.into())
     }
 }
 
@@ -140,7 +145,7 @@ pub(crate) fn set_grant_delay(
 /// ) internal virtual returns (bool)
 /// ```
 ///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L270-L275>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L270>
 pub(crate) fn _grant_role(
     ctx: &mut ExecCtx,
     role_id: RoleId,
@@ -149,7 +154,7 @@ pub(crate) fn _grant_role(
     execution_delay: u32,
 ) -> Result<bool, ContractError> {
     if role_id == RoleId::PUBLIC_ROLE {
-        return Err(ContractError::AccessManagerLockedRole(role_id));
+        return Err(AccessManagerError::AccessManagerLockedRole(role_id).into());
     }
 
     let new_member = ctx
@@ -202,7 +207,7 @@ pub(crate) fn _grant_role(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L305>
 fn _revoke_role(ctx: &mut ExecCtx, role_id: RoleId, account: &Addr) -> Result<bool, ContractError> {
     if role_id == RoleId::PUBLIC_ROLE {
-        return Err(ContractError::AccessManagerLockedRole(role_id));
+        return Err(AccessManagerError::AccessManagerLockedRole(role_id).into());
     }
 
     match ctx
@@ -231,7 +236,7 @@ fn _revoke_role(ctx: &mut ExecCtx, role_id: RoleId, account: &Addr) -> Result<bo
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L328>
 fn _set_role_admin(ctx: &mut ExecCtx, role_id: RoleId, admin: RoleId) -> Result<(), ContractError> {
     if role_id == RoleId::ADMIN_ROLE || role_id == RoleId::PUBLIC_ROLE {
-        return Err(ContractError::AccessManagerLockedRole(role_id));
+        return Err(AccessManagerError::AccessManagerLockedRole(role_id).into());
     }
 
     ctx.storage()
@@ -265,7 +270,7 @@ fn _set_role_guardian(
     guardian: RoleId,
 ) -> Result<(), ContractError> {
     if role_id == RoleId::ADMIN_ROLE || role_id == RoleId::PUBLIC_ROLE {
-        return Err(ContractError::AccessManagerLockedRole(role_id));
+        return Err(AccessManagerError::AccessManagerLockedRole(role_id).into());
     }
 
     ctx.storage()
@@ -296,7 +301,7 @@ fn _set_grant_delay(
     new_delay: u32,
 ) -> Result<(), ContractError> {
     if role_id == RoleId::PUBLIC_ROLE {
-        return Err(ContractError::AccessManagerLockedRole(role_id));
+        return Err(AccessManagerError::AccessManagerLockedRole(role_id).into());
     }
 
     let timestamp = ctx.timestamp();
@@ -355,7 +360,7 @@ fn _set_target_function_role(
     role_id: RoleId,
 ) {
     ctx.storage()
-        .write::<TargetAllowedRoles>(&(target.clone(), selector.clone()), &role_id);
+        .write::<TargetAllowedRoles>(&(target.clone(), selector.to_owned()), &role_id);
     ctx.emit(TargetFunctionRoleUpdated {
         target,
         selector,
@@ -442,7 +447,7 @@ pub(crate) fn set_target_closed(
 /// function _setTargetClosed(address target, bool closed) internal virtual
 /// ```
 ///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L422C5-L422C76>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L422>
 fn _set_target_closed(ctx: &mut ExecCtx, target: &Addr, closed: bool) -> Result<(), ContractError> {
     ctx.storage()
         .upsert::<Targets, ContractError>(target, |maybe_target_config| {
@@ -502,11 +507,12 @@ pub(crate) fn schedule(
 
     // If call with delay is not authorized, or if requested timing is too soon, revert
     if setback == 0 || (when > 0 && when < min_when) {
-        return Err(ContractError::AccessManagerUnauthorizedCall {
+        return Err(AccessManagerError::AccessManagerUnauthorizedCall {
             caller: caller.clone(),
             target: target.clone(),
-            selector: _check_selector(data)?,
-        });
+            selector: _check_selector(data)?.to_owned(),
+        }
+        .into());
     }
 
     let when = cmp::max(when, min_when);
@@ -523,7 +529,7 @@ pub(crate) fn schedule(
     }) = maybe_schedule
     {
         if !_is_expired(ctx.query_ctx(), prev_timepoint) {
-            return Err(ContractError::AccessManagerAlreadyScheduled(operation_id));
+            return Err(AccessManagerError::AccessManagerAlreadyScheduled(operation_id).into());
         }
     }
 
@@ -547,7 +553,7 @@ pub(crate) fn schedule(
 }
 
 /// See [`ExecuteMsg::Execute`].
-// NOTE: Reentrancy is not an issue because permissions are checked on info.sender.p Additionally,
+// NOTE: Reentrancy is not an issue because permissions are checked on info.sender. Additionally,
 // _consume_scheduled_op guarantees a scheduled operation is only executed once.
 pub(crate) fn execute(
     ctx: &mut ExecCtx,
@@ -564,11 +570,12 @@ pub(crate) fn execute(
 
     // If call is not authorized, revert
     if !immediate && setback == 0 {
-        return Err(ContractError::AccessManagerUnauthorizedCall {
+        return Err(AccessManagerError::AccessManagerUnauthorizedCall {
             caller: caller.clone(),
             target: target.clone(),
-            selector: _check_selector(data)?,
-        });
+            selector: _check_selector(data)?.to_owned(),
+        }
+        .into());
     }
 
     let operation_id = hash_operation(caller, target, data);
@@ -584,14 +591,18 @@ pub(crate) fn execute(
     ctx.storage()
         .update_item::<ExecutionIdStack, ContractError, _>(|stack| {
             // this gets popped in the reply handler
-            stack.push(_hash_execution_id(target, &_check_selector(data)?));
+            stack.push(_hash_execution_id(target, _check_selector(data)?));
 
             Ok(())
         })?;
 
     Ok((
-        SubMsg::reply_always(
-            wasm_execute(target, &data, ctx.value().to_vec())?,
+        SubMsg::reply_on_success(
+            WasmMsg::Execute {
+                contract_addr: target.to_string(),
+                msg: data.as_bytes().into(),
+                funds: ctx.value().to_vec(),
+            },
             EXECUTE_REPLY_ID,
         ),
         nonce,
@@ -612,10 +623,10 @@ pub(crate) fn cancel(
     let schedule = ctx
         .storage()
         .maybe_read::<Schedules>(&operation_id)?
-        .ok_or_else(|| ContractError::AccessManagerNotScheduled(operation_id))?;
+        .ok_or(AccessManagerError::AccessManagerNotScheduled(operation_id))?;
 
     if schedule.timepoint == 0 {
-        return Err(ContractError::AccessManagerNotScheduled(operation_id));
+        return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
     } else if caller != msgsender {
         // calls can only be canceled by the account that scheduled them, a global admin, or by a
         // guardian of the required role.
@@ -624,19 +635,20 @@ pub(crate) fn cancel(
             ctx.query_ctx(),
             get_role_guardian(
                 ctx.query_ctx(),
-                get_target_function_role(ctx.query_ctx(), target, &selector)?,
+                get_target_function_role(ctx.query_ctx(), target, selector)?,
             )?,
             msgsender,
         )?
         .is_member;
 
         if !is_admin && !is_guardian {
-            return Err(ContractError::AccessManagerUnauthorizedCancel {
+            return Err(AccessManagerError::AccessManagerUnauthorizedCancel {
                 msg_sender: msgsender.clone(),
                 caller: caller.clone(),
                 target: target.clone(),
-                selector,
-            });
+                selector: selector.to_owned(),
+            }
+            .into());
         }
     }
 
@@ -666,13 +678,15 @@ pub(crate) fn consume_scheduled_op(
     let target = ctx.msg_sender();
 
     // idrk what's going on here ngl
-    let selector = ctx
-        .querier()
-        .query_wasm_smart::<Selector>(target, &AccessManagedQueryMsg::IsConsumingScheduledOp {})?;
-    if (selector != AccessManagedQueryMsg::IsConsumingScheduledOp {}.selector()) {
-        return Err(ContractError::AccessManagerUnauthorizedConsume {
+    let selector = ctx.querier().query_wasm_smart::<Box<Selector>>(
+        target,
+        &managed::msg::QueryMsg::IsConsumingScheduledOp {},
+    )?;
+    if (&*selector != managed::msg::QueryMsg::IsConsumingScheduledOp {}.selector()) {
+        return Err(AccessManagerError::AccessManagerUnauthorizedConsume {
             target: target.clone(),
-        });
+        }
+        .into());
     }
 
     _consume_scheduled_op(ctx, hash_operation(caller, target, data))?;
@@ -690,14 +704,17 @@ pub(crate) fn consume_scheduled_op(
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L563>
 fn _consume_scheduled_op(ctx: &mut ExecCtx, operation_id: H256) -> Result<u32, ContractError> {
-    let Schedule { timepoint, nonce } = ctx.storage().read::<Schedules>(&operation_id)?;
+    let Schedule { timepoint, nonce } = ctx
+        .storage()
+        .maybe_read::<Schedules>(&operation_id)?
+        .unwrap_or_default();
 
     if timepoint == 0 {
-        return Err(ContractError::AccessManagerNotScheduled(operation_id));
+        return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
     } else if timepoint > ctx.timestamp() {
-        return Err(ContractError::AccessManagerNotReady(operation_id));
+        return Err(AccessManagerError::AccessManagerNotReady(operation_id).into());
     } else if _is_expired(ctx.query_ctx(), timepoint) {
-        return Err(ContractError::AccessManagerExpired(operation_id));
+        return Err(AccessManagerError::AccessManagerExpired(operation_id).into());
     }
 
     // reset the timepoint, keep the nonce
@@ -719,7 +736,7 @@ fn _consume_scheduled_op(ctx: &mut ExecCtx, operation_id: H256) -> Result<u32, C
 
 /// See [`QueryMsg::HashOperation`].
 pub(crate) fn hash_operation(caller: &Addr, target: &Addr, data: &str) -> H256 {
-    Sha256::digest(format!("{caller}/{target}/{data}",)).into()
+    Sha256::digest(format!("{caller}/{target}/{data}")).into()
 }
 
 // ============================================ OTHERS ============================================
@@ -734,7 +751,7 @@ pub(crate) fn update_authority(
 
     Ok(SubMsg::reply_never(wasm_execute(
         target,
-        &AccessManagedExecuteMsg::SetAuthority {
+        &managed::msg::ExecuteMsg::SetAuthority {
             new_authority: new_authority.clone(),
         },
         vec![],
@@ -753,24 +770,28 @@ pub(crate) fn update_authority(
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L598>
+#[inline]
 fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
+    let msg_data = ctx.msg_data();
+
     let CanCall {
         allowed: immediate,
         delay,
-    } = _can_call_self(ctx, ctx.msg_sender(), ctx.msg_data())?;
+    } = _can_call_self(ctx, ctx.msg_sender(), &msg_data)?;
 
     if !immediate {
         if delay == 0 {
-            let (_, required_role, _) = _get_admin_restrictions(ctx, ctx.msg_data())?;
-            return Err(ContractError::AccessManagerUnauthorizedAccount {
+            let (_, required_role, _) = _get_admin_restrictions(ctx, &msg_data)?;
+            return Err(AccessManagerError::AccessManagerUnauthorizedAccount {
                 msg_sender: ctx.msg_sender().clone(),
                 required_role_id: required_role,
-            });
+            }
+            .into());
         }
 
         _consume_scheduled_op(
             ctx,
-            hash_operation(ctx.msg_sender(), ctx.address_this(), ctx.msg_data()),
+            hash_operation(ctx.msg_sender(), ctx.address_this(), &msg_data),
         )?;
     }
 
@@ -792,7 +813,7 @@ fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
 /// ) private view returns (bool adminRestricted, uint64 roleAdminId, uint32 executionDelay)
 /// ```
 ///
-/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L619-L621>
+/// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L619>
 fn _get_admin_restrictions(
     ctx: &mut ExecCtx,
     data: &str,
@@ -827,7 +848,7 @@ fn _get_admin_restrictions(
 
         _ => Ok((
             false,
-            get_target_function_role(ctx.query_ctx(), ctx.address_this(), &_check_selector(data)?)?,
+            get_target_function_role(ctx.query_ctx(), ctx.address_this(), _check_selector(data)?)?,
             0,
         )),
     }
@@ -841,10 +862,9 @@ fn _get_admin_restrictions(
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L730>
-fn _check_selector(data: &str) -> Result<Selector, ContractError> {
-    Ok(serde_json::from_str::<Managed<()>>(data)
-        .map_err(|e| StdError::generic_err(format!("{e}")))?
-        .selector())
+fn _check_selector(data: &str) -> Result<&Selector, ContractError> {
+    Selector::extract_from_data(data)
+        .map_err(|e| StdError::generic_err(format!("error extracting selector: {e}")).into())
 }
 
 // =========================================== HELPERS ============================================
@@ -874,7 +894,7 @@ fn _can_call_extended(
     if target == ctx.address_this() {
         _can_call_self(ctx, caller, data)
     } else {
-        can_call(ctx.query_ctx(), caller, target, &_check_selector(data)?)
+        can_call(ctx.query_ctx(), caller, target, _check_selector(data)?)
     }
 }
 
@@ -887,11 +907,11 @@ fn _can_call_extended(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L685>
 fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCall, ContractError> {
     if caller == ctx.address_this() {
-        // Caller is AccessManager, this means the call was sent through {execute} and it already
+        // Caller is AccessManager, this means the call was sent through `execute` and it already
         // checked permissions. We verify that the call "identifier", which is set during
         // `execute`, is correct.
         return Ok(CanCall {
-            allowed: _is_executing(ctx.query_ctx(), ctx.address_this(), &_check_selector(data)?)?,
+            allowed: _is_executing(ctx.query_ctx(), ctx.address_this(), _check_selector(data)?)?,
             delay: 0,
         });
     }
@@ -1028,7 +1048,7 @@ pub(crate) fn get_target_function_role(
 ) -> Result<RoleId, ContractError> {
     Ok(ctx
         .storage()
-        .maybe_read::<TargetAllowedRoles>(&(target.clone(), selector.clone()))?
+        .maybe_read::<TargetAllowedRoles>(&(target.clone(), selector.to_owned()))?
         .unwrap_or_default())
 }
 
@@ -1129,32 +1149,4 @@ pub(crate) fn has_role(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L737>
 pub(crate) fn _hash_execution_id(target: &Addr, selector: &Selector) -> H256 {
     sha2::Sha256::digest(format!("{target}:{selector}")).into()
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CanCall {
-    // whether or not the caller can call the target *right now*, i.e. without any delay
-    pub allowed: bool,
-    pub delay: u32,
-}
-
-// TODO: Make this an enum, execution_delay is only ever meaningful when is_member is true
-// (i think)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct HasRole {
-    pub is_member: bool,
-    pub execution_delay: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct FullAccess {
-    /// Timestamp at which the account membership becomes valid. 0 means role is not granted.
-    since: u64,
-    /// Current execution delay for the account.
-    current_delay: u32,
-    /// Pending execution delay for the account.
-    pending_delay: u32,
-    /// Timestamp at which the pending execution delay will become active. 0 means no delay update
-    /// is scheduled.
-    effect: u64,
 }

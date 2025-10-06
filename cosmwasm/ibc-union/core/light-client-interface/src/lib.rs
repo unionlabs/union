@@ -49,9 +49,9 @@ pub enum DecodeError<T: IbcClient> {
 #[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
 pub enum IbcClientError<T: IbcClient> {
-    #[error("std error ({0:?})")]
+    #[error(transparent)]
     Std(#[from] StdError),
-    #[error("migration error")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
     #[error("decode error ({0:?})")]
     Decode(#[from] DecodeError<T>),

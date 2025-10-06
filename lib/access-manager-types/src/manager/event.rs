@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Event};
 use unionlabs_primitives::H256;
 
-use crate::types::{RoleId, Selector};
+use crate::{RoleId, Selector};
 
 /// A delayed operation was scheduled.
 ///
@@ -100,7 +100,9 @@ impl From<RoleLabel<'_>> for Event {
 
 /// Emitted when `account` is granted `role_id`.
 ///
-/// NOTE: The meaning of the `since` argument depends on the `new_member` argument. If the role is granted to a new member, the `since` argument indicates when the account becomes a member of the role, otherwise it indicates the execution delay for this account and role id is updated.
+/// NOTE: The meaning of the `since` argument depends on the `new_member` argument. If the role is
+/// granted to a new member, the `since` argument indicates when the account becomes a member of the
+/// role, otherwise it indicates the execution delay for this account and role id is updated.
 ///
 /// ```solidity
 /// event RoleGranted(uint64 indexed roleId, address indexed account, uint32 delay, uint48 since, bool newMember);

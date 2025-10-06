@@ -7,7 +7,7 @@ pub enum Error {
     #[error(transparent)]
     StdError(#[from] StdError),
 
-    #[error("migration error: {0}")]
+    #[error(transparent)]
     Migrate(#[from] UpgradeError),
 
     #[error("sender is not admin")]

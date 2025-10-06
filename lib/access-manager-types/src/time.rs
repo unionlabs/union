@@ -54,7 +54,7 @@ impl Delay {
     /// ) private pure returns (uint32 valueBefore, uint32 valueAfter, uint48 effect)
     /// ```
     ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L74-L77>
+    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L74>
     fn _get_full_at(&self, timepoint: u64) -> UnpackedDelay {
         let &Delay {
             effect_date,
@@ -114,7 +114,7 @@ impl Delay {
     /// ) internal view returns (Delay updatedDelay, uint48 effect)
     /// ```
     ///
-    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L103-L107>
+    /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/types/Time.sol#L103>
     #[must_use]
     pub fn with_update(&self, timestamp: u64, new_value: u32, min_setback: u32) -> (Delay, u64) {
         let value = self.get(timestamp);
@@ -134,8 +134,6 @@ impl Delay {
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/test/utils/types/Time.test.js>
 #[cfg(test)]
 mod tests {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     use hex_literal::hex;
     use itertools::Itertools;
     use unionlabs_encoding::{Bincode, DecodeAs, EncodeAs};
@@ -146,10 +144,18 @@ mod tests {
     const SOME_VALUES: [u32; 7] = [0, 1, 2, 15, 16, 17, 42];
 
     fn now() -> u64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
+        #[cfg(not(miri))]
+        {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+        }
+
+        #[cfg(miri)]
+        {
+            1759235023
+        }
     }
 
     fn effect_samples_for_timepoint(timepoint: u64) -> impl Iterator<Item = u64> {

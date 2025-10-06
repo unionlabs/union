@@ -253,6 +253,7 @@ members = [
   "cosmwasm/cw20-token-minter",
   "cosmwasm/cw-account",
   "cosmwasm/access-manager",
+  "cosmwasm/access-managed",
   "cosmwasm/cw-escrow-vault",
   "cosmwasm/cw-unionversal-token",
   "cosmwasm/ucs03-zkgm-token-minter-api",
@@ -288,6 +289,9 @@ members = [
   "lib/cw20-ctx",
   "lib/ucs03-zkgmable",
   "lib/ucs03-solvable",
+  "lib/access-manager-types",
+  "e2e/access-manager-tests",
+  "e2e/access-managed-example",
 ]
 
 [workspace.package]
@@ -390,11 +394,13 @@ ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = 
 ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
 ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
 
+access-managed         = { path = "cosmwasm/access-managed", default-features = false }
+access-managed-example = { path = "e2e/access-managed-example", default-features = false }
+access-manager-types   = { path = "lib/access-manager-types", default-features = false }
+
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
 lst = { path = "cosmwasm/lst", default-features = false }
-
-access-manager = { path = "cosmwasm/access-manager", default-features = false }
 
 cw-account      = { path = "cosmwasm/cw-account", default-features = false }
 cw-escrow-vault = { path = "cosmwasm/cw-escrow-vault", default-features = false }

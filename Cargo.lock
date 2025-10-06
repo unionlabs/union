@@ -38,9 +38,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "access-manager"
+name = "access-managed"
 version = "0.0.0"
 dependencies = [
+ "access-manager-types",
  "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
  "depolama",
@@ -51,8 +52,88 @@ dependencies = [
  "serde",
  "serde-json-wasm 1.0.1",
  "serde-utils",
+ "sha2 0.10.9",
+ "strum 0.27.2",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
+]
+
+[[package]]
+name = "access-managed-example"
+version = "0.0.0"
+dependencies = [
+ "access-managed",
+ "access-manager-types",
+ "cosmwasm-std 2.2.2",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "serde",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+]
+
+[[package]]
+name = "access-manager"
+version = "0.0.0"
+dependencies = [
+ "access-manager-types",
+ "bincode 2.0.1",
+ "cosmwasm-std 2.2.2",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 0.4.1",
+ "itertools 0.13.0",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "sha2 0.10.9",
+ "strum 0.27.2",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
+]
+
+[[package]]
+name = "access-manager-tests"
+version = "0.0.0"
+dependencies = [
+ "access-managed-example",
+ "access-manager-types",
+ "anyhow",
+ "bip39",
+ "clap 4.5.39",
+ "cometbft-rpc",
+ "cosmos-client",
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "hex-literal 0.4.1",
+ "k256 0.13.4",
+ "protos",
+ "serde",
  "serde_json",
  "sha2 0.10.9",
+ "tiny-hderive",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
+name = "access-manager-types"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cosmwasm-std 2.2.2",
+ "hex-literal 0.4.1",
+ "itertools 0.13.0",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
  "strum 0.27.2",
  "thiserror 2.0.12",
  "unionlabs-encoding",
@@ -2374,9 +2455,9 @@ dependencies = [
 
 [[package]]
 name = "bip39"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33415e24172c1b7d6066f6d999545375ab8e1d95421d6784bdfff9496f292387"
+checksum = "43d193de1f7487df1914d3a568b772458861d33f9c54249612cc2893d6915054"
 dependencies = [
  "bitcoin_hashes 0.13.0",
  "serde",
