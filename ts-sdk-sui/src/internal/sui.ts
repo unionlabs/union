@@ -10,7 +10,6 @@ export const publicClientLayer = <
   Id,
 >(tag: Context.Tag<Id, Sui.Sui.PublicClient>) =>
 (
-  // interface unchanged (variadic)
   ...options: Parameters<any>
 ): Layer.Layer<Id, Sui.CreatePublicClientError> =>
   Layer.effect(
@@ -20,11 +19,9 @@ export const publicClientLayer = <
         try: () => new SuiClient(options[0] as SuiClientOptions),
         catch: (err) =>
           new Sui.CreatePublicClientError({
-            // mirror your Sui error-detail extraction
             cause: Utils.extractErrorDetails(err as Sui.CreatePublicClientError),
           }),
       }),
-      // keep the { client } shape
       Effect.map((client) => ({ client })),
     ),
   )

@@ -239,11 +239,18 @@ export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
     },
   )
 
+/**
+ * @since 2.0.0
+ */
 export const normalizeSuiTypeTag = (t: string): string => {
   const [addr, mod, name] = t.split("::")
   return `${normalizeSuiAddress(addr)}::${mod}::${name}`
 }
 
+
+/**
+ * @since 2.0.0
+ */
 const isNativeSui = (t: string): boolean => {
   // compare on normalized address to avoid short/long mismatch
   const norm = normalizeSuiTypeTag(t)
