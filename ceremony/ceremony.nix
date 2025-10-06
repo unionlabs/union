@@ -25,6 +25,9 @@ _: {
           extraSrcs = [
             ../ceremony
           ];
+          pnpmWorkspaces = [
+            "union-cermony"
+          ];
           nativeBuildInputs = deps;
           buildInputs = deps;
           buildPhase = ''
