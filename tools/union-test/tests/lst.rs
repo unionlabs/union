@@ -122,7 +122,7 @@ async fn bond(
         sender_on_evm.as_ref(),
     );
 
-    // funding the eth address that we execute bond with, with muno
+    // funding the eth address that we execute bond with, with au
     eth_fund_u(&t, src_channel_id, sender_on_evm.into(), 100_000, 500_000)
         .await
         .unwrap();
@@ -164,7 +164,7 @@ async fn bond(
                         t.union_address.lst_hub.as_str(),
                         &proxy_address_on_union.to_string(),
                         min_mint_amount,
-                        "muno",
+                        "au",
                         bond_amount,
                     )
                     .into(),
@@ -350,11 +350,11 @@ async fn test_bond_success() {
         let dst_channel_id = 1;
         let src_channel_id = 1;
 
-        // setting "muno" as the fungible counterparty
+        // setting "au" as the fungible counterparty
         eth_set_fungible_counterparty(
             &t.ctx.dst,
             src_channel_id,
-            b"muno",
+            b"au",
             t.union_address.escrow_vault.as_bytes(),
         )
         .await
@@ -412,29 +412,6 @@ async fn test_bond_success() {
                 eu_balance_after_stake - eu_balance_before,
                 new_state.total_shares.u128() - state.total_shares.u128()
             );
-
-            let k = t
-                .ctx
-                .src
-                .privileged_acc_keyring
-                .with(async |k| k)
-                .await
-                .unwrap();
-
-            let outcome = t
-                .ctx
-                .src
-                .stake(
-                    "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej".to_string(),
-                    bond_amount,
-                    // &t.staker,
-                    k,
-                )
-                .await
-                .unwrap()
-                .unwrap();
-
-            assert_eq!(outcome.tx_result.code, Code::Ok);
         }
 
         // we are making sure that the 2 mins ubonding time passes, while making sure that the
@@ -493,50 +470,36 @@ async fn test_unbond_success() {
             total_unbond_amount += amount * 2;
         }
 
-        let k = t
-            .ctx
-            .src
-            .privileged_acc_keyring
-            .with(async |k| k)
-            .await
-            .unwrap();
-
-        let outcome = t
-            .ctx
-            .src
-            .unstake(
-                "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej".to_string(),
-                total_unbond_amount,
-                k,
-            )
-            .await
-            .unwrap()
-            .unwrap();
-
-        assert_eq!(outcome.tx_result.code, Code::Ok);
-
         let (_, signer) = t.ctx.src.get_signer().await;
 
         let state = get_accounting_state(&t).await.unwrap();
-        let outcome = t
-            .ctx
-            .src
-            .send_cosmwasm_transaction(
-                t.union_address.lst_hub.clone(),
-                (
-                    to_json_binary(&LstExecuteMsg::SubmitBatch {})
-                        .unwrap()
-                        .into(),
-                    vec![],
-                ),
-                &signer,
-            )
-            .await
-            .unwrap()
-            .unwrap();
-
-        assert_eq!(outcome.tx_result.code, Code::Ok);
-
+        let mut worked = false;
+        for _ in 1..6 {
+            if let Ok(outcome) = t
+                .ctx
+                .src
+                .send_cosmwasm_transaction(
+                    t.union_address.lst_hub.clone(),
+                    (
+                        to_json_binary(&LstExecuteMsg::SubmitBatch {})
+                            .unwrap()
+                            .into(),
+                        vec![],
+                    ),
+                    &signer,
+                )
+                .await
+                .unwrap()
+            {
+                assert_eq!(outcome.tx_result.code, Code::Ok);
+                worked = true;
+                break;
+            } else {
+                info!("waiting 20 seconds before submitting batch");
+                tokio::time::sleep(Duration::from_secs(20)).await;
+            }
+        }
+        assert!(worked);
         let new_state = get_accounting_state(&t).await.unwrap();
 
         // We burned exactly the `total_unbond_amount` of eU's
@@ -583,7 +546,7 @@ async fn test_withdraw_success() {
                     .unwrap()
                     .into(),
                     vec![ProtoCoin {
-                        denom: "muno".to_string(),
+                        denom: "au".to_string(),
                         amount: fund_amount.to_string(),
                     }],
                 ),
@@ -612,7 +575,7 @@ async fn test_withdraw_success() {
             let u_balance_before = t
                 .ctx
                 .src
-                .native_balance(proxy_address.clone(), "muno")
+                .native_balance(proxy_address.clone(), "au")
                 .await
                 .unwrap();
 
@@ -626,12 +589,7 @@ async fn test_withdraw_success() {
             )
             .await;
 
-            let u_balance_after = t
-                .ctx
-                .src
-                .native_balance(proxy_address, "muno")
-                .await
-                .unwrap();
+            let u_balance_after = t.ctx.src.native_balance(proxy_address, "au").await.unwrap();
 
             assert_eq!(
                 u_balance_after - u_balance_before,
@@ -668,7 +626,7 @@ async fn test_withdraw_success() {
 //     eth_set_fungible_counterparty(
 //         &t.ctx.dst,
 //         dst_channel_id,
-//         b"muno",
+//         b"au,
 //         t.union_address.escrow_vault.as_bytes(),
 //     )
 //     .await
@@ -702,7 +660,7 @@ async fn test_withdraw_success() {
 //     let new_vault_balance = t
 //         .ctx
 //         .src
-//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "au")
 //         .await
 //         .unwrap();
 
@@ -759,7 +717,7 @@ async fn test_withdraw_success() {
 //     // let zkgm_message = json!({
 //     //     "contract": lst_hub,
 //     //     "msg": bond_message.to_string(),
-//     //     "funds": [{ "denom": "muno", "amount": "3" }],
+//     //     "funds": [{ "denom": "au", "amount": "3" }],
 //     //     "call_action": "call_proxy"
 //     // })
 //     // .to_string();
@@ -768,14 +726,14 @@ async fn test_withdraw_success() {
 //         lst_hub,
 //         "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
 //         1000000u128.into(),
-//         "muno",
+//         "au",
 //         1000000,
 //     );
 
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated.clone(), "muno")
+//         .native_balance(zkgm_proxy_calculated.clone(), "au")
 //         .await
 //         .unwrap();
 
@@ -805,7 +763,7 @@ async fn test_withdraw_success() {
 //                         }
 //                         .abi_encode_params()
 //                         .into(),
-//                         quote_token: "muno".as_bytes().into(),
+//                         quote_token: "au".as_bytes().into(),
 //                         // giving 150 but expecting 1000000 so it will fail.
 //                         quote_amount: "150".parse().unwrap(),
 //                     }
@@ -889,7 +847,7 @@ async fn test_withdraw_success() {
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated, "muno")
+//         .native_balance(zkgm_proxy_calculated, "au")
 //         .await
 //         .unwrap();
 
@@ -928,7 +886,7 @@ async fn test_withdraw_success() {
 //         operand: TokenOrderV2 {
 //             sender: cosmos_address_bytes.clone().into(),
 //             receiver: evm_address.to_vec().into(),
-//             base_token: "muno".as_bytes().into(),
+//             base_token: "au".as_bytes().into(),
 //             base_amount: "100000".parse().unwrap(),
 //             kind: TOKEN_ORDER_KIND_SOLVE,
 //             metadata: metadata.into(),
@@ -948,7 +906,7 @@ async fn test_withdraw_success() {
 //             zkgm_deployer_provider.clone(),
 //             alloy::primitives::U256::ZERO,
 //             dst_channel_id,
-//             b"muno".to_vec().into(),
+//             b"au.to_vec().into(),
 //             evm::u::U::FungibleCounterparty {
 //                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
 //             },
@@ -970,7 +928,7 @@ async fn test_withdraw_success() {
 //     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
 //     let funds = vec![Coin {
-//         denom: "muno".into(),
+//         denom: "au".into(),
 //         amount: "100000".into(),
 //     }];
 
@@ -1010,7 +968,7 @@ async fn test_withdraw_success() {
 //     let new_vault_balance = t
 //         .ctx
 //         .src
-//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "au")
 //         .await
 //         .unwrap();
 
@@ -1067,7 +1025,7 @@ async fn test_withdraw_success() {
 //     // let zkgm_message = json!({
 //     //     "contract": lst_hub,
 //     //     "msg": bond_message.to_string(),
-//     //     "funds": [{ "denom": "muno", "amount": "3" }],
+//     //     "funds": [{ "denom": "au", "amount": "3" }],
 //     //     "call_action": "call_proxy"
 //     // })
 //     // .to_string();
@@ -1083,7 +1041,7 @@ async fn test_withdraw_success() {
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated.clone(), "muno")
+//         .native_balance(zkgm_proxy_calculated.clone(), "au")
 //         .await
 //         .unwrap();
 
@@ -1112,7 +1070,7 @@ async fn test_withdraw_success() {
 //                         }
 //                         .abi_encode_params()
 //                         .into(),
-//                         quote_token: "muno".as_bytes().into(),
+//                         quote_token: "au".as_bytes().into(),
 //                         quote_amount: "150".parse().unwrap(),
 //                     }
 //                     .abi_encode_params()
@@ -1195,7 +1153,7 @@ async fn test_withdraw_success() {
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated, "muno")
+//         .native_balance(zkgm_proxy_calculated, "au")
 //         .await
 //         .unwrap();
 
@@ -1234,7 +1192,7 @@ async fn test_withdraw_success() {
 //         operand: TokenOrderV2 {
 //             sender: cosmos_address_bytes.clone().into(),
 //             receiver: evm_address.to_vec().into(),
-//             base_token: "muno".as_bytes().into(),
+//             base_token: "au".as_bytes().into(),
 //             base_amount: "100000".parse().unwrap(),
 //             kind: TOKEN_ORDER_KIND_SOLVE,
 //             metadata: metadata.into(),
@@ -1254,7 +1212,7 @@ async fn test_withdraw_success() {
 //             zkgm_deployer_provider.clone(),
 //             alloy::primitives::U256::ZERO,
 //             dst_channel_id,
-//             b"muno".to_vec().into(),
+//             b"au.to_vec().into(),
 //             evm::u::U::FungibleCounterparty {
 //                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
 //             },
@@ -1276,7 +1234,7 @@ async fn test_withdraw_success() {
 //     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
 //     let funds = vec![Coin {
-//         denom: "muno".into(),
+//         denom: "au".into(),
 //         amount: "100000".into(),
 //     }];
 
@@ -1316,7 +1274,7 @@ async fn test_withdraw_success() {
 //     let new_vault_balance = t
 //         .ctx
 //         .src
-//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "au")
 //         .await
 //         .unwrap();
 
@@ -1373,7 +1331,7 @@ async fn test_withdraw_success() {
 //     // let zkgm_message = json!({
 //     //     "contract": lst_hub,
 //     //     "msg": bond_message.to_string(),
-//     //     "funds": [{ "denom": "muno", "amount": "3" }],
+//     //     "funds": [{ "denom": "au", "amount": "3" }],
 //     //     "call_action": "call_proxy"
 //     // })
 //     // .to_string();
@@ -1382,14 +1340,14 @@ async fn test_withdraw_success() {
 //         lst_hub,
 //         "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
 //         0u128.into(),
-//         "muno",
+//         "au",
 //         0, // under minimum amount to make it fail
 //     );
 
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated.clone(), "muno")
+//         .native_balance(zkgm_proxy_calculated.clone(), "au")
 //         .await
 //         .unwrap();
 
@@ -1418,7 +1376,7 @@ async fn test_withdraw_success() {
 //                         }
 //                         .abi_encode_params()
 //                         .into(),
-//                         quote_token: "muno".as_bytes().into(),
+//                         quote_token: "au".as_bytes().into(),
 //                         quote_amount: "150".parse().unwrap(),
 //                     }
 //                     .abi_encode_params()
@@ -1501,7 +1459,7 @@ async fn test_withdraw_success() {
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated, "muno")
+//         .native_balance(zkgm_proxy_calculated, "au")
 //         .await
 //         .unwrap();
 
@@ -1540,7 +1498,7 @@ async fn test_withdraw_success() {
 //         operand: TokenOrderV2 {
 //             sender: cosmos_address_bytes.clone().into(),
 //             receiver: evm_address.to_vec().into(),
-//             base_token: "muno".as_bytes().into(),
+//             base_token: "au".as_bytes().into(),
 //             base_amount: "100000".parse().unwrap(),
 //             kind: TOKEN_ORDER_KIND_SOLVE,
 //             metadata: metadata.into(),
@@ -1560,7 +1518,7 @@ async fn test_withdraw_success() {
 //             zkgm_deployer_provider.clone(),
 //             alloy::primitives::U256::ZERO,
 //             dst_channel_id,
-//             b"muno".to_vec().into(),
+//             b"au.to_vec().into(),
 //             evm::u::U::FungibleCounterparty {
 //                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
 //             },
@@ -1582,7 +1540,7 @@ async fn test_withdraw_success() {
 //     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
 //     let funds = vec![Coin {
-//         denom: "muno".into(),
+//         denom: "au".into(),
 //         amount: "100000".into(),
 //     }];
 
@@ -1622,7 +1580,7 @@ async fn test_withdraw_success() {
 //     let new_vault_balance = t
 //         .ctx
 //         .src
-//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "muno")
+//         .native_balance(Bech32::from_str(vault_on_union).unwrap(), "au")
 //         .await
 //         .unwrap();
 
@@ -1679,7 +1637,7 @@ async fn test_withdraw_success() {
 //     // let zkgm_message = json!({
 //     //     "contract": lst_hub,
 //     //     "msg": bond_message.to_string(),
-//     //     "funds": [{ "denom": "muno", "amount": "3" }],
+//     //     "funds": [{ "denom": "au", "amount": "3" }],
 //     //     "call_action": "call_proxy"
 //     // })
 //     // .to_string();
@@ -1701,7 +1659,7 @@ async fn test_withdraw_success() {
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated.clone(), "muno")
+//         .native_balance(zkgm_proxy_calculated.clone(), "au")
 //         .await
 //         .unwrap();
 
@@ -1730,7 +1688,7 @@ async fn test_withdraw_success() {
 //                         }
 //                         .abi_encode_params()
 //                         .into(),
-//                         quote_token: "muno".as_bytes().into(),
+//                         quote_token: "au".as_bytes().into(),
 //                         quote_amount: "150".parse().unwrap(), //giving 150 but expecting 1000000 so it will fail.
 //                     }
 //                     .abi_encode_params()
@@ -1813,7 +1771,7 @@ async fn test_withdraw_success() {
 //     let proxy_balance = t
 //         .ctx
 //         .src
-//         .native_balance(zkgm_proxy_calculated, "muno")
+//         .native_balance(zkgm_proxy_calculated, "au")
 //         .await
 //         .unwrap();
 

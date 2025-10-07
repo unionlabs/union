@@ -200,7 +200,7 @@ async fn test_send_vault_success() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
@@ -219,7 +219,7 @@ async fn test_send_vault_success() {
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
-            b"muno".to_vec().into(),
+            b"au".to_vec().into(),
             evm::u::U::FungibleCounterparty {
                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
             },
@@ -240,7 +240,7 @@ async fn test_send_vault_success() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -258,7 +258,7 @@ async fn test_send_vault_success() {
     let initial_vault_balance = t
         .ctx
         .src
-        .native_balance(t.union_address.escrow_vault.clone(), "muno")
+        .native_balance(t.union_address.escrow_vault.clone(), "au")
         .await
         .unwrap();
 
@@ -294,7 +294,7 @@ async fn test_send_vault_success() {
     let new_vault_balance = t
         .ctx
         .src
-        .native_balance(t.union_address.escrow_vault.clone(), "muno")
+        .native_balance(t.union_address.escrow_vault.clone(), "au")
         .await
         .unwrap();
 
@@ -338,7 +338,7 @@ async fn test_send_vault_success_with_fee() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: recv_addr.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "15".parse().unwrap(), // So fee will be 5 and will be minted to relayer
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
@@ -357,7 +357,7 @@ async fn test_send_vault_success_with_fee() {
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
-            b"muno".to_vec().into(),
+            b"au".to_vec().into(),
             evm::u::U::FungibleCounterparty {
                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
             },
@@ -378,7 +378,7 @@ async fn test_send_vault_success_with_fee() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "15".into(), // So fee will be 5 and will be minted to relayer
     }];
 
@@ -392,7 +392,7 @@ async fn test_send_vault_success_with_fee() {
     let initial_vault_balance = t
         .ctx
         .src
-        .native_balance(t.union_address.escrow_vault.clone(), "muno")
+        .native_balance(t.union_address.escrow_vault.clone(), "au")
         .await
         .unwrap();
 
@@ -436,7 +436,7 @@ async fn test_send_vault_success_with_fee() {
     let new_vault_balance = t
         .ctx
         .src
-        .native_balance(t.union_address.escrow_vault.clone(), "muno")
+        .native_balance(t.union_address.escrow_vault.clone(), "au")
         .await
         .unwrap();
 
@@ -485,7 +485,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             &t.ctx.dst,
             ETH_ADDRESS_ZKGM.into(),
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
-            "muno".into(),
+            "au".into(),
             &evm_provider,
         )
         .await
@@ -500,10 +500,10 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         operand: TokenOrderV1 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
-            base_token_symbol: "muno".into(),
-            base_token_name: "muno".into(),
+            base_token_symbol: "au".into(),
+            base_token_name: "au".into(),
             base_token_decimals: 6,
             base_token_path: "0".parse().unwrap(),
             quote_token: quote_token_addr.as_ref().to_vec().into(),
@@ -523,7 +523,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -556,11 +556,11 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             receiver: cosmos_address_bytes.clone().into(),
             base_token: quote_token_addr.as_ref().to_vec().into(),
             base_amount: "1".parse().unwrap(),
-            base_token_symbol: "muno".into(),
-            base_token_name: "muno".into(),
+            base_token_symbol: "au".into(),
+            base_token_name: "au".into(),
             base_token_decimals: 6,
             base_token_path: dst_chain_id.try_into().unwrap(),
-            quote_token: "muno".into(),
+            quote_token: "au".into(),
             quote_amount: "1".parse().unwrap(),
         }
         .abi_encode_params()
@@ -821,7 +821,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
             &t.ctx.dst,
             ETH_ADDRESS_ZKGM.into(),
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
-            "muno".into(),
+            "au".into(),
             &evm_provider,
         )
         .await
@@ -838,10 +838,10 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
         operand: TokenOrderV1 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: sending_amount.parse().unwrap(),
-            base_token_symbol: "muno".into(),
-            base_token_name: "muno".into(),
+            base_token_symbol: "au".into(),
+            base_token_name: "au".into(),
             base_token_decimals: 6,
             base_token_path: "0".parse().unwrap(),
             quote_token: cosmos_address_bytes.clone().into(), // it will revert
@@ -872,14 +872,14 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: sending_amount.into(),
     }];
 
     let muno_balance_before_send = t
         .ctx
         .src
-        .get_balance(&cosmos_address.clone().to_string(), "muno")
+        .get_balance(&cosmos_address.clone().to_string(), "au")
         .await;
     assert!(
         muno_balance_before_send.is_ok(),
@@ -918,7 +918,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
     let muno_balance_after_send = t
         .ctx
         .src
-        .get_balance(&cosmos_address.clone().to_string(), "muno")
+        .get_balance(&cosmos_address.clone().to_string(), "au")
         .await;
     assert!(
         muno_balance_after_send.is_ok(),
@@ -1101,8 +1101,8 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         initializer: ZkgmERC20::initializeCall {
             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
             _minter: ETH_ADDRESS_ZKGM.into(),
-            _name: "muno".into(),
-            _symbol: "muno".into(),
+            _name: "au".into(),
+            _symbol: "au".into(),
             _decimals: 6u8,
         }
         .abi_encode()
@@ -1121,7 +1121,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.clone().into(),
@@ -1138,7 +1138,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.into(),
@@ -1159,7 +1159,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -1274,8 +1274,8 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         initializer: ZkgmERC20::initializeCall {
             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
             _minter: ETH_ADDRESS_ZKGM.into(),
-            _name: "muno".into(),
-            _symbol: "muno".into(),
+            _name: "au".into(),
+            _symbol: "au".into(),
             _decimals: 6u8,
         }
         .abi_encode()
@@ -1312,7 +1312,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
             &t.ctx.dst,
             ETH_ADDRESS_ZKGM.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
-            "muno".into(),
+            "au".into(),
             img,
             &evm_provider,
         )
@@ -1327,7 +1327,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_INITIALIZE,
             metadata: img_metadata.clone().into(),
@@ -1349,7 +1349,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -1409,7 +1409,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "munooo".as_bytes().into(), // Which is wrong, so it will revert ErrInvalidUnescrow
+            base_token: "au".as_bytes().into(), // Which is wrong, so it will revert ErrInvalidUnescrow
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_UNESCROW,
             metadata: img_metadata.into(),
@@ -1474,8 +1474,8 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
         initializer: ZkgmERC20::initializeCall {
             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
             _minter: ETH_ADDRESS_ZKGM.into(),
-            _name: "muno".into(),
-            _symbol: "muno".into(),
+            _name: "au".into(),
+            _symbol: "au".into(),
             _decimals: 6u8,
         }
         .abi_encode()
@@ -1492,7 +1492,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
             &t.ctx.dst,
             ETH_ADDRESS_ZKGM.into(),
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
-            "muno".into(),
+            "au".into(),
             &evm_provider,
         )
         .await
@@ -1504,7 +1504,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_ESCROW, // Which is wrong, so it will revert CANNOT_DEPLOY
             metadata: img_metadata.clone().into(),
@@ -1525,7 +1525,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -1772,7 +1772,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
@@ -1789,7 +1789,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
@@ -1808,7 +1808,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
-            b"muno".to_vec().into(),
+            b"au".to_vec().into(),
             evm::u::U::FungibleCounterparty {
                 beneficiary: empty_beneficiary, // Sending it empty to make this
                                                 // test revert due to U_CounterpartyIsNotFungible and get ErrOnlyMaker
@@ -1830,7 +1830,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -1955,7 +1955,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
@@ -1973,7 +1973,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
@@ -1992,7 +1992,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
-            b"muno".to_vec().into(),
+            b"au".to_vec().into(),
             evm::u::U::FungibleCounterparty {
                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
             },
@@ -2013,7 +2013,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 
@@ -2139,7 +2139,7 @@ async fn test_send_vault_unhappy_u_fool() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
@@ -2157,7 +2157,7 @@ async fn test_send_vault_unhappy_u_fool() {
         operand: TokenOrderV2 {
             sender: cosmos_address_bytes.clone().into(),
             receiver: evm_address.to_vec().into(),
-            base_token: "muno".as_bytes().into(),
+            base_token: "au".as_bytes().into(),
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
@@ -2176,7 +2176,7 @@ async fn test_send_vault_unhappy_u_fool() {
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
-            b"muno".to_vec().into(),
+            b"au".to_vec().into(),
             evm::u::U::FungibleCounterparty {
                 beneficiary: vault_on_union.as_bytes().to_vec().into(),
             },
@@ -2197,7 +2197,7 @@ async fn test_send_vault_unhappy_u_fool() {
     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
     let funds = vec![Coin {
-        denom: "muno".into(),
+        denom: "au".into(),
         amount: "10".into(),
     }];
 

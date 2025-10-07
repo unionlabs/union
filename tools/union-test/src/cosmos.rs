@@ -706,7 +706,7 @@ impl Module {
                     delegator_address: signer_address.to_string(),
                     validator_address,
                     amount: Some(Coin {
-                        denom: "muno".to_string(),
+                        denom: "au".to_string(),
                         amount: amount.to_string(),
                     }),
                 })],
@@ -733,7 +733,7 @@ impl Module {
                     delegator_address: signer_address.to_string(),
                     validator_address,
                     amount: Some(Coin {
-                        denom: "muno".to_string(),
+                        denom: "au".to_string(),
                         amount: amount.to_string(),
                     }),
                 })],

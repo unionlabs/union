@@ -17,7 +17,8 @@ use ucs03_zkgm::com::{
 use union_test::{
     cosmos::{self},
     cosmos_helpers::{
-        calculate_cosmos_contract_address, SALT_ESCROW_VAULT, SALT_EU, SALT_LST_HUB, SALT_ZKGM,
+        calculate_cosmos_contract_address, SALT_ESCROW_VAULT, SALT_EU, SALT_LST_HUB,
+        SALT_LST_STAKER, SALT_ZKGM,
     },
     evm, TestContext,
 };
@@ -37,6 +38,7 @@ pub struct UnionAddressBook {
     pub lst_hub: Addr,
     pub eu: Addr,
     pub escrow_vault: Addr,
+    pub lst_staker: Addr,
 }
 
 pub struct LstContext {
@@ -71,7 +73,6 @@ pub async fn run_test_in_queue<
     key: &str,
     test_fn: F,
 ) {
-    println!("[1] LST: BEFORE ANYTHING");
     let ctx = CTX
         .get_or_init(|| async {
             let subscriber = FmtSubscriber::builder()
@@ -121,6 +122,11 @@ pub async fn run_test_in_queue<
                         escrow_vault: calculate_cosmos_contract_address(
                             &cfg.union_deployer_addr,
                             SALT_ESCROW_VAULT,
+                        )
+                        .unwrap(),
+                        lst_staker: calculate_cosmos_contract_address(
+                            &cfg.union_deployer_addr,
+                            SALT_LST_STAKER,
                         )
                         .unwrap(),
                     },
@@ -211,7 +217,7 @@ pub async fn eth_fund_u(
             operand: TokenOrderV2 {
                 sender: cosmos_address.to_string().into_bytes().into(),
                 receiver: receiver.into_bytes().into(),
-                base_token: "muno".as_bytes().into(),
+                base_token: "au".as_bytes().into(),
                 base_amount: amount,
                 kind: TOKEN_ORDER_KIND_SOLVE,
                 metadata: metadata.into(),
@@ -242,7 +248,7 @@ pub async fn eth_fund_u(
                     }
                     .encode_as::<Json>(),
                     vec![ProtoCoin {
-                        denom: "muno".into(),
+                        denom: "au".into(),
                         amount: amount.to_string(),
                     }],
                 ),
@@ -280,7 +286,7 @@ pub mod evm_helper {
                 receiver: receiver.as_bytes().to_vec().into(),
                 base_token: ETH_ADDRESS_U.into_bytes().into(),
                 base_amount: amount,
-                quote_token: b"muno".into(),
+                quote_token: b"au".into(),
                 quote_amount: amount,
                 kind: TOKEN_ORDER_KIND_SOLVE,
                 metadata: SolverMetadata {

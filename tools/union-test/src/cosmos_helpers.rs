@@ -18,6 +18,7 @@ pub const SALT_ESCROW_VAULT: &[u8] =
     &hex!("50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965");
 pub const SALT_LST_HUB: &[u8] = b"apps/lst";
 pub const SALT_EU: &[u8] = b"tokens/eu";
+pub const SALT_LST_STAKER: &[u8] = b"apps/lst-staker";
 
 pub fn calculate_cosmos_contract_address(creator: &str, salt: &[u8]) -> anyhow::Result<Addr> {
     let bech_addr: Bech32 = Bech32::from_str(creator).unwrap();

@@ -932,7 +932,7 @@ impl Module {
                 .registerGovernanceToken(
                     channel_id,
                     zkgm::GovernanceToken {
-                        unwrappedToken: b"muno".into(),
+                        unwrappedToken: b"au".into(),
                         metadataImage: metadata_image.into(),
                     },
                 )
