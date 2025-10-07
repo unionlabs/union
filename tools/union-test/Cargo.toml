@@ -10,7 +10,7 @@ repository   = { workspace = true }
 
 
 [package.metadata.crane]
-test-include = [ "tools/union-test/config.jsonc", "tools/union-test/tests/config.json" ]
+test-include = ["tools/union-test/config.jsonc", "tools/union-test/tests/config.json"]
 
 [dependencies]
 alloy                          = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
