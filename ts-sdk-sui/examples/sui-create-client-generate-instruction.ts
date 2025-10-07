@@ -11,19 +11,10 @@ import { ChannelId } from "@unionlabs/sdk/schema/channel"
 import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
-import * as ZkgmIncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import { Effect, Logger } from "effect"
-import {
-  PublicClient,
-  readCoinBalances,
-  readCoinMetadata,
-  sendInstruction,
-  WalletClient,
-  writeContract,
-} from "../src/Sui.js"
+import { PublicClient, WalletClient } from "../src/Sui.js"
 import { layerWithoutWallet } from "../src/SuiZkgmClient.js"
 
-import { Transaction } from "@mysten/sui/transactions"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"

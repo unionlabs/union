@@ -36,7 +36,6 @@ const program = Effect.gen(function*() {
   )
   yield* Effect.log("SUI balances", balances)
 
-  const wallet = yield* WalletClient
   const amountMist = 10_000_000n // 0.01 SUI
 
   const tx = new Transaction()

@@ -109,8 +109,12 @@ let manualAddress = $state("")
 let showClearConfirm = $state(false)
 let bookmarkOnAdd = $state(false)
 
-let recentAddresses: Record<string, Array<`0x${string}` | `${string}1${string}`>> = $state({})
-let bookmarkedAddresses: Record<string, Array<`0x${string}` | `${string}1${string}`>> = $state({})
+let recentAddresses: Record<string, Array<(string & {}) | `0x${string}` | `${string}1${string}`>> =
+  $state({})
+let bookmarkedAddresses: Record<
+  string,
+  Array<(string & {}) | `0x${string}` | `${string}1${string}`>
+> = $state({})
 
 // Create crossfade transition
 const [send, receive] = crossfade({
