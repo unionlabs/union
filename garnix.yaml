@@ -15,6 +15,7 @@ builds:
       - 'checks.aarch64-linux.nil'
       - 'checks.aarch64-linux.ssz-tests-up-to-date'
       - 'checks.*.all-crates-buildable-individually'
+      - 'checks.*.all-works'
       - 'checks.*.devnet-eth-runs'
       - 'checks.*.ensure-blocks'
       - 'checks.*.epoch-completes'
@@ -72,6 +73,7 @@ builds:
       - 'nixosConfigurations.*'
     exclude:
       - 'checks.*.all-crates-buildable-individually'
+      - 'checks.*.all-works'
       - 'checks.*.devnet-eth-runs'
       - 'checks.*.ensure-blocks'
       - 'checks.*.epoch-completes'
