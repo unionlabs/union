@@ -5,6 +5,7 @@
     { "path": "sentinel2/tsconfig.build.json" },
     { "path": "ts-sdk-cosmos/tsconfig.build.json" },
     { "path": "ts-sdk-evm/tsconfig.build.json" },
+    { "path": "ts-sdk-sui/tsconfig.build.json" },
     { "path": "ts-sdk/tsconfig.build.json" }
   ]
 }

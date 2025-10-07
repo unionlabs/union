@@ -283,10 +283,7 @@ export const readCoinMetadata = (tokenAddress: Address) =>
         const result = await client.getCoinMetadata({ coinType: tokenAddress })
         return result
       },
-      catch: err =>
-        new Error({
-          cause: extractErrorDetails(err as ReadCoinError),
-        }),
+      catch: cause => new ReadCoinError({ cause }),
     })
     return metadata
   })

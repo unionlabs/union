@@ -14,6 +14,7 @@ import { Match, ParseResult, pipe, Predicate } from "effect"
 import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
 import * as Inspectable from "effect/Inspectable"
+import * as Option from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import * as Sui from "../Sui.js"
@@ -30,7 +31,10 @@ export const fromWallet = (
 
       const encodeInstruction: (
         u: ZkgmInstruction.ZkgmInstruction,
-      ) => Effect.Effect<Ucs03.Ucs03, ParseResult.ParseError | Sui.ReadContractError> = pipe(
+      ) => Effect.Effect<
+        Ucs03.Ucs03,
+        ParseResult.ParseError | Sui.ReadContractError | Sui.ReadCoinError
+      > = pipe(
         Match.type<ZkgmInstruction.ZkgmInstruction>(),
         Match.tagsExhaustive({
           Batch: (batch) =>
@@ -242,6 +246,7 @@ export class ClientResponseImpl extends IncomingMessageImpl<ClientError.Response
   implements ClientResponse.ZkgmClientResponse
 {
   readonly [ClientResponse.TypeId]: ClientResponse.TypeId
+  readonly safeHash = Option.none()
 
   constructor(
     readonly request: ClientRequest.ZkgmClientRequest,

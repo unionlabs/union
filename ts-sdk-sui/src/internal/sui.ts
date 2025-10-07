@@ -2,7 +2,6 @@ import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Effect, Layer, pipe } from "effect"
-import * as V from "viem"
 import * as Sui from "../Sui.js"
 
 /** @internal */
