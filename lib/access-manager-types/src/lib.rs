@@ -199,6 +199,8 @@ impl<Context> bincode::Decode<Context> for Box<Selector> {
 }
 
 impl Selector {
+    pub const INTERNAL_PREFIX: &str = "$$";
+
     pub fn new(selector: &str) -> &Self {
         unsafe { &*(ptr::from_ref::<str>(selector) as *const Self) }
     }
@@ -504,6 +506,10 @@ impl Selector {
         }
 
         t.serialize(ExtractSelector(None)).unwrap()
+    }
+
+    pub fn is_internal(&self) -> bool {
+        self.0.starts_with(Self::INTERNAL_PREFIX)
     }
 }
 

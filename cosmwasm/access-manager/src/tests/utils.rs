@@ -14,9 +14,10 @@ use cosmwasm_std::{
     Addr, Deps, Env, OwnedDeps, Response,
 };
 use depolama::StorageExt;
+use frissitheto::UpgradeMsg;
 use serde::de::DeserializeOwned;
 
-use crate::{init, query, state::RoleMembers};
+use crate::{migrate, query, state::RoleMembers};
 
 pub static ADMIN: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("admin"));
 
@@ -30,12 +31,12 @@ pub fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
     let mut deps = mock_dependencies();
     let env = mock_env();
 
-    let res = init(
+    let res = migrate(
         deps.as_mut(),
-        &env,
-        &InitMsg {
+        env.clone(),
+        UpgradeMsg::Init(InitMsg {
             initial_admin: ADMIN.clone(),
-        },
+        }),
     )
     .unwrap();
 

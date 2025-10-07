@@ -344,7 +344,7 @@ pub(crate) fn set_target_function_role<'a>(
     only_authorized(ctx)?;
 
     for selector in selectors {
-        _set_target_function_role(ctx, target, selector, role_id);
+        _set_target_function_role(ctx, target, selector, role_id)?;
     }
 
     Ok(())
@@ -358,14 +358,23 @@ fn _set_target_function_role(
     target: &Addr,
     selector: &Selector,
     role_id: RoleId,
-) {
+) -> Result<(), ContractError> {
+    if selector.is_internal() {
+        return Err(ContractError::AccessManager(
+            AccessManagerError::InternalSelector(selector.to_owned()),
+        ));
+    }
+
     ctx.storage()
         .write::<TargetAllowedRoles>(&(target.clone(), selector.to_owned()), &role_id);
+
     ctx.emit(TargetFunctionRoleUpdated {
         target,
         selector,
         role_id,
     });
+
+    Ok(())
 }
 
 /// See [`ExecuteMsg::SetTargetAdminDelay`].
@@ -986,7 +995,12 @@ pub(crate) fn can_call(
     target: &Addr,
     selector: &Selector,
 ) -> Result<CanCall, ContractError> {
-    if is_target_closed(ctx, target)? {
+    if selector.is_internal() {
+        Ok(CanCall {
+            allowed: true,
+            delay: 0,
+        })
+    } else if is_target_closed(ctx, target)? {
         Ok(CanCall {
             allowed: false,
             delay: 0,
@@ -1046,6 +1060,12 @@ pub(crate) fn get_target_function_role(
     target: &Addr,
     selector: &Selector,
 ) -> Result<RoleId, ContractError> {
+    if selector.is_internal() {
+        return Err(ContractError::AccessManager(
+            AccessManagerError::InternalSelector(selector.to_owned()),
+        ));
+    }
+
     Ok(ctx
         .storage()
         .maybe_read::<TargetAllowedRoles>(&(target.clone(), selector.to_owned()))?

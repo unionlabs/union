@@ -49,4 +49,7 @@ pub enum AccessManagerError {
         target: Addr,
         selector: Box<Selector>,
     },
+
+    #[error("cannot set permissions for internal selector {0}")]
+    InternalSelector(Box<Selector>),
 }
