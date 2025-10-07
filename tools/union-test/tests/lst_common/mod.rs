@@ -159,11 +159,11 @@ pub async fn eth_set_fungible_counterparty(
 ) -> anyhow::Result<()> {
     info!("registering fungible counterparty");
 
-    let (_, priviledged_account) = module.get_provider_privileged().await;
+    let (_, privileged_account) = module.get_provider_privileged().await;
     module
         .u_register_fungible_counterpart(
             ETH_ADDRESS_U,
-            priviledged_account.clone(),
+            privileged_account.clone(),
             alloy::primitives::U256::ZERO,
             channel_id,
             base_token.to_vec().into(),
