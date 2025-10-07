@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": ["examples"],
+  "references": [{ "path": "tsconfig.src.json" }],
+  "compilerOptions": {
+    "tsBuildInfoFile": ".tsbuildinfo/examples.tsbuildinfo",
+    "noEmit": true,
+    "types": ["node"],
+    "rootDir": "examples"
+  }
+}

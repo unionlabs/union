@@ -13,7 +13,7 @@ import { fromBytes, fromHex, isHex, toHex } from "viem"
 
 const CHKSUM_LEN = 4
 
-type RpcType = "evm" | "cosmos" | "aptos"
+type RpcType = "evm" | "cosmos" | "aptos" | "sui"
 
 /**
  * @category errors

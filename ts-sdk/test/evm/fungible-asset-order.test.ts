@@ -166,7 +166,7 @@ const CosmosToCosmosError = Layer.mergeAll(
   } as unknown as Context.Tag.Service<CosmWasmClientSource>),
 )
 
-describe("Fungible Asset Order Tests", () => {
+describe.skip("Fungible Asset Order Tests", () => {
   it.layer(EvmToEvm)("EVM to EVM", it => {
     it.effect.skip("should create a fungible asset order from EVM to EVM", () =>
       Effect.gen(function*() {

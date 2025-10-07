@@ -34,16 +34,14 @@ export const walletClientLayer = <
 ): Layer.Layer<Id, Sui.CreateWalletClientError> =>
   Layer.effect(
     tag,
-    pipe(
-      Effect.try({
-        try: () => ({
-          client: new SuiClient(options),
-          signer,
-        }),
-        catch: (err) =>
-          new Sui.CreateWalletClientError({
-            cause: extractErrorDetails(err as Sui.CreateWalletClientErrorType),
-          }),
+    Effect.try({
+      try: () => ({
+        client: new SuiClient(options),
+        signer,
       }),
-    ),
+      catch: (err) =>
+        new Sui.CreateWalletClientError({
+          cause: extractErrorDetails(err as Sui.CreateWalletClientErrorType),
+        }),
+    }),
   )

@@ -1122,6 +1122,68 @@ importers:
         version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.5.1)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(tsx@4.20.3)(yaml@2.8.0)
     publishDirectory: dist
 
+  ts-sdk-sui:
+    dependencies:
+      '@mysten/sui':
+        specifier: ^1.38.0
+        version: 1.39.0(typescript@5.8.3)
+      '@scure/base':
+        specifier: 1.2.4
+        version: 1.2.4
+      crc:
+        specifier: ^4.3.2
+        version: 4.3.2(buffer@6.0.3)
+    devDependencies:
+      '@babel/cli':
+        specifier: ^7.27.2
+        version: 7.27.2(@babel/core@7.27.4)
+      '@babel/core':
+        specifier: ^7.27.1
+        version: 7.27.4
+      '@babel/plugin-transform-export-namespace-from':
+        specifier: ^7.27.1
+        version: 7.27.1(@babel/core@7.27.4)
+      '@babel/plugin-transform-modules-commonjs':
+        specifier: ^7.27.1
+        version: 7.27.1(@babel/core@7.27.4)
+      '@cosmjs/math':
+        specifier: 0.33.1
+        version: 0.33.1
+      '@effect/build-utils':
+        specifier: ^0.8.3
+        version: 0.8.3
+      '@effect/platform':
+        specifier: 0.84.6
+        version: 0.84.6(effect@3.16.3)
+      '@safe-global/safe-apps-sdk':
+        specifier: ~9.1.0
+        version: 9.1.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.32)
+      '@types/node':
+        specifier: ^22.13.1
+        version: 22.13.14
+      '@unionlabs/sdk':
+        specifier: workspace:^
+        version: link:../ts-sdk
+      babel-plugin-annotate-pure-calls:
+        specifier: ^0.5.0
+        version: 0.5.0(@babel/core@7.27.4)
+      dpdm:
+        specifier: ^3.14.0
+        version: 3.14.0
+      effect:
+        specifier: 3.16.3
+        version: 3.16.3
+      madge:
+        specifier: ^8.0.0
+        version: 8.0.0(typescript@5.8.3)
+      viem:
+        specifier: 2.33.3
+        version: 2.33.3(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.32)
+      vitest:
+        specifier: ^3.0.5
+        version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.5.1)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(tsx@4.20.3)(yaml@2.8.0)
+    publishDirectory: dist
+
   typescript-sdk:
     dependencies:
       '@aptos-labs/ts-sdk':
@@ -2514,6 +2576,20 @@ packages:
       '@gql.tada/vue-support':
         optional: true
 
+  '@gql.tada/cli-utils@1.7.1':
+    resolution: {integrity: sha512-wg5ysZNQxtNQm67T3laVWmZzLpGb7QfyYWZdaUD2r1OjDj5Bgftq7eQlplmH+hsdffjuUyhJw/b5XAjeE2mJtg==}
+    peerDependencies:
+      '@0no-co/graphqlsp': ^1.12.13
+      '@gql.tada/svelte-support': 1.0.1
+      '@gql.tada/vue-support': 1.0.1
+      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+      typescript: ^5.0.0
+    peerDependenciesMeta:
+      '@gql.tada/svelte-support':
+        optional: true
+      '@gql.tada/vue-support':
+        optional: true
+
   '@gql.tada/internal@1.0.8':
     resolution: {integrity: sha512-XYdxJhtHC5WtZfdDqtKjcQ4d7R1s0d1rnlSs3OcBEUbYiPoJJfZU7tWsVXuv047Z6msvmr4ompJ7eLSK5Km57g==}
     peerDependencies:
@@ -2982,12 +3058,22 @@ packages:
   '@mysten/bcs@1.6.1':
     resolution: {integrity: sha512-pywsl2+jxbib5CbteAjMpmJpnj1pcUco2ff+lXCK3hfppPbkyWEMbZDQn1jNngV6ADQ3IFIvPs0FaS7fKWPOLA==}
 
+  '@mysten/bcs@1.8.0':
+    resolution: {integrity: sha512-bDoLN1nN+XPONsvpNyNyqYHndM3PKWS419GLeRnbLoWyNm4bnyD1X4luEpJLLDq400hBuXiCan4RWjofvyTUIQ==}
+
   '@mysten/sui@1.30.1':
     resolution: {integrity: sha512-WnyDpc5Fw6cvkJwXXmPWV80LA5YhvUgrKf86Pix0KLBSIc7aqwZi0GTPRWqiCedvayR6C3TkZqEhoDrVMusL7A==}
     engines: {node: '>=18'}
 
+  '@mysten/sui@1.39.0':
+    resolution: {integrity: sha512-tjH4oVAODO9JWPNvIBhAvorrwh7UfX5Lwf1oBjawnpk4sAIyajD8JYJUWXdI8o1H1519/5KEKaMT3ABAwTamQg==}
+    engines: {node: '>=18'}
+
   '@mysten/utils@0.0.0':
     resolution: {integrity: sha512-KRI57Qow3E7TGqczimazwGf7+fwukdOi+6a31igSCzz0kPjAXbyK1a1gXaxeLMF8xEZ07ouW3RnsWt+EaUuHUw==}
+
+  '@mysten/utils@0.2.0':
+    resolution: {integrity: sha512-CM6kJcJHX365cK6aXfFRLBiuyXc5WSBHQ43t94jqlCAIRw8umgNcTb5EnEA9n31wPAQgLDGgbG/rCUISCTJ66w==}
 
   '@n1ru4l/push-pull-async-iterable-iterator@3.2.0':
     resolution: {integrity: sha512-3fkKj25kEjsfObL6IlKPAlHYPq/oYwUkkQ03zsTTiDjD7vg/RxjdiLeCydqtxHZP0JgsXL3D/X5oAkMGzuUp/Q==}
@@ -3088,6 +3174,10 @@ packages:
 
   '@noble/curves@1.9.2':
     resolution: {integrity: sha512-HxngEd2XUcg9xi20JkwlLCtYwfoFw4JGkuZpT+WlsPD4gB/cxkvTD8fSsoAnphGZhFdZYKeQIPCuFlWPm1uE0g==}
+    engines: {node: ^14.21.3 || >=16}
+
+  '@noble/curves@1.9.7':
+    resolution: {integrity: sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==}
     engines: {node: ^14.21.3 || >=16}
 
   '@noble/hashes@1.4.0':
@@ -7034,6 +7124,12 @@ packages:
 
   gql.tada@1.8.10:
     resolution: {integrity: sha512-FrvSxgz838FYVPgZHGOSgbpOjhR+yq44rCzww3oOPJYi0OvBJjAgCiP6LEokZIYND2fUTXzQAyLgcvgw1yNP5A==}
+    hasBin: true
+    peerDependencies:
+      typescript: ^5.0.0
+
+  gql.tada@1.8.13:
+    resolution: {integrity: sha512-fYoorairdPgxtE7Sf1X9/6bSN9Kt2+PN8KLg3hcF8972qFnawwUgs1OLVU8efZMHwL7EBHhhKBhrsGPlOs2lZQ==}
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -13290,6 +13386,13 @@ snapshots:
       graphql: 16.11.0
       typescript: 5.8.3
 
+  '@gql.tada/cli-utils@1.7.1(@0no-co/graphqlsp@1.12.16(graphql@16.11.0)(typescript@5.8.3))(graphql@16.11.0)(typescript@5.8.3)':
+    dependencies:
+      '@0no-co/graphqlsp': 1.12.16(graphql@16.11.0)(typescript@5.8.3)
+      '@gql.tada/internal': 1.0.8(graphql@16.11.0)(typescript@5.8.3)
+      graphql: 16.11.0
+      typescript: 5.8.3
+
   '@gql.tada/internal@1.0.8(graphql@16.10.0)(typescript@5.8.3)':
     dependencies:
       '@0no-co/graphql.web': 1.1.2(graphql@16.10.0)
@@ -13958,6 +14061,11 @@ snapshots:
       '@mysten/utils': 0.0.0
       '@scure/base': 1.2.4
 
+  '@mysten/bcs@1.8.0':
+    dependencies:
+      '@mysten/utils': 0.2.0
+      '@scure/base': 1.2.6
+
   '@mysten/sui@1.30.1(typescript@5.8.3)':
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.11.0)
@@ -13977,9 +14085,32 @@ snapshots:
       - '@gql.tada/vue-support'
       - typescript
 
+  '@mysten/sui@1.39.0(typescript@5.8.3)':
+    dependencies:
+      '@graphql-typed-document-node/core': 3.2.0(graphql@16.11.0)
+      '@mysten/bcs': 1.8.0
+      '@mysten/utils': 0.2.0
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/base': 1.2.6
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      gql.tada: 1.8.13(graphql@16.11.0)(typescript@5.8.3)
+      graphql: 16.11.0
+      poseidon-lite: 0.2.1
+      valibot: 0.36.0
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - typescript
+
   '@mysten/utils@0.0.0':
     dependencies:
       '@scure/base': 1.2.4
+
+  '@mysten/utils@0.2.0':
+    dependencies:
+      '@scure/base': 1.2.6
 
   '@n1ru4l/push-pull-async-iterable-iterator@3.2.0': {}
 
@@ -14058,6 +14189,10 @@ snapshots:
       '@noble/hashes': 1.7.1
 
   '@noble/curves@1.9.2':
+    dependencies:
+      '@noble/hashes': 1.8.0
+
+  '@noble/curves@1.9.7':
     dependencies:
       '@noble/hashes': 1.8.0
 
@@ -20016,6 +20151,18 @@ snapshots:
       '@0no-co/graphql.web': 1.1.2(graphql@16.11.0)
       '@0no-co/graphqlsp': 1.12.16(graphql@16.11.0)(typescript@5.8.3)
       '@gql.tada/cli-utils': 1.6.3(@0no-co/graphqlsp@1.12.16(graphql@16.11.0)(typescript@5.8.3))(graphql@16.11.0)(typescript@5.8.3)
+      '@gql.tada/internal': 1.0.8(graphql@16.11.0)(typescript@5.8.3)
+      typescript: 5.8.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - graphql
+
+  gql.tada@1.8.13(graphql@16.11.0)(typescript@5.8.3):
+    dependencies:
+      '@0no-co/graphql.web': 1.1.2(graphql@16.11.0)
+      '@0no-co/graphqlsp': 1.12.16(graphql@16.11.0)(typescript@5.8.3)
+      '@gql.tada/cli-utils': 1.7.1(@0no-co/graphqlsp@1.12.16(graphql@16.11.0)(typescript@5.8.3))(graphql@16.11.0)(typescript@5.8.3)
       '@gql.tada/internal': 1.0.8(graphql@16.11.0)(typescript@5.8.3)
       typescript: 5.8.3
     transitivePeerDependencies:

@@ -23,7 +23,7 @@ export type UniversalChainId = typeof UniversalChainId.Type
 
 export const ChainDisplayName = S.String.pipe(S.brand("ChainDisplayName"))
 
-export const RpcType = S.Literal("evm", "cosmos", "aptos")
+export const RpcType = S.Literal("evm", "cosmos", "aptos", "sui")
 export type RpcType = typeof RpcType.Type
 
 export class ChainFeatures extends S.Class<ChainFeatures>("ChainFeatures")({
@@ -153,6 +153,8 @@ export class Chain extends S.Class<Chain>("Chain")({
         return Effect.succeed(address.slice(0, 2) + address.slice(2).toUpperCase())
       case "aptos":
         // Aptos uses the canonical format
+        return Effect.succeed(address)
+      case "sui":
         return Effect.succeed(address)
       default:
         return Effect.fail(new NotACosmosChainError({ chain: this }))
