@@ -251,7 +251,6 @@ async fn main() -> Result<()> {
     info!("set INCREMENT role guardian");
     info!("set DECREMENT role guardian");
     info!("set INCREMENT_IN_REPLY role guardian");
-    info!("set DECREMENT_IN_SUB_MSG role guardian");
     info!("grant INCREMENT to bob with an execution delay");
 
     execute(
@@ -272,12 +271,6 @@ async fn main() -> Result<()> {
                 target: Addr::unchecked(managed.to_string()),
                 selectors: vec![Selector::new("increment_in_reply").to_owned()],
                 role_id: INCREMENT_IN_REPLY,
-            },
-            // reentrant call, access is checked by the contract itself
-            &manager::msg::ExecuteMsg::SetTargetFunctionRole {
-                target: Addr::unchecked(managed.to_string()),
-                selectors: vec![Selector::new("decrement_in_sub_msg").to_owned()],
-                role_id: RoleId::PUBLIC_ROLE,
             },
             &manager::msg::ExecuteMsg::SetRoleGuardian {
                 role_id: INCREMENT,

@@ -15,7 +15,7 @@ use unionlabs_primitives::H256;
 
 use crate::{
     error::ContractError,
-    execute, min_setback,
+    execute, min_setback, query,
     tests::utils::{assert_query_result, setup, ACCOUNT_1, ACCOUNT_2, ADMIN, TARGET_1, TARGET_2},
 };
 
@@ -1501,5 +1501,56 @@ fn schedule_reentrant_works() {
             target: &env.contract.address,
             data: r#"{"grant_role":{"role_id":"10","account":"account-2","execution_delay":0}}"#,
         }),
+    );
+}
+
+#[test]
+fn target_role_internal_selector_fails() {
+    let (mut deps, env) = setup();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]).clone(),
+            ExecuteMsg::SetTargetFunctionRole {
+                selectors: vec![Selector::new("$$internal_method").to_owned()],
+                role_id: RoleId::new(1),
+                target: TARGET_1.clone(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::InternalSelector(
+            Selector::new("$$internal_method").to_owned()
+        ))
+    );
+
+    assert_eq!(
+        query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::GetTargetFunctionRole {
+                target: TARGET_1.clone(),
+                selector: Selector::new("$$also_internal").to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::InternalSelector(
+            Selector::new("$$also_internal").to_owned()
+        ))
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("$$internal_yet_again").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall {
+            allowed: true,
+            delay: 0,
+        },
     );
 }

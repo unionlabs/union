@@ -14,6 +14,7 @@ pub enum ExecuteMsg {
         by: u32,
         in_sub_msg: bool,
     },
+    #[serde(rename = "$$decrement_in_sub_msg")]
     DecrementInSubMsg {
         by: u32,
     },
