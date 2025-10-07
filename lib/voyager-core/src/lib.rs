@@ -8,49 +8,49 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, Context as _};
+use anyhow::{Context as _, anyhow};
 use futures::{
+    Future, FutureExt, StreamExt, TryFutureExt, TryStreamExt,
     future::{self, BoxFuture},
     stream::{self, FuturesUnordered},
-    Future, FutureExt, StreamExt, TryFutureExt, TryStreamExt,
 };
 use itertools::Itertools;
 use jsonrpsee::core::middleware::{RpcServiceBuilder, RpcServiceT};
-use opentelemetry::{metrics::Counter, KeyValue};
+use opentelemetry::{KeyValue, metrics::Counter};
 use serde::Serialize;
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
 use tracing::{
-    debug, debug_span, error, info, info_span, instrument, trace, trace_span, warn, Instrument,
+    Instrument, debug, debug_span, error, info, info_span, instrument, trace, trace_span, warn,
 };
 use unionlabs::ErrorReporter;
 use voyager_message::{
+    PluginMessage, VoyagerMessage,
     call::{
         Call, FetchUpdateHeaders, Index, IndexRange, SubmitTx, WaitForClientUpdate, WaitForHeight,
         WaitForHeightRelative, WaitForTimestamp, WaitForTrustedHeight, WaitForTrustedTimestamp,
     },
     callback::{AggregateSubmitTxFromOrderedHeaders, Callback},
     data::{Data, IbcDatagram, OrderedHeaders},
-    PluginMessage, VoyagerMessage,
 };
 use voyager_plugin_protocol::{
-    coordinator_server, worker_child_process, WithId, WorkerClient, INVALID_CONFIG_EXIT_CODE,
+    INVALID_CONFIG_EXIT_CODE, WithId, WorkerClient, coordinator_server, worker_child_process,
 };
 use voyager_primitives::{ClientInfo, IbcSpec, QueryHeight};
 use voyager_rpc::{
-    error_object_to_queue_error, json_rpc_error_to_queue_error, missing_state,
+    ClientModuleClient, PluginClient, VoyagerRpcServer, error_object_to_queue_error,
+    json_rpc_error_to_queue_error, missing_state,
     types::{
         ClientBootstrapModuleInfo, ClientModuleInfo, FinalityModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
-    ClientModuleClient, PluginClient, VoyagerRpcServer,
 };
 use voyager_vm::{
-    defer,
+    BoxDynError, HandlerFactory, ItemId, Op, Queue, QueueError, defer,
     in_memory::InMemoryQueue,
     noop, now,
     pass::{Pass, PassResult},
-    seq, BoxDynError, HandlerFactory, ItemId, Op, Queue, QueueError,
+    seq,
 };
 
 use crate::{
@@ -653,15 +653,14 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
                 if let Some(previous_consensus_type) = context_inner
                     .client_consensus_types
                     .insert(client_type.clone(), consensus_type.clone())
+                    && previous_consensus_type != consensus_type
                 {
-                    if previous_consensus_type != consensus_type {
-                        return Err(anyhow!(
-                            "inconsistency in client consensus types: \
+                    return Err(anyhow!(
+                        "inconsistency in client consensus types: \
                             client type `{client_type}` is registered \
                             as tracking both `{previous_consensus_type}` \
                             and `{consensus_type}`"
-                        ));
-                    }
+                    ));
                 }
 
                 Ok(())
@@ -1094,7 +1093,9 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         Ok(noop())
                     }
                     None => {
-                        debug!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                        debug!(
+                            "consensus state for client {client_id} not found at height {height} on chain {chain_id}"
+                        );
                         Ok(seq([
                             defer(now() + 1),
                             voyager_vm::call(WaitForClientUpdate {
@@ -1364,14 +1365,14 @@ pub mod api {
     use std::net::SocketAddr;
 
     use axum::{
+        Json,
         extract::State,
         http::StatusCode,
         routing::{get, post},
-        Json,
     };
     use futures::{
-        channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
         SinkExt,
+        channel::mpsc::{UnboundedReceiver, UnboundedSender, unbounded},
     };
     use voyager_message::VoyagerMessage;
     use voyager_vm::Op;

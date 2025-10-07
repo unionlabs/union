@@ -236,7 +236,7 @@ impl NodeCodec for RlpNodeCodec<KeccakHasher> {
         let mut stream = RlpStream::new_list(2);
         stream.append_iter(encode_partial_from_iterator_iter(
             partial,
-            number_nibble % 2 > 0,
+            !number_nibble.is_multiple_of(2),
             false,
         ));
         match child_ref {

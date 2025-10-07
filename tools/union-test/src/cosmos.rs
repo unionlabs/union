@@ -374,15 +374,12 @@ impl Module {
                     if let ModuleEvent::UpdateClient {
                         consensus_heights, ..
                     } = evt
-                    {
-                        if let Some(first) = consensus_heights.first() {
-                            if first.height() >= expected_revision_height {
+                        && let Some(first) = consensus_heights.first()
+                            && first.height() >= expected_revision_height {
                                 return Some(helpers::UpdateClient {
                                     height: first.height(),
                                 });
                             }
-                        }
-                    }
                     None
                 },
                 max_wait,

@@ -138,7 +138,7 @@ impl schemars::JsonSchema for U256 {
         "U256".to_owned()
     }
 
-    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+    fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
         use schemars::schema::{
             InstanceType, Metadata, SchemaObject, SingleOrVec, StringValidation,
         };

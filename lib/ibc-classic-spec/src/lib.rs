@@ -541,23 +541,21 @@ pub enum FullEvent {
 impl FullEvent {
     pub fn client_id(&self) -> &ClientId {
         match self {
-            Self::CreateClient(ref event) => &event.client_id,
-            Self::UpdateClient(ref event) => &event.client_id,
-            Self::ConnectionOpenInit(ref event) => &event.client_id,
-            Self::ConnectionOpenTry(ref event) => &event.client_id,
-            Self::ConnectionOpenAck(ref event) => &event.client_id,
-            Self::ConnectionOpenConfirm(ref event) => &event.client_id,
-            Self::ChannelOpenInit(ref event) => &event.connection.client_id,
-            Self::ChannelOpenTry(ref event) => &event.connection.client_id,
-            Self::ChannelOpenAck(ref event) => &event.connection.client_id,
-            Self::ChannelOpenConfirm(ref event) => &event.connection.client_id,
-            Self::SendPacket(ref event) => &event.packet.source_channel.connection.client_id,
-            Self::RecvPacket(ref event) => &event.packet.source_channel.connection.client_id,
-            Self::WriteAcknowledgement(ref event) => {
-                &event.packet.source_channel.connection.client_id
-            }
-            Self::AcknowledgePacket(ref event) => &event.packet.source_channel.connection.client_id,
-            Self::TimeoutPacket(ref event) => &event.packet.source_channel.connection.client_id,
+            Self::CreateClient(event) => &event.client_id,
+            Self::UpdateClient(event) => &event.client_id,
+            Self::ConnectionOpenInit(event) => &event.client_id,
+            Self::ConnectionOpenTry(event) => &event.client_id,
+            Self::ConnectionOpenAck(event) => &event.client_id,
+            Self::ConnectionOpenConfirm(event) => &event.client_id,
+            Self::ChannelOpenInit(event) => &event.connection.client_id,
+            Self::ChannelOpenTry(event) => &event.connection.client_id,
+            Self::ChannelOpenAck(event) => &event.connection.client_id,
+            Self::ChannelOpenConfirm(event) => &event.connection.client_id,
+            Self::SendPacket(event) => &event.packet.source_channel.connection.client_id,
+            Self::RecvPacket(event) => &event.packet.source_channel.connection.client_id,
+            Self::WriteAcknowledgement(event) => &event.packet.source_channel.connection.client_id,
+            Self::AcknowledgePacket(event) => &event.packet.source_channel.connection.client_id,
+            Self::TimeoutPacket(event) => &event.packet.source_channel.connection.client_id,
         }
     }
 
@@ -566,25 +564,23 @@ impl FullEvent {
     /// `CreateClient`.
     pub fn counterparty_client_id(&self) -> Option<&ClientId> {
         match self {
-            Self::ConnectionOpenInit(ref event) => Some(&event.counterparty_client_id),
-            Self::ConnectionOpenTry(ref event) => Some(&event.counterparty_client_id),
-            Self::ConnectionOpenAck(ref event) => Some(&event.counterparty_client_id),
-            Self::ConnectionOpenConfirm(ref event) => Some(&event.counterparty_client_id),
-            Self::ChannelOpenInit(ref event) => Some(&event.connection.counterparty.client_id),
-            Self::ChannelOpenTry(ref event) => Some(&event.connection.counterparty.client_id),
-            Self::ChannelOpenAck(ref event) => Some(&event.connection.counterparty.client_id),
-            Self::ChannelOpenConfirm(ref event) => Some(&event.connection.counterparty.client_id),
-            Self::SendPacket(ref event) => {
-                Some(&event.packet.destination_channel.connection.client_id)
-            }
-            Self::RecvPacket(ref event) => Some(&event.packet.source_channel.connection.client_id),
-            Self::WriteAcknowledgement(ref event) => {
+            Self::ConnectionOpenInit(event) => Some(&event.counterparty_client_id),
+            Self::ConnectionOpenTry(event) => Some(&event.counterparty_client_id),
+            Self::ConnectionOpenAck(event) => Some(&event.counterparty_client_id),
+            Self::ConnectionOpenConfirm(event) => Some(&event.counterparty_client_id),
+            Self::ChannelOpenInit(event) => Some(&event.connection.counterparty.client_id),
+            Self::ChannelOpenTry(event) => Some(&event.connection.counterparty.client_id),
+            Self::ChannelOpenAck(event) => Some(&event.connection.counterparty.client_id),
+            Self::ChannelOpenConfirm(event) => Some(&event.connection.counterparty.client_id),
+            Self::SendPacket(event) => Some(&event.packet.destination_channel.connection.client_id),
+            Self::RecvPacket(event) => Some(&event.packet.source_channel.connection.client_id),
+            Self::WriteAcknowledgement(event) => {
                 Some(&event.packet.source_channel.connection.client_id)
             }
-            Self::AcknowledgePacket(ref event) => {
+            Self::AcknowledgePacket(event) => {
                 Some(&event.packet.destination_channel.connection.client_id)
             }
-            Self::TimeoutPacket(ref event) => {
+            Self::TimeoutPacket(event) => {
                 Some(&event.packet.destination_channel.connection.client_id)
             }
             _ => None,

@@ -80,6 +80,10 @@
         options = [ ];
         includes = [ "*.nix" ];
       };
+      rustfmt.options = [
+        "--edition 2024"
+        "--config skip_children=true"
+      ];
       statix.options = [ "explain" ];
       mdformat.options = [ "--number" ];
       deadnix.options = [ "--no-lambda-pattern-names" ];

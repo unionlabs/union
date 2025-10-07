@@ -1,5 +1,3 @@
-use macros::model;
-
 use crate::{
     call, conc, data, defer, noop, now, promise, seq,
     tests::utils::{BuildPrintAbc, DataA, DataB, DataC, FetchA, FetchB, PrintAbc, SimpleMessage},
@@ -16,13 +14,6 @@ impl QueueMessage for UnitMessage {
     type Call = ();
     type Callback = ();
 }
-
-#[model]
-pub struct SimpleData {}
-#[model]
-pub struct SimpleCall {}
-#[model]
-pub struct SimpleCallback {}
 
 #[test]
 fn flatten() {

@@ -963,15 +963,13 @@ where
             packet_hash
         );
 
-        let packet_timeout = match source_chain
+        match source_chain
             .wait_for_packet_timeout(packet_hash, timeout)
             .await
         {
             Ok(evt) => Ok(evt),
             Err(e) => anyhow::bail!("wait_for_packet_timeout failed: {:?}", e),
-        };
-
-        packet_timeout
+        }
     }
 
     pub async fn send_and_get_height<Src: ChainEndpoint, Dst: ChainEndpoint>(

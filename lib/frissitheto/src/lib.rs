@@ -69,14 +69,14 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
                     let (res, new_version) =
                         migrate_f(deps.branch(), migrate, current_state_version)?;
 
-                    if let Some(new_version) = new_version {
-                        if new_version <= current_state_version {
-                            return Err(UpgradeError::StateVersionMustIncreaseIfModified {
-                                current: current_state_version,
-                                new: new_version,
-                            }
-                            .into());
+                    if let Some(new_version) = new_version
+                        && new_version <= current_state_version
+                    {
+                        return Err(UpgradeError::StateVersionMustIncreaseIfModified {
+                            current: current_state_version,
+                            new: new_version,
                         }
+                        .into());
                     }
 
                     deps.storage.set(
@@ -115,7 +115,9 @@ pub enum UpgradeError {
     NotInitiated,
     #[error("unknown state version {0}")]
     UnknownStateVersion(NonZeroU32),
-    #[error("the state version must increase if it is modified, attempted to migrate from {current} to {new}")]
+    #[error(
+        "the state version must increase if it is modified, attempted to migrate from {current} to {new}"
+    )]
     StateVersionMustIncreaseIfModified {
         current: NonZeroU32,
         new: NonZeroU32,
@@ -156,7 +158,7 @@ pub enum InitStateVersionError {
 mod tests {
     use std::collections::BTreeMap;
 
-    use cosmwasm_std::{testing::mock_dependencies, Empty, MemoryStorage, Storage};
+    use cosmwasm_std::{Empty, MemoryStorage, Storage, testing::mock_dependencies};
 
     use super::*;
 

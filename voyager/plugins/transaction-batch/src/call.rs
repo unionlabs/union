@@ -1,3 +1,4 @@
+use core::slice;
 use std::cmp::Ordering;
 
 use enumorph::Enumorph;
@@ -597,7 +598,9 @@ impl MakeMsg<IbcUnion> {
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
-                        ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone()]),
+                        ibc_union_spec::path::BatchPacketsPath::from_packets(slice::from_ref(
+                            &packet,
+                        )),
                     )
                     .await?
                     .into_result()?;
@@ -688,7 +691,9 @@ impl MakeMsg<IbcUnion> {
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
-                        ibc_union_spec::path::BatchReceiptsPath::from_packets(&[packet.clone()]),
+                        ibc_union_spec::path::BatchReceiptsPath::from_packets(slice::from_ref(
+                            &packet,
+                        )),
                     )
                     .await?
                     .into_result()?;

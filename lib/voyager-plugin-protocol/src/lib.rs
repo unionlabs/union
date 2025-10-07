@@ -62,10 +62,9 @@ pub const STARTUP_ERROR_EXIT_CODE: u8 = 14;
 /// Run the coordinator server.
 ///
 /// This will listen to messages on [`coordinator_socket_path`]`(name)`.
-pub async fn coordinator_server(
-    name: &str,
-    server: impl VoyagerRpcServer,
-    layer: impl Layer<
+pub async fn coordinator_server<
+    V: VoyagerRpcServer,
+    L: Layer<
             RpcService,
             Service: Clone
                          + Send
@@ -76,7 +75,11 @@ pub async fn coordinator_server(
         + Send
         + Sync
         + 'static,
-) -> anyhow::Result<impl Future<Output = ()>> {
+>(
+    name: &str,
+    server: V,
+    layer: L,
+) -> anyhow::Result<impl Future<Output = ()> + use<V, L>> {
     let coordinator_socket = coordinator_socket_path(name);
 
     let rpc_server = reth_ipc::server::Builder::default()

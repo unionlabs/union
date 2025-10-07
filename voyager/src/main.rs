@@ -22,7 +22,7 @@ use pg_queue::{
     default_retryable_error_expo_backoff_multiplier, PgQueueConfig, Tables,
 };
 use reqwest::Url;
-use schemars::gen::{SchemaGenerator, SchemaSettings};
+use schemars::r#gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
 use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
@@ -87,7 +87,7 @@ fn main() -> ExitCode {
             let errs = iter::successors(err.source(), |e| (*e).source())
                 .enumerate()
                 .fold(format!("0: {err}\n"), |mut acc, (i, e)| {
-                    writeln!(acc, "{}: {e}", i + 1).unwrap();
+                    writeln!(acc, "{}: {e}", i + 1).expect("???");
                     acc
                 });
 
@@ -296,7 +296,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                         return Err(anyhow!(
                             "no database set in config, queue commands \
                             require the `pg-queue` database backend"
-                        ))
+                        ));
                     }
                 })
             };

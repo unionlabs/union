@@ -284,7 +284,7 @@ impl Cmd {
                             ));
                         }
 
-                        if local_attempts % 20000 == 0 {
+                        if local_attempts.is_multiple_of(20000) {
                             total_attempts.fetch_add(20000, Ordering::Relaxed);
                             local_attempts = 0;
                         }
@@ -313,12 +313,11 @@ impl Cmd {
 
         let mut result = None;
         for handle in handles {
-            if let Ok(thread_result) = handle.join() {
-                if thread_result.is_some() {
+            if let Ok(thread_result) = handle.join()
+                && thread_result.is_some() {
                     result = thread_result;
                     break;
                 }
-            }
         }
 
         status_handle.join().ok();

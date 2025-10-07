@@ -9,7 +9,7 @@ macro_rules! export_wasm_client_type {
     ($type:ident) => {
         const _: $crate::WasmClientType = $crate::WasmClientType::$type;
         $crate::paste! {
-            #[no_mangle]
+            #[unsafe(no_mangle)]
             #[used]
             #[allow(non_upper_case_globals)]
             static [ <WASM_CLIENT_TYPE_ $type> ]: u8 = 0;
@@ -20,7 +20,7 @@ macro_rules! export_wasm_client_type {
 /// This type is used to discriminate 08-wasm light clients.
 ///
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
-/// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
+/// Light clients supported by voyager must export a `#[unsafe(no_mangle)] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WasmClientType {

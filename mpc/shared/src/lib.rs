@@ -8,7 +8,7 @@ use std::ffi::{c_char, c_int};
 pub const CONTRIBUTION_SIZE: usize = 306032532;
 
 #[link(name = "galois")]
-extern "C" {
+unsafe extern "C" {
     fn Phase2Contribute(
         phase2_payload_raw: *const c_char,
         phase2_contrib_raw: *mut c_char,
@@ -36,7 +36,9 @@ pub enum Phase2VerificationError {
     FailedToConvertPayloadSize,
     #[error("1 BTC = 1 BTC, what are you trying to achieve?")]
     InconsistentPayloadSize,
-    #[error("Cheating is great, but not allowed. You may lose your slot if the coordinator chose to :'(.")]
+    #[error(
+        "Cheating is great, but not allowed. You may lose your slot if the coordinator chose to :'(."
+    )]
     Phase2VerificationFailed,
 }
 

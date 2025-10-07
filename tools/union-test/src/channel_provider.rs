@@ -187,20 +187,20 @@ impl ChannelPool {
     ) {
         let mut inner = self.inner.lock().await;
         let key = (src_chain.clone(), dst_chain.clone());
-        if let Some(vec) = inner.borrowed.get_mut(&key) {
-            if let Some(i) = vec.iter().position(|x| *x == pair) {
-                vec.swap_remove(i);
-            }
+        if let Some(vec) = inner.borrowed.get_mut(&key)
+            && let Some(i) = vec.iter().position(|x| *x == pair)
+        {
+            vec.swap_remove(i);
         }
         let rev = ChannelPair {
             src: pair.dest,
             dest: pair.src,
         };
         let rev_key = (key.1.clone(), key.0.clone());
-        if let Some(vec) = inner.borrowed.get_mut(&rev_key) {
-            if let Some(i) = vec.iter().position(|x| *x == rev) {
-                vec.swap_remove(i);
-            }
+        if let Some(vec) = inner.borrowed.get_mut(&rev_key)
+            && let Some(i) = vec.iter().position(|x| *x == rev)
+        {
+            vec.swap_remove(i);
         }
         inner.available.entry(key.clone()).or_default().push(pair);
         inner.available.entry(rev_key).or_default().push(rev);

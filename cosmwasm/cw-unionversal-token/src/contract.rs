@@ -1,3 +1,5 @@
+use std::slice;
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
@@ -24,7 +26,9 @@ use crate::{
 
 #[entry_point]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[cw_serde]
@@ -146,7 +150,7 @@ pub fn execute(
             if intent {
                 let whitelisted = deps
                     .storage
-                    .read::<IntentWhitelist>(&commit_packets(&[packet.clone()]))
+                    .read::<IntentWhitelist>(&commit_packets(slice::from_ref(&packet)))
                     .unwrap_or(false);
                 if !whitelisted {
                     return Err(Error::IntentMustBeWhitelisted);

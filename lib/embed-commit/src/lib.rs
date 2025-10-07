@@ -32,9 +32,9 @@ impl core::fmt::Display for Rev {
 
 #[cfg_attr(
     not(target_arch = "wasm32"),
-    no_mangle,
+    unsafe(no_mangle),
     used,
-    link_section = ".note.embed_commit.GIT_REV"
+    unsafe(link_section = ".note.embed_commit.GIT_REV")
 )]
 pub static GIT_REV: Rev = match option_env!("GIT_REV") {
     None => Rev::Unknown,
@@ -51,7 +51,7 @@ pub static GIT_REV: Rev = match option_env!("GIT_REV") {
 };
 
 #[cfg(target_arch = "wasm32")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn commit_hash() -> Rev {
     unsafe { core::ptr::read_volatile(&GIT_REV as *const _) }
 }

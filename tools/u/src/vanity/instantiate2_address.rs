@@ -148,12 +148,11 @@ impl Cmd {
 
         let mut result = None;
         for handle in handles {
-            if let Ok(thread_result) = handle.join() {
-                if thread_result.is_some() {
+            if let Ok(thread_result) = handle.join()
+                && thread_result.is_some() {
                     result = thread_result;
                     break;
                 }
-            }
         }
 
         status_handle.join().ok();

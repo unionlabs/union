@@ -553,7 +553,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    pub fn plugin_client(&self, plugin: impl Into<String>) -> VoyagerPluginClient<C> {
+    pub fn plugin_client(&self, plugin: impl Into<String>) -> VoyagerPluginClient<'_, C> {
         VoyagerPluginClient {
             inner: self,
             plugin: plugin.into(),

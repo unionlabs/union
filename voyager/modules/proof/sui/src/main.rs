@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::ErrorObject,
+    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -94,7 +94,7 @@ impl Module {
     }
 }
 
-fn err<T: core::error::Error>(e: T, msg: &str) -> ErrorObject {
+fn err<T: core::error::Error>(e: T, msg: &str) -> ErrorObjectOwned {
     ErrorObject::owned(-1, ErrorReporter(e).with_message(msg), None::<()>)
 }
 
@@ -150,7 +150,9 @@ impl ProofModuleServer<IbcUnion> for Module {
         if height.height() != checkpoint_number {
             return Err(ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
-                format!("the proof height {height} must match the height of the transaction {checkpoint_number} where the object is modified"),
+                format!(
+                    "the proof height {height} must match the height of the transaction {checkpoint_number} where the object is modified"
+                ),
                 None::<()>,
             ));
         }

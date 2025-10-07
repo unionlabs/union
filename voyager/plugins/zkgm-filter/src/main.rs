@@ -1,5 +1,3 @@
-#![feature(let_chains)]
-
 use std::{
     collections::{HashSet, VecDeque},
     time::{SystemTime, UNIX_EPOCH},

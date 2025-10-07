@@ -91,7 +91,11 @@ pub fn check_against_spec(
         });
     }
 
-    if inner_op.suffix.len() % spec.inner_spec.child_size.inner() != 0 {
+    if !inner_op
+        .suffix
+        .len()
+        .is_multiple_of(spec.inner_spec.child_size.inner())
+    {
         return Err(SpecMismatchError::InnerOpSuffixMalformed(
             inner_op.suffix.len(),
         ));

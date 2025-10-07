@@ -1,5 +1,6 @@
 // #![warn(clippy::unwrap_used)]
 
+use core::slice;
 use std::{
     cmp::Ordering,
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
@@ -619,7 +620,9 @@ impl Module {
                                     occupied_entry.insert(EventState::SeenNow);
                                 }
                                 EventState::SeenNow => {
-                                    warn!("found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!");
+                                    warn!(
+                                        "found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!"
+                                    );
                                 }
                             },
                         };
@@ -1606,7 +1609,9 @@ impl Module {
                     .maybe_query_ibc_state(
                         self.chain_id.clone(),
                         QueryHeight::Latest,
-                        ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone()]),
+                        ibc_union_spec::path::BatchPacketsPath::from_packets(slice::from_ref(
+                            &packet,
+                        )),
                     )
                     .await?;
 

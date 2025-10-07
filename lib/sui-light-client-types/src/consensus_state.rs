@@ -32,17 +32,12 @@ pub mod ethabi {
         }
     }
 
-    #[derive(Debug, thiserror::Error)]
-    pub enum TryFromEthAbiError {}
-
-    impl TryFrom<SolConsensusState> for ConsensusState {
-        type Error = TryFromEthAbiError;
-
-        fn try_from(value: SolConsensusState) -> Result<Self, Self::Error> {
-            Ok(Self {
+    impl From<SolConsensusState> for ConsensusState {
+        fn from(value: SolConsensusState) -> Self {
+            Self {
                 timestamp: value.timestamp,
                 content_digest: SuiFixedBytes(value.content_digest.into()),
-            })
+            }
         }
     }
 }

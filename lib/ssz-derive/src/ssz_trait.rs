@@ -326,7 +326,7 @@ fn wrapper(item: &DeriveInput, struct_data: &DataStruct) -> Result<TokenStream, 
             return Err(syn::Error::new(
                 struct_data.fields.span(),
                 "`#[ssz(transparent)]` requires one field",
-            ))
+            ));
         }
     };
 
@@ -408,7 +408,7 @@ fn enum_union(derive_input: &DeriveInput, enum_data: &DataEnum) -> Result<TokenS
             fn tree_hash_root(&self) -> ::ssz::H256 {
                 match self {
                     #(
-                        Self::#variant(ref inner) => {
+                        Self::#variant(inner) => {
                             let root = inner.tree_hash_root();
                             let selector = #union_selectors;
                             ::ssz::tree_hash::mix_in_selector(&root, selector)
@@ -421,7 +421,7 @@ fn enum_union(derive_input: &DeriveInput, enum_data: &DataEnum) -> Result<TokenS
             fn ssz_bytes_len(&self) -> ::core::num::NonZeroUsize {
                 match self {
                     #(
-                        Self::#variant(ref inner) => inner
+                        Self::#variant(inner) => inner
                             .ssz_bytes_len()
                             .checked_add(1)
                             .expect("encoded length must be less than usize::MAX"),
@@ -432,7 +432,7 @@ fn enum_union(derive_input: &DeriveInput, enum_data: &DataEnum) -> Result<TokenS
             fn ssz_append(&self, buf: &mut Vec<u8>) {
                 match self {
                     #(
-                        Self::#variant(ref inner) => {
+                        Self::#variant(inner) => {
                             let union_selector: u8 = #union_selectors;
                             debug_assert!(union_selector <= ::ssz::MAX_UNION_SELECTOR);
                             buf.push(union_selector);

@@ -2,17 +2,17 @@ use std::{collections::HashMap, convert};
 
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro2::{Literal, Span};
-use quote::{format_ident, quote, quote_spanned, ToTokens};
+use quote::{ToTokens, format_ident, quote, quote_spanned};
 use syn::{
+    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
+    Index, Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type,
+    Variant, WhereClause, WherePredicate,
     fold::Fold,
     parenthesized,
     parse::{Parse, ParseStream},
     parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
-    Index, Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type,
-    Variant, WhereClause, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -105,14 +105,13 @@ fn derive_debug(
             .and_then(|meta| {
                 let binding = format_ident!("__binding_{idx}");
 
-                if let Some(meta_fmt) = &meta.fmt {
-                    if container_attrs.fmt.is_some() {
+                if let Some(meta_fmt) = &meta.fmt
+                    && container_attrs.fmt.is_some() {
                         return Err(syn::Error::new(
                             meta_fmt.span(),
                             "container and field `#[debug(...)]` attributes cannot be combined"
                         ))
                     }
-                }
 
                 if let Some(meta_bound) = &meta.bound {
                     return Err(syn::Error::new(
@@ -131,7 +130,7 @@ fn derive_debug(
                             .fold_expr(expr.clone())
                         });
 
-                        quote! {{
+                        quote! {&{
                             // yes, write to a string and then display the string
                             // fight me, it's debug
                             struct DebugAsDisplay<T>(T);
@@ -141,7 +140,7 @@ fn derive_debug(
                                 }
                             }
 
-                            &DebugAsDisplay(format!(#lit, #(#exprs,)*))
+                            DebugAsDisplay(format!(#lit, #(#exprs,)*))
                         }}
                     }
                     Some(DebugMetaFmt::Wrap(path)) => {
@@ -337,7 +336,7 @@ fn parse_debug_meta<'a>(
                         return Err(syn::Error::new(
                             new.span(),
                             "only one `#[debug(bound(...))]` attribute is allowed",
-                        ))
+                        ));
                     }
                 };
 
@@ -348,7 +347,7 @@ fn parse_debug_meta<'a>(
                         return Err(syn::Error::new(
                             new.span(),
                             "only one `#[debug(...)]` formatting attribute is allowed",
-                        ))
+                        ));
                     }
                 };
 
@@ -895,7 +894,7 @@ impl Parse for FromRawAttrs {
                     return Err(syn::Error::new_spanned(
                         meta,
                         "invalid attribute, valid attributes are `raw(...)`, `into`, `from`, `no_static_assert`",
-                    ))
+                    ));
                 }
             }
         }

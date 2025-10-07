@@ -760,11 +760,10 @@ impl<'a> Module<'a> {
                     .unwrap();
 
                 for raw in logs {
-                    if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
-                        if let IbcEvents::PacketSend(ev) = alloy_log.data {
+                    if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner)
+                        && let IbcEvents::PacketSend(ev) = alloy_log.data {
                             return Ok((ev.packet_hash.into(), block_number));
                         }
-                    }
                 }
 
                 Err(ErrorObjectOwned::owned(

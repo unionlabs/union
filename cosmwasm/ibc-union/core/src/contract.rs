@@ -1,3 +1,4 @@
+use core::slice;
 use std::{collections::BTreeSet, num::NonZeroU32};
 
 use alloy_sol_types::SolValue;
@@ -145,7 +146,7 @@ fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2]
         (events::attribute::CHANNEL_ID, channel_id.to_string()),
         (
             events::attribute::PACKET_HASH,
-            commit_packets(&[packet.clone()]).to_string(),
+            commit_packets(slice::from_ref(packet)).to_string(),
         ),
     ]
     .map(Into::into)
@@ -701,7 +702,9 @@ fn migrate_state(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -839,7 +842,7 @@ fn timeout_packet(
         return Err(ContractError::TimeoutProofTimestampNotFound);
     }
 
-    let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
+    let commitment_key = BatchReceiptsPath::from_packets(slice::from_ref(&packet)).key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
     query_light_client::<()>(
@@ -944,7 +947,7 @@ fn acknowledge_packet(
 }
 
 fn mark_packet_as_acknowledged(deps: DepsMut, packet: &Packet) -> Result<(), ContractError> {
-    let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
+    let commitment_key = BatchPacketsPath::from_packets(slice::from_ref(packet)).key();
     let commitment = deps
         .storage
         .maybe_read::<Commitments>(&commitment_key)?
@@ -1828,7 +1831,7 @@ fn process_receive(
             });
         }
 
-        let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
+        let commitment_key = BatchReceiptsPath::from_packets(slice::from_ref(&packet)).key();
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
                 events.push(
@@ -1903,7 +1906,7 @@ fn write_acknowledgement(
         });
     }
 
-    let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
+    let commitment_key = BatchReceiptsPath::from_packets(slice::from_ref(&packet)).key();
 
     // the receipt must present, but ack shouldn't
     match read_commit(deps.as_ref(), &commitment_key) {
@@ -2038,7 +2041,7 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
 }
 
 fn commit_ack(ack: &Bytes) -> H256 {
-    commit_acks(&[ack.clone()])
+    commit_acks(slice::from_ref(ack))
 }
 
 fn commit_acks(acks: &[Bytes]) -> H256 {

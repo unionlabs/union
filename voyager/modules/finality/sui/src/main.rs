@@ -6,24 +6,13 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use sui_sdk::SuiClientBuilder;
 use tracing::{debug, trace};
-use unionlabs::{
-    aptos::{state_proof::StateProof, transaction_proof::TransactionInfoWithProof},
-    ibc::core::client::height::Height,
-    ErrorReporter,
-};
+use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
     rpc::{types::FinalityModuleInfo, FinalityModuleServer},
 };
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct StateProofResponse {
-    tx_index: u64,
-    state_proof: StateProof,
-    tx_proof: TransactionInfoWithProof,
-}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
