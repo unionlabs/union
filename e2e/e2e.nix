@@ -129,6 +129,7 @@
           unionNode
           unionTestnetGenesisNode
           devnetEthNode
+          mkVoyagerNode
           ;
 
         # TODO: This is poorly named, it only starts devnet-union and devnet-eth
@@ -168,19 +169,28 @@
           };
 
         mkE2eTestEthUnion =
+          voyagerConfigFile:
           {
             name,
             testScript,
             nodes ? { },
+            openConnection ? false
           }:
           let
-            voyagerNode = mkVoyagerNode ../tools/union-test/config.jsonc;
+            voyagerNode = mkVoyagerNode voyagerConfigFile;
             voyagerBin = "${self'.packages.voyager}/bin/voyager";
           in
           mkTest {
             inherit name;
 
             testScript = ''
+              openConnection = ${if openConnection then "True" else "False"}
+
+              if openConnection:
+                print("ananabacina")
+              else:
+                print("teyzeneamcana...")
+
               devnetUnion.wait_for_open_port(${toString unionNode.wait_for_open_port})
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
@@ -201,23 +211,17 @@
 
               devnetVoyager.wait_until_succeeds('sleep 10')
 
-              devnetVoyager.succeed(
-                "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"union-devnet-1\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"connection_open_init\",\"@value\":{\"client_id\":1,\"counterparty_client_id\":1}}}]}}}' > /tmp/payload.json"
-              )
+              if openConnection:
+                devnetVoyager.succeed(
+                  "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"union-devnet-1\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"connection_open_init\",\"@value\":{\"client_id\":1,\"counterparty_client_id\":1}}}]}}}' > /tmp/payload.json"
+                )
 
-              devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
+                devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
 
-              # wait until the connection is opened
-              devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"connection\": { \"connection_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
-
-              devnetVoyager.succeed(
-                "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"32382\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"channel_open_init\",\"@value\":{\"counterparty_port_id\":\"0x756e696f6e3172667a33797467366c363077786b357278736b32376a766e32393037637961763034737a386b64653378686d6d66396e706c7871723879303563\",\"port_id\":\"0x05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5\",\"connection_id\":1,\"version\":\"ucs03-zkgm-0\"}}}]}}}' > /tmp/payload.json"
-              )
-
-              devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
-
-              # wait until the channel is opened
-              devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"channel\": { \"channel_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+                # wait until the connection is opened
+                devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"connection\": { \"connection_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+              else:
+                print("Skipping connection...")
 
               ${testScript}
             '';

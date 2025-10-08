@@ -784,7 +784,6 @@ impl Module {
                     max: self.max_gas_price.expect("max gas price is set"),
                     price: gas_price,
                 });
-            } else {
             }
         }
 

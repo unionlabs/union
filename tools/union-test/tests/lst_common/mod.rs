@@ -33,6 +33,7 @@ pub static CTX: OnceCell<(Mutex<Queue>, Arc<LstContext>)> = OnceCell::const_new(
 pub const ETH_ADDRESS_U: H160 = H160::new(hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836"));
 pub const ETH_ADDRESS_ZKGM: H160 = H160::new(hex!("05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5"));
 
+#[allow(unused)]
 pub struct UnionAddressBook {
     pub zkgm: Addr,
     pub lst_hub: Addr,

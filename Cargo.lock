@@ -15389,6 +15389,7 @@ dependencies = [
  "cosmos-sdk-event",
  "cosmwasm-std",
  "cw20",
+ "embed-commit",
  "hex-literal 0.4.1",
  "ibc-solidity",
  "ibc-union-msg",

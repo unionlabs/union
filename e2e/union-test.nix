@@ -3,11 +3,25 @@
   self',
   ...
 }:
+let
+  voyagerConfigFile = ../tools/union-test/config.jsonc;
+  voyagerNode = e2e.mkVoyagerNode voyagerConfigFile;
+  voyagerBin = "${self'.packages.voyager}/bin/voyager";
+in
 {
-  all-works = e2e.mkE2eTestEthUnion {
-    name = "all-works";
+  lst = e2e.mkE2eTestEthUnion voyagerConfigFile {
+    name = "lst";
 
     testScript = ''
+      devnetVoyager.succeed(
+        "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"32382\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"channel_open_init\",\"@value\":{\"counterparty_port_id\":\"0x756e696f6e3172667a33797467366c363077786b357278736b32376a766e32393037637961763034737a386b64653378686d6d66396e706c7871723879303563\",\"port_id\":\"0x05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5\",\"connection_id\":1,\"version\":\"ucs03-zkgm-0\"}}}]}}}' > /tmp/payload.json"
+      )
+
+      devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
+
+      # wait until the channel is opened
+      devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"channel\": { \"channel_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+
       devnetUnion.wait_until_succeeds("${self'.packages.cosmwasm-deployer}/bin/cosmwasm-deployer deploy-contract --rpc-url http://devnetUnion:26657 --private-key 0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f --bytecode ${self'.packages.lst-staker} --init-msg '{ \"local\": { \"admin\": \"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2\" } }' --salt apps/lst-staker --gas feemarket --max-gas 100000000 --gas-multiplier 1.4")
 
       devnetUnion.wait_until_succeeds("${self'.packages.cosmwasm-deployer}/bin/cosmwasm-deployer deploy-contract --rpc-url http://devnetUnion:26657 --private-key 0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f --bytecode ${self'.packages.lst} --init-msg '{ \"native_token_denom\": \"au\", \"minimum_liquid_stake_amount\": \"10\", \"staker_address\": \"union160a75a608j6w80x5ykckvd9cavs2xk8yfjzy2eqhpq0nprxg05qqf067nj\", \"protocol_fee_config\": {\"fee_rate\": \"10000\", \"fee_recipient\": \"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2\" }, \"lst_address\": \"union1nluwd0qfymmdwfczezvgrmvz43n4xwdyfvshxj82sj7smuk9m42stgfwcz\", \"batch_period_seconds\": \"20\", \"monitors\": [], \"admin\": \"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2\", \"unbonding_period_seconds\": \"100\" }' --salt apps/lst --gas feemarket --max-gas 100000000 --gas-multiplier 1.4")
@@ -62,7 +76,5 @@
       devnetUnion.wait_until_succeeds("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>&2")
     '';
 
-    nodes = {
-    };
   };
 }
