@@ -6,9 +6,7 @@ on:
       - 'ts-sdk/**'
       - '.changeset/**'
   workflow_dispatch: {}
-
 permissions: {}
-
 jobs:
   snapshot:
     name: Snapshot
@@ -32,7 +30,7 @@ jobs:
       - name: Make writable snapshot copy
         run: |
           rm -rf ./snapshot-pkg
-          rsync -a --copy-links ./result/dist ./snapshot-pkg/
+          rsync -a --copy-links ./result/ ./snapshot-pkg/
           chmod -R u+w ./snapshot-pkg
       - uses: actions/setup-node@v4
         with: {node-version: 22}
@@ -42,4 +40,4 @@ jobs:
           run_install: false
       - name: Create snapshot
         id: snapshot
-        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./snapshot-pkg/dist
+        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./snapshot-pkg
