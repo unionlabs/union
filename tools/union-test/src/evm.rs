@@ -6,8 +6,8 @@ use alloy::{
     network::{AnyNetwork, EthereumWallet},
     primitives::{Address, Bytes},
     providers::{
-        fillers::RecommendedFillers, DynProvider, PendingTransactionError, Provider,
-        ProviderBuilder,
+        DynProvider, PendingTransactionError, Provider, ProviderBuilder,
+        fillers::RecommendedFillers,
     },
     rpc::types::Filter,
     signers::local::LocalSigner,
@@ -17,13 +17,13 @@ use alloy::{
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_solidity::Ibc::IbcEvents;
-use ibc_union_spec::{datagram::Datagram, ChannelId};
+use ibc_union_spec::{ChannelId, datagram::Datagram};
 use jsonrpsee::{core::RpcResult, types::ErrorObjectOwned};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info_span, warn, Instrument};
+use tracing::{Instrument, debug, error, info_span, warn};
 use unionlabs::{
-    primitives::{FixedBytes, H160, H256, U256},
     ErrorReporter,
+    primitives::{FixedBytes, H160, H256, U256},
 };
 use voyager_sdk::{
     anyhow::{self},
@@ -174,10 +174,10 @@ impl Module {
                         }
                     };
                     for log in logs {
-                        if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
-                            if let Some(event) = filter_fn(ibc_event.data) {
-                                events.push(event);
-                            }
+                        if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner)
+                            && let Some(event) = filter_fn(ibc_event.data)
+                        {
+                            events.push(event);
                         }
                     }
 
@@ -739,9 +739,10 @@ impl Module {
 
                 for raw in logs {
                     if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner)
-                        && let IbcEvents::PacketSend(ev) = alloy_log.data {
-                            return Ok((ev.packet_hash.into(), block_number));
-                        }
+                        && let IbcEvents::PacketSend(ev) = alloy_log.data
+                    {
+                        return Ok((ev.packet_hash.into(), block_number));
+                    }
                 }
 
                 Err(ErrorObjectOwned::owned(
@@ -1187,7 +1188,9 @@ pub enum TxSubmitError {
     EmptyRevert(Vec<Datagram>),
     #[error("gas price is too high: max {max}, price {price}")]
     GasPriceTooHigh { max: u128, price: u128 },
-    #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
+    #[error(
+        "rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)"
+    )]
     RpcError(#[from] ErrorObjectOwned),
     #[error("batch too large")]
     BatchTooLarge,
