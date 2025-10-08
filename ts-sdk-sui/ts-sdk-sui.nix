@@ -16,7 +16,7 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-sui"
           ];
-          hash = "sha256-X+yOSBK99AnS11sXHfQuQjqgjkxrCJms4z+A+Xrh8Ss=";
+          hash = "sha256-8fBgRR9gTZRsImkeRxVkzADjQb3DH7+KSi+MMvNdI00=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
