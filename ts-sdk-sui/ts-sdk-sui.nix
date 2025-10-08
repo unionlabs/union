@@ -25,7 +25,7 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk-sui/build/* $out
+            cp -r ./ts-sdk-sui/dist/* $out
           '';
           checkPhase = ''
             pnpm run --filter=@unionlabs/sdk-sui check

@@ -29,7 +29,7 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk-evm/build/* $out
+            cp -r ./ts-sdk-evm/dist/* $out
           '';
           checkPhase = ''
             pnpm run --filter=@unionlabs/sdk-evm check

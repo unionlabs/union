@@ -28,7 +28,7 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk-cosmos/build/* $out
+            cp -r ./ts-sdk-cosmos/dist/* $out
           '';
           checkPhase = ''
             pnpm run --filter=@unionlabs/sdk-cosmos check

@@ -29,7 +29,7 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk/build/* $out
+            cp -r ./ts-sdk/dist/* $out
           '';
           checkPhase = ''
             pnpm --filter=@unionlabs/sdk check
