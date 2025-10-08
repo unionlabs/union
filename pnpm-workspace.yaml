@@ -58,7 +58,7 @@ catalogs:
     eslint-plugin-svelte: ^3.5.1
     svelte: ^5.33.18
     svelte-check: ^4.2.1
-minimumReleaseAge: 1440
+minimumReleaseAge: 2880
 overrides:
   '@cosmjs/math': 0.33.1
   ansi-regex: <6.2.1
@@ -87,3 +87,5 @@ patchedDependencies:
   '@effect/docgen': patches/@effect__docgen.patch
 strictPeerDependencies: true
 resolvePeersFromWorkspaceRoot: false
+engineStrict: true
+sharedWorkspaceLockfile: true

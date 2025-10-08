@@ -2891,7 +2891,7 @@ packages:
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
   '@jsr/rehype-pretty__transformers@0.13.4':
-    resolution: {integrity: sha512-iGWAx/2I+5YcoZN2yB7YceBUA24ktRPAhyCBqEvkELuAmw7XCYknEqRAIm+0MdBgDv3wPlk3y6gz4IUXBf7I6w==, tarball: 'https://npm.jsr.io/~/11/@jsr/rehype-pretty__transformers/0.13.4.tgz'}
+    resolution: {integrity: sha512-iGWAx/2I+5YcoZN2yB7YceBUA24ktRPAhyCBqEvkELuAmw7XCYknEqRAIm+0MdBgDv3wPlk3y6gz4IUXBf7I6w==, tarball: https://npm.jsr.io/~/11/@jsr/rehype-pretty__transformers/0.13.4.tgz}
 
   '@keplr-wallet/types@0.12.279':
     resolution: {integrity: sha512-MZuSzpFT5Bqr3BAjnWEIcVnvi9rEJtSONteCS7c3CBhMvCMmwJ96X+g+PKfwI4WodZdNXbUJa1+eat+3hgeoaw==}
@@ -10588,19 +10588,19 @@ snapshots:
       css-tree: 2.3.1
       is-potential-custom-element-name: 1.0.1
 
-  ? '@astro-community/astro-embed-baseline-status@0.2.0(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astro-community/astro-embed-baseline-status@0.2.0(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astro-community/astro-embed-utils': 0.1.3
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
 
-  ? '@astro-community/astro-embed-bluesky@0.1.3(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astro-community/astro-embed-bluesky@0.1.3(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@atproto/api': 0.13.35
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       ts-pattern: 5.8.0
 
-  ? '@astro-community/astro-embed-integration@0.8.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astro-community/astro-embed-integration@0.8.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astro-community/astro-embed-bluesky': 0.1.3(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@astro-community/astro-embed-link-preview': 0.2.2
       '@astro-community/astro-embed-twitter': 0.5.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
@@ -10615,8 +10615,8 @@ snapshots:
     dependencies:
       '@astro-community/astro-embed-utils': 0.1.3
 
-  ? '@astro-community/astro-embed-twitter@0.5.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astro-community/astro-embed-twitter@0.5.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astro-community/astro-embed-utils': 0.1.3
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
 
@@ -10624,13 +10624,13 @@ snapshots:
     dependencies:
       linkedom: 0.14.26
 
-  ? '@astro-community/astro-embed-vimeo@0.3.10(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astro-community/astro-embed-vimeo@0.3.10(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astro-community/astro-embed-utils': 0.1.3
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
 
-  ? '@astro-community/astro-embed-youtube@0.5.7(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astro-community/astro-embed-youtube@0.5.7(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       lite-youtube-embed: 0.3.3
 
@@ -10713,8 +10713,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@astrojs/mdx@4.3.6(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astrojs/mdx@4.3.6(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astrojs/markdown-remark': 6.3.7
       '@mdx-js/mdx': 3.1.1
       acorn: 8.15.0
@@ -10736,8 +10736,8 @@ snapshots:
     dependencies:
       prismjs: 1.30.0
 
-  ? '@astrojs/react@4.4.0(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(jiti@2.6.1)(lightningcss@1.30.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(yaml@2.8.1)'
-  : dependencies:
+  '@astrojs/react@4.4.0(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(jiti@2.6.1)(lightningcss@1.30.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(yaml@2.8.1)':
+    dependencies:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
       '@vitejs/plugin-react': 4.7.0(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
@@ -10770,13 +10770,13 @@ snapshots:
       stream-replace-string: 2.0.0
       zod: 3.25.76
 
-  ? '@astrojs/starlight-tailwind@4.0.1(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))(tailwindcss@4.1.14)'
-  : dependencies:
+  '@astrojs/starlight-tailwind@4.0.1(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))(tailwindcss@4.1.14)':
+    dependencies:
       '@astrojs/starlight': 0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       tailwindcss: 4.1.14
 
-  ? '@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astrojs/markdown-remark': 6.3.7
       '@astrojs/mdx': 4.3.6(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@astrojs/sitemap': 3.6.0
@@ -10808,8 +10808,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@astrojs/svelte@7.2.0(@types/node@22.18.8)(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(jiti@2.6.1)(lightningcss@1.30.1)(svelte@5.39.9)(typescript@5.9.3)(yaml@2.8.1)'
-  : dependencies:
+  '@astrojs/svelte@7.2.0(@types/node@22.18.8)(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(jiti@2.6.1)(lightningcss@1.30.1)(svelte@5.39.9)(typescript@5.9.3)(yaml@2.8.1)':
+    dependencies:
       '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       svelte: 5.39.9
@@ -10830,8 +10830,8 @@ snapshots:
       - tsx
       - yaml
 
-  ? '@astrojs/tailwind@5.1.5(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(tailwindcss@3.4.18(yaml@2.8.1))(ts-node@10.9.2(@types/node@22.18.8)(typescript@5.9.3))'
-  : dependencies:
+  '@astrojs/tailwind@5.1.5(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(tailwindcss@3.4.18(yaml@2.8.1))(ts-node@10.9.2(@types/node@22.18.8)(typescript@5.9.3))':
+    dependencies:
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       autoprefixer: 10.4.21(postcss@8.5.6)
       postcss: 8.5.6
@@ -10862,8 +10862,8 @@ snapshots:
       semver: 7.7.2
       vscode-languageserver-textdocument: 1.0.12
 
-  ? '@astrojs/vercel@8.2.8(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(react@19.2.0)(rollup@4.52.4)(svelte@5.39.9)(vue@3.5.22(typescript@5.9.3))'
-  : dependencies:
+  '@astrojs/vercel@8.2.8(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(react@19.2.0)(rollup@4.52.4)(svelte@5.39.9)(vue@3.5.22(typescript@5.9.3))':
+    dependencies:
       '@astrojs/internal-helpers': 0.7.3
       '@vercel/analytics': 1.5.0(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(react@19.2.0)(svelte@5.39.9)(vue@3.5.22(typescript@5.9.3))
       '@vercel/functions': 2.2.13
@@ -10885,8 +10885,8 @@ snapshots:
       - vue
       - vue-router
 
-  ? '@astrojs/vue@5.1.1(@types/node@22.18.8)(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(vue@3.5.22(typescript@5.9.3))(yaml@2.8.1)'
-  : dependencies:
+  '@astrojs/vue@5.1.1(@types/node@22.18.8)(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(vue@3.5.22(typescript@5.9.3))(yaml@2.8.1)':
+    dependencies:
       '@vitejs/plugin-vue': 5.2.1(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))
       '@vitejs/plugin-vue-jsx': 4.2.0(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))
       '@vue/compiler-sfc': 3.5.22
@@ -11184,8 +11184,8 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  ? '@base-org/account@1.1.1(@types/react@19.2.0)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@base-org/account@1.1.1(@types/react@19.2.0)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@noble/hashes': 1.4.0
       clsx: 1.2.1
       eventemitter3: 5.0.1
@@ -11247,8 +11247,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@coinbase/wallet-sdk@4.3.6(@types/react@19.2.0)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@coinbase/wallet-sdk@4.3.6(@types/react@19.2.0)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@noble/hashes': 1.4.0
       clsx: 1.2.1
       eventemitter3: 5.0.1
@@ -11449,8 +11449,8 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  ? '@cosmjs/stargate@0.32.4(patch_hash=746102a36fec3bbfa8804e1d470fc65c724740343f31ecc65cb8637de7173bf8)(bufferutil@4.0.9)(utf-8-validate@5.0.10)'
-  : dependencies:
+  '@cosmjs/stargate@0.32.4(patch_hash=746102a36fec3bbfa8804e1d470fc65c724740343f31ecc65cb8637de7173bf8)(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
       '@confio/ics23': 0.6.8
       '@cosmjs/amino': 0.32.4
       '@cosmjs/encoding': 0.32.4
@@ -11466,8 +11466,8 @@ snapshots:
       - debug
       - utf-8-validate
 
-  ? '@cosmjs/stargate@0.33.1(patch_hash=746102a36fec3bbfa8804e1d470fc65c724740343f31ecc65cb8637de7173bf8)(bufferutil@4.0.9)(utf-8-validate@5.0.10)'
-  : dependencies:
+  '@cosmjs/stargate@0.33.1(patch_hash=746102a36fec3bbfa8804e1d470fc65c724740343f31ecc65cb8637de7173bf8)(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
       '@cosmjs/amino': 0.33.1(patch_hash=009a0401b33075fe62c3f766de38d9cb6305fe29be495b1e624b366c270cd9a4)
       '@cosmjs/encoding': 0.33.1
       '@cosmjs/math': 0.33.1
@@ -11506,8 +11506,8 @@ snapshots:
       - debug
       - utf-8-validate
 
-  ? '@cosmjs/tendermint-rpc@0.33.1(patch_hash=d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e)(bufferutil@4.0.9)(utf-8-validate@5.0.10)'
-  : dependencies:
+  '@cosmjs/tendermint-rpc@0.33.1(patch_hash=d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e)(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
       '@cosmjs/crypto': 0.33.1
       '@cosmjs/encoding': 0.33.1
       '@cosmjs/json-rpc': 0.33.1
@@ -11538,8 +11538,8 @@ snapshots:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
 
-  ? '@csstools/css-color-parser@3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)'
-  : dependencies:
+  '@csstools/css-color-parser@3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
+    dependencies:
       '@csstools/color-helpers': 5.1.0
       '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
@@ -11592,8 +11592,8 @@ snapshots:
     dependencies:
       effect: 3.17.14
 
-  ? '@effect/vitest@0.25.1(effect@3.17.14)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1))'
-  : dependencies:
+  '@effect/vitest@0.25.1(effect@3.17.14)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1))':
+    dependencies:
       effect: 3.17.14
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1)
 
@@ -12197,8 +12197,8 @@ snapshots:
       graphql: 16.11.0
       typescript: 5.9.3
 
-  ? '@graphiql/plugin-doc-explorer@0.4.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))'
-  : dependencies:
+  '@graphiql/plugin-doc-explorer@0.4.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))':
+    dependencies:
       '@graphiql/react': 0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
       '@headlessui/react': 2.2.9(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       graphql: 16.11.0
@@ -12211,16 +12211,16 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  ? '@graphiql/plugin-explorer@5.1.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(graphql@16.11.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@graphiql/plugin-explorer@5.1.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(graphql@16.11.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@graphiql/react': 0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
       graphiql-explorer: 0.9.0(graphql@16.11.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       graphql: 16.11.0
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  ? '@graphiql/plugin-history@0.4.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(@types/node@22.18.8)(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))'
-  : dependencies:
+  '@graphiql/plugin-history@0.4.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(@types/node@22.18.8)(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))':
+    dependencies:
       '@graphiql/react': 0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
       '@graphiql/toolkit': 0.11.3(@types/node@22.18.8)(graphql@16.11.0)
       react: 19.2.0
@@ -12235,8 +12235,8 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  ? '@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))'
-  : dependencies:
+  '@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))':
+    dependencies:
       '@graphiql/toolkit': 0.11.3(@types/node@22.18.8)(graphql@16.11.0)
       '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -12619,8 +12619,8 @@ snapshots:
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.4.0
 
-  ? '@lorenzo_lewis/starlight-utils@0.3.2(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))'
-  : dependencies:
+  '@lorenzo_lewis/starlight-utils@0.3.2(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+    dependencies:
       '@astrojs/starlight': 0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       astro-integration-kit: 0.18.0(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
@@ -12757,8 +12757,8 @@ snapshots:
     dependencies:
       openapi-fetch: 0.13.8
 
-  ? '@metamask/sdk-communication-layer@0.33.1(cross-fetch@4.1.0)(eciesjs@0.4.15)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))'
-  : dependencies:
+  '@metamask/sdk-communication-layer@0.33.1(cross-fetch@4.1.0)(eciesjs@0.4.15)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
+    dependencies:
       '@metamask/sdk-analytics': 0.0.5
       bufferutil: 4.0.9
       cross-fetch: 4.1.0
@@ -13155,8 +13155,8 @@ snapshots:
 
   '@radix-ui/primitive@1.1.3': {}
 
-  ? '@radix-ui/react-arrow@1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-arrow@1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -13164,8 +13164,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-collection@1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-collection@1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-context': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -13188,8 +13188,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  ? '@radix-ui/react-dialog@1.1.15(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-dialog@1.1.15(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/primitive': 1.1.3
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-context': 1.1.2(@types/react@19.2.0)(react@19.2.0)
@@ -13216,8 +13216,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  ? '@radix-ui/react-dismissable-layer@1.1.11(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-dismissable-layer@1.1.11(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/primitive': 1.1.3
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -13229,8 +13229,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-dropdown-menu@2.1.16(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-dropdown-menu@2.1.16(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/primitive': 1.1.3
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-context': 1.1.2(@types/react@19.2.0)(react@19.2.0)
@@ -13250,8 +13250,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  ? '@radix-ui/react-focus-scope@1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-focus-scope@1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-use-callback-ref': 1.1.1(@types/react@19.2.0)(react@19.2.0)
@@ -13268,8 +13268,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  ? '@radix-ui/react-menu@2.1.16(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-menu@2.1.16(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/primitive': 1.1.3
       '@radix-ui/react-collection': 1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
@@ -13294,8 +13294,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-popper@1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-popper@1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@floating-ui/react-dom': 2.1.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-arrow': 1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
@@ -13312,8 +13312,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-portal@1.1.9(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-portal@1.1.9(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.0)(react@19.2.0)
       react: 19.2.0
@@ -13322,8 +13322,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-presence@1.1.5(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-presence@1.1.5(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@19.2.0)(react@19.2.0)
       react: 19.2.0
@@ -13332,8 +13332,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-primitive@2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-primitive@2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-slot': 1.2.3(@types/react@19.2.0)(react@19.2.0)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -13341,8 +13341,8 @@ snapshots:
       '@types/react': 19.2.0
       '@types/react-dom': 19.2.0(@types/react@19.2.0)
 
-  ? '@radix-ui/react-roving-focus@1.1.11(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-roving-focus@1.1.11(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/primitive': 1.1.3
       '@radix-ui/react-collection': 1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
@@ -13365,8 +13365,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  ? '@radix-ui/react-tooltip@1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-tooltip@1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/primitive': 1.1.3
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
       '@radix-ui/react-context': 1.1.2(@types/react@19.2.0)(react@19.2.0)
@@ -13433,8 +13433,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  ? '@radix-ui/react-visually-hidden@1.2.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)'
-  : dependencies:
+  '@radix-ui/react-visually-hidden@1.2.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
       '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
@@ -13557,8 +13557,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@reown/appkit-controllers@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@reown/appkit-controllers@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@walletconnect/universal-provider': 2.21.0(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -13592,8 +13592,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@reown/appkit-pay@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@reown/appkit-pay@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-ui': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -13632,8 +13632,8 @@ snapshots:
     dependencies:
       buffer: 6.0.3
 
-  ? '@reown/appkit-scaffold-ui@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@reown/appkit-scaffold-ui@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-ui': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -13668,8 +13668,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@reown/appkit-ui@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@reown/appkit-ui@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)
@@ -13703,8 +13703,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@reown/appkit-utils@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@reown/appkit-utils@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-polyfills': 1.7.8
@@ -13752,8 +13752,8 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  ? '@reown/appkit@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@reown/appkit@1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-pay': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -14094,21 +14094,21 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  ? '@sveltejs/adapter-auto@3.3.1(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))'
-  : dependencies:
+  '@sveltejs/adapter-auto@3.3.1(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))':
+    dependencies:
       '@sveltejs/kit': 2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
       import-meta-resolve: 4.2.0
 
-  ? '@sveltejs/adapter-static@3.0.10(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))'
-  : dependencies:
+  '@sveltejs/adapter-static@3.0.10(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))':
+    dependencies:
       '@sveltejs/kit': 2.44.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))
 
-  ? '@sveltejs/adapter-static@3.0.10(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))'
-  : dependencies:
+  '@sveltejs/adapter-static@3.0.10(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))':
+    dependencies:
       '@sveltejs/kit': 2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
 
-  ? '@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))'
-  : dependencies:
+  '@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))':
+    dependencies:
       '@standard-schema/spec': 1.0.0
       '@sveltejs/acorn-typescript': 1.0.6(acorn@8.15.0)
       '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))
@@ -14126,8 +14126,8 @@ snapshots:
       svelte: 5.39.9
       vite: 5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)
 
-  ? '@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))'
-  : dependencies:
+  '@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))':
+    dependencies:
       '@standard-schema/spec': 1.0.0
       '@sveltejs/acorn-typescript': 1.0.6(acorn@8.15.0)
       '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))
@@ -14146,8 +14146,8 @@ snapshots:
       vite: 5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)
     optional: true
 
-  ? '@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))'
-  : dependencies:
+  '@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))':
+    dependencies:
       '@standard-schema/spec': 1.0.0
       '@sveltejs/acorn-typescript': 1.0.6(acorn@8.15.0)
       '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
@@ -14165,8 +14165,8 @@ snapshots:
       svelte: 5.39.9
       vite: 6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)
 
-  ? '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))'
-  : dependencies:
+  '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))':
+    dependencies:
       '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.39.9)(vite@5.4.20(@types/node@24.1.0)(lightningcss@1.30.1))
       debug: 4.4.1
       svelte: 5.39.9
@@ -14174,8 +14174,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))'
-  : dependencies:
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))':
+    dependencies:
       '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))
       debug: 4.4.1
       svelte: 5.39.9
@@ -14184,8 +14184,8 @@ snapshots:
       - supports-color
     optional: true
 
-  ? '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))'
-  : dependencies:
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))':
+    dependencies:
       '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
       debug: 4.4.1
       svelte: 5.39.9
@@ -14193,8 +14193,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))'
-  : dependencies:
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)))(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))':
+    dependencies:
       '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))
       debug: 4.4.1
       svelte: 5.39.9
@@ -14410,8 +14410,8 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
 
-  ? '@testing-library/svelte@5.2.8(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1))'
-  : dependencies:
+  '@testing-library/svelte@5.2.8(svelte@5.39.9)(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1))':
+    dependencies:
       '@testing-library/dom': 10.4.1
       svelte: 5.39.9
     optionalDependencies:
@@ -14749,8 +14749,8 @@ snapshots:
       '@types/node': 22.18.8
     optional: true
 
-  ? '@typescript-eslint/eslint-plugin@8.45.0(@typescript-eslint/parser@8.45.0(eslint@9.37.0(jiti@2.6.1))(typescript@5.9.3))(eslint@9.37.0(jiti@2.6.1))(typescript@5.9.3)'
-  : dependencies:
+  '@typescript-eslint/eslint-plugin@8.45.0(@typescript-eslint/parser@8.45.0(eslint@9.37.0(jiti@2.6.1))(typescript@5.9.3))(eslint@9.37.0(jiti@2.6.1))(typescript@5.9.3)':
+    dependencies:
       '@eslint-community/regexpp': 4.12.1
       '@typescript-eslint/parser': 8.45.0(eslint@9.37.0(jiti@2.6.1))(typescript@5.9.3)
       '@typescript-eslint/scope-manager': 8.45.0
@@ -14880,8 +14880,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@vercel/analytics@1.5.0(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(react@19.2.0)(svelte@5.39.9)(vue@3.5.22(typescript@5.9.3))'
-  : optionalDependencies:
+  '@vercel/analytics@1.5.0(@sveltejs/kit@2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(react@19.2.0)(svelte@5.39.9)(vue@3.5.22(typescript@5.9.3))':
+    optionalDependencies:
       '@sveltejs/kit': 2.44.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1)))(svelte@5.39.9)(vite@5.4.20(@types/node@22.18.8)(lightningcss@1.30.1))
       react: 19.2.0
       svelte: 5.39.9
@@ -14936,8 +14936,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@vitejs/plugin-vue-jsx@4.2.0(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))'
-  : dependencies:
+  '@vitejs/plugin-vue-jsx@4.2.0(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))':
+    dependencies:
       '@babel/core': 7.28.4
       '@babel/plugin-transform-typescript': 7.28.0(@babel/core@7.28.4)
       '@rolldown/pluginutils': 1.0.0-beta.9-commit.d91dfb5
@@ -14947,8 +14947,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@vitejs/plugin-vue@5.2.1(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))'
-  : dependencies:
+  '@vitejs/plugin-vue@5.2.1(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))':
+    dependencies:
       vite: 6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)
       vue: 3.5.22(typescript@5.9.3)
 
@@ -15103,8 +15103,8 @@ snapshots:
       '@vue/compiler-dom': 3.5.22
       '@vue/shared': 3.5.22
 
-  ? '@vue/devtools-core@7.7.7(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))'
-  : dependencies:
+  '@vue/devtools-core@7.7.7(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))':
+    dependencies:
       '@vue/devtools-kit': 7.7.7
       '@vue/devtools-shared': 7.7.7
       mitt: 3.0.1
@@ -15153,8 +15153,8 @@ snapshots:
 
   '@vue/shared@3.5.22': {}
 
-  ? '@wagmi/connectors@5.11.2(@types/react@19.2.0)(@vercel/functions@2.2.13)(@wagmi/core@2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)'
-  : dependencies:
+  '@wagmi/connectors@5.11.2(@types/react@19.2.0)(@vercel/functions@2.2.13)(@wagmi/core@2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)':
+    dependencies:
       '@base-org/account': 1.1.1(@types/react@19.2.0)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@coinbase/wallet-sdk': 4.3.6(@types/react@19.2.0)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@gemini-wallet/core': 0.2.0(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
@@ -15200,8 +15200,8 @@ snapshots:
       - wagmi
       - zod
 
-  ? '@wagmi/core@2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))'
-  : dependencies:
+  '@wagmi/core@2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+    dependencies:
       eventemitter3: 5.0.1
       mipd: 0.0.7(typescript@5.9.3)
       viem: 2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -15307,8 +15307,8 @@ snapshots:
     dependencies:
       tslib: 1.14.1
 
-  ? '@walletconnect/ethereum-provider@2.21.1(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@walletconnect/ethereum-provider@2.21.1(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@reown/appkit': 1.7.8(@types/react@19.2.0)(@vercel/functions@2.2.13)(bufferutil@4.0.9)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
@@ -15441,8 +15441,8 @@ snapshots:
     dependencies:
       tslib: 1.14.1
 
-  ? '@walletconnect/sign-client@2.21.0(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@walletconnect/sign-client@2.21.0(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@walletconnect/core': 2.21.0(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
@@ -15477,8 +15477,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@walletconnect/sign-client@2.21.1(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@walletconnect/sign-client@2.21.1(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@walletconnect/core': 2.21.1(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
@@ -15575,8 +15575,8 @@ snapshots:
       - ioredis
       - uploadthing
 
-  ? '@walletconnect/universal-provider@2.21.0(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@walletconnect/universal-provider@2.21.0(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
@@ -15615,8 +15615,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@walletconnect/universal-provider@2.21.1(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)'
-  : dependencies:
+  '@walletconnect/universal-provider@2.21.1(@vercel/functions@2.2.13)(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
@@ -15908,19 +15908,19 @@ snapshots:
 
   astring@1.9.0: {}
 
-  ? astro-auto-import@0.4.5(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
-  : dependencies:
+  astro-auto-import@0.4.5(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)):
+    dependencies:
       '@types/node': 18.19.129
       acorn: 8.15.0
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
 
-  ? astro-capo@0.0.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
-  : dependencies:
+  astro-capo@0.0.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)):
+    dependencies:
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       ultrahtml: 1.6.0
 
-  ? astro-embed@0.9.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
-  : dependencies:
+  astro-embed@0.9.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)):
+    dependencies:
       '@astro-community/astro-embed-baseline-status': 0.2.0(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@astro-community/astro-embed-bluesky': 0.1.3(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@astro-community/astro-embed-integration': 0.8.1(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
@@ -15930,8 +15930,8 @@ snapshots:
       '@astro-community/astro-embed-youtube': 0.5.7(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
 
-  ? astro-expressive-code@0.41.3(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
-  : dependencies:
+  astro-expressive-code@0.41.3(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)):
+    dependencies:
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       rehype-expressive-code: 0.41.3
 
@@ -15946,8 +15946,8 @@ snapshots:
       - debug
       - supports-color
 
-  ? astro-integration-kit@0.18.0(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
-  : dependencies:
+  astro-integration-kit@0.18.0(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)):
+    dependencies:
       astro: 5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
       pathe: 1.1.2
       recast: 0.23.11
@@ -15966,8 +15966,8 @@ snapshots:
       - prettier-plugin-astro
       - typescript
 
-  ? astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
-  : dependencies:
+  astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1):
+    dependencies:
       '@astrojs/compiler': 2.13.0
       '@astrojs/internal-helpers': 0.7.3
       '@astrojs/markdown-remark': 6.3.7
@@ -17813,8 +17813,8 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  ? graphiql@5.2.0(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
-  : dependencies:
+  graphiql@5.2.0(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)):
+    dependencies:
       '@graphiql/plugin-doc-explorer': 0.4.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
       '@graphiql/plugin-history': 0.4.1(@graphiql/react@0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)))(@types/node@22.18.8)(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
       '@graphiql/react': 0.37.1(@types/node@22.18.8)(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(graphql@16.11.0)(react-compiler-runtime@19.1.0-rc.1(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
@@ -19895,8 +19895,8 @@ snapshots:
 
   pony-cause@2.1.11: {}
 
-  ? porto@0.2.19(@types/react@19.2.0)(@wagmi/core@2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-  : dependencies:
+  porto@0.2.19(@types/react@19.2.0)(@wagmi/core@2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)):
+    dependencies:
       '@wagmi/core': 2.21.2(@tanstack/query-core@5.90.2)(@types/react@19.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(viem@2.33.3(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       hono: 4.9.10
       idb-keyval: 6.2.2
@@ -20954,8 +20954,8 @@ snapshots:
       pako: 2.1.0
       ts-mixer: 6.0.4
 
-  ? starlight-heading-badges@0.5.0(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))
-  : dependencies:
+  starlight-heading-badges@0.5.0(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))):
+    dependencies:
       '@astrojs/markdown-remark': 6.3.7
       '@astrojs/starlight': 0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       github-slugger: 2.0.0
@@ -20964,8 +20964,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? starlight-links-validator@0.17.2(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))
-  : dependencies:
+  starlight-links-validator@0.17.2(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))):
+    dependencies:
       '@astrojs/starlight': 0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@types/picomatch': 3.0.2
       github-slugger: 2.0.0
@@ -20980,12 +20980,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? starlight-theme-rapide@0.5.1(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))
-  : dependencies:
+  starlight-theme-rapide@0.5.1(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))):
+    dependencies:
       '@astrojs/starlight': 0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
 
-  ? starlight-typedoc@0.21.3(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))(typedoc-plugin-markdown@4.9.0(typedoc@0.28.13(typescript@5.9.3)))(typedoc@0.28.13(typescript@5.9.3))
-  : dependencies:
+  starlight-typedoc@0.21.3(@astrojs/starlight@0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)))(typedoc-plugin-markdown@4.9.0(typedoc@0.28.13(typescript@5.9.3)))(typedoc@0.28.13(typescript@5.9.3)):
+    dependencies:
       '@astrojs/starlight': 0.34.8(astro@5.14.1(@types/node@22.18.8)(@vercel/functions@2.2.13)(idb-keyval@6.2.2)(jiti@2.6.1)(lightningcss@1.30.1)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       github-slugger: 2.0.0
       typedoc: 0.28.13(typescript@5.9.3)
@@ -21110,8 +21110,8 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  ? svelte-check@3.8.6(@babel/core@7.28.4)(postcss-load-config@4.0.2(postcss@8.5.6)(ts-node@10.9.2(@types/node@24.1.0)(typescript@5.9.3)))(postcss@8.5.6)(svelte@5.39.9)
-  : dependencies:
+  svelte-check@3.8.6(@babel/core@7.28.4)(postcss-load-config@4.0.2(postcss@8.5.6)(ts-node@10.9.2(@types/node@24.1.0)(typescript@5.9.3)))(postcss@8.5.6)(svelte@5.39.9):
+    dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       chokidar: 3.6.0
       picocolors: 1.1.1
@@ -21153,8 +21153,8 @@ snapshots:
     optionalDependencies:
       svelte: 5.39.9
 
-  ? svelte-preprocess@5.1.4(@babel/core@7.28.4)(postcss-load-config@4.0.2(postcss@8.5.6)(ts-node@10.9.2(@types/node@24.1.0)(typescript@5.9.3)))(postcss@8.5.6)(svelte@5.39.9)(typescript@5.9.3)
-  : dependencies:
+  svelte-preprocess@5.1.4(@babel/core@7.28.4)(postcss-load-config@4.0.2(postcss@8.5.6)(ts-node@10.9.2(@types/node@24.1.0)(typescript@5.9.3)))(postcss@8.5.6)(svelte@5.39.9)(typescript@5.9.3):
+    dependencies:
       '@types/pug': 2.0.10
       detect-indent: 6.1.0
       magic-string: 0.30.19
@@ -21872,8 +21872,8 @@ snapshots:
       - rollup
       - supports-color
 
-  ? vite-plugin-vue-devtools@7.7.7(rollup@4.52.4)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))
-  : dependencies:
+  vite-plugin-vue-devtools@7.7.7(rollup@4.52.4)(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3)):
+    dependencies:
       '@vue/devtools-core': 7.7.7(vite@6.3.6(@types/node@22.18.8)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))(vue@3.5.22(typescript@5.9.3))
       '@vue/devtools-kit': 7.7.7
       '@vue/devtools-shared': 7.7.7
@@ -21970,8 +21970,8 @@ snapshots:
     optionalDependencies:
       vite: 6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1)
 
-  ? vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1)
-  : dependencies:
+  vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.6.1)(happy-dom@17.6.3)(jiti@2.6.1)(jsdom@23.2.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.30.1)(yaml@2.8.1):
+    dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
       '@vitest/mocker': 3.2.4(vite@6.3.6(@types/node@24.6.1)(jiti@2.6.1)(lightningcss@1.30.1)(yaml@2.8.1))

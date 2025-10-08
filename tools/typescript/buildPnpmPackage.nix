@@ -29,7 +29,6 @@ let
         [
           ../../package.json
           ../../pnpm-lock.yaml
-          ../../.npmrc
           ../../patches
           ../../pnpm-workspace.yaml
           ../../tsconfig.base.json

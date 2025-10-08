@@ -37,10 +37,10 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@effect/experimental": "catalog:",
-    "@effect/platform": "catalog:",
-    "effect": "catalog:",
-    "viem": "catalog:"
+    "@effect/experimental": "catalog:peer",
+    "@effect/platform": "catalog:peer",
+    "effect": "catalog:peer",
+    "viem": "catalog:peer"
   },
   "devDependencies": {
     "@babel/cli": "catalog:",
