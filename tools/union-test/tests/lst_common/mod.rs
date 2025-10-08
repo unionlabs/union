@@ -85,7 +85,6 @@ pub async fn run_test_in_queue<
 
             let src = cosmos::Module::new(cfg.union).await.unwrap();
             let dst = evm::Module::new(cfg.evm).await.unwrap();
-            println!("[2] LST: AFTER PARSING CONFIG");
 
             let ctx = TestContext::new(
                 src,
@@ -138,10 +137,8 @@ pub async fn run_test_in_queue<
 
     loop {
         {
-            println!("LST RUNNING TEST BRO????");
             let mut lock = ctx.0.lock().await;
             if lock.tests.last().unwrap() == key {
-                println!("LST RUNNING SPECIFIC TEST: {key}");
                 lock.shared_data = test_fn(ctx.1.clone(), lock.shared_data.clone()).await;
                 let _ = lock.tests.pop();
                 return;

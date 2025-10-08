@@ -174,7 +174,7 @@
             name,
             testScript,
             nodes ? { },
-            openConnection ? false
+            openConnection ? false,
           }:
           let
             voyagerNode = mkVoyagerNode voyagerConfigFile;
@@ -186,29 +186,30 @@
             testScript = ''
               openConnection = ${if openConnection then "True" else "False"}
 
-              if openConnection:
-                print("ananabacina")
-              else:
-                print("teyzeneamcana...")
-
               devnetUnion.wait_for_open_port(${toString unionNode.wait_for_open_port})
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
+              # deploy contract on union
               devnetUnion.succeed('${self'.packages.cosmwasm-scripts.union-devnet.deploy}/bin/union-devnet-deploy-full')
 
               # match non-zero blocks
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+
+              # we are waiting until slot 20 so that we are sure that the contracts are deployed
               devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 20\') == "true" ]]')
 
               devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
               devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
 
+              # index the chains on voyager
               devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} index union-devnet-1 -e')
               devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} index 32382 -e')
 
+              # create clients
               devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on union-devnet-1 --tracking 32382 --ibc-interface ibc-cosmwasm --ibc-spec-id ibc-union --client-type trusted/evm/mpt -e')
               devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on 32382 --tracking union-devnet-1 --ibc-interface ibc-solidity --ibc-spec-id ibc-union --client-type cometbls -e')
 
+              # give some time for the clients to be created
               devnetVoyager.wait_until_succeeds('sleep 10')
 
               if openConnection:
