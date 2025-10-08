@@ -483,7 +483,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         .ctx
         .predict_wrapped_token::<evm::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "au".into(),
             &evm_provider,
@@ -586,7 +586,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         .ctx
         .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             &t.ctx.src,
             3,
@@ -628,7 +628,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let deployed_erc20 = t
         .ctx
         .dst
-        .deploy_basic_erc20(ETH_ADDRESS_ZKGM.into(), evm_provider.clone())
+        .deploy_basic_erc20(ETH_ADDRESS_ZKGM, evm_provider.clone())
         .await
         .expect("failed to deploy ERC20");
 
@@ -688,7 +688,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         .ctx
         .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             &t.ctx.src,
             3,
@@ -819,7 +819,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
         .ctx
         .predict_wrapped_token::<evm::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "au".into(),
             &evm_provider,
@@ -962,7 +962,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
     let deployed_erc20 = t
         .ctx
         .dst
-        .deploy_basic_erc20(ETH_ADDRESS_ZKGM.into(), evm_provider.clone())
+        .deploy_basic_erc20(ETH_ADDRESS_ZKGM, evm_provider.clone())
         .await
         .expect("failed to deploy ERC20");
 
@@ -1039,7 +1039,7 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
         .ctx
         .send_and_recv_refund::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             &t.ctx.src,
             Duration::from_secs(720),
@@ -1239,7 +1239,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_IBC.into(),
+            ETH_ADDRESS_IBC,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,
@@ -1310,7 +1310,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         .ctx
         .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "au".into(),
             img,
@@ -1384,7 +1384,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         .dst
         .zkgmerc20_approve(
             quote_token_addr,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             U256::from(100000000000u64),
             evm_provider.clone(),
         )
@@ -1439,7 +1439,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,
@@ -1490,7 +1490,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
         .ctx
         .predict_wrapped_token::<evm::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "au".into(),
             &evm_provider,
@@ -1577,7 +1577,7 @@ async fn test_from_evm_to_union_batch_err_invalid_batch_instruction() {
     let deployed_erc20 = t
         .ctx
         .dst
-        .deploy_basic_erc20(ETH_ADDRESS_ZKGM.into(), evm_provider.clone())
+        .deploy_basic_erc20(ETH_ADDRESS_ZKGM, evm_provider.clone())
         .await
         .expect("failed to deploy ERC20");
 
@@ -1633,7 +1633,7 @@ async fn test_from_evm_to_union_batch_err_invalid_batch_instruction() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,
@@ -1668,7 +1668,7 @@ async fn test_from_evm_to_union_batch_err_invalid_forward_instruction() {
     let deployed_erc20 = t
         .ctx
         .dst
-        .deploy_basic_erc20(ETH_ADDRESS_ZKGM.into(), evm_provider.clone())
+        .deploy_basic_erc20(ETH_ADDRESS_ZKGM, evm_provider.clone())
         .await
         .expect("failed to deploy ERC20");
 
@@ -1726,7 +1726,7 @@ async fn test_from_evm_to_union_batch_err_invalid_forward_instruction() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,
@@ -1909,7 +1909,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_IBC.into(),
+            ETH_ADDRESS_IBC,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,
@@ -2093,7 +2093,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_IBC.into(),
+            ETH_ADDRESS_IBC,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,
@@ -2277,7 +2277,7 @@ async fn test_send_vault_unhappy_u_fool() {
         .ctx
         .send_and_expect_revert::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_IBC.into(),
+            ETH_ADDRESS_IBC,
             call,
             expected_revert_code,
             &zkgm_deployer_provider,

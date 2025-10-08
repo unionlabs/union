@@ -33,7 +33,7 @@ use lst_common::*;
 
 fn make_proxy_call(funded_msgs: &[(&str, Binary, Vec<CwCoin>)]) -> Vec<u8> {
     let wasm_msgs: Vec<CosmosMsg> = funded_msgs
-        .into_iter()
+        .iter()
         .map(|(contract, msg, funds)| {
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract.to_string(),
@@ -123,7 +123,7 @@ async fn bond(
     );
 
     // funding the eth address that we execute bond with, with au
-    eth_fund_u(&t, src_channel_id, sender_on_evm.into(), 100_000, 500_000)
+    eth_fund_u(t, src_channel_id, sender_on_evm.into(), 100_000, 500_000)
         .await
         .unwrap();
 
@@ -162,7 +162,7 @@ async fn bond(
                     proxy_address_on_union.as_bytes().to_vec().into(),
                     make_zkgm_bond_payload_via_call(
                         t.union_address.lst_hub.as_str(),
-                        &proxy_address_on_union.to_string(),
+                        proxy_address_on_union.as_ref(),
                         min_mint_amount,
                         "au",
                         bond_amount,
@@ -178,7 +178,7 @@ async fn bond(
         .ctx
         .send_and_recv_and_ack_with_retry::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             &t.ctx.src,
             3,
@@ -236,7 +236,7 @@ async fn unbond(
         .ctx
         .send_and_recv_and_ack_with_retry::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             &t.ctx.src,
             6,
@@ -294,7 +294,7 @@ async fn withdraw(
         .ctx
         .send_and_recv_and_ack_with_retry::<evm::Module, cosmos::Module>(
             &t.ctx.dst,
-            ETH_ADDRESS_ZKGM.into(),
+            ETH_ADDRESS_ZKGM,
             call,
             &t.ctx.src,
             6,
@@ -486,7 +486,7 @@ async fn test_unbond_success() {
                             .into(),
                         vec![],
                     ),
-                    &signer,
+                    signer,
                 )
                 .await
                 .unwrap()
@@ -553,7 +553,7 @@ async fn test_withdraw_success() {
                         amount: fund_amount.to_string(),
                     }],
                 ),
-                &signer,
+                signer,
             )
             .await
             .unwrap()

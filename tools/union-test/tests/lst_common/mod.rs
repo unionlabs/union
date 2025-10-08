@@ -67,7 +67,6 @@ pub struct Queue {
 }
 
 pub async fn run_test_in_queue<
-    'a,
     Fut: Future<Output = SharedData>,
     F: Fn(Arc<LstContext>, SharedData) -> Fut,
 >(
