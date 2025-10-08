@@ -128,6 +128,8 @@
 
               # bool
               dontRemoveDevDeps ? false,
+
+              cargoTomlHook,
             }:
             assert isListOf builtins.isString workspaceMembers;
             assert isListOf builtins.isString extraIncludes;
@@ -169,7 +171,9 @@
                     path: cargoToml:
                     let
                       cargoTomlPath = writeTOML "Cargo.toml" (
-                        builtins.removeAttrs cargoToml (lib.optionals (!dontRemoveDevDeps) [ "dev-dependencies" ])
+                        builtins.removeAttrs (cargoTomlHook cargoToml) (
+                          lib.optionals (!dontRemoveDevDeps) [ "dev-dependencies" ]
+                        )
                       );
                     in
                     "cp ${cargoTomlPath} ./${path}/Cargo.toml"
@@ -366,13 +370,17 @@
               extraNativeBuildInputs ? [ ],
 
               extraVendorPaths ? [ ],
-              overrideVendorGitCheckout ? ps: drv: drv,
+              overrideVendorGitCheckout ? _ps: drv: drv,
+              overrideVendorCargoPackage ? _p: drv: drv,
 
               # this builder will by default remove dev-dependencies from the Cargo.toml of all crates in the filtered source of the packages being built. set this to true to disable this behaviour.
               dontRemoveDevDeps ? false,
 
               # the root Cargo.toml may require patching when building certain packages in the monorepo. this hook can be used to arbitrarily modify the patched Cargo.toml before writing it into the source root derivation.
               rootCargoTomlHook ? x: x,
+
+              # individual packages' Cargo.tomls may require patching when building certain packages in the monorepo. this hook can be used to arbitrarily modify the patched Cargo.toml before writing it into the source root derivation.
+              cargoTomlHook ? x: x,
             }:
             assert builtins.isAttrs extraArgs;
             assert lib.assertMsg
@@ -460,7 +468,7 @@
 
               # patch the workspace Cargo.toml and Cargo.lock to only contain the local dependencies required to build this crate
               crateRepoSource = mkCleanSrc {
-                inherit dontRemoveDevDeps;
+                inherit cargoTomlHook dontRemoveDevDeps;
                 workspaceMembers = memberDepsForCrate;
                 extraIncludes =
                   (getIncludes memberDepsForCrateCargoTomls) ++ (getExtraIncludes memberDepsForCrateCargoTomls);
@@ -524,6 +532,7 @@
                         else
                           # nothing to change, run the provided hook
                           overrideVendorGitCheckout ps drv;
+                      inherit overrideVendorCargoPackage;
                     };
 
                     PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
@@ -621,6 +630,7 @@
           );
 
           cargoWorkspaceSrc = mkCleanSrc {
+            cargoTomlHook = cargoToml: cargoToml;
             workspaceMembers = workspaceCargoToml.workspace.members;
             extraIncludes = (getIncludes allCargoTomls) ++ (getExtraIncludes allCargoTomls);
             cargoToml = /${root}/Cargo.toml;

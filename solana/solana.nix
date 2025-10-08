@@ -82,6 +82,7 @@ _: {
 
       solana-ibc =
         (crane.buildWorkspaceMember "solana/ibc" {
+          cargoTomlHook = cargoToml: { cargo-features = [ "edition2024" ]; } // cargoToml;
           cargoBuildRustToolchain = dbg "${platform-tools}/rust";
           extraBuildInputs = [ cargo-solana ];
           # NOTE: Only used for build-std
@@ -115,10 +116,25 @@ _: {
               )
             else
               drv;
-          rustflags = "-Zlocation-detail=none";
+          overrideVendorCargoPackage =
+            _p: drv:
+            drv.overrideAttrs (
+              old:
+              old
+              // {
+                patchPhase =
+                  (old.patchPhase or "")
+                  + ''
+                    echo 'cargo-features = [ "edition2024" ]' | cat - Cargo.toml > temp && mv temp Cargo.toml
+                  '';
+              }
+            );
+          rustflags = ''-Zlocation-detail=none'';
           extraArgs = {
             doNotPostBuildInstallCargoBinaries = true;
             buildPhaseCargoCommand = ''
+              echo '#![feature(let_chains)]' | cat - lib/macros/src/lib.rs > tmp && mv tmp lib/macros/src/lib.rs
+
               cargo build-sbf \
                 --arch v2 \
                 --skip-tools-install \
@@ -128,7 +144,7 @@ _: {
                 -- \
                 -p ibc-union-solana
 
-                # TODO: Have a .release builder that doe -j1 for reproducible builds
+                # TODO: Have a .release builder that does -j1 for reproducible builds
                 # -j1 \
                 # NOTE: Only used for build-std
                 # -Z build-std=panic_abort,std,core,alloc

@@ -36,7 +36,7 @@ impl core::fmt::Display for Rev {
     used,
     unsafe(link_section = ".note.embed_commit.GIT_REV")
 )]
-#[cfg_attr(target_os = "solana", no_mangle, used)]
+#[cfg_attr(target_os = "solana", unsafe(no_mangle), used)]
 pub static GIT_REV: Rev = match option_env!("GIT_REV") {
     None => Rev::Unknown,
     Some(hash) => match hash.as_bytes() {
