@@ -59,7 +59,7 @@
           --gas-prices 1au\
         ")
 
-      devnetUnion.wait_until_succeeds("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>2")
+      devnetUnion.wait_until_succeeds("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>&2")
     '';
 
     nodes = {

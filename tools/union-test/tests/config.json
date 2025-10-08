@@ -32,7 +32,7 @@
         }
       ]
     },
-    "rpc_url": "http://0.0.0.0:26657",
+    "rpc_url": "http://devnetUnion:26657",
     "gas_config": {
       "type": "feemarket",
       "config": {
@@ -47,8 +47,8 @@
     "chain_id": "32382",
     "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
     "multicall_address": "0x84c4c2ee43ccfd523af9f78740256e0f60d38068",
-    "rpc_url": "http://0.0.0.0:8545",
-    "ws_url": "ws://0.0.0.0:8546",
+    "rpc_url": "http://devnetEth:8545",
+    "ws_url": "ws://devnetEth:8546",
     "keyring": {
       "name": "evm-keyring",
       "keys": [

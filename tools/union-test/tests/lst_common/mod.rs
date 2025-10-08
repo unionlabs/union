@@ -82,7 +82,6 @@ pub async fn run_test_in_queue<
                 .expect("setting default subscriber failed");
             let cfg: Config = serde_json::from_str(include_str!("../config.json")).unwrap();
 
-            println!("[1] LST: BEFORE PARSING CONFIG");
             let src = cosmos::Module::new(cfg.union).await.unwrap();
             let dst = evm::Module::new(cfg.evm).await.unwrap();
             println!("[2] LST: AFTER PARSING CONFIG");

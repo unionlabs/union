@@ -516,6 +516,9 @@ async fn test_unbond_success() {
 #[tokio::test]
 async fn test_withdraw_success() {
     run_test_in_queue("withdraw", async |t, shared_data| {
+        // Waiting for at least the unbond amount before receiving the tokens
+        tokio::time::sleep(Duration::from_secs(120)).await;
+
         let dst_channel_id = 1;
         let src_channel_id = 1;
 
