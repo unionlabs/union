@@ -17,4 +17,4 @@ jobs:
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         run: |
-          nix build .#checks.x86_64-linux.all-works -L
+          nix build .#checks.x86_64-linux.e2e-lst -L --option sandbox false

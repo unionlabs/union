@@ -9,7 +9,7 @@ let
   voyagerBin = "${self'.packages.voyager}/bin/voyager";
 in
 {
-  lst = e2e.mkE2eTestEthUnion voyagerConfigFile {
+  e2e-lst = e2e.mkE2eTestEthUnion voyagerConfigFile {
     name = "lst";
 
     openConnection = true;

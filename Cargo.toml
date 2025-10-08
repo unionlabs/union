@@ -207,7 +207,7 @@ members = [
   "voyager/plugins/client-update/sui",
   "voyager/plugins/client-update/trusted-mpt",
 
-  # "voyager/plugins/periodic-client-update",
+  "voyager/plugins/periodic-client-update",
 
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
