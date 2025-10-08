@@ -1,0 +1,114 @@
+{
+  "union": {
+    "chain_id": "union-devnet-1",
+    "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+    "keyring": {
+      "name": "alice",
+      "keys": [
+        {
+          "type": "raw",
+          "name": "bob",
+          "key": "0xf562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+        },
+        {
+          "type": "raw",
+          "name": "dave",
+          "key": "0xedc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+        },
+        {
+          "type": "raw",
+          "name": "charlie",
+          "key": "0xa1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+        }
+      ]
+    },
+    "privileged_acc_keyring": {
+      "name": "privileged_acc",
+      "keys": [
+        {
+          "type": "raw",
+          "name": "privileged_acc",
+          "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+        }
+      ]
+    },
+    "rpc_url": "http://devnetUnion:26657",
+    "gas_config": {
+      "type": "feemarket",
+      "config": {
+        "max_gas": 10000000,
+        "gas_multiplier": 1.4,
+        "denom": null
+      }
+    },
+    "fee_recipient": null
+  },
+  "evm": {
+    "chain_id": "32382",
+    "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+    "multicall_address": "0x84c4c2ee43ccfd523af9f78740256e0f60d38068",
+    "rpc_url": "http://devnetEth:8545",
+    "ws_url": "ws://devnetEth:8546",
+    "keyring": {
+      "name": "evm-keyring",
+      "keys": [
+        {
+          "type": "raw",
+          "name": "dev-key0.prv",
+          "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key1.prv",
+          "key": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key2.prv",
+          "key": "0xeadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key3.prv",
+          "key": "0xd56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key4.prv",
+          "key": "0x084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key5.prv",
+          "key": "0xf977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key6.prv",
+          "key": "0x523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c"
+        },
+        {
+          "type": "raw",
+          "name": "dev-key7.prv",
+          "key": "0xb7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058"
+        }
+      ]
+    },
+    "privileged_acc_keyring": {
+      "name": "zkgm-deployer",
+      "keys": [
+        {
+          "type": "raw",
+          "name": "zkgm-deployer-key",
+          "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+        }
+      ]
+    },
+    "max_gas_price": null,
+    "fixed_gas_price": null,
+    "gas_multiplier": 2.0
+  },
+  "needed_channel_count": 1,
+  "voyager_config_file_path": "./voyager",
+  "union_deployer_addr": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+}

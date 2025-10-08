@@ -23,7 +23,7 @@
             ...
           }:
           let
-            # full-e2e = import ./full-e2e.nix { inherit e2e pkgs; };
+            union-test = import ./union-test.nix { inherit e2e pkgs self'; };
             epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs dbg; };
             upgrades = import ./upgrades.nix {
               inherit e2e pkgs;
@@ -36,8 +36,8 @@
             # TODO: Fix Ensure Blocks Workflow unionlabs/union#2067
             # ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
             #
-            # Tests from ./full-e2e.nix
-            # inherit (full-e2e) all-works;
+            # Tests from ./union-test.nix
+            inherit (union-test) e2e-lst;
 
             # Tests from ./epoch-staking.nix
             inherit (epoch-staking) epoch-completes;

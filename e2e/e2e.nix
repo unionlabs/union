@@ -78,9 +78,9 @@
               };
               vlans = [ 1 ];
             };
-            networking.hostName = "devnetVoyager";
-
             environment.systemPackages = with pkgs; [ jq ];
+            services.resolved.enable = true;
+            nix.settings.sandbox = false;
           };
       };
 
@@ -121,29 +121,6 @@
           networking.hostName = "devnetUnion";
         };
       };
-
-      galoisNode = {
-        wait_for_console_text = "Serving...";
-        wait_for_open_port = 9999;
-        node = _: {
-          imports = [
-            inputs.arion.nixosModules.arion
-          ];
-          virtualisation = {
-            diskSize = 16 * 1024;
-            memorySize = 32 * 1024;
-            # TODO(aeryz): remove this
-            cores = 32;
-            arion = {
-              backend = "docker";
-              projects.galois.settings = galois-arion-project;
-            };
-            vlans = [ 1 ];
-          };
-          networking.hostName = "galois";
-        };
-      };
-
     in
     {
       _module.args.e2e = {
@@ -152,6 +129,7 @@
           unionNode
           unionTestnetGenesisNode
           devnetEthNode
+          mkVoyagerNode
           ;
 
         # TODO: This is poorly named, it only starts devnet-union and devnet-eth
@@ -190,50 +168,74 @@
                 );
           };
 
-        # TODO: This is poorly named, it only starts devnet-union and devnet-eth
         mkE2eTestEthUnion =
+          voyagerConfigFile:
           {
             name,
             testScript,
             nodes ? { },
+            openConnection ? false,
           }:
           let
-            voyagerNode = mkVoyagerNode ../tools/union-test/config.jsonc;
+            voyagerNode = mkVoyagerNode voyagerConfigFile;
             voyagerBin = "${self'.packages.voyager}/bin/voyager";
           in
           mkTest {
             inherit name;
 
             testScript = ''
-              galois.start()
+              openConnection = ${if openConnection then "True" else "False"}
+
               devnetUnion.wait_for_open_port(${toString unionNode.wait_for_open_port})
               devnetEth.wait_for_open_port(${toString devnetEthNode.wait_for_open_port})
 
+              # deploy contract on union
               devnetUnion.succeed('${self'.packages.cosmwasm-scripts.union-devnet.deploy}/bin/union-devnet-deploy-full')
 
               # match non-zero blocks
               devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
-              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 1\') == "true" ]]')
+
+              # we are waiting until slot 20 so that we are sure that the contracts are deployed
+              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 20\') == "true" ]]')
 
               devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
               devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
 
-              galois.wait_for_console_text('${galoisNode.wait_for_console_text}')
+              # index the chains on voyager
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} index union-devnet-1 -e')
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} index 32382 -e')
 
-              devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 200000") == "true" ]]')
+              # create clients
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on union-devnet-1 --tracking 32382 --ibc-interface ibc-cosmwasm --ibc-spec-id ibc-union --client-type trusted/evm/mpt -e')
+              devnetVoyager.wait_until_succeeds('${voyagerBin} -c ${voyagerNode.voyagerConfig} msg create-client --on 32382 --tracking union-devnet-1 --ibc-interface ibc-solidity --ibc-spec-id ibc-union --client-type cometbls -e')
+
+              # give some time for the clients to be created
+              devnetVoyager.wait_until_succeeds('sleep 10')
+
+              if openConnection:
+                devnetVoyager.succeed(
+                  "echo '{\"@type\":\"call\",\"@value\":{\"@type\":\"submit_tx\",\"@value\":{\"chain_id\":\"union-devnet-1\",\"datagrams\":[{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{\"@type\":\"connection_open_init\",\"@value\":{\"client_id\":1,\"counterparty_client_id\":1}}}]}}}' > /tmp/payload.json"
+                )
+
+                devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
+
+                # wait until the connection is opened
+                devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"connection\": { \"connection_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+              else:
+                print("Skipping connection...")
+
+              ${testScript}
             '';
 
             nodes =
               (pkgs.lib.throwIf (builtins.hasAttr "devnetUnion" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "voyager" nodes) "voyager node already exists; use a different name")
-                (pkgs.lib.throwIf (builtins.hasAttr "galois" nodes) "galois node already exists; use a different name")
                 (
                   {
                     devnetUnion = unionNode.node;
                     devnetEth = devnetEthNode.node;
                     devnetVoyager = voyagerNode.node;
-                    galois = galoisNode.node;
                   }
                   // nodes
                 );

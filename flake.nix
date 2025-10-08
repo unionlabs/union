@@ -229,6 +229,7 @@
         ./sentinel2/sentinel.nix
         ./lib/embed-commit
         ./networks/services/voyager.nix
+        ./tools/union-test/tests/e2e.nix
         treefmt-nix.flakeModule
       ];
 

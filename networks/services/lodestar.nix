@@ -95,11 +95,11 @@ in
     ];
     healthcheck = {
       interval = "5s";
-      retries = 6;
+      retries = 15;
       test = [
         "CMD-SHELL"
         ''
-          curl -f http://localhost:9596/eth/v2/beacon/blocks/2 || exit 1
+          curl -f http://localhost:9596/eth/v2/beacon/blocks/3 || exit 1
         ''
       ];
     };
