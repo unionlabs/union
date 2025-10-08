@@ -1,8 +1,6 @@
+use aptos_types::{state_proof::StateProof, transaction_proof::TransactionInfoWithProof};
 use ethereum_light_client_types::{AccountProof, StorageProof};
-use unionlabs::{
-    aptos::{state_proof::StateProof, transaction_proof::TransactionInfoWithProof},
-    ibc::core::client::height::Height,
-};
+use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

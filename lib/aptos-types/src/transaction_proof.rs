@@ -1,12 +1,10 @@
-use macros::model;
+use unionlabs_primitives::{FixedBytes, H256, encoding::HexUnprefixed};
 
-use crate::{
-    aptos::transaction_info::TransactionInfo,
-    primitives::{encoding::HexUnprefixed, FixedBytes, H256},
-};
+use crate::transaction_info::TransactionInfo;
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionInfoWithProof {
     /// The accumulator proof from ledger info root to leaf that authenticates the hash of the
@@ -38,7 +36,8 @@ impl Default for TransactionInfoWithProof {
     }
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionAccumulatorProof {
     pub siblings: Vec<H256<HexUnprefixed>>,
@@ -46,6 +45,7 @@ pub struct TransactionAccumulatorProof {
 }
 
 // idk man, it's in the json
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Null;

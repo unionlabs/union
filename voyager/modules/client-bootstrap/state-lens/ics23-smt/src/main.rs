@@ -1,23 +1,23 @@
+use aptos_types::account::AccountAddress;
 use ibc_union_spec::ClientId;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use movement_light_client_types::ConsensusState as MovementConsensusState;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use state_lens_ics23_smt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
+use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState, client_state::Extra};
 use tracing::instrument;
-use unionlabs::{aptos::account::AccountAddress, ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
-    anyhow, into_value,
+    ExtensionsExt, anyhow, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
     rpc::{
-        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
     },
-    ExtensionsExt,
 };
 
 #[tokio::main(flavor = "multi_thread")]

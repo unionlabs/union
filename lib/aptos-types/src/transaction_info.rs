@@ -1,18 +1,16 @@
-use macros::model;
-use serde::{Deserialize, Serialize};
-
-use crate::primitives::{encoding::HexUnprefixed, H256};
+use unionlabs_primitives::{H256, encoding::HexUnprefixed};
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
-#[model(no_serde)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum TransactionInfo {
     V0(TransactionInfoV0),
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionInfoV0 {
     /// The amount of gas used.
@@ -55,10 +53,10 @@ pub struct TransactionInfoV0 {
 //     }
 // }
 
-#[model(no_serde)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ExecutionStatus {
-    #[serde(rename = "Success")]
+    #[cfg_attr(feature = "serde", serde(rename = "Success"))]
     Success,
 }

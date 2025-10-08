@@ -2,16 +2,13 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use macros::model;
+use unionlabs_primitives::FixedBytes;
 
 use crate::{
-    aptos::{
-        block_info::BlockInfo,
-        epoch_change::EpochChangeProof,
-        ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-        signature::AggregateSignature,
-    },
-    primitives::FixedBytes,
+    block_info::BlockInfo,
+    epoch_change::EpochChangeProof,
+    ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
+    signature::AggregateSignature,
 };
 
 /// A convenience type for the collection of sub-proofs that constitute a
@@ -21,7 +18,8 @@ use crate::{
 /// `TrustedState` to the last epoch change LI in the [`EpochChangeProof`]
 /// or the latest [`LedgerInfoWithSignatures`] if the epoch changes get them into
 /// the most recent epoch.
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct StateProof {
     pub latest_li_w_sigs: LedgerInfoWithSignatures,

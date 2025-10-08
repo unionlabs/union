@@ -1,9 +1,6 @@
-use macros::model;
+use unionlabs_primitives::{H256, encoding::HexUnprefixed};
 
-use crate::{
-    aptos::epoch_state::EpochState,
-    primitives::{encoding::HexUnprefixed, H256},
-};
+use crate::epoch_state::EpochState;
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -23,7 +20,8 @@ pub const GENESIS_TIMESTAMP_USECS: u64 = 0;
 /// This structure contains all the information needed for tracking a block
 /// without having access to the block or its execution output state. It
 /// assumes that the block is the last block executed within the ledger.
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.

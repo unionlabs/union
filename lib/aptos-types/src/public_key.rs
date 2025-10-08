@@ -1,13 +1,12 @@
-use macros::model;
-
 /// A BLS12381 public key
-#[model(no_serde)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct PublicKey {
     // TODO: Use Bytes here and ensure the ser/de is the same
     pub pubkey: Vec<u8>,
 }
 
+#[cfg(feature = "serde")]
 impl serde::Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -26,6 +25,7 @@ impl serde::Serialize for PublicKey {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for PublicKey {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where

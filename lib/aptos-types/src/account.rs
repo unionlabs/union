@@ -3,16 +3,18 @@
 /// We only use the strict parsing and display functionality, and wrap our `H256` type instead of `[u8; 32]`.
 use core::{fmt, str::FromStr};
 
-use serde::{Deserialize, Serialize};
+use unionlabs_primitives::{FixedBytes, FixedBytesError, H256, encoding::HexUnprefixed};
 
-use crate::primitives::{encoding::HexUnprefixed, FixedBytes, FixedBytesError, H256};
-
-#[derive(
-    macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
-)]
-#[debug("AccountAddress({})", self)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct AccountAddress(pub H256<HexUnprefixed>);
+
+impl fmt::Debug for AccountAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("AccountAddress({})", self.0))
+    }
+}
 
 impl AccountAddress {
     /// Returns whether the address is a "special" address. Addresses are considered
@@ -64,7 +66,9 @@ pub enum AccountAddressParseError {
     )]
     LongFormRequiredUnlessSpecial,
 
-    #[error("the given hex string is a special address not in long form, it must be 0x0 to 0xf without padding zeroes")]
+    #[error(
+        "the given hex string is a special address not in long form, it must be 0x0 to 0xf without padding zeroes"
+    )]
     InvalidPaddingZeroes,
 
     #[error("invalid address length: {0}")]

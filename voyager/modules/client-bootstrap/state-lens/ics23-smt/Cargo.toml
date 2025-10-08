@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy                                   = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+aptos-types                             = { workspace = true, features = ["serde", "bincode"] }
 beacon-api                              = { workspace = true }
 beacon-api-types                        = { workspace = true, features = ["serde"] }
 cometbft-rpc                            = { workspace = true }
@@ -27,7 +28,6 @@ tokio                                   = { workspace = true }
 tracing                                 = { workspace = true }
 unionlabs                               = { workspace = true }
 voyager-sdk                             = { workspace = true }
-
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

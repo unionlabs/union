@@ -1,0 +1,30 @@
+[package]
+name    = "aptos-types"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+bcs                  = { workspace = true, optional = true }
+bincode              = { workspace = true, optional = true, features = ["derive"] }
+hex                  = { workspace = true }
+hex-literal          = { workspace = true }
+serde                = { workspace = true, optional = true, features = ["derive"] }
+serde_bytes          = "0.11.19"
+sha3                 = { workspace = true, optional = true }
+thiserror            = { workspace = true }
+unionlabs-primitives = { workspace = true }
+
+[features]
+default = []
+
+bincode = ["dep:bincode", "unionlabs-primitives/bincode"]
+serde   = ["dep:serde"]
+std     = ["dep:bcs", "dep:sha3"]

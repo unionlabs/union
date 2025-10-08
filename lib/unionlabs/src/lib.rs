@@ -55,8 +55,6 @@ pub mod union;
 /// Types specific to the berachain protocol.
 pub mod berachain;
 
-pub mod aptos;
-
 pub mod bounded;
 
 pub mod constants;

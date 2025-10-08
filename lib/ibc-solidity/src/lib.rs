@@ -583,76 +583,6 @@ maybe_sol_attr! {
     }
 }
 
-impl Clone for Ibc::IbcEvents {
-    fn clone(&self) -> Self {
-        match self {
-            Ibc::IbcEvents::RegisterClient(client_registered) => {
-                Ibc::IbcEvents::RegisterClient(client_registered.clone())
-            }
-            Ibc::IbcEvents::CreateClient(client_created) => {
-                Ibc::IbcEvents::CreateClient(client_created.clone())
-            }
-            Ibc::IbcEvents::UpdateClient(client_updated) => {
-                Ibc::IbcEvents::UpdateClient(client_updated.clone())
-            }
-            Ibc::IbcEvents::ConnectionOpenInit(connection_open_init) => {
-                Ibc::IbcEvents::ConnectionOpenInit(connection_open_init.clone())
-            }
-            Ibc::IbcEvents::ConnectionOpenTry(connection_open_try) => {
-                Ibc::IbcEvents::ConnectionOpenTry(connection_open_try.clone())
-            }
-            Ibc::IbcEvents::ConnectionOpenAck(connection_open_ack) => {
-                Ibc::IbcEvents::ConnectionOpenAck(connection_open_ack.clone())
-            }
-            Ibc::IbcEvents::ConnectionOpenConfirm(connection_open_confirm) => {
-                Ibc::IbcEvents::ConnectionOpenConfirm(connection_open_confirm.clone())
-            }
-            Ibc::IbcEvents::ChannelOpenInit(channel_open_init) => {
-                Ibc::IbcEvents::ChannelOpenInit(channel_open_init.clone())
-            }
-            Ibc::IbcEvents::ChannelOpenTry(channel_open_try) => {
-                Ibc::IbcEvents::ChannelOpenTry(channel_open_try.clone())
-            }
-            Ibc::IbcEvents::ChannelOpenAck(channel_open_ack) => {
-                Ibc::IbcEvents::ChannelOpenAck(channel_open_ack.clone())
-            }
-            Ibc::IbcEvents::ChannelOpenConfirm(channel_open_confirm) => {
-                Ibc::IbcEvents::ChannelOpenConfirm(channel_open_confirm.clone())
-            }
-            Ibc::IbcEvents::ChannelCloseInit(channel_close_init) => {
-                Ibc::IbcEvents::ChannelCloseInit(channel_close_init.clone())
-            }
-            Ibc::IbcEvents::ChannelCloseConfirm(channel_close_confirm) => {
-                Ibc::IbcEvents::ChannelCloseConfirm(channel_close_confirm.clone())
-            }
-            Ibc::IbcEvents::PacketSend(send_packet) => {
-                Ibc::IbcEvents::PacketSend(send_packet.clone())
-            }
-            Ibc::IbcEvents::PacketRecv(recv_packet) => {
-                Ibc::IbcEvents::PacketRecv(recv_packet.clone())
-            }
-            Ibc::IbcEvents::IntentPacketRecv(recv_intent_packet) => {
-                Ibc::IbcEvents::IntentPacketRecv(recv_intent_packet.clone())
-            }
-            Ibc::IbcEvents::WriteAck(write_acknowledgement) => {
-                Ibc::IbcEvents::WriteAck(write_acknowledgement.clone())
-            }
-            Ibc::IbcEvents::PacketAck(acknowledge_packet) => {
-                Ibc::IbcEvents::PacketAck(acknowledge_packet.clone())
-            }
-            Ibc::IbcEvents::PacketTimeout(timeout_packet) => {
-                Ibc::IbcEvents::PacketTimeout(timeout_packet.clone())
-            }
-            Ibc::IbcEvents::BatchedPreviouslySent(batched_previously_sent) => {
-                Ibc::IbcEvents::BatchedPreviouslySent(batched_previously_sent.clone())
-            }
-            Ibc::IbcEvents::BatchedPreviouslyAcked(batched_previously_acked) => {
-                Ibc::IbcEvents::BatchedPreviouslyAcked(batched_previously_acked.clone())
-            }
-        }
-    }
-}
-
 /// Conversions between [`alloy::sol!`] generated types and the canonical tyeps in [`ibc_union_spec`].
 pub mod compat {
     use ibc_union_spec::{ChannelId, ClientId, ConnectionId, MustBeZero, Timestamp};
@@ -729,7 +659,7 @@ pub mod compat {
                     ConnectionState::TryOpen => ibc_union_spec::ConnectionState::TryOpen,
                     ConnectionState::Open => ibc_union_spec::ConnectionState::Open,
                     ConnectionState::Unspecified | ConnectionState::__Invalid => {
-                        return Err(InvalidConnectionError::ConnectionState)
+                        return Err(InvalidConnectionError::ConnectionState);
                     }
                 },
                 client_id: ClientId::from_raw(value.client_id)
@@ -784,7 +714,7 @@ pub mod compat {
                     ChannelState::Open => ibc_union_spec::ChannelState::Open,
                     ChannelState::Closed => ibc_union_spec::ChannelState::Closed,
                     ChannelState::Unspecified | ChannelState::__Invalid => {
-                        return Err(InvalidChannelError::InvalidChannelState)
+                        return Err(InvalidChannelError::InvalidChannelState);
                     }
                 },
                 connection_id: ConnectionId::from_raw(value.connection_id)
@@ -1008,7 +938,7 @@ mod tests {
     }
 
     mod packet {
-        use alloy::sol_types::{private::U256, SolValue};
+        use alloy::sol_types::{SolValue, private::U256};
         use ibc_union_spec::{ChannelId, MustBeZero, Timestamp};
 
         use super::*;
