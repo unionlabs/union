@@ -1,30 +1,30 @@
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
+    CertifiedCheckpointSummary, U64,
     checkpoint_summary::CheckpointContents,
     client_state::{ClientState, ClientStateV1},
     committee::Committee,
     consensus_state::ConsensusState,
     fixed_bytes::SuiFixedBytes,
-    CertifiedCheckpointSummary, U64,
 };
 use sui_sdk::{
+    SuiClient, SuiClientBuilder,
     rpc_types::{CheckpointId, SuiCommittee},
     types::{base_types::ObjectID, full_checkpoint_content::CheckpointTransaction},
-    SuiClient, SuiClientBuilder,
 };
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

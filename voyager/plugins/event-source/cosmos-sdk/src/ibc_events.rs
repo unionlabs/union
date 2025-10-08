@@ -4,9 +4,9 @@ use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use unionlabs::{
-    ibc::core::{channel::order::Order, client::height::Height},
-    primitives::{encoding::HexUnprefixed, Bech32, Bytes, H256},
     ErrorReporter,
+    ibc::core::{channel::order::Order, client::height::Height},
+    primitives::{Bech32, Bytes, H256, encoding::HexUnprefixed},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, bincode::Encode)]
@@ -374,8 +374,8 @@ pub mod height_list_comma_separated {
     use std::string::String;
 
     use serde::{
-        de::{self, Deserialize},
         Deserializer, Serialize, Serializer,
+        de::{self, Deserialize},
     };
     use unionlabs::ibc::core::client::height::Height;
 

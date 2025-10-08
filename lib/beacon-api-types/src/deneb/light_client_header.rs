@@ -1,7 +1,7 @@
 use unionlabs::primitives::H256;
 
 use crate::{
-    consts::{floorlog2, EXECUTION_PAYLOAD_GINDEX},
+    consts::{EXECUTION_PAYLOAD_GINDEX, floorlog2},
     deneb::ExecutionPayloadHeader,
     phase0::BeaconBlockHeader,
 };

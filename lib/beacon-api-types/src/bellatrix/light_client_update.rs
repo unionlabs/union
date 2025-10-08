@@ -3,7 +3,7 @@ use unionlabs::primitives::H256;
 use crate::{
     altair::{SyncAggregate, SyncCommittee},
     bellatrix::LightClientHeader,
-    consts::{floorlog2, FINALIZED_ROOT_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX},
+    consts::{FINALIZED_ROOT_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX, floorlog2},
     custom_types::Slot,
 };
 

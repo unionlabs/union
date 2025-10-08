@@ -1,7 +1,7 @@
 #[cfg(feature = "ssz")]
 use {
     crate::chain_spec::ChainSpec,
-    ssz::{types::List, Ssz},
+    ssz::{Ssz, types::List},
 };
 
 use crate::electra::{ConsolidationRequest, DepositRequest, WithdrawalRequest};

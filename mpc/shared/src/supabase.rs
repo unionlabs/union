@@ -2,14 +2,14 @@ use std::{future::Future, io::SeekFrom, str::FromStr};
 
 use postgrest::Postgrest;
 use reqwest::{
-    header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_LENGTH, RANGE},
     ClientBuilder, StatusCode,
+    header::{AUTHORIZATION, CONTENT_LENGTH, HeaderMap, HeaderValue, RANGE},
 };
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 
 use crate::{
-    types::{Contribution, ContributionSignature, ContributorId, PayloadId},
     CONTRIBUTION_SIZE,
+    types::{Contribution, ContributionSignature, ContributorId, PayloadId},
 };
 
 const API_KEY: &str = "apikey";

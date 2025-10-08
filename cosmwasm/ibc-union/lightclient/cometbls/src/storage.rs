@@ -125,7 +125,7 @@ pub fn consensus_state_iterator_key(height: Height) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::mock_dependencies, Storage};
+    use cosmwasm_std::{Storage, testing::mock_dependencies};
 
     use super::*;
 

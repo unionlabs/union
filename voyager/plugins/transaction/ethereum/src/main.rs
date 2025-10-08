@@ -10,8 +10,8 @@ use alloy::{
     network::{AnyNetwork, EthereumWallet},
     primitives::Address,
     providers::{
-        fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
-        Provider, ProviderBuilder,
+        DynProvider, PendingTransactionError, Provider, ProviderBuilder,
+        fillers::RecommendedFillers, layers::CacheLayer,
     },
     signers::local::LocalSigner,
     sol_types::{SolEvent, SolInterface},
@@ -21,30 +21,30 @@ use bip32::secp256k1::ecdsa::{self, SigningKey};
 use clap::Subcommand;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_solidity::Ibc::{self, IbcErrors};
-use ibc_union_spec::{datagram::Datagram, IbcUnion};
+use ibc_union_spec::{IbcUnion, datagram::Datagram};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
+    Extensions, MethodsError,
+    core::{RpcResult, async_trait},
     proc_macros::rpc,
     types::{ErrorObject, ErrorObjectOwned},
-    Extensions, MethodsError,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
+use serde_json::{Value, json};
+use tracing::{Instrument, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
+    ErrorReporter,
     never::Never,
     primitives::{H160, H256, U256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow::{self, bail},
     hook::SubmitTxHook,
     into_value,
-    message::{data::Data, PluginMessage, VoyagerMessage},
+    message::{PluginMessage, VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::ChainId,
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, defer, now, pass::PassResult, seq, Op, Visit},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    vm::{Op, Visit, call, defer, now, pass::PassResult, seq},
 };
 
 use crate::{
@@ -286,7 +286,9 @@ pub enum TxSubmitError {
     EmptyRevert(Vec<Datagram>),
     #[error("gas price is too high: max {max}, price {price}")]
     GasPriceTooHigh { max: u128, price: u128 },
-    #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
+    #[error(
+        "rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)"
+    )]
     RpcError(#[from] ErrorObjectOwned),
     #[error("batch too large")]
     BatchTooLarge,
@@ -852,7 +854,7 @@ pub mod multicall {
 mod tests {
     use alloy::{
         hex,
-        primitives::{fixed_bytes, LogData},
+        primitives::{LogData, fixed_bytes},
     };
 
     use super::*;

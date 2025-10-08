@@ -3,11 +3,11 @@ use enumorph::Enumorph;
 use ucs03_zkgm::com::{OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER};
 
 use crate::{
+    Instruction, Result,
     batch::{Batch, BatchAck, BatchShape},
     call::{Call, CallAck, CallShape},
     forward::{Forward, ForwardAck, ForwardShape},
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
-    Instruction, Result,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]

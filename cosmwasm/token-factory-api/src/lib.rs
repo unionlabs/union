@@ -2,7 +2,7 @@
 
 // TODO: Link to the protobuf definitions on all types
 
-use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_schema::{QueryResponses, cw_serde};
 use cosmwasm_std::{Addr, Coin, CustomMsg, CustomQuery, Uint128};
 use enumorph::Enumorph;
 

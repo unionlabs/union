@@ -3,21 +3,21 @@
 use alloy::{
     eips::{BlockId, BlockNumberOrTag},
     network::AnyNetwork,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
     serde_json::json,
 };
 

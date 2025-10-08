@@ -1,8 +1,8 @@
 use std::num::ParseIntError;
 
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace};
@@ -14,7 +14,7 @@ use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{json_rpc_error_to_error_object, types::FinalityModuleInfo, FinalityModuleServer},
+    rpc::{FinalityModuleServer, json_rpc_error_to_error_object, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

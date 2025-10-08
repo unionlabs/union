@@ -1,6 +1,6 @@
 use anyhow::Result;
-use clap::{builder::ArgPredicate, Subcommand};
-use ibc_union_spec::{path::commit_packets, ChannelId, MustBeZero, Packet, Timestamp};
+use clap::{Subcommand, builder::ArgPredicate};
+use ibc_union_spec::{ChannelId, MustBeZero, Packet, Timestamp, path::commit_packets};
 use unionlabs::{
     encoding::{DecodeAs, Json},
     primitives::Bytes,

@@ -1,6 +1,6 @@
 use depolama::{
-    value::{ValueCodecViaEncoding, ValueUnitEncoding},
     Prefix, Store,
+    value::{ValueCodecViaEncoding, ValueUnitEncoding},
 };
 use unionlabs_encoding::Bincode;
 

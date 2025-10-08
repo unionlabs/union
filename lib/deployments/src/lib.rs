@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, fmt::Display, sync::LazyLock};
 
 use serde::{Deserialize, Serialize};
 use ucs04::UniversalChainId;
-use unionlabs_primitives::{encoding::HexUnprefixed, Bech32, H160, H256};
+use unionlabs_primitives::{Bech32, H160, H256, encoding::HexUnprefixed};
 use voyager_primitives::ClientType;
 
 pub type Deployments<'a> = BTreeMap<UniversalChainId<'a>, Deployment>;

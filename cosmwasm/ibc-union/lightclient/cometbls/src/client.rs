@@ -8,7 +8,7 @@ use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
-use ibc_union_spec::{path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX, Duration, Status, Timestamp};
+use ibc_union_spec::{Duration, Status, Timestamp, path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX};
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,

@@ -39,13 +39,13 @@ impl AnyPubKey {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use super::{bn254, ed25519, secp256k1, AnyPubKey};
+    use super::{AnyPubKey, bn254, ed25519, secp256k1};
     use crate::{
+        TryFromProtoBytesError, TypeUrl,
         encoding::{DecodeAs, Proto},
         google::protobuf::any::Any,
         impl_proto_via_try_from_into,
         primitives::FixedBytesError,
-        TryFromProtoBytesError, TypeUrl,
     };
 
     impl_proto_via_try_from_into!(AnyPubKey => protos::google::protobuf::Any);

@@ -1,5 +1,5 @@
 use unionlabs::{
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
     tuple::AsTuple,
 };
 

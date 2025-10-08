@@ -2,26 +2,26 @@ use std::slice;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdError, StdResult,
+    Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, entry_point,
+    to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use ibc_union_spec::{path::commit_packets, ChannelId};
+use ibc_union_spec::{ChannelId, path::commit_packets};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_solvable::Solvable;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs_primitives::{encoding::HexPrefixed, Bytes, U256};
+use unionlabs_primitives::{Bytes, U256, encoding::HexPrefixed};
 
 use crate::{
+    CwUCtx,
     error::Error,
     msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg},
     state::{
         Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist,
         Minters, Zkgm,
     },
-    CwUCtx,
 };
 
 #[entry_point]

@@ -5,25 +5,25 @@ use std::{
 
 use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, instrument};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::{Bech32, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Duration, Timestamp},
     rpc::{
-        json_rpc_error_to_error_object, types::ClientBootstrapModuleInfo,
-        ClientBootstrapModuleServer,
+        ClientBootstrapModuleServer, json_rpc_error_to_error_object,
+        types::ClientBootstrapModuleInfo,
     },
 };
 

@@ -4,8 +4,8 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event,
-    MessageInfo, Response, StdResult,
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+    to_json_binary, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -13,7 +13,7 @@ use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
 use ucs03_solvable::Solvable;
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs_primitives::{encoding::HexPrefixed, Bytes};
+use unionlabs_primitives::{Bytes, encoding::HexPrefixed};
 
 use crate::{
     error::Error,
@@ -245,9 +245,9 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{message_info, mock_dependencies, mock_env, MOCK_CONTRACT_ADDR},
         Addr, ContractInfoResponse, ContractResult, QuerierResult, SystemResult, WasmMsg,
         WasmQuery,
+        testing::{MOCK_CONTRACT_ADDR, message_info, mock_dependencies, mock_env},
     };
     use ibc_union_spec::{ChannelId, Packet, Timestamp};
 

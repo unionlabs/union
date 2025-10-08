@@ -262,7 +262,7 @@ pub fn verify_header<C: VerificationContext>(
 
     // 4.
     ctx.verify(
-        signing_valset.map(|x| &x.1 .1),
+        signing_valset.map(|x| &x.1.1),
         vote_attestation.data.hash().get(),
         vote_attestation.agg_signature,
     )

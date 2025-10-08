@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, fmt::Display, str::FromStr};
 
 use cometbft_types::abci::event_attribute::EventAttribute;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use unionlabs::primitives::{Bech32, H256};
 
 /// Wrapper around a strongly-typed enum of on-chain events, containing well-known attributes that

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base64, Bytes};
+use unionlabs_primitives::{Bytes, encoding::Base64};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

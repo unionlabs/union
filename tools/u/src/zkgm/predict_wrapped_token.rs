@@ -1,7 +1,7 @@
 use alloy::{network::AnyNetwork, primitives::Address, providers::ProviderBuilder, sol};
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::Args;
-use deployments::{Deployment, DEPLOYMENTS};
+use deployments::{DEPLOYMENTS, Deployment};
 use ibc_union_spec::ChannelId;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};

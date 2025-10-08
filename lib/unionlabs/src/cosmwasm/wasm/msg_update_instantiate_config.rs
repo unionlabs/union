@@ -24,7 +24,7 @@ pub mod proto {
     use unionlabs_primitives::Bech32DecodeError;
 
     use super::MsgUpdateInstantiateConfig;
-    use crate::{cosmwasm::wasm::access_config, impl_proto_via_try_from_into, Msg};
+    use crate::{Msg, cosmwasm::wasm::access_config, impl_proto_via_try_from_into};
 
     impl_proto_via_try_from_into!(MsgUpdateInstantiateConfig => protos::cosmwasm::wasm::v1::MsgUpdateInstantiateConfig);
 

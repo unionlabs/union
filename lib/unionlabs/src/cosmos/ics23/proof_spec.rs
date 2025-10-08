@@ -6,7 +6,7 @@ use crate::{
         inner_spec::{InnerSpec, TryFromInnerSpecError},
         leaf_op::{LeafOp, TryFromLeafOpError},
     },
-    errors::{required, MissingField},
+    errors::{MissingField, required},
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::ProofSpec), into, from))]

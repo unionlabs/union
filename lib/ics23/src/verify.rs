@@ -14,7 +14,7 @@ use unionlabs::{
 
 use crate::{
     existence_proof::{self, CalculateRootError, SpecMismatchError},
-    ops::hash_op::{do_hash, HashError},
+    ops::hash_op::{HashError, do_hash},
 };
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]

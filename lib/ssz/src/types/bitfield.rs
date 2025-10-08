@@ -6,13 +6,13 @@ use serde::{
     de::{Deserialize, Deserializer},
     ser::{Serialize, Serializer},
 };
-use smallvec::{smallvec, SmallVec, ToSmallVec};
+use smallvec::{SmallVec, ToSmallVec, smallvec};
 use typenum::Unsigned;
 use unionlabs_primitives::H256;
 
 use crate::{
-    types::{tree_hash::bitfield_bytes_tree_hash_root, Error},
     DecodeError, Ssz,
+    types::{Error, tree_hash::bitfield_bytes_tree_hash_root},
 };
 
 /// Maximum number of bytes to store on the stack in a bitfield's `SmallVec`.
@@ -439,11 +439,7 @@ impl<'a, T: BitfieldBehaviour> IntoIterator for &'a Bitfield<T> {
 const fn bytes_for_bit_len(bit_len: usize) -> usize {
     let v2 = bit_len.div_ceil(8);
 
-    if v2 >= 1 {
-        v2
-    } else {
-        1
-    }
+    if v2 >= 1 { v2 } else { 1 }
 }
 
 /// An iterator over the bits in a `Bitfield`.

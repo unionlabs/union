@@ -64,12 +64,16 @@ pub enum Error {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum InvalidHeaderError {
-    #[error("signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})")]
+    #[error(
+        "signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})"
+    )]
     SignedHeaderHeightMustBeMoreRecent {
         signed_height: u64,
         trusted_height: u64,
     },
-    #[error("signed header's timestamp ({signed_timestamp}) must be greater than trusted timestamp ({trusted_timestamp})")]
+    #[error(
+        "signed header's timestamp ({signed_timestamp}) must be greater than trusted timestamp ({trusted_timestamp})"
+    )]
     SignedHeaderTimestampMustBeMoreRecent {
         signed_timestamp: u64,
         trusted_timestamp: u64,
@@ -78,7 +82,9 @@ pub enum InvalidHeaderError {
     HeaderExpired(u64),
     #[error("negative header timestamp ({0})")]
     NegativeTimestamp(i64),
-    #[error("signed header timestamp ({signed_timestamp}) cannot exceed the max clock drift ({max_clock_drift})")]
+    #[error(
+        "signed header timestamp ({signed_timestamp}) cannot exceed the max clock drift ({max_clock_drift})"
+    )]
     SignedHeaderCannotExceedMaxClockDrift {
         signed_timestamp: u64,
         max_clock_drift: u64,
@@ -99,7 +105,9 @@ pub enum MigrateClientStoreError {
 pub struct TrustedValidatorsMismatch(pub H256, pub H256);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("trusted revision number ({trusted_revision_number}) does not match the header ({header_revision_number})")]
+#[error(
+    "trusted revision number ({trusted_revision_number}) does not match the header ({header_revision_number})"
+)]
 pub struct RevisionNumberMismatch {
     pub trusted_revision_number: u64,
     pub header_revision_number: u64,

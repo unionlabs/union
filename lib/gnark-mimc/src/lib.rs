@@ -178,7 +178,7 @@ impl<'a, F: PrimeField, const K: usize, const E: u64> MiMC<'a, F, K, E> {
 mod tests {
     use serde::Deserialize;
 
-    use crate::{MiMC, MiMCConstants, GNARK_BN254_E, GNARK_BN254_ROUNDS, GNARK_SEED};
+    use crate::{GNARK_BN254_E, GNARK_BN254_ROUNDS, GNARK_SEED, MiMC, MiMCConstants};
 
     #[derive(Deserialize)]
     struct Test {

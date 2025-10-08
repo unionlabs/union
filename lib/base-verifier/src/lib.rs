@@ -2,15 +2,15 @@ use core::fmt::Debug;
 
 use alloy_sol_types::SolValue;
 use base_light_client_types::{
-    header::{L2Header, OutputRootProof},
     ClientStateV1, Header,
+    header::{L2Header, OutputRootProof},
 };
 use evm_storage_verifier::{
     verify_account_code_hash, verify_account_storage_root, verify_storage_proof,
 };
 use unionlabs::{
     ethereum::{keccak256, slot::Slot},
-    primitives::{encoding::HexPrefixed, ByteArrayExt, H160, H256, U256},
+    primitives::{ByteArrayExt, H160, H256, U256, encoding::HexPrefixed},
 };
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]

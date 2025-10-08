@@ -1,8 +1,8 @@
 use std::{
     io::Write,
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     time::Instant,
@@ -10,10 +10,10 @@ use std::{
 
 use alloy::{
     hex,
-    primitives::{keccak256, Address, U256},
+    primitives::{Address, U256, keccak256},
 };
 use clap::Args;
-use sha2::{digest::generic_array::GenericArray, Digest};
+use sha2::{Digest, digest::generic_array::GenericArray};
 use unionlabs::{
     primitives::{H160, H256},
     typenum,
@@ -237,10 +237,11 @@ impl Cmd {
         let mut result = None;
         for handle in handles {
             if let Ok(thread_result) = handle.join()
-                && thread_result.is_some() {
-                    result = thread_result;
-                    break;
-                }
+                && thread_result.is_some()
+            {
+                result = thread_result;
+                break;
+            }
         }
 
         status_handle.join().ok();

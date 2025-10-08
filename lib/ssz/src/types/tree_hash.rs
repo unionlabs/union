@@ -2,8 +2,8 @@ use typenum::Unsigned;
 use unionlabs_primitives::H256;
 
 use crate::{
-    tree_hash::{MerkleHasher, TreeHashType, BYTES_PER_CHUNK},
     Ssz,
+    tree_hash::{BYTES_PER_CHUNK, MerkleHasher, TreeHashType},
 };
 
 /// A helper function providing common functionality between the `TreeHash` implementations for

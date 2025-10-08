@@ -8,7 +8,7 @@ use {
         electra::ExecutionRequestsSsz,
         phase0::{AttestationSsz, AttesterSlashingSsz, DepositSsz},
     },
-    ssz::{types::List, Ssz},
+    ssz::{Ssz, types::List},
 };
 
 use crate::{

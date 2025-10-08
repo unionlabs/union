@@ -1,6 +1,6 @@
 use unionlabs_primitives::H256;
 
-use super::{get_zero_hash, BYTES_PER_CHUNK};
+use super::{BYTES_PER_CHUNK, get_zero_hash};
 use crate::tree_hash::{hash_concat, hash_fixed};
 
 /// Merkleize `bytes` and return the root, optionally padding the tree out to `min_leaves` number of

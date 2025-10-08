@@ -1,8 +1,8 @@
 use core::fmt::Display;
 
 use bip32::{
-    secp256k1::{ecdsa, ecdsa::Signature, schnorr::signature::Signer},
     PrivateKey, PublicKey,
+    secp256k1::{ecdsa, ecdsa::Signature, schnorr::signature::Signer},
 };
 use ripemd::Digest;
 use unionlabs_primitives::{FixedBytes, H160};

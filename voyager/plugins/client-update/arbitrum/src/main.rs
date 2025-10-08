@@ -8,38 +8,37 @@ use alloy::{
 };
 use arbitrum_client::finalized_l2_block_of_l1_height;
 use arbitrum_light_client_types::{ClientState, Header, L2Header};
-use arbitrum_types::slots::{rollup_core_nodes_confirm_data_slot, ROLLUP_CORE_LATEST_NODE_CREATED};
+use arbitrum_types::slots::{ROLLUP_CORE_LATEST_NODE_CREATED, rollup_core_nodes_confirm_data_slot};
 use ethereum_light_client_types::{AccountProof, StorageProof};
-use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
+use ibc_union_spec::{ClientId, IbcUnion, path::ClientStatePath};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{H160, U256},
-    ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
         callback::AggregateSubmitTxFromOrderedHeaders,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
     types::RawClientId,
-    vm::{call, conc, data, pass::PassResult, promise, seq, Op, Visit},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    vm::{Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
 
 use crate::call::{FetchL2Update, FetchUpdate, ModuleCall};

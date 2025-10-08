@@ -1,7 +1,7 @@
 #![allow(non_snake_case, unused_imports)]
 
 use hex_literal::hex;
-use ssz::{types::*, Ssz};
+use ssz::{Ssz, types::*};
 use typenum::U;
 use unionlabs::primitives::{H256, U256};
 

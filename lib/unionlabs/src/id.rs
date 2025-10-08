@@ -317,7 +317,7 @@ const fn validate_id(s: &str, min_len: usize, max_len: usize) -> Result<(), Ics2
             _ => {
                 return Err(Ics24IdParseError::InvalidCharacter(
                     InvalidIcs024IdentifierCharacter(c),
-                ))
+                ));
             }
         }
 

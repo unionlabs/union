@@ -91,7 +91,7 @@ pub mod base64 {
     use core::fmt::Debug;
 
     use base64::prelude::*;
-    use serde::{de, Deserialize, Deserializer};
+    use serde::{Deserialize, Deserializer, de};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -117,7 +117,7 @@ pub mod inner_base64 {
     use alloc::{string::String, vec::Vec};
 
     use base64::prelude::*;
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S: Serializer>(
         #[allow(clippy::ptr_arg)] // required by serde
@@ -142,7 +142,7 @@ pub mod base64_opt {
     use alloc::{string::String, vec::Vec};
 
     use base64::prelude::*;
-    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
     pub fn serialize<S: Serializer>(
         #[allow(clippy::ptr_arg)] // required by serde
@@ -168,7 +168,7 @@ pub mod base64_opt_default {
     use alloc::{string::String, vec::Vec};
 
     use base64::prelude::*;
-    use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
     pub fn serialize<S: Serializer>(
         #[allow(clippy::ptr_arg)] // required by serde
@@ -193,9 +193,9 @@ pub mod fixed_size_array {
     use core::marker::PhantomData;
 
     use serde::{
+        Deserialize, Deserializer, Serialize, Serializer,
         de::{SeqAccess, Visitor},
         ser::SerializeTuple,
-        Deserialize, Deserializer, Serialize, Serializer,
     };
 
     pub fn serialize<S: Serializer, T: Serialize, const N: usize>(
@@ -254,7 +254,7 @@ pub mod hex_string {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     use crate::{parse_hex, to_hex};
 
@@ -289,7 +289,7 @@ pub mod hex_string {
 pub mod u64_hex {
     use alloc::{format, string::String};
 
-    use serde::{de, Deserialize};
+    use serde::{Deserialize, de};
 
     use crate::HEX_ENCODING_PREFIX;
 
@@ -315,7 +315,7 @@ pub mod u64_hex {
 pub mod u64_hex_opt {
     use alloc::{format, string::String};
 
-    use serde::{de, Deserialize};
+    use serde::{Deserialize, de};
 
     use crate::HEX_ENCODING_PREFIX;
 
@@ -348,7 +348,7 @@ pub mod hex_upper_unprefixed {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -377,7 +377,7 @@ pub mod hex_allow_unprefixed {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -404,7 +404,7 @@ pub mod hex_allow_unprefixed_list {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S, T, C>(list: &C, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -441,7 +441,7 @@ pub mod hex_allow_unprefixed_option {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S, T>(option: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -476,7 +476,7 @@ pub mod hex_allow_unprefixed_maybe_empty {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub fn serialize<S, T: AsRef<[u8]>>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -511,7 +511,7 @@ pub mod hex_string_list {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     use crate::parse_hex;
 
@@ -543,7 +543,7 @@ pub mod string {
     use alloc::string::String;
     use core::{fmt::Display, str::FromStr};
 
-    use serde::{de::Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserializer, Serialize, Serializer, de::Deserialize};
 
     pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -580,7 +580,7 @@ pub mod string_list {
     use alloc::{format, string::String, vec::Vec};
     use core::{fmt::Debug, str::FromStr};
 
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     use crate::alloc::string::ToString;
 
@@ -618,7 +618,7 @@ pub mod map_numeric_keys_as_string {
     };
     use core::{fmt::Display, str::FromStr};
 
-    use serde::{de::Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserializer, Serialize, Serializer, de::Deserialize};
 
     pub fn serialize<S, M, K, V>(data: M, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -659,7 +659,7 @@ pub mod string_opt {
     use alloc::string::String;
     use core::{fmt::Display, str::FromStr};
 
-    use serde::{de::Deserialize, Deserializer, Serializer};
+    use serde::{Deserializer, Serializer, de::Deserialize};
 
     pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -693,8 +693,8 @@ pub mod bitvec_string {
 
     use bitvec::vec::BitVec;
     use serde::{
-        de::{self, Deserialize},
         Deserializer, Serializer,
+        de::{self, Deserialize},
     };
 
     pub fn serialize<S>(data: &BitVec<u8>, serializer: S) -> Result<S::Ok, S::Error>
@@ -737,7 +737,7 @@ pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
     use core::fmt::Debug;
 
     use chrono::{DateTime, SecondsFormat, Utc};
-    use serde::{de::Deserialize, Deserializer, Serializer};
+    use serde::{Deserializer, Serializer, de::Deserialize};
 
     pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where

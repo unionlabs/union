@@ -6,14 +6,14 @@ use std::{
 
 use anyhow::Result;
 use clap::{
-    builder::styling::{AnsiColor, Effects, Styles},
     Parser, Subcommand, ValueEnum,
+    builder::styling::{AnsiColor, Effects, Styles},
 };
 use serde::Serialize;
 use tracing_subscriber::EnvFilter;
 use unionlabs::primitives::{
-    encoding::{HexPrefixed, HexUnprefixed},
     Bytes,
+    encoding::{HexPrefixed, HexUnprefixed},
 };
 
 pub mod codec;

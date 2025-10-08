@@ -4,7 +4,7 @@ use cometbft_types::{
 };
 use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
-    spec::Status, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate, spec::Status,
 };
 use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
 use ics23::ibc_api::SDK_SPECS;
@@ -18,7 +18,7 @@ use unionlabs::{
         client::height::Height,
         commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 use crate::{

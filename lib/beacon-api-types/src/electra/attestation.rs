@@ -3,8 +3,8 @@ use unionlabs::primitives::{Bytes, H768};
 use {
     crate::chain_spec::ChainSpec,
     ssz::{
-        types::{BitList, BitVector},
         Ssz,
+        types::{BitList, BitVector},
     },
 };
 

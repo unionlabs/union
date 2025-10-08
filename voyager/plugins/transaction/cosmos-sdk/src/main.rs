@@ -12,41 +12,40 @@ use std::{
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
-    gas::{any, feemarket, fixed, osmosis_eip1559_feemarket, GasFillerT},
+    BroadcastTxCommitError, TxClient,
+    gas::{GasFillerT, any, feemarket, fixed, osmosis_eip1559_feemarket},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    BroadcastTxCommitError, TxClient,
 };
 use ibc_union::ContractErrorKind;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
+    Extensions, MethodsError,
+    core::{RpcResult, async_trait},
     proc_macros::rpc,
     types::ErrorObject,
-    Extensions, MethodsError,
 };
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
-    self,
+    self, ErrorReporter,
     cosmos::base::coin::Coin,
     google::protobuf::any::mk_any,
     never::Never,
     option_unwrap,
     primitives::{Bech32, Bytes, H160, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
+    DefaultCmd,
     anyhow::{self, anyhow, bail},
     hook::SubmitTxHook,
     into_value,
-    message::{data::Data, PluginMessage, VoyagerMessage},
+    message::{PluginMessage, VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::ChainId,
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, defer_relative, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
-    DefaultCmd,
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    vm::{BoxDynError, Op, Visit, call, defer_relative, noop, pass::PassResult, seq},
 };
 
 use crate::call::{IbcMessage, ModuleCall};
@@ -561,7 +560,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     -1,
                                     ErrorReporter(err).with_message("jsonrpc error"),
                                     None::<()>,
-                                ))
+                                ));
                             }
 
                             BroadcastTxCommitError::Query(GrpcAbciQueryError {
@@ -578,7 +577,9 @@ impl PluginServer<ModuleCall, Never> for Module {
                             {
                                 return Err(ErrorObject::owned(
                                     -1,
-                                    format!("account sequence mismatch ({codespace}, {error_code}): {log}"),
+                                    format!(
+                                        "account sequence mismatch ({codespace}, {error_code}): {log}"
+                                    ),
                                     None::<()>,
                                 ));
                             }
@@ -648,13 +649,17 @@ impl PluginServer<ModuleCall, Never> for Module {
                                                 ibc_union_spec::datagram::Datagram::UpdateClient(_)
                                             )
                                         ) {
-                                            warn!("update client failed, this may cause other messages to fail as well");
+                                            warn!(
+                                                "update client failed, this may cause other messages to fail as well"
+                                            );
                                         }
 
                                         warn!(msg = %into_value(failed_msg), "dropping failed msg");
 
                                         if msgs.is_empty() {
-                                            info!("no messages to submit after dropping failed messages");
+                                            info!(
+                                                "no messages to submit after dropping failed messages"
+                                            );
 
                                             Ok(noop())
                                         } else {
@@ -669,7 +674,9 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                                     return Err(ErrorObject::owned(-1, "out of gas", None::<()>));
                                 } else {
-                                    warn!("unable to parse message index from tx failure ({codespace}, {error_code}): {log}");
+                                    warn!(
+                                        "unable to parse message index from tx failure ({codespace}, {error_code}): {log}"
+                                    );
 
                                     if msgs.len() == 1 {
                                         warn!(msg = %into_value(msgs.pop().unwrap()), "cosmos msg failed");

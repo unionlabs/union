@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
-    primitives::{encoding::Base64, H256},
+    primitives::{H256, encoding::Base64},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

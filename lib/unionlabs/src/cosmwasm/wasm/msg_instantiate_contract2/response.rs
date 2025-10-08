@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{encoding::Base64, Bech32, Bytes, H256};
+use crate::primitives::{Bech32, Bytes, H256, encoding::Base64};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

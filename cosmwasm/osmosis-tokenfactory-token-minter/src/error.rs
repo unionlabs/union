@@ -21,7 +21,9 @@ pub enum Error {
     #[error("minter config is expected to be osmosis-tokenfactory")]
     InvalidMinterConfig,
 
-    #[error("the token ownership can only be changed by this contract or the minter operator since this token is owned by this contract")]
+    #[error(
+        "the token ownership can only be changed by this contract or the minter operator since this token is owned by this contract"
+    )]
     UnauthorizedWhenSelfOwned,
 
     #[error("the token is owned by {owner} and, {sender} cannot change the ownership")]
@@ -38,7 +40,9 @@ pub enum Error {
     )]
     CouldNotDecodeMetadata,
 
-    #[error("tokenfactory minter expects the implementation field of foa v2 to be a constant 'tokenfactory' string")]
+    #[error(
+        "tokenfactory minter expects the implementation field of foa v2 to be a constant 'tokenfactory' string"
+    )]
     UnexpectedImplementation,
 
     #[error("cannot deploy a new token with v1 TokenOrder")]

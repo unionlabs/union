@@ -102,14 +102,23 @@ pub fn connection_to_process((net_a, net_b): &(Network, Network)) -> Process {
         name: name.clone(),
         disabled: None,
         is_daemon: Some(true),
-        command: format!("set -o pipefail; nix run .#voyager -- queue enqueue \"$(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config {} --client-b-config {} --create-clients --open-connection --connection-ordering unordered --init-fetch)\"",net_a.network_id(), net_b.network_id(), client_a_config, client_b_config ),
+        command: format!(
+            "set -o pipefail; nix run .#voyager -- queue enqueue \"$(nix run -L .#voyager -- -c ./voyager-config.json handshake {} {} --client-a-config {} --client-b-config {} --create-clients --open-connection --connection-ordering unordered --init-fetch)\"",
+            net_a.network_id(),
+            net_b.network_id(),
+            client_a_config,
+            client_b_config
+        ),
 
         log_configuration: LogConfiguration::default(),
         log_location: log_path(&name),
         depends_on: Some(HashMap::from([
-            (net_a.to_process().name,ProcessDependency::healthy()),
-            (net_b.to_process().name,ProcessDependency::healthy()),
-            (voyager::relay_process(&[]).name,ProcessDependency::healthy())
+            (net_a.to_process().name, ProcessDependency::healthy()),
+            (net_b.to_process().name, ProcessDependency::healthy()),
+            (
+                voyager::relay_process(&[]).name,
+                ProcessDependency::healthy(),
+            ),
         ])),
         liveliness_probe: None,
         readiness_probe: None, // TODO
@@ -188,8 +197,10 @@ fn main() {
             .unwrap();
     }
 
-    let info_text = format!("Tips:\n - Run {} in a second terminal tab to view logs.\n - You can restart single processes in the interface with ctrl+r.\n - You can view the generated process composition at `process-compose.yml` in the repo root.\n - Processes are designed to be overridden for a fast dev feedback cycle.\n   For example, add a `process-compose.override.yml` to the repo root with the following contents\n   to use a cargo debug build of voyager instead of the nix build.", style("`nix run .#devnet-logs`").cyan().bold()) +
-    r##"
+    let info_text = format!(
+        "Tips:\n - Run {} in a second terminal tab to view logs.\n - You can restart single processes in the interface with ctrl+r.\n - You can view the generated process composition at `process-compose.yml` in the repo root.\n - Processes are designed to be overridden for a fast dev feedback cycle.\n   For example, add a `process-compose.override.yml` to the repo root with the following contents\n   to use a cargo debug build of voyager instead of the nix build.",
+        style("`nix run .#devnet-logs`").cyan().bold()
+    ) + r##"
     {
       "processes": {
         "voyager-relay" : {

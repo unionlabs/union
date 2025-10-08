@@ -27,7 +27,7 @@
 
 use access_manager_types::managed::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg};
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
+    Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
@@ -44,7 +44,7 @@ mod restricted;
 pub mod state;
 
 pub use restricted::{
-    EnsureCanCallResult, Restricted, ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
+    ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID, EnsureCanCallResult, Restricted,
 };
 
 /// Initializes the contract connected to an initial authority.

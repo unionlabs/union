@@ -1,39 +1,39 @@
 // #![warn(clippy::unwrap_used)]
 
-use std::num::{NonZeroU32, NonZeroU8, ParseIntError};
+use std::num::{NonZeroU8, NonZeroU32, ParseIntError};
 
 use cometbft_rpc::rpc_types::Order;
 use cosmos_sdk_event::CosmosSdkEvent;
-use futures::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
+use futures::{TryFutureExt, TryStreamExt, stream::FuturesUnordered};
 use ibc_union_spec::{
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet, Status,
+    Timestamp,
     path::StorePath,
     query::{
         ClientStatus, PacketAckByHash, PacketAckByHashResponse, PacketByHash, PacketByHashResponse,
         PacketsByBatchHash, PacketsByBatchHashResponse, Query,
     },
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet, Status,
-    Timestamp,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde_json::{Value, json};
 use tracing::{debug, error, instrument, trace};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     option_unwrap,
-    primitives::{encoding::HexUnprefixed, Bech32, Bytes, H256},
-    ErrorReporter,
+    primitives::{Bech32, Bytes, H256, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
-    rpc::{rpc_error, types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, rpc_error, types::StateModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -109,7 +109,9 @@ impl Module {
         channel_id: ChannelId,
         packet_hash: H256,
     ) -> RpcResult<PacketByHashResponse> {
-        let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
+        let query = format!(
+            "wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}"
+        );
 
         let mut res = self
             .cometbft_client
@@ -520,7 +522,9 @@ impl StateModuleServer<IbcUnion> for Module {
                 channel_id,
                 batch_hash,
             }) => {
-                let query = format!("wasm-batch_send.batch_hash='{batch_hash}' AND wasm-batch_send.channel_id={channel_id}");
+                let query = format!(
+                    "wasm-batch_send.batch_hash='{batch_hash}' AND wasm-batch_send.channel_id={channel_id}"
+                );
 
                 let res = self
                     .cometbft_client

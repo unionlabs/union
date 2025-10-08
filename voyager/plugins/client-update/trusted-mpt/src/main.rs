@@ -3,37 +3,37 @@
 use std::collections::VecDeque;
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
-use ed25519_dalek::{ed25519::signature::SignerMut, SigningKey};
+use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
 use ethereum_light_client_types::AccountProof;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
-use trusted_mpt_light_client_types::{signed_data::SignedData, Header};
+use trusted_mpt_light_client_types::{Header, signed_data::SignedData};
 use unionlabs::{
+    ErrorReporter,
     encoding::Bincode,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{H160, H256, H512},
-    ErrorReporter,
 };
 use voyager_sdk::{
+    DefaultCmd,
     anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{types::PluginInfo, PluginServer},
-    vm::{self, pass::PassResult, BoxDynError, Op, Visit},
-    DefaultCmd,
+    rpc::{PluginServer, types::PluginInfo},
+    vm::{self, BoxDynError, Op, Visit, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};

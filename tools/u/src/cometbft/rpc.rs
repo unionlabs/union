@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::{Args, Subcommand};
 use unionlabs::{bounded::BoundedI64, primitives::Bytes};
 

@@ -4,7 +4,7 @@ use std::{
     process::ExitCode,
 };
 
-use cargo_metadata::{semver::Version, MetadataCommand};
+use cargo_metadata::{MetadataCommand, semver::Version};
 use cargo_util_schemas::manifest::{
     InheritableDependency, InheritableField, TomlInheritedDependency, TomlManifest,
 };

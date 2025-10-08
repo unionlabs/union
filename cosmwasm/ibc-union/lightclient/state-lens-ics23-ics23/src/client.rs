@@ -4,9 +4,9 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::VerifyCreationResponseEvent;
-use ibc_union_spec::{path::ConsensusStatePath, Status, Timestamp};
+use ibc_union_spec::{Status, Timestamp, path::ConsensusStatePath};
 use ics23::ibc_api::SDK_SPECS;
-use state_lens_ics23_ics23_light_client_types::{client_state::Extra, ClientState, ConsensusState};
+use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState, client_state::Extra};
 use state_lens_light_client_types::Header;
 use unionlabs::{
     encoding::{Bincode, DecodeAs, EthAbi},

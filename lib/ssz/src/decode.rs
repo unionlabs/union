@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
-use super::{Ssz, UnionSelector, BYTES_PER_LENGTH_OFFSET, MAX_UNION_SELECTOR};
+use super::{BYTES_PER_LENGTH_OFFSET, MAX_UNION_SELECTOR, Ssz, UnionSelector};
 
 type SmallVec8<T> = SmallVec<[T; 8]>;
 
@@ -188,7 +188,7 @@ impl<'a> SszDecoderBuilder<'a> {
             match first_offset.cmp(&self.items_index) {
                 Ordering::Less => return Err(DecodeError::OffsetIntoFixedPortion(first_offset)),
                 Ordering::Greater => {
-                    return Err(DecodeError::OffsetSkipsVariableBytes(first_offset))
+                    return Err(DecodeError::OffsetSkipsVariableBytes(first_offset));
                 }
                 Ordering::Equal => (),
             }

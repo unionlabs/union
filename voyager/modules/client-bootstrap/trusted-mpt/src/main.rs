@@ -1,8 +1,8 @@
-use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer};
 use ed25519_dalek::SigningKey;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -16,7 +16,7 @@ use voyager_sdk::{
     anyhow, ensure_null, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

@@ -3,8 +3,8 @@ use unionlabs::primitives::{Bytes, H256};
 use voyager_primitives::{ClientType, Timestamp};
 
 use crate::{
-    types::{packet::MustBeZero, ChannelId, ClientId, ConnectionId},
     Connection, Packet,
+    types::{ChannelId, ClientId, ConnectionId, packet::MustBeZero},
 };
 
 /// The fully filled out event for IBC union. This will likely not be what is exactly emitted on chain, however *enough* information should be emitted such that this structure can be constructed.

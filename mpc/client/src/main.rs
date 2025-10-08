@@ -9,38 +9,39 @@ use std::{
     os::unix::fs::MetadataExt,
     str::FromStr,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant, UNIX_EPOCH},
 };
 
-use async_sqlite::{rusqlite::OpenFlags, JournalMode, PoolBuilder};
-use base64::{prelude::BASE64_STANDARD, Engine};
+use async_sqlite::{JournalMode, PoolBuilder, rusqlite::OpenFlags};
+use base64::{Engine, prelude::BASE64_STANDARD};
 use crossterm::{cursor::Show, event, execute};
 use http_body_util::{BodyExt, Full};
 use httpdate::parse_http_date;
 use hyper::{
+    Method,
     body::{Buf, Bytes},
     service::service_fn,
-    Method,
 };
 use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
-use mpc_shared::{phase2_contribute, signed_message, supabase::SupabaseMPCApi, CONTRIBUTION_SIZE};
+use mpc_shared::{CONTRIBUTION_SIZE, phase2_contribute, signed_message, supabase::SupabaseMPCApi};
 use pgp::{
+    ArmorOptions, Deserializable, KeyType, SecretKeyParamsBuilder, SignedSecretKey,
     cleartext::CleartextSignedMessage,
     crypto::{hash::HashAlgorithm, sym::SymmetricKeyAlgorithm},
     types::SecretKeyTrait,
-    ArmorOptions, Deserializable, KeyType, SecretKeyParamsBuilder, SignedSecretKey,
 };
-use ratatui::{backend::CrosstermBackend, Terminal, Viewport};
-use reqwest::{header::LOCATION, Body};
+use ratatui::{Terminal, Viewport, backend::CrosstermBackend};
+use reqwest::{Body, header::LOCATION};
 use serde::Deserialize;
 use tokio::{
     net::TcpListener,
     sync::{
+        RwLock,
         broadcast::{self, Receiver, Sender},
-        mpsc, oneshot, RwLock,
+        mpsc, oneshot,
     },
 };
 use tokio_util::sync::CancellationToken;
@@ -323,9 +324,9 @@ async fn contribute(
             .await?
             .error_for_status()
             .is_err()
-        {
-            upload_location = None;
-        }
+    {
+        upload_location = None;
+    }
     let upload_location = match upload_location {
         Some(location) => location,
         None => {

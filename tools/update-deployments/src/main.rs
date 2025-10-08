@@ -3,7 +3,7 @@ use std::{fmt::Display, path::PathBuf};
 use alloy::{
     eips::BlockNumberOrTag, hex, network::AnyNetwork, primitives::keccak256, providers::Provider,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 use cosmwasm_std::instantiate2_address;
 use deployments::{

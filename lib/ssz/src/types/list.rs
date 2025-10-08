@@ -13,8 +13,8 @@ use typenum::{NonZero, Unsigned};
 use unionlabs_primitives::H256;
 
 use crate::{
-    decode::TryFromIter, decode_list_of_variable_length_items, sequence_ssz_append,
-    sequence_ssz_bytes_len, tree_hash::TreeHashType, types::tree_hash::vec_tree_hash_root, Ssz,
+    Ssz, decode::TryFromIter, decode_list_of_variable_length_items, sequence_ssz_append,
+    sequence_ssz_bytes_len, tree_hash::TreeHashType, types::tree_hash::vec_tree_hash_root,
 };
 
 /// Emulates a SSZ `List`.

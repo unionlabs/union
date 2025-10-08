@@ -2,7 +2,7 @@ use unionlabs::primitives::H256;
 
 use crate::{
     altair::SyncCommittee,
-    consts::{floorlog2, CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA},
+    consts::{CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA, floorlog2},
     deneb::LightClientHeader,
 };
 

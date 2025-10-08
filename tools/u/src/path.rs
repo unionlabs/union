@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use ibc_union_spec::{
+    ChannelId, ClientId, ConnectionId,
     path::{
         BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
         ConsensusStatePath,
     },
-    ChannelId, ClientId, ConnectionId,
 };
 use unionlabs::{
     ethereum::ibc_commitment_key, ibc::core::client::height::Height, primitives::H256,

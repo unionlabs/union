@@ -5,13 +5,13 @@ use subset_of::SubsetOf;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     message::{
-        data::{DecodedHeaderMeta, OrderedHeaders},
         VoyagerMessage,
+        data::{DecodedHeaderMeta, OrderedHeaders},
     },
-    vm::{data, Op},
+    vm::{Op, data},
 };
 
-use crate::{data::ProveResponse, Module};
+use crate::{Module, data::ProveResponse};
 
 #[model]
 #[derive(Enumorph, SubsetOf)]

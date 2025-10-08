@@ -55,10 +55,11 @@ pub mod proto {
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use unionlabs::{
+        TryFromEthAbiBytesError,
         bounded::{BoundedI32, BoundedI64, BoundedIntError},
         google::protobuf::timestamp::Timestamp,
         ibc::core::client::height::Height,
-        impl_ethabi_via_try_from_into, TryFromEthAbiBytesError,
+        impl_ethabi_via_try_from_into,
     };
 
     use crate::{Header, LightHeader};

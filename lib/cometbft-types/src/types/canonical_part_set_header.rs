@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::primitives::{encoding::HexUnprefixed, H256};
+use unionlabs::primitives::{H256, encoding::HexUnprefixed};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalPartSetHeader {

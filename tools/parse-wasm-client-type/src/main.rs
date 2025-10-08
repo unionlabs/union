@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 
 use clap::Parser;
-use wasm_client_type::{extract_from_wasm, WasmClientType};
+use wasm_client_type::{WasmClientType, extract_from_wasm};
 
 #[derive(Parser)]
 #[command(arg_required_else_help = true)]

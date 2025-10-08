@@ -31,7 +31,9 @@ pub enum Error {
     #[error("the quote token must be a valid utf8 denom")]
     InvalidQuoteToken,
 
-    #[error("the order quote token must match the previously escrowed denom: quote_token={quote_token} != escrowed_denom={escrowed_denom}")]
+    #[error(
+        "the order quote token must match the previously escrowed denom: quote_token={quote_token} != escrowed_denom={escrowed_denom}"
+    )]
     InvalidFill {
         quote_token: String,
         escrowed_denom: String,

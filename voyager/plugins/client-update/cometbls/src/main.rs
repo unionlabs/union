@@ -20,9 +20,9 @@ use galois_rpc::{
     validator_set_commit::ValidatorSetCommit,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
@@ -31,21 +31,21 @@ use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
     bounded::BoundedI64,
     ibc::core::client::height::Height,
-    primitives::{encoding::HexUnprefixed, H160},
+    primitives::{H160, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
+    DefaultCmd,
     anyhow::{self, bail},
     hook::UpdateHook,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight},
         data::Data,
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{rpc_error, types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, data, defer, noop, now, pass::PassResult, promise, seq, void, Op, Visit},
-    DefaultCmd,
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, rpc_error, types::PluginInfo},
+    vm::{Op, Visit, call, data, defer, noop, now, pass::PassResult, promise, seq, void},
 };
 
 use crate::{

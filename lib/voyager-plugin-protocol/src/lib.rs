@@ -30,28 +30,28 @@ use std::{
 
 use futures::FutureExt;
 use jsonrpsee::{
+    MethodResponse, RpcModule,
     core::{
+        TEN_MB_SIZE_BYTES,
         client::{BatchResponse, ClientT},
         params::BatchRequestBuilder,
         traits::ToRpcParams,
-        TEN_MB_SIZE_BYTES,
     },
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, Response, ResponsePayload},
-    MethodResponse, RpcModule,
 };
-use opentelemetry::{global, KeyValue};
+use opentelemetry::{KeyValue, global};
 use reth_ipc::{
     client::IpcClientBuilder,
     server::{RpcService, RpcServiceBuilder},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::value::RawValue;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::Layer;
-use tracing::{debug, debug_span, error, info, info_span, instrument, trace, Instrument};
-use unionlabs::{ethereum::slot::keccak256, primitives::encoding::HexUnprefixed, ErrorReporter};
+use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace};
+use unionlabs::{ErrorReporter, ethereum::slot::keccak256, primitives::encoding::HexUnprefixed};
 use voyager_client::VoyagerClient;
 use voyager_rpc::VoyagerRpcServer;
 use voyager_vm::ItemId;

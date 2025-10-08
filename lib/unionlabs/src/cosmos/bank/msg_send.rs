@@ -21,7 +21,7 @@ pub mod proto {
     use unionlabs_primitives::Bech32DecodeError;
 
     use super::MsgSend;
-    use crate::{cosmos::base::coin, impl_proto_via_try_from_into, Msg};
+    use crate::{Msg, cosmos::base::coin, impl_proto_via_try_from_into};
 
     impl_proto_via_try_from_into!(MsgSend => protos::cosmos::bank::v1beta1::MsgSend);
 

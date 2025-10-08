@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use either::Either;
 use enumorph::Enumorph;
-use futures::{stream::FuturesOrdered, TryFutureExt, TryStreamExt};
+use futures::{TryFutureExt, TryStreamExt, stream::FuturesOrdered};
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
@@ -12,24 +12,24 @@ use subset_of::{SubsetOf, Superset};
 use tracing::{debug, info, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
+    VoyagerClient,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{
             FetchUpdateHeaders, SubmitTx, WaitForClientUpdate, WaitForHeightRelative,
             WaitForTrustedHeight,
         },
         data::{Data, EventProvableHeight, IbcDatagram, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     primitives::{ChainId, ClientStateMeta, IbcSpec, QueryHeight},
     types::RawClientId,
-    vm::{call, conc, noop, promise, seq, Op},
-    VoyagerClient,
+    vm::{Op, call, conc, noop, promise, seq},
 };
 
 use crate::{
+    IbcSpecExt, Module,
     call::{MakeMsg, MakeTransactionBatchesWithUpdate, ModuleCall},
     data::{BatchableEvent, ModuleData, ProofUnavailable},
-    IbcSpecExt, Module,
 };
 
 #[model]
@@ -247,7 +247,9 @@ where
         datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         if datas.is_empty() {
-            warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
+            warn!(
+                "no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain"
+            );
         }
 
         let (msgs, events_no_proof_available) = datas
@@ -316,10 +318,12 @@ where
                     module_server.plugin_name(),
                     ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
                         client_id: self.client_id.clone(),
-                        batches: vec![events_no_proof_available
-                            .into_iter()
-                            .map(|e| e.event)
-                            .collect()],
+                        batches: vec![
+                            events_no_proof_available
+                                .into_iter()
+                                .map(|e| e.event)
+                                .collect(),
+                        ],
                     }),
                 ),
             ))

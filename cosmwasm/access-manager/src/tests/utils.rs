@@ -1,17 +1,16 @@
 use std::{fmt::Debug, sync::LazyLock};
 
 use access_manager_types::{
+    Access, RoleId,
     manager::{
         event::RoleGranted,
         msg::{InitMsg, QueryMsg},
     },
     time::Delay,
-    Access, RoleId,
 };
 use cosmwasm_std::{
-    from_json,
-    testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    Addr, Deps, Env, OwnedDeps, Response,
+    Addr, Deps, Env, OwnedDeps, Response, from_json,
+    testing::{MockApi, MockQuerier, MockStorage, mock_dependencies, mock_env},
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;

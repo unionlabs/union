@@ -3,8 +3,8 @@ use unionlabs::primitives::{Bytes, H256};
 use voyager_primitives::IbcQuery;
 
 use crate::{
-    types::{ChannelId, ClientId},
     IbcUnion, Packet, Status,
+    types::{ChannelId, ClientId},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Enumorph)]

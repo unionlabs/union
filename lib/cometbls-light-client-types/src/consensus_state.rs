@@ -1,7 +1,7 @@
 use consensus_primitives::Timestamp;
 use unionlabs::{
     ibc::core::commitment::merkle_root::MerkleRoot,
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,7 +20,7 @@ pub struct ConsensusState {
 pub mod proto {
     use consensus_primitives::Timestamp;
     use unionlabs::{
-        errors::{required, MissingField},
+        errors::{MissingField, required},
         ibc::core::commitment::merkle_root::TryFromMerkleRootError,
         impl_proto_via_try_from_into,
         primitives::FixedBytesError,

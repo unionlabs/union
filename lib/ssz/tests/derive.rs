@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use ssz::{
-    types::{typenum::U5, List},
     Ssz,
+    types::{List, typenum::U5},
 };
 
 fn assert_encode<T: Ssz>(item: &T, bytes: &[u8]) {

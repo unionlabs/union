@@ -1,12 +1,12 @@
 use cosmwasm_std::{Empty, StdError};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_light_client::{
-    spec::{Status, Timestamp},
     ClientCreationResult, IbcClient, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
 };
 use sui_light_client_types::{
-    client_state::ClientState, committee::Committee, consensus_state::ConsensusState,
-    header::Header, storage_proof::StorageProof, U64,
+    U64, client_state::ClientState, committee::Committee, consensus_state::ConsensusState,
+    header::Header, storage_proof::StorageProof,
 };
 use unionlabs::encoding::{Bincode, DecodeAs, EncodeAs};
 

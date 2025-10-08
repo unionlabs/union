@@ -1,10 +1,10 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, WasmMsg,
+    Addr, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdError, WasmMsg, from_json,
+    to_json_binary,
 };
-use depolama::{value::ValueCodecViaEncoding, Prefix, RawAddrEncoding, StorageExt, Store};
+use depolama::{Prefix, RawAddrEncoding, StorageExt, Store, value::ValueCodecViaEncoding};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use serde::{Deserialize, Serialize};
 use ucs03_zkgmable::OnZkgm;

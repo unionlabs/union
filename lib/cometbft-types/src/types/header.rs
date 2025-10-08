@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
-    primitives::{encoding::HexUnprefixed, H160, H256},
+    primitives::{H160, H256, encoding::HexUnprefixed},
 };
 
 use crate::{types::block_id::BlockId, version::consensus::Consensus};
@@ -51,7 +51,7 @@ impl Header {
     pub fn calculate_merkle_root(&self) -> Option<H256> {
         use prost::Message;
         use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
-        use sha2::{digest::FixedOutput, Digest, Sha256};
+        use sha2::{Digest, Sha256, digest::FixedOutput};
 
         const LEAF_PREFIX: u8 = 0;
         const INNER_PREFIX: u8 = 1;

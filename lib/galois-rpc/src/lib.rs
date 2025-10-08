@@ -1,8 +1,8 @@
 use tonic::{
+    GrpcMethod, IntoRequest, Status,
     client::Grpc,
     codec::ProstCodec,
     transport::{Channel, Endpoint},
-    GrpcMethod, IntoRequest, Status,
 };
 use unionlabs::ErrorReporter;
 

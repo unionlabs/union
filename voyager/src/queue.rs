@@ -8,8 +8,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use voyager_message::VoyagerMessage;
 use voyager_vm::{
-    filter::InterestFilter, in_memory::InMemoryQueue, pass::Pass, Captures, EnqueueResult, ItemId,
-    Op, Queue, QueueError,
+    Captures, EnqueueResult, ItemId, Op, Queue, QueueError, filter::InterestFilter,
+    in_memory::InMemoryQueue, pass::Pass,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

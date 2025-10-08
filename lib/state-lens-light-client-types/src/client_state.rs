@@ -163,9 +163,9 @@ where
     ClientStateFieldsTuple: Join<Extra::Tuple, Out: Tuple + TupleAsRef>,
     // can't use `<ClientStateFieldsTuple as Tuple>::Ref<'a>` here for some reason?
     for<'a> (&'a String, &'a ClientId, &'a ClientId, &'a u64): Join<
-        <Extra::Tuple as Tuple>::Ref<'a>,
-        Out = <<ClientStateFieldsTuple as Join<Extra::Tuple>>::Out as Tuple>::Ref<'a>,
-    >,
+            <Extra::Tuple as Tuple>::Ref<'a>,
+            Out = <<ClientStateFieldsTuple as Join<Extra::Tuple>>::Out as Tuple>::Ref<'a>,
+        >,
 {
     type Tuple = <ClientStateFieldsTuple as Join<Extra::Tuple>>::Out;
 
@@ -209,7 +209,7 @@ where
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::{
-        dyn_abi::{abi::token::PackedSeqToken, Decoder, DynSolValue},
+        dyn_abi::{Decoder, DynSolValue, abi::token::PackedSeqToken},
         sol_types::SolValue,
     };
     use ibc_union_spec::ClientId;
@@ -276,7 +276,7 @@ pub mod ethabi {
 #[cfg(test)]
 mod tests {
     use alloy::{
-        dyn_abi::{abi::token::PackedSeqToken, DynSolValue},
+        dyn_abi::{DynSolValue, abi::token::PackedSeqToken},
         sol_types::SolValue,
     };
     use unionlabs::{

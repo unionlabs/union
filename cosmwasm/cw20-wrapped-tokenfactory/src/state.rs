@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Addr;
-use cw20::AllowanceResponse;
 use cw_storage_plus::{Item, Map};
+use cw20::AllowanceResponse;
 
 #[cw_serde]
 pub struct TokenInfo {

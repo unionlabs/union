@@ -4,14 +4,14 @@ use macros::model;
 
 use crate::{
     cosmos::{
-        crypto::{proto::TryFromAnyPubKeyError, AnyPubKey},
+        crypto::{AnyPubKey, proto::TryFromAnyPubKeyError},
         staking::{
             bond_status::BondStatus,
             commission::{Commission, TryFromCommissionError},
             description::Description,
         },
     },
-    errors::{required, MissingField, UnknownEnumVariant},
+    errors::{MissingField, UnknownEnumVariant, required},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
 };
 

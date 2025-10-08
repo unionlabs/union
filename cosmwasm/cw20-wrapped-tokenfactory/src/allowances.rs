@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, Addr, Binary, BlockInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    StdResult, Storage, Uint128,
+    Addr, Binary, BlockInfo, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError,
+    StdResult, Storage, Uint128, attr,
 };
 use cw20::{AllowanceResponse, Cw20ReceiveMsg, Expiration};
 use token_factory_api::{BurnTokensMsg, ForceTransferMsg, TokenFactoryMsg};

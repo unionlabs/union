@@ -314,7 +314,7 @@ impl U256 {
 
     #[must_use]
     pub const fn as_limbs(&self) -> [u64; 4] {
-        self.0 .0
+        self.0.0
     }
 
     #[must_use]

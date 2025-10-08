@@ -61,8 +61,8 @@
 #![warn(clippy::pedantic, missing_docs)]
 
 use cosmwasm_std::{
-    to_json_binary, Addr, Empty, OverflowError, OverflowOperation, Querier, QueryRequest, StdError,
-    StdResult, Storage, WasmQuery,
+    Addr, Empty, OverflowError, OverflowOperation, Querier, QueryRequest, StdError, StdResult,
+    Storage, WasmQuery, to_json_binary,
 };
 use num_traits::{CheckedAdd, One};
 use unionlabs_encoding::{Decode, Encode, Encoding};
@@ -70,7 +70,7 @@ use unionlabs_encoding::{Decode, Encode, Encoding};
 pub use unionlabs_primitives::Bytes;
 
 pub use crate::{
-    key::{raw_key, KeyCodec},
+    key::{KeyCodec, raw_key},
     value::ValueCodec,
 };
 

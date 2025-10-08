@@ -4,26 +4,26 @@ use std::{
     sync::LazyLock,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use bip32::secp256k1::ecdsa::SigningKey;
 use clap::Parser;
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
 use cosmos_client::{
+    TxClient,
     gas::any::GasFiller as AnyGasFiller,
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    TxClient,
 };
 use cosmwasm_std::{Addr, Uint256};
-use futures::{future::OptionFuture, stream::FuturesOrdered, TryStreamExt};
+use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use rand_chacha::{
-    rand_core::{block::BlockRng, SeedableRng},
     ChaChaCore,
+    rand_core::{SeedableRng, block::BlockRng},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha2::Digest;
 use tracing::{info, instrument};
 use tracing_subscriber::EnvFilter;
@@ -364,7 +364,9 @@ async fn main() -> Result<()> {
     do_main().await
 }
 
-const BYTECODE_BASE_BYTECODE: &[u8] = &hex_literal::hex!("0061736d0100000001110360037f7f7f017f60017f017f60017f000304030001020503010001074605066d656d6f7279020013696e746572666163655f76657273696f6e5f3800000b696e7374616e7469617465000008616c6c6f6361746500010a6465616c6c6f6361746500020a0f03040041330b0400413f0b0300010b0b4e010041010b487b226f6b223a7b226d65737361676573223a5b5d2c2261747472696275746573223a5b5d2c226576656e7473223a5b5d7d7d0100000032000000320000004b000000000200000002");
+const BYTECODE_BASE_BYTECODE: &[u8] = &hex_literal::hex!(
+    "0061736d0100000001110360037f7f7f017f60017f017f60017f000304030001020503010001074605066d656d6f7279020013696e746572666163655f76657273696f6e5f3800000b696e7374616e7469617465000008616c6c6f6361746500010a6465616c6c6f6361746500020a0f03040041330b0400413f0b0300010b0b4e010041010b487b226f6b223a7b226d65737361676573223a5b5d2c2261747472696275746573223a5b5d2c226576656e7473223a5b5d7d7d0100000032000000320000004b000000000200000002"
+);
 
 fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
@@ -642,9 +644,9 @@ async fn do_main() -> Result<()> {
                                     code_id: minter_code_id,
                                     new_instantiate_permission: Some(
                                         AccessConfig::AnyOfAddresses {
-                                            addresses: vec![ucs03_address
-                                                .clone()
-                                                .map_data(Into::into)],
+                                            addresses: vec![
+                                                ucs03_address.clone().map_data(Into::into),
+                                            ],
                                         },
                                     ),
                                 },
@@ -699,10 +701,12 @@ async fn do_main() -> Result<()> {
                                             code_id,
                                             new_instantiate_permission: Some(
                                                 AccessConfig::AnyOfAddresses {
-                                                    addresses: vec![token_minter_address
-                                                        .clone()
-                                                        .map_data(Into::into)
-                                                        .clone()],
+                                                    addresses: vec![
+                                                        token_minter_address
+                                                            .clone()
+                                                            .map_data(Into::into)
+                                                            .clone(),
+                                                    ],
                                                 },
                                             ),
                                         },
@@ -758,9 +762,9 @@ async fn do_main() -> Result<()> {
                                     code_id: cw_account_code_id,
                                     new_instantiate_permission: Some(
                                         AccessConfig::AnyOfAddresses {
-                                            addresses: vec![ucs03_address
-                                                .clone()
-                                                .map_data(Into::into)],
+                                            addresses: vec![
+                                                ucs03_address.clone().map_data(Into::into),
+                                            ],
                                         },
                                     ),
                                 },
@@ -951,10 +955,14 @@ async fn do_main() -> Result<()> {
             let checksum = ctx.code_checksum(contract_info.code_id).await?.unwrap();
 
             if checksum == sha2(BYTECODE_BASE_BYTECODE) {
-                bail!("contract {address} has not yet been initiated, it must be fully deployed before it can be migrated")
+                bail!(
+                    "contract {address} has not yet been initiated, it must be fully deployed before it can be migrated"
+                )
             } else if checksum == sha2(&new_bytecode) {
                 if force {
-                    info!("contract {address} has already been migrated to this bytecode, migrating anyways since --force was passed");
+                    info!(
+                        "contract {address} has already been migrated to this bytecode, migrating anyways since --force was passed"
+                    );
                 } else {
                     info!("contract {address} has already been migrated to this bytecode");
                     return Ok(());

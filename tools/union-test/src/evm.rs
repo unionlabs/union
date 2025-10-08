@@ -577,6 +577,9 @@ impl Module {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!(
+                        "Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}"
+                    );
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
@@ -608,6 +611,9 @@ impl Module {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!(
+                        "Approved spender: {spender:?} for token_id: {token_id:?} on contract: {contract:?}"
+                    );
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 5 && self.is_nonce_too_low(&err) => {
@@ -942,6 +948,9 @@ impl Module {
                 Ok(pending) => {
                     let tx_hash = <H256>::from(*pending.tx_hash());
                     self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!(
+                        "Registered governance token on channel {channel_id} with metadata image {metadata_image:?}"
+                    );
                     return Ok(tx_hash);
                 }
                 Err(err) if attempts <= 10 && self.is_nonce_too_low(&err) => {

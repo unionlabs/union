@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use arbitrum_light_client_types::{ClientStateV1, Header};
 use arbitrum_types::slots::{
-    read_latest_node_created, rollup_core_nodes_confirm_data_slot, ROLLUP_CORE_LATEST_NODE_CREATED,
+    ROLLUP_CORE_LATEST_NODE_CREATED, read_latest_node_created, rollup_core_nodes_confirm_data_slot,
 };
 use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use unionlabs::primitives::{H256, U256};

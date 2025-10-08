@@ -1,15 +1,17 @@
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, entry_point};
 use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
-    msg::{InitMsg, QueryMsg},
     IbcClientError,
+    msg::{InitMsg, QueryMsg},
 };
 
 use crate::client::ParliaLightClient;
 
 #[entry_point]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[entry_point]

@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
 
-use crate::{call, data, noop, Handler, Op, QueueError, QueueMessage};
+use crate::{Handler, Op, QueueError, QueueMessage, call, data, noop};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SimpleMessage {}

@@ -2,10 +2,10 @@ use std::{num::NonZero, sync::LazyLock};
 
 use attested_light_client_types::{ClientState, ClientStateV1, ConsensusState, Header};
 use cosmwasm_std::{
-    testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
     Addr, Api, OwnedDeps,
+    testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
 };
-use ed25519_dalek::{ed25519::signature::SignerMut, SigningKey};
+use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
 use frissitheto::UpgradeMsg;
 use hex_literal::hex;
 use ibc_union_light_client::spec::{Duration, Timestamp};
@@ -207,18 +207,20 @@ fn verify_header_works() {
     };
 
     // can't update before quorum is reached for a height
-    assert!(verify_header(
-        deps.as_ref(),
-        ClientState::V1(ClientStateV1 {
-            chain_id: "999".to_owned(),
-            latest_height: 1,
-        }),
-        Header {
-            height: attestation.height,
-            timestamp: Timestamp::from_nanos(100),
-        },
-    )
-    .is_err());
+    assert!(
+        verify_header(
+            deps.as_ref(),
+            ClientState::V1(ClientStateV1 {
+                chain_id: "999".to_owned(),
+                latest_height: 1,
+            }),
+            Header {
+                height: attestation.height,
+                timestamp: Timestamp::from_nanos(100),
+            },
+        )
+        .is_err()
+    );
 
     reach_quorum(&mut deps, attestation.clone());
 

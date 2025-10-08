@@ -1,33 +1,32 @@
 use std::collections::VecDeque;
 
 use ibc_union_spec::{
+    IbcUnion,
     datagram::{Datagram, MsgPacketTimeout},
     event::{FullEvent, PacketSend},
     path::BatchReceiptsPath,
-    IbcUnion,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{self, never::Never, ErrorReporter};
+use unionlabs::{self, ErrorReporter, never::Never};
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{SubmitTx, WaitForTrustedTimestamp},
         data::{Data, IbcDatagram},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
     types::{ProofType, RawClientId},
-    vm::{call, defer, noop, pass::PassResult, seq, Op},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    vm::{Op, call, defer, noop, pass::PassResult, seq},
 };
 
 use crate::call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt};

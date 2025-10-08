@@ -3,8 +3,8 @@ use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
     google::protobuf::timestamp::Timestamp,
     primitives::{
-        encoding::{Base64, HexUnprefixed},
         Bytes, H160,
+        encoding::{Base64, HexUnprefixed},
     },
 };
 

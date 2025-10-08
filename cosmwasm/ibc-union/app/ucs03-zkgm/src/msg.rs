@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CosmosMsg, Uint256, Uint64};
+use cosmwasm_std::{Addr, CosmosMsg, Uint64, Uint256};
 use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;

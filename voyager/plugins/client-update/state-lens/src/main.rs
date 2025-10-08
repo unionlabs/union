@@ -2,34 +2,33 @@ use std::{collections::VecDeque, fmt::Debug};
 
 use call::FetchUpdateAfterL1Update;
 use ibc_union_spec::{
-    path::{ClientStatePath, ConsensusStatePath},
     ClientId, IbcUnion,
+    path::{ClientStatePath, ConsensusStatePath},
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
 use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, never::Never};
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     hook::simple_take_filter,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
         callback::AggregateSubmitTxFromOrderedHeaders,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, PluginServer, types::PluginInfo},
     types::{ProofType, RawClientId},
-    vm::{call, conc, data, pass::PassResult, promise, seq, Op, Visit},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    vm::{Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};

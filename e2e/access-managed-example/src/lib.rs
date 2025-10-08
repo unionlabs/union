@@ -1,15 +1,15 @@
 use std::num::NonZero;
 
 use access_managed::{
-    handle_consume_scheduled_op_reply, state::Authority, EnsureCanCallResult, Restricted,
+    EnsureCanCallResult, Restricted, handle_consume_scheduled_op_reply, state::Authority,
 };
 use access_manager_types::{
     managed::msg::{InitMsg, MigrateMsg},
     manager,
 };
 use cosmwasm_std::{
-    entry_point, to_json_binary, wasm_execute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
-    Reply, Response, StdError, SubMsg,
+    Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, StdError, SubMsg, entry_point,
+    to_json_binary, wasm_execute,
 };
 use depolama::StorageExt;
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
@@ -54,7 +54,7 @@ pub fn execute(
     let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
         EnsureCanCallResult::Msg(msg) => msg,
         EnsureCanCallResult::Scheduled(sub_msgs) => {
-            return Ok(Response::new().add_submessages(sub_msgs))
+            return Ok(Response::new().add_submessages(sub_msgs));
         }
     };
 

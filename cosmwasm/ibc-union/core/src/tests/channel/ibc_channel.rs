@@ -54,13 +54,15 @@ fn channel_open_init_ok() {
         version: VERSION.to_owned(),
         relayer: mock_addr(RELAYER).to_string(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
-    )
-    .is_ok());
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenInit(msg),
+        )
+        .is_ok()
+    );
 }
 
 #[test]
@@ -185,13 +187,15 @@ fn channel_open_try_ok() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenTry(msg),
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 #[test]
 fn channel_open_try_invalid_state() {
@@ -237,21 +241,23 @@ fn channel_open_try_invalid_state() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
-    )
-    .is_err_and(|err| {
-        matches!(
-            err,
-            ContractError::ChannelInvalidState {
-                got: ChannelState::Open,
-                expected: ChannelState::TryOpen
-            }
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenTry(msg),
         )
-    }))
+        .is_err_and(|err| {
+            matches!(
+                err,
+                ContractError::ChannelInvalidState {
+                    got: ChannelState::Open,
+                    expected: ChannelState::TryOpen
+                }
+            )
+        })
+    )
 }
 
 #[test]
@@ -427,13 +433,15 @@ fn channel_open_ack_ok() {
         relayer: mock_addr(RELAYER).to_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenAck(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -617,13 +625,15 @@ fn channel_open_confirm_ok() {
         proof_height: 1,
         relayer: mock_addr(RELAYER).to_string(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenConfirm(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenConfirm(msg),
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]

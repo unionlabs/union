@@ -1,31 +1,30 @@
 use std::collections::VecDeque;
 
 use ibc_union_spec::{
+    ChannelId, IbcUnion,
     datagram::MsgIntentPacketRecv,
     event::{ChannelMetadata, ConnectionMetadata, FullEvent, PacketMetadata, PacketSend, WriteAck},
-    path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath, COMMITMENT_MAGIC},
+    path::{BatchPacketsPath, BatchReceiptsPath, COMMITMENT_MAGIC, ChannelPath, ConnectionPath},
     query::{PacketAckByHash, PacketByHash},
-    ChannelId, IbcUnion,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256};
 use voyager_sdk::{
-    anyhow, into_value,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow, into_value,
     message::{
+        VoyagerMessage,
         call::SubmitTx,
         data::{ChainEvent, Data, EventProvableHeight, IbcDatagram},
-        VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
-    vm::{call, data, noop, pass::PassResult, Op},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    rpc::{PluginServer, types::PluginInfo},
+    vm::{Op, call, data, noop, pass::PassResult},
 };
 
 use crate::call::{MakePacketEvent, ModuleCall};

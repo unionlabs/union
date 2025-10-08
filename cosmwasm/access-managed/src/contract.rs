@@ -1,6 +1,6 @@
 use access_manager_types::{
-    managed::{error::AccessManagedError, event::AuthorityUpdated, msg::QueryMsg},
     Selector,
+    managed::{error::AccessManagedError, event::AuthorityUpdated, msg::QueryMsg},
 };
 use cosmwasm_std::{Addr, Deps, DepsMut, Event, MessageInfo};
 use depolama::StorageExt;

@@ -18,8 +18,8 @@ use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     google::protobuf::timestamp::Timestamp,
     primitives::{
-        encoding::{Base64, HexUnprefixed},
         Bytes, H160, H256,
+        encoding::{Base64, HexUnprefixed},
     },
 };
 

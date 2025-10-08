@@ -2,38 +2,37 @@ use std::collections::VecDeque;
 
 use call::FetchUpdate;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use sui_light_client_types::{checkpoint_summary::CheckpointContents, CertifiedCheckpointSummary};
+use serde_json::{Value, json};
+use sui_light_client_types::{CertifiedCheckpointSummary, checkpoint_summary::CheckpointContents};
 use sui_sdk::{
+    SuiClient, SuiClientBuilder,
     rpc_types::CheckpointId,
     types::{
         base_types::ObjectID, committee::EpochId, full_checkpoint_content::CheckpointTransaction,
     },
-    SuiClient, SuiClientBuilder,
 };
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, anyhow,
     hook::UpdateHook,
     message::{
+        PluginMessage, VoyagerMessage,
         call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
     rpc::{
+        FATAL_JSONRPC_ERROR_CODE, PluginServer,
         types::{PluginInfo, UnexpectedChainIdError},
-        PluginServer, FATAL_JSONRPC_ERROR_CODE,
     },
-    vm::{data, pass::PassResult, Op, Visit},
-    DefaultCmd,
+    vm::{Op, Visit, data, pass::PassResult},
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback};

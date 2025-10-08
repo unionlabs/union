@@ -1,6 +1,6 @@
 use macros::model;
 
-use crate::primitives::{encoding::Base64, FixedBytesError, H256};
+use crate::primitives::{FixedBytesError, H256, encoding::Base64};
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]

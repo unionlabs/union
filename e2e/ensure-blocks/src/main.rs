@@ -2,7 +2,7 @@ use std::{fmt::Debug, time::Duration};
 
 use alloy::providers::{Provider, ProviderBuilder};
 use clap::Parser;
-use futures::{stream::unfold, StreamExt};
+use futures::{StreamExt, stream::unfold};
 use tokio::{join, time::sleep};
 
 const BLOCKS_TO_WAIT_FOR: usize = 10;

@@ -1,7 +1,7 @@
 use beacon_api_types::{bellatrix, capella, deneb, electra, phase0};
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
-use unionlabs::{primitives::H256, ErrorReporter};
+use unionlabs::{ErrorReporter, primitives::H256};
 
 use crate::client::{VersionedResponse, VersionedResponseTypes};
 

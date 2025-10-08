@@ -5,8 +5,8 @@ use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvide
 use cosmos_client::wallet::LocalSigner;
 use cosmwasm_std::Addr;
 use ibc_union_spec::{
-    path::{BatchPacketsPath, StorePath},
     ChannelId, MustBeZero, Packet,
+    path::{BatchPacketsPath, StorePath},
 };
 use jsonrpsee::http_client::HttpClient;
 use protos::cosmos::base::v1beta1::Coin;
@@ -17,7 +17,7 @@ use unionlabs::{
     primitives::{Bech32, Bytes, FixedBytes, H160, H256},
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow, Context},
+    anyhow::{self, Context, anyhow},
     primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     rpc::VoyagerRpcClient,
     serde_json,

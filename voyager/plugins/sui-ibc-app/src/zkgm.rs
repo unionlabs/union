@@ -1,12 +1,12 @@
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, hash_map::Entry},
     str::FromStr,
     time::Duration,
 };
 
 use alloy::sol_types::SolValue;
 use hex_literal::hex;
-use ibc_union_spec::{datagram::MsgPacketAcknowledgement, ChannelId};
+use ibc_union_spec::{ChannelId, datagram::MsgPacketAcknowledgement};
 use jsonrpsee::tracing::debug;
 use move_core_types_sui::{
     account_address::AccountAddress, ident_str, language_storage::StructTag,
@@ -15,15 +15,15 @@ use sha3::{Digest, Keccak256};
 use sui_sdk::{
     rpc_types::{ObjectChange, SuiMoveValue, SuiParsedData, SuiTransactionBlockResponseOptions},
     types::{
+        Identifier, TypeTag,
         base_types::ObjectRef,
         crypto::SuiKeyPair,
         dynamic_field::DynamicFieldName,
         transaction::{Argument, CallArg, Command, ObjectArg},
-        Identifier, TypeTag,
     },
 };
 use ucs03_zkgm::com::{Batch, TokenMetadata, TokenOrderV2, ZkgmPacket};
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes, H256};
+use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
 use voyager_sdk::{
     anyhow::{self, anyhow},
     serde_json,
@@ -579,7 +579,9 @@ pub async fn register_token_if_zkgm(
             {
                 return Ok(Some(wrapped_token_t));
             } else {
-                return Err(anyhow!("a token cannot be received for the first time with `ESCROW`, it must be received with `INITIALIZE` first"));
+                return Err(anyhow!(
+                    "a token cannot be received for the first time with `ESCROW`, it must be received with `INITIALIZE` first"
+                ));
             }
         }
         // If it's an unescrow case, it means that this token is previously sent, so it's already been saved in ZKGM, so we can just parse

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use subset_of::SubsetOf;
 use tracing::info;
 use unionlabs::{
+    ErrorReporter,
     ibc::core::{
         channel::{
             channel::Channel, msg_acknowledgement::MsgAcknowledgement,
@@ -27,7 +28,6 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     never::Never,
     primitives::{Bytes, H256},
-    ErrorReporter,
 };
 use voyager_primitives::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
 

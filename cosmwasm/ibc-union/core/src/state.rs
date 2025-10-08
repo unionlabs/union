@@ -2,8 +2,8 @@ use std::{collections::BTreeSet, marker::PhantomData};
 
 use cosmwasm_std::{Addr, StdError, StdResult};
 use depolama::{
-    value::{ValueCodecViaEncoding, ValueUnitEncoding},
     KeyCodec, Prefix, Store, ValueCodec,
+    value::{ValueCodecViaEncoding, ValueUnitEncoding},
 };
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
 use unionlabs::{
@@ -408,7 +408,7 @@ fn invalid_id() -> StdError {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{testing::mock_dependencies, Storage};
+    use cosmwasm_std::{Storage, testing::mock_dependencies};
     use depolama::StorageExt;
     use hex_literal::hex;
     use ibc_union_spec::{ChannelState, ConnectionState};

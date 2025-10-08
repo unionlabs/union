@@ -1,4 +1,4 @@
-use gnark_mimc::{mimc_sum_bl12377, MiMCBls12377, MiMCBls12377Constants};
+use gnark_mimc::{MiMCBls12377, MiMCBls12377Constants, mimc_sum_bl12377};
 use linea_types::{
     account::{MimcSafeBytes, ZkAccount},
     proof::{MerklePath, MerkleProof, NonInclusionProof},
@@ -9,7 +9,7 @@ use unionlabs::{
     primitives::{H160, H256, U256},
 };
 
-use crate::node::{get_leaf_path, BranchNode, Direction, LeafNode, Node, RootNode, Terminator};
+use crate::node::{BranchNode, Direction, LeafNode, Node, RootNode, Terminator, get_leaf_path};
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/ZKTrie.java#L64C1-L65C47
 pub const ZK_TRIE_DEPTH: usize = 40;

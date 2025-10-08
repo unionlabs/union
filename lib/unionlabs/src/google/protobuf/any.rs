@@ -6,8 +6,8 @@ use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    encoding::{Decode, DecodeErrorOf, Encode, Proto},
     TryFromProtoBytesError, TypeUrl,
+    encoding::{Decode, DecodeErrorOf, Encode, Proto},
 };
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.

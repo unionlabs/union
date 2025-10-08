@@ -51,13 +51,15 @@ fn send_packet_ok() {
         timeout_timestamp: Timestamp::from_nanos(1000000),
         data: vec![0, 1, 2].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketSend(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -99,13 +101,15 @@ fn send_packet_missing_timeout() {
         timeout_timestamp: Timestamp::ZERO,
         data: vec![0, 1, 2].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketSend(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::TimeoutMustBeSet) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::TimeoutMustBeSet) }))
 }
 
 #[test]
@@ -147,18 +151,20 @@ fn send_packet_channel_does_not_exist() {
         timeout_timestamp: Timestamp::from_nanos(1000000),
         data: vec![0, 1, 2].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketSend(msg),
+        )
+        .is_err_and(|err| {
+            match err {
+                ContractError::Std(err) => matches!(err, StdError::GenericErr { .. }),
+                _ => false,
+            }
+        })
     )
-    .is_err_and(|err| {
-        match err {
-            ContractError::Std(err) => matches!(err, StdError::GenericErr { .. }),
-            _ => false,
-        }
-    }))
 }
 
 #[test]
@@ -200,13 +206,15 @@ fn send_packet_module_is_not_channel_owner() {
         timeout_timestamp: Timestamp::from_nanos(1000000),
         data: vec![0, 1, 2].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr("not module"), &[]),
-        ExecuteMsg::PacketSend(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr("not module"), &[]),
+            ExecuteMsg::PacketSend(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) }))
 }
 
 #[test]
@@ -257,13 +265,15 @@ fn recv_packet_ok() {
         proof_height: 1,
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketRecv(msg),
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -314,20 +324,22 @@ fn recv_packet_invalid_channel_state() {
         proof_height: 1,
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
-    )
-    .is_err_and(|err| {
-        match err {
-            ContractError::Std(err) => {
-                matches!(err, StdError::GenericErr { .. })
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketRecv(msg),
+        )
+        .is_err_and(|err| {
+            match err {
+                ContractError::Std(err) => {
+                    matches!(err, StdError::GenericErr { .. })
+                }
+                _ => false,
             }
-            _ => false,
-        }
-    }))
+        })
+    )
 }
 
 #[test]
@@ -382,13 +394,15 @@ fn recv_packet_timeout_timestamp() {
         proof_height: 1,
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        env,
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            env,
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketRecv(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) }))
 }
 
 #[test]
@@ -437,13 +451,15 @@ fn recv_intent_packet_ok() {
         market_maker: mock_addr("marketmaker").into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::IntentPacketRecv(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::IntentPacketRecv(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -492,13 +508,15 @@ fn recv_intent_packet_timeout_timestamp() {
         market_maker: mock_addr("marketmaker").into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::IntentPacketRecv(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::IntentPacketRecv(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) }))
 }
 
 #[test]
@@ -592,13 +610,15 @@ fn acknowledge_packet_ok() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketAck(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketAck(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -692,13 +712,15 @@ fn acknowledge_packet_tampered() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketAck(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketAck(msg)
+        )
+        .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound))
     )
-    .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound)))
 }
 
 #[test]
@@ -779,13 +801,15 @@ fn acknowledge_packet_not_sent() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketAck(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketAck(msg)
+        )
+        .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound))
     )
-    .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound)))
 }
 
 #[test]
@@ -853,13 +877,15 @@ fn timeout_packet_timestamp_ok() {
         proof_height: 11,
         relayer: mock_addr(RELAYER).into_string(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketTimeout(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketTimeout(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -927,13 +953,15 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
         proof_height: 11,
         relayer: mock_addr(RELAYER).into_string(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketTimeout(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::PacketTimeout(msg)
+        )
+        .is_err_and(|err| { matches!(err, ContractError::TimeoutTimestampNotReached) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::TimeoutTimestampNotReached) }))
 }
 
 #[test]
@@ -1036,13 +1064,15 @@ fn write_acknowledgement_ok() {
         },
         acknowledgement: vec![1].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::WriteAcknowledgement(msg),
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -1145,13 +1175,15 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         },
         acknowledgement: vec![1].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::WriteAcknowledgement(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) }))
 }
 
 #[test]
@@ -1229,13 +1261,15 @@ fn write_acknowledgement_packet_not_received() {
         },
         acknowledgement: vec![1].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::WriteAcknowledgement(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::PacketNotReceived) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::PacketNotReceived) }))
 }
 
 #[test]
@@ -1338,13 +1372,15 @@ fn write_acknowledgement_already_exists() {
         },
         acknowledgement: vec![1].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
-    )
-    .is_ok());
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::WriteAcknowledgement(msg),
+        )
+        .is_ok()
+    );
     let msg = MsgWriteAcknowledgement {
         packet: Packet {
             source_channel_id: ChannelId!(1),
@@ -1355,13 +1391,15 @@ fn write_acknowledgement_already_exists() {
         },
         acknowledgement: vec![1].into(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::WriteAcknowledgement(msg),
+        )
+        .is_err_and(|err| { matches!(err, ContractError::AlreadyAcknowledged) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::AlreadyAcknowledged) }))
 }
 
 #[test]
@@ -1476,13 +1514,15 @@ fn batch_send_ok() {
             },
         ],
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::BatchSend(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::BatchSend(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -1568,13 +1608,15 @@ fn batch_send_packet_not_sent() {
             },
         ],
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::BatchSend(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::BatchSend(msg)
+        )
+        .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) }))
 }
 
 #[test]
@@ -1739,13 +1781,15 @@ fn batch_acks_ok() {
         ],
         acks: vec![vec![1].into(), vec![1].into()],
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::BatchAcks(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::BatchAcks(msg)
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -1832,13 +1876,15 @@ fn batch_acks_packet_not_received() {
         ],
         acks: vec![vec![1].into(), vec![1].into()],
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::BatchAcks(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::BatchAcks(msg)
+        )
+        .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) }))
 }
 
 #[test]
@@ -2003,11 +2049,13 @@ fn batch_acks_tampered_packet() {
         ],
         acks: vec![vec![1].into(), vec![1].into()],
     };
-    assert!(execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::BatchAcks(msg)
+    assert!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::BatchAcks(msg)
+        )
+        .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
-    .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) }))
 }

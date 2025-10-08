@@ -3,9 +3,9 @@ use enumorph::Enumorph;
 use ucs03_zkgm::com::{INSTR_VERSION_0, OP_BATCH, OP_CALL, OP_TOKEN_ORDER};
 
 use crate::{
+    Instruction, Result,
     call::{Call, CallAck, CallShape},
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
-    Instruction, Result,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]

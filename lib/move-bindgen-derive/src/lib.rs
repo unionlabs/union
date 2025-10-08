@@ -2,8 +2,8 @@ use std::convert;
 
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, parse_quote, parse_quote_spanned, spanned::Spanned, Data, DeriveInput,
-    Field, WhereClause, WherePredicate,
+    Data, DeriveInput, Field, WhereClause, WherePredicate, parse_macro_input, parse_quote,
+    parse_quote_spanned, spanned::Spanned,
 };
 
 #[proc_macro_derive(MoveOutputType, attributes(move_output_type))]

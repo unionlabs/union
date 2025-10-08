@@ -8,10 +8,10 @@ use std::{
 use beacon_api_types::custom_types::Slot;
 use moka::{future::Cache, ops::compute::Op};
 use reqwest::{Client, StatusCode};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::{value::RawValue, Value};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde_json::{Value, value::RawValue};
 use tracing::{debug, info, trace};
-use unionlabs::{primitives::H256, ErrorReporter};
+use unionlabs::{ErrorReporter, primitives::H256};
 
 use crate::{
     errors::Error,
@@ -302,13 +302,13 @@ impl<'a, T: VersionedResponseTypes> TryFrom<VersionedResponseRaw<'a>> for Versio
 impl<T: VersionedResponseTypes> VersionedResponse<T>
 where
     T: VersionedResponseTypes<
-        // fun fact: if these bounds are just T::Phase0, this fails with a circular resolution error
-        Altair = <T as VersionedResponseTypes>::Phase0,
-        Bellatrix = <T as VersionedResponseTypes>::Phase0,
-        Capella = <T as VersionedResponseTypes>::Phase0,
-        Deneb = <T as VersionedResponseTypes>::Phase0,
-        Electra = <T as VersionedResponseTypes>::Phase0,
-    >,
+            // fun fact: if these bounds are just T::Phase0, this fails with a circular resolution error
+            Altair = <T as VersionedResponseTypes>::Phase0,
+            Bellatrix = <T as VersionedResponseTypes>::Phase0,
+            Capella = <T as VersionedResponseTypes>::Phase0,
+            Deneb = <T as VersionedResponseTypes>::Phase0,
+            Electra = <T as VersionedResponseTypes>::Phase0,
+        >,
 {
     /// "Unwrap" the inner type. This is only possible if all of the inner types are all the same.
     pub fn into_inner(self) -> T::Phase0 {

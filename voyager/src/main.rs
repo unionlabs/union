@@ -13,13 +13,13 @@
 
 use std::{collections::HashMap, fmt::Write, iter, process::ExitCode, time::Duration};
 
-use anyhow::{anyhow, Context as _};
+use anyhow::{Context as _, anyhow};
 use clap::Parser;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use pg_queue::{
-    default_max_connections, default_min_connections, default_retryable_error_expo_backoff_max,
-    default_retryable_error_expo_backoff_multiplier, PgQueueConfig, Tables,
+    PgQueueConfig, Tables, default_max_connections, default_min_connections,
+    default_retryable_error_expo_backoff_max, default_retryable_error_expo_backoff_multiplier,
 };
 use reqwest::Url;
 use schemars::r#gen::{SchemaGenerator, SchemaSettings};
@@ -27,32 +27,32 @@ use serde::Serialize;
 use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use voyager_client::VoyagerClient;
 use voyager_core::{
+    Engine,
     context::ModulesConfig,
     default_metrics_endpoint, default_rest_laddr, default_rpc_laddr,
     equivalent_chain_ids::EquivalentChainIds,
-    filter::{make_filter, run_filter, JaqFilterResult},
+    filter::{JaqFilterResult, make_filter, run_filter},
     get_plugin_info,
     ibc_spec_handlers::IbcSpecHandler,
-    Engine,
 };
 use voyager_message::{
+    VoyagerMessage,
     call::{FetchUpdateHeaders, Index, IndexRange, IndexRangeHeights},
     callback::AggregateSubmitTxFromOrderedHeaders,
-    VoyagerMessage,
 };
 use voyager_primitives::{IbcSpec, QueryHeight};
-use voyager_rpc::{types::IbcStateResponse, VoyagerRpcClient};
-use voyager_vm::{call, promise, Op, Queue};
+use voyager_rpc::{VoyagerRpcClient, types::IbcStateResponse};
+use voyager_vm::{Op, Queue, call, promise};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{
-        get_voyager_config, App, Command, ConfigCmd, LogFormat, MsgCmd, PluginCmd, QueueCmd, RpcCmd,
+        App, Command, ConfigCmd, LogFormat, MsgCmd, PluginCmd, QueueCmd, RpcCmd, get_voyager_config,
     },
     config::{Config, VoyagerConfig},
     queue::{QueueConfig, QueueImpl},
@@ -828,9 +828,9 @@ pub mod utils {
     use serde_json::Value;
     use tracing::trace;
     use voyager_client::VoyagerClient;
-    use voyager_message::{call::SubmitTx, data::IbcDatagram, VoyagerMessage};
+    use voyager_message::{VoyagerMessage, call::SubmitTx, data::IbcDatagram};
     use voyager_primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight};
-    use voyager_vm::{call, Op};
+    use voyager_vm::{Op, call};
 
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn make_msg_create_client<C: ClientT + Send + Sync>(

@@ -119,7 +119,8 @@ pub enum ContractError {
     #[error("{} the packet already exists", ContractErrorKind::from(self))]
     PacketCommitmentAlreadyExist,
     #[error(
-        "{} caller {caller} don't have permission to migrate the client {client} with id {client_id}", ContractErrorKind::from(self)
+        "{} caller {caller} don't have permission to migrate the client {client} with id {client_id}",
+        ContractErrorKind::from(self)
     )]
     UnauthorizedMigration {
         client_id: ClientId,
@@ -132,7 +133,8 @@ pub enum ContractError {
     )]
     CannotMigrateWithNoClientState { client_id: ClientId },
     #[error(
-        "{} cannot migrate the client {client_id} when there's no consensus state at height {height}", ContractErrorKind::from(self)
+        "{} cannot migrate the client {client_id} when there's no consensus state at height {height}",
+        ContractErrorKind::from(self)
     )]
     CannotMigrateWithNoConsensusState { client_id: ClientId, height: u64 },
     #[error(

@@ -11,10 +11,10 @@ pub(crate) mod types;
 pub use voyager_primitives::{Duration, Timestamp};
 
 pub use crate::types::{
+    ChannelId, ClientId, ConnectionId, Status,
     channel::{Channel, ChannelState},
     connection::{Connection, ConnectionState},
     packet::{MustBeZero, Packet},
-    ChannelId, ClientId, ConnectionId, Status,
 };
 use crate::{
     datagram::{Datagram, MsgUpdateClient},

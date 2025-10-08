@@ -3,7 +3,7 @@ use ibc_union_light_client::IbcClientError;
 use ibc_union_spec::Timestamp;
 use unionlabs::{
     ibc::core::client::height::Height,
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};

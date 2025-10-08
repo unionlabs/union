@@ -1,26 +1,25 @@
 use alloy_sol_types::SolValue as _;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use state_lens_ics23_ics23_light_client_types::{
-    client_state::{Extra, ExtraV1},
     ClientState, ConsensusState,
+    client_state::{Extra, ExtraV1},
 };
 use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
-    self,
+    self, ErrorReporter,
     encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
     tuple::AsTuple,
     union::ics23,
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow::{self, anyhow},
@@ -29,7 +28,7 @@ use voyager_sdk::{
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
     },
-    rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

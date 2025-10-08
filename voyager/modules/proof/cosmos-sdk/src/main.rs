@@ -4,12 +4,12 @@ use std::num::{NonZeroU32, ParseIntError};
 
 use ibc_classic_spec::{IbcClassic, StorePath};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{error, instrument};
 use unionlabs::{
     cosmos::ics23::commitment_proof::CommitmentProof,
@@ -20,7 +20,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{rpc_error, types::ProofModuleInfo, ProofModuleServer},
+    rpc::{ProofModuleServer, rpc_error, types::ProofModuleInfo},
     types::ProofType,
 };
 

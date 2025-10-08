@@ -1,5 +1,6 @@
 use blake2::{Blake2b, Digest as _};
 use sui_light_client_types::{
+    AppId, Digest, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
     checkpoint_summary::{CheckpointContents, CheckpointSummary},
     committee::Committee,
     crypto::{
@@ -8,7 +9,6 @@ use sui_light_client_types::{
     },
     object::{Data, ObjectInner, TypeTag},
     transaction_effects::{ObjectOut, TransactionEffects},
-    AppId, Digest, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
 };
 
 mod error;

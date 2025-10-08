@@ -3,8 +3,8 @@ use std::io;
 
 use roaring::RoaringBitmap;
 use unionlabs_primitives::{
-    encoding::{Base58, Base64},
     FixedBytes,
+    encoding::{Base58, Base64},
 };
 
 use crate::{checkpoint_summary::EpochId, fixed_bytes::SuiFixedBytes};

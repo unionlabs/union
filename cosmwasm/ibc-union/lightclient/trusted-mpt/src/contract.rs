@@ -1,8 +1,8 @@
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, Response, StdResult, entry_point};
 use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
-    msg::{InitMsg, QueryMsg},
     IbcClientError,
+    msg::{InitMsg, QueryMsg},
 };
 use serde::{Deserialize, Serialize};
 

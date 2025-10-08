@@ -2,22 +2,23 @@ use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, from_json, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
-    CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Empty, Env, MessageInfo,
-    QueryRequest, Response, StdResult, Storage, WasmMsg,
+    BankMsg, Binary, CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Empty, Env,
+    MessageInfo, QueryRequest, Response, StdResult, Storage, WasmMsg, entry_point, from_json,
+    instantiate2_address, to_json_binary, wasm_execute,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
-    encode_metadata, new_wrapped_token_event, ExecuteMsg, LocalTokenMsg, MetadataResponse,
-    PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenKind, WrappedTokenMsg,
+    ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
+    TokenMinterInitMsg, WrappedTokenKind, WrappedTokenMsg, encode_metadata,
+    new_wrapped_token_event,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
 use crate::{
     error::Error,
-    state::{Config, CONFIG, CW20_ADMIN},
+    state::{CONFIG, CW20_ADMIN, Config},
 };
 
 pub const DEFAULT_DECIMALS: u8 = 6;

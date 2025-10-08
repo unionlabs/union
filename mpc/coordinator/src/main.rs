@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use clap::{Parser, Subcommand};
 use mpc_shared::{phase2_verify, signed_message, supabase::SupabaseMPCApi};
-use pgp::{cleartext::CleartextSignedMessage, Deserializable, SignedPublicKey};
+use pgp::{Deserializable, SignedPublicKey, cleartext::CleartextSignedMessage};
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 

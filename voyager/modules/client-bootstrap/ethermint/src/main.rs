@@ -6,27 +6,28 @@ use std::{
 use ethermint_light_client_types::ClientState;
 use ics23::ibc_api::SDK_SPECS;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ConsensusState, Fraction};
 use tracing::{error, instrument};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap,
     primitives::{Bytes, H160},
-    result_unwrap, ErrorReporter,
+    result_unwrap,
 };
 use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
     rpc::{
-        json_rpc_error_to_error_object, types::ClientBootstrapModuleInfo,
-        ClientBootstrapModuleServer,
+        ClientBootstrapModuleServer, json_rpc_error_to_error_object,
+        types::ClientBootstrapModuleInfo,
     },
 };
 

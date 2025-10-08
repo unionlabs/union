@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display, fs, path::PathBuf};
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use ics23::{
     existence_proof::{self, calculate_root},
     ops::{hash_op, inner_op, inner_op::check_against_spec, leaf_op},
@@ -10,7 +10,7 @@ use ics23::{
     },
 };
 use protos::cosmos::ics23::v1::InnerSpec;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{Deserialize, de::DeserializeOwned};
 use unionlabs::{
     cosmos::ics23::{
         commitment_proof::CommitmentProof, hash_op::HashOp, inner_op::InnerOp,

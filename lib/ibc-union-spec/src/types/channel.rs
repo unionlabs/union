@@ -80,8 +80,8 @@ pub mod ethabi {
     use std::borrow::Cow;
 
     use alloy_sol_types::{
-        sol_data::{Bytes as SolBytes, String as SolString, Uint},
         SolStruct, SolType, SolValue,
+        sol_data::{Bytes as SolBytes, String as SolString, Uint},
     };
 
     use super::*;

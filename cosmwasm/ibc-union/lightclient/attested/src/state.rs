@@ -2,9 +2,9 @@ use std::{collections::BTreeMap, num::NonZero};
 
 use cosmwasm_std::{StdError, StdResult};
 use depolama::{
+    KeyCodec, Prefix, Store,
     key::KeyCodecViaEncoding,
     value::{ValueCodecViaEncoding, ValueUnitEncoding},
-    KeyCodec, Prefix, Store,
 };
 use ibc_union_light_client::spec::Timestamp;
 use unionlabs::{

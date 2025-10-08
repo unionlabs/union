@@ -1,26 +1,25 @@
 use std::collections::VecDeque;
 
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument};
 use unionlabs::never::Never;
 use voyager_sdk::{
-    anyhow, into_value,
+    ExtensionsExt, VoyagerClient, anyhow, into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{FetchUpdateHeaders, WaitForTrustedHeight},
         callback::AggregateSubmitTxFromOrderedHeaders,
         data::Data,
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpecId, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{PluginServer, types::PluginInfo},
     types::RawClientId,
-    vm::{call, conc, defer, now, pass::PassResult, promise, seq, Op},
-    ExtensionsExt, VoyagerClient,
+    vm::{Op, call, conc, defer, now, pass::PassResult, promise, seq},
 };
 
 use crate::call::{CheckForClientAge, ModuleCall};

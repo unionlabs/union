@@ -22,8 +22,9 @@ pub struct TxBody<M = RawAny> {
 pub mod proto {
     use super::TxBody;
     use crate::{
+        ErrorReporter,
         google::protobuf::{any::RawAny, timestamp::TryFromTimestampError},
-        impl_proto_via_try_from_into, ErrorReporter,
+        impl_proto_via_try_from_into,
     };
 
     impl_proto_via_try_from_into!(

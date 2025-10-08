@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use clap::{self, Parser, Subcommand};
 use ibc_union_spec::IbcUnion;
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
