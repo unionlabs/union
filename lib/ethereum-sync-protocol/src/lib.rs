@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 extern crate alloc;
 
 pub mod error;

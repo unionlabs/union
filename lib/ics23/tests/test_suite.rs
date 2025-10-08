@@ -301,6 +301,7 @@ impl TestCase for TestCheckLeafData {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
+#[allow(dead_code)]
 struct TestCheckAgainstSpecData {
     proof: protos::cosmos::ics23::v1::ExistenceProof,
     spec: protos::cosmos::ics23::v1::ProofSpec,

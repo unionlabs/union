@@ -315,8 +315,8 @@ async fn contribute(
         })
         .await?;
     let upload_client = client.new_reqwest_builder()?.build()?;
-    if let Some(ref location) = upload_location {
-        if upload_client
+    if let Some(ref location) = upload_location
+        && upload_client
             .head(location)
             .header("Tus-Resumable", "1.0.0")
             .send()
@@ -326,7 +326,6 @@ async fn contribute(
         {
             upload_location = None;
         }
-    }
     let upload_location = match upload_location {
         Some(location) => location,
         None => {

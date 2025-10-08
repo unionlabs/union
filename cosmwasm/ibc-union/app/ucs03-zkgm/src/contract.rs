@@ -1,55 +1,55 @@
 use core::str;
-use std::str::FromStr;
+use std::{slice, str::FromStr};
 
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
-    CanonicalAddr, CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, Event,
-    MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, Storage, SubMsg,
-    SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg, WasmQuery,
+    Addr, Binary, CanonicalAddr, CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env,
+    Event, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, Storage, SubMsg,
+    SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg, WasmQuery, instantiate2_address,
+    to_json_binary, to_json_string, wasm_execute,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
-use ibc_union_spec::{path::BatchPacketsPath, ChannelId, MustBeZero, Packet, Timestamp};
+use ibc_union_spec::{ChannelId, MustBeZero, Packet, Timestamp, path::BatchPacketsPath};
 use ucs03_solvable::Solvable;
 use ucs03_zkgm_token_minter_api::{
-    new_wrapped_token_event, LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind,
-    WrappedTokenMsg,
+    LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind, WrappedTokenMsg,
+    new_wrapped_token_event,
 };
 use ucs03_zkgmable::{OnIntentZkgm, OnZkgm, Zkgmable};
 use unionlabs::{
     ethereum::keccak256,
     never::Never,
-    primitives::{encoding::HexPrefixed, Bytes, H256},
+    primitives::{Bytes, H256, encoding::HexPrefixed},
 };
 
 use crate::{
+    ContractError,
     com::{
-        Ack, Batch, BatchAck, Call, Forward, Instruction, SolverMetadata, TokenMetadata,
-        TokenOrderAck, TokenOrderV1, TokenOrderV2, ZkgmPacket, ACK_ERR_ONLY_MAKER,
-        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
-        INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER,
+        ACK_ERR_ONLY_MAKER, Ack, Batch, BatchAck, Call, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
+        FORWARD_SALT_MAGIC, Forward, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+        Instruction, OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER, SolverMetadata,
         TAG_ACK_FAILURE, TAG_ACK_SUCCESS, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
-        TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
+        TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW, TokenMetadata, TokenOrderAck,
+        TokenOrderV1, TokenOrderV2, ZkgmPacket,
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, V1ToV2Migration,
         V1ToV2WrappedMigration,
     },
     state::{
-        CallProxySalt, BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT,
+        BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT, CallProxySalt,
         DEPRECATED_CHANNEL_BALANCE_V1, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH, EXECUTION_ACK,
         HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, METADATA_IMAGE_OF, TOKEN_BUCKET,
         TOKEN_MINTER, TOKEN_ORIGIN,
     },
     token_bucket::TokenBucket,
-    ContractError,
 };
 
 pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
@@ -372,12 +372,12 @@ fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<
             version: version.to_string(),
         });
     }
-    if let Some(version) = counterparty_version {
-        if version != PROTOCOL_VERSION {
-            return Err(ContractError::InvalidIbcVersion {
-                version: version.to_string(),
-            });
-        }
+    if let Some(version) = counterparty_version
+        && version != PROTOCOL_VERSION
+    {
+        return Err(ContractError::InvalidIbcVersion {
+            version: version.to_string(),
+        });
     }
     Ok(())
 }
@@ -529,7 +529,7 @@ fn timeout_packet(
     if is_forwarded_packet(zkgm_packet.salt.0.into()) {
         // This is a forwarded packet timeout
         // Find the parent packet that initiated the forward
-        let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
+        let commitment_key = BatchPacketsPath::from_packets(slice::from_ref(&packet)).key();
 
         if let Some(parent_packet) =
             IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
@@ -693,7 +693,7 @@ fn acknowledge_packet(
     if is_forwarded_packet(zkgm_packet.salt.0.into()) {
         // This is a forwarded packet acknowledgement
         // Find the parent packet that initiated the forward
-        let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
+        let commitment_key = BatchPacketsPath::from_packets(slice::from_ref(&packet)).key();
 
         if let Some(parent_packet) =
             IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
@@ -2185,56 +2185,57 @@ fn execute_token_order_v2(
                 )?;
                 wrapped_token = Some(pred_wrapped);
             }
-        } else if order.kind == TOKEN_ORDER_KIND_INITIALIZE {
-            if let Some(ref metadata) = metadata {
-                let (pred_wrapped, _) = predict_wrapped_token_v2(
-                    deps.as_ref(),
-                    &minter,
-                    path,
-                    packet.destination_channel_id,
-                    Vec::from(order.base_token.clone()).into(),
-                    metadata.clone(),
-                )?;
-                if quote_token_str != pred_wrapped {
-                    return Err(ContractError::InvalidTokenOrderKind);
-                }
-                wrapped_token = Some(pred_wrapped);
+        } else if order.kind == TOKEN_ORDER_KIND_INITIALIZE
+            && let Some(ref metadata) = metadata
+        {
+            let (pred_wrapped, _) = predict_wrapped_token_v2(
+                deps.as_ref(),
+                &minter,
+                path,
+                packet.destination_channel_id,
+                Vec::from(order.base_token.clone()).into(),
+                metadata.clone(),
+            )?;
+            if quote_token_str != pred_wrapped {
+                return Err(ContractError::InvalidTokenOrderKind);
             }
+            wrapped_token = Some(pred_wrapped);
         }
 
         // Protocol fill if quote token matches wrapped token and base covers quote
-        if let Some(wrapped_denom) = wrapped_token {
-            if quote_token_str == wrapped_denom && base_amount_covers_quote_amount {
-                let base_amount =
-                    u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
-                let quote_amount = u128::try_from(order.quote_amount)
-                    .map_err(|_| ContractError::AmountOverflow)?;
+        if let Some(wrapped_denom) = wrapped_token
+            && quote_token_str == wrapped_denom
+            && base_amount_covers_quote_amount
+        {
+            let base_amount =
+                u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+            let quote_amount =
+                u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
 
-                rate_limit(
-                    deps.storage,
-                    quote_token_str.clone(),
-                    quote_amount,
-                    env.block.time.seconds(),
-                )?;
+            rate_limit(
+                deps.storage,
+                quote_token_str.clone(),
+                quote_amount,
+                env.block.time.seconds(),
+            )?;
 
-                // The asset can only be deployed if the metadata preimage is provided
-                let can_deploy = order.kind == TOKEN_ORDER_KIND_INITIALIZE;
+            // The asset can only be deployed if the metadata preimage is provided
+            let can_deploy = order.kind == TOKEN_ORDER_KIND_INITIALIZE;
 
-                return protocol_fill_mint(
-                    deps,
-                    env,
-                    packet.destination_channel_id,
-                    path,
-                    Vec::from(order.base_token.clone()).into(),
-                    wrapped_denom,
-                    receiver,
-                    relayer,
-                    base_amount.into(),
-                    quote_amount.into(),
-                    metadata,
-                    can_deploy,
-                );
-            }
+            return protocol_fill_mint(
+                deps,
+                env,
+                packet.destination_channel_id,
+                path,
+                Vec::from(order.base_token.clone()).into(),
+                wrapped_denom,
+                receiver,
+                relayer,
+                base_amount.into(),
+                quote_amount.into(),
+                metadata,
+                can_deploy,
+            );
         }
 
         // Fall back to market maker fill
@@ -2277,43 +2278,44 @@ fn protocol_fill_mint(
         .map_err(|_| ContractError::AmountOverflow)?;
 
     // Deploy wrapped token if needed and can deploy
-    if can_deploy && !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_token.clone()) {
-        if let Some(metadata) = metadata {
-            // Create the wrapped token if it doesn't exist
-            HASH_TO_FOREIGN_TOKEN.save(
-                deps.storage,
-                wrapped_token.clone(),
-                &Vec::from(base_token.clone()).into(),
-            )?;
+    if can_deploy
+        && !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_token.clone())
+        && let Some(metadata) = metadata
+    {
+        // Create the wrapped token if it doesn't exist
+        HASH_TO_FOREIGN_TOKEN.save(
+            deps.storage,
+            wrapped_token.clone(),
+            &Vec::from(base_token.clone()).into(),
+        )?;
 
-            // Create the token with metadata from the preimage
-            messages.push(SubMsg::reply_never(make_wasm_msg(
-                WrappedTokenMsg::CreateDenomV2 {
-                    subdenom: wrapped_token.clone(),
-                    path: path.to_be_bytes::<32>().to_vec().into(),
-                    channel_id,
-                    token: Vec::from(base_token.clone()).into(),
-                    implementation: metadata.implementation.to_vec().into(),
-                    initializer: metadata.initializer.to_vec().into(),
-                },
-                &minter,
-                vec![],
-            )?));
+        // Create the token with metadata from the preimage
+        messages.push(SubMsg::reply_never(make_wasm_msg(
+            WrappedTokenMsg::CreateDenomV2 {
+                subdenom: wrapped_token.clone(),
+                path: path.to_be_bytes::<32>().to_vec().into(),
+                channel_id,
+                token: Vec::from(base_token.clone()).into(),
+                implementation: metadata.implementation.to_vec().into(),
+                initializer: metadata.initializer.to_vec().into(),
+            },
+            &minter,
+            vec![],
+        )?));
 
-            // Save the token origin for future unwrapping
-            TOKEN_ORIGIN.save(
-                deps.storage,
-                wrapped_token.clone(),
-                &Uint256::from_be_bytes(update_channel_path(path, channel_id)?.to_be_bytes()),
-            )?;
+        // Save the token origin for future unwrapping
+        TOKEN_ORIGIN.save(
+            deps.storage,
+            wrapped_token.clone(),
+            &Uint256::from_be_bytes(update_channel_path(path, channel_id)?.to_be_bytes()),
+        )?;
 
-            // Save metadata image
-            METADATA_IMAGE_OF.save(
-                deps.storage,
-                wrapped_token.clone(),
-                &keccak256(metadata.abi_encode_params()),
-            )?;
-        }
+        // Save metadata image
+        METADATA_IMAGE_OF.save(
+            deps.storage,
+            wrapped_token.clone(),
+            &keccak256(metadata.abi_encode_params()),
+        )?;
     }
 
     // Mint the quote amount to the receiver
@@ -2553,7 +2555,8 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                     #[allow(deprecated)]
                     sent_packet_data: Vec::from(reply_data.data.unwrap_or_default()).into(),
                 })?;
-                let commitment_key = BatchPacketsPath::from_packets(&[sent_packet.clone()]).key();
+                let commitment_key =
+                    BatchPacketsPath::from_packets(slice::from_ref(&sent_packet)).key();
                 IN_FLIGHT_PACKET.save(
                     deps.storage,
                     commitment_key.into_bytes().into(),
@@ -3025,7 +3028,9 @@ pub struct MigrateMsg {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

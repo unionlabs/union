@@ -248,7 +248,7 @@ impl MerkleHasher {
         } else if self.next_leaf == 1 {
             // A tree of depth one has a root that is equal to the first given leaf.
             self.root = Some(H256::new(leaf));
-        } else if self.next_leaf % 2 == 0 {
+        } else if self.next_leaf.is_multiple_of(2) {
             self.process_left_node(self.next_leaf, Preimage::Slice(&leaf));
         } else {
             self.process_right_node(self.next_leaf, Preimage::Slice(&leaf));

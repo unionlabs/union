@@ -411,7 +411,7 @@ impl<E: Encoding, const BYTES: usize> schemars::JsonSchema for FixedBytes<BYTES,
         format!("{}::{}", module_path!(), Self::schema_name()).into()
     }
 
-    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+    fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
         use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
 
         SchemaObject {

@@ -1,5 +1,3 @@
-#![feature(array_chunks)]
-
 #[cfg(test)]
 mod tests;
 
@@ -50,7 +48,9 @@ pub fn parse_epoch_rotation_header_extra_data(
 
     let num = data[0];
     let vals = data[1..]
-        .array_chunks::<VAL_ENTRY_LEN>()
+        .as_chunks::<VAL_ENTRY_LEN>()
+        .0
+        .iter()
         .map(|x| {
             // (address, pubkey)
             (

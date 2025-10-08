@@ -1,5 +1,6 @@
 // #![warn(clippy::unwrap_used)] // allow for now
 
+use core::slice;
 use std::{cmp::Ordering, collections::VecDeque};
 
 use alloy::{
@@ -320,7 +321,9 @@ impl Module {
             if block_number > until {
                 return Err(ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
-                    format!("block number {block_number} cannot be greater than the until height {until}"),
+                    format!(
+                        "block number {block_number} cannot be greater than the until height {until}"
+                    ),
                     None::<()>,
                 ));
             } else if block_number == until {
@@ -1021,7 +1024,7 @@ impl Module {
                     .maybe_query_ibc_state(
                         self.chain_id.clone(),
                         QueryHeight::Latest,
-                        BatchReceiptsPath::from_packets(&[packet.clone()]),
+                        BatchReceiptsPath::from_packets(slice::from_ref(&packet)),
                     )
                     .await?
                     .state;
@@ -1051,7 +1054,7 @@ impl Module {
                             .maybe_query_ibc_state(
                                 counterparty_chain_id.clone(),
                                 QueryHeight::Latest,
-                                BatchPacketsPath::from_packets(&[packet.clone()]),
+                                BatchPacketsPath::from_packets(slice::from_ref(&packet)),
                             )
                             .await?
                             .state;

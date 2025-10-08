@@ -32,7 +32,7 @@ pub fn new_mimc_constants_bls12_377() -> MiMCBls12377Constants {
     MiMCConstants::new(GNARK_SEED)
 }
 
-pub fn new_mimc_bls12_377(constants: &MiMCBls12377Constants) -> MiMCBls12377 {
+pub fn new_mimc_bls12_377(constants: &MiMCBls12377Constants) -> MiMCBls12377<'_> {
     MiMC::new(constants)
 }
 
@@ -51,7 +51,7 @@ pub fn new_mimc_constants_bn254() -> MiMCConstants<ark_bn254::Fr, { GNARK_BN254_
     MiMCConstants::new(GNARK_SEED)
 }
 
-pub fn new_mimc_bn254(constants: &MiMCBn254Constants) -> MiMCBn254 {
+pub fn new_mimc_bn254(constants: &MiMCBn254Constants) -> MiMCBn254<'_> {
     MiMC::new(constants)
 }
 

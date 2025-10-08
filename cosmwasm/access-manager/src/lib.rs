@@ -147,7 +147,6 @@ pub fn init(deps: DepsMut, env: &Env, msg: &InitMsg) -> Result<Response, Contrac
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
-#[expect(clippy::missing_panics_doc, reason = "it's in a const bro")]
 #[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
 pub fn instantiate(
     mut deps: DepsMut,

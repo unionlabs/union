@@ -3,7 +3,7 @@ use std::cmp;
 #[cfg(doc)]
 use access_manager_types::manager::{event::*, msg::QueryMsg};
 use access_manager_types::{
-    managed,
+    Access, CanCall, FullAccess, HasRole, Role, RoleId, Schedule, Selector, TargetConfig, managed,
     manager::{
         error::AccessManagerError,
         event::{
@@ -14,18 +14,17 @@ use access_manager_types::{
         msg::ExecuteMsg,
     },
     time::{Delay, UnpackedDelay},
-    Access, CanCall, FullAccess, HasRole, Role, RoleId, Schedule, Selector, TargetConfig,
 };
-use cosmwasm_std::{from_json, wasm_execute, Addr, StdError, SubMsg, WasmMsg};
+use cosmwasm_std::{Addr, StdError, SubMsg, WasmMsg, from_json, wasm_execute};
 use depolama::StorageExt;
 use sha2::{Digest, Sha256};
 use unionlabs_primitives::H256;
 
 use crate::{
+    EXECUTE_REPLY_ID,
     context::{ExecCtx, HasStorage, IExecCtx, IQueryCtx, QueryCtx},
     error::ContractError,
     state::{ExecutionIdStack, RoleMembers, Roles, Schedules, TargetAllowedRoles, Targets},
-    EXECUTE_REPLY_ID,
 };
 
 /// Check that the caller is authorized to perform the operation.
@@ -536,10 +535,9 @@ pub(crate) fn schedule(
         timepoint: prev_timepoint,
         ..
     }) = maybe_schedule
+        && !_is_expired(ctx.query_ctx(), prev_timepoint)
     {
-        if !_is_expired(ctx.query_ctx(), prev_timepoint) {
-            return Err(AccessManagerError::AccessManagerAlreadyScheduled(operation_id).into());
-        }
+        return Err(AccessManagerError::AccessManagerAlreadyScheduled(operation_id).into());
     }
 
     let schedule = Schedule {

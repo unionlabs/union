@@ -1,10 +1,10 @@
 use cosmwasm_std::{
-    ensure, entry_point, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError,
-    StdResult,
+    Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, ensure,
+    entry_point,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use ibc_union_light_client::{msg::QueryMsg, IbcClientError};
+use ibc_union_light_client::{IbcClientError, msg::QueryMsg};
 use serde::{Deserialize, Serialize};
 use unionlabs::encoding::{Bincode, EncodeAs};
 
@@ -39,14 +39,13 @@ pub fn execute(
             if let Some(previously_attested_timestamp) = deps
                 .storage
                 .maybe_read::<HeightTimestamps>(&attestation.height)?
+                && previously_attested_timestamp != attestation.timestamp
             {
-                if previously_attested_timestamp != attestation.timestamp {
-                    return Err(Error::InconsistentTimestamp {
-                        height: attestation.height,
-                        timestamp: attestation.timestamp,
-                        previously_attested_timestamp,
-                    });
-                }
+                return Err(Error::InconsistentTimestamp {
+                    height: attestation.height,
+                    timestamp: attestation.timestamp,
+                    previously_attested_timestamp,
+                });
             }
 
             let attestation_key = AttestationKey {

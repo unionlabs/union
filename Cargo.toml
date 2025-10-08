@@ -294,7 +294,7 @@ members = [
 
 [workspace.package]
 authors      = ["Union Labs"]
-edition      = "2021"
+edition      = "2024"
 license-file = "LICENSE"
 publish      = false
 repository   = "https://github.com/unionlabs/union"

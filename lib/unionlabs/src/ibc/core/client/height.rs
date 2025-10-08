@@ -252,7 +252,7 @@ impl ::schemars::JsonSchema for Height {
         alloc::borrow::Cow::Borrowed(concat!(module_path!(), "::Height"))
     }
 
-    fn json_schema(_: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+    fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
         use schemars::schema::{
             InstanceType, Metadata, SchemaObject, SingleOrVec, StringValidation,
         };

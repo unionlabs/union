@@ -19,8 +19,7 @@ fn main() -> Result<()> {
 
             let rev = match &file.get(0..4) {
                 Some(b"\0asm") => extract_wasm(&file)?,
-                Some(b"\0elf") => extract_elf(&file)?,
-                Some(b"\x7FELF") => extract_elf(&file)?,
+                Some(b"\0elf" | b"\x7FELF") => extract_elf(&file)?,
                 Some(magic) => bail!("unknown file magic {magic:?}"),
                 None => bail!("file is < 4 bytes"),
             };

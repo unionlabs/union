@@ -23,7 +23,7 @@ pub(crate) fn read_varint(mut buffer: &[u8]) -> Result<(&[u8], i64), prost::Deco
     // reinterpret the bits of the u64 as an i64
     // reference implementation did some hacky bit fiddling but rustc is smart enough to optimize this to shr and neg
     #[allow(clippy::cast_possible_wrap)] // u64::MAX / 2 == i64::MAX
-    let x = (ux / 2) as i64 * (if ux % 2 == 0 { 1 } else { -1 });
+    let x = (ux / 2) as i64 * (if ux.is_multiple_of(2) { 1 } else { -1 });
 
     Ok((buffer, x))
 }

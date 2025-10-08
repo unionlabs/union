@@ -31,22 +31,22 @@ pub fn check_against_spec(
     leaf_op::check_against_spec(&existence_proof.leaf, spec)
         .map_err(SpecMismatchError::LeafSpecMismatch)?;
 
-    if let Some(min_depth) = spec.min_depth {
-        if existence_proof.path.len() < min_depth.inner() {
-            return Err(SpecMismatchError::InnerDepthTooShort {
-                path_len: existence_proof.path.len(),
-                min_depth: min_depth.inner(),
-            });
-        }
+    if let Some(min_depth) = spec.min_depth
+        && existence_proof.path.len() < min_depth.inner()
+    {
+        return Err(SpecMismatchError::InnerDepthTooShort {
+            path_len: existence_proof.path.len(),
+            min_depth: min_depth.inner(),
+        });
     }
 
-    if let Some(max_depth) = spec.max_depth {
-        if existence_proof.path.len() < max_depth.inner() {
-            return Err(SpecMismatchError::InnerDepthTooLong {
-                path_len: existence_proof.path.len(),
-                max_depth: max_depth.inner(),
-            });
-        }
+    if let Some(max_depth) = spec.max_depth
+        && existence_proof.path.len() < max_depth.inner()
+    {
+        return Err(SpecMismatchError::InnerDepthTooLong {
+            path_len: existence_proof.path.len(),
+            max_depth: max_depth.inner(),
+        });
     }
 
     for (index, inner) in existence_proof.path.iter().enumerate() {
@@ -82,14 +82,13 @@ pub(crate) fn calculate(
         .try_fold(leaf_hash, |res, step| {
             let leaf_hash = inner_op::apply(step, &res).map_err(CalculateRootError::InnerOpHash)?;
 
-            if let Some(proof_spec) = spec {
-                if leaf_hash.len() > proof_spec.inner_spec.child_size.inner()
+            if let Some(proof_spec) = spec
+                && leaf_hash.len() > proof_spec.inner_spec.child_size.inner()
                     // REVIEW: WHy is this >= 32 check here? Taken directly from https://github.com/cosmos/ics23/blob/master/go/proof.go#L140
                     && proof_spec.inner_spec.child_size.inner() >= 32
                 {
                     return Err(CalculateRootError::InnerOpHashAndSpecMismatch);
                 }
-            }
 
             Ok(leaf_hash)
         })

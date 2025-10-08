@@ -1,18 +1,20 @@
 use serde::Deserialize;
 use ssz::{
-    types::{BitList, BitVector, List, Vector},
     Ssz,
+    types::{BitList, BitVector, List, Vector},
 };
 use typenum::U;
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Ssz)]
 #[serde(rename_all = "UPPERCASE")]
+#[allow(unused)]
 pub struct SingleFieldTestStruct {
     pub a: u8,
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Ssz)]
 #[serde(rename_all = "UPPERCASE")]
+#[allow(unused)]
 pub struct SmallTestStruct {
     pub a: u16,
     pub b: u16,
@@ -20,6 +22,7 @@ pub struct SmallTestStruct {
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Ssz)]
 #[serde(rename_all = "UPPERCASE")]
+#[allow(unused)]
 pub struct FixedTestStruct {
     pub a: u8,
     pub b: u64,
@@ -28,6 +31,7 @@ pub struct FixedTestStruct {
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Ssz)]
 #[serde(rename_all = "UPPERCASE")]
+#[allow(unused)]
 pub struct VarTestStruct {
     pub a: u16,
     pub b: List<u16, U<1024>>,
@@ -36,6 +40,7 @@ pub struct VarTestStruct {
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Ssz)]
 #[serde(rename_all = "UPPERCASE")]
+#[allow(unused)]
 pub struct ComplexTestStruct {
     pub a: u16,
     pub b: List<u16, U<128>>,
@@ -49,6 +54,7 @@ pub struct ComplexTestStruct {
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Ssz)]
 #[serde(rename_all = "UPPERCASE")]
+#[allow(unused)]
 pub struct BitsStruct {
     pub a: BitList<U<5>>,
     pub b: BitVector<U<2>>,

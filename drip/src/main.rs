@@ -5,17 +5,18 @@ use std::{
 use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
 use async_sqlite::{
-    rusqlite::{self, params, OptionalExtension},
     JournalMode, Pool, PoolBuilder,
+    rusqlite::{self, OptionalExtension, params},
 };
 use axum::{
+    Router,
     response::{self, IntoResponse},
     routing::get,
-    Router,
 };
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
 use cosmos_client::{
+    TxClient,
     gas::{
         any::GasFiller,
         feemarket::{self},
@@ -23,16 +24,15 @@ use cosmos_client::{
     },
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    TxClient,
 };
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
-use tracing::{debug, error, info, instrument, warn, Instrument};
+use tracing::{Instrument, debug, error, info, instrument, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{
-    primitives::{encoding::HexUnprefixed, H256},
     ErrorReporter,
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 mod turnstile;
@@ -566,15 +566,15 @@ impl Mutation {
             .as_ref()
             .is_some_and(|CaptchaBypassSecret(secret)| secret == &captcha_token);
 
-        if let Some(secret) = secret {
-            if !allow_bypass {
-                let response = turnstile::verify(&captcha_token, &secret.0)
-                    .await
-                    .map_err(|err| format!("failed to verify turnstile: {:?}", err))?;
+        if let Some(secret) = secret
+            && !allow_bypass
+        {
+            let response = turnstile::verify(&captcha_token, &secret.0)
+                .await
+                .map_err(|err| format!("failed to verify turnstile: {:?}", err))?;
 
-                if !response.success {
-                    return Err(format!("failed turnstile request: {:?}", response).into());
-                }
+            if !response.success {
+                return Err(format!("failed turnstile request: {:?}", response).into());
             }
         }
 

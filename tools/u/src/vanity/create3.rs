@@ -206,7 +206,7 @@ impl Cmd {
                             return Some(salt.to_be_bytes::<32>().into());
                         }
 
-                        if local_attempts % 200000 == 0 {
+                        if local_attempts.is_multiple_of(200000) {
                             total_attempts.fetch_add(200000, Ordering::Relaxed);
                             local_attempts = 0;
                             break;
@@ -236,12 +236,11 @@ impl Cmd {
 
         let mut result = None;
         for handle in handles {
-            if let Ok(thread_result) = handle.join() {
-                if thread_result.is_some() {
+            if let Ok(thread_result) = handle.join()
+                && thread_result.is_some() {
                     result = thread_result;
                     break;
                 }
-            }
         }
 
         status_handle.join().ok();

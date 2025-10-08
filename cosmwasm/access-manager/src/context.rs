@@ -44,7 +44,7 @@ impl<'info, 'deps> ExecCtx<'info, 'deps> {
 }
 
 pub(crate) trait IQueryCtx<'info> {
-    fn querier(&self) -> QuerierWrapper;
+    fn querier(&self) -> QuerierWrapper<'_>;
     fn address_this(&self) -> &'info Addr;
     fn timestamp(&self) -> u64;
 }
@@ -58,7 +58,7 @@ pub(crate) trait IExecCtx<'info> {
 }
 
 impl<'info> IQueryCtx<'info> for ExecCtx<'info, '_> {
-    fn querier(&self) -> QuerierWrapper {
+    fn querier(&self) -> QuerierWrapper<'_> {
         self.deps.querier
     }
 
@@ -94,7 +94,7 @@ impl<'info> IExecCtx<'info> for ExecCtx<'info, '_> {
 }
 
 impl<'info> IQueryCtx<'info> for QueryCtx<'info, '_> {
-    fn querier(&self) -> QuerierWrapper {
+    fn querier(&self) -> QuerierWrapper<'_> {
         self.deps.querier
     }
 

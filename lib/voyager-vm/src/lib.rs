@@ -175,8 +175,12 @@ pub trait Visit<T: QueueMessage> {
                 data,
                 receiver: _,
             }) => {
-                queue.iter_mut().for_each(|op| self.visit_op(op));
-                data.iter_mut().for_each(|data| self.visit_data(data));
+                for op in queue.iter_mut() {
+                    self.visit_op(op);
+                }
+                for data in data.iter_mut() {
+                    self.visit_data(data);
+                }
             }
             Op::Void(op) => self.visit_op(op),
         }

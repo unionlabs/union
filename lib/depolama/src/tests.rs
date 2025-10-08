@@ -83,7 +83,7 @@ mod iterator {
         // b"test" + 1
         storage.set(b"tesu".as_slice(), &[0]);
 
-        for (ref k, ref v) in &kvs {
+        for (k, v) in &kvs {
             storage.write::<TestStore>(k, v);
         }
 

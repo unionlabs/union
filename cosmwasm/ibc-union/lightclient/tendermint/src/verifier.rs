@@ -16,7 +16,7 @@ impl<'a> Ed25519Verifier<'a> {
 impl HostFns for Ed25519Verifier<'_> {
     fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
         match pubkey {
-            PublicKey::Ed25519(ref key) => self
+            PublicKey::Ed25519(key) => self
                 .deps
                 .api
                 .ed25519_verify(msg, sig, key)
@@ -52,7 +52,7 @@ impl HostFns for Ed25519Verifier<'_> {
 #[cfg(feature = "bls")]
 pub mod bls {
     use cometbft_types::crypto::public_key::PublicKey;
-    use cosmwasm_std::{Deps, BLS12_381_G1_GENERATOR};
+    use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps};
     use sha2::Digest;
     use tendermint_verifier::types::HostFns;
 
@@ -74,7 +74,7 @@ pub mod bls {
             sig: &[u8],
         ) -> bool {
             match pubkey {
-                PublicKey::Bls12_381(ref pubkey) => {
+                PublicKey::Bls12_381(pubkey) => {
                     let msg = if msg.len() > 32 {
                         sha2::Sha256::new().chain_update(msg).finalize().to_vec()
                     } else {

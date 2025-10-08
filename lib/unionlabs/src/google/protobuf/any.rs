@@ -131,7 +131,7 @@ impl<T: TypeUrl> TryFrom<AnySerde<T>> for Any<T> {
 impl<T: Encode<Proto> + TypeUrl> From<Any<T>> for protos::google::protobuf::Any {
     fn from(val: Any<T>) -> Self {
         protos::google::protobuf::Any {
-            type_url: T::type_url().to_string(),
+            type_url: T::type_url(),
             value: val.0.encode(),
         }
     }
@@ -146,7 +146,7 @@ impl<T: Encode<Proto> + TypeUrl> Encode<Proto> for Any<T> {
 impl<T: Encode<Proto> + TypeUrl> From<Any<T>> for RawAny {
     fn from(val: Any<T>) -> Self {
         RawAny {
-            type_url: T::type_url().to_string(),
+            type_url: T::type_url(),
             value: val.0.encode(),
         }
     }
