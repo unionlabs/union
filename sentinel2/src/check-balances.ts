@@ -58,7 +58,7 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
 }
 
 export const checkBalances = Effect.repeat(
-  Effect.gen(function*(_) {
+  Effect.gen(function*() {
     yield* Effect.log("Spawning per-plugin balance checks…")
     const { config } = yield* Config
     const sbConfig = config.signerBalances
@@ -176,7 +176,7 @@ export const checkBalances = Effect.repeat(
             payload,
           })
 
-          const worker = Effect.gen(function*(_) {
+          const worker = Effect.gen(function*() {
             const result = yield* callWithRetry
             if (result) {
               if (!Array.isArray(result) || result.length === 0) {

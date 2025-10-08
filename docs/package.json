@@ -42,7 +42,7 @@
     "astro": "^5.11.0",
     "astro-embed": "^0.9.0",
     "astro-live-code": "^0.0.6",
-    "effect": "3.16.3",
+    "effect": "catalog:",
     "expressive-code-twoslash": "^0.5.3",
     "glob": "^11.0.3",
     "graphiql": "^5.0.3",
@@ -66,7 +66,6 @@
     "remark-toc": "^9.0.0",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "runed": "^0.29.1",
-    "sharp": "^0.33.5",
     "shiki": "^3.7.0",
     "slugify": "^1.6.6",
     "smartypants": "^0.2.2",
@@ -87,8 +86,11 @@
     "@astrojs/language-server": "^2.15.4",
     "@astrojs/starlight-tailwind": "^4.0.1",
     "@astrojs/ts-plugin": "^1.10.4",
+    "@cosmjs/proto-signing": "catalog:",
+    "@cosmjs/stargate": "catalog:",
+    "@effect/typeclass": "catalog:",
     "@iconify/json": "^2.2.354",
-    "@internationalized/date": "catalog:",
+    "@internationalized/date": "^3.10.0",
     "@shikijs/monaco": "^3.7.0",
     "@shikijs/rehype": "^3.7.0",
     "@shikijs/transformers": "^3.7.0",
@@ -121,6 +123,7 @@
     "typed-query-selector": "^2.12.0",
     "unist-util-visit": "^5.0.0",
     "unplugin-icons": "^22.1.0",
+    "viem": "catalog:",
     "vite": "^6.3.5"
   }
 }

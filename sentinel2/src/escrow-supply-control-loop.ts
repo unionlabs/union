@@ -115,7 +115,7 @@ const fetchSourceChannelId = (
   })
 
 export const escrowSupplyControlLoop = Effect.repeat(
-  Effect.gen(function*(_) {
+  Effect.gen(function*() {
     yield* Effect.log("Escrow supply control loop started")
     let config = (yield* Config).config
 

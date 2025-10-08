@@ -1,16 +1,19 @@
 packages:
-  - 'app2'
-  - 'ceremony'
-  - 'docs'
-  - 'sentinel2'
-  - 'site'
-  - 'ts-sdk'
-  - 'ts-sdk-cosmos'
-  - 'ts-sdk-evm'
-  - 'zkgm-dev'
-  - 'ts-sdk-sui'
+  - app2
+  - ceremony
+  - docs
+  - sentinel2
+  - site
+  - ts-sdk
+  - ts-sdk-cosmos
+  - ts-sdk-evm
+  - zkgm-dev
+  - ts-sdk-sui
+
 allowUnusedPatches: true
+
 autoInstallPeers: false
+
 catalog:
   '@babel/cli': ^7.28.3
   '@babel/core': ^7.28.4
@@ -23,15 +26,15 @@ catalog:
   '@cosmjs/stargate': 0.33.1
   '@cosmjs/tendermint-rpc': 0.33.1
   '@effect/build-utils': ^0.8.9
-  '@effect/docgen': ^0.5.2
+  '@effect/docgen': 0.5.2
   '@effect/experimental': ^0.55.0
   '@effect/language-service': ^0.41.0
   '@effect/platform': ^0.91.1
-  '@effect/typeclass': ^0.36.0
+  '@effect/typeclass': 0.36.0
   '@effect/vitest': ^0.25.1
-  '@internationalized/date': ^3.10.0
   '@types/node': ^24.5.2
   babel-plugin-annotate-pure-calls: ^0.5.0
+  dpdm: ^3.14.0
   effect: ~3.17.14
   glob: ^11.0.3
   madge: ^8.0.0
@@ -43,7 +46,9 @@ catalog:
   viem: ^2.33.3
   vite: ^6.1.1
   vitest: ^3.2.4
+
 catalogMode: strict
+
 catalogs:
   peer:
     '@effect/experimental': ^0.55
@@ -58,7 +63,11 @@ catalogs:
     eslint-plugin-svelte: ^3.5.1
     svelte: ^5.33.18
     svelte-check: ^4.2.1
+
+engineStrict: true
+
 minimumReleaseAge: 2880
+
 overrides:
   '@cosmjs/math': 0.33.1
   ansi-regex: <6.2.1
@@ -80,12 +89,21 @@ overrides:
   supports-hyperlinks: <4.1.1
   viem: 2.33.3
   wrap-ansi: <9.0.1
+
 patchedDependencies:
   '@cosmjs/amino@0.33.1': patches/@cosmjs__amino@0.33.1.patch
   '@cosmjs/stargate': patches/@cosmjs__stargate.patch
   '@cosmjs/tendermint-rpc@0.33.1': patches/@cosmjs__tendermint-rpc@0.33.1.patch
   '@effect/docgen': patches/@effect__docgen.patch
-strictPeerDependencies: true
+
+peerDependencyRules:
+  allowedVersions:
+    graphiql-explorer@0.9.0>graphql: '*'
+    graphiql-explorer@0.9.0>react: '*'
+    graphiql-explorer@0.9.0>react-dom: '*'
+
 resolvePeersFromWorkspaceRoot: false
-engineStrict: true
+
 sharedWorkspaceLockfile: true
+
+strictPeerDependencies: true

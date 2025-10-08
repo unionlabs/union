@@ -45,7 +45,7 @@ interface GetRequestError {
 }
 
 export const checkSSLCertificates = Effect.repeat(
-  Effect.gen(function*(_) {
+  Effect.gen(function*() {
     yield* Effect.log("Spawning checkSSLCertificates loop")
     const { config } = yield* Config
     const rpchostEndpoints = config.rpcHostEndpoints

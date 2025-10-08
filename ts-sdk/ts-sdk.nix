@@ -7,11 +7,14 @@ _: {
       ensureAtRepositoryRoot,
       ...
     }:
+    let
+      hash = "sha256-8fBgRR9gTZRsImkeRxVkzADjQb3DH7+KSi+MMvNdI00=";
+    in
     {
       packages = {
         ts-sdk = buildPnpmPackage {
+          inherit hash;
           packageJsonPath = ./package.json;
-          hash = "sha256-X+yOSBK99AnS11sXHfQuQjqgjkxrCJms4z+A+Xrh8Ss=";
           pnpmWorkspaces = [
             "@unionlabs/sdk"
           ];
@@ -26,15 +29,30 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            echo TS SDK NODE ROOT
-            ls -lah ./ts-sdk
-            echo TS SDK NODE NODE MODULES
-            ls -lah ./ts-sdk/node_modules
             cp -r ./ts-sdk/build/* $out
           '';
           checkPhase = ''
             pnpm --filter=@unionlabs/sdk check
             pnpm --filter=@unionlabs/sdk test
+          '';
+        };
+        ts-sdk-docs = buildPnpmPackage {
+          inherit hash;
+          packageJsonPath = ./package.json;
+          pnpmWorkspaces = [
+            "@unionlabs/sdk"
+          ];
+          extraSrcs = [
+            ../ts-sdk
+          ];
+          buildPhase = ''
+            runHook preBuild
+            pnpm --filter=@unionlabs/sdk docgen
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r ./ts-sdk/docs/* $out
           '';
         };
       };

@@ -16,13 +16,13 @@ be downloaded using [`graphqurl`](https://github.com/hasura/graphqurl) or [`grap
   <TabItem label="graphql-inspector" icon="seti:npm">
 ```sh frame="none"
 # download .graphql schema
-npx @graphql-inspector/cli \
+pnpm dlx @graphql-inspector/cli \
   introspect https://graphql.union.build/v1/graphql \
   --write schema.graphql
 ```
 ```bash frame="none"
 # download .json schema
-npx @graphql-inspector/cli \
+pnpm dlx @graphql-inspector/cli \
   introspect https://graphql.union.build/v1/graphql \
   --write schema.json
 ```
@@ -30,12 +30,12 @@ npx @graphql-inspector/cli \
   <TabItem label="graphqurl" icon="seti:npm">
 ```sh frame="none"
 # download .graphql schema
-npx graphqurl https://graphql.union.build/v1/graphql \
+pnpm dlx graphqurl https://graphql.union.build/v1/graphql \
   --introspect > schema.graphql
 ```
 ```sh frame="none"
 # download .json schema
-npx graphqurl https://graphql.union.build/v1/graphql \
+pnpm dlx graphqurl https://graphql.union.build/v1/graphql \
   --introspect \
   --format json > schema.json
 ```

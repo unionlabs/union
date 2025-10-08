@@ -52,6 +52,7 @@ files.extend-exclude = [
   "uniond/docs/static/openapi.yml",
   "docs/src/assets/theme/**",
   "cosmwasm/cw20-base/**",
+  "app2/src/lib/dashboard/database.types.ts",
 ]
 
 [default.extend-words]

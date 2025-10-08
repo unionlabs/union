@@ -25,7 +25,10 @@
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "catalog:",
+    "@cosmjs/stargate": "catalog:",
+    "@cosmjs/proto-signing": "catalog:",
     "@effect/platform": "catalog:",
+    "@unionlabs/sdk": "workspace:*",
     "@unionlabs/sdk-cosmos": "workspace:*",
     "@unionlabs/sdk-evm": "workspace:*",
     "better-sqlite3": "^11.9.1",

@@ -2,25 +2,15 @@ _: {
   perSystem =
     {
       pkgs,
-      lib,
       mkCi,
-      pkgsUnstable,
       ensureAtRepositoryRoot,
+      buildPnpmPackage,
       ...
     }:
-    let
-      deps = with pkgsUnstable; [
-        pkg-config
-        nodePackages_latest.nodejs
-      ];
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit lib pkgs;
-      };
-    in
     {
       packages = {
         site = mkCi false (buildPnpmPackage {
-          # hash = "sha256-HLL0s9pXWGK9O/L4S6SUTdhq2q3TipGeNfyHoB/QVWI=";
+          hash = "sha256-QQtlK9xlLoxkTgpEoHFExYcj+/Y+KjU1Uy4tVbnXdeI=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../site
@@ -28,8 +18,6 @@ _: {
           pnpmWorkspaces = [
             "site"
           ];
-          nativeBuildInputs = deps;
-          buildInputs = deps;
           buildPhase = ''
             runHook preBuild
             export PUPPETEER_SKIP_DOWNLOAD=1;
@@ -51,7 +39,6 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "site-dev-server";
-            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/
@@ -66,7 +53,6 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "site-check";
-            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/

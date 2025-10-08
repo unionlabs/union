@@ -1,5 +1,5 @@
 {
-  "$schema": "../node_modules/@effect/docgen/schema.json",
+  "$schema": "./node_modules/@effect/docgen/schema.json",
   "srcLink": "https://github.com/unionlabs/union/tree/main/ts-sdk-sui/src/",
   "exclude": ["src/internal/**/*.ts"]
 }

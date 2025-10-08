@@ -4,7 +4,7 @@ import starlight from "@astrojs/starlight"
 import svelte from "@astrojs/svelte"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import tailwindcss from "@tailwindcss/vite"
-import { defineConfig } from "astro/config"
+import { defineConfig, passthroughImageService } from "astro/config"
 import ecTwoSlash from "expressive-code-twoslash"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
@@ -34,6 +34,9 @@ export default defineConfig({
   },
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
+  image: {
+    service: passthroughImageService(),
+  },
   vite: {
     resolve: {
       alias: [

@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "prepare": "effect-language-service patch",
-    "docgen": ""
+    "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm --filter @unionlabs/sdk-cosmos exec docgen && node scripts/docs.mjs"
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
