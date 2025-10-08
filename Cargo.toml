@@ -293,7 +293,7 @@ members = [
   "e2e/access-manager-tests",
   "e2e/access-managed-example",
   "lib/aptos-types",
-  "solana/ibc"
+  "solana/ibc",
 ]
 
 [workspace.package]

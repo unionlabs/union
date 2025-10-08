@@ -31,7 +31,6 @@ serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
 sha2                     = { workspace = true }
 sha3                     = { workspace = true }
-ssz                      = { workspace = true }
 static_assertions        = { workspace = true }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
