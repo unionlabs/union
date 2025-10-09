@@ -1,10 +1,10 @@
 use ibc_union_spec::{ClientId, Connection, ConnectionId, ConnectionState};
 use pinocchio::{
-    account_info::AccountInfo, program_error::ProgramError, pubkey::find_program_address,
-    ProgramResult,
+    ProgramResult, account_info::AccountInfo, program_error::ProgramError,
+    pubkey::find_program_address,
 };
 
-use crate::{next_connection_id::NextConnectionId, TypedAccount};
+use crate::{TypedAccount, next_connection_id::NextConnectionId};
 
 pub struct ConnectionOpenInit<'a> {
     pub accounts: ConnectionOpenInitAccounts<'a>,

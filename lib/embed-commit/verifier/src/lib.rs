@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic, clippy::unwrap_used)]
 
-use anyhow::{anyhow, Context, Result};
-use elf::{endian::AnyEndian, ElfBytes};
+use anyhow::{Context, Result, anyhow};
+use elf::{ElfBytes, endian::AnyEndian};
 use embed_commit::Rev;
 use wasmtime::{Engine, Linker, Module, Store};
 

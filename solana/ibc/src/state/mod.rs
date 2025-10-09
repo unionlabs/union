@@ -1,10 +1,10 @@
 use pinocchio::{
+    ProgramResult,
     account_info::AccountInfo,
     instruction::{Seed, Signer},
     program_error::ProgramError,
     pubkey::find_program_address,
-    sysvars::{rent::Rent, Sysvar},
-    ProgramResult,
+    sysvars::{Sysvar, rent::Rent},
 };
 use pinocchio_system::instructions::CreateAccount;
 
