@@ -4,8 +4,8 @@ use aptos_rest_client::error::RestError;
 use call::FetchUpdate;
 use ethereum_light_client_types::{account_proof::AccountProof, storage_proof::StorageProof};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
@@ -19,21 +19,20 @@ use unionlabs::{
     primitives::H160,
 };
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, anyhow,
     hook::UpdateHook,
     message::{
+        PluginMessage, VoyagerMessage,
         call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
     rpc::{
-        types::{PluginInfo, UnexpectedChainIdError},
         PluginServer,
+        types::{PluginInfo, UnexpectedChainIdError},
     },
-    vm::{data, pass::PassResult, Op, Visit},
-    DefaultCmd,
+    vm::{Op, Visit, data, pass::PassResult},
 };
 
 use crate::call::ModuleCall;

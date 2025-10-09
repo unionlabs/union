@@ -6,7 +6,9 @@ use crate::MAX_ACCUMULATOR_PROOF_DEPTH;
 pub enum Error {
     #[error("root hash mismatch, expected ({expected}) given ({given})")]
     RootHashMismatch { expected: H256, given: H256 },
-    #[error("accumulator proof hash has more than maximum ({MAX_ACCUMULATOR_PROOF_DEPTH}) siblings ({0})")]
+    #[error(
+        "accumulator proof hash has more than maximum ({MAX_ACCUMULATOR_PROOF_DEPTH}) siblings ({0})"
+    )]
     MaxSiblingsExceeded(usize),
     #[error("storage verification error")]
     StorageVerification(#[from] StorageVerificationError),

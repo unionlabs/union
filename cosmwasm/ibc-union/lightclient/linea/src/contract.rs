@@ -1,8 +1,7 @@
-use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, entry_point};
 use ics008_wasm_client::{
-    define_cosmwasm_light_client_contract,
+    CustomQueryOf, InstantiateMsg, define_cosmwasm_light_client_contract,
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
-    CustomQueryOf, InstantiateMsg,
 };
 use linea_light_client_types::ClientState;
 use protos::ibc::lightclients::wasm::v1::{

@@ -27,7 +27,7 @@ use ucs03_zkgm::{
 use union_test::{
     TestContext,
     cosmos::{self},
-    cosmos_helpers::{calculate_cosmos_contract_address, SALT_ESCROW_VAULT, SALT_ZKGM},
+    cosmos_helpers::{SALT_ESCROW_VAULT, SALT_ZKGM, calculate_cosmos_contract_address},
     evm::{
         self,
         zkgm::{

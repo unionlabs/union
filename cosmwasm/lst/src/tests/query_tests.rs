@@ -61,9 +61,8 @@
 use std::fmt::Debug;
 
 use cosmwasm_std::{
-    from_json,
+    Addr, Decimal, Deps, Uint128, from_json,
     testing::{mock_dependencies, mock_env},
-    Addr, Decimal, Deps, Uint128,
 };
 use depolama::StorageExt;
 use serde::de::DeserializeOwned;
@@ -80,12 +79,12 @@ use crate::{
         UnstakeRequestsByStakerHash,
     },
     tests::test_helper::{
-        mock_init_msg, set_rewards, setup, FEE_RECIPIENT, LST_ADDRESS, NATIVE_TOKEN,
-        STAKER_ADDRESS, UNION1, UNION2, UNION_MONITOR_1, UNION_MONITOR_2,
+        FEE_RECIPIENT, LST_ADDRESS, NATIVE_TOKEN, STAKER_ADDRESS, UNION_MONITOR_1, UNION_MONITOR_2,
+        UNION1, UNION2, mock_init_msg, set_rewards, setup,
     },
     types::{
-        staker_hash, AccountingState, BatchId, PendingBatch, ProtocolFeeConfig, ReceivedBatch,
-        SubmittedBatch, UnstakeRequest, UnstakeRequestKey,
+        AccountingState, BatchId, PendingBatch, ProtocolFeeConfig, ReceivedBatch, SubmittedBatch,
+        UnstakeRequest, UnstakeRequestKey, staker_hash,
     },
 };
 

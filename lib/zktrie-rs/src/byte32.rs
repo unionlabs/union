@@ -1,4 +1,4 @@
-use crate::{fr_from_big_endian, Fr, HashScheme, HASH_DOMAIN_BYTE32};
+use crate::{Fr, HASH_DOMAIN_BYTE32, HashScheme, fr_from_big_endian};
 
 #[derive(Debug, PartialEq, Eq, Clone, Default, Ord, PartialOrd, Copy)]
 #[repr(transparent)]

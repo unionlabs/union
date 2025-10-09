@@ -59,8 +59,8 @@
 // TITLE.
 
 use cosmwasm_std::{
-    testing::{message_info, mock_dependencies, mock_env},
     Addr,
+    testing::{message_info, mock_dependencies, mock_env},
 };
 use depolama::StorageExt;
 
@@ -69,7 +69,7 @@ use crate::{
     error::ContractError,
     execute::FEE_RATE_DENOMINATOR,
     state::CurrentPendingBatch,
-    tests::test_helper::{mock_init_msg, UNION1},
+    tests::test_helper::{UNION1, mock_init_msg},
     types::{BatchId, PendingBatch},
 };
 

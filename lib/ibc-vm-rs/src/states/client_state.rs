@@ -67,7 +67,11 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     client_id,
                     client_msg,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::VerifyClientMessage { valid }, IbcResponse::CheckForMisbehaviour { misbehaviour_found }],
+                &[
+                    IbcResponse::Status { status },
+                    IbcResponse::VerifyClientMessage { valid },
+                    IbcResponse::CheckForMisbehaviour { misbehaviour_found },
+                ],
             ) => {
                 if *status != Status::Active {
                     return Err(IbcError::NotActive(client_id, *status).into());
@@ -114,10 +118,12 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
             )),
             (
                 UpdateClient::UpdatedState { client_id },
-                &[IbcResponse::UpdateState {
-                    consensus_states,
-                    client_state,
-                }],
+                &[
+                    IbcResponse::UpdateState {
+                        consensus_states,
+                        client_state,
+                    },
+                ],
             ) => {
                 host.commit_raw(
                     ClientStatePath {

@@ -3,7 +3,7 @@ use ethabi::{ParamType, Token};
 use ibc_union_msg::msg::MsgSendPacket;
 use ibc_union_spec::{ChannelId, Duration, Timestamp};
 
-use crate::{state::Config, ContractError};
+use crate::{ContractError, state::Config};
 
 #[cw_serde]
 pub struct UCS00PingPong {
@@ -17,7 +17,7 @@ impl UCS00PingPong {
         let values = ethabi::decode(&[ParamType::Bool /*ParamType::Int(64)*/], bz.as_ref())
             .map_err(|_| ContractError::EthAbiDecoding)?;
         match &values[..] {
-            &[Token::Bool(ping),/* Token::Int(timeout) */] => Ok(UCS00PingPong {
+            &[Token::Bool(ping) /* Token::Int(timeout) */] => Ok(UCS00PingPong {
                 ping,
                 // counterparty_timeout: timeout.as_u64(),
             }),

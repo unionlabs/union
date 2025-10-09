@@ -3,8 +3,8 @@ use core::marker::PhantomData;
 use poseidon_rs::Fr;
 
 use crate::{
-    test_bit, to_secure_key, BranchHash, BranchType, Byte32, Database, Error, Hash, HashScheme,
-    Node, NodeValue, PreimageDatabase, MAGIC_SMT_BYTES, ZERO_HASH,
+    BranchHash, BranchType, Byte32, Database, Error, Hash, HashScheme, MAGIC_SMT_BYTES, Node,
+    NodeValue, PreimageDatabase, ZERO_HASH, test_bit, to_secure_key,
 };
 
 #[derive(Clone)]

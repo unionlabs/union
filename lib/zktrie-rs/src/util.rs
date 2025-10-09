@@ -1,6 +1,6 @@
 use crate::{
-    Byte32, Fr, Hash, HashScheme, PrimeFieldDecodingError, HASH_DOMAIN_BYTE32,
-    HASH_DOMAIN_ELEMS_BASE,
+    Byte32, Fr, HASH_DOMAIN_BYTE32, HASH_DOMAIN_ELEMS_BASE, Hash, HashScheme,
+    PrimeFieldDecodingError,
 };
 
 pub fn fr_from_big_endian(buf: &[u8]) -> Result<Fr, String> {

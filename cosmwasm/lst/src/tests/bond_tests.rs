@@ -59,9 +59,9 @@
 // TITLE.
 
 use cosmwasm_std::{
-    coins,
+    Addr, CosmosMsg, Decimal, Event, StdError, WasmMsg, coins,
     testing::{message_info, mock_env},
-    to_json_binary, wasm_execute, Addr, CosmosMsg, Decimal, Event, StdError, WasmMsg,
+    to_json_binary, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -73,8 +73,8 @@ use crate::{
     query::query_state,
     state::AccountingStateStore,
     tests::test_helper::{
-        mock_init_msg, set_rewards, setup, LST_ADDRESS, NATIVE_TOKEN, STAKER_ADDRESS, UNION1,
-        UNION2,
+        LST_ADDRESS, NATIVE_TOKEN, STAKER_ADDRESS, UNION1, UNION2, mock_init_msg, set_rewards,
+        setup,
     },
 };
 

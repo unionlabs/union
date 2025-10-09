@@ -59,8 +59,9 @@
 // TITLE.
 
 use cosmwasm_std::{
+    Addr, Coin, CosmosMsg, Event, Timestamp, Uint128, WasmMsg,
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Coin, CosmosMsg, Event, Timestamp, Uint128, WasmMsg,
+    to_json_binary,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -74,8 +75,8 @@ use crate::{
         AccountingStateStore, CurrentPendingBatch, ReceivedBatches, SubmittedBatches,
         UnstakeRequests,
     },
-    tests::test_helper::{ensure_execute_error, setup, LST_ADDRESS, UNION1, UNION2},
-    types::{staker_hash, BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey},
+    tests::test_helper::{LST_ADDRESS, UNION1, UNION2, ensure_execute_error, setup},
+    types::{BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey, staker_hash},
 };
 
 #[test]

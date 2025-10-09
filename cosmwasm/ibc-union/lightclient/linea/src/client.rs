@@ -2,17 +2,17 @@ use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use gnark_mimc::new_mimc_constants_bls12_377;
 use ics008_wasm_client::{
+    IbcClient, IbcClientError, Status, StorageState,
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
         update_client_state,
     },
-    IbcClient, IbcClientError, Status, StorageState,
 };
 use linea_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
 use unionlabs::{
-    cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
+    cosmwasm::wasm::union::custom_query::{UnionCustomQuery, query_consensus_state},
     encoding::{DecodeAs, Proto},
     ethereum::keccak256,
     ibc::{

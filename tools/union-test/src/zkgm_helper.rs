@@ -1,6 +1,6 @@
 use alloy::primitives::Bytes;
 use alloy_sol_types::SolValue as _;
-use ucs03_zkgm::com::{Call, Instruction, INSTR_VERSION_0, OP_BATCH, OP_CALL};
+use ucs03_zkgm::com::{Call, INSTR_VERSION_0, Instruction, OP_BATCH, OP_CALL};
 
 pub fn make_batch(instructions: Vec<Instruction>) -> Instruction {
     Instruction {

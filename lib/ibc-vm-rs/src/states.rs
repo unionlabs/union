@@ -95,7 +95,10 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     client_state,
                     consensus_state,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::LatestHeight { height }],
+                &[
+                    IbcResponse::Status { status },
+                    IbcResponse::LatestHeight { height },
+                ],
             ) => {
                 if status != Status::Active {
                     return Err(IbcError::NotActive(client_id, status).into());

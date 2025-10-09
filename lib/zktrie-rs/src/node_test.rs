@@ -1,4 +1,4 @@
-use crate::{byte32_test::TestHash, node::*, Byte32, Hash, ZERO_HASH};
+use crate::{Byte32, Hash, ZERO_HASH, byte32_test::TestHash, node::*};
 
 fn gen_key(n: char) -> Vec<u8> {
     let mut tmp = vec![n as u8; 32];

@@ -61,8 +61,8 @@
 use core::fmt;
 
 use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
     Addr, DecCoin, Decimal256, Deps, DepsMut, Env, MessageInfo, OwnedDeps, Storage,
+    testing::{MockApi, MockQuerier, MockStorage, mock_dependencies, mock_env},
 };
 use frissitheto::UpgradeMsg;
 

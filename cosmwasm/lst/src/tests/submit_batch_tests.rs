@@ -59,8 +59,9 @@
 // TITLE.
 
 use cosmwasm_std::{
+    Addr, Coin, CosmosMsg, Event, Timestamp, WasmMsg,
     testing::{message_info, mock_dependencies, mock_env},
-    to_json_binary, Addr, Coin, CosmosMsg, Event, Timestamp, WasmMsg,
+    to_json_binary,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -72,7 +73,7 @@ use crate::{
     msg::ExecuteMsg,
     state::{AccountingStateStore, ConfigStore, CurrentPendingBatch, SubmittedBatches},
     tests::test_helper::{
-        mock_init_msg, set_rewards, setup, ADMIN, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2, UNION3,
+        ADMIN, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2, UNION3, mock_init_msg, set_rewards, setup,
     },
     types::{BatchId, PendingBatch, SubmittedBatch},
 };

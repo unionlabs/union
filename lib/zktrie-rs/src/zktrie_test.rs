@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use unionlabs::primitives::H256;
 
 use crate::{
-    byte32_test::TestHash, copy_truncated, decode_smt_proofs, to_secure_key, Byte32, Database,
-    Error, Hash, MemDB, Node, NodeValue, PoseidonHash, TrieData, ZkTrie, ZERO_HASH,
+    Byte32, Database, Error, Hash, MemDB, Node, NodeValue, PoseidonHash, TrieData, ZERO_HASH,
+    ZkTrie, byte32_test::TestHash, copy_truncated, decode_smt_proofs, to_secure_key,
 };
 
 pub struct TestTrie(ZkTrie<TestHash>, MemDB<TestHash>);
@@ -672,7 +672,7 @@ fn hex_root(d: &str) -> Result<Hash, String> {
     Ok(Hash::from_bytes(&data))
 }
 
-static EXAMPLE : [&str;41] = [
+static EXAMPLE: [&str; 41] = [
     "0x09218bcaf094949451aaea2273a4092c7116839ad69df7597df06c7bf741a9477f01020df75837d8a760bfb941f3465f63812b205ac7e1fff5d310a2a3295e60c8",
     "0x0913e957fbc8585b40175129d3547a76b9fc3a1c3b16a6ca4de468879bb08fcbb6104a71f54260a0430906c4a0c3cc5eb459dd132b637c944ea92b769a98dba762",
     "0x092c2eae4f5273c398709da3e317c86a3a817008c98269bf2766405259c488306628c0c92eb1f16fc59b8b99e0a8abee3f88afb477c4d36be3571d537b076e0f83",

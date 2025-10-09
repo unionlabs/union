@@ -11,16 +11,17 @@ use tokio::sync::{Mutex, OnceCell};
 use tracing::info;
 use tracing_subscriber::FmtSubscriber;
 use ucs03_zkgm::com::{
-    Instruction, SolverMetadata, TokenOrderV2, INSTR_VERSION_2, OP_TOKEN_ORDER, TAG_ACK_SUCCESS,
-    TOKEN_ORDER_KIND_SOLVE,
+    INSTR_VERSION_2, Instruction, OP_TOKEN_ORDER, SolverMetadata, TAG_ACK_SUCCESS,
+    TOKEN_ORDER_KIND_SOLVE, TokenOrderV2,
 };
 use union_test::{
+    TestContext,
     cosmos::{self},
     cosmos_helpers::{
-        calculate_cosmos_contract_address, SALT_ESCROW_VAULT, SALT_EU, SALT_LST_HUB,
-        SALT_LST_STAKER, SALT_ZKGM,
+        SALT_ESCROW_VAULT, SALT_EU, SALT_LST_HUB, SALT_LST_STAKER, SALT_ZKGM,
+        calculate_cosmos_contract_address,
     },
-    evm, TestContext,
+    evm,
 };
 use unionlabs::{
     encoding::{EncodeAs, Json},
@@ -191,7 +192,9 @@ pub async fn eth_fund_u(
         .unwrap();
 
     if min_amount > amount {
-        return Err(anyhow::anyhow!("you seriously wanna fund your contract less than min amount, when min amount is greater?"));
+        return Err(anyhow::anyhow!(
+            "you seriously wanna fund your contract less than min amount, when min amount is greater?"
+        ));
     }
 
     if u_balance > min_amount.into() {

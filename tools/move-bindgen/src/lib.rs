@@ -11,7 +11,7 @@ pub use move_bindgen_derive::MoveOutputType;
 pub use move_core_types;
 use move_core_types::account_address::AccountAddress;
 pub use serde;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 pub use serde_json;
 pub use tracing;
 

@@ -1,6 +1,6 @@
 use std::{fs::File, io::Read};
 
-use crate::{byte32_test::TestHash, to_secure_key, Byte32, Hash, MemDB, ZkTrie};
+use crate::{Byte32, Hash, MemDB, ZkTrie, byte32_test::TestHash, to_secure_key};
 
 /*
  * Result:

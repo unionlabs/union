@@ -2,12 +2,12 @@ use near_primitives::{
     merkle::merklize,
     types::BlockHeight,
     views::{
-        validator_stake_view::ValidatorStakeView, BlockHeaderInnerLiteView, LightClientBlockView,
+        BlockHeaderInnerLiteView, LightClientBlockView, validator_stake_view::ValidatorStakeView,
     },
 };
 use near_primitives_core::hash::CryptoHash;
 use near_sdk::AccountId;
-use near_workspaces::{network::Sandbox, Worker};
+use near_workspaces::{Worker, network::Sandbox};
 use unionlabs::near::types::{self, MerklePathItem};
 
 pub async fn state_proof(

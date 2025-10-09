@@ -59,8 +59,8 @@
 // TITLE.
 
 use cosmwasm_std::{
-    testing::{message_info, mock_env},
     Addr, Event,
+    testing::{message_info, mock_env},
 };
 use depolama::StorageExt;
 
@@ -70,7 +70,7 @@ use crate::{
     execute::OWNERSHIP_CLAIM_DELAY_PERIOD_SECONDS,
     msg::ExecuteMsg,
     state::{Admin, PendingOwnerStore},
-    tests::test_helper::{ensure_execute_error, setup, ADMIN, UNION1, UNION2, UNION_MONITOR_1},
+    tests::test_helper::{ADMIN, UNION_MONITOR_1, UNION1, UNION2, ensure_execute_error, setup},
     types::PendingOwner,
 };
 
@@ -260,11 +260,12 @@ fn revoke_works() {
     assert!(res.messages.is_empty());
     assert_eq!(res.events, [Event::new("revoke_ownership_transfer")]);
 
-    assert!(deps
-        .storage
-        .maybe_read_item::<PendingOwnerStore>()
-        .unwrap()
-        .is_none(),);
+    assert!(
+        deps.storage
+            .maybe_read_item::<PendingOwnerStore>()
+            .unwrap()
+            .is_none(),
+    );
     assert_eq!(
         deps.storage.read_item::<Admin>().unwrap(),
         Addr::unchecked(ADMIN)
@@ -305,11 +306,12 @@ fn revoke_works_after_delay_period() {
     assert!(res.messages.is_empty());
     assert_eq!(res.events, [Event::new("revoke_ownership_transfer")]);
 
-    assert!(deps
-        .storage
-        .maybe_read_item::<PendingOwnerStore>()
-        .unwrap()
-        .is_none(),);
+    assert!(
+        deps.storage
+            .maybe_read_item::<PendingOwnerStore>()
+            .unwrap()
+            .is_none(),
+    );
     assert_eq!(
         deps.storage.read_item::<Admin>().unwrap(),
         Addr::unchecked(ADMIN)
@@ -374,11 +376,12 @@ fn claim_ownership_works() {
         [Event::new("accept_ownership").add_attribute("new_owner", NEW_OWNER)]
     );
 
-    assert!(deps
-        .storage
-        .maybe_read_item::<PendingOwnerStore>()
-        .unwrap()
-        .is_none(),);
+    assert!(
+        deps.storage
+            .maybe_read_item::<PendingOwnerStore>()
+            .unwrap()
+            .is_none(),
+    );
     assert_eq!(
         deps.storage.read_item::<Admin>().unwrap(),
         Addr::unchecked(NEW_OWNER)
