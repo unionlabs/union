@@ -101,7 +101,7 @@ pub fn mix_in_type(root: &H256, type_index: usize) -> H256 {
 /// ## Specification
 ///
 /// ```plaintext
-/// mix_in_selector: Given a Merkle root root and a type selector selector ("uint256" little-endian
+/// mix_in_selector: Given a Merkle root `root` and a type selector selector ("uint256" little-endian
 /// serialization) return hash(root + selector).
 /// ```
 ///
