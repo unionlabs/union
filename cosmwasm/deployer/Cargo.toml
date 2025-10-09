@@ -17,6 +17,7 @@ bip32                       = { workspace = true }
 clap                        = { workspace = true, features = ["derive", "error-context", "help", "env"] }
 cometbft-rpc                = { workspace = true }
 cosmos-client               = { workspace = true }
+cosmos-signer               = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["std"] }
 cw-escrow-vault             = { workspace = true, features = ["library"] }
 embed-commit                = { workspace = true }

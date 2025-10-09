@@ -3524,6 +3524,7 @@ version = "0.0.0"
 dependencies = [
  "bip32 0.5.3",
  "cometbft-rpc",
+ "cosmos-signer",
  "num-rational",
  "num-traits",
  "protos",
@@ -3558,6 +3559,18 @@ checksum = "1d0afc4daf81936e6ef5a2cf76f00c913ba5bc385d58ae1e09644e25d16b0381"
 dependencies = [
  "prost 0.13.5",
  "tendermint-proto",
+]
+
+[[package]]
+name = "cosmos-signer"
+version = "0.0.0"
+dependencies = [
+ "bip32 0.5.3",
+ "hex-literal 0.4.1",
+ "k256 0.13.4",
+ "ripemd",
+ "sha2 0.10.9",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -3599,6 +3612,7 @@ dependencies = [
  "clap",
  "cometbft-rpc",
  "cosmos-client",
+ "cosmos-signer",
  "cosmwasm-std",
  "cw-escrow-vault",
  "embed-commit",
@@ -15343,7 +15357,6 @@ dependencies = [
  "base64 0.22.1",
  "bcs",
  "bincode 2.0.1",
- "bip32 0.5.3",
  "borsh",
  "bs58 0.5.1",
  "chrono",
@@ -15353,14 +15366,11 @@ dependencies = [
  "frame-support-procedural",
  "hex",
  "hex-literal 0.4.1",
- "k256 0.13.4",
  "macros",
  "near-sdk",
  "prost 0.12.6",
  "protos",
  "rand 0.8.5",
- "ripemd",
- "rlp",
  "schemars",
  "serde",
  "serde-utils",
@@ -15369,7 +15379,6 @@ dependencies = [
  "sha2 0.10.9",
  "sha3",
  "solidity-slot",
- "ssz",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "thiserror 2.0.12",
  "typenum",

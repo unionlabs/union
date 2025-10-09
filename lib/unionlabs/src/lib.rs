@@ -65,8 +65,6 @@ pub mod never;
 /// Various identifier types used throughout the IBC stack.
 pub mod id;
 
-pub mod signer;
-
 pub(crate) mod macros;
 
 pub mod errors;

@@ -13,25 +13,20 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bip32                    = { workspace = true, features = ["secp256k1"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 cosmwasm-std             = { workspace = true, optional = true, features = ["std"] }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
 hex                      = { workspace = true }
-k256                     = { version = "0.13.4", default-features = false, features = ["schnorr", "alloc"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
 prost                    = { workspace = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full", "serde"] }
-ripemd                   = { workspace = true }
-rlp                      = { workspace = true, features = ["derive"], optional = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
-serde_json               = { workspace = true }
+serde_json               = { workspace = true, optional = true }
 sha2                     = { workspace = true }
 sha3                     = { workspace = true }
-ssz                      = { workspace = true }
 static_assertions        = { workspace = true }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
@@ -67,12 +62,12 @@ ethabi = [
 std = ["sha2/std", "unionlabs-encoding/std"]
 
 fuzzing    = []
-test-utils = []
+test-utils = ["dep:serde_json"]
 
 bcs      = ["unionlabs-encoding/bcs"]
 bincode  = ["dep:bincode", "unionlabs-primitives/bincode", "unionlabs-encoding/bincode"]
 proto    = ["unionlabs-encoding/proto"]
-rlp      = ["dep:rlp", "unionlabs-primitives/rlp"]
+rlp      = ["unionlabs-primitives/rlp"]
 schemars = ["dep:schemars", "unionlabs-primitives/schemars"]
 ssz      = ["unionlabs-encoding/ssz"]
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]
