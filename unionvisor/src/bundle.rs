@@ -159,7 +159,7 @@ impl Bundle {
         self.path.join("genesis.json")
     }
 
-    /// Construct the path to the fallback verison, based on the [`BundleMeta`]
+    /// Construct the path to the fallback version, based on the [`BundleMeta`]
     pub fn fallback_path(&self) -> Result<ValidVersionPath, ValidateVersionPathError> {
         let fallback_version = &self.meta.fallback_version.clone();
         self.path_to(fallback_version).validate()

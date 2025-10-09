@@ -9,7 +9,7 @@ args@{
   packageJsonPath,
   # to provision sources additional to monorepo boilerplate
   extraSrcs,
-  # workspace project names required for build (e.g. anything with "workspace:*" verison declaration)
+  # workspace project names required for build (e.g. anything with "workspace:*" version declaration)
   pnpmWorkspaces ? [ ],
   hash ? lib.fakeHash,
   pnpm ? pkgs.pnpm_10,
