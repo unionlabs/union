@@ -1,6 +1,6 @@
 use instructions::connection_open_init::ConnectionOpenInit;
 use pinocchio::{
-    account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
+    ProgramResult, account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey,
 };
 
 pub mod helper;
