@@ -3,7 +3,7 @@ use enumorph::Enumorph;
 use ucs03_zkgm::com::{INSTR_VERSION_0, OP_FORWARD};
 use unionlabs_primitives::U256;
 
-use crate::{root::Root, Instruction, Result};
+use crate::{Instruction, Result, root::Root};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[cfg_attr(

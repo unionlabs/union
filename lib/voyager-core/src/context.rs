@@ -7,11 +7,11 @@ use serde_json::Value;
 use voyager_plugin_protocol::WorkerClient;
 use voyager_primitives::{ChainId, ClientType, ConsensusType, IbcInterface, IbcSpecId};
 use voyager_rpc::{
+    UNPROCESSABLE_JSONRPC_ERROR_CODE,
     types::{
         ClientBootstrapModuleInfo, ClientModuleInfo, FinalityModuleInfo, InfoResponse,
         ProofModuleInfo, StateModuleInfo,
     },
-    UNPROCESSABLE_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::QueueError;
 

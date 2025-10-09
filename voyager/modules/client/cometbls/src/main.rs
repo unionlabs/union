@@ -1,31 +1,27 @@
 use alloy_sol_types::SolValue;
 use cometbls_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use macros::model;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{debug, instrument};
 use unionlabs::{
-    self,
-    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
-    google::protobuf::any::Any,
-    ibc::lightclients::wasm,
+    self, ErrorReporter,
+    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi},
     primitives::Bytes,
     union::ics23,
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow::{self, anyhow},
     plugin::ClientModule,
     primitives::{
-        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
-        IbcGo08WasmClientMetadata, IbcInterface,
+        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
     },
-    rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -39,7 +35,7 @@ pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcMoveAptos,
     IbcMoveSui,
-    IbcGoV8_08Wasm,
+    // IbcGoV8_08Wasm,
     IbcCosmwasm,
 }
 
@@ -52,7 +48,7 @@ impl TryFrom<String> for SupportedIbcInterface {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
             IbcInterface::IBC_MOVE_SUI => Ok(SupportedIbcInterface::IbcMoveSui),
-            IbcInterface::IBC_GO_V8_08_WASM => Ok(SupportedIbcInterface::IbcGoV8_08Wasm),
+            // IbcInterface::IBC_GO_V8_08_WASM => Ok(SupportedIbcInterface::IbcGoV8_08Wasm),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
@@ -65,7 +61,7 @@ impl SupportedIbcInterface {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
             SupportedIbcInterface::IbcMoveSui => IbcInterface::IBC_MOVE_SUI,
-            SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
+            // SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
     }
@@ -114,20 +110,19 @@ impl Module {
                         None::<()>,
                     )
                 })
-            }
-            SupportedIbcInterface::IbcGoV8_08Wasm => {
-                <Any<wasm::consensus_state::ConsensusState<ConsensusState>>>::decode_as::<Proto>(
-                    consensus_state,
-                )
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                })
-                .map(|any| any.0.data)
-            }
+            } // SupportedIbcInterface::IbcGoV8_08Wasm => {
+              //     <Any<wasm::consensus_state::ConsensusState<ConsensusState>>>::decode_as::<Proto>(
+              //         consensus_state,
+              //     )
+              //     .map_err(|err| {
+              //         ErrorObject::owned(
+              //             FATAL_JSONRPC_ERROR_CODE,
+              //             format!("unable to decode consensus state: {}", ErrorReporter(err)),
+              //             None::<()>,
+              //         )
+              //     })
+              //     .map(|any| any.0.data)
+              // }
         }
     }
 
@@ -150,19 +145,19 @@ impl Module {
                     )
                 })
             }
-            SupportedIbcInterface::IbcGoV8_08Wasm => {
-                <Any<wasm::client_state::ClientState<ClientState>>>::decode_as::<Proto>(
-                    client_state,
-                )
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                })
-                .map(|any| any.0.data)
-            }
+            // SupportedIbcInterface::IbcGoV8_08Wasm => {
+            //     <Any<wasm::client_state::ClientState<ClientState>>>::decode_as::<Proto>(
+            //         client_state,
+            //     )
+            //     .map_err(|err| {
+            //         ErrorObject::owned(
+            //             FATAL_JSONRPC_ERROR_CODE,
+            //             format!("unable to decode client state: {}", ErrorReporter(err)),
+            //             None::<()>,
+            //         )
+            //     })
+            //     .map(|any| any.0.data)
+            // }
             SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
                 .map_err(|err| {
                     ErrorObject::owned(
@@ -274,27 +269,26 @@ impl ClientModuleServer for Module {
                         ));
                     }
                     Ok(cs.encode_as::<Bincode>())
-                }
-                SupportedIbcInterface::IbcGoV8_08Wasm => {
-                    let metadata =
-                        serde_json::from_value::<IbcGo08WasmClientMetadata>(metadata.clone())
-                            .map_err(|e| {
-                                ErrorObject::owned(
-                                    FATAL_JSONRPC_ERROR_CODE,
-                                    format!("unable to decode metadata: {}", ErrorReporter(e)),
-                                    Some(json!({
-                                        "provided_metadata": metadata,
-                                    })),
-                                )
-                            })?;
+                } // SupportedIbcInterface::IbcGoV8_08Wasm => {
+                  //     let metadata =
+                  //         serde_json::from_value::<IbcGo08WasmClientMetadata>(metadata.clone())
+                  //             .map_err(|e| {
+                  //                 ErrorObject::owned(
+                  //                     FATAL_JSONRPC_ERROR_CODE,
+                  //                     format!("unable to decode metadata: {}", ErrorReporter(e)),
+                  //                     Some(json!({
+                  //                         "provided_metadata": metadata,
+                  //                     })),
+                  //                 )
+                  //             })?;
 
-                    Ok(Any(wasm::client_state::ClientState {
-                        latest_height: cs.latest_height,
-                        data: cs,
-                        checksum: metadata.checksum,
-                    })
-                    .encode_as::<Proto>())
-                }
+                  //     Ok(Any(wasm::client_state::ClientState {
+                  //         latest_height: cs.latest_height,
+                  //         data: cs,
+                  //         checksum: metadata.checksum,
+                  //     })
+                  //     .encode_as::<Proto>())
+                  // }
             })
             .map(Into::into)
     }
@@ -321,9 +315,9 @@ impl ClientModuleServer for Module {
                 | SupportedIbcInterface::IbcMoveAptos
                 | SupportedIbcInterface::IbcMoveSui
                 | SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>(),
-                SupportedIbcInterface::IbcGoV8_08Wasm => {
-                    Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>()
-                }
+                // SupportedIbcInterface::IbcGoV8_08Wasm => {
+                //     Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>()
+                // }
             })
             .map(Into::into)
     }
@@ -355,11 +349,10 @@ impl ClientModuleServer for Module {
                         })?
                         .into();
                     Ok(header.encode_as::<Bcs>())
-                }
-                SupportedIbcInterface::IbcGoV8_08Wasm => {
-                    Ok(Any(wasm::client_message::ClientMessage { data: header })
-                        .encode_as::<Proto>())
-                }
+                } // SupportedIbcInterface::IbcGoV8_08Wasm => {
+                  //     Ok(Any(wasm::client_message::ClientMessage { data: header })
+                  //         .encode_as::<Proto>())
+                  // }
             })?
             .map(Into::into)
     }
@@ -386,8 +379,7 @@ impl ClientModuleServer for Module {
                         )
                         .unwrap(),
                     )
-                }
-                SupportedIbcInterface::IbcGoV8_08Wasm => proof.encode_as::<Proto>(),
+                } // SupportedIbcInterface::IbcGoV8_08Wasm => proof.encode_as::<Proto>(),
             })
             .map(Into::into)
     }

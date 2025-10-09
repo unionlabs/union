@@ -1,6 +1,6 @@
 use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
-    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate, spec::Timestamp,
 };
 use ibc_union_msg::lightclient::Status;
 use movement_light_client_types::{

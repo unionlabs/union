@@ -2,31 +2,31 @@
 
 use std::ops::Div;
 
-use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer};
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom_types::Slot};
 use ethereum_light_client_types::{
-    client_state::InitialSyncCommittee, ClientState, ClientStateV1, ConsensusState,
+    ClientState, ClientStateV1, ConsensusState, client_state::InitialSyncCommittee,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument, trace};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     primitives::{H160, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow::{self, bail},
     ensure_null, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

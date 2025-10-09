@@ -1,6 +1,6 @@
 use rlp::Encodable;
 use sha3::{Digest, Keccak256};
-use unionlabs::primitives::{H160, H2048, H256, H64, U256};
+use unionlabs::primitives::{H64, H160, H256, H2048, U256};
 
 #[derive(Debug, Clone, PartialEq, rlp::RlpEncodable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

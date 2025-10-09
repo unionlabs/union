@@ -28,7 +28,7 @@ pub struct SyncAggregateSsz<C: crate::chain_spec::SYNC_COMMITTEE_SIZE> {
 
 #[cfg(feature = "ssz")]
 pub mod ssz {
-    use ::ssz::types::{bitfield::BitlistFromBytesError, BitVector};
+    use ::ssz::types::{BitVector, bitfield::BitlistFromBytesError};
 
     use super::*;
 

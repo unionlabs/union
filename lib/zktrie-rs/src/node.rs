@@ -1,8 +1,8 @@
 use core::marker::PhantomData;
 
 use crate::{
-    handling_elems_and_byte32, hash_elems_with_domain, Byte32, Error, Fr, Hash, HashScheme,
-    HASH_BYTE_LEN,
+    Byte32, Error, Fr, HASH_BYTE_LEN, Hash, HashScheme, handling_elems_and_byte32,
+    hash_elems_with_domain,
 };
 
 #[derive(Debug, Eq)]

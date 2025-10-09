@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     time::Instant,
@@ -149,10 +149,11 @@ impl Cmd {
         let mut result = None;
         for handle in handles {
             if let Ok(thread_result) = handle.join()
-                && thread_result.is_some() {
-                    result = thread_result;
-                    break;
-                }
+                && thread_result.is_some()
+            {
+                result = thread_result;
+                break;
+            }
         }
 
         status_handle.join().ok();

@@ -3,7 +3,7 @@ use std::time::Duration;
 use alloy::{network::AnyNetwork, primitives::Address, providers::DynProvider};
 use cometbft_rpc::types::code::Code;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Coin as CwCoin, CosmosMsg, Decimal, Uint128, WasmMsg,
+    Addr, Binary, Coin as CwCoin, CosmosMsg, Decimal, Uint128, WasmMsg, to_json_binary,
 };
 use cw20::Cw20ExecuteMsg;
 use lst::{
@@ -12,7 +12,7 @@ use lst::{
 };
 use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
 use rand::RngCore;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tracing::{info, warn};
 use ucs03_zkgm::com::TAG_ACK_SUCCESS;
 use union_test::{

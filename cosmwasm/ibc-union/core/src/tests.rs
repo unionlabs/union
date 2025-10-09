@@ -1,8 +1,7 @@
 use contract::execute;
 use cosmwasm_std::{
-    from_json,
-    testing::{message_info, mock_env, MockApi},
-    Addr, Binary, DepsMut, QuerierResult, Response, StdResult, WasmQuery,
+    Addr, Binary, DepsMut, QuerierResult, Response, StdResult, WasmQuery, from_json,
+    testing::{MockApi, message_info, mock_env},
 };
 use ibc_union_msg::{
     lightclient::QueryMsg as LightClientQueryMsg,

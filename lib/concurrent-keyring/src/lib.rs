@@ -10,7 +10,7 @@ use crossbeam_queue::ArrayQueue;
 use futures::{Future, FutureExt};
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info_span, warn, Instrument};
+use tracing::{Instrument, debug, info_span, warn};
 use unionlabs::primitives::H256;
 
 pub trait ChainKeyring {

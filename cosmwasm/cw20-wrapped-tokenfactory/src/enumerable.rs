@@ -1,8 +1,8 @@
 use cosmwasm_std::{Deps, Order, StdResult};
+use cw_storage_plus::Bound;
 use cw20::{
     AllAllowancesResponse, AllSpenderAllowancesResponse, AllowanceInfo, SpenderAllowanceInfo,
 };
-use cw_storage_plus::Bound;
 
 use crate::state::{ALLOWANCES, ALLOWANCES_SPENDER};
 // use crate::state::BALANCES;

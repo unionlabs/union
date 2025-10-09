@@ -1,12 +1,13 @@
 use ibc_vm_rs::IbcVmResponse;
 use near_sdk::{
+    AccountId, Promise,
     borsh::{self, BorshDeserialize, BorshSerialize},
-    env, ext_contract, near_bindgen, AccountId, Promise,
+    env, ext_contract, near_bindgen,
 };
-#[allow(unused)]
-use near_sdk_contract_tools::owner::OwnerExternal;
 #[allow(clippy::wildcard_imports)]
 use near_sdk_contract_tools::Owner;
+#[allow(unused)]
+use near_sdk_contract_tools::owner::OwnerExternal;
 use unionlabs::{
     ibc::core::{
         channel::{self, packet::Packet},

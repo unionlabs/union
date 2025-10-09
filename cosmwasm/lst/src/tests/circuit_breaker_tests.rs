@@ -59,8 +59,8 @@
 // TITLE.
 
 use cosmwasm_std::{
-    testing::{message_info, mock_env},
     Addr, Event, Uint128,
+    testing::{message_info, mock_env},
 };
 use depolama::StorageExt;
 
@@ -69,7 +69,7 @@ use crate::{
     error::ContractError,
     msg::ExecuteMsg,
     state::Stopped,
-    tests::test_helper::{ensure_execute_error, setup, ADMIN, UNION1, UNION_MONITOR_1},
+    tests::test_helper::{ADMIN, UNION_MONITOR_1, UNION1, ensure_execute_error, setup},
     types::BatchId,
 };
 

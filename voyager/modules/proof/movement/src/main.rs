@@ -3,29 +3,29 @@ use std::fmt::Debug;
 use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
-use ibc_union_spec::{path::StorePath, IbcUnion};
+use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
+    core::{RpcResult, async_trait},
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
+    ErrorReporter,
     aptos::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
     ibc::core::client::height::Height,
     primitives::{H256, U256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{types::ProofModuleInfo, ProofModuleServer},
+    rpc::{ProofModuleServer, types::ProofModuleInfo},
     types::ProofType,
 };
 

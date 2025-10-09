@@ -2,26 +2,26 @@
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use ethereum_light_client_types::StorageProof;
-use ibc_union_spec::{path::StorePath, IbcUnion};
+use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
+    ErrorReporter,
     ethereum::ibc_commitment_key,
     ibc::core::client::height::Height,
     primitives::{H160, U256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{types::ProofModuleInfo, ProofModuleServer},
+    rpc::{ProofModuleServer, types::ProofModuleInfo},
     types::ProofType,
 };
 
@@ -119,7 +119,9 @@ impl ProofModuleServer<IbcUnion> for Module {
         let proof = match <[_; 1]>::try_from(proof.storage_proof) {
             Ok([proof]) => proof,
             Err(invalid) => {
-                panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
+                panic!(
+                    "received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`"
+                );
             }
         };
 

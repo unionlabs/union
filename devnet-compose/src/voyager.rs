@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    log_path,
+    Network, Process, log_path,
     process_compose::{LogConfiguration, Probe, ProcessDependency, RestartPolicy, ShutdownConfig},
-    Network, Process,
 };
 
 pub fn queue_process() -> Process {

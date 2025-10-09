@@ -7,7 +7,7 @@ pub mod version;
 pub mod utils {
     use unionlabs::{
         errors::{ExpectedLength, InvalidLength},
-        primitives::{encoding::HexUnprefixed, FixedBytesError, H256},
+        primitives::{FixedBytesError, H256, encoding::HexUnprefixed},
     };
 
     pub fn maybe_empty_h256(value: &[u8]) -> Result<Option<H256<HexUnprefixed>>, InvalidLength> {
@@ -28,8 +28,8 @@ pub mod utils {
 
 pub mod serde {
     pub mod maybe_empty_h256 {
-        use serde::{de, Deserialize, Deserializer, Serializer};
-        use unionlabs::primitives::{encoding::HexUnprefixed, H256};
+        use serde::{Deserialize, Deserializer, Serializer, de};
+        use unionlabs::primitives::{H256, encoding::HexUnprefixed};
 
         pub fn serialize<S>(
             data: &Option<H256<HexUnprefixed>>,

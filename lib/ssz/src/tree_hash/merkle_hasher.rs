@@ -1,10 +1,10 @@
 use std::mem;
 
 use sha2::Digest;
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 use unionlabs_primitives::H256;
 
-use crate::tree_hash::{get_zero_hash, HASHSIZE};
+use crate::tree_hash::{HASHSIZE, get_zero_hash};
 
 type SmallVec8<T> = SmallVec<[T; 8]>;
 

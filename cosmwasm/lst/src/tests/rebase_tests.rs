@@ -59,15 +59,16 @@
 // TITLE.
 
 use cosmwasm_std::{
+    Addr, Coin, CosmosMsg, Event, Order, Storage, WasmMsg,
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Coin, CosmosMsg, Event, Order, Storage, WasmMsg,
+    to_json_binary,
 };
 use itertools::assert_equal;
 
 use crate::{
     contract::execute,
     msg::{ExecuteMsg, StakerExecuteMsg},
-    tests::test_helper::{setup, NATIVE_TOKEN, STAKER_ADDRESS, UNION1, UNION2},
+    tests::test_helper::{NATIVE_TOKEN, STAKER_ADDRESS, UNION1, UNION2, setup},
 };
 
 #[test]

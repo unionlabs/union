@@ -2,7 +2,7 @@ pub mod hook;
 
 use std::fmt::Debug;
 
-use jsonrpsee::{async_client, core::RpcResult, types::ErrorObject, Extensions};
+use jsonrpsee::{Extensions, async_client, core::RpcResult, types::ErrorObject};
 use serde::Serialize;
 use serde_json::Value;
 use tracing::error;

@@ -5,7 +5,7 @@ mod merkleize_standard;
 pub use merkle_hasher::{Error, MerkleHasher};
 pub use merkleize_padded::merkleize_padded;
 pub use merkleize_standard::merkleize_standard;
-use sha2::{digest::FixedOutput, Digest, Sha256};
+use sha2::{Digest, Sha256, digest::FixedOutput};
 use smallvec::SmallVec;
 use unionlabs_primitives::H256;
 

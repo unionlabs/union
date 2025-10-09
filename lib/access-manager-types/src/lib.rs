@@ -3,12 +3,12 @@ use std::{borrow::Cow, ptr};
 
 use cosmwasm_std::{StdError, StdResult};
 use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
     de::{self, MapAccess, Visitor},
     ser::{
         SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
         SerializeTupleStruct, SerializeTupleVariant,
     },
-    Deserialize, Deserializer, Serialize, Serializer,
 };
 use serde_json::value::RawValue;
 use unionlabs_primitives::Bytes;

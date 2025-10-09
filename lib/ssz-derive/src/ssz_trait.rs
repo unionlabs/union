@@ -1,8 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    parse::ParseStream, spanned::Spanned, Attribute, Data, DataEnum, DataStruct, DeriveInput,
-    Fields,
+    Attribute, Data, DataEnum, DataStruct, DeriveInput, Fields, parse::ParseStream,
+    spanned::Spanned,
 };
 
 use crate::MAX_UNION_SELECTOR;

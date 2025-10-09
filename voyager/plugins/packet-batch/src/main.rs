@@ -5,31 +5,30 @@ use std::{
 
 use either::Either;
 use ibc_union_spec::{
+    ChannelId, IbcUnion, Packet,
     datagram::{MsgBatchAcks, MsgBatchSend},
     event::FullEvent,
-    ChannelId, IbcUnion, Packet,
 };
 use itertools::Itertools;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use unionlabs::never::Never;
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, anyhow,
     hook::simple_take_filter,
     message::{
+        PluginMessage, VoyagerMessage,
         call::SubmitTx,
         data::{Data, IbcDatagram},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec},
-    rpc::{types::PluginInfo, PluginServer},
-    vm::{call, data, pass::PassResult, Op},
-    DefaultCmd,
+    rpc::{PluginServer, types::PluginInfo},
+    vm::{Op, call, data, pass::PassResult},
 };
 
 use crate::data::{BatchAck, BatchSend, ModuleData};

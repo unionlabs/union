@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, Empty, HashFunction, BLS12_381_G1_GENERATOR};
+use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps, Empty, HashFunction};
 use ethereum_sync_protocol::{BlsVerify, DST_POP_G2};
 use unionlabs::primitives::{H384, H768};
 
@@ -75,44 +75,110 @@ mod tests {
     /// Verify that aggpkey + neg(pkey(i)) + neg(pkey(i+1)) + .. + neg(pkey(i + k)) = 0
     fn test_pubkey_negation() {
         let committee = [
-          hex_literal::hex!("815042c33c1a43c1ee58a58ee074bc93a13c23a035dedee6879730220379d0c03ff4a3829240b6c34e56feb55cd322df"),
-          hex_literal::hex!("8826e820179fd321819e78ffee16f50ac528db2da71ad8c269f60b878bc4887c79c0545b3d750e86e490d5ba9083cb70"),
-          hex_literal::hex!("982d829cab4f09be252a2c57b77c166679b7e9fdf6f5cc882462b8f4dc9a90beb303c85af56304fb79b975d3643e2ed1"),
-          hex_literal::hex!("8a298ee1ac0466ecaa04d5798048c6e192409af63217f32fd7e07794cfcdcd8deca055b9782dd1ad45a578a9ec10606c"),
-          hex_literal::hex!("8b47707a1f563d3b1034e20be2a663587f17fece6581fca156cf660575fde4b8de4d45f1fda7ade9167b953d4c93417d"),
-          hex_literal::hex!("a98c264dfc3bc3ed635df5dbfd54909e77600cd68480ec201d9f5c416580591daaa9735b04743e10e7fc6370a8189775"),
-          hex_literal::hex!("99f6e5b80dc52407f0436d3474bd5da5ff23a19cb188b933af6312d9793cbfd54f9e72596c5d481a1ed8d705b81c1f0e"),
-          hex_literal::hex!("b300303a03b8eff26a25449169d1946b208d5240f011ca6f5db23cd7f2c004b63f60afe3c9e047b67f9e4c8970c71cf0"),
-          hex_literal::hex!("ab77bbaf0047e03ef4bb1ddaefb777f263c9dd556502f3078d51790653a59452f1455d23002e175ec5b541cb69007f8a"),
-          hex_literal::hex!("8bb9e1693eab1496d7583bf22fb1f2a475934c63b4d94118940617aa187bc277f738223e0ec1ce8a5566035d9bcc5470"),
-          hex_literal::hex!("8bf2630491d2a480ec243b00d65d76e69615e67d3df5d8c14ca7506edd8e896a9083e8ee9e4129af0f6d896a3225c08c"),
-          hex_literal::hex!("9893413c00283a3f9ed9fd9845dda1cea38228d22567f9541dccc357e54a2d6a6e204103c92564cbc05f4905ac7c493a"),
-          hex_literal::hex!("b544d0df633f2334845f73a3921f2a716b9694baa6abcd7cedfa359ba3448029d5b874eef8b3f9f324f1ff4c0f997e97"),
-          hex_literal::hex!("8dde8306920812b32def3b663f7c540b49180345d3bcb8d3770790b7dc80030ebc06497feebd1bcf017d918f00bfa88f"),
-          hex_literal::hex!("a99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c"),
-          hex_literal::hex!("a3862121db5914d7272b0b705e6e3c5336b79e316735661873566245207329c30f9a33d4fb5f5857fc6fd0a368186972"),
-          hex_literal::hex!("9698d9519a02b64f230e5a2520401799c2ca7d69ab23a6d9817943147264bf00d409264b928718245efff4f7ee97dd5c"),
-          hex_literal::hex!("914b56f41c411fbfca9dc9763f44daf253c103b162457d07954fd0af768b5e74692b4639c22455fb81d71f7ed6144514"),
-          hex_literal::hex!("903e2989e7442ee0a8958d020507a8bd985d3974f5e8273093be00db3935f0500e141b252bd09e3728892c7a8443863c"),
-          hex_literal::hex!("8ce551755078927147bae52f683f962ca09cd68e2a14dc7444f98739fe5d27e3596314d78deedc87beb705bcf9532182"),
-          hex_literal::hex!("a1c76af1545d7901214bb6be06be5d9e458f8e989c19373a920f0018327c83982f6a2ac138260b8def732cb366411ddc"),
-          hex_literal::hex!("8f1ef3639aea57fef705847e251b785bb608a848f42d9107c494cbc696be35642f6552fb83174ca2e73632568a5667f4"),
-          hex_literal::hex!("8794388915e86e4988363cdd4289ad19182209c873cbbbf5a80ff5c99f93acb839807787a77ad2b603f074405d7ed08b"),
-          hex_literal::hex!("ae241af60691fda1cf8ca44d49573c55818c53b6141800cca2d488b9a3fba71c0f869179fff50c084657831fbeb42bf4"),
-          hex_literal::hex!("98f011f9a4dff94eb0352ff6e21b7df45e2a112bd5d789b5729111b89b368e7ed554e4d1c16b72f4d105090173cafed2"),
-          hex_literal::hex!("b0933ec64b73c49071fb92028a8e3d1ad18019e177370d335fa03c61de5d01e1a7e154812f720c44109701e2b07068b0"),
-          hex_literal::hex!("b451eb0ff4990917aba6e3d80c34aee91ea1ce49053f38ae174cef107cb9acc595d0ca3fefcb804c9dd04510c630cabe"),
-          hex_literal::hex!("a8e3c2d3ac4e0e3c83380577ff7b7b5b2a98571e0d04ddebc0a6c472ce3bc5cc6a6733be728a0ee17da74b7691d2679d"),
-          hex_literal::hex!("925b1fb57c06b5668567bd5aa196531032d6f8918dd4f702017c11b59288e3bdb98e3820ac22780f73580a4119de4bbc"),
-          hex_literal::hex!("96ef954b331a534199f4f113d993a50ec7a781fc5aa2a181ea0bdbfd4c5c557abfebfcc02604d5aef52ba64afbe0ff18"),
-          hex_literal::hex!("a3a32b0f8b4ddb83f1a0a853d81dd725dfe577d4f4c3db8ece52ce2b026eca84815c1a7e8e92a4de3d755733bf7e4a9b"),
-          hex_literal::hex!("b363a57c600a0037d54d738037358aa686e27da3ea65be95f95fc04d5736fba6338c5d544c3cf2b11262bd20e7a42dd1"),
+            hex_literal::hex!(
+                "815042c33c1a43c1ee58a58ee074bc93a13c23a035dedee6879730220379d0c03ff4a3829240b6c34e56feb55cd322df"
+            ),
+            hex_literal::hex!(
+                "8826e820179fd321819e78ffee16f50ac528db2da71ad8c269f60b878bc4887c79c0545b3d750e86e490d5ba9083cb70"
+            ),
+            hex_literal::hex!(
+                "982d829cab4f09be252a2c57b77c166679b7e9fdf6f5cc882462b8f4dc9a90beb303c85af56304fb79b975d3643e2ed1"
+            ),
+            hex_literal::hex!(
+                "8a298ee1ac0466ecaa04d5798048c6e192409af63217f32fd7e07794cfcdcd8deca055b9782dd1ad45a578a9ec10606c"
+            ),
+            hex_literal::hex!(
+                "8b47707a1f563d3b1034e20be2a663587f17fece6581fca156cf660575fde4b8de4d45f1fda7ade9167b953d4c93417d"
+            ),
+            hex_literal::hex!(
+                "a98c264dfc3bc3ed635df5dbfd54909e77600cd68480ec201d9f5c416580591daaa9735b04743e10e7fc6370a8189775"
+            ),
+            hex_literal::hex!(
+                "99f6e5b80dc52407f0436d3474bd5da5ff23a19cb188b933af6312d9793cbfd54f9e72596c5d481a1ed8d705b81c1f0e"
+            ),
+            hex_literal::hex!(
+                "b300303a03b8eff26a25449169d1946b208d5240f011ca6f5db23cd7f2c004b63f60afe3c9e047b67f9e4c8970c71cf0"
+            ),
+            hex_literal::hex!(
+                "ab77bbaf0047e03ef4bb1ddaefb777f263c9dd556502f3078d51790653a59452f1455d23002e175ec5b541cb69007f8a"
+            ),
+            hex_literal::hex!(
+                "8bb9e1693eab1496d7583bf22fb1f2a475934c63b4d94118940617aa187bc277f738223e0ec1ce8a5566035d9bcc5470"
+            ),
+            hex_literal::hex!(
+                "8bf2630491d2a480ec243b00d65d76e69615e67d3df5d8c14ca7506edd8e896a9083e8ee9e4129af0f6d896a3225c08c"
+            ),
+            hex_literal::hex!(
+                "9893413c00283a3f9ed9fd9845dda1cea38228d22567f9541dccc357e54a2d6a6e204103c92564cbc05f4905ac7c493a"
+            ),
+            hex_literal::hex!(
+                "b544d0df633f2334845f73a3921f2a716b9694baa6abcd7cedfa359ba3448029d5b874eef8b3f9f324f1ff4c0f997e97"
+            ),
+            hex_literal::hex!(
+                "8dde8306920812b32def3b663f7c540b49180345d3bcb8d3770790b7dc80030ebc06497feebd1bcf017d918f00bfa88f"
+            ),
+            hex_literal::hex!(
+                "a99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c"
+            ),
+            hex_literal::hex!(
+                "a3862121db5914d7272b0b705e6e3c5336b79e316735661873566245207329c30f9a33d4fb5f5857fc6fd0a368186972"
+            ),
+            hex_literal::hex!(
+                "9698d9519a02b64f230e5a2520401799c2ca7d69ab23a6d9817943147264bf00d409264b928718245efff4f7ee97dd5c"
+            ),
+            hex_literal::hex!(
+                "914b56f41c411fbfca9dc9763f44daf253c103b162457d07954fd0af768b5e74692b4639c22455fb81d71f7ed6144514"
+            ),
+            hex_literal::hex!(
+                "903e2989e7442ee0a8958d020507a8bd985d3974f5e8273093be00db3935f0500e141b252bd09e3728892c7a8443863c"
+            ),
+            hex_literal::hex!(
+                "8ce551755078927147bae52f683f962ca09cd68e2a14dc7444f98739fe5d27e3596314d78deedc87beb705bcf9532182"
+            ),
+            hex_literal::hex!(
+                "a1c76af1545d7901214bb6be06be5d9e458f8e989c19373a920f0018327c83982f6a2ac138260b8def732cb366411ddc"
+            ),
+            hex_literal::hex!(
+                "8f1ef3639aea57fef705847e251b785bb608a848f42d9107c494cbc696be35642f6552fb83174ca2e73632568a5667f4"
+            ),
+            hex_literal::hex!(
+                "8794388915e86e4988363cdd4289ad19182209c873cbbbf5a80ff5c99f93acb839807787a77ad2b603f074405d7ed08b"
+            ),
+            hex_literal::hex!(
+                "ae241af60691fda1cf8ca44d49573c55818c53b6141800cca2d488b9a3fba71c0f869179fff50c084657831fbeb42bf4"
+            ),
+            hex_literal::hex!(
+                "98f011f9a4dff94eb0352ff6e21b7df45e2a112bd5d789b5729111b89b368e7ed554e4d1c16b72f4d105090173cafed2"
+            ),
+            hex_literal::hex!(
+                "b0933ec64b73c49071fb92028a8e3d1ad18019e177370d335fa03c61de5d01e1a7e154812f720c44109701e2b07068b0"
+            ),
+            hex_literal::hex!(
+                "b451eb0ff4990917aba6e3d80c34aee91ea1ce49053f38ae174cef107cb9acc595d0ca3fefcb804c9dd04510c630cabe"
+            ),
+            hex_literal::hex!(
+                "a8e3c2d3ac4e0e3c83380577ff7b7b5b2a98571e0d04ddebc0a6c472ce3bc5cc6a6733be728a0ee17da74b7691d2679d"
+            ),
+            hex_literal::hex!(
+                "925b1fb57c06b5668567bd5aa196531032d6f8918dd4f702017c11b59288e3bdb98e3820ac22780f73580a4119de4bbc"
+            ),
+            hex_literal::hex!(
+                "96ef954b331a534199f4f113d993a50ec7a781fc5aa2a181ea0bdbfd4c5c557abfebfcc02604d5aef52ba64afbe0ff18"
+            ),
+            hex_literal::hex!(
+                "a3a32b0f8b4ddb83f1a0a853d81dd725dfe577d4f4c3db8ece52ce2b026eca84815c1a7e8e92a4de3d755733bf7e4a9b"
+            ),
+            hex_literal::hex!(
+                "b363a57c600a0037d54d738037358aa686e27da3ea65be95f95fc04d5736fba6338c5d544c3cf2b11262bd20e7a42dd1"
+            ),
         ];
         let neg_committee: Vec<_> = committee
             .into_iter()
             .map(|x| G1Affine::deserialize_compressed(x.as_slice()).unwrap())
             .collect();
-        let agg_pkey = hex_literal::hex!("a3a4f9d6687c40366aa7e6105a74497c99f2ab1108a7df61478924c1115e861da52f894160a6da13a95b89a008f1dce9");
+        let agg_pkey = hex_literal::hex!(
+            "a3a4f9d6687c40366aa7e6105a74497c99f2ab1108a7df61478924c1115e861da52f894160a6da13a95b89a008f1dce9"
+        );
         let agg_pkey = -G1Affine::deserialize_compressed(agg_pkey.as_slice()).unwrap();
 
         let mut pkey = agg_pkey;

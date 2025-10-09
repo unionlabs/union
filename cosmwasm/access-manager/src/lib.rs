@@ -87,11 +87,11 @@
 use std::num::NonZero;
 
 use access_manager_types::{
-    manager::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
     RoleId,
+    manager::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
 };
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, SubMsg,
+    Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, SubMsg, to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;

@@ -1,6 +1,6 @@
 use blake2::{Blake2b, Digest as _};
 
-use crate::{checkpoint_summary::GasCostSummary, Digest, ObjectID, ObjectRef, Owner};
+use crate::{Digest, ObjectID, ObjectRef, Owner, checkpoint_summary::GasCostSummary};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

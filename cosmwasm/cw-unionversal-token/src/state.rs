@@ -1,6 +1,6 @@
 use cosmwasm_std::Addr;
 use depolama::{
-    key::KeyCodecViaEncoding, value::ValueCodecViaEncoding, Prefix, RawAddrEncoding, Store,
+    Prefix, RawAddrEncoding, Store, key::KeyCodecViaEncoding, value::ValueCodecViaEncoding,
 };
 use ibc_union_spec::ChannelId;
 use unionlabs_encoding::Bincode;

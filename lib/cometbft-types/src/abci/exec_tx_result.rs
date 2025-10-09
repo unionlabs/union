@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
-    primitives::{encoding::Base64, Bytes},
+    primitives::{Bytes, encoding::Base64},
 };
 
 use crate::{abci::event::Event, code::Code};

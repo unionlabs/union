@@ -1,8 +1,8 @@
 use cosmwasm_std::Addr;
 use depolama::{
+    Prefix, RawAddrEncoding, Store,
     key::KeyCodecViaEncoding,
     value::{ValueCodecViaEncoding, ValueUnitEncoding},
-    Prefix, RawAddrEncoding, Store,
 };
 use unionlabs_encoding::Bincode;
 

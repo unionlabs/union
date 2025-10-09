@@ -330,7 +330,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     counterparty_version,
                     client_id,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
+                &[
+                    IbcResponse::Status { status },
+                    IbcResponse::VerifyMembership { valid },
+                ],
             ) => {
                 if *status != Status::Active {
                     return Err(IbcError::NotActive(client_id, *status).into());
@@ -580,7 +583,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     counterparty_version,
                     client_id,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
+                &[
+                    IbcResponse::Status { status },
+                    IbcResponse::VerifyMembership { valid },
+                ],
             ) => {
                 if *status != Status::Active {
                     return Err(IbcError::NotActive(client_id, *status).into());
@@ -795,7 +801,10 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     port_id,
                     counterparty,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::VerifyMembership { valid }],
+                &[
+                    IbcResponse::Status { status },
+                    IbcResponse::VerifyMembership { valid },
+                ],
             ) => {
                 if *status != Status::Active {
                     return Err(IbcError::NotActive(client_id, *status).into());

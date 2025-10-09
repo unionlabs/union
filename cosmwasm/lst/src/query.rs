@@ -73,7 +73,7 @@ use crate::{
         ProtocolFeeConfigStore, ReceivedBatches, StakerAddress, Stopped, SubmittedBatches,
         UnstakeRequests, UnstakeRequestsByStakerHash,
     },
-    types::{staker_hash, BatchId, Config, PendingBatch, UnstakeRequest, UnstakeRequestKey},
+    types::{BatchId, Config, PendingBatch, UnstakeRequest, UnstakeRequestKey, staker_hash},
 };
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {

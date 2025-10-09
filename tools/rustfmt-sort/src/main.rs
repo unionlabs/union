@@ -2,7 +2,7 @@ use std::fs;
 
 use clap::Parser;
 use quote::ToTokens;
-use syn::{visit_mut::VisitMut, Item};
+use syn::{Item, visit_mut::VisitMut};
 
 #[derive(Parser, Debug)]
 #[command(name = "rustfmt-sort", about = "Sort Rust items in a file")]

@@ -1,15 +1,15 @@
 use std::{
-    num::{NonZeroU32, NonZeroU8},
+    num::{NonZeroU8, NonZeroU32},
     time::Duration,
 };
 
 use cometbft_rpc::rpc_types::{Order, TxResponse};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
+    BroadcastTxCommitError, TxClient,
     gas::{any, feemarket, fixed},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    BroadcastTxCommitError, TxClient,
 };
 use cosmos_sdk_event::CosmosSdkEvent;
 use cosmwasm_std::Addr;
@@ -22,15 +22,14 @@ use protos::{
     },
     cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tracing::info;
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
     google::protobuf::any::mk_any,
     ibc::core::client::height::Height,
-    primitives::{encoding::HexUnprefixed, Bech32, Bytes, H160, H256},
-    prost,
+    primitives::{Bech32, Bytes, H160, H256, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
     anyhow::{self, anyhow, bail},
@@ -377,11 +376,12 @@ impl Module {
                         consensus_heights, ..
                     } = evt
                         && let Some(first) = consensus_heights.first()
-                            && first.height() >= expected_revision_height {
-                                return Some(helpers::UpdateClient {
-                                    height: first.height(),
-                                });
-                            }
+                        && first.height() >= expected_revision_height
+                    {
+                        return Some(helpers::UpdateClient {
+                            height: first.height(),
+                        });
+                    }
                     None
                 },
                 max_wait,
@@ -880,8 +880,8 @@ pub mod height_list_comma_separated {
     use std::string::String;
 
     use serde::{
-        de::{self, Deserialize},
         Deserializer, Serialize, Serializer,
+        de::{self, Deserialize},
     };
     use unionlabs::ibc::core::client::height::Height;
 

@@ -7,10 +7,10 @@ use ibc_vm_rs::DEFAULT_IBC_VERSION;
 use msgs::{ChannelOpenTry, RecvPacket};
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
+    Account, AccountId, Contract, Worker,
     network::Sandbox,
     sandbox,
     types::{Gas, KeyType, NearToken, SecretKey},
-    Account, AccountId, Contract, Worker,
 };
 use unionlabs::{
     events::IbcEvent,
@@ -792,7 +792,10 @@ pub async fn initiate_ping(
     }
 
     match &events.as_slice() {
-        &[IbcEvent::RecvPacket(recv_event), IbcEvent::WriteAcknowledgement(ack_event)] => {
+        &[
+            IbcEvent::RecvPacket(recv_event),
+            IbcEvent::WriteAcknowledgement(ack_event),
+        ] => {
             let recv_event = recv_event.clone();
             let ack_event = ack_event.clone();
             let current_height =

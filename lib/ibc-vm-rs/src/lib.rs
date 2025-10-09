@@ -1,13 +1,13 @@
 use ibc_events::IbcEvent;
 use serde::{Deserialize, Serialize};
 use states::{
+    CreateClient,
     channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
     client_state::UpdateClient,
     connection_handshake::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
     },
     packet::{Acknowledgement, RecvPacket, SendPacket},
-    CreateClient,
 };
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
@@ -90,14 +90,10 @@ pub enum IbcError {
     #[error("destination port ({0}) does not match the received packet's counterparty port ({1})")]
     DestinationPortMismatch(PortId, PortId),
 
-    #[error(
-        "source channel ({0}) does not match the received packet's counterparty channel ({1})"
-    )]
+    #[error("source channel ({0}) does not match the received packet's counterparty channel ({1})")]
     SourceChannelMismatch(ChannelId, ChannelId),
 
-    #[error(
-        "source channel ({0}) does not match the received packet's counterparty channel ({1})"
-    )]
+    #[error("source channel ({0}) does not match the received packet's counterparty channel ({1})")]
     DestinationChannelMismatch(ChannelId, ChannelId),
 
     #[error("packet is already timed out")]

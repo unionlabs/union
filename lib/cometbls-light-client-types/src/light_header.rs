@@ -1,7 +1,7 @@
 use unionlabs::{
     bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

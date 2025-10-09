@@ -2,8 +2,8 @@ use alloy::sol_types::SolValue;
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use ucs03_zkgm::com::{
-    Instruction, SolverMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_1, INSTR_VERSION_2,
-    OP_TOKEN_ORDER, TOKEN_ORDER_KIND_SOLVE,
+    INSTR_VERSION_1, INSTR_VERSION_2, Instruction, OP_TOKEN_ORDER, SolverMetadata,
+    TOKEN_ORDER_KIND_SOLVE, TokenOrderV1, TokenOrderV2,
 };
 use unionlabs::primitives::{Bytes, U256};
 

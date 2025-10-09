@@ -5,7 +5,7 @@ use jsonrpsee::core::RpcResult;
 use moka::policy::EvictionPolicy;
 use opentelemetry::KeyValue;
 use schemars::JsonSchema;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use tracing::{debug, trace, warn};
 use unionlabs::ibc::core::client::height::Height;

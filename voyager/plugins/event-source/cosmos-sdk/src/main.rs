@@ -3,24 +3,25 @@
 use core::slice;
 use std::{
     cmp::Ordering,
-    collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
-    num::{NonZeroU32, NonZeroU8, ParseIntError},
+    collections::{BTreeMap, BTreeSet, VecDeque, btree_map::Entry},
+    num::{NonZeroU8, NonZeroU32, ParseIntError},
     sync::Arc,
 };
 
 use cosmos_sdk_event::CosmosSdkEvent;
 use dashmap::DashMap;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{path::ChannelPath, query::PacketByHash, IbcUnion, MustBeZero, Packet};
+use ibc_union_spec::{IbcUnion, MustBeZero, Packet, path::ChannelPath, query::PacketByHash};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::{
         channel::{self},
         client::height::Height,
@@ -29,22 +30,20 @@ use unionlabs::{
     never::Never,
     option_unwrap,
     primitives::{Bech32, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow,
+    ExtensionsExt, VoyagerClient, anyhow,
     hook::simple_take_filter,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight},
         data::{ChainEvent, Data, EventProvableHeight},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, QueryHeight},
-    rpc::{rpc_error, types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
-    ExtensionsExt, VoyagerClient,
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, rpc_error, types::PluginInfo},
+    vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 use wasm_client_type::WasmClientType;
 

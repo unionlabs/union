@@ -59,16 +59,15 @@
 // TITLE.
 
 use cosmwasm_std::{
-    coins,
+    Addr, Uint128, coins,
     testing::{message_info, mock_env},
-    Addr, Uint128,
 };
 use cw_utils::PaymentError;
 
 use crate::{
     error::ContractError,
     msg::ExecuteMsg,
-    tests::test_helper::{ensure_execute_error, setup, ADMIN, NATIVE_TOKEN, UNION1},
+    tests::test_helper::{ADMIN, NATIVE_TOKEN, UNION1, ensure_execute_error, setup},
     types::BatchId,
 };
 

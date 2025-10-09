@@ -5,7 +5,7 @@ use crate::{
         existence_proof::{ExistenceProof, TryFromExistenceProofError},
         non_existence_proof::{NonExistenceProof, TryFromNonExistenceProofError},
     },
-    errors::{required, MissingField},
+    errors::{MissingField, required},
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::BatchEntry), into, from))]

@@ -1,25 +1,25 @@
 use aptos_rest_client::error::RestError;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 use unionlabs::{
+    ErrorReporter,
     aptos::{
         account::AccountAddress, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
     primitives::H160,
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

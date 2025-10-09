@@ -1,4 +1,4 @@
-use gnark_mimc::{mimc_sum_bl12377, MiMCBls12377Constants};
+use gnark_mimc::{MiMCBls12377Constants, mimc_sum_bl12377};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},

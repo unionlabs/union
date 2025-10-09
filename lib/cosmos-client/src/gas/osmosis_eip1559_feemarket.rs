@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 use unionlabs::cosmos::{base::coin::Coin, tx::fee::Fee};
 
-use crate::gas::{u128_saturating_mul_f64, GasFillerT};
+use crate::gas::{GasFillerT, u128_saturating_mul_f64};
 
 #[derive(Debug)]
 pub struct GasFiller {

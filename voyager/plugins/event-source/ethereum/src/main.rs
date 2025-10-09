@@ -4,12 +4,13 @@ use core::slice;
 use std::{cmp::Ordering, collections::VecDeque};
 
 use alloy::{
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
     rpc::types::Filter,
     sol_types::SolEventInterface,
 };
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
+    ChannelId, ChannelState, IbcUnion, Packet,
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
@@ -18,35 +19,33 @@ use ibc_union_spec::{
     },
     path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
-    ChannelId, ChannelState, IbcUnion, Packet,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, info_span, instrument, trace, warn};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{H160, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     hook::simple_take_filter,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight},
         data::{ChainEvent, Data, EventProvableHeight},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
 use crate::call::{FetchBlocks, FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall};

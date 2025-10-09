@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::errors::{required, MissingField};
+use unionlabs::errors::{MissingField, required};
 
 use crate::prove_response::{self, ProveResponse};
 

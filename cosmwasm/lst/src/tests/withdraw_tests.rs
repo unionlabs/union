@@ -59,8 +59,8 @@
 // TITLE.
 
 use cosmwasm_std::{
-    testing::{message_info, mock_env},
     Addr, Coin, CosmosMsg,
+    testing::{message_info, mock_env},
 };
 use depolama::StorageExt;
 
@@ -69,8 +69,8 @@ use crate::{
     error::ContractError,
     msg::ExecuteMsg,
     state::{AccountingStateStore, ReceivedBatches, UnstakeRequests},
-    tests::test_helper::{setup, NATIVE_TOKEN, UNION1, UNION2, UNION3},
-    types::{staker_hash, BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey},
+    tests::test_helper::{NATIVE_TOKEN, UNION1, UNION2, UNION3, setup},
+    types::{BatchId, ReceivedBatch, UnstakeRequest, UnstakeRequestKey, staker_hash},
 };
 
 #[test]

@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use alloy::{
     eips::BlockNumberOrTag,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
 use beacon_api::{
     client::{BeaconApiClient, VersionedResponse},
@@ -12,18 +12,18 @@ use beacon_api::{
 };
 use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Slot};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument, trace};
-use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H256};
 use voyager_sdk::{
     anyhow::{self, bail},
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

@@ -3,8 +3,8 @@ use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_primitives::ClientType;
 
 use crate::{
-    types::{ChannelId, ClientId, ConnectionId},
     Channel, Packet,
+    types::{ChannelId, ClientId, ConnectionId},
 };
 
 /// All datagrams that are a part of the IBC union specification.

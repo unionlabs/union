@@ -2,8 +2,8 @@ use checkpoint_summary::CheckpointSummary;
 use crypto::AuthorityStrongQuorumSignInfo;
 use fixed_bytes::SuiFixedBytes;
 use unionlabs_primitives::{
-    encoding::{Base58, HexPrefixed},
     FixedBytes,
+    encoding::{Base58, HexPrefixed},
 };
 
 pub mod checkpoint_summary;

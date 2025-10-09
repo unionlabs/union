@@ -1,10 +1,10 @@
 use move_core_types_sui::ident_str;
 use serde::Serialize;
 use sui_sdk::types::{
+    TypeTag,
     base_types::{ObjectID, ObjectRef},
     programmable_transaction_builder::ProgrammableTransactionBuilder,
     transaction::{Argument, CallArg, Command, ObjectArg},
-    TypeTag,
 };
 
 pub async fn update_name(

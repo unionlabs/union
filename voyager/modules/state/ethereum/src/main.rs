@@ -5,47 +5,46 @@ use std::sync::{Arc, LazyLock};
 use alloy::{
     eips::BlockNumberOrTag,
     network::AnyNetwork,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
     rpc::types::{TransactionInput, TransactionRequest},
     serde::WithOtherFields,
     sol_types::{SolCall, SolValue},
 };
-use futures::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
+use futures::{TryFutureExt, TryStreamExt, stream::FuturesUnordered};
 use ibc_solidity::{
     ILightClient,
     Ibc::{self, IbcInstance},
 };
 use ibc_union_spec::{
-    path::{
-        BatchPacketsPath, BatchReceiptsPath, MembershipProofPath, NonMembershipProofPath,
-        StorePath, NON_MEMBERSHIP_COMMITMENT_VALUE,
-    },
-    query::{PacketAckByHashResponse, PacketByHashResponse, PacketsByBatchHashResponse, Query},
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     IbcUnion, Status,
+    path::{
+        BatchPacketsPath, BatchReceiptsPath, MembershipProofPath, NON_MEMBERSHIP_COMMITMENT_VALUE,
+        NonMembershipProofPath, StorePath,
+    },
+    query::{PacketAckByHashResponse, PacketByHashResponse, PacketsByBatchHashResponse, Query},
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     primitives::{Bytes, H160, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow, into_value,
+    ExtensionsExt, anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     rpc::{
-        types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE,
-        MISSING_STATE_ERROR_CODE,
+        FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, StateModuleServer,
+        types::StateModuleInfo,
     },
-    ExtensionsExt,
 };
 
 #[tokio::main(flavor = "multi_thread")]

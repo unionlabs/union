@@ -3,7 +3,7 @@ use macros::model;
 use crate::{
     bounded::{BoundedI32, BoundedIntError},
     cosmos::ics23::leaf_op::{LeafOp, TryFromLeafOpError},
-    errors::{required, MissingField},
+    errors::{MissingField, required},
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedExistenceProof), into, from))]

@@ -8,7 +8,7 @@ use unionlabs::{
     primitives::{H160, H256, U256},
 };
 
-use crate::rlp_node_codec::{keccak_256, EthLayout, KeccakHasher};
+use crate::rlp_node_codec::{EthLayout, KeccakHasher, keccak_256};
 
 pub mod error;
 mod rlp_node_codec;

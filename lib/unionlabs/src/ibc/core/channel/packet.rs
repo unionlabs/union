@@ -3,7 +3,7 @@ use core::num::{NonZeroU64, TryFromIntError};
 use macros::model;
 
 use crate::{
-    errors::{required, MissingField},
+    errors::{MissingField, required},
     ibc::core::client::height::Height,
     id::{ChannelId, Ics24IdParseError, ParsePrefixedIdError, PortId},
     primitives::Bytes,

@@ -1,5 +1,5 @@
 use cosmwasm_std::StdError;
-use ibc_union_light_client::{spec::Timestamp, IbcClientError};
+use ibc_union_light_client::{IbcClientError, spec::Timestamp};
 use unionlabs::primitives::{Bytes, H256};
 
 use crate::{client::AttestedLightClient, types::AttestationValue};

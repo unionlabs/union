@@ -2,7 +2,7 @@ use macros::model;
 
 use crate::{
     cosmos::staking::commission_rates::CommissionRates,
-    errors::{required, MissingField},
+    errors::{MissingField, required},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
 };
 

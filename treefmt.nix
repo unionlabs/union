@@ -16,6 +16,7 @@
     rustfmt = {
       enable = true;
       package = rust.toolchains.dev;
+      edition = "2024";
     };
     taplo.enable = true;
     biome = {
@@ -80,10 +81,6 @@
         options = [ ];
         includes = [ "*.nix" ];
       };
-      rustfmt.options = [
-        "--edition 2024"
-        "--config skip_children=true"
-      ];
       statix.options = [ "explain" ];
       mdformat.options = [ "--number" ];
       deadnix.options = [ "--no-lambda-pattern-names" ];
@@ -254,6 +251,7 @@
         "uniond/docs/static/**"
         ".git-blame-ignore-revs"
         "cosmwasm/cw20-base/**"
+        "cosmwasm/migrations/zkgm/v1_to_v2/v1tov2.sh"
       ];
     };
   };

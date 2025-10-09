@@ -2,24 +2,23 @@ use std::collections::VecDeque;
 
 use ibc_union_spec::IbcUnion;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use tracing::{debug, instrument, trace};
 use unionlabs::never::Never;
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, anyhow,
     hook::simple_take_filter,
     into_value,
-    message::{data::Data, VoyagerMessage},
+    message::{VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::IbcSpec,
-    rpc::{types::PluginInfo, PluginServer},
-    vm::{pass::PassResult, Op},
-    DefaultCmd,
+    rpc::{PluginServer, types::PluginInfo},
+    vm::{Op, pass::PassResult},
 };
 
 #[tokio::main]

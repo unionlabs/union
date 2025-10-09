@@ -1,21 +1,21 @@
 use std::{fmt::Display, path::PathBuf};
 
 use access_manager_types::{
+    RoleId, Selector,
     managed::error::AccessManagedError,
     manager::{self, error::AccessManagerError},
-    RoleId, Selector,
 };
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use bip39::Mnemonic;
 use clap::Parser;
 use cometbft_rpc::rpc_types::{BlockResponse, GrpcAbciQueryError};
 use cosmos_client::{
+    BroadcastTxCommitError, TxClient,
     gas::GasFillerT,
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    BroadcastTxCommitError, TxClient,
 };
-use cosmwasm_std::{to_json_string, Addr};
+use cosmwasm_std::{Addr, to_json_string};
 use serde::Serialize;
 use tracing::{info, instrument};
 use unionlabs::{
@@ -27,7 +27,7 @@ use unionlabs::{
     primitives::{Bech32, H256},
 };
 
-use crate::gas::{any_gas_filler_from_args, GasFillerArgs};
+use crate::gas::{GasFillerArgs, any_gas_filler_from_args};
 
 pub mod gas;
 

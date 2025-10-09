@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de};
 
 pub fn serde_as<'de, D, Src, Dst>(deserializer: D) -> Result<Dst, D::Error>
 where

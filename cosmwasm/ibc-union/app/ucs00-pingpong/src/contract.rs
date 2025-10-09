@@ -1,14 +1,14 @@
 use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{wasm_execute, DepsMut, Env, MessageInfo, Response, StdError};
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, StdError, wasm_execute};
 use ibc_union_msg::{module::IbcUnionMsg, msg::MsgWriteAcknowledgement};
 use ibc_union_spec::Timestamp;
 
 use crate::{
+    ContractError,
     msg::{ExecuteMsg, InitMsg, UCS00PingPong},
     state::CONFIG,
-    ContractError,
 };
 
 pub const PROTOCOL_VERSION: &str = "ucs00-pingpong-1";

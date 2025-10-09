@@ -1,11 +1,9 @@
-use macros::model;
-use serde::{Deserialize, Serialize};
-
-use crate::primitives::{encoding::HexUnprefixed, H256};
+use unionlabs_primitives::{H256, encoding::HexUnprefixed};
 
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SparseMerkleProof {
     /// This proof can be used to authenticate whether a given leaf exists in the tree or not.
@@ -24,7 +22,8 @@ pub struct SparseMerkleProof {
     pub siblings: Vec<H256<HexUnprefixed>>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SparseMerkleLeafNode {
     pub key: H256<HexUnprefixed>,

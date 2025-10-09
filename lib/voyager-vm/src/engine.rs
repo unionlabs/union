@@ -1,9 +1,9 @@
 use std::{future::Future, marker::PhantomData, time::Duration};
 
-use futures::{stream::try_unfold, FutureExt, Stream, TryStreamExt};
+use futures::{FutureExt, Stream, TryStreamExt, stream::try_unfold};
 use tokio::time::sleep;
 
-use crate::{filter::InterestFilter, process, BoxDynError, HandlerFactory, Queue, QueueMessage};
+use crate::{BoxDynError, HandlerFactory, Queue, QueueMessage, filter::InterestFilter, process};
 
 pub struct Engine<'a, T, Q, H, F> {
     handler: H,

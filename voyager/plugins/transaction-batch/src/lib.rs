@@ -8,31 +8,30 @@ use std::{
 };
 
 use either::Either;
-use futures::{stream::FuturesOrdered, StreamExt};
+use futures::{StreamExt, stream::FuturesOrdered};
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tracing::{debug, error, info, instrument, trace, warn};
-use unionlabs::{ibc::core::client::height::Height, id::ClientId, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, id::ClientId};
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     hook::simple_take_filter,
     message::{
+        PluginMessage, VoyagerMessage,
         call::WaitForHeight,
         data::{ChainEvent, Data, EventProvableHeight},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
     types::RawClientId,
-    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
 use crate::{

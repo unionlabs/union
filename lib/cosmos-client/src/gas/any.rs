@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::cosmos::tx::fee::Fee;
 
-use crate::gas::{feemarket, fixed, osmosis_eip1559_feemarket, GasFillerT};
+use crate::gas::{GasFillerT, feemarket, fixed, osmosis_eip1559_feemarket};
 
 #[derive(Debug)]
 pub enum GasFiller {

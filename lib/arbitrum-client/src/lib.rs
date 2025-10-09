@@ -8,8 +8,8 @@ use alloy::{
     sol_types::SolEvent,
 };
 use arbitrum_types::{
-    slots::{read_latest_node_created, ROLLUP_CORE_LATEST_NODE_CREATED},
     NodeCreated,
+    slots::{ROLLUP_CORE_LATEST_NODE_CREATED, read_latest_node_created},
 };
 use tracing::{debug, instrument, trace};
 use unionlabs::primitives::{H160, H256};

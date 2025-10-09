@@ -9,7 +9,7 @@ use crate::{
             CompressedNonExistenceProof, TryFromCompressedNonExistenceProofError,
         },
     },
-    errors::{required, MissingField},
+    errors::{MissingField, required},
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchEntry), into, from))]

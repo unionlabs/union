@@ -2,7 +2,7 @@ use cometbft_types::types::block_id::BlockId;
 use unionlabs::{
     errors::InvalidLength,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    primitives::{encoding::HexUnprefixed, H160, H256},
+    primitives::{H160, H256, encoding::HexUnprefixed},
 };
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -16,12 +16,16 @@ pub enum Error {
     HeadersMustBeNonAdjacent,
     #[error("headers must be adjacent")]
     HeadersMustBeAdjacent,
-    #[error("header with the timestamp ({header_timestamp}) is expired (trusting period {trusting_period})")]
+    #[error(
+        "header with the timestamp ({header_timestamp}) is expired (trusting period {trusting_period})"
+    )]
     HeaderExpired {
         trusting_period: Duration,
         header_timestamp: Timestamp,
     },
-    #[error("untrusted ({untrusted_header_chain_id}) and trusted header ({trusted_header_chain_id}) chain id mismatch")]
+    #[error(
+        "untrusted ({untrusted_header_chain_id}) and trusted header ({trusted_header_chain_id}) chain id mismatch"
+    )]
     ChainIdMismatch {
         untrusted_header_chain_id: String,
         trusted_header_chain_id: String,
@@ -33,12 +37,16 @@ pub enum Error {
         sh_hash: H256<HexUnprefixed>,
         commit_hash: H256<HexUnprefixed>,
     },
-    #[error("trusted header height ({untrusted_header_height}) cannot be greater than or equal to the untrusted height ({untrusted_header_height})")]
+    #[error(
+        "trusted header height ({untrusted_header_height}) cannot be greater than or equal to the untrusted height ({untrusted_header_height})"
+    )]
     UntrustedHeaderHeightIsLE {
         untrusted_header_height: i64,
         trusted_header_height: i64,
     },
-    #[error("trusted header timestamp ({untrusted_header_timestamp}) cannot be greater than or equal to the untrusted timestamp ({untrusted_header_timestamp})")]
+    #[error(
+        "trusted header timestamp ({untrusted_header_timestamp}) cannot be greater than or equal to the untrusted timestamp ({untrusted_header_timestamp})"
+    )]
     UntrustedHeaderTimestampIsLE {
         untrusted_header_timestamp: Timestamp,
         trusted_header_timestamp: Timestamp,

@@ -4,8 +4,8 @@ use std::{collections::VecDeque, num::ParseIntError};
 
 use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
@@ -13,22 +13,22 @@ use tracing::{instrument, warn};
 use unionlabs::{
     ibc::core::client::height::Height,
     never::Never,
-    primitives::{encoding::HexUnprefixed, H160},
+    primitives::{H160, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
+    DefaultCmd,
     anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{rpc_error, types::PluginInfo, PluginServer},
-    vm::{data, pass::PassResult, Op, Visit},
-    DefaultCmd,
+    rpc::{PluginServer, rpc_error, types::PluginInfo},
+    vm::{Op, Visit, data, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};

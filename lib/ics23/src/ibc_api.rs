@@ -170,10 +170,10 @@ mod tests {
         ibc::core::commitment::{
             merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
         },
-        primitives::{encoding::HexUnprefixed, H256},
+        primitives::{H256, encoding::HexUnprefixed},
     };
 
-    use super::{verify_membership, verify_non_membership, VerifyMembershipError, SDK_SPECS};
+    use super::{SDK_SPECS, VerifyMembershipError, verify_membership, verify_non_membership};
     use crate::verify;
 
     fn chained_membership(

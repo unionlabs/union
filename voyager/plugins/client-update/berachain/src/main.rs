@@ -5,35 +5,35 @@ use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::Header;
 use ethereum_light_client_types::AccountProof;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{
+    ErrorReporter,
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{DecodeAs, Ssz},
     ibc::core::commitment::merkle_proof::MerkleProof,
     never::Never,
     primitives::H160,
-    ErrorReporter,
 };
 use voyager_sdk::{
+    DefaultCmd,
     anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpecId},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{PluginServer, types::PluginInfo},
     types::RawClientId,
-    vm::{call, conc, data, pass::PassResult, seq, Op, Visit},
-    DefaultCmd,
+    vm::{Op, Visit, call, conc, data, pass::PassResult, seq},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};

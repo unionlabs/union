@@ -6,25 +6,26 @@ use std::{
 
 use ics23::ibc_api::SDK_SPECS;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
 use tracing::{error, info, instrument};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap,
     primitives::{Bech32, H256},
-    result_unwrap, ErrorReporter,
+    result_unwrap,
 };
 use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

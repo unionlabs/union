@@ -13,14 +13,15 @@ use ibc_classic_spec::{
     NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath, StorePath,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
+    core::{RpcResult, async_trait},
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{error, instrument};
 use unionlabs::{
+    ErrorReporter,
     encoding::{DecodeAs, Proto},
     ibc::core::{
         channel::channel::Channel, client::height::Height,
@@ -28,14 +29,13 @@ use unionlabs::{
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     never::Never,
-    primitives::{Bytes, H256, H64},
-    ErrorReporter,
+    primitives::{Bytes, H64, H256},
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{rpc_error, types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, rpc_error, types::StateModuleInfo},
 };
 
 const IBC_STORE_PATH: &str = "store/ibc/key";
@@ -275,7 +275,7 @@ impl Module {
                 return Err(fatal_rpc_error("error decoding receipt", None)(format!(
                     "value is neither empty nor the single byte 0x01, found {}",
                     serde_utils::to_hex(invalid)
-                )))
+                )));
             }
         })
     }

@@ -61,7 +61,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    ensure, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+    Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, ensure, to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
@@ -70,9 +70,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::ContractError,
     execute::{
-        accept_ownership, bond, circuit_breaker, rebase, receive_rewards, receive_unstaked_tokens,
-        resume_contract, revoke_ownership_transfer, slash_batches, submit_batch,
-        transfer_ownership, unbond, update_config, withdraw, FEE_RATE_DENOMINATOR,
+        FEE_RATE_DENOMINATOR, accept_ownership, bond, circuit_breaker, rebase, receive_rewards,
+        receive_unstaked_tokens, resume_contract, revoke_ownership_transfer, slash_batches,
+        submit_batch, transfer_ownership, unbond, update_config, withdraw,
     },
     msg::{ExecuteMsg, InitMsg, QueryMsg},
     query::{
@@ -88,7 +88,9 @@ use crate::{
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {

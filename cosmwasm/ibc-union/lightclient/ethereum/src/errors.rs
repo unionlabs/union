@@ -34,7 +34,9 @@ pub enum Error {
     #[error("integer arithmetic overflow")]
     IntegerOverflow,
 
-    #[error("misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})")]
+    #[error(
+        "misbehaviour can only exist if there exists two conflicting headers, the provided headers are not at the same height ({0} != {1})"
+    )]
     MisbehaviourCannotExist(Slot, Slot),
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]

@@ -1,6 +1,7 @@
 use cosmwasm_std::{
+    Addr, Event,
     testing::{message_info, mock_dependencies, mock_env},
-    to_json_binary, Addr, Event,
+    to_json_binary,
 };
 use depolama::StorageExt;
 use ibc_union_msg::{
@@ -10,9 +11,9 @@ use ibc_union_msg::{
 
 use super::*;
 use crate::{
+    ContractError,
     contract::{events, execute, init},
     state::{ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates, ClientTypes},
-    ContractError,
 };
 
 const CLIENT_TYPE: &str = "union";
@@ -39,10 +40,11 @@ fn register_client_ok() {
     .unwrap();
     let res = register_client(deps.as_mut()).unwrap();
 
-    assert!(res
-        .events
-        .into_iter()
-        .any(|e| e == new_client_registered_event(CLIENT_TYPE, &mock_addr(CLIENT_ADDRESS))));
+    assert!(
+        res.events
+            .into_iter()
+            .any(|e| e == new_client_registered_event(CLIENT_TYPE, &mock_addr(CLIENT_ADDRESS)))
+    );
 
     assert_eq!(
         deps.storage
@@ -208,13 +210,15 @@ fn update_client_ok() {
         client_message: vec![3, 2, 1].into(),
         relayer: mock_addr(RELAYER).into_string(),
     });
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        msg
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            msg
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -263,13 +267,15 @@ fn update_client_ko() {
         client_message: vec![3, 2, 1].into(),
         relayer: mock_addr(RELAYER).into_string(),
     });
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        msg
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            msg
+        )
+        .is_err()
     )
-    .is_err())
 }
 
 #[test]

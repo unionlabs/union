@@ -1,6 +1,5 @@
-use unionlabs::{
-    aptos::account::AccountAddress, ibc::core::client::height::Height, primitives::H160,
-};
+use aptos_types::account::AccountAddress;
+use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

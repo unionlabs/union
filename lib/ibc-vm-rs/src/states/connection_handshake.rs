@@ -13,8 +13,8 @@ use unionlabs::{
 };
 
 use crate::{
-    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcQuery, IbcResponse, IbcVmResponse, Runnable,
-    Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
+    DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX, Either, IbcAction, IbcError, IbcEvent, IbcHost,
+    IbcQuery, IbcResponse, IbcVmResponse, Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

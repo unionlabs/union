@@ -3,12 +3,12 @@ use std::collections::BTreeMap;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    has_coins, Coin, DepsMut, Env, MessageInfo, Never, Reply, Response, SubMsg, Uint128, WasmMsg,
+    Coin, DepsMut, Env, MessageInfo, Never, Reply, Response, SubMsg, Uint128, WasmMsg, has_coins,
 };
 
 use crate::{
-    msg::{ExecuteMsg, InitMsg},
     ContractError,
+    msg::{ExecuteMsg, InitMsg},
 };
 
 const REPLY_ID: u64 = 0x1337;

@@ -1,4 +1,4 @@
-use crate::{crypto::AuthorityPublicKeyBytes, U64};
+use crate::{U64, crypto::AuthorityPublicKeyBytes};
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

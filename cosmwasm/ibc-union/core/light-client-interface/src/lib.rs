@@ -3,7 +3,7 @@
 use core::fmt::Debug;
 use std::error::Error;
 
-use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError};
+use cosmwasm_std::{Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError, to_json_binary};
 use depolama::{QuerierExt, StorageExt, Store};
 use frissitheto::UpgradeError;
 use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
@@ -13,9 +13,9 @@ use ibc_union_msg::lightclient::{
 };
 use ibc_union_spec::{ClientId, Status, Timestamp};
 use unionlabs::{
+    ErrorReporter,
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     primitives::Bytes,
-    ErrorReporter,
 };
 
 use crate::{msg::InitMsg, state::IbcHost};

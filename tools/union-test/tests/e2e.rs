@@ -19,22 +19,22 @@ use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
     com::{
-        Instruction, SolverMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_0, INSTR_VERSION_1,
-        INSTR_VERSION_2, OP_BATCH, OP_FORWARD, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_ESCROW,
-        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
+        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, Instruction, OP_BATCH, OP_FORWARD,
+        OP_TOKEN_ORDER, SolverMetadata, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
+        TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW, TokenOrderV1, TokenOrderV2,
     },
 };
 use union_test::{
+    TestContext,
     cosmos::{self},
-    cosmos_helpers::{calculate_cosmos_contract_address, SALT_ESCROW_VAULT, SALT_ZKGM},
+    cosmos_helpers::{SALT_ESCROW_VAULT, SALT_ZKGM, calculate_cosmos_contract_address},
     evm::{
         self,
         zkgm::{
-            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket, IBC,
+            IBC, IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket,
         },
         zkgmerc20::ZkgmERC20,
     },
-    TestContext,
 };
 use unionlabs::{
     encoding::{Encode, Json},
@@ -727,7 +727,10 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let approve_contract = Addr::unchecked(str::from_utf8(&quote_token_bytes).unwrap());
 
-    println!("Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}",  quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
+    println!(
+        "Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}",
+        quote_token_addr, quote_token_bytes, cosmos_address, approve_contract
+    );
 
     let approve_recv_packet_data = t
         .ctx

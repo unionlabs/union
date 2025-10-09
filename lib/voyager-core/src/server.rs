@@ -2,29 +2,29 @@
 
 use std::sync::{Arc, OnceLock};
 
-use anyhow::{anyhow, Context as _};
+use anyhow::{Context as _, anyhow};
 use futures::TryFutureExt;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
+    core::{RpcResult, async_trait},
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
-use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::Bytes};
 use voyager_plugin_protocol::WithId;
 use voyager_primitives::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
 };
 use voyager_rpc::{
-    json_rpc_error_to_error_object,
+    ClientBootstrapModuleClient, ClientModuleClient, FATAL_JSONRPC_ERROR_CODE,
+    FinalityModuleClient, PluginClient, RawProofModuleClient, RawStateModuleClient,
+    VoyagerRpcServer, json_rpc_error_to_error_object,
     types::{
         IbcProofResponse, IbcStateResponse, InfoResponse, SelfClientStateResponse,
         SelfConsensusStateResponse,
     },
-    ClientBootstrapModuleClient, ClientModuleClient, FinalityModuleClient, PluginClient,
-    RawProofModuleClient, RawStateModuleClient, VoyagerRpcServer, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_types::{IbcProof, RawClientId};
 use voyager_vm::ItemId;
@@ -508,11 +508,7 @@ impl Server {
                                 // TODO: Use valuable here
                                 trace!(%state, "fetched ibc state");
 
-                                if state.is_null() {
-                                    None
-                                } else {
-                                    Some(state)
-                                }
+                                if state.is_null() { None } else { Some(state) }
                             })
                             .map_err(|e| json_rpc_error_to_error_object(e)),
                     )

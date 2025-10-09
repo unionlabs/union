@@ -2,15 +2,15 @@ use std::fmt::Debug;
 
 use anyhow::anyhow;
 use jaq_core::{
-    load::{Arena, File, Loader},
     Ctx, Filter, Native, RcIter,
+    load::{Arena, File, Loader},
 };
 use jaq_json::Val;
 use tracing::{error, instrument, trace};
 use voyager_rpc::types::PluginInfo;
 use voyager_vm::{
-    filter::{FilterResult, Interest, InterestFilter},
     Op,
+    filter::{FilterResult, Interest, InterestFilter},
 };
 
 use crate::VoyagerMessage;
@@ -38,11 +38,12 @@ pub fn make_filter(
     }: PluginInfo,
 ) -> anyhow::Result<(Filter<Native<Val>>, String)> {
     fn map_jq_errs(es: Vec<(File<&str, &str>, impl Debug)>) -> anyhow::Error {
-        anyhow!(es
-            .iter()
-            .map(|(file, error)| format!("{}: {:?}", file.path, error))
-            .collect::<Vec<_>>()
-            .join(","))
+        anyhow!(
+            es.iter()
+                .map(|(file, error)| format!("{}: {:?}", file.path, error))
+                .collect::<Vec<_>>()
+                .join(",")
+        )
     }
 
     let program = File {

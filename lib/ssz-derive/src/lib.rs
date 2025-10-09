@@ -80,7 +80,7 @@
 //!     UnionEnum::Bar(vec![42, 42].try_into().unwrap()),
 //! );
 
-use syn::{parse_macro_input, DeriveInput};
+use syn::{DeriveInput, parse_macro_input};
 
 use crate::ssz_trait::do_ssz;
 

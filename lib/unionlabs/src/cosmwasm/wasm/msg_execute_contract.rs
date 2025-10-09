@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmos::base::coin::Coin,
-    primitives::{encoding::Base64, Bech32, Bytes, H256},
+    primitives::{Bech32, Bytes, H256, encoding::Base64},
 };
 
 pub mod response;
@@ -22,7 +22,7 @@ pub mod proto {
     use unionlabs_primitives::{Bech32DecodeError, FixedBytesError};
 
     use super::MsgExecuteContract;
-    use crate::{cosmos::base::coin, impl_proto_via_try_from_into, Msg};
+    use crate::{Msg, cosmos::base::coin, impl_proto_via_try_from_into};
 
     impl_proto_via_try_from_into!(MsgExecuteContract => protos::cosmwasm::wasm::v1::MsgExecuteContract);
 

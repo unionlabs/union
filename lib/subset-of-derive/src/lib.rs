@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use quote::{quote_spanned, ToTokens};
-use syn::{parse_macro_input, parse_quote, spanned::Spanned, DeriveInput, Type};
+use quote::{ToTokens, quote_spanned};
+use syn::{DeriveInput, Type, parse_macro_input, parse_quote, spanned::Spanned};
 
 #[proc_macro_derive(SubsetOf, attributes(subset_of))]
 pub fn subset_of(input: TokenStream) -> TokenStream {
@@ -15,7 +15,7 @@ pub fn subset_of(input: TokenStream) -> TokenStream {
                 "SubsetOf can only be derived on enums",
             )
             .into_compile_error()
-            .into()
+            .into();
         }
         syn::Data::Enum(enm) => enm,
         syn::Data::Union(union) => {
@@ -24,7 +24,7 @@ pub fn subset_of(input: TokenStream) -> TokenStream {
                 "SubsetOf can only be derived on enums",
             )
             .into_compile_error()
-            .into()
+            .into();
         }
     };
 

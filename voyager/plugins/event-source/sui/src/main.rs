@@ -2,6 +2,7 @@ use std::{cmp::Ordering, collections::VecDeque};
 
 use call::FetchEvents;
 use ibc_union_spec::{
+    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, IbcUnion, Timestamp,
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
@@ -10,34 +11,33 @@ use ibc_union_spec::{
     },
     path::{BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
-    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, IbcUnion, Timestamp,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use sui_sdk::{
+    SuiClientBuilder,
     rpc_types::{EventFilter, SuiEvent, SuiTransactionBlockResponseOptions},
     types::base_types::SuiAddress,
-    SuiClientBuilder,
 };
 use tracing::{info, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H256};
 use voyager_sdk::{
+    DefaultCmd, ExtensionsExt, VoyagerClient,
     hook::simple_take_filter,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight, WaitForHeightRelative},
         data::{ChainEvent, Data, EventProvableHeight},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
-    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    rpc::{PluginServer, types::PluginInfo},
+    vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
 use crate::{

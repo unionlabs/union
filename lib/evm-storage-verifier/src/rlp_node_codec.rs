@@ -22,8 +22,8 @@ use hash_db::Hasher;
 use rlp::{DecoderError, Prototype, Rlp, RlpStream};
 use sha3::{Digest, Keccak256};
 use trie_db::{
-    node::{NibbleSlicePlan, NodeHandlePlan, NodePlan, Value, ValuePlan},
     ChildReference, NodeCodec, TrieLayout,
+    node::{NibbleSlicePlan, NodeHandlePlan, NodePlan, Value, ValuePlan},
 };
 use unionlabs::primitives::H256;
 

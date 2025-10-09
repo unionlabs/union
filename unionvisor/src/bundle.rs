@@ -89,13 +89,13 @@ impl UnvalidatedVersionPath {
         if let Err(err) = child.kill() {
             match err.kind() {
                 io::ErrorKind::NotFound => {
-                    return Err(ValidateVersionPathError::NotInBundle(self.0.clone(), err))
+                    return Err(ValidateVersionPathError::NotInBundle(self.0.clone(), err));
                 }
                 io::ErrorKind::PermissionDenied => {
                     return Err(ValidateVersionPathError::PermissionDenied(
                         self.0.clone(),
                         err,
-                    ))
+                    ));
                 }
                 _ => return Err(ValidateVersionPathError::OtherIO(err)),
             }

@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 
 use tracing::info;
 use voyager_message::{
-    call::{Call, FetchUpdateHeaders, SubmitTx},
     VoyagerMessage,
+    call::{Call, FetchUpdateHeaders, SubmitTx},
 };
 use voyager_primitives::{ChainId, ClientType};
 use voyager_vm::Visit;

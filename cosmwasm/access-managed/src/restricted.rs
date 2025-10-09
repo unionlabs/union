@@ -1,7 +1,7 @@
-use access_manager_types::{managed::error::AccessManagedError, CanCall, Selector};
-use cosmwasm_std::{to_json_binary, Addr, DepsMut, Env, MessageInfo, SubMsg, WasmMsg};
+use access_manager_types::{CanCall, Selector, managed::error::AccessManagedError};
+use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, SubMsg, WasmMsg, to_json_binary};
 use depolama::{StorageExt, Store};
-use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 
 use crate::{error::ContractError, state::ConsumingSchedule};
 

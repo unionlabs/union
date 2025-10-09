@@ -3,7 +3,7 @@
 use std::fmt::Debug;
 
 use macros::model;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use voyager_vm::QueueMessage;
 

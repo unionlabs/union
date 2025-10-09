@@ -5,8 +5,8 @@ use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
-    OverflowError, OverflowOperation, Response, StdError, StdResult, Storage,
+    Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, OverflowError,
+    OverflowOperation, Response, StdError, StdResult, Storage, to_json_binary, wasm_execute,
 };
 use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -28,27 +28,27 @@ use ibc_union_msg::{
     query::QueryMsg,
 };
 use ibc_union_spec::{
-    path::{
-        commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ConnectionPath, ConsensusStatePath, MembershipProofPath, NonMembershipProofPath,
-        COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK, NON_MEMBERSHIP_COMMITMENT_VALUE,
-    },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
     MustBeZero, Packet, Status, Timestamp,
+    path::{
+        BatchPacketsPath, BatchReceiptsPath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK, ChannelPath,
+        ClientStatePath, ConnectionPath, ConsensusStatePath, MembershipProofPath,
+        NON_MEMBERSHIP_COMMITMENT_VALUE, NonMembershipProofPath, commit_packets,
+    },
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
 };
 
 use crate::{
+    ContractError,
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
         ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
         NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers, WhitelistedRelayersAdmin,
     },
-    ContractError,
 };
 
 type ContractResult = Result<Response, ContractError>;

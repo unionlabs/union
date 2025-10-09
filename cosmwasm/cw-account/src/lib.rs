@@ -1,8 +1,8 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo,
-    Order, Response, StdError,
+    Addr, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Order, Response, StdError,
+    from_json, to_json_binary,
 };
 use depolama::{self, StorageExt};
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};

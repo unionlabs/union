@@ -2,8 +2,8 @@ use cometbft_types::crypto::public_key::PublicKey;
 use cosmwasm_std::{Addr, Empty};
 use ethermint_light_client_types::ClientState;
 use ibc_union_light_client::{
-    spec::{Status, Timestamp},
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
 };
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client::verifier::Ed25519Verifier;

@@ -1,8 +1,8 @@
 use access_manager_types::{Access, Role, RoleId, Schedule, Selector, TargetConfig};
 use cosmwasm_std::{Addr, StdError, StdResult};
 use depolama::{
-    key::KeyCodecViaEncoding, value::ValueCodecViaEncoding, Bytes, KeyCodec, Prefix,
-    RawAddrEncoding, Store,
+    Bytes, KeyCodec, Prefix, RawAddrEncoding, Store, key::KeyCodecViaEncoding,
+    value::ValueCodecViaEncoding,
 };
 use unionlabs_encoding::{Bincode, DecodeAs, EncodeAs};
 use unionlabs_primitives::H256;

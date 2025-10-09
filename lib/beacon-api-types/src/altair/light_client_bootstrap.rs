@@ -2,7 +2,7 @@ use unionlabs::primitives::H256;
 
 use crate::{
     altair::{LightClientHeader, SyncCommittee},
-    consts::{floorlog2, CURRENT_SYNC_COMMITTEE_GINDEX},
+    consts::{CURRENT_SYNC_COMMITTEE_GINDEX, floorlog2},
 };
 
 #[derive(Debug, Clone, PartialEq)]

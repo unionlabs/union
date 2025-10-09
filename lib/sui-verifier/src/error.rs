@@ -25,13 +25,9 @@ pub enum Error {
     #[error("an effect to object ({0}) not found in the given effects")]
     EffectNotFound(ObjectID),
 
-    #[error(
-        "proven object's digest ({proven}) does not match the given object's digest ({given})"
-    )]
+    #[error("proven object's digest ({proven}) does not match the given object's digest ({given})")]
     ObjectDigestMismatch { given: Digest, proven: Digest },
 
-    #[error(
-        "proven contents digest ({proven}) does not match the given contents digest ({given})"
-    )]
+    #[error("proven contents digest ({proven}) does not match the given contents digest ({given})")]
     ContentsDigestMismatch { given: Digest, proven: Digest },
 }

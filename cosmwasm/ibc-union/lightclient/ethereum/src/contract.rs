@@ -3,8 +3,8 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
-    msg::{InitMsg, QueryMsg},
     IbcClientError,
+    msg::{InitMsg, QueryMsg},
 };
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,9 @@ use crate::client::EthereumLightClient;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

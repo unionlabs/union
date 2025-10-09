@@ -1,7 +1,7 @@
 use macros::model;
 
 use crate::{
-    errors::{required, MissingField, UnknownEnumVariant},
+    errors::{MissingField, UnknownEnumVariant, required},
     ibc::core::channel::{
         counterparty::{Counterparty, TryFromChannelCounterpartyError},
         order::Order,

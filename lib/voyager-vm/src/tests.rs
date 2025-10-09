@@ -1,7 +1,6 @@
 use crate::{
-    call, conc, data, defer, noop, now, promise, seq,
+    QueueMessage, call, conc, data, defer, noop, now, promise, seq,
     tests::utils::{BuildPrintAbc, DataA, DataB, DataC, FetchA, FetchB, PrintAbc, SimpleMessage},
-    QueueMessage,
 };
 
 pub mod utils;

@@ -84,8 +84,20 @@ impl Display for G2Const {
         };
 
         // SAFETY: See const assertions just above
-        let [g2_x00, g2_x01, g2_x10, g2_x11, g2_y00, g2_y01, g2_y10, g2_y11, g2_z00, g2_z01, g2_z10, g2_z11] =
-            unsafe { std::mem::transmute::<G2, [u128; 12]>(self.0) };
+        let [
+            g2_x00,
+            g2_x01,
+            g2_x10,
+            g2_x11,
+            g2_y00,
+            g2_y01,
+            g2_y10,
+            g2_y11,
+            g2_z00,
+            g2_z01,
+            g2_z10,
+            g2_z11,
+        ] = unsafe { std::mem::transmute::<G2, [u128; 12]>(self.0) };
 
         write!(
             f,

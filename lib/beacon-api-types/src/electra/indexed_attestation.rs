@@ -2,7 +2,7 @@ use unionlabs::primitives::H768;
 #[cfg(feature = "ssz")]
 use {
     crate::chain_spec::ChainSpec,
-    ssz::{types::List, Ssz},
+    ssz::{Ssz, types::List},
 };
 
 use crate::phase0::AttestationData;

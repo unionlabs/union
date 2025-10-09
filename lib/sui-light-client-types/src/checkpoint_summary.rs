@@ -1,10 +1,10 @@
 use blake2::{Blake2b, Digest as _};
 use unionlabs_primitives::{
-    encoding::{Base64, Encoding as _},
     Bytes, FixedBytes,
+    encoding::{Base64, Encoding as _},
 };
 
-use crate::{crypto::AuthorityPublicKeyBytes, Digest, U64};
+use crate::{Digest, U64, crypto::AuthorityPublicKeyBytes};
 
 pub type CheckpointSequenceNumber = u64;
 pub type CheckpointTimestamp = u64;

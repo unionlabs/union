@@ -1,9 +1,9 @@
 use attested_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
-use cosmwasm_std::{ensure, Addr, Deps, Empty};
+use cosmwasm_std::{Addr, Deps, Empty, ensure};
 use depolama::StorageExt;
 use ibc_union_light_client::{
-    spec::{Status, Timestamp},
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
 };
 use unionlabs::{encoding::Bincode, primitives::Bytes};
 

@@ -9,9 +9,9 @@ use alloy::{
 use ethereum_light_client_types::AccountProof;
 use ibc_union_spec::{ClientId, IbcUnion};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use parlia_light_client_types::Header;
 use parlia_types::ParliaHeader;
@@ -19,21 +19,20 @@ use parlia_verifier::EPOCH_LENGTH;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{info, instrument};
-use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H160, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, never::Never, primitives::H160};
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, anyhow,
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{types::PluginInfo, PluginServer},
-    vm::{self, pass::PassResult, BoxDynError, Op, Visit},
-    DefaultCmd,
+    rpc::{PluginServer, types::PluginInfo},
+    vm::{self, BoxDynError, Op, Visit, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};

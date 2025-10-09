@@ -1,6 +1,6 @@
 use std::ops::Bound;
 
-use cosmwasm_std::{testing::MockStorage, Order};
+use cosmwasm_std::{Order, testing::MockStorage};
 use unionlabs::primitives::ByteArrayExt;
 
 use super::*;

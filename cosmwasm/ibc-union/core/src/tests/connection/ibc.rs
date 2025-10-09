@@ -41,13 +41,15 @@ fn connection_open_init_ok() {
         client_id: ClientId!(1),
         counterparty_client_id: ClientId!(2),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenInit(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ConnectionOpenInit(msg),
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 #[test]
@@ -121,13 +123,15 @@ fn connection_open_try_ok() {
         proof_height: 1,
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenTry(msg),
-    )
-    .is_ok());
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ConnectionOpenTry(msg),
+        )
+        .is_ok()
+    );
 }
 
 #[test]
@@ -268,13 +272,15 @@ fn connection_open_ack_ok() {
         proof_height: 1,
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenAck(msg),
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ConnectionOpenAck(msg),
+        )
+        .is_ok()
     )
-    .is_ok())
 }
 
 // #[test]
@@ -368,13 +374,15 @@ fn connection_open_confirm_ok() {
         proof_height: 1,
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenConfirm(msg),
-    )
-    .is_ok());
+    assert!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ConnectionOpenConfirm(msg),
+        )
+        .is_ok()
+    );
 }
 
 // #[test]

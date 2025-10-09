@@ -6,31 +6,31 @@ use aptos_move_ibc::{
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
 use ibc_union_spec::{
-    path::StorePath, query::Query, Channel, ChannelState, ClientId, Connection, ConnectionState,
-    IbcUnion,
+    Channel, ChannelState, ClientId, Connection, ConnectionState, IbcUnion, path::StorePath,
+    query::Query,
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
+    core::{RpcResult, async_trait},
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument, trace};
 use unionlabs::{
+    ErrorReporter,
     aptos::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
     ibc::core::client::height::Height,
     primitives::{Bytes, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, Timestamp},
-    rpc::{types::StateModuleInfo, StateModuleServer},
+    rpc::{StateModuleServer, types::StateModuleInfo},
 };
 
 pub mod events;

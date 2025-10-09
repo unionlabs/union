@@ -1,17 +1,17 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    entry_point, wasm_execute, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    StdResult,
+    Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, entry_point,
+    wasm_execute,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
+    IbcClientError,
     msg::{InitMsg, QueryMsg},
     read_client_state, read_consensus_state,
     spec::ClientId,
     state::IbcHost,
-    IbcClientError,
 };
 use ibc_union_msg::msg::MsgMigrateState;
 use unionlabs::{
@@ -23,7 +23,9 @@ use crate::client::BobLightClient;
 
 #[entry_point]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[entry_point]
@@ -106,7 +108,7 @@ pub fn migrate(
                                 "unexpected client state v2 for v1 to v2 migration, client={}",
                                 client_id
                             ))
-                            .into())
+                            .into());
                         }
                     }
                 }

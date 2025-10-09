@@ -4,7 +4,7 @@ pub trait HostFns {
     fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool;
 
     fn verify_batch_signature(&self, pubkeys: &[PublicKey], msgs: &[&[u8]], sigs: &[&[u8]])
-        -> bool;
+    -> bool;
 }
 
 pub struct SignatureVerifier<V: HostFns> {

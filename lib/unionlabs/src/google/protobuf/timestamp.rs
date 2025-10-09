@@ -3,12 +3,12 @@ use core::{cmp::Ordering, fmt::Display, num::TryFromIntError, ops::Neg, str::Fro
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
 use macros::model;
 use serde::{
-    de::{self, Unexpected},
     Deserialize, Serialize,
+    de::{self, Unexpected},
 };
 
 use crate::{
-    bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
+    bounded::{BoundedI32, BoundedI64, BoundedI128, BoundedIntError},
     constants::metric::NANOS_PER_SECOND,
     google::protobuf::duration::Duration,
     result_unwrap,
@@ -467,8 +467,7 @@ mod tests {
 
         for items in test_items {
             assert_eq!(
-                ts!(items.0 .0, items.0 .1)
-                    .checked_add(Duration::new(items.1 .0, items.1 .1).unwrap()),
+                ts!(items.0.0, items.0.1).checked_add(Duration::new(items.1.0, items.1.1).unwrap()),
                 items.2.map(|(seconds, nanos)| Timestamp {
                     seconds: seconds.try_into().unwrap(),
                     nanos: nanos.try_into().unwrap()

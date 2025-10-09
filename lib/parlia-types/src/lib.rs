@@ -3,7 +3,7 @@ use core::fmt;
 use consensus_primitives::Timestamp;
 use rlp::{RlpDecodable, RlpDecodableWrapper, RlpEncodable, RlpEncodableWrapper};
 use sha3::Digest as _;
-use unionlabs_primitives::{ByteArrayExt, Bytes, H160, H2048, H256, H384, H64, H768, U256};
+use unionlabs_primitives::{ByteArrayExt, Bytes, H64, H160, H256, H384, H768, H2048, U256};
 
 #[derive(Debug, Clone, PartialEq, RlpDecodable, RlpEncodable)]
 pub struct VoteAttestation {

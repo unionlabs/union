@@ -9,7 +9,7 @@ use macros::apply;
 use serde_json::Value;
 use unionlabs::{
     ibc::core::client::height::{Height, HeightFromStrError},
-    primitives::{encoding::HexUnprefixed, Bytes, H256},
+    primitives::{Bytes, H256, encoding::HexUnprefixed},
 };
 
 /// Represents the IBC interface of a chain.

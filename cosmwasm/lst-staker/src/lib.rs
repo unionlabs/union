@@ -1,12 +1,12 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    entry_point, to_json_binary, wasm_execute, Addr, Binary, Coin, DecCoin, Decimal256,
-    DelegatorReward, Deps, DepsMut, DistributionMsg, Env, Event, MessageInfo, Response, StakingMsg,
-    StdError, Uint128, Uint256,
+    Addr, Binary, Coin, DecCoin, Decimal256, DelegatorReward, Deps, DepsMut, DistributionMsg, Env,
+    Event, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, entry_point,
+    to_json_binary, wasm_execute,
 };
 use cw_account::ensure_local_admin_or_self;
-use cw_utils::{must_pay, PaymentError};
+use cw_utils::{PaymentError, must_pay};
 use depolama::StorageExt;
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 use lst::msg::{ConfigResponse, StakerExecuteMsg};

@@ -3,22 +3,21 @@
 use alloy::{
     eips::BlockId,
     network::AnyNetwork,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
-    anyhow,
+    ExtensionsExt, anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
-    ExtensionsExt,
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

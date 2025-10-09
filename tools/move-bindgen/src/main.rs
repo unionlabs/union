@@ -9,12 +9,12 @@ use std::{
 };
 
 use aptos_rest_client::{
-    aptos_api_types::{Address, MoveFunctionVisibility, MoveStruct, MoveStructTag, MoveType},
     Client,
+    aptos_api_types::{Address, MoveFunctionVisibility, MoveStruct, MoveStructTag, MoveType},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, Ident, ItemFn, ItemStruct, Type};
+use syn::{Ident, ItemFn, ItemStruct, Type, parse_quote};
 
 type Bde = Box<dyn Error + Send + Sync>;
 

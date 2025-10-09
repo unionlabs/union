@@ -33,7 +33,7 @@ impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {
         value: protos::ibc::core::commitment::v1::MerkleProof,
     ) -> Result<Self, Self::Error> {
         use protos::cosmos::ics23::v1::{
-            commitment_proof::Proof as RawProof, CommitmentProof as RawCommitmentProof,
+            CommitmentProof as RawCommitmentProof, commitment_proof::Proof as RawProof,
         };
 
         let proofs: [_; 2] = value.proofs.try_into().map_err(|invalid: Vec<_>| {
@@ -44,16 +44,22 @@ impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {
         })?;
 
         match proofs {
-            [RawCommitmentProof {
-                proof: Some(RawProof::Exist(exist_1)),
-            }, RawCommitmentProof {
-                proof: Some(RawProof::Exist(exist_2)),
-            }] => Ok(Self::Membership(exist_1.try_into()?, exist_2.try_into()?)),
-            [RawCommitmentProof {
-                proof: Some(RawProof::Nonexist(non_exist)),
-            }, RawCommitmentProof {
-                proof: Some(RawProof::Exist(exist)),
-            }] => Ok(Self::NonMembership(
+            [
+                RawCommitmentProof {
+                    proof: Some(RawProof::Exist(exist_1)),
+                },
+                RawCommitmentProof {
+                    proof: Some(RawProof::Exist(exist_2)),
+                },
+            ] => Ok(Self::Membership(exist_1.try_into()?, exist_2.try_into()?)),
+            [
+                RawCommitmentProof {
+                    proof: Some(RawProof::Nonexist(non_exist)),
+                },
+                RawCommitmentProof {
+                    proof: Some(RawProof::Exist(exist)),
+                },
+            ] => Ok(Self::NonMembership(
                 non_exist.try_into()?,
                 exist.try_into()?,
             )),
@@ -65,7 +71,7 @@ impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {
 impl From<MerkleProof> for protos::ibc::core::commitment::v1::MerkleProof {
     fn from(value: MerkleProof) -> Self {
         use protos::cosmos::ics23::v1::{
-            commitment_proof::Proof as RawProof, CommitmentProof as RawCommitmentProof,
+            CommitmentProof as RawCommitmentProof, commitment_proof::Proof as RawProof,
         };
 
         match value {

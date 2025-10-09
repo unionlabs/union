@@ -1,13 +1,13 @@
 use ibc_vm_rs::{IbcQuery, IbcResponse, Status};
 use near_primitives_core::hash::CryptoHash;
 use near_sdk::{
+    PanicOnDefault,
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen,
     store::LookupMap,
-    PanicOnDefault,
 };
 #[allow(unused)]
-use near_sdk_contract_tools::{owner::OwnerExternal, Owner};
+use near_sdk_contract_tools::{Owner, owner::OwnerExternal};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_path::MerklePath},
     id::ClientId,
@@ -18,9 +18,9 @@ use unionlabs::{
 };
 
 use crate::{
+    ClientState, ConsensusState,
     merkle::{self, combine_hash, hash_borsh},
     state_proof::RawStateProof,
-    ClientState, ConsensusState,
 };
 
 #[near_bindgen]

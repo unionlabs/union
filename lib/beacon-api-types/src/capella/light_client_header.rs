@@ -2,7 +2,7 @@ use unionlabs::primitives::H256;
 
 use crate::{
     capella::ExecutionPayloadHeader,
-    consts::{floorlog2, EXECUTION_PAYLOAD_GINDEX},
+    consts::{EXECUTION_PAYLOAD_GINDEX, floorlog2},
     phase0::BeaconBlockHeader,
 };
 

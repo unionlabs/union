@@ -3,8 +3,8 @@ use std::fmt::Debug;
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{chain_spec::Mainnet, deneb};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -15,11 +15,10 @@ use unionlabs::{
     primitives::H160,
 };
 use voyager_sdk::{
-    anyhow,
+    ExtensionsExt, anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
-    ExtensionsExt,
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

@@ -59,9 +59,9 @@
 // TITLE.
 
 use cosmwasm_std::{
-    coins,
+    Addr, BankMsg, Coin, CosmosMsg, Event, coins,
     testing::{message_info, mock_env},
-    wasm_execute, Addr, BankMsg, Coin, CosmosMsg, Event,
+    wasm_execute,
 };
 use depolama::StorageExt;
 
@@ -71,7 +71,7 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, StakerExecuteMsg},
     state::AccountingStateStore,
-    tests::test_helper::{mock_init_msg, setup, FEE_RECIPIENT, NATIVE_TOKEN, STAKER_ADDRESS},
+    tests::test_helper::{FEE_RECIPIENT, NATIVE_TOKEN, STAKER_ADDRESS, mock_init_msg, setup},
     types::AccountingState,
 };
 

@@ -13,7 +13,7 @@ use tracing::{field::display as as_display, info};
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::{
-    bundle::{log_bundle, Bundle, NewBundleError, ValidateVersionPathError},
+    bundle::{Bundle, NewBundleError, ValidateVersionPathError, log_bundle},
     init::{self, SetSeedsError},
     logging::LogFormat,
     supervisor::{self, RuntimeError},

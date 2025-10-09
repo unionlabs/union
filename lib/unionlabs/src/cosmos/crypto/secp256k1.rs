@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{encoding::Base64, FixedBytes};
+use crate::primitives::{FixedBytes, encoding::Base64};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PubKey {

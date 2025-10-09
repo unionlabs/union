@@ -103,10 +103,10 @@ pub trait Ssz: Sized {
 use std::{fmt::Debug, iter, num::NonZeroUsize, ops::Div};
 
 use itertools::process_results;
-use typenum::{NonZero, Unsigned, U};
+use typenum::{NonZero, U, Unsigned};
 
 use crate::{
-    decode::{read_offset, sanitize_offset, TryFromIter},
+    decode::{TryFromIter, read_offset, sanitize_offset},
     encode::SszEncoder,
     types::Vector,
 };

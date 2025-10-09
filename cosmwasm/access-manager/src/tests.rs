@@ -1,4 +1,5 @@
 use access_manager_types::{
+    CanCall, HasRole, RoleId, Selector,
     manager::{
         error::AccessManagerError,
         event::{
@@ -7,16 +8,15 @@ use access_manager_types::{
         },
         msg::{ExecuteMsg, QueryMsg},
     },
-    CanCall, HasRole, RoleId, Selector,
 };
-use cosmwasm_std::{testing::message_info, Addr, Response};
+use cosmwasm_std::{Addr, Response, testing::message_info};
 use hex_literal::hex;
 use unionlabs_primitives::H256;
 
 use crate::{
     error::ContractError,
     execute, min_setback, query,
-    tests::utils::{assert_query_result, setup, ACCOUNT_1, ACCOUNT_2, ADMIN, TARGET_1, TARGET_2},
+    tests::utils::{ACCOUNT_1, ACCOUNT_2, ADMIN, TARGET_1, TARGET_2, assert_query_result, setup},
 };
 
 pub mod utils;

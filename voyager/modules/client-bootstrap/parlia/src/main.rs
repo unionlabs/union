@@ -1,26 +1,26 @@
 use alloy::{
     network::AnyNetwork,
     primitives::address,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
     sol,
 };
 use ibc_union_spec::{Duration, Timestamp};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use parlia_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{info, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
     rpc::{
-        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
     },
 };
 

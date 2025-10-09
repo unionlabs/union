@@ -5,9 +5,9 @@ use unionlabs::primitives::Bytes;
 use voyager_sdk::{
     anyhow,
     message::{
+        VoyagerMessage,
         call::{Call, SubmitTx},
         data::IbcDatagram,
-        VoyagerMessage,
     },
     primitives::{ChainId, IbcSpecId},
     serde_json::{self},

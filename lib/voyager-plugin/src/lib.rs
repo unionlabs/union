@@ -3,19 +3,19 @@ use std::{env::VarError, time::Duration};
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use serde::de::DeserializeOwned;
-use tracing::{debug_span, instrument, Instrument};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use tracing::{Instrument, debug_span, instrument};
+use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use unionlabs::ErrorReporter;
 pub use voyager_plugin_protocol as protocol;
-use voyager_plugin_protocol::{worker_server, INVALID_CONFIG_EXIT_CODE};
+use voyager_plugin_protocol::{INVALID_CONFIG_EXIT_CODE, worker_server};
 use voyager_primitives::IbcSpec;
 use voyager_rpc::{
+    ClientBootstrapModuleServer, ClientModuleServer, FinalityModuleServer, Member, PluginServer,
+    ProofModuleServer, StateModuleServer,
     types::{
         ClientBootstrapModuleInfo, ClientModuleInfo, FinalityModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
-    ClientBootstrapModuleServer, ClientModuleServer, FinalityModuleServer, Member, PluginServer,
-    ProofModuleServer, StateModuleServer,
 };
 
 #[allow(async_fn_in_trait)]

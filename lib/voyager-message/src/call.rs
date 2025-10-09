@@ -1,11 +1,11 @@
 use enumorph::Enumorph;
 use macros::model;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_primitives::{ChainId, ClientType, IbcSpecId, Timestamp};
 use voyager_types::RawClientId;
 
-use crate::{data::IbcDatagram, PluginMessage};
+use crate::{PluginMessage, data::IbcDatagram};
 
 #[model]
 #[derive(Enumorph)]

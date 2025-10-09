@@ -3,29 +3,29 @@
 use std::num::ParseIntError;
 
 use ibc_union_spec::{
-    path::{StorePath, IBC_UNION_COSMWASM_COMMITMENT_PREFIX},
     IbcUnion,
+    path::{IBC_UNION_COSMWASM_COMMITMENT_PREFIX, StorePath},
 };
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{error, instrument, warn};
 use unionlabs::{
+    ErrorReporter,
     bounded::BoundedI64,
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     primitives::{Bech32, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{rpc_error, types::ProofModuleInfo, ProofModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, ProofModuleServer, rpc_error, types::ProofModuleInfo},
     types::ProofType,
 };
 

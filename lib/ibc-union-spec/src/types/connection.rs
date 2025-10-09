@@ -92,7 +92,7 @@ impl Borrow<u8> for &ConnectionState {
 pub mod ethabi {
     use std::borrow::Cow;
 
-    use alloy_sol_types::{sol_data::Uint, SolStruct, SolType, SolValue};
+    use alloy_sol_types::{SolStruct, SolType, SolValue, sol_data::Uint};
 
     use super::*;
 

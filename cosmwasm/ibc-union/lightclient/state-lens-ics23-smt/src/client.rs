@@ -4,7 +4,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
-use ibc_union_spec::{path::ConsensusStatePath, Timestamp};
+use ibc_union_spec::{Timestamp, path::ConsensusStatePath};
 use movement_light_client_types::ConsensusState as L2ConsensusState;
 use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::primitives::{
-    encoding::{Base64, HexUnprefixed},
     Bytes, H256,
+    encoding::{Base64, HexUnprefixed},
 };
 
 use crate::crypto::proof::Proof;

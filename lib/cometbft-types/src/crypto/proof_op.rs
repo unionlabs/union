@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::primitives::{encoding::Base64, Bytes};
+use unionlabs::primitives::{Bytes, encoding::Base64};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProofOp {

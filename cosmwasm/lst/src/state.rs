@@ -59,7 +59,7 @@
 // TITLE.
 
 use cosmwasm_std::{Addr, StdError, StdResult};
-use depolama::{value::ValueCodecViaEncoding, KeyCodec, Prefix, RawAddrEncoding, Store};
+use depolama::{KeyCodec, Prefix, RawAddrEncoding, Store, value::ValueCodecViaEncoding};
 use unionlabs_encoding::Bincode;
 use unionlabs_primitives::{ByteArrayExt, Bytes};
 

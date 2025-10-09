@@ -5,7 +5,7 @@ use unionlabs::cosmos::ics23::{
 };
 
 use crate::{
-    ops::{hash_op, hash_op::HashError, length_op, validate_iavl_ops, ValidateIavlOpsError},
+    ops::{ValidateIavlOpsError, hash_op, hash_op::HashError, length_op, validate_iavl_ops},
     proof_specs::{self, IAVL_PROOF_SPEC},
 };
 

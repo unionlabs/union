@@ -8,7 +8,7 @@ use std::{
 };
 
 use hex::ToHex;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{Deserialize, de::DeserializeOwned};
 use ssz::types::{BitList, BitVector, List, Vector};
 use typenum::{NonZero, Unsigned};
 use unionlabs::primitives::{H256, U256};

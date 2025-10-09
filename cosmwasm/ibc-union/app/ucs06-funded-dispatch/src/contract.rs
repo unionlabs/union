@@ -2,18 +2,18 @@ use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    wasm_execute, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg, SubMsgResult, WasmMsg,
+    BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
+    SubMsg, SubMsgResult, WasmMsg, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use frissitheto::UpgradeMsg;
 use unionlabs::primitives::Bytes;
 
 use crate::{
+    ContractError,
     msg::{ExecuteMsg, InitMsg},
     state::{CONFIG, EXECUTING_PARAMS},
     types::{FundedDispatchParameters, StoredFundedDispatchFund, StoredFundedDispatchParameters},
-    ContractError,
 };
 
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
@@ -29,7 +29,9 @@ pub struct MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
-    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+    panic!(
+        "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
+    );
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

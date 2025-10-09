@@ -63,7 +63,7 @@ pub mod generic_array_compat {
 
 #[cfg(feature = "alloy-primitives-compat")]
 pub mod alloy_primitives_compat {
-    use crate::{encoding::Encoding, Bytes, FixedBytes, H160, U256};
+    use crate::{Bytes, FixedBytes, H160, U256, encoding::Encoding};
 
     impl<EBytes: Encoding> TryFrom<Bytes<EBytes>> for alloy_primitives::Address {
         type Error = crate::fixed_bytes::FixedBytesError;
@@ -75,13 +75,13 @@ pub mod alloy_primitives_compat {
 
     impl<E: Encoding> From<alloy_primitives::Address> for Bytes<E> {
         fn from(value: alloy_primitives::Address) -> Self {
-            value.0 .0.into()
+            value.0.0.into()
         }
     }
 
     impl<E: Encoding> From<alloy_primitives::Address> for H160<E> {
         fn from(value: alloy_primitives::Address) -> Self {
-            value.0 .0.into()
+            value.0.0.into()
         }
     }
 
@@ -135,13 +135,13 @@ pub mod alloy_primitives_compat {
 #[cfg(feature = "alloy-sol-types-compat")]
 pub mod alloy_sol_types_compat {
     use alloy_sol_types::{
+        SolType, SolValue, Word,
         abi::token::WordToken,
         private::SolTypeValue,
         sol_data::{ByteCount, SupportedFixedBytes},
-        SolType, SolValue, Word,
     };
 
-    use crate::{encoding::Encoding, Bytes, FixedBytes};
+    use crate::{Bytes, FixedBytes, encoding::Encoding};
 
     impl<E: Encoding> SolValue for Bytes<E> {
         type SolType = <alloy_primitives::Bytes as SolValue>::SolType;

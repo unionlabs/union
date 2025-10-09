@@ -3,8 +3,8 @@
 //! Useful for `cargo flamegraph`.
 
 use ssz::{
-    types::{typenum::U8192, List},
     Ssz,
+    types::{List, typenum::U8192},
 };
 
 fn main() {

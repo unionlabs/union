@@ -10,7 +10,7 @@ use ssz::Ssz;
 use typenum::Unsigned;
 use unionlabs::primitives::H256;
 
-use crate::{error::InvalidMerkleBranch, GENESIS_SLOT};
+use crate::{GENESIS_SLOT, error::InvalidMerkleBranch};
 
 /// Returns the fork version based on the `epoch` and `chain_id`.
 ///

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use alloy_sol_types::SolValue as _;
-use cosmwasm_std::{instantiate2_address, Addr, CanonicalAddr};
+use cosmwasm_std::{Addr, CanonicalAddr, instantiate2_address};
 use hex_literal::hex;
 use unionlabs::{
     ethereum::keccak256,

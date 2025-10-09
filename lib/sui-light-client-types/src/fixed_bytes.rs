@@ -1,7 +1,7 @@
 use core::fmt::Display;
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound};
-use unionlabs_primitives::{encoding::Encoding, Bytes, FixedBytes};
+use unionlabs_primitives::{Bytes, FixedBytes, encoding::Encoding};
 
 #[derive(DebugNoBound, EqNoBound, PartialEqNoBound, CloneNoBound)]
 pub struct SuiFixedBytes<const N: usize, E: Encoding>(pub FixedBytes<N, E>);

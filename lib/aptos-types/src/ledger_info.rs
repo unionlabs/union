@@ -1,14 +1,10 @@
-use macros::model;
-use serde::{Deserialize, Serialize};
+use unionlabs_primitives::{H256, encoding::HexUnprefixed};
 
-use crate::{
-    aptos::{block_info::BlockInfo, signature::AggregateSignature},
-    primitives::{encoding::HexUnprefixed, H256},
-};
+use crate::{block_info::BlockInfo, signature::AggregateSignature};
 
 /// Wrapper to support future upgrades, this is the data being persisted.
-#[model(no_serde)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
@@ -19,7 +15,8 @@ pub enum LedgerInfoWithSignatures {
 /// the `LedgerInfo` element since the validator node doesn't need to know the signatures
 /// again when the client performs a query, those are only there for the client
 /// to be able to verify the state
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct LedgerInfoWithV0 {
     pub ledger_info: LedgerInfo,
@@ -28,11 +25,11 @@ pub struct LedgerInfoWithV0 {
     pub signatures: AggregateSignature,
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct LedgerInfo {
     pub commit_info: BlockInfo,
-
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
     pub consensus_data_hash: H256<HexUnprefixed>,

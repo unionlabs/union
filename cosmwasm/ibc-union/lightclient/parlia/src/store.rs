@@ -1,5 +1,5 @@
 use cosmwasm_std::{StdError, StdResult};
-use depolama::{value::ValueCodecViaEncoding, Bytes, KeyCodec, Prefix, Store};
+use depolama::{Bytes, KeyCodec, Prefix, Store, value::ValueCodecViaEncoding};
 use parlia_types::Valset;
 use unionlabs::encoding::Bincode;
 

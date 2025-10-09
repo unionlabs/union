@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{
     fmt::Debug,
-    num::{NonZeroU32, NonZeroU64, NonZeroU8},
+    num::{NonZeroU8, NonZeroU32, NonZeroU64},
     time::Duration,
 };
 
@@ -16,12 +16,13 @@ use jsonrpsee::{
     rpc_params,
     ws_client::{PingConfig, WsClientBuilder},
 };
-use tracing::{debug, debug_span, instrument, trace, Instrument};
+use tracing::{Instrument, debug, debug_span, instrument, trace};
 use unionlabs::{
+    ErrorReporter,
     bounded::{BoundedI64, BoundedU8},
     option_unwrap,
     primitives::H256,
-    result_unwrap, ErrorReporter,
+    result_unwrap,
 };
 
 use crate::rpc_types::{

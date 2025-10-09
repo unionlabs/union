@@ -2,19 +2,19 @@ use std::{
     collections::BTreeMap,
     future::Future,
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc, Mutex,
+        atomic::{AtomicU32, Ordering},
     },
 };
 
 use either::Either;
-use tracing::{debug, error, info, info_span, trace, Instrument};
+use tracing::{Instrument, debug, error, info, info_span, trace};
 use unionlabs::ErrorReporter;
 
 use crate::{
+    Captures, EnqueueResult, ItemId, Op, Queue, QueueError, QueueMessage,
     filter::{FilterResult, Interest, InterestFilter},
     pass::Pass,
-    Captures, EnqueueResult, ItemId, Op, Queue, QueueError, QueueMessage,
 };
 
 #[derive(Debug, Clone)]

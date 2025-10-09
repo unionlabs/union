@@ -3,10 +3,10 @@ use std::time::Instant;
 use ratatui::{
     crossterm::event::{self, KeyEvent},
     prelude::{
-        symbols, Alignment, Backend, Color, Constraint, Frame, Layout, Line, Modifier, Rect, Span,
-        Style, Terminal, Widget,
+        Alignment, Backend, Color, Constraint, Frame, Layout, Line, Modifier, Rect, Span, Style,
+        Terminal, Widget, symbols,
     },
-    widgets::{block, Block, Gauge, LineGauge, List, ListItem, Paragraph},
+    widgets::{Block, Gauge, LineGauge, List, ListItem, Paragraph, block},
 };
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{self, error::TryRecvError};

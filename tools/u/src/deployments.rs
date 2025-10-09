@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Subcommand;
 use deployments::DEPLOYMENTS;
 use ucs04::UniversalChainId;

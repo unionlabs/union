@@ -3,7 +3,7 @@ use core::str::FromStr;
 use macros::model;
 
 use crate::{
-    errors::{required, MissingField, UnknownEnumVariant},
+    errors::{MissingField, UnknownEnumVariant, required},
     ibc::core::connection::{
         counterparty::{Counterparty, TryFromConnectionCounterpartyError},
         state::State,

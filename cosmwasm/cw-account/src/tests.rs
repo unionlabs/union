@@ -1,6 +1,7 @@
 use cosmwasm_std::{
-    testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    to_json_vec, BankMsg, Order, OwnedDeps,
+    BankMsg, Order, OwnedDeps,
+    testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
+    to_json_vec,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::ChannelId;

@@ -56,7 +56,7 @@ impl Fr {
 
     #[must_use]
     pub fn bytes(&self) -> [u64; 4] {
-        self.0 .0
+        self.0.0
     }
 
     #[must_use]

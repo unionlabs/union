@@ -19,8 +19,8 @@ use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ibc_union_light_client::{
-    spec::{Status, Timestamp},
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::{Status, Timestamp},
 };
 use unionlabs::{
     encoding::{Bincode, DecodeAs, EncodeAs},
@@ -523,12 +523,12 @@ mod tests {
 
     use beacon_api_types::{altair::SyncCommittee, electra};
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
         Addr,
+        testing::{mock_dependencies, mock_env},
     };
     use ethereum_light_client_types::{
-        client_state::InitialSyncCommittee, AccountProof, LightClientUpdateData,
-        SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
+        AccountProof, LightClientUpdateData, SyncCommitteePeriodChangeUpdate,
+        WithinSyncCommitteePeriodUpdate, client_state::InitialSyncCommittee,
     };
     use ethereum_sync_protocol::utils::compute_timestamp_at_slot;
     use hex_literal::hex;

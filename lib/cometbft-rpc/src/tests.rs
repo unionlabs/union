@@ -1,6 +1,6 @@
 use std::{fmt::Debug, path::Path};
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 #[track_caller]
 fn ensure_json<T: DeserializeOwned + PartialEq + Debug>(path: impl AsRef<Path>, t: T) {

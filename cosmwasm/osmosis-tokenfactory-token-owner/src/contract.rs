@@ -1,4 +1,4 @@
-use cosmwasm_std::{entry_point, DepsMut, Empty, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{DepsMut, Empty, Env, MessageInfo, Response, StdResult, entry_point};
 use osmosis_tokenfactory_token_minter::msg::TokenFactoryAdminOperation;
 use token_factory_api::TokenFactoryMsg;
 

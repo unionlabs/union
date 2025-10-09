@@ -1,36 +1,36 @@
 use std::fmt::Debug;
 
-use ibc_union_spec::{path::StorePath, IbcUnion};
+use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
+    core::{RpcResult, async_trait},
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
+    Authenticator, ObjectID, Owner,
     checkpoint_summary::CheckpointContents,
     fixed_bytes::SuiFixedBytes,
     object::{Data, MoveObject, MoveObjectType, ObjectInner, StructTag, TypeTag},
     storage_proof::StorageProof,
     transaction_effects::TransactionEffects,
-    Authenticator, ObjectID, Owner,
 };
 use sui_sdk::{
+    SuiClientBuilder,
     rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions},
     types::{
         base_types::ObjectID as SuiObjectID, effects::TransactionEvents,
         messages_checkpoint::CertifiedCheckpointSummary, object::Object, transaction::Transaction,
     },
-    SuiClientBuilder,
 };
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{types::ProofModuleInfo, ProofModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, ProofModuleServer, types::ProofModuleInfo},
     types::ProofType,
 };
 

@@ -1,4 +1,4 @@
-use super::{Ssz, BYTES_PER_LENGTH_OFFSET, MAX_LENGTH_VALUE};
+use super::{BYTES_PER_LENGTH_OFFSET, MAX_LENGTH_VALUE, Ssz};
 
 /// Allow for encoding an ordered series of distinct or indistinct objects as SSZ bytes.
 ///

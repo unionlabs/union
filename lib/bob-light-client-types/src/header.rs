@@ -2,7 +2,7 @@ use ethereum_light_client_types::{AccountProof, StorageProof};
 use rlp::Encodable;
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{Bytes, H160, H2048, H256, H64, H72, U256},
+    primitives::{Bytes, H64, H72, H160, H256, H2048, U256},
 };
 
 #[derive(Debug, Clone, PartialEq)]

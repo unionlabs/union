@@ -88,7 +88,7 @@ impl Supervisor {
 
     /// Backup the current uniond home directory to the provided path. The location will be "{dir}/data".
     pub fn backup(&self, backup_dir: impl AsRef<Path>) -> Result<(), BackupError> {
-        use fs_extra::dir::{copy, CopyOptions};
+        use fs_extra::dir::{CopyOptions, copy};
         let backup_dir = backup_dir.as_ref();
         info!(target: "unionvisor", "creating backup dir at {}",  as_display(backup_dir.display()));
         create_dir_all(backup_dir)

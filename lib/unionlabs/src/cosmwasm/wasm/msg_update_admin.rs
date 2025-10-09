@@ -17,9 +17,8 @@ pub mod proto {
 
     use super::MsgUpdateAdmin;
     use crate::{
-        impl_proto_via_try_from_into,
+        Msg, impl_proto_via_try_from_into,
         primitives::{Bech32DecodeError, FixedBytesError},
-        Msg,
     };
 
     impl_proto_via_try_from_into!(MsgUpdateAdmin => protos::cosmwasm::wasm::v1::MsgUpdateAdmin);

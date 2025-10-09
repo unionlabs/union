@@ -1,4 +1,4 @@
-use alloy_primitives::{hex, Address, B256};
+use alloy_primitives::{Address, B256, hex};
 use sha3::{Digest, Keccak256};
 
 const PROXY_INITCODE_HASH: [u8; 32] =
@@ -35,8 +35,8 @@ pub fn predict_deterministic_address(deployer: Address, salt: B256) -> Address {
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::{address, bytes, hex, keccak256, U256};
-    use alloy_sol_types::{sol, SolValue};
+    use alloy_primitives::{U256, address, bytes, hex, keccak256};
+    use alloy_sol_types::{SolValue, sol};
 
     sol! {
         #[derive(Debug)]

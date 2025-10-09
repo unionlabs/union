@@ -1,6 +1,6 @@
 use unionlabs_primitives::H256;
 
-use super::{hash_fixed, HASHSIZE, MERKLE_HASH_CHUNK};
+use super::{HASHSIZE, MERKLE_HASH_CHUNK, hash_fixed};
 
 /// Merkleizes bytes and returns the root, using a simple algorithm that does not optimize to avoid
 /// processing or storing padding bytes.

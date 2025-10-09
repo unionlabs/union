@@ -1,6 +1,6 @@
 use poseidon_rs::{Fr, Poseidon};
 
-use crate::{fr_from_little_endian, reverse_byte_order, Byte32};
+use crate::{Byte32, fr_from_little_endian, reverse_byte_order};
 
 pub const HASH_DOMAIN_ELEMS_BASE: usize = 256;
 pub const HASH_DOMAIN_BYTE32: usize = 2 * HASH_DOMAIN_ELEMS_BASE;

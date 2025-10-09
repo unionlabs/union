@@ -86,9 +86,9 @@ pub(crate) fn calculate(
                 && leaf_hash.len() > proof_spec.inner_spec.child_size.inner()
                     // REVIEW: WHy is this >= 32 check here? Taken directly from https://github.com/cosmos/ics23/blob/master/go/proof.go#L140
                     && proof_spec.inner_spec.child_size.inner() >= 32
-                {
-                    return Err(CalculateRootError::InnerOpHashAndSpecMismatch);
-                }
+            {
+                return Err(CalculateRootError::InnerOpHashAndSpecMismatch);
+            }
 
             Ok(leaf_hash)
         })

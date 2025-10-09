@@ -40,6 +40,8 @@ pub enum Error {
     #[error("the quote token must be a valid utf8 denom")]
     InvalidQuoteToken,
 
-    #[error("the order quote token must match the cw20 contract address: quote_token={quote_token} != self")]
+    #[error(
+        "the order quote token must match the cw20 contract address: quote_token={quote_token} != self"
+    )]
     InvalidFill { quote_token: String },
 }

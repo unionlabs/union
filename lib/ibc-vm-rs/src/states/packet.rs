@@ -414,7 +414,10 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                     data,
                     connection_id,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::LatestHeight { height }],
+                &[
+                    IbcResponse::Status { status },
+                    IbcResponse::LatestHeight { height },
+                ],
             ) => {
                 if status != Status::Active {
                     return Err(IbcError::NotActive(client_id, status).into());

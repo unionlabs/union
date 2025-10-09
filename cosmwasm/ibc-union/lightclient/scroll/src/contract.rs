@@ -1,7 +1,7 @@
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, entry_point};
 use ibc_union_light_client::{
-    msg::{InstantiateMsg, QueryMsg},
     IbcClientError,
+    msg::{InstantiateMsg, QueryMsg},
 };
 
 use crate::client::ScrollLightClient;

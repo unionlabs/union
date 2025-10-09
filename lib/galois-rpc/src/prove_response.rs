@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    errors::{required, MissingField},
+    errors::{MissingField, required},
     primitives::{FixedBytesError, H256},
 };
 

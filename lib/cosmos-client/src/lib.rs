@@ -4,18 +4,19 @@
 use std::num::NonZeroU32;
 
 use cometbft_rpc::{
+    JsonRpcError,
     rpc_types::{GrpcAbciQueryError, TxResponse},
     types::code::Code,
-    JsonRpcError,
 };
 use protos::cosmos::base::abci;
 use sha2::Digest;
 use tracing::{debug, info, instrument};
 use unionlabs::{
+    ErrorReporter, Msg, TypeUrl,
     cosmos::{
         auth::base_account::BaseAccount,
         base::abci::gas_info::GasInfo,
-        crypto::{secp256k1, AnyPubKey},
+        crypto::{AnyPubKey, secp256k1},
         tx::{
             auth_info::AuthInfo, mode_info::ModeInfo, sign_doc::SignDoc, signer_info::SignerInfo,
             signing::sign_info::SignMode, tx::Tx, tx_body::TxBody, tx_raw::TxRaw,
@@ -24,9 +25,8 @@ use unionlabs::{
     cosmwasm::wasm::msg_update_instantiate_config::response::MsgUpdateInstantiateConfigResponse,
     encoding::{Decode, EncodeAs, Proto},
     google::protobuf::any::{Any, RawAny, TryFromAnyError},
-    primitives::{encoding::HexUnprefixed, Bech32, H256},
+    primitives::{Bech32, H256, encoding::HexUnprefixed},
     prost::{self, Message},
-    ErrorReporter, Msg, TypeUrl,
 };
 
 use crate::{gas::GasFillerT, rpc::RpcT, wallet::WalletT};
@@ -212,7 +212,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
                             codespace: response.codespace,
                             error_code,
                             log: response.log,
-                        })
+                        });
                     }
                 },
                 Err(source) if i > 5 => {

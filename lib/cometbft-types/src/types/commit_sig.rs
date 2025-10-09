@@ -3,8 +3,8 @@ use unionlabs::{
     errors::UnknownEnumVariant,
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
     primitives::{
-        encoding::{Base64, HexUnprefixed},
         Bytes, FixedBytesError, H160,
+        encoding::{Base64, HexUnprefixed},
     },
 };
 

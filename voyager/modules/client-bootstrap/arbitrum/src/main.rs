@@ -1,26 +1,25 @@
 use alloy::{
     network::AnyNetwork,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
 use arbitrum_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use ibc_union_spec::{ClientId, IbcUnion, Timestamp};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{info, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
-    anyhow, into_value,
+    ExtensionsExt, VoyagerClient, anyhow, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
     rpc::{
-        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
     },
-    ExtensionsExt, VoyagerClient,
 };
 
 #[tokio::main(flavor = "multi_thread")]

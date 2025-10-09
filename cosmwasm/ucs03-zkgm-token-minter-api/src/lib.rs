@@ -4,7 +4,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Event, Uint128};
 use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes, H256};
+use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
 
 pub const EVENT_WRAPPED_TOKEN: &str = "create_wrapped_token";
 pub const EVENT_WRAPPED_TOKEN_ATTR_CHANNEL_ID: &str = "channel_id";

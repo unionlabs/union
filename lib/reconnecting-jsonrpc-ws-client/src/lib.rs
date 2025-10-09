@@ -3,14 +3,14 @@ use std::{fmt::Debug, future::Future, sync::Arc, time::Duration};
 
 use arc_swap::ArcSwapOption;
 use jsonrpsee::core::{
+    DeserializeOwned,
     client::{BatchResponse, ClientT},
     params::BatchRequestBuilder,
     traits::ToRpcParams,
-    DeserializeOwned,
 };
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, debug_span, error, instrument, trace, Instrument};
+use tracing::{Instrument, debug, debug_span, error, instrument, trace};
 
 #[derive(Debug, Clone)]
 pub struct Client {

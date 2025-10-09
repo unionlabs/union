@@ -1,7 +1,7 @@
 use blake2::{Blake2b, Digest as _};
 use unionlabs_primitives::{
-    encoding::{Base58, HexPrefixed},
     Bytes, FixedBytes,
+    encoding::{Base58, HexPrefixed},
 };
 
 use crate::{AccountAddress, ObjectID, ObjectRef, SuiAddress};

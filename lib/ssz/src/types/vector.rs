@@ -9,13 +9,13 @@ use std::{
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 pub use typenum;
-use typenum::{Const, NonZero, ToUInt, Unsigned, U};
+use typenum::{Const, NonZero, ToUInt, U, Unsigned};
 use unionlabs_primitives::H256;
 
 use crate::{
-    decode::TryFromIter, decode_list_of_variable_length_items, sequence_ssz_append,
-    sequence_ssz_bytes_len, tree_hash::TreeHashType, types::tree_hash::vec_tree_hash_root,
-    DecodeError, Ssz,
+    DecodeError, Ssz, decode::TryFromIter, decode_list_of_variable_length_items,
+    sequence_ssz_append, sequence_ssz_bytes_len, tree_hash::TreeHashType,
+    types::tree_hash::vec_tree_hash_root,
 };
 
 /// Emulates a SSZ `Vector` (distinct from a Rust `Vec`).

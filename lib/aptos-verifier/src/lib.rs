@@ -9,6 +9,7 @@ use error::StorageVerificationError;
 use hex_literal::hex;
 use sha3::{Digest, Sha3_256};
 use unionlabs::{
+    BytesBitIterator,
     aptos::{
         account::AccountAddress,
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
@@ -17,7 +18,6 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     primitives::H256,
-    BytesBitIterator,
 };
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;

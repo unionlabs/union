@@ -1,4 +1,4 @@
-use ssz::{decode::DecodeError, Ssz};
+use ssz::{Ssz, decode::DecodeError};
 
 macro_rules! list {
     ($($tt:tt)*) => {
@@ -8,8 +8,8 @@ macro_rules! list {
 
 mod round_trip {
     use ssz::types::{
-        typenum::{U10, U4},
         List,
+        typenum::{U4, U10},
     };
 
     use super::*;

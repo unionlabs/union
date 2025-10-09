@@ -6,8 +6,8 @@ use voyager_primitives::IbcStorePathKey;
 #[cfg(feature = "ethabi")]
 use crate::Packet;
 use crate::{
-    types::{ChannelId, ClientId, ConnectionId},
     Channel, Connection, IbcUnion,
+    types::{ChannelId, ClientId, ConnectionId},
 };
 
 pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];

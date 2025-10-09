@@ -10,35 +10,35 @@ use ethereum_light_client_types::{
     AccountProof, Header, LightClientUpdate, LightClientUpdateData,
     SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
 };
-use futures::{stream, StreamExt, TryStreamExt};
+use futures::{StreamExt, TryStreamExt, stream};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{H160, H256},
-    ErrorReporter,
 };
 use voyager_sdk::{
+    DefaultCmd,
     anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, FetchUpdateHeaders, WaitForTimestamp},
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{PluginServer, types::PluginInfo},
     types::RawClientId,
-    vm::{self, call, defer, now, pass::PassResult, seq, Op, Visit},
-    DefaultCmd,
+    vm::{self, Op, Visit, call, defer, now, pass::PassResult, seq},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};

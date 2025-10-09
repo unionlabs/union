@@ -1,4 +1,4 @@
-use crate::{committee::Committee, ObjectID};
+use crate::{ObjectID, committee::Committee};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(

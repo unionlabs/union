@@ -4,13 +4,12 @@
 
 use core::fmt;
 
-use macros::model;
-
-use crate::aptos::validator_verifier::ValidatorVerifier;
+use crate::validator_verifier::ValidatorVerifier;
 
 /// `EpochState` represents a trusted validator set to validate messages from the specific epoch,
 /// it could be updated with `EpochChangeProof`.
-#[model]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EpochState {
     pub epoch: u64,

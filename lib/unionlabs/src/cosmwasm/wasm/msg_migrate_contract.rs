@@ -2,7 +2,7 @@ use core::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{encoding::Base64, Bech32, Bytes, H256};
+use crate::primitives::{Bech32, Bytes, H256, encoding::Base64};
 
 pub mod response;
 
@@ -21,7 +21,7 @@ pub mod proto {
     use unionlabs_primitives::{Bech32DecodeError, FixedBytesError};
 
     use super::MsgMigrateContract;
-    use crate::{impl_proto_via_try_from_into, Msg};
+    use crate::{Msg, impl_proto_via_try_from_into};
 
     impl_proto_via_try_from_into!(MsgMigrateContract => protos::cosmwasm::wasm::v1::MsgMigrateContract);
 

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use opentelemetry::{global, KeyValue};
+use opentelemetry::{KeyValue, global};
 use opentelemetry_otlp::{MetricExporter, Protocol, WithExportConfig};
 use opentelemetry_sdk::metrics::SdkMeterProvider;
 

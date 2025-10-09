@@ -6,7 +6,7 @@ use crate::{
         inner_op::{InnerOp, TryFromInnerOpError},
         leaf_op::{LeafOp, TryFromLeafOpError},
     },
-    errors::{required, MissingField},
+    errors::{MissingField, required},
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from))]

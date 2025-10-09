@@ -1,18 +1,18 @@
 use std::{fmt::Debug, num::ParseIntError};
 
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace};
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{json_rpc_error_to_error_object, types::FinalityModuleInfo, FinalityModuleServer},
+    rpc::{FinalityModuleServer, json_rpc_error_to_error_object, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

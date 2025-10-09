@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use cosmwasm_std::{
-    from_json,
-    testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    to_json_binary, Addr, ContractResult, DecCoin, Decimal, DistributionMsg, Event, Order,
-    OwnedDeps, QuerierResult, Response, Uint128, WasmQuery,
+    Addr, ContractResult, DecCoin, Decimal, DistributionMsg, Event, Order, OwnedDeps,
+    QuerierResult, Response, Uint128, WasmQuery, from_json,
+    testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
+    to_json_binary,
 };
 use cw_account::{
     state::{Admins, Zkgm},
@@ -13,7 +13,7 @@ use cw_account::{
 use depolama::StorageExt;
 use lst::{msg::ConfigResponse, types::ProtocolFeeConfig};
 
-use crate::{execute, msg::ExecuteMsg, withdraw_all_rewards, ContractError};
+use crate::{ContractError, execute, msg::ExecuteMsg, withdraw_all_rewards};
 
 const ADMIN: &str = "admin";
 const LST_HUB: &str = "lst-hub";

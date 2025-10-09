@@ -14,16 +14,16 @@ use futures_util::TryStreamExt;
 use itertools::Itertools;
 use opentelemetry::KeyValue;
 use schemars::JsonSchema;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sqlx::{
-    postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, Executor, PgPool, Postgres,
-    Transaction,
+    Either, Executor, PgPool, Postgres, Transaction, postgres::PgPoolOptions, prelude::FromRow,
+    types::Json,
 };
-use tracing::{debug, debug_span, error, info, info_span, instrument, trace, warn, Instrument};
+use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace, warn};
 use voyager_vm::{
+    BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
     filter::{FilterResult, Interest, InterestFilter},
     pass::{Pass, PassResult},
-    BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
 };
 
 use crate::metrics::Metrics;

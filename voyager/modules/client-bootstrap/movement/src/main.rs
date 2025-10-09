@@ -1,8 +1,8 @@
 use aptos_move_ibc::ibc::ClientExt;
 use aptos_rest_client::error::RestError;
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
     Extensions,
+    core::{RpcResult, async_trait},
 };
 use movement_light_client_types::{ClientState, ConsensusState};
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

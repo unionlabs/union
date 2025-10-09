@@ -7,12 +7,12 @@ use core::{
 
 use macros::model;
 use serde::{
-    de::{self, Unexpected},
     Deserialize, Serialize,
+    de::{self, Unexpected},
 };
 
 use crate::{
-    bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
+    bounded::{BoundedI32, BoundedI64, BoundedI128, BoundedIntError},
     constants::metric::NANOS_PER_SECOND,
     macros::result_try,
 };

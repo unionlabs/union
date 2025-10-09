@@ -3,30 +3,29 @@ use std::cmp::Ordering;
 
 use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{query::PacketsByBatchHash, IbcUnion};
+use ibc_union_spec::{IbcUnion, query::PacketsByBatchHash};
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_sdk::{
+    VoyagerClient,
     message::{
+        PluginMessage, VoyagerMessage,
         call::FetchUpdateHeaders,
         data::{EventProvableHeight, IbcDatagram},
-        PluginMessage, VoyagerMessage,
     },
     primitives::{ChainId, QueryHeight},
     rpc::MISSING_STATE_ERROR_CODE,
     types::RawClientId,
-    vm::{data, now, promise, Op},
-    VoyagerClient,
+    vm::{Op, data, now, promise},
 };
 
 use crate::{
-    call,
-    callback::{make_msgs, MakeBatchTransaction, MakeIbcMessagesFromUpdate, ModuleCallback},
+    IbcSpecExt, Module, call,
+    callback::{MakeBatchTransaction, MakeIbcMessagesFromUpdate, ModuleCallback, make_msgs},
     data::{BatchableEvent, EventClassic, EventUnion},
-    IbcSpecExt, Module,
 };
 
 #[model]

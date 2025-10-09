@@ -6,8 +6,8 @@ use std::{
     os::unix::ffi::{OsStrExt, OsStringExt},
 };
 
-use anyhow::{bail, Result};
-use base64::{prelude::BASE64_STANDARD, Engine};
+use anyhow::{Result, bail};
+use base64::{Engine, prelude::BASE64_STANDARD};
 use clap::{Args, Subcommand, ValueEnum};
 use unionlabs::encoding::{
     Bcs, Bincode, Decode, DecodeAs, Encode, EncodeAs, Encoding, EthAbi, Json, Proto, Ssz,

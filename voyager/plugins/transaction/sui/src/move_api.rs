@@ -1,23 +1,23 @@
 use ibc_union_spec::{
+    ChannelId,
     datagram::{
         MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
         MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv, MsgUpdateClient,
     },
-    ChannelId,
 };
 use move_core_types_sui::{ident_str, identifier::IdentStr};
 use sui_sdk::{
+    SuiClient,
     rpc_types::{SuiObjectDataOptions, SuiTypeTag},
     types::{
+        Identifier, TypeTag,
         base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         transaction::{Argument, CallArg, Command, ObjectArg, TransactionKind},
-        Identifier, TypeTag,
     },
-    SuiClient,
 };
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes, H256};
+use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
 use voyager_sdk::anyhow;
 
 use crate::{Module, ModuleInfo};

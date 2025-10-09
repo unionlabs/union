@@ -1,7 +1,7 @@
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -11,11 +11,10 @@ use sui_light_client_types::{
 };
 use tracing::instrument;
 use unionlabs::{
-    self,
+    self, ErrorReporter,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, ensure_null,
@@ -24,7 +23,7 @@ use voyager_sdk::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

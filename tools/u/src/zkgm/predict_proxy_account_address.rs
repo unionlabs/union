@@ -1,8 +1,8 @@
 use alloy::hex;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::Args;
 use cosmwasm_std::instantiate2_address;
-use deployments::{Deployment, DEPLOYMENTS};
+use deployments::{DEPLOYMENTS, Deployment};
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm::contract::proxy_account_salt;
 use unionlabs::primitives::{Bech32, Bytes, U256};

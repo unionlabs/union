@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cosmwasm::wasm::access_config::AccessConfig,
-    primitives::{encoding::Base64, Bech32, Bytes},
+    primitives::{Bech32, Bytes, encoding::Base64},
 };
 
 pub mod response;
@@ -22,7 +22,7 @@ pub mod proto {
     use unionlabs_primitives::Bech32DecodeError;
 
     use super::MsgStoreCode;
-    use crate::{cosmwasm::wasm::access_config, impl_proto_via_try_from_into, Msg};
+    use crate::{Msg, cosmwasm::wasm::access_config, impl_proto_via_try_from_into};
 
     impl_proto_via_try_from_into!(MsgStoreCode => protos::cosmwasm::wasm::v1::MsgStoreCode);
 

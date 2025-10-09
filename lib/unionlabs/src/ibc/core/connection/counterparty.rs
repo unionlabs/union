@@ -3,7 +3,7 @@ use core::str::FromStr;
 use macros::model;
 
 use crate::{
-    errors::{required, MissingField},
+    errors::{MissingField, required},
     ibc::core::commitment::merkle_prefix::MerklePrefix,
     id::{ClientId, ConnectionId, ParsePrefixedIdError},
 };

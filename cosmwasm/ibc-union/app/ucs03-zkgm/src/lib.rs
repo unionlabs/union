@@ -1,4 +1,4 @@
-use alloy_primitives::{ruint::ParseError, U256};
+use alloy_primitives::{U256, ruint::ParseError};
 use cosmwasm_std::{Instantiate2AddressError, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
@@ -59,13 +59,9 @@ pub enum ContractError {
     InvalidReceiver,
     #[error("sender must be a valid address")]
     InvalidSender,
-    #[error(
-        "the receiver can't be validated, make sure the bech prefix matches the current chain"
-    )]
+    #[error("the receiver can't be validated, make sure the bech prefix matches the current chain")]
     UnableToValidateReceiver,
-    #[error(
-        "the receiver can't be validated, make sure the bech prefix matches the current chain"
-    )]
+    #[error("the receiver can't be validated, make sure the bech prefix matches the current chain")]
     UnableToValidateMarketMaker,
     #[error("the sender can't be validated, make sure the bech prefix matches the current chain")]
     UnableToValidateSender,
@@ -100,7 +96,9 @@ pub enum ContractError {
     AsyncCallUnsupported,
     #[error("an error happened while calling the destination contract: {error}")]
     CallError { error: String },
-    #[error("channel path is full and can't be updated, too many hops? path: {path}, next_hop_index: {next_hop_index}")]
+    #[error(
+        "channel path is full and can't be updated, too many hops? path: {path}, next_hop_index: {next_hop_index}"
+    )]
     ChannelPathIsFull { path: U256, next_hop_index: usize },
     #[error("invalid asset origin path: actual={actual}, expected={expected}")]
     InvalidAssetOrigin { actual: U256, expected: U256 },
@@ -148,8 +146,12 @@ pub enum ContractError {
     Instantiate2(#[from] Instantiate2AddressError),
     #[error("validator must be a valid address")]
     InvalidValidator,
-    #[error("the validator address can't be validated, make sure the bech prefix matches the current chain")]
+    #[error(
+        "the validator address can't be validated, make sure the bech prefix matches the current chain"
+    )]
     UnableToValidateValidator,
-    #[error("you tried to transfer a token that was not previously bridged using the image of the metadata")]
+    #[error(
+        "you tried to transfer a token that was not previously bridged using the image of the metadata"
+    )]
     WrappedTokenNotDeployed,
 }

@@ -7,41 +7,40 @@ use alloy::{
     providers::{DynProvider, Provider, ProviderBuilder},
 };
 use base_light_client_types::{
-    header::{L2Header, OutputRootProof},
     ClientState, Header,
+    header::{L2Header, OutputRootProof},
 };
 use call::FetchL2Update;
 use ethereum_light_client_types::{AccountProof, StorageProof};
-use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
+use ibc_union_spec::{ClientId, IbcUnion, path::ClientStatePath};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
+    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
-    primitives::{encoding::HexPrefixed, ByteArrayExt, H160, H256, U256},
-    ErrorReporter,
+    primitives::{ByteArrayExt, H160, H256, U256, encoding::HexPrefixed},
 };
 use voyager_sdk::{
-    anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     hook::UpdateHook,
     into_value,
     message::{
+        PluginMessage, VoyagerMessage,
         call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
         callback::AggregateSubmitTxFromOrderedHeaders,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
-        PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{PluginServer, types::PluginInfo},
     types::RawClientId,
-    vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit},
-    DefaultCmd, ExtensionsExt, VoyagerClient,
+    vm::{BoxDynError, Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -151,12 +150,14 @@ impl Module {
             .l1_provider
             .get_proof(
                 self.l1_dispute_game_factory_proxy.into(),
-                vec![base_verifier::compute_game_slot(
-                    self.dispute_game_factory_dispute_game_list_slot,
-                    game_index,
-                )
-                .to_be_bytes()
-                .into()],
+                vec![
+                    base_verifier::compute_game_slot(
+                        self.dispute_game_factory_dispute_game_list_slot,
+                        game_index,
+                    )
+                    .to_be_bytes()
+                    .into(),
+                ],
             )
             .block_id(height.into())
             .await

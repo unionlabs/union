@@ -1,20 +1,20 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
-    entry_point, from_json, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, CosmosMsg,
-    Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Response, StdResult, Uint128,
+    Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest,
+    Response, StdResult, Uint128, entry_point, from_json, to_json_binary, wasm_execute,
 };
 use ibc_union_spec::ChannelId;
 use prost::Message;
 use protos::osmosis::tokenfactory::v1beta1::MsgSetDenomMetadata;
 use token_factory_api::{BurnTokensMsg, MintTokensMsg, TokenFactoryMsg, TokenFactoryQuery};
 use ucs03_zkgm_token_minter_api::{
-    encode_metadata, new_wrapped_token_event, ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg,
-    MetadataResponse, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg, WrappedTokenKind,
-    WrappedTokenMsg,
+    ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse,
+    QueryMsg, TokenMinterInitMsg, WrappedTokenKind, WrappedTokenMsg, encode_metadata,
+    new_wrapped_token_event,
 };
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{encoding::Base58, H256},
+    primitives::{H256, encoding::Base58},
     prost::Name,
 };
 
@@ -22,7 +22,7 @@ pub const DEFAULT_DECIMALS: u8 = 6;
 pub const CONSTANT_IMPLEMENTATION: &[u8] = b"tokenfactory";
 
 use crate::{
-    bank_types::{new_proto_metadata, DenomMetadataResponse},
+    bank_types::{DenomMetadataResponse, new_proto_metadata},
     error::Error,
     msg::{ExecuteMsg, OsmosisTokenMinterInitializer, TokenFactoryAdminOperation},
     state::{OPERATOR, TOKEN_OWNERS, ZKGM_ADDR},
@@ -454,8 +454,8 @@ fn calculate_salt_v2(
 mod tests {
     use alloy::hex;
     use cosmwasm_std::{
-        testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
         Addr, Empty, OwnedDeps,
+        testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
     };
     use ucs03_zkgm_token_minter_api::Metadata;
 

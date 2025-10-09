@@ -1,5 +1,5 @@
 use cosmwasm_std::Addr;
-use depolama::{value::ValueCodecViaEncoding, Prefix, RawAddrEncoding, Store};
+use depolama::{Prefix, RawAddrEncoding, Store, value::ValueCodecViaEncoding};
 use unionlabs_encoding::Bincode;
 
 /// ```solidity
