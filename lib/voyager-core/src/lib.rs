@@ -1388,7 +1388,7 @@ pub mod api {
 
             let listener = tokio::net::TcpListener::bind(laddr).await.unwrap();
 
-            axum::serve(listener, app)
+            axum::serve(listener, app).await.expect("error serving api")
         });
 
         queue_rx
