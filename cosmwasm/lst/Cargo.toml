@@ -41,5 +41,6 @@ library  = []
 schemars = ["dep:schemars", "dep:cosmwasm-schema"]
 
 [[bin]]
+doc               = false
 name              = "schema"
 required-features = ["schemars"]

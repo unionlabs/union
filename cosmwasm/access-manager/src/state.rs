@@ -154,7 +154,7 @@ impl ValueCodecViaEncoding for Schedules {
 }
 
 /// Used to identify operations that are currently being executed via
-/// [`ExecuteMsg::Execute`][crate::msg::ExecuteMsg::Execute]. This should be transient storage when
+/// [`ExecuteMsg::Execute`][access_manager_types::manager::msg::ExecuteMsg::Execute]. This should be transient storage when
 /// supported by `CosmWasm`.
 ///
 /// ```solidity

@@ -5,6 +5,8 @@ use voyager_primitives::{ChainId, IbcSpecId};
 use voyager_types::RawClientId;
 
 use crate::PluginMessage;
+#[cfg(doc)]
+use crate::{call::SubmitTx, data::OrderedHeaders};
 
 #[model]
 #[derive(Enumorph)]

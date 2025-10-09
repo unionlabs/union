@@ -64,6 +64,7 @@ builds:
       - 'packages.*.voyager'
       - 'packages.*.voyager-modules'
       - 'packages.*.voyager-modules-plugins-names'
+      - 'packages.*.rust-docs'
     branch: main
   # build x86_64 on all branches
   - include:
@@ -113,4 +114,5 @@ builds:
       - 'packages.*.voyager'
       - 'packages.*.voyager-modules'
       - 'packages.*.voyager-modules-plugins-names'
+      - 'packages.*.rust-docs'
 enableGithubOrgAccessTokens: true

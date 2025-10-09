@@ -158,12 +158,13 @@ impl PendingBatch {
 }
 
 /// Initial state of a batch. Only one batch is pending at a time (see
-/// [`crate::state::PENDING_BATCH_ID`].
+/// [`crate::state::CurrentPendingBatch`]).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, bincode::Encode, bincode::Decode)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct PendingBatch {
     /// The ID of this batch.
     pub batch_id: BatchId,
+
     /// Total amount of the LST to be burned in this batch
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
@@ -175,6 +176,7 @@ pub struct PendingBatch {
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint64"))]
     pub unstake_requests_count: u64,
+
     /// The earliest timestamp at which the batch can be submitted.
     ///
     /// This will be `creation_time + batch_period`.
@@ -210,6 +212,7 @@ pub struct SubmittedBatch {
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint64"))]
     pub receive_time: u64,
+
     /// The amount of native tokens that should be received after unstaking.
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
@@ -232,6 +235,7 @@ pub struct ReceivedBatch {
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint64"))]
     pub unstake_requests_count: u64,
+
     /// The amount of native tokens received after unbonding.
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
@@ -242,6 +246,7 @@ pub struct ReceivedBatch {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct BatchExpectedAmount {
     pub batch_id: BatchId,
+
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
     pub expected_native_amount: u128,
@@ -292,6 +297,7 @@ pub struct AccountingState {
     #[serde(with = "::serde_utils::string")]
     #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint128"))]
     pub total_bonded_native_tokens: u128,
+
     /// The total issuance of the LST, also known as the "total shares".
     ///
     /// Note that this is *not* the same as the total supply of the LST contract, but rather the
@@ -318,6 +324,7 @@ pub struct PendingOwner {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct UnstakeRequestKey {
     pub batch_id: BatchId,
+
     /// The hash of the staker of the associated [`UnstakeRequest`].
     ///
     /// This is `sha256(bytes(staker))`.

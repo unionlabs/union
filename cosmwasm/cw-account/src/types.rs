@@ -5,6 +5,9 @@ use ibc_union_spec::ChannelId;
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::U256;
 
+#[cfg(doc)]
+use crate::msg::{ExecuteMsg, InitMsg};
+
 #[derive(
     Serialize,
     Deserialize,

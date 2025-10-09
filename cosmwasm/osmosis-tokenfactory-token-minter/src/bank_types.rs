@@ -63,7 +63,7 @@ pub struct DenomMetadataResponse {
 /// 2. The `denom_units` need to have an entry with `0` exponent.
 /// 3. The exponents have to be sorted in ascending order.
 ///
-/// For the full rules: https://github.com/cosmos/cosmos-sdk/blob/f5600147e5b4720bd553f1e0ca091c22d127317f/x/bank/types/metadata.go#L18
+/// For the full rules: <https://github.com/cosmos/cosmos-sdk/blob/f5600147e5b4720bd553f1e0ca091c22d127317f/x/bank/types/metadata.go#L18>
 pub fn new_proto_metadata(
     denom: String,
     metadata: Metadata,
