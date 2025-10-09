@@ -135,6 +135,12 @@ If your own node isn't set up to accept RPC request, you can send them to anothe
 
 :::
 
+:::node
+
+Using `--gas auto`, to create a validator is not supported. Please manually provide gas and fees when creating a validator. You can use the fee market module to query the current gas price.
+
+:::
+
 ## Epoch Staking & Validator Set Updates
 
 Union uses [Epoch Staking](/architecture/cometbls/#epoch-based-validator-rotation) to perform validator set updates. This means that the validator set is only updated once per epoch. 
