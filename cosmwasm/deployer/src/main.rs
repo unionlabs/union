@@ -14,6 +14,7 @@ use cosmos_client::{
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
 };
+use cosmos_signer::CosmosSigner;
 use cosmwasm_std::{Addr, Uint256};
 use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
@@ -39,7 +40,6 @@ use unionlabs::{
     },
     google::protobuf::any::Any,
     primitives::{Bech32, Bytes, H256, U256},
-    signer::CosmosSigner,
 };
 
 #[derive(clap::Parser)]

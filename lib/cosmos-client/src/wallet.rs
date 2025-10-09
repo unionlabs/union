@@ -1,7 +1,5 @@
-use unionlabs::{
-    primitives::{Bech32, FixedBytes, H160, H256, H512},
-    signer::CosmosSigner,
-};
+use cosmos_signer::CosmosSigner;
+use unionlabs::primitives::{Bech32, FixedBytes, H160, H256, H512};
 
 pub trait WalletT {
     fn address(&self) -> Bech32<H160>;

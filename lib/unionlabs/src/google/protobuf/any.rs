@@ -1,6 +1,5 @@
 use core::fmt::Debug;
 
-use frame_support_procedural::DebugNoBound;
 use macros::model;
 use prost::Message;
 use serde::{Deserialize, Serialize};
@@ -176,7 +175,7 @@ where
 //     const TYPE_URL: &'static str = "/google.protobuf.Any";
 // }
 
-#[derive(DebugNoBound, thiserror::Error)]
+#[derive(macros::Debug, thiserror::Error)]
 pub enum TryFromAnyError<T: Decode<Proto, Error: core::error::Error> + TypeUrl> {
     // TODO: Extract this out into a struct such that it can be reused
     #[error(

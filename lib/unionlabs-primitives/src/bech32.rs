@@ -1,4 +1,4 @@
-use core::{convert::Infallible, fmt, marker::PhantomData, str::FromStr};
+use core::{convert::Infallible, fmt, str::FromStr};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize, de};
@@ -116,6 +116,8 @@ where
     where
         D: serde::Deserializer<'de>,
     {
+        use core::marker::PhantomData;
+
         struct Bech32Visitor<Data, Hrp>(PhantomData<fn() -> (Data, Hrp)>);
 
         impl<'de, Data, Hrp> de::Visitor<'de> for Bech32Visitor<Data, Hrp>

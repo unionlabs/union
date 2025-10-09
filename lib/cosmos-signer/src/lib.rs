@@ -5,9 +5,7 @@ use bip32::{
     secp256k1::{ecdsa, ecdsa::Signature, schnorr::signature::Signer},
 };
 use ripemd::Digest;
-use unionlabs_primitives::{FixedBytes, H160};
-
-use crate::primitives::{Bech32, H256};
+use unionlabs_primitives::{Bech32, FixedBytes, H160, H256};
 
 /// A simple wrapper around a cosmos signer (ECDSA), easily representable as a bech32 string.
 #[derive(Debug, Clone)]
