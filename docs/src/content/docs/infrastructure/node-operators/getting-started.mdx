@@ -214,6 +214,12 @@ If your own node isn't set up to accept RPC request, you can send them to anothe
 
 :::
 
+:::node
+
+Using `--gas auto`, to create a validator is not supported. Please manually provide gas and fees when creating a validator. You can use the fee market module to query the current gas price.
+
+:::
+
 ## Systemd Service
 
 We recommend running `uniond` as a systemd service. Create a file in `/etc/systemd/system` called `uniond.service`. Make sure to replace $USER with your username.
