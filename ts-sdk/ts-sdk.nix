@@ -2,33 +2,25 @@ _: {
   perSystem =
     {
       pkgs,
-      pkgsUnstable,
-      lib,
+      buildPnpmPackage,
       self',
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit pkgs lib;
-      };
-      deps = with pkgsUnstable; [
-        python3
-        stdenv.cc
-        pkg-config
-        nodePackages_latest.nodejs
-        pnpm_10
-      ];
-      pnpm = pkgs.pnpm_10;
+      hash = "sha256-8fBgRR9gTZRsImkeRxVkzADjQb3DH7+KSi+MMvNdI00=";
     in
     {
       packages = {
         ts-sdk = buildPnpmPackage {
-          inherit pnpm;
+          inherit hash;
           packageJsonPath = ./package.json;
-          extraSrcs = [ ../ts-sdk ];
-          pnpmWorkspaces = [ "@unionlabs/sdk" ];
-          hash = "sha256-0gGO6QZYH2kCG2O5QsvwGEz3GRXQLvXfwk0fwSLNQoA=";
+          pnpmWorkspaces = [
+            "@unionlabs/sdk"
+          ];
+          extraSrcs = [
+            ../ts-sdk
+          ];
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -37,11 +29,30 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk/* $out
+            cp -r ./ts-sdk/dist/* $out
           '';
           checkPhase = ''
             pnpm --filter=@unionlabs/sdk check
             pnpm --filter=@unionlabs/sdk test
+          '';
+        };
+        ts-sdk-docs = buildPnpmPackage {
+          inherit hash;
+          packageJsonPath = ./package.json;
+          pnpmWorkspaces = [
+            "@unionlabs/sdk"
+          ];
+          extraSrcs = [
+            ../ts-sdk
+          ];
+          buildPhase = ''
+            runHook preBuild
+            pnpm --filter=@unionlabs/sdk docgen
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r ./ts-sdk/docs/* $out
           '';
         };
       };
@@ -52,7 +63,7 @@ _: {
             name = "publish-ts-sdk";
             text = ''
               cd ${self'.packages.ts-sdk}/
-              ${pnpm}/bin/pnpm publish --access='public'
+              pnpm publish --access='public'
             '';
           };
         };
@@ -60,7 +71,6 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "ts-sdk-fetch-schema";
-            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd ts-sdk/

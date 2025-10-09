@@ -94,12 +94,12 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
 BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
-export const runIbcChecksForever = Effect.gen(function*(_) {
+export const runIbcChecksForever = Effect.gen(function*() {
   const { config } = yield* Config
 
   const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
 
-  const effectToRepeat = Effect.gen(function*(_) {
+  const effectToRepeat = Effect.gen(function*() {
     yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
 
     yield* checkPackets(

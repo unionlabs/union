@@ -32,15 +32,14 @@ export const generateSalt = (rpcType: RpcType) =>
     const len = (rpcType === "aptos" ? 14 : 32) - CHKSUM_LEN
     const saltBytes = new Uint8Array(len)
     if (globalThis.crypto instanceof Crypto) {
-      try {
-        globalThis.crypto.getRandomValues(saltBytes)
-      } catch (cause) {
-        return yield* new CryptoError({ cause })
-      }
+      yield* Effect.try({
+        try: () => globalThis.crypto.getRandomValues(saltBytes),
+        catch: (cause) => new CryptoError({ cause }),
+      })
     } else {
       return yield* new CryptoError({ cause: new Error("Crypto API not supported.") })
     }
-    const crc = crc32(saltBytes).toString(16)
+    const crc = crc32(saltBytes as Buffer<ArrayBufferLike>).toString(16)
     const paddedCrc = Str.padStart(7, "0")(crc)
     const crcBytes = fromHex(`0x${paddedCrc}`, "bytes")
     const concatenated = new Uint8Array([...saltBytes, ...crcBytes])
@@ -54,11 +53,11 @@ export const generateSalt = (rpcType: RpcType) =>
  */
 export const verifySalt = (hex: `0x${string}`): Effect.Effect<boolean> =>
   Effect.sync(() => {
-    const decoded: Uint8Array<ArrayBuffer> = fromHex(hex, "bytes")
+    const decoded = fromHex(hex, "bytes")
     const delim = decoded.length - CHKSUM_LEN
     const salt = decoded.subarray(0, delim)
     const crc = decoded.subarray(delim, decoded.length)
-    const computed = crc32(salt)
+    const computed = crc32(salt as Buffer<ArrayBufferLike>)
     return computed === fromBytes(crc, "number")
   })
 

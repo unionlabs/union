@@ -265,6 +265,8 @@
 
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
           pkgsGoUnstable = import inputs.nixpkgs-go-unstable { inherit system; };
+          pnpm = pkgsUnstable.pnpm_10;
+          nodejs = pkgsUnstable.nodejs-slim_24;
         in
         {
           _module = {
@@ -421,6 +423,11 @@
                 ]
               );
 
+              buildPnpmPackage = import ./tools/typescript/buildPnpmPackage.nix {
+                inherit pnpm nodejs;
+                pkgs = pkgsUnstable;
+              };
+
               ensureAtRepositoryRoot = ''
                 # If the current directory contains flake.nix, then we are at the repository root
                 if [[ -f flake.nix ]]
@@ -520,7 +527,10 @@
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
             buildInputs =
-              [ rust.toolchains.dev ]
+              [
+                rust.toolchains.dev
+                nodejs
+              ]
               ++ (with pkgs; [
                 clang
                 cargo-llvm-cov
@@ -547,7 +557,6 @@
                 procs
                 graphviz
                 emmet-language-server
-                nodePackages_latest.nodejs
                 nodePackages_latest.graphqurl
                 nodePackages_latest.svelte-language-server
                 nodePackages_latest."@astrojs/language-server"

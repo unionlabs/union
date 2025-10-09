@@ -18,19 +18,24 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/yargs": "^17.0.33",
     "ts-node": "^10.9.1",
-    "vitest": "^3.0.8"
+    "graphql": "^16.0.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vite": "catalog:"
   },
   "dependencies": {
-    "@cosmjs/cosmwasm-stargate": "^0.33.1",
-    "@effect/platform": "0.84.6",
+    "@cosmjs/cosmwasm-stargate": "catalog:",
+    "@cosmjs/stargate": "catalog:",
+    "@cosmjs/proto-signing": "catalog:",
+    "@effect/platform": "catalog:",
     "@unionlabs/sdk": "workspace:*",
     "@unionlabs/sdk-cosmos": "workspace:*",
     "@unionlabs/sdk-evm": "workspace:*",
     "better-sqlite3": "^11.9.1",
     "consola": "^3.4.0",
-    "effect": "3.16.3",
+    "effect": "catalog:",
     "graphql-request": "^7.1.2",
-    "viem": "^2.22.11",
+    "viem": "catalog:",
     "yargs": "^17.7.2"
   }
 }

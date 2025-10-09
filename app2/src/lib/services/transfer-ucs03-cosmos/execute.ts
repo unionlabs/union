@@ -1,9 +1,9 @@
 import { getCosmWasmClient } from "$lib/services/cosmos/clients"
 import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors"
 import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer"
-import type { CosmosWalletId } from "$lib/wallet/cosmos"
+import { isValidBech32ContractAddress } from "$lib/utils"
+import { isValidBech32Address } from "$lib/utils/format"
 import type { ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
-import { isValidBech32Address, isValidBech32ContractAddress } from "@unionlabs/client"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 

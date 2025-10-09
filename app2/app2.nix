@@ -4,16 +4,13 @@ _: {
       pkgs,
       pkgsUnstable,
       ensureAtRepositoryRoot,
-      lib,
       gitShortRev,
       lastModified,
       lastModifiedDate,
+      buildPnpmPackage,
       ...
     }:
     let
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit pkgs lib;
-      };
       deps = with pkgsUnstable; [
         python3
         stdenv.cc
@@ -35,12 +32,11 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../app2
-            ../typescript-sdk
             ../ts-sdk
             ../ts-sdk-evm
             ../ts-sdk-cosmos
           ];
-          hash = "sha256-+eBL34sxYBIt2SiiLeSbn93zBN/JqGDJSaKY+3DpSos=";
+          hash = "sha256-VkzzXZr7WNTSE8pBOcLLd9vZThjFqsSJaEKwb7bi4PY=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
@@ -48,11 +44,9 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-evm"
             "@unionlabs/sdk-cosmos"
-            "@unionlabs/client"
           ];
           buildPhase = ''
             runHook preBuild
-
             export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
             export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
             export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"

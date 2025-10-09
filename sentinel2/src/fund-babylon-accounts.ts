@@ -67,7 +67,7 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
   })
 
 export const fundBabylonAccounts = Effect.repeat(
-  Effect.gen(function*(_) {
+  Effect.gen(function*() {
     yield* Effect.log("Funding babylon accounts loop started")
     let config = (yield* Config).config
     if (config.isLocal) {

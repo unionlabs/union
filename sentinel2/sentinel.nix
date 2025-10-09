@@ -108,26 +108,19 @@ in
       pkgs,
       pkgsUnstable,
       ensureAtRepositoryRoot,
-      lib,
+      buildPnpmPackage,
       ...
     }:
     let
       deps = with pkgsUnstable; [
-        python3
-        pkg-config
         sqlite
-        nodejs_20
-        nodePackages_latest."patch-package"
       ];
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit lib pkgs;
-      };
     in
     {
       packages = {
         sentinel2 = buildPnpmPackage {
           packageJsonPath = ./package.json;
-          hash = "sha256-mfPIaW8WQ+lN4H6EKIdT99fgzyq8D64njFY7udoFJaE=";
+          hash = "sha256-2894Wpx9xSNckonH7EKxRtZqtkWtMsoo5oskfBstTSA=";
           extraSrcs = [
             ../sentinel2
             ../ts-sdk
@@ -148,8 +141,6 @@ in
             python3
             pkg-config
             sqlite
-            nodejs_20
-            nodePackages_latest."patch-package"
           ];
           buildInputs = [
             pkgs.bashInteractive
@@ -165,29 +156,29 @@ in
             # pnpm rebuild better-sqlite3 --build-from-source
           '';
           installPhase = ''
-                        mkdir -p $out/lib
-                        cp -r ./sentinel2/build/* $out/lib
+            mkdir -p $out
+            cp -r ./sentinel2/build/* $out
 
-                        # 2) Copy node_modules (with rebuilt better-sqlite3)
-                        rm -rf $out/lib/node_modules
-                        cp -r node_modules $out/lib/node_modules
+            # 2) Copy node_modules (with rebuilt better-sqlite3)
+            # rm -rf $out/lib/node_modules
+            # cp -r node_modules $out/lib/node_modules
 
-                        # 3) Copy package.json
-                        cp package.json $out/lib
+            # 3) Copy package.json
+            # cp package.json $out/lib
 
-                        # 4) Create a Bash wrapper in $out/bin
-                        mkdir -p $out/bin
+            # 4) Create a Bash wrapper in $out/bin
+            # mkdir -p $out/bin
 
-                        # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
-                        cat <<EOF > $out/bin/sentinel2
-            #!${pkgs.bashInteractive}/bin/bash
-            export PATH=${pkgs.nodejs_20}/bin:\$PATH
-            cd "$out/lib"
-            export NODE_PATH="$out/lib/node_modules"
-            EOF
+            # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
+            # cat <<EOF > $out/bin/sentinel2
+            # #!${pkgs.bashInteractive}/bin/bash
+            # export PATH=${pkgsUnstable.nodejs_24}/bin:\$PATH
+            # cd "$out/lib"
+            # export NODE_PATH="$out/lib/node_modules"
+            # EOF
 
-                        echo 'exec '"${pkgs.nodejs_20}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
-                        chmod +x $out/bin/sentinel2
+            # echo 'exec '"${pkgsUnstable.nodejs_24}/bin/node"' esm/sentinel2.js "$@"' >> $out/bin/sentinel2
+            # chmod +x $out/bin/sentinel2
           '';
 
           doDist = false;

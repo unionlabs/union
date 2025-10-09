@@ -1,5 +1,4 @@
 import { runFork, runPromise, runSync } from "$lib/runtime"
-import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
 import { fetchCosmosBalance, type FetchCosmosBalanceError } from "$lib/services/cosmos/balances"
 import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
 import type { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
@@ -72,7 +71,6 @@ const boundedFibonacci$: (maxDelta: number) => Stream.Stream<number> = maxDelta 
 export type BalancesStoreError =
   | FetchEvmBalanceError
   | FetchCosmosBalanceError
-  | FetchAptosBalanceError
 
 export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
@@ -151,15 +149,6 @@ export class BalancesStore {
           tokenAddress: denom,
           walletAddress: AddressEvmCanonical.make(address),
         })),
-      Match.when(
-        { chain: { rpc_type: "aptos" } },
-        ({ chain, address, denom }) =>
-          fetchAptosBalance({
-            chain,
-            tokenAddress: denom,
-            walletAddress: address,
-          }),
-      ),
       Match.when(
         { chain: { rpc_type: "cosmos" } },
         ({ chain, address, denom }) =>

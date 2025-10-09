@@ -16,7 +16,8 @@ import { ConfigProvider, Effect, Layer, Option, pipe } from "effect"
 import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 
-const packetHash = $derived(PacketHash.make(page.params.packet_hash))
+// TODO: enforce param presence at type level
+const packetHash = $derived(PacketHash.make(page.params.packet_hash!))
 
 // GraphQL config for development endpoint
 const QlpConfigProvider = Layer.setConfigProvider(
@@ -66,24 +67,23 @@ const unbondData = $derived(pipe(
           }
         }
       `),
-      variables: { packet_hash: packetHash }
+      variables: { packet_hash: packetHash },
     })
-    
+
     const unbonds = result.v2_unbonds as Array<any>
-    
+
     if (unbonds.length === 0) {
       return yield* Effect.fail(new Error("Unstake not found"))
     }
-    
+
     return unbonds[0]
   }),
   Effect.provide(Layer.mergeAll(
     Indexer.Indexer.Default,
-    QlpConfigProvider
+    QlpConfigProvider,
   )),
-  Effect.runPromise
+  Effect.runPromise,
 ))
-
 </script>
 
 <Sections>
@@ -113,112 +113,129 @@ const unbondData = $derived(pipe(
         </div>
       </div>
     {:then unbond}
-      {@const status = unbond.success === true ? "success" : unbond.success === false ? "failure" : "pending"}
-        
-        <div class="p-6">
-          <h1 class="text-2xl font-bold mb-4">Unstake</h1>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Unstake Details -->
-            <div class="space-y-4">
-              <div>
-                <Label>Packet Hash</Label>
-                <div class="font-mono text-sm text-zinc-400 break-all">
-                  {unbond.packet_hash}
+      {@const status = unbond.success === true
+        ? "success"
+        : unbond.success === false
+        ? "failure"
+        : "pending"}
+
+      <div class="p-6">
+        <h1 class="text-2xl font-bold mb-4">Unstake</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Unstake Details -->
+          <div class="space-y-4">
+            <div>
+              <Label>Packet Hash</Label>
+              <div class="font-mono text-sm text-zinc-400 break-all">
+                {unbond.packet_hash}
+              </div>
+            </div>
+
+            <div>
+              <Label>Amount</Label>
+              <!--TODO, check amount type-->
+              {#if unbond.source_chain}
+                <TokenComponent
+                  chain={unbond.source_chain}
+                  denom={unbond.base_token}
+                  amount={BigInt(unbond.base_amount) as TokenRawAmount}
+                  showIcon={true}
+                />
+              {:else}
+                <div class="font-semibold font-mono">
+                  {unbond.base_amount} {unbond.base_token}
                 </div>
+              {/if}
+            </div>
+
+            <div>
+              <Label>Status</Label>
+              <div class="text-sm">
+                <span
+                  class="
+                    inline-flex items-center px-2 py-1 rounded text-xs font-medium {
+                    status === 'success'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
+                    : status === 'failure'
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                    }
+                  "
+                >
+                  {status}
+                </span>
               </div>
-              
-              <div>
-                <Label>Amount</Label>
-                <!--TODO, check amount type-->
-                {#if unbond.source_chain}
-                  <TokenComponent
-                    chain={unbond.source_chain}
-                    denom={unbond.base_token}
-                    amount={BigInt(unbond.base_amount) as TokenRawAmount}
-                    showIcon={true}
-                  />
-                {:else}
-                  <div class="font-semibold font-mono">
-                    {unbond.base_amount} {unbond.base_token}
-                  </div>
-                {/if}
-              </div>
-              
-              <div>
-                <Label>Status</Label>
-                <div class="text-sm">
-                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium {
-                    status === 'success' 
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
-                      : status === 'failure'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                  }">
-                    {status}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <Label>Timestamp</Label>
-                {#if unbond.unbond_send_timestamp}
-                  <div class="text-sm text-zinc-400">
-                    {(() => {
+            </div>
+            <div>
+              <Label>Timestamp</Label>
+              {#if unbond.unbond_send_timestamp}
+                <div class="text-sm text-zinc-400">
+                  {
+                    (() => {
                       try {
                         const date = new Date(unbond.unbond_send_timestamp)
-                        return isNaN(date.getTime()) ? "Invalid date" : date.toLocaleString()
+                        return isNaN(date.getTime())
+                          ? "Invalid date"
+                          : date.toLocaleString()
                       } catch {
                         return "Invalid date"
                       }
-                    })()}
-                  </div>
-                {:else}
-                  <div class="text-sm text-zinc-500">No timestamp</div>
-                {/if}
-              </div>
-            </div>
-            
-            <!-- Chain Information -->
-            <div class="space-y-4">
-              <div>
-                <Label>Source Chain</Label>
-                {#if unbond.source_chain}
-                  <ChainComponent chain={unbond.source_chain} withToken={unbond.base_token} />
-                {:else}
-                  <div class="text-sm text-zinc-500">{unbond.source_universal_chain_id}</div>
-                {/if}
-              </div>
-              
-              <div>
-                <Label>Destination Chain</Label>
-                {#if unbond.destination_chain}
-                  <ChainComponent chain={unbond.destination_chain} withToken={unbond.base_token} />
-                {:else}
-                  <div class="text-sm text-zinc-500">{unbond.destination_universal_chain_id}</div>
-                {/if}
-              </div>
-              
-              <div>
-                <Label>Sender</Label>
-                <div class="font-mono text-sm text-zinc-400 break-all">
-                  {unbond.sender_display}
+                    })()
+                  }
                 </div>
+              {:else}
+                <div class="text-sm text-zinc-500">No timestamp</div>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Chain Information -->
+          <div class="space-y-4">
+            <div>
+              <Label>Source Chain</Label>
+              {#if unbond.source_chain}
+                <ChainComponent
+                  chain={unbond.source_chain}
+                  withToken={unbond.base_token}
+                />
+              {:else}
+                <div class="text-sm text-zinc-500">{unbond.source_universal_chain_id}</div>
+              {/if}
+            </div>
+
+            <div>
+              <Label>Destination Chain</Label>
+              {#if unbond.destination_chain}
+                <ChainComponent
+                  chain={unbond.destination_chain}
+                  withToken={unbond.base_token}
+                />
+              {:else}
+                <div class="text-sm text-zinc-500">{unbond.destination_universal_chain_id}</div>
+              {/if}
+            </div>
+
+            <div>
+              <Label>Sender</Label>
+              <div class="font-mono text-sm text-zinc-400 break-all">
+                {unbond.sender_display}
               </div>
             </div>
           </div>
         </div>
-        
-        <!-- Raw Data Section -->
-        <details class="group border-t border-zinc-800">
-          <summary class="flex cursor-pointer items-center justify-between px-6 py-4 text-sm text-zinc-400 hover:text-zinc-200">
-            <span class="font-medium">Raw Unstake Data</span>
-            <span class="transition-transform group-open:rotate-180">↓</span>
-          </summary>
-          <div class="px-6 pb-6">
-            <JsonPreview value={unbond} />
-          </div>
-        </details>
-        
+      </div>
+
+      <!-- Raw Data Section -->
+      <details class="group border-t border-zinc-800">
+        <summary class="flex cursor-pointer items-center justify-between px-6 py-4 text-sm text-zinc-400 hover:text-zinc-200">
+          <span class="font-medium">Raw Unstake Data</span>
+          <span class="transition-transform group-open:rotate-180">↓</span>
+        </summary>
+        <div class="px-6 pb-6">
+          <JsonPreview value={unbond} />
+        </div>
+      </details>
     {:catch error}
       <div class="p-6">
         <ErrorComponent {error} />

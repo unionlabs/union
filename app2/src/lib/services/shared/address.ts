@@ -1,8 +1,7 @@
-import { runSync } from "$lib/runtime"
 import { AddressValidationError } from "$lib/services/shared"
-import { bech32AddressToHex } from "@unionlabs/client"
-import { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
-import { Effect, Option, pipe, Schema } from "effect"
+import { isValidBech32Address } from "$lib/utils/format"
+import { Ucs05 } from "@unionlabs/sdk"
+import { Effect } from "effect"
 import { getAddress, isHex } from "viem"
 
 export const deriveReceiverEffect = (input: string) =>
@@ -41,17 +40,23 @@ export const deriveReceiverEffect = (input: string) =>
       })
     }
 
-    return yield* Effect.try({
-      try: () => {
-        const hexAddress = bech32AddressToHex({ address: trimmed })
-        return getAddress(hexAddress)
-      },
-      catch: err =>
-        new AddressValidationError({
-          input: trimmed,
-          cause: err,
-        }),
-    })
+    if (isValidBech32Address(trimmed)) {
+      return yield* Effect.try({
+        try: () => Ucs05.anyDisplayToCanonical(Ucs05.CosmosDisplay.make({ address: trimmed })),
+        catch: err =>
+          new AddressValidationError({
+            input: trimmed,
+            cause: err,
+          }),
+      })
+    }
+
+    return yield* Effect.fail(
+      new AddressValidationError({
+        input: trimmed,
+        cause: new Error("could not derive address"),
+      }),
+    )
   })
 
 export function isHexMovement(

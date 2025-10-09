@@ -1,12 +1,109 @@
 packages:
-  - 'app2'
-  - 'ceremony'
-  - 'docs'
-  - 'sentinel2'
-  - 'site'
-  - 'ts-sdk'
-  - 'ts-sdk-cosmos'
-  - 'ts-sdk-evm'
-  - 'typescript-sdk'
-  - 'zkgm-dev'
-  - 'ts-sdk-sui'
+  - app2
+  - ceremony
+  - docs
+  - sentinel2
+  - site
+  - ts-sdk
+  - ts-sdk-cosmos
+  - ts-sdk-evm
+  - zkgm-dev
+  - ts-sdk-sui
+
+allowUnusedPatches: true
+
+autoInstallPeers: false
+
+catalog:
+  '@babel/cli': ^7.28.3
+  '@babel/core': ^7.28.4
+  '@babel/plugin-transform-export-namespace-from': ^7.27.1
+  '@babel/plugin-transform-modules-commonjs': ^7.27.1
+  '@changesets/cli': ^2.29.5
+  '@cosmjs/cosmwasm-stargate': 0.33.1
+  '@cosmjs/math': 0.33.1
+  '@cosmjs/proto-signing': 0.33.1
+  '@cosmjs/stargate': 0.33.1
+  '@cosmjs/tendermint-rpc': 0.33.1
+  '@effect/build-utils': ^0.8.9
+  '@effect/docgen': 0.5.2
+  '@effect/experimental': ^0.55.0
+  '@effect/language-service': ^0.41.0
+  '@effect/platform': ^0.91.1
+  '@effect/typeclass': 0.36.0
+  '@effect/vitest': ^0.25.1
+  '@types/node': ^24.5.2
+  babel-plugin-annotate-pure-calls: ^0.5.0
+  dpdm: ^3.14.0
+  effect: ~3.17.14
+  glob: ^11.0.3
+  madge: ^8.0.0
+  react: ^18.3.1
+  starknet: ^7.6.4
+  tstyche: ^4.3.0
+  tsx: ^4.19.4
+  typescript: ~5.9.3
+  viem: ^2.33.3
+  vite: ^6.1.1
+  vitest: ^3.2.4
+
+catalogMode: strict
+
+catalogs:
+  peer:
+    '@effect/experimental': ^0.55
+    '@effect/platform': ^0.91
+    effect: ^3.17
+    viem: ^2
+  svelte:
+    '@sveltejs/adapter-static': ^3.0.8
+    '@sveltejs/kit': ^2.21.3
+    '@sveltejs/vite-plugin-svelte': ^5.1.0
+    '@testing-library/svelte': ^5.2.4
+    eslint-plugin-svelte: ^3.5.1
+    svelte: ^5.33.18
+    svelte-check: ^4.2.1
+
+engineStrict: true
+
+minimumReleaseAge: 2880
+
+overrides:
+  '@cosmjs/math': 0.33.1
+  ansi-regex: <6.2.1
+  ansi-styles: <6.2.2
+  backslash: <0.2.1
+  chalk: <5.6.1
+  chalk-template: <1.1.1
+  color-convert: <3.1.1
+  color-name: <2.0.1
+  color-string: <2.1.1
+  debug: <4.4.2
+  error-ex: <1.3.3
+  has-ansi: <6.0.1
+  is-arrayish: <0.3.3
+  simple-swizzle: <0.2.3
+  slice-ansi: <7.1.1
+  strip-ansi: <7.1.1
+  supports-color: <10.2.1
+  supports-hyperlinks: <4.1.1
+  viem: 2.33.3
+  wrap-ansi: <9.0.1
+
+patchedDependencies:
+  '@cosmjs/amino@0.33.1': patches/@cosmjs__amino@0.33.1.patch
+  '@cosmjs/stargate': patches/@cosmjs__stargate.patch
+  '@cosmjs/tendermint-rpc@0.33.1': patches/@cosmjs__tendermint-rpc@0.33.1.patch
+  '@effect/docgen': patches/@effect__docgen.patch
+
+peerDependencyRules:
+  allowedVersions:
+    graphiql-explorer@0.9.0>graphql: '*'
+    graphiql-explorer@0.9.0>react: '*'
+    graphiql-explorer@0.9.0>react-dom: '*'
+
+resolvePeersFromWorkspaceRoot: false
+
+sharedWorkspaceLockfile: true
+
+strictPeerDependencies: true

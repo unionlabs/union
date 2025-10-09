@@ -1,8 +1,6 @@
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte"
-import { getPublicClient as getAptosClient } from "$lib/services/aptos/clients"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors"
-import { MoveVector } from "@aptos-labs/ts-sdk"
 import { Ucs03 } from "@unionlabs/sdk"
 import type { Chain, Channel, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Effect, Schedule } from "effect"
@@ -60,36 +58,6 @@ export const getQuoteToken = (
       throw new Error("NOT IMPLEMENTED")
 
       // return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
-    }
-
-    if (destinationChain.rpc_type === "aptos") {
-      const aptosClient = yield* getAptosClient(destinationChain)
-
-      const output = yield* Effect.tryPromise({
-        try: () =>
-          aptosClient.view({
-            payload: {
-              function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
-              typeArguments: [],
-              functionArguments: [
-                0, // path
-                channel.destination_channel_id,
-                MoveVector.U8(base_token),
-              ],
-            },
-          }),
-        catch: error =>
-          new GetQuoteError({ cause: `Failed to predict quote token (Aptos): ${error}` }),
-      }).pipe(Effect.retry(retryPolicy))
-
-      const wrappedAddressHex = output[0]?.toString()
-      if (!wrappedAddressHex) {
-        return yield* Effect.fail(
-          new GetQuoteError({ cause: "Failed to get wrapped address from Aptos" }),
-        )
-      }
-
-      return { type: "NEW_WRAPPED" as const, quote_token: wrappedAddressHex }
     }
 
     return yield* Effect.fail(

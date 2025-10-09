@@ -12,9 +12,6 @@
       "path": "../ts-sdk-cosmos"
     },
     {
-      "path": "../typescript-sdk"
-    },
-    {
       "path": "tsconfig.examples.json"
     }
   ],

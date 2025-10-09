@@ -14,6 +14,7 @@
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.1",
+    "@types/node": "catalog:",
     "autoprefixer": "^10.4.20",
     "svelte": "^5.6.2",
     "svelte-check": "^4.1.1",

@@ -1,15 +1,12 @@
 import { unionMainnet } from "$lib/config/wallets/info"
 import { runSync } from "$lib/runtime"
-import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import {
   KeplrChainInfoFromInternal,
   LeapChainInfoFromInternal,
 } from "$lib/services/cosmos/chain-info/transform"
 import { wallets } from "$lib/stores/wallets.svelte"
-import { bech32AddressToHex } from "@unionlabs/client"
 import { Ucs05 } from "@unionlabs/sdk"
-import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
-import { Effect, Option, pipe } from "effect"
+import { Effect, Option } from "effect"
 import * as S from "effect/Schema"
 
 export const cosmosWalletsInformation = [

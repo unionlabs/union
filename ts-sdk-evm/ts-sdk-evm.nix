@@ -2,19 +2,16 @@ _: {
   perSystem =
     {
       pkgs,
-      lib,
+      buildPnpmPackage,
       ...
     }:
     let
-      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
-        inherit pkgs lib;
-      };
-      pnpm = pkgs.pnpm_10;
+      hash = "sha256-oGq9J3PUuoYl2i1WZjyHXzfa7/SJKNA5apKVKNWV2qc=";
     in
     {
       packages = {
         ts-sdk-evm = buildPnpmPackage {
-          inherit pnpm;
+          inherit hash;
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../ts-sdk
@@ -24,7 +21,6 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-evm"
           ];
-          hash = "sha256-/2HUXozGfMaviwZaBKcUuy9Njq6wh3XVzT4sVbT7Z/8=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -33,11 +29,32 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./ts-sdk-evm/* $out
+            cp -r ./ts-sdk-evm/dist/* $out
           '';
           checkPhase = ''
             pnpm run --filter=@unionlabs/sdk-evm check
             pnpm run --filter=@unionlabs/sdk-evm test
+          '';
+        };
+        ts-sdk-evm-docs = buildPnpmPackage {
+          inherit hash;
+          packageJsonPath = ./package.json;
+          extraSrcs = [
+            ../ts-sdk
+            ../ts-sdk-evm
+          ];
+          pnpmWorkspaces = [
+            "@unionlabs/sdk"
+            "@unionlabs/sdk-evm"
+          ];
+          buildPhase = ''
+            runHook preBuild
+            pnpm --filter=@unionlabs/sdk-evm docgen
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r ./ts-sdk-evm/docs/* $out
           '';
         };
       };

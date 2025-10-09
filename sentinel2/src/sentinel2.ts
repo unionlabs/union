@@ -26,7 +26,7 @@ BigInt["prototype"].toJSON = function() {
 
 export let db: BetterSqlite3Database
 
-const mainEffect = Effect.gen(function*(_) {
+const mainEffect = Effect.gen(function*() {
   const argv = yield* Effect.sync(() =>
     yargs(hideBin(process.argv))
       .option("config", {

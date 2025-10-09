@@ -314,7 +314,7 @@ export class TransferData {
       return Option.some(x)
     }),
     Option.map(Struct.get("tags")),
-    Option.map(A.contains("tokenorder-v2")),
+    Option.map(A.contains<"canonical" | "tokenorder-v2">("tokenorder-v2")),
     Option.map(B.match({
       onTrue: constant(2 as const),
       onFalse: constant(1 as const),

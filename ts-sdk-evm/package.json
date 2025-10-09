@@ -31,17 +31,18 @@
     "build-esm": "tsc -b tsconfig.build.json",
     "check": "tsc -b tsconfig.json",
     "check:circular": "dpdm -T src",
+    "docgen": "docgen",
     "check:examples": "tsc -p tsconfig.examples.json",
     "codegen": "build-utils prepare-v3",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@effect/platform": "^0.84",
-    "@unionlabs/sdk": "workspace:^",
+    "@effect/platform": "catalog:peer",
     "@safe-global/safe-apps-sdk": "^9",
-    "effect": "^3.16",
-    "viem": "^2"
+    "@unionlabs/sdk": "workspace:^",
+    "effect": "catalog:peer",
+    "viem": "catalog:"
   },
   "peerDependenciesMeta": {
     "@safe-global/safe-apps-sdk": {
@@ -49,22 +50,25 @@
     }
   },
   "devDependencies": {
-    "@babel/cli": "^7.27.2",
-    "@babel/core": "^7.27.1",
-    "@babel/plugin-transform-export-namespace-from": "^7.27.1",
-    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
-    "@cosmjs/math": "^0.33.1",
-    "@effect/build-utils": "^0.8.3",
-    "@effect/platform": "0.84.6",
+    "@babel/cli": "catalog:",
+    "@babel/core": "catalog:",
+    "@babel/plugin-transform-export-namespace-from": "catalog:",
+    "@babel/plugin-transform-modules-commonjs": "catalog:",
+    "@cosmjs/math": "catalog:",
+    "@effect/build-utils": "catalog:",
+    "@effect/docgen": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/vitest": "catalog:",
     "@safe-global/safe-apps-sdk": "~9.1.0",
-    "@types/node": "^22.13.1",
+    "@types/node": "catalog:",
     "@unionlabs/sdk": "workspace:^",
-    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "babel-plugin-annotate-pure-calls": "catalog:",
     "dpdm": "^3.14.0",
-    "effect": "3.16.3",
+    "effect": "catalog:",
     "madge": "^8.0.0",
-    "viem": "^2.33.3",
-    "vitest": "^3.0.5"
+    "typescript": "catalog:",
+    "viem": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@scure/base": "1.2.4",

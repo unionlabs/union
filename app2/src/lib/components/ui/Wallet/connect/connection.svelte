@@ -1,17 +1,16 @@
-<script lang="ts">
+<script
+  lang="ts"
+  generics="T extends string"
+>
 import SharpPowerIcon from "$lib/components/icons/SharpPowerIcon.svelte"
-import { dashboard } from "$lib/dashboard/stores/user.svelte"
-import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type EvmWalletId } from "$lib/wallet/evm"
 import { RpcType } from "@unionlabs/sdk/schema"
 import type { State } from "@wagmi/core"
 import { Schema } from "effect"
-import { Option } from "effect"
 import Label from "../../Label.svelte"
 import Truncate from "../../Truncate.svelte"
 
-type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
 type ChainWalletsInformation = ReadonlyArray<{
   id: string
@@ -20,30 +19,32 @@ type ChainWalletsInformation = ReadonlyArray<{
   download: string
 }>
 
+interface Props {
+  chain: T
+  address?: string | undefined
+  connectStatus: ChainConnectStatus
+  chainWalletsInformation: ChainWalletsInformation
+  connectedWalletId?:
+    | (T extends "cosmos" ? CosmosWalletId
+      : T extends "evm" ? EvmWalletId
+      : never)
+    | undefined
+    | null
+  onConnectClick: (walletIdentifier: string) => void | Promise<any>
+  onDisconnectClick: () => void
+  showDivider?: boolean
+}
+
 let {
   chain,
   address,
   connectStatus,
   chainWalletsInformation,
-  connectedWalletId,
+  connectedWalletId = undefined,
   onConnectClick,
   onDisconnectClick,
   showDivider = true,
-} = $props<{
-  chain: Chain
-  address: string | undefined
-  connectStatus: ChainConnectStatus
-  chainWalletsInformation: ChainWalletsInformation
-  connectedWalletId:
-    | (Chain extends "cosmos" ? CosmosWalletId
-      : Chain extends "aptos" ? AptosWalletId
-      : EvmWalletId)
-    | null
-    | undefined
-  onConnectClick: (walletIdentifier: string) => void | Promise<any>
-  onDisconnectClick: () => void
-  showDivider?: boolean
-}>()
+}: Props = $props()
 
 let connectText = $derived(
   connectStatus === "connected" && address && address?.length > 0 ? address : "",
@@ -88,7 +89,7 @@ let connectedWallet = $derived(
     </div>
   {/if}
 
-  {#if connectStatus === "connected" && address?.length > 0}
+  {#if connectStatus === "connected" && connectedWallet && address && address?.length > 0}
     <!-- Wallet Card -->
     <div class="w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4 transition-colors">
       <div class="flex items-center justify-between">
