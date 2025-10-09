@@ -20,7 +20,7 @@ impl AccountAddress {
     /// Returns whether the address is a "special" address. Addresses are considered
     /// special if the first 63 characters of the hex string are zero. In other words,
     /// an address is special if the first 31 bytes are zero and the last byte is
-    /// smaller than than `0b10000` (16). In other words, special is defined as an address
+    /// smaller than `0b10000` (16). In other words, special is defined as an address
     /// that matches the following regex: `^0x0{63}[0-9a-f]$`. In short form this means
     /// the addresses in the range from `0x0` to `0xf` (inclusive) are special.
     ///
