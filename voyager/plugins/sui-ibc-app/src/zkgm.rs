@@ -223,13 +223,13 @@ pub fn acknowledge_packet_call(
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: zkgm_store_initial_seq,
+            id: vault_object_id,
+            initial_shared_version: vault_store_initial_seq,
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
-            id: vault_object_id,
-            initial_shared_version: vault_store_initial_seq,
+            id: module_info.stores[0].into(),
+            initial_shared_version: zkgm_store_initial_seq,
             mutable: true,
         }),
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
@@ -275,6 +275,104 @@ pub fn end_ack_call(
         module_info.latest_address.into(),
         module_info.module_name.clone(),
         ident_str!("end_ack").into(),
+        vec![],
+        arguments,
+    ));
+}
+
+pub fn begin_timeout_call(
+    ptb: &mut ProgrammableTransactionBuilder,
+    module_info: &ModuleInfo,
+    data: MsgPacketTimeout,
+) -> Argument {
+    let arguments = vec![
+        CallArg::Pure(bcs::to_bytes(&data.packet.source_channel_id).unwrap()),
+        CallArg::Pure(bcs::to_bytes(&data.packet.destination_channel_id).unwrap()),
+        CallArg::Pure(bcs::to_bytes(&data.packet.data).unwrap()),
+        CallArg::Pure(bcs::to_bytes(&data.packet.timeout_height).unwrap()),
+        CallArg::Pure(bcs::to_bytes(&data.packet.timeout_timestamp).unwrap()),
+    ]
+    .into_iter()
+    .map(|a| ptb.input(a))
+    .collect::<Result<_, _>>()
+    .unwrap();
+
+    ptb.command(Command::move_call(
+        module_info.latest_address.into(),
+        module_info.module_name.clone(),
+        ident_str!("begin_timeout").into(),
+        vec![],
+        arguments,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn timeout_packet_call(
+    ptb: &mut ProgrammableTransactionBuilder,
+    module: &Module,
+    module_info: &ModuleInfo,
+    zkgm_store_initial_seq: SequenceNumber,
+    vault_object_id: ObjectID,
+    vault_store_initial_seq: SequenceNumber,
+    coin_t: TypeTag,
+    session: Argument,
+) -> Argument {
+    let arguments = vec![
+        CallArg::Object(ObjectArg::SharedObject {
+            id: module.ibc_store.into(),
+            initial_shared_version: module.ibc_store_initial_seq,
+            mutable: true,
+        }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: vault_object_id,
+            initial_shared_version: vault_store_initial_seq,
+            mutable: true,
+        }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].into(),
+            initial_shared_version: zkgm_store_initial_seq,
+            mutable: true,
+        }),
+    ]
+    .into_iter()
+    .map(|a| ptb.input(a).unwrap())
+    .chain(vec![session])
+    .collect();
+
+    ptb.command(Command::move_call(
+        module_info.latest_address.into(),
+        module_info.module_name.clone(),
+        ident_str!("timeout_packet").into(),
+        vec![coin_t],
+        arguments,
+    ))
+}
+
+pub fn end_timeout_call(
+    ptb: &mut ProgrammableTransactionBuilder,
+    module: &Module,
+    module_info: &ModuleInfo,
+    session: Argument,
+    data: MsgPacketTimeout,
+) {
+    let arguments = vec![
+        CallArg::Object(ObjectArg::SharedObject {
+            id: module.ibc_store.into(),
+            initial_shared_version: module.ibc_store_initial_seq,
+            mutable: true,
+        }),
+        (&data.proof.into_vec()).into(),
+        data.proof_height.into(),
+    ]
+    .into_iter()
+    .map(|a| ptb.input(a).unwrap())
+    .chain(vec![session])
+    .collect();
+
+    let _ = ptb.command(Command::move_call(
+        module_info.latest_address.into(),
+        module_info.module_name.clone(),
+        ident_str!("end_timeout").into(),
         vec![],
         arguments,
     ));

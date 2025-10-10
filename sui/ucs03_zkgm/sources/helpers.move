@@ -66,28 +66,22 @@ module zkgm::helper {
     const E_INVALID_HOPS: u64 = 2;
 
     const OP_FORWARD: u8 = 0x00;
-    const OP_MULTIPLEX: u8 = 0x01;
+    const OP_CALL: u8 = 0x01;
     const OP_BATCH: u8 = 0x02;
     const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
-    const OP_STAKE: u8 = 0x04;
-    const OP_UNSTAKE: u8 = 0x05;
-    const OP_WITHDRAW_STAKE: u8 = 0x06;
-    const OP_WITHDRAW_REWARDS: u8 = 0x07;
 
     const FORWARD_SALT_MAGIC: u256 = 0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
     
     public(package) fun is_allowed_batch_instruction(
         opcode: u8
     ): bool {
-        opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
-            || opcode == OP_STAKE || opcode == OP_UNSTAKE
-            || opcode == OP_WITHDRAW_STAKE
+        opcode == OP_CALL || opcode == OP_FUNGIBLE_ASSET_ORDER
     }
 
     public(package) fun is_allowed_forward(
         opcode: u8
     ): bool {        
-        opcode == OP_MULTIPLEX || 
+        opcode == OP_CALL || 
             opcode == OP_BATCH || 
             opcode == OP_FUNGIBLE_ASSET_ORDER
     }
