@@ -38,7 +38,7 @@ hex-literal = { version = "1.0" }
 [features]
 default  = []
 library  = []
-schemars = ["dep:schemars", "dep:cosmwasm-schema"]
+schemars = ["dep:schemars", "dep:cosmwasm-schema", "unionlabs-primitives/schemars"]
 
 [[bin]]
 doc               = false

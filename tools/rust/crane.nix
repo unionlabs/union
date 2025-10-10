@@ -675,8 +675,8 @@
         src = crane.cargoWorkspaceSrc;
 
         # unionvisor is tested individually, and mpc* crates attempt to link to galoisd (and don't have any tests anyways).
-        cargoTestExtraArgs = "--workspace --exclude 'mpc*' --exclude unionvisor --exclude union-test --no-fail-fast";
-        cargoClippyExtraArgs = "--workspace --tests -- -Dwarnings";
+        cargoTestExtraArgs = "--workspace --all-features --exclude 'mpc*' --exclude unionvisor --exclude union-test --no-fail-fast";
+        cargoClippyExtraArgs = "--workspace --tests --all-features -- -Dwarnings";
 
         CARGO_PROFILE = "dev";
         SQLX_OFFLINE = true;
