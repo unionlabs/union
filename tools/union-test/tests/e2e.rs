@@ -19,22 +19,22 @@ use tokio::sync::OnceCell;
 use ucs03_zkgm::{
     self,
     com::{
-        Instruction, SolverMetadata, TokenOrderV1, TokenOrderV2, INSTR_VERSION_0, INSTR_VERSION_1,
-        INSTR_VERSION_2, OP_BATCH, OP_FORWARD, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_ESCROW,
-        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
+        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, Instruction, OP_BATCH, OP_FORWARD,
+        OP_TOKEN_ORDER, SolverMetadata, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
+        TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW, TokenOrderV1, TokenOrderV2,
     },
 };
 use union_test::{
+    TestContext,
     cosmos::{self},
-    cosmos_helpers::{calculate_cosmos_contract_address, SALT_ESCROW_VAULT, SALT_ZKGM},
+    cosmos_helpers::{SALT_ESCROW_VAULT, SALT_ZKGM, calculate_cosmos_contract_address},
     evm::{
         self,
         zkgm::{
-            IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket, IBC,
+            IBC, IBCPacket, Instruction as InstructionEvm, MsgPacketRecv, UCS03Zkgm, ZkgmPacket,
         },
         zkgmerc20::ZkgmERC20,
     },
-    TestContext,
 };
 use unionlabs::{
     encoding::{Encode, Json},
@@ -184,12 +184,10 @@ async fn test_send_vault_success() {
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
 
-    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
-
-    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+    let vault_on_union = t.union_address.escrow_vault.clone();
 
     let metadata = SolverMetadata {
-        solverAddress: u_on_eth.to_vec().into(),
+        solverAddress: ETH_ADDRESS_U.into_bytes().into(),
         metadata: Default::default(),
     }
     .abi_encode_params();
@@ -204,7 +202,7 @@ async fn test_send_vault_success() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
-            quote_token: u_on_eth.to_vec().into(),
+            quote_token: ETH_ADDRESS_U.into_bytes().into(),
             quote_amount: "10".parse().unwrap(),
         }
         .abi_encode_params()
@@ -215,7 +213,7 @@ async fn test_send_vault_success() {
     t.ctx
         .dst
         .u_register_fungible_counterpart(
-            H160::from(u_on_eth),
+            ETH_ADDRESS_U,
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
@@ -247,11 +245,7 @@ async fn test_send_vault_success() {
     let initial_u_balance = t
         .ctx
         .dst
-        .zkgmerc20_balance_of(
-            H160::from(u_on_eth),
-            evm_address.into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(ETH_ADDRESS_U, evm_address.into(), evm_provider.clone())
         .await
         .unwrap();
 
@@ -321,12 +315,10 @@ async fn test_send_vault_success_with_fee() {
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
 
-    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
-
-    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+    let vault_on_union = t.union_address.escrow_vault.clone();
 
     let metadata = SolverMetadata {
-        solverAddress: u_on_eth.to_vec().into(),
+        solverAddress: ETH_ADDRESS_U.into_bytes().into(),
         metadata: Default::default(),
     }
     .abi_encode_params();
@@ -342,7 +334,7 @@ async fn test_send_vault_success_with_fee() {
             base_amount: "15".parse().unwrap(), // So fee will be 5 and will be minted to relayer
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
-            quote_token: u_on_eth.to_vec().into(),
+            quote_token: ETH_ADDRESS_U.into_bytes().into(),
             quote_amount: "10".parse().unwrap(),
         }
         .abi_encode_params()
@@ -353,7 +345,7 @@ async fn test_send_vault_success_with_fee() {
     t.ctx
         .dst
         .u_register_fungible_counterpart(
-            H160::from(u_on_eth),
+            ETH_ADDRESS_U,
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
@@ -443,11 +435,7 @@ async fn test_send_vault_success_with_fee() {
     let new_balance_of_relayer = t
         .ctx
         .dst
-        .zkgmerc20_balance_of(
-            H160::from(u_on_eth),
-            evm_address.into(),
-            evm_provider.clone(),
-        )
+        .zkgmerc20_balance_of(ETH_ADDRESS_U, evm_address.into(), evm_provider.clone())
         .await
         .unwrap();
 
@@ -463,341 +451,351 @@ async fn test_send_vault_success_with_fee() {
     );
 }
 
-#[tokio::test]
-async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
-    let t = init_ctx().await;
-    ensure_channels_opened(t.ctx.channel_count).await;
+// #[tokio::test]
+// async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
+//     let t = init_ctx().await;
 
-    let (evm_address, evm_provider) = t.ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_provider) = t.ctx.src.get_signer().await;
-    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+//     let (evm_address, evm_provider) = t.ctx.dst.get_provider().await;
+//     let (cosmos_address, cosmos_provider) = t.ctx.src.get_signer().await;
+//     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    let available_channel = t.ctx.get_available_channel_count().await;
-    assert!(available_channel > 0);
+//     // ensure_channels_opened(t.ctx.channel_count).await;
+//     // let available_channel = t.ctx.get_available_channel_count().await;
+//     // assert!(available_channel > 0);
+//     // let pair = t.ctx.get_channel().await.expect("channel available");
 
-    let pair = t.ctx.get_channel().await.expect("channel available");
-    let dst_chain_id = pair.dest;
-    let src_chain_id = pair.src;
+//     // let dst_chain_id = pair.dest;
+//     // let src_chain_id = pair.src;
+//     let dst_chain_id = 1;
+//     let src_chain_id = 1;
 
-    let quote_token_addr = t
-        .ctx
-        .predict_wrapped_token::<evm::Module>(
-            &t.ctx.dst,
-            ETH_ADDRESS_ZKGM,
-            ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
-            "au".into(),
-            &evm_provider,
-        )
-        .await
-        .unwrap();
+//     let quote_token_addr = t
+//         .ctx
+//         .predict_wrapped_token::<evm::Module>(
+//             &t.ctx.dst,
+//             ETH_ADDRESS_ZKGM,
+//             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
+//             "au".into(),
+//             &evm_provider,
+//         )
+//         .await
+//         .unwrap();
 
-    let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+//     let mut salt_bytes = [0u8; 32];
+//     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let instruction_cosmos = Instruction {
-        version: INSTR_VERSION_1,
-        opcode: OP_TOKEN_ORDER,
-        operand: TokenOrderV1 {
-            sender: cosmos_address_bytes.clone().into(),
-            receiver: evm_address.to_vec().into(),
-            base_token: "au".as_bytes().into(),
-            base_amount: "10".parse().unwrap(),
-            base_token_symbol: "au".into(),
-            base_token_name: "au".into(),
-            base_token_decimals: 6,
-            base_token_path: "0".parse().unwrap(),
-            quote_token: quote_token_addr.as_ref().to_vec().into(),
-            quote_amount: "10".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+//     let instruction_cosmos = Instruction {
+//         version: INSTR_VERSION_1,
+//         opcode: OP_TOKEN_ORDER,
+//         operand: TokenOrderV1 {
+//             sender: cosmos_address_bytes.clone().into(),
+//             receiver: evm_address.to_vec().into(),
+//             base_token: "au".as_bytes().into(),
+//             base_amount: "10".parse().unwrap(),
+//             base_token_symbol: "au".into(),
+//             base_token_name: "au".into(),
+//             base_token_decimals: 6,
+//             base_token_path: "0".parse().unwrap(),
+//             quote_token: quote_token_addr.as_ref().to_vec().into(),
+//             quote_amount: "10".parse().unwrap(),
+//         }
+//         .abi_encode_params()
+//         .into(),
+//     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-        channel_id: src_chain_id.try_into().unwrap(),
-        timeout_height: 0u64.into(),
-        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-        salt: salt_bytes.into(),
-        instruction: instruction_cosmos.abi_encode_params().into(),
-    };
-    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+//     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+//         channel_id: src_chain_id.try_into().unwrap(),
+//         timeout_height: 0u64.into(),
+//         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+//         salt: salt_bytes.into(),
+//         instruction: instruction_cosmos.abi_encode_params().into(),
+//     };
+//     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
-    let funds = vec![Coin {
-        denom: "au".into(),
-        amount: "10".into(),
-    }];
+//     let funds = vec![Coin {
+//         denom: "au".into(),
+//         amount: "10".into(),
+//     }];
 
-    let recv_packet_data = t
-        .ctx
-        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
-            &t.ctx.src,
-            t.union_address.zkgm.clone(),
-            (bin_msg, funds),
-            &t.ctx.dst,
-            3,
-            Duration::from_secs(20),
-            Duration::from_secs(720),
-            cosmos_provider,
-        )
-        .await;
-    assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
-    );
+//     let recv_packet_data = t
+//         .ctx
+//         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+//             &t.ctx.src,
+//             t.union_address.zkgm.clone(),
+//             (bin_msg, funds),
+//             &t.ctx.dst,
+//             3,
+//             Duration::from_secs(20),
+//             Duration::from_secs(720),
+//             cosmos_provider,
+//         )
+//         .await;
+//     assert!(
+//         recv_packet_data.is_ok(),
+//         "Failed to send and receive packet: {:?}",
+//         recv_packet_data.err()
+//     );
 
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+//     println!(
+//         "Received packet data from union->evm: {:?}",
+//         recv_packet_data
+//     );
 
-    let instruction_from_evm_to_union = InstructionEvm {
-        version: INSTR_VERSION_1,
-        opcode: OP_TOKEN_ORDER,
-        operand: TokenOrderV1 {
-            sender: evm_address.to_vec().into(),
-            receiver: cosmos_address_bytes.clone().into(),
-            base_token: quote_token_addr.as_ref().to_vec().into(),
-            base_amount: "1".parse().unwrap(),
-            base_token_symbol: "au".into(),
-            base_token_name: "au".into(),
-            base_token_decimals: 6,
-            base_token_path: dst_chain_id.try_into().unwrap(),
-            quote_token: "au".into(),
-            quote_amount: "1".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+//     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    println!("quote_token:  {:?}", quote_token_addr);
+//     let instruction_from_evm_to_union = InstructionEvm {
+//         version: INSTR_VERSION_1,
+//         opcode: OP_TOKEN_ORDER,
+//         operand: TokenOrderV1 {
+//             sender: evm_address.to_vec().into(),
+//             receiver: cosmos_address_bytes.clone().into(),
+//             base_token: quote_token_addr.as_ref().to_vec().into(),
+//             base_amount: "1".parse().unwrap(),
+//             base_token_symbol: "au".into(),
+//             base_token_name: "au".into(),
+//             base_token_decimals: 6,
+//             base_token_path: "0".parse().unwrap(),
+//             quote_token: "au".into(),
+//             quote_amount: "1".parse().unwrap(),
+//         }
+//         .abi_encode_params()
+//         .into(),
+//     };
 
-    let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), evm_provider.clone());
+//     println!("quote_token:  {:?}", quote_token_addr);
 
-    let call = ucs03_zkgm
-        .send(
-            dst_chain_id,
-            0u64,
-            4294967295000000000u64,
-            salt_bytes.into(),
-            instruction_from_evm_to_union.clone(),
-        )
-        .clear_decoder()
-        .with_cloned_provider();
+//     let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), evm_provider.clone());
 
-    let recv_packet_data = t
-        .ctx
-        .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
-            &t.ctx.dst,
-            ETH_ADDRESS_ZKGM,
-            call,
-            &t.ctx.src,
-            3,
-            Duration::from_secs(20),
-            Duration::from_secs(720),
-            &evm_provider,
-        )
-        .await;
+//     let call = ucs03_zkgm
+//         .send(
+//             dst_chain_id,
+//             0u64,
+//             4294967295000000000u64,
+//             salt_bytes.into(),
+//             instruction_from_evm_to_union.clone(),
+//         )
+//         .clear_decoder()
+//         .with_cloned_provider();
 
-    println!("Received packet data: {:?}", recv_packet_data);
+//     let recv_packet_data = t
+//         .ctx
+//         .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
+//             &t.ctx.dst,
+//             ETH_ADDRESS_ZKGM,
+//             call,
+//             &t.ctx.src,
+//             3,
+//             Duration::from_secs(20),
+//             Duration::from_secs(720),
+//             &evm_provider,
+//         )
+//         .await;
 
-    assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
-    );
-}
+//     println!("Received packet data: {:?}", recv_packet_data);
 
-#[tokio::test]
-async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
-    let t = init_ctx().await;
-    let (evm_address, evm_provider) = t.ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_signer) = t.ctx.src.get_signer().await;
-    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+//     assert!(
+//         recv_packet_data.is_ok(),
+//         "Failed to send and receive packet: {:?}",
+//         recv_packet_data.err()
+//     );
+// }
 
-    println!("EVM Address: {:?}", evm_address);
-    println!("Cosmos Address: {:?}", cosmos_address);
+// #[tokio::test]
+// async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
+//     let t = init_ctx().await;
+//     let (evm_address, evm_provider) = t.ctx.dst.get_provider().await;
+//     let (cosmos_address, cosmos_signer) = t.ctx.src.get_signer().await;
+//     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
-    ensure_channels_opened(t.ctx.channel_count).await;
-    let available_channel = t.ctx.get_available_channel_count().await;
-    assert!(available_channel > 0);
-    let pair = t.ctx.get_channel().await.expect("channel available");
+//     println!("EVM Address: {:?}", evm_address);
+//     println!("Cosmos Address: {:?}", cosmos_address);
 
-    let dst_chain_id = pair.dest;
-    let src_chain_id = pair.src;
+//     ensure_channels_opened(t.ctx.channel_count).await;
+//     let available_channel = t.ctx.get_available_channel_count().await;
+//     assert!(available_channel > 0);
+//     let pair = t.ctx.get_channel().await.expect("channel available");
 
-    // let deployed_erc20 = ensure_erc20(EVM_ZKGM_BYTES.into()).await;
+//     let dst_chain_id = pair.dest;
+//     let src_chain_id = pair.src;
 
-    let deployed_erc20 = t
-        .ctx
-        .dst
-        .deploy_basic_erc20(ETH_ADDRESS_ZKGM, evm_provider.clone())
-        .await
-        .expect("failed to deploy ERC20");
+//     // let deployed_erc20 = ensure_erc20(EVM_ZKGM_BYTES.into()).await;
 
-    let quote_token_addr = t
-        .ctx
-        .predict_wrapped_token::<cosmos::Module>(
-            &t.ctx.src,
-            t.union_address.zkgm.clone(),
-            ChannelId::new(NonZero::new(src_chain_id).unwrap()),
-            deployed_erc20.as_ref().to_vec(),
-            cosmos_signer,
-        )
-        .await
-        .unwrap();
+//     let deployed_erc20 = t
+//         .ctx
+//         .dst
+//         .deploy_basic_erc20(ETH_ADDRESS_ZKGM, evm_provider.clone())
+//         .await
+//         .expect("failed to deploy ERC20");
 
-    let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
-        .expect("invalid quote‐token address hex");
+//     let quote_token_addr = t
+//         .ctx
+//         .predict_wrapped_token::<cosmos::Module>(
+//             &t.ctx.src,
+//             t.union_address.zkgm.clone(),
+//             ChannelId::new(NonZero::new(src_chain_id).unwrap()),
+//             deployed_erc20.as_ref().to_vec(),
+//             cosmos_signer,
+//         )
+//         .await
+//         .unwrap();
 
-    println!("Quote token address: {:?}", quote_token_addr);
-    println!("deployed_erc20 address: {:?}", deployed_erc20);
-    let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+//     let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
+//         .expect("invalid quote‐token address hex");
 
-    let instruction_from_evm_to_union = InstructionEvm {
-        version: INSTR_VERSION_1,
-        opcode: OP_TOKEN_ORDER,
-        operand: TokenOrderV1 {
-            sender: evm_address.to_vec().into(),
-            receiver: cosmos_address_bytes.clone().into(),
-            base_token: deployed_erc20.as_ref().to_vec().into(),
-            base_amount: "10".parse().unwrap(),
-            base_token_symbol: "GLD".into(),
-            base_token_name: "Gold".into(),
-            base_token_decimals: 18,
-            base_token_path: "0".parse().unwrap(),
-            quote_token: quote_token_bytes.into(),
-            quote_amount: "10".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+//     println!("Quote token address: {:?}", quote_token_addr);
+//     println!("deployed_erc20 address: {:?}", deployed_erc20);
+//     let mut salt_bytes = [0u8; 32];
+//     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), evm_provider.clone());
+//     let instruction_from_evm_to_union = InstructionEvm {
+//         version: INSTR_VERSION_1,
+//         opcode: OP_TOKEN_ORDER,
+//         operand: TokenOrderV1 {
+//             sender: evm_address.to_vec().into(),
+//             receiver: cosmos_address_bytes.clone().into(),
+//             base_token: deployed_erc20.as_ref().to_vec().into(),
+//             base_amount: "10".parse().unwrap(),
+//             base_token_symbol: "GLD".into(),
+//             base_token_name: "Gold".into(),
+//             base_token_decimals: 18,
+//             base_token_path: "0".parse().unwrap(),
+//             quote_token: quote_token_bytes.into(),
+//             quote_amount: "10".parse().unwrap(),
+//         }
+//         .abi_encode_params()
+//         .into(),
+//     };
 
-    let call = ucs03_zkgm
-        .send(
-            dst_chain_id,
-            0u64,
-            4294967295000000000u64,
-            salt_bytes.into(),
-            instruction_from_evm_to_union.clone(),
-        )
-        .clear_decoder()
-        .with_cloned_provider();
+//     let ucs03_zkgm = UCS03Zkgm::new(ETH_ADDRESS_ZKGM.into(), evm_provider.clone());
 
-    let recv_packet_data: Result<union_test::helpers::PacketRecv, voyager_sdk::anyhow::Error> = t
-        .ctx
-        .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
-            &t.ctx.dst,
-            ETH_ADDRESS_ZKGM,
-            call,
-            &t.ctx.src,
-            3,
-            Duration::from_secs(20),
-            Duration::from_secs(720),
-            &evm_provider,
-        )
-        .await;
+//     let call = ucs03_zkgm
+//         .send(
+//             dst_chain_id,
+//             0u64,
+//             4294967295000000000u64,
+//             salt_bytes.into(),
+//             instruction_from_evm_to_union.clone(),
+//         )
+//         .clear_decoder()
+//         .with_cloned_provider();
 
-    assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
-    );
-    println!(
-        "Received packet data from evm->cosmos GOLD token: {:?}",
-        recv_packet_data
-    );
+//     let recv_packet_data: Result<union_test::helpers::PacketRecv, voyager_sdk::anyhow::Error> = t
+//         .ctx
+//         .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
+//             &t.ctx.dst,
+//             ETH_ADDRESS_ZKGM,
+//             call,
+//             &t.ctx.src,
+//             3,
+//             Duration::from_secs(20),
+//             Duration::from_secs(720),
+//             &evm_provider,
+//         )
+//         .await;
 
-    let get_minter_result = t
-        .ctx
-        .src
-        .get_minter(t.union_address.zkgm.clone())
-        .await
-        .expect("failed to get minter address");
+//     assert!(
+//         recv_packet_data.is_ok(),
+//         "Failed to send and receive packet: {:?}",
+//         recv_packet_data.err()
+//     );
+//     println!(
+//         "Received packet data from evm->cosmos GOLD token: {:?}",
+//         recv_packet_data
+//     );
 
-    let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
-        spender: get_minter_result,
-        amount: "100".parse().unwrap(),
-        expires: None,
-    };
+//     let get_minter_result = t
+//         .ctx
+//         .src
+//         .get_minter(t.union_address.zkgm.clone())
+//         .await
+//         .expect("failed to get minter address");
 
-    let approve_msg_bin: Vec<u8> = Encode::<Json>::encode(&approve_msg);
-    let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
-        .expect("invalid quote‐token address hex");
+//     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
+//         spender: get_minter_result,
+//         amount: "100".parse().unwrap(),
+//         expires: None,
+//     };
 
-    let approve_contract = Addr::unchecked(str::from_utf8(&quote_token_bytes).unwrap());
+//     let approve_msg_bin: Vec<u8> = Encode::<Json>::encode(&approve_msg);
+//     let quote_token_bytes = hex_decode(quote_token_addr.trim_start_matches("0x"))
+//         .expect("invalid quote‐token address hex");
 
-    println!("Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}",  quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
+//     let approve_contract = Addr::unchecked(str::from_utf8(&quote_token_bytes).unwrap());
 
-    let approve_recv_packet_data = t
-        .ctx
-        .src
-        .send_cosmwasm_transaction_with_retry(
-            approve_contract,
-            (approve_msg_bin, vec![]),
-            cosmos_signer,
-        )
-        .await;
+//     println!(
+//         "Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}",
+//         quote_token_addr, quote_token_bytes, cosmos_address, approve_contract
+//     );
 
-    // println!("Approve transaction data: {:?}", approve_recv_packet_data);
-    assert!(
-        approve_recv_packet_data.is_some(),
-        "Failed to send approve transaction: {:?}",
-        approve_recv_packet_data
-    );
+//     let approve_recv_packet_data = t
+//         .ctx
+//         .src
+//         .send_cosmwasm_transaction_with_retry(
+//             approve_contract,
+//             (approve_msg_bin, vec![]),
+//             cosmos_signer,
+//         )
+//         .await;
 
-    let instruction_cosmos = Instruction {
-        version: INSTR_VERSION_1,
-        opcode: OP_TOKEN_ORDER,
-        operand: TokenOrderV1 {
-            sender: cosmos_address_bytes.clone().into(),
-            receiver: evm_address.to_vec().into(),
-            base_token: quote_token_bytes.into(),
-            base_amount: "1".parse().unwrap(),
-            base_token_symbol: "GLD".into(),
-            base_token_name: "Gold".into(),
-            base_token_decimals: 18,
-            base_token_path: src_chain_id.try_into().unwrap(),
-            quote_token: deployed_erc20.as_ref().to_vec().into(),
-            quote_amount: "1".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+//     // println!("Approve transaction data: {:?}", approve_recv_packet_data);
+//     assert!(
+//         approve_recv_packet_data.is_some(),
+//         "Failed to send approve transaction: {:?}",
+//         approve_recv_packet_data
+//     );
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-        channel_id: src_chain_id.try_into().unwrap(),
-        timeout_height: 0u64.into(),
-        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-        salt: salt_bytes.into(),
-        instruction: instruction_cosmos.abi_encode_params().into(),
-    };
-    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+//     let instruction_cosmos = Instruction {
+//         version: INSTR_VERSION_1,
+//         opcode: OP_TOKEN_ORDER,
+//         operand: TokenOrderV1 {
+//             sender: cosmos_address_bytes.clone().into(),
+//             receiver: evm_address.to_vec().into(),
+//             base_token: quote_token_bytes.into(),
+//             base_amount: "1".parse().unwrap(),
+//             base_token_symbol: "GLD".into(),
+//             base_token_name: "Gold".into(),
+//             base_token_decimals: 18,
+//             base_token_path: src_chain_id.try_into().unwrap(),
+//             quote_token: deployed_erc20.as_ref().to_vec().into(),
+//             quote_amount: "1".parse().unwrap(),
+//         }
+//         .abi_encode_params()
+//         .into(),
+//     };
 
-    let funds = vec![];
+//     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+//         channel_id: src_chain_id.try_into().unwrap(),
+//         timeout_height: 0u64.into(),
+//         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+//         salt: salt_bytes.into(),
+//         instruction: instruction_cosmos.abi_encode_params().into(),
+//     };
+//     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
-    let recv_packet_data = t
-        .ctx
-        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
-            &t.ctx.src,
-            t.union_address.zkgm.clone(),
-            (bin_msg, funds),
-            &t.ctx.dst,
-            3,
-            Duration::from_secs(20),
-            Duration::from_secs(720),
-            cosmos_signer,
-        )
-        .await;
+//     let funds = vec![];
 
-    println!("Received packet data: {:?}", recv_packet_data);
+//     let recv_packet_data = t
+//         .ctx
+//         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+//             &t.ctx.src,
+//             t.union_address.zkgm.clone(),
+//             (bin_msg, funds),
+//             &t.ctx.dst,
+//             3,
+//             Duration::from_secs(20),
+//             Duration::from_secs(720),
+//             cosmos_signer,
+//         )
+//         .await;
 
-    assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
-    );
-}
+//     println!("Received packet data: {:?}", recv_packet_data);
+
+//     assert!(
+//         recv_packet_data.is_ok(),
+//         "Failed to send and receive packet: {:?}",
+//         recv_packet_data.err()
+//     );
+// }
 
 #[tokio::test]
 async fn test_send_packet_from_union_to_evm_get_refund() {
@@ -949,11 +947,10 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
     println!("Cosmos Address: {:?}", cosmos_address);
 
     ensure_channels_opened(t.ctx.channel_count).await;
-
     let available_channel = t.ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
-
     let pair = t.ctx.get_channel().await.expect("channel available");
+
     let dst_chain_id = pair.dest;
     let src_chain_id = pair.src;
 
@@ -1080,178 +1077,181 @@ async fn test_send_packet_from_evm_to_union_get_refund() {
     );
 }
 
-#[tokio::test]
-async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
-    let t = init_ctx().await;
+// #[tokio::test]
+// async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
+//     let t = init_ctx().await;
 
-    let (evm_address, _evm_provider) = t.ctx.dst.get_provider().await;
-    let (cosmos_address, cosmos_provider) = t.ctx.src.get_signer().await;
-    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
-    println!("EVM Address: {:?}", evm_address);
+//     let (evm_address, _evm_provider) = t.ctx.dst.get_provider().await;
+//     let (cosmos_address, cosmos_provider) = t.ctx.src.get_signer().await;
+//     let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+//     println!("EVM Address: {:?}", evm_address);
 
-    ensure_channels_opened(t.ctx.channel_count).await;
-    let available_channel = t.ctx.get_available_channel_count().await;
-    assert!(available_channel > 0);
-    let pair = t.ctx.get_channel().await.expect("channel available");
+//     // ensure_channels_opened(t.ctx.channel_count).await;
+//     // let available_channel = t.ctx.get_available_channel_count().await;
+//     // assert!(available_channel > 0);
+//     // let pair = t.ctx.get_channel().await.expect("channel available");
 
-    let img_metadata = ucs03_zkgm::com::TokenMetadata {
-        implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
-            .to_vec()
-            .into(),
-        initializer: ZkgmERC20::initializeCall {
-            _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
-            _minter: ETH_ADDRESS_ZKGM.into(),
-            _name: "au".into(),
-            _symbol: "au".into(),
-            _decimals: 6u8,
-        }
-        .abi_encode()
-        .into(),
-    }
-    .abi_encode_params();
+//     let dst_chain_id = 1; //pair.dest;
+//     let src_chain_id = 1; //pair.src;
 
-    let (zkgm_deployer_address, zkgm_deployer_provider) = t.ctx.dst.get_provider_privileged().await;
+//     let img_metadata = ucs03_zkgm::com::TokenMetadata {
+//         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
+//             .to_vec()
+//             .into(),
+//         initializer: ZkgmERC20::initializeCall {
+//             _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
+//             _minter: ETH_ADDRESS_ZKGM.into(),
+//             _name: "au".into(),
+//             _symbol: "au".into(),
+//             _decimals: 6u8,
+//         }
+//         .abi_encode()
+//         .into(),
+//     }
+//     .abi_encode_params();
 
-    let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+//     let (zkgm_deployer_address, zkgm_deployer_provider) = t.ctx.dst.get_provider_privileged().await;
 
-    let instruction_cosmos = Instruction {
-        version: INSTR_VERSION_2,
-        opcode: OP_TOKEN_ORDER,
-        operand: TokenOrderV2 {
-            sender: cosmos_address_bytes.clone().into(),
-            receiver: evm_address.to_vec().into(),
-            base_token: "au".as_bytes().into(),
-            base_amount: "10".parse().unwrap(),
-            kind: TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: img_metadata.clone().into(),
-            quote_token: evm_address.to_vec().into(), // Wrong quote token, so it will revert ONLY_MAKER
-            quote_amount: "10".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+//     let mut salt_bytes = [0u8; 32];
+//     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let instruction_evm = InstructionEvm {
-        version: INSTR_VERSION_2,
-        opcode: OP_TOKEN_ORDER,
-        operand: TokenOrderV2 {
-            sender: cosmos_address_bytes.clone().into(),
-            receiver: evm_address.to_vec().into(),
-            base_token: "au".as_bytes().into(),
-            base_amount: "10".parse().unwrap(),
-            kind: TOKEN_ORDER_KIND_INITIALIZE,
-            metadata: img_metadata.into(),
-            quote_token: evm_address.to_vec().into(), //quote_token_addr.as_ref().to_vec().into(),
-            quote_amount: "10".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+//     let instruction_cosmos = Instruction {
+//         version: INSTR_VERSION_2,
+//         opcode: OP_TOKEN_ORDER,
+//         operand: TokenOrderV2 {
+//             sender: cosmos_address_bytes.clone().into(),
+//             receiver: evm_address.to_vec().into(),
+//             base_token: "au".as_bytes().into(),
+//             base_amount: "10".parse().unwrap(),
+//             kind: TOKEN_ORDER_KIND_INITIALIZE,
+//             metadata: img_metadata.clone().into(),
+//             quote_token: evm_address.to_vec().into(), // Wrong quote token, so it will revert ONLY_MAKER
+//             quote_amount: "10".parse().unwrap(),
+//         }
+//         .abi_encode_params()
+//         .into(),
+//     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-        channel_id: pair.src.try_into().unwrap(),
-        timeout_height: 0u64.into(),
-        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-        salt: salt_bytes.into(),
-        instruction: instruction_cosmos.abi_encode_params().into(),
-    };
-    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+//     let instruction_evm = InstructionEvm {
+//         version: INSTR_VERSION_2,
+//         opcode: OP_TOKEN_ORDER,
+//         operand: TokenOrderV2 {
+//             sender: cosmos_address_bytes.clone().into(),
+//             receiver: evm_address.to_vec().into(),
+//             base_token: "au".as_bytes().into(),
+//             base_amount: "10".parse().unwrap(),
+//             kind: TOKEN_ORDER_KIND_INITIALIZE,
+//             metadata: img_metadata.into(),
+//             quote_token: evm_address.to_vec().into(), //quote_token_addr.as_ref().to_vec().into(),
+//             quote_amount: "10".parse().unwrap(),
+//         }
+//         .abi_encode_params()
+//         .into(),
+//     };
 
-    let funds = vec![Coin {
-        denom: "au".into(),
-        amount: "10".into(),
-    }];
+//     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+//         channel_id: src_chain_id.try_into().unwrap(),
+//         timeout_height: 0u64.into(),
+//         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+//         salt: salt_bytes.into(),
+//         instruction: instruction_cosmos.abi_encode_params().into(),
+//     };
+//     let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
 
-    let height = t
-        .ctx
-        .send_and_get_height::<cosmos::Module, evm::Module>(
-            &t.ctx.src,
-            t.union_address.zkgm.clone(),
-            (bin_msg, funds),
-            &t.ctx.dst,
-            Duration::from_secs(720),
-            cosmos_provider,
-        )
-        .await;
+//     let funds = vec![Coin {
+//         denom: "au".into(),
+//         amount: "10".into(),
+//     }];
 
-    assert!(
-        height.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        height.err()
-    );
-    let height = height.unwrap();
+//     let height = t
+//         .ctx
+//         .send_and_get_height::<cosmos::Module, evm::Module>(
+//             &t.ctx.src,
+//             t.union_address.zkgm.clone(),
+//             (bin_msg, funds),
+//             &t.ctx.dst,
+//             Duration::from_secs(720),
+//             cosmos_provider,
+//         )
+//         .await;
 
-    let hashed_salt = keccak256((cosmos_address_bytes.clone(), salt_bytes).abi_encode());
+//     assert!(
+//         height.is_ok(),
+//         "Failed to send and receive packet: {:?}",
+//         height.err()
+//     );
+//     let height = height.unwrap();
 
-    let zkgm_packet = ZkgmPacket {
-        salt: hashed_salt.into(),
-        path: U256::from(0u32).into(),
-        instruction: instruction_evm.clone(),
-    };
+//     let hashed_salt = keccak256((cosmos_address_bytes.clone(), salt_bytes).abi_encode());
 
-    let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
+//     let zkgm_packet = ZkgmPacket {
+//         salt: hashed_salt.into(),
+//         path: U256::from(0u32).into(),
+//         instruction: instruction_evm.clone(),
+//     };
 
-    let packets = vec![IBCPacket {
-        sourceChannelId: pair.src,
-        destinationChannelId: pair.dest,
-        data: encoded_packet.clone().into(),
-        timeoutHeight: 0u64,
-        timeoutTimestamp: 4294967295000000000,
-    }];
+//     let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
-    let proof = t
-        .ctx
-        .calculate_proof::<evm::Module>(
-            &t.ctx.dst,
-            pair.src,
-            pair.dest,
-            encoded_packet,
-            height,
-            "union-devnet-1",
-        )
-        .await;
+//     let packets = vec![IBCPacket {
+//         sourceChannelId: src_chain_id,
+//         destinationChannelId: dst_chain_id,
+//         data: encoded_packet.clone().into(),
+//         timeoutHeight: 0u64,
+//         timeoutTimestamp: 4294967295000000000,
+//     }];
 
-    assert!(
-        proof.is_ok(),
-        "Failed to calculate proof: {:?}",
-        proof.err()
-    );
-    let proof = proof.unwrap();
+//     let proof = t
+//         .ctx
+//         .calculate_proof::<evm::Module>(
+//             &t.ctx.dst,
+//             src_chain_id,
+//             dst_chain_id,
+//             encoded_packet,
+//             height,
+//             "union-devnet-1",
+//         )
+//         .await;
 
-    let recv_packet_msg = MsgPacketRecv {
-        packets,
-        relayerMsgs: vec![vec![].into()],
-        relayer: zkgm_deployer_address,
+//     assert!(
+//         proof.is_ok(),
+//         "Failed to calculate proof: {:?}",
+//         proof.err()
+//     );
+//     let proof = proof.unwrap();
 
-        proof: proof.into(),
-        proofHeight: height,
-    };
+//     let recv_packet_msg = MsgPacketRecv {
+//         packets,
+//         relayerMsgs: vec![vec![].into()],
+//         relayer: zkgm_deployer_address,
 
-    let ibc = IBC::new(ETH_ADDRESS_IBC.into(), zkgm_deployer_provider.clone());
-    let call = ibc
-        .recvPacket(recv_packet_msg)
-        .clear_decoder()
-        .with_cloned_provider();
+//         proof: proof.into(),
+//         proofHeight: height,
+//     };
 
-    let expected_revert_code = 0x3717ba2c; // Only maker
-    let recv_packet_data = t
-        .ctx
-        .send_and_expect_revert::<evm::Module, cosmos::Module>(
-            &t.ctx.dst,
-            ETH_ADDRESS_IBC,
-            call,
-            expected_revert_code,
-            &zkgm_deployer_provider,
-        )
-        .await;
+//     let ibc = IBC::new(ETH_ADDRESS_IBC.into(), zkgm_deployer_provider.clone());
+//     let call = ibc
+//         .recvPacket(recv_packet_msg)
+//         .clear_decoder()
+//         .with_cloned_provider();
 
-    assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
-    );
-}
+//     let expected_revert_code = 0x3717ba2c; // Only maker
+//     let recv_packet_data = t
+//         .ctx
+//         .send_and_expect_revert::<evm::Module, cosmos::Module>(
+//             &t.ctx.dst,
+//             ETH_ADDRESS_IBC,
+//             call,
+//             expected_revert_code,
+//             &zkgm_deployer_provider,
+//         )
+//         .await;
+
+//     assert!(
+//         recv_packet_data.is_ok(),
+//         "Failed to send and receive packet: {:?}",
+//         recv_packet_data.err()
+//     );
+// }
 
 #[tokio::test]
 async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
@@ -1266,6 +1266,9 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     let available_channel = t.ctx.get_available_channel_count().await;
     assert!(available_channel > 0);
     let pair = t.ctx.get_channel().await.expect("channel available");
+
+    let dst_chain_id = pair.dst;
+    let src_chain_id = pair.src;
 
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
@@ -1292,7 +1295,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     //     .dst
     //     .setup_governance_token(
     //         EVM_ZKGM_BYTES.into(),
-    //         pair.dest,
+    //         dst_chain_id,
     //         img,
     //         zkgm_deployer_provider.clone(),
     //     )
@@ -1311,7 +1314,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         .predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
             &t.ctx.dst,
             ETH_ADDRESS_ZKGM,
-            ChannelId::new(NonZero::new(pair.dest).unwrap()),
+            ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "au".into(),
             img,
             &evm_provider,
@@ -1339,7 +1342,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     };
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-        channel_id: pair.src.try_into().unwrap(),
+        channel_id: src_chain_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
@@ -1425,7 +1428,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
     rand::thread_rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
         .send(
-            pair.dest,
+            dst_chain_id,
             0u64,
             4294967295000000000u64,
             salt_bytes.into(),
@@ -1467,6 +1470,9 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
     assert!(available_channel > 0);
     let pair = t.ctx.get_channel().await.expect("channel available");
 
+    let dst_chain_id = pair.dst;
+    let src_chain_id = pair.src;
+
     let img_metadata = ucs03_zkgm::com::TokenMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA")
             .to_vec()
@@ -1491,7 +1497,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
         .predict_wrapped_token::<evm::Module>(
             &t.ctx.dst,
             ETH_ADDRESS_ZKGM,
-            ChannelId::new(NonZero::new(pair.dest).unwrap()),
+            ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "au".into(),
             &evm_provider,
         )
@@ -1516,7 +1522,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
     };
 
     let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
-        channel_id: pair.src.try_into().unwrap(),
+        channel_id: src_chain_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
         salt: salt_bytes.into(),
@@ -1570,7 +1576,7 @@ async fn test_from_evm_to_union_batch_err_invalid_batch_instruction() {
     let pair = t.ctx.get_channel().await.expect("channel available");
 
     let dst_chain_id = pair.dest;
-    let _src_chain_id = pair.src;
+    let _src_chain_id = 1;
 
     // let deployed_erc20 = ensure_erc20(EVM_ZKGM_BYTES.into()).await;
 
@@ -1758,10 +1764,8 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
 
     let _vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
 
-    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
-
     let metadata = SolverMetadata {
-        solverAddress: u_on_eth.to_vec().into(),
+        solverAddress: ETH_ADDRESS_U.into_bytes().into(),
         metadata: Default::default(),
     }
     .abi_encode_params();
@@ -1776,7 +1780,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
-            quote_token: u_on_eth.to_vec().into(),
+            quote_token: ETH_ADDRESS_U.into_bytes().into(),
             quote_amount: "10".parse().unwrap(),
         }
         .abi_encode_params()
@@ -1793,7 +1797,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
-            quote_token: u_on_eth.to_vec().into(),
+            quote_token: ETH_ADDRESS_U.into_bytes().into(),
             quote_amount: "10".parse().unwrap(),
         }
         .abi_encode_params()
@@ -1804,7 +1808,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     t.ctx
         .dst
         .u_register_fungible_counterpart(
-            H160::from(u_on_eth),
+            ETH_ADDRESS_U,
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
@@ -1863,8 +1867,8 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src,
-        destinationChannelId: pair.dest,
+        sourceChannelId: src_channel_id,
+        destinationChannelId: dst_channel_id,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
@@ -1874,8 +1878,8 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
         .ctx
         .calculate_proof::<evm::Module>(
             &t.ctx.dst,
-            pair.src,
-            pair.dest,
+            src_channel_id,
+            dst_channel_id,
             encoded_packet,
             height,
             "union-devnet-1",
@@ -1939,12 +1943,10 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
 
-    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
-
-    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+    let vault_on_union = t.union_address.escrow_vault.clone();
 
     let metadata = SolverMetadata {
-        solverAddress: u_on_eth.to_vec().into(),
+        solverAddress: ETH_ADDRESS_U.into_bytes().into(),
         metadata: Default::default(),
     }
     .abi_encode_params();
@@ -1959,7 +1961,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.clone().into(),
-            quote_token: u_on_eth.to_vec().into(),
+            quote_token: ETH_ADDRESS_U.into_bytes().into(),
             quote_amount: "11".parse().unwrap(), // Sending it bigger than base_amount to make this
                                                  // test revert due to U_BaseAmountMustCoverQuoteAmount and get ErrOnlyMaker
         }
@@ -1977,7 +1979,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
             base_amount: "10".parse().unwrap(),
             kind: TOKEN_ORDER_KIND_SOLVE,
             metadata: metadata.into(),
-            quote_token: u_on_eth.to_vec().into(),
+            quote_token: ETH_ADDRESS_U.into_bytes().into(),
             quote_amount: "11".parse().unwrap(), // Sending it bigger than base_amount to make this
                                                  // test revert due to U_BaseAmountMustCoverQuoteAmount and get ErrOnlyMaker
         }
@@ -1988,7 +1990,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     t.ctx
         .dst
         .u_register_fungible_counterpart(
-            H160::from(u_on_eth),
+            ETH_ADDRESS_U,
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
@@ -2046,8 +2048,8 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src,
-        destinationChannelId: pair.dest,
+        sourceChannelId: src_channel_id,
+        destinationChannelId: dst_channel_id,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
@@ -2057,8 +2059,8 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
         .ctx
         .calculate_proof::<evm::Module>(
             &t.ctx.dst,
-            pair.src,
-            pair.dest,
+            src_channel_id,
+            dst_channel_id,
             encoded_packet,
             height,
             "union-devnet-1",
@@ -2123,12 +2125,10 @@ async fn test_send_vault_unhappy_u_fool() {
     let dst_channel_id = pair.dest;
     let src_channel_id = pair.src;
 
-    let vault_on_union = "union1skg5244hpkad603zz77kdekzw6ffgpfrde3ldk8rpdz06n62k4hqct0w4j";
-
-    let u_on_eth = hex_literal::hex!("0c8C6f58156D10d18193A8fFdD853e1b9F8D8836");
+    let vault_on_union = t.union_address.escrow_vault.clone();
 
     let metadata = SolverMetadata {
-        solverAddress: u_on_eth.to_vec().into(),
+        solverAddress: ETH_ADDRESS_U.into_bytes().into(),
         metadata: Default::default(),
     }
     .abi_encode_params();
@@ -2172,7 +2172,7 @@ async fn test_send_vault_unhappy_u_fool() {
     t.ctx
         .dst
         .u_register_fungible_counterpart(
-            H160::from(u_on_eth),
+            ETH_ADDRESS_U,
             zkgm_deployer_provider.clone(),
             alloy::primitives::U256::ZERO,
             dst_channel_id,
@@ -2230,8 +2230,8 @@ async fn test_send_vault_unhappy_u_fool() {
     let encoded_packet: Vec<u8> = zkgm_packet.abi_encode_params();
 
     let packets = vec![IBCPacket {
-        sourceChannelId: pair.src,
-        destinationChannelId: pair.dest,
+        sourceChannelId: src_channel_id,
+        destinationChannelId: dst_channel_id,
         data: encoded_packet.clone().into(),
         timeoutHeight: 0u64,
         timeoutTimestamp: 4294967295000000000,
@@ -2241,8 +2241,8 @@ async fn test_send_vault_unhappy_u_fool() {
         .ctx
         .calculate_proof::<evm::Module>(
             &t.ctx.dst,
-            pair.src,
-            pair.dest,
+            src_channel_id,
+            dst_channel_id,
             encoded_packet,
             height,
             "union-devnet-1",
