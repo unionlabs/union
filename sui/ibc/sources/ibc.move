@@ -1453,12 +1453,42 @@ module ibc::ibc {
         );
 
         let packet_hash = commitment::commit_packet(&packet);
-        let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
 
-        assert!(!ibc_store.commitments.contains(commitment_key), E_PACKET_ALREADY_RECEIVED);
+        assert!(
+            !ibc_store.commitments.contains(commitment::batch_receipts_commitment_key(packet_hash)),
+            E_PACKET_ALREADY_RECEIVED
+        );
+
+        let channel = ibc_store.channels.borrow(packet.destination_channel_id());
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let connection_id = channel.connection_id();
+
+        let connection = ibc_store.connections.borrow(connection_id);
+        assert!(
+            connection.state() == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+        let client_id = connection.client_id();
+
+        // make sure that the packet is sent
+        let err =
+            ibc_store.client_mgr.verify_membership(
+                client_id,
+                proof_height,
+                proof,
+                commitment::batch_packets_commitment_key(
+                    packet_hash
+                ),
+                COMMITMENT_MAGIC
+            );
+
+        if (err != 0) {
+            abort err
+        };
 
         ibc_store.commitments.add(
-            commitment::timed_out_packet_commitment_key(commitment_key),
+            commitment::timed_out_packet_commitment_key(packet_hash),
             COMMITMENT_MAGIC
         );
     }
