@@ -6,7 +6,7 @@
 //! implementing a policy that allows certain callers to access certain functions.
 //!
 //! NOTE: The [`Restricted<T>`] wrapper will apply access control to *all* methods by default.
-//! Internal methods can be marked as such by prefixing the json name with
+//! Internal methods can be marked as such by prefixing the JSON name with
 //! [`Selector::INTERNAL_PREFIX`][access_manager_types::Selector::INTERNAL_PREFIX] with
 //! `#[serde(rename)]`, however this will make the methods fully public to call and access must be
 //! checked by the access managed contract itself.
