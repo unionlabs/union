@@ -2,8 +2,9 @@ use ibc_union_spec::{
     ChannelId,
     datagram::{
         MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
-        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv, MsgUpdateClient,
+        MsgCommitTimedOutPacket, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
+        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv,
+        MsgUpdateClient,
     },
 };
 use move_core_types_sui::{ident_str, identifier::IdentStr};
@@ -344,6 +345,29 @@ pub fn channel_open_confirm_call(
             }),
             data.channel_id.raw().into(),
             (&data.proof_ack.into_vec()).into(),
+            data.proof_height.into(),
+        ],
+    )
+}
+
+pub fn commit_timed_out_packet_call(
+    ptb: &mut ProgrammableTransactionBuilder,
+    module: &Module,
+    data: MsgCommitTimedOutPacket,
+) -> anyhow::Result<()> {
+    ptb.move_call(
+        module.ibc_handler_address.into(),
+        IBC_IDENT.into(),
+        ident_str!("commit_timed_out_packet").into(),
+        vec![],
+        vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module.ibc_store.into(),
+                initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            SUI_CALL_ARG_CLOCK,
+            (&data.proof.into_vec()).into(),
             data.proof_height.into(),
         ],
     )

@@ -225,6 +225,7 @@ members = [
   "voyager/plugins/packet-timeout",
   "voyager/plugins/zkgm-filter",
   "voyager/plugins/sui-ibc-app",
+  "voyager/plugins/sui-packet-timeout",
 
   "drip",
 

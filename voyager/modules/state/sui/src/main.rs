@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use ibc_union_spec::{
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionState, IbcUnion, Packet,
-    path::StorePath,
+    path::{BatchReceiptsPath, StorePath},
     query::{PacketByHash, Query},
 };
 use jsonrpsee::{
@@ -231,69 +231,76 @@ impl StateModuleServer<IbcUnion> for Module {
 
         Ok(match path {
             StorePath::Connection(path) => {
-                let res = query
+                match query
                     .add_param(path.connection_id.raw())
                     .call(self.ibc_contract, "get_connection")
                     .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
+                {
+                    Ok(res) => into_value(convert_connection(
+                        SuiConnection::decode_as::<Bcs>(&res[0].0).unwrap(),
+                    )),
+                    Err(_) => into_value(None::<()>),
                 }
-
-                into_value(convert_connection(
-                    SuiConnection::decode_as::<Bcs>(&res[0].0).unwrap(),
-                ))
             }
             StorePath::Channel(path) => {
-                let res = query
+                match query
                     .add_param(path.channel_id.raw())
                     .call(self.ibc_contract, "get_channel")
                     .await
-                    .unwrap();
-
-                if res.len() != 1 {
-                    panic!("expected a single encoded connection end")
+                {
+                    Ok(res) => into_value(convert_channel(
+                        SuiChannel::decode_as::<Bcs>(&res[0].0).unwrap(),
+                    )),
+                    Err(_) => into_value(None::<()>),
                 }
-
-                into_value(convert_channel(
-                    SuiChannel::decode_as::<Bcs>(&res[0].0).unwrap(),
-                ))
             }
             StorePath::ClientState(path) => {
-                let res = query
+                match query
                     .add_param(path.client_id.raw())
                     .call(self.ibc_contract, "get_client_state")
                     .await
-                    .unwrap();
+                {
+                    Ok(res) => {
+                        // Doing 1.. here since the return data is bcs encoded vector<u8> which is
+                        // just `prefix + vector<u8>`
+                        let client_state_bytes: Bytes = res[0].clone().0[1..].into();
 
-                if res.len() != 1 {
-                    panic!("was expecting a single encoded client state");
+                        into_value(client_state_bytes)
+                    }
+                    Err(_) => into_value(None::<()>),
                 }
-
-                // Doing 1.. here since the return data is bcs encoded vector<u8> which is
-                // just `prefix + vector<u8>`
-                let client_state_bytes: Bytes = res[0].clone().0[1..].into();
-
-                into_value(Some(client_state_bytes))
             }
             StorePath::ConsensusState(path) => {
-                let res = query
+                match query
                     .add_param(path.client_id.raw())
                     .add_param(path.height)
                     .call(self.ibc_contract, "get_consensus_state")
                     .await
-                    .unwrap();
+                {
+                    Ok(res) => {
+                        // Doing 1.. here since the return data is bcs encoded vector<u8> which is
+                        // just `prefix + vector<u8>`
+                        let consensus_state_bytes: Bytes = res[0].clone().0[1..].into();
 
-                if res.len() != 1 {
-                    panic!("was expecting a single encoded consensus state");
+                        into_value(consensus_state_bytes)
+                    }
+                    Err(_) => into_value(None::<()>),
                 }
-
-                // Doing 1.. here since the return data is bcs encoded vector<u8> which is
-                // just `prefix + vector<u8>`
-                let consensus_state_bytes: Bytes = res[0].clone().0[1..].into();
-
-                into_value(consensus_state_bytes)
+            }
+            StorePath::BatchReceipts(path) => {
+                match query
+                    .add_param(
+                        BatchReceiptsPath {
+                            batch_hash: path.batch_hash,
+                        }
+                        .key(),
+                    )
+                    .call(self.ibc_contract, "get_commitment")
+                    .await
+                {
+                    Ok(res) => into_value(res[0].0.clone()),
+                    Err(_) => into_value(None::<()>),
+                }
             }
             what => panic!("WHAT: {what:?}"),
         })
