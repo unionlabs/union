@@ -9,7 +9,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "rpc_url": "http://devnetUnion:26657",
+          "rpc_url": "http://0.0.0.0:26657",
           "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
       },
@@ -22,7 +22,7 @@
         },
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-          "rpc_url": "http://devnetEth:8545"
+          "rpc_url": "http://0.0.0.0:8545"
         }
       }
     ],
@@ -35,7 +35,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "rpc_url": "http://devnetUnion:26657",
+          "rpc_url": "http://0.0.0.0:26657",
           "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
       },
@@ -48,7 +48,7 @@
         },
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-          "rpc_url": "http://devnetEth:8545"
+          "rpc_url": "http://0.0.0.0:8545"
         }
       }
     ],
@@ -61,7 +61,7 @@
           "consensus_type": "cometbls"
         },
         "config": {
-          "rpc_url": "http://devnetUnion:26657"
+          "rpc_url": "http://0.0.0.0:26657"
         }
       },
       {
@@ -72,7 +72,7 @@
           "consensus_type": "trusted/evm"
         },
         "config": {
-          "rpc_url": "http://devnetEth:8545",
+          "rpc_url": "http://0.0.0.0:8545",
           "finality_lag": 1
         }
       }
@@ -103,7 +103,7 @@
       {
         "config": {
           "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
-          "rpc_url": "http://devnetUnion:26657"
+          "rpc_url": "http://0.0.0.0:26657"
         },
         "enabled": true,
         "info": {
@@ -115,7 +115,7 @@
       {
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-          "rpc_url": "http://devnetEth:8545",
+          "rpc_url": "http://0.0.0.0:8545",
           "private_key": "0x23312AE62C46C1F05DE7A772C1DD74951009BFCD08B47946E497468DEA6D7008"
         },
         "enabled": true,
@@ -128,7 +128,7 @@
       // {
       //   "config": {
       //     "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-      //     "rpc_url": "http://devnetEth:8545",
+      //     "rpc_url": "http://0.0.0.0:8545",
       //     "chain_spec": "minimal",
       //     "beacon_rpc_url": "http://localhost:9596"
       //   },
@@ -147,7 +147,7 @@
       "path": "/bin/voyager-event-source-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
-        "rpc_url": "http://devnetUnion:26657",
+        "rpc_url": "http://0.0.0.0:26657",
         "chunk_block_fetch_size": 1000,
         "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
         "refetch_delay": 20
@@ -159,7 +159,7 @@
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-        "rpc_url": "http://devnetEth:8545"
+        "rpc_url": "http://0.0.0.0:8545"
       }
     },
     {
@@ -186,7 +186,7 @@
             "gas_multiplier": "1.4"
           }
         },
-        "rpc_url": "http://devnetUnion:26657"
+        "rpc_url": "http://0.0.0.0:26657"
       }
     },
     {
@@ -207,8 +207,14 @@
             }
           ]
         },
-        "rpc_url": "http://devnetEth:8545"
+        "rpc_url": "http://0.0.0.0:8545"
       }
+    },
+
+    {
+      "enabled": true,
+      "path": "/bin/voyager-plugin-packet-timeout",
+      "config": {}
     },
     {
       "enabled": true,
@@ -245,7 +251,7 @@
       "path": "/bin/voyager-client-update-plugin-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
-        "rpc_url": "http://devnetUnion:26657",
+        "rpc_url": "http://0.0.0.0:26657",
         "prover_endpoints": ["https://galois.testnet-9.union.build:443"]
       }
     },
@@ -255,7 +261,7 @@
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-        "rpc_url": "http://devnetEth:8545",
+        "rpc_url": "http://0.0.0.0:8545",
         "private_key": "0x23312AE62C46C1F05DE7A772C1DD74951009BFCD08B47946E497468DEA6D7008"
       }
     }
@@ -266,7 +272,7 @@
     //     "chain_id": "32382",
     //     "chain_spec": "minimal",
     //     "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-    //     "rpc_url": "http://devnetEth:8545",
+    //     "rpc_url": "http://0.0.0.0:8545",
     //     "beacon_rpc_url": "http://localhost:9596"
     //   }
     // }

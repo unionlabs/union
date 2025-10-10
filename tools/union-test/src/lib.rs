@@ -5,8 +5,8 @@ use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvide
 use cosmos_client::wallet::LocalSigner;
 use cosmwasm_std::Addr;
 use ibc_union_spec::{
-    path::{BatchPacketsPath, StorePath},
     ChannelId, MustBeZero, Packet,
+    path::{BatchPacketsPath, StorePath},
 };
 use jsonrpsee::http_client::HttpClient;
 use protos::cosmos::base::v1beta1::Coin;
@@ -17,7 +17,7 @@ use unionlabs::{
     primitives::{Bech32, Bytes, FixedBytes, H160, H256},
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow, Context},
+    anyhow::{self, Context, anyhow},
     primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     rpc::VoyagerRpcClient,
     serde_json,
@@ -487,8 +487,8 @@ where
         channel_count: usize,
         voyager_config_file_path: &str,
     ) -> anyhow::Result<Self> {
-        // voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
-        // voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
+        voyager::init_fetch(voyager_config_file_path, src.chain_id().clone())?;
+        voyager::init_fetch(voyager_config_file_path, dst.chain_id().clone())?;
         let channel_pool = ChannelPool::new();
         println!(
             "Creating test context for {} and {}. Init_fetch called for both chains.",
