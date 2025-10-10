@@ -154,6 +154,7 @@ module ibc::ibc {
     const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 1061;
     const E_MAKER_MSG_LEN_MISMATCH: u64 = 1062;
     const E_ALREADY_RECEIVED: u64 = 1063;
+    const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 1064;
 
     // This event is only emitted during the `init` phase
     // since the voyager event source module requires at least
@@ -1436,6 +1437,30 @@ module ibc::ibc {
 
             i = i + 1;
         }
+    }
+
+    public fun commit_timed_out_packet(
+        ibc_store: &mut IBCStore,
+        clock: &clock::Clock,
+        packet: Packet,
+        proof: vector<u8>,
+        proof_height: u64,
+    ) {
+        let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
+        assert!(
+            current_timestamp >= packet.timeout_timestamp(),
+            E_PACKET_HAVE_NOT_TIMED_OUT
+        );
+
+        let packet_hash = commitment::commit_packet(&packet);
+        let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
+
+        assert!(!ibc_store.commitments.contains(commitment_key), E_PACKET_ALREADY_RECEIVED);
+
+        ibc_store.commitments.add(
+            commitment::timed_out_packet_commitment_key(commitment_key),
+            COMMITMENT_MAGIC
+        );
     }
 
     public fun get_client_state(ibc_store: &IBCStore, client_id: u32): vector<u8> {

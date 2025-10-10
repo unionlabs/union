@@ -21,7 +21,7 @@ published-at = "0xf36048b090671467af3d6a6109403d179aaa0a699307ff9df218b893b8f6bd
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc = "0x0"
+ibc = "_"
 
 # ibc = "_"
 
