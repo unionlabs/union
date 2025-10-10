@@ -18,6 +18,7 @@ hex                  = { workspace = true }
 hex-literal          = { workspace = true }
 serde                = { workspace = true, optional = true, features = ["derive"] }
 serde_bytes          = "0.11.19"
+sha2                 = { workspace = true, optional = true }
 sha3                 = { workspace = true, optional = true }
 thiserror            = { workspace = true }
 unionlabs-primitives = { workspace = true }
@@ -27,4 +28,4 @@ default = []
 
 bincode = ["dep:bincode", "unionlabs-primitives/bincode"]
 serde   = ["dep:serde"]
-std     = ["dep:bcs", "dep:sha3"]
+std     = ["dep:bcs", "dep:sha2", "dep:sha3"]

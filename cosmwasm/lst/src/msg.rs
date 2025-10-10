@@ -88,12 +88,12 @@ pub struct InitMsg {
 
     /// Frequency (in seconds) at which the unbonding queue is executed.
     #[serde(with = "::serde_utils::string")]
-    #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::U64"))]
+    #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint64"))]
     pub batch_period_seconds: u64,
 
     /// The unbonding period of the chain.
     #[serde(with = "::serde_utils::string")]
-    #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::U64"))]
+    #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint64"))]
     pub unbonding_period_seconds: u64,
 
     /// Set of addresses allowed to trigger a circuit break.
@@ -216,7 +216,7 @@ pub enum QueryMsg {
     },
 
     /// Queries a paginated list of all submitted batches.
-    #[cfg_attr(feature = "schemars", returns(BatchesResponse))]
+    #[cfg_attr(feature = "schemars", returns(BatchesResponse<IdentifiedBatch<SubmittedBatch>>))]
     SubmittedBatches {
         /// If provided, starts listing batches after this batch ID.
         start_after: Option<BatchId>,
@@ -226,7 +226,7 @@ pub enum QueryMsg {
     },
 
     /// Queries a paginated list of all received batches.
-    #[cfg_attr(feature = "schemars", returns(BatchesResponse))]
+    #[cfg_attr(feature = "schemars", returns(BatchesResponse<IdentifiedBatch<ReceivedBatch>>))]
     ReceivedBatches {
         /// If provided, starts listing batches after this batch ID.
         start_after: Option<BatchId>,
@@ -236,7 +236,7 @@ pub enum QueryMsg {
     },
 
     /// Queries the batches with the provided list of IDs.
-    #[cfg_attr(feature = "schemars", returns(BatchesResponse))]
+    #[cfg_attr(feature = "schemars", returns(BatchesResponse<IdentifiedBatch<Batch>>))]
     BatchesByIds {
         /// List of batch IDs to fetch.
         batch_ids: Vec<BatchId>,

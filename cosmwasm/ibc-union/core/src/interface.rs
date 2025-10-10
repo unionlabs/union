@@ -17,7 +17,7 @@ impl<Chain: CwEnv> Uploadable for IbcUnion<Chain> {
     fn wasm(_chain_info: &ChainInfoOwned) -> WasmPath {
         artifacts_dir_from_workspace!()
             .find_wasm_path("ibc_union")
-            .unwrap()
+            .expect("unable to find wasm path")
     }
 
     fn wrapper() -> <Mock as TxHandler>::ContractSource {

@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
     Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest,
-    Response, StdResult, Uint128, entry_point, from_json, to_json_binary, wasm_execute,
+    Response, StdResult, Uint128, from_json, to_json_binary, wasm_execute,
 };
 use ibc_union_spec::ChannelId;
 use prost::Message;
@@ -28,7 +28,7 @@ use crate::{
     state::{OPERATOR, TOKEN_OWNERS, ZKGM_ADDR},
 };
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _: Env,
@@ -43,7 +43,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -314,12 +314,12 @@ fn wrapped_create_denom_v2(
 #[cosmwasm_schema::cw_serde]
 pub struct MigrateMsg {}
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn migrate(_deps: DepsMut, _: Env, _msg: MigrateMsg) -> StdResult<Response> {
     Ok(Response::new())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
         QueryMsg::PredictWrappedToken {
