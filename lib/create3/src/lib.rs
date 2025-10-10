@@ -6,7 +6,7 @@ const PROXY_INITCODE_HASH: [u8; 32] =
 
 /// Use to obtain the address using the CREATE3 algorithm from solady's assembly optimized implementation.
 ///
-/// https://github.com/Vectorized/solady/blob/de9aee59648862bb98affd578248d1e75c7073ad/src/utils/CREATE3.sol#L106
+/// <https://github.com/Vectorized/solady/blob/de9aee59648862bb98affd578248d1e75c7073ad/src/utils/CREATE3.sol#L106>
 pub fn predict_deterministic_address(deployer: Address, salt: B256) -> Address {
     let mut bytes: Vec<u8> = Vec::new();
     bytes.push(0xff);

@@ -5,8 +5,11 @@
 //! a contract like `access_manager` that follows the [`ExecuteMsg`][me]/[`QueryMsg`][mq] interface,
 //! implementing a policy that allows certain callers to access certain functions.
 //!
-//! NOTE: The [`Restricted<T>`] wrapper will apply access control to *all* methods. Methods that
-//! should be public must be configured as such on the manager.
+//! NOTE: The [`Restricted<T>`] wrapper will apply access control to *all* methods by default.
+//! Internal methods can be marked as such by prefixing the JSON name with
+//! [`Selector::INTERNAL_PREFIX`][access_manager_types::Selector::INTERNAL_PREFIX] with
+//! `#[serde(rename)]`, however this will make the methods fully public to call and access must be
+//! checked by the access managed contract itself.
 //!
 //! [me]: access_manager_types::manager::msg::ExecuteMsg
 //! [mq]: access_manager_types::manager::msg::QueryMsg

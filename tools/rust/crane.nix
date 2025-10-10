@@ -650,6 +650,55 @@
         root = ../../.;
         inherit (args) gitRev;
       };
+
+      workspaceCargoVendorDir = crane.lib.vendorCargoDeps {
+        src = crane.cargoWorkspaceSrc;
+        overrideVendorGitCheckout =
+          ps: drv:
+          if pkgs.lib.any (p: (pkgs.lib.hasInfix "zhiburt/tabled" p.source)) ps then
+            drv.overrideAttrs (_old: {
+              postPatch = ''
+                # broken symlink or something idk
+                # https://github.com/ipetkov/crane/issues/802
+                # https://github.com/zhiburt/tabled/issues/538
+                rm tabled/examples/show/LICENSE
+              '';
+            })
+          else
+            # Nothing to change, leave the derivations as is
+            drv;
+      };
+
+      cargoWorkspaceAttrs = {
+        pname = "cargo-workspace";
+        version = "0.0.0";
+        src = crane.cargoWorkspaceSrc;
+
+        # unionvisor is tested individually, and mpc* crates attempt to link to galoisd (and don't have any tests anyways).
+        cargoTestExtraArgs = "--workspace --exclude 'mpc*' --exclude unionvisor --exclude union-test --no-fail-fast";
+        cargoClippyExtraArgs = "--workspace --tests -- -Dwarnings";
+
+        CARGO_PROFILE = "dev";
+        SQLX_OFFLINE = true;
+        PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+
+        buildInputs = [
+          pkgs.pkg-config
+          pkgs.perl
+          pkgs.openssl
+          pkgs.protobuf
+          pkgs.perl
+          pkgs.gnumake
+          pkgs.systemd
+        ] ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
+        nativeBuildInputs = [
+          pkgs.clang
+        ];
+        cargoVendorDir = workspaceCargoVendorDir;
+      };
+      cargoArtifacts = crane.lib.buildDepsOnly cargoWorkspaceAttrs;
     in
     {
       _module.args = {
@@ -658,130 +707,103 @@
 
       # lib = { inherit mkCrane; };
 
-      checks =
-        let
-          cargoWorkspaceAttrs = rec {
-            pname = "cargo-workspace";
-            version = "0.0.0";
-            src = crane.cargoWorkspaceSrc;
+      checks = {
+        cargo-workspace-clippy = crane.lib.cargoClippy (
+          cargoWorkspaceAttrs
+          // {
+            inherit cargoArtifacts;
+          }
+        );
 
-            # unionvisor is tested individually, and mpc* crates attempt to link to galoisd (and don't have any tests anyways).
-            cargoTestExtraArgs = "--workspace --exclude 'mpc*' --exclude unionvisor --exclude union-test --no-fail-fast";
-            cargoClippyExtraArgs = "--workspace --tests -- -Dwarnings";
+        cargo-workspace-test = crane.lib.cargoTest (
+          cargoWorkspaceAttrs
+          // {
+            inherit cargoArtifacts;
+          }
+        );
 
-            CARGO_PROFILE = "dev";
-            SQLX_OFFLINE = true;
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
-            ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
+        cargo-workspace-doc = crane.lib.mkCargoDerivation (
+          cargoWorkspaceAttrs
+          // {
+            buildPhaseCargoCommand = ''
+              cargo doc --workspace --no-deps
+            '';
+            inherit cargoArtifacts;
+          }
+        );
 
-            buildInputs = [
-              pkgs.pkg-config
-              pkgs.perl
-              pkgs.openssl
-              pkgs.protobuf
-              pkgs.perl
-              pkgs.gnumake
-              pkgs.systemd
-            ] ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
-            nativeBuildInputs = [
-              pkgs.clang
-            ];
-            cargoVendorDir = crane.lib.vendorCargoDeps {
-              inherit src;
-              overrideVendorGitCheckout =
-                ps: drv:
-                if pkgs.lib.any (p: (pkgs.lib.hasInfix "zhiburt/tabled" p.source)) ps then
-                  drv.overrideAttrs (_old: {
-                    postPatch = ''
-                      # broken symlink or something idk
-                      # https://github.com/ipetkov/crane/issues/802
-                      # https://github.com/zhiburt/tabled/issues/538
-                      rm tabled/examples/show/LICENSE
-                    '';
-                  })
-                else
-                  # Nothing to change, leave the derivations as is
-                  drv;
-            };
-          };
-          cargoArtifacts = crane.lib.buildDepsOnly cargoWorkspaceAttrs;
-        in
-        {
-          cargo-workspace-clippy = crane.lib.cargoClippy (cargoWorkspaceAttrs // { inherit cargoArtifacts; });
-          cargo-workspace-test = crane.lib.cargoTest (cargoWorkspaceAttrs // { inherit cargoArtifacts; });
-          # NOTE: This is currently broken, as some crate features are not working properly
-          all-crates-buildable-individually = crane.lib.mkCargoDerivation (
-            (builtins.removeAttrs cargoWorkspaceAttrs [
-              "cargoTestExtraArgs"
-              "cargoClippyExtraArgs"
-            ])
-            // {
-              inherit cargoArtifacts;
-              pname = "cargo-workspace-individual-check";
-              # strictDeps = true;
-              passAsFile = [ "actualBuildPhase" ];
-              buildPhaseCargoCommand = null;
-              buildPhase = ''
-                . "$actualBuildPhasePath"
-              '';
-              # if we don't do this (and pass as file above), we hit "Argument list too long"
-              # no clue why
-              actualBuildPhase = pkgs.lib.concatMapStringsSep "\n\n" (
-                cargoToml:
-                let
-                  features = builtins.attrNames (builtins.removeAttrs (cargoToml.features or { }) [ "default" ]);
+        # NOTE: This is currently broken, as some crate features are not working properly
+        all-crates-buildable-individually = crane.lib.mkCargoDerivation (
+          (builtins.removeAttrs cargoWorkspaceAttrs [
+            "cargoTestExtraArgs"
+            "cargoClippyExtraArgs"
+          ])
+          // {
+            inherit cargoArtifacts;
+            pname = "cargo-workspace-individual-check";
+            # strictDeps = true;
+            passAsFile = [ "actualBuildPhase" ];
+            buildPhaseCargoCommand = null;
+            buildPhase = ''
+              . "$actualBuildPhasePath"
+            '';
+            # if we don't do this (and pass as file above), we hit "Argument list too long"
+            # no clue why
+            actualBuildPhase = pkgs.lib.concatMapStringsSep "\n\n" (
+              cargoToml:
+              let
+                features = builtins.attrNames (builtins.removeAttrs (cargoToml.features or { }) [ "default" ]);
 
-                  subsets =
-                    xs: n:
-                    if n == 0 then
-                      [ [ ] ]
-                    else if xs == [ ] then
-                      [ ]
-                    else
-                      let
-                        x = builtins.head xs;
-                        xs' = builtins.tail xs;
-                      in
-                      (map (ys: [ x ] ++ ys) (subsets xs' (n - 1))) ++ (subsets xs' n);
+                subsets =
+                  xs: n:
+                  if n == 0 then
+                    [ [ ] ]
+                  else if xs == [ ] then
+                    [ ]
+                  else
+                    let
+                      x = builtins.head xs;
+                      xs' = builtins.tail xs;
+                    in
+                    (map (ys: [ x ] ++ ys) (subsets xs' (n - 1))) ++ (subsets xs' n);
 
-                  allFeatureCombinations = pkgs.lib.concatLists (
-                    builtins.genList (subsets features) (dbg (builtins.length (dbg features) + 1))
-                  );
-                in
-                if cargoToml.package.name == "protos" then
-                  "cargo clippy -p protos --all-features --tests -- -Dwarnings"
-                else if features == [ ] then
-                  "cargo clippy -p ${cargoToml.package.name} --no-default-features --tests -- -Dwarnings"
-                else
-                  pkgs.lib.concatMapStringsSep "\n" (
-                    features:
-                    "cargo clippy -p ${cargoToml.package.name} --no-default-features ${
-                      pkgs.lib.optionalString (features != [ ]) "-F${pkgs.lib.concatMapStringsSep "," (f: f) features}"
-                    } --tests -- -Dwarnings"
-                  ) allFeatureCombinations
-              ) (builtins.attrValues crane.allCargoTomls);
-              doInstallCargoArtifacts = false;
-            }
-          );
-          # this would probably be better for caching but it's an insanely massive derivation
-          # all-crates-buildable-individually = pkgs.linkFarmFromDrvs "all-crates-buildable-individually" (
-          #   dbg (
-          #     map (
-          #       p:
-          #       crane.lib.cargoClippy (
-          #         cargoWorkspaceAttrs
-          #         // {
-          #           inherit cargoArtifacts;
-          #           pname = "${p.name}-individual-check";
-          #           cargoClippyExtraArgs = "-p ${p.name} --tests -- -Dwarnings";
-          #           doInstallCargoArtifacts = false;
-          #         }
-          #       )
-          #     ) (pkgs.lib.mapAttrsToList lib.nameValuePair allCargoTomls)
-          #   )
-          # );
-        };
+                allFeatureCombinations = pkgs.lib.concatLists (
+                  builtins.genList (subsets features) (dbg (builtins.length (dbg features) + 1))
+                );
+              in
+              if cargoToml.package.name == "protos" then
+                "cargo clippy -p protos --all-features --tests -- -Dwarnings"
+              else if features == [ ] then
+                "cargo clippy -p ${cargoToml.package.name} --no-default-features --tests -- -Dwarnings"
+              else
+                pkgs.lib.concatMapStringsSep "\n" (
+                  features:
+                  "cargo clippy -p ${cargoToml.package.name} --no-default-features ${
+                    pkgs.lib.optionalString (features != [ ]) "-F${pkgs.lib.concatMapStringsSep "," (f: f) features}"
+                  } --tests -- -Dwarnings"
+                ) allFeatureCombinations
+            ) (builtins.attrValues crane.allCargoTomls);
+            doInstallCargoArtifacts = false;
+          }
+        );
+        # this would probably be better for caching but it's an insanely massive derivation
+        # all-crates-buildable-individually = pkgs.linkFarmFromDrvs "all-crates-buildable-individually" (
+        #   dbg (
+        #     map (
+        #       p:
+        #       crane.lib.cargoClippy (
+        #         cargoWorkspaceAttrs
+        #         // {
+        #           inherit cargoArtifacts;
+        #           pname = "${p.name}-individual-check";
+        #           cargoClippyExtraArgs = "-p ${p.name} --tests -- -Dwarnings";
+        #           doInstallCargoArtifacts = false;
+        #         }
+        #       )
+        #     ) (pkgs.lib.mapAttrsToList lib.nameValuePair allCargoTomls)
+        #   )
+        # );
+      };
 
       # these are incredibly useful for debugging
       packages = {
@@ -809,6 +831,19 @@
             cargo metadata --no-deps | jq '.workspace_members[]' -r | xargs -I{} cargo check -p {}
           '';
         };
+
+        rust-docs = crane.lib.cargoDoc (
+          cargoWorkspaceAttrs
+          // {
+            pname = "rust-docs";
+            version = "0.0.0";
+            src = crane.cargoWorkspaceSrc;
+            cargoVendorDir = workspaceCargoVendorDir;
+            inherit cargoArtifacts;
+            cargoDocExtraArgs = "--workspace";
+            RUSTDOCFLAGS = "-Z unstable-options --enable-index-page";
+          }
+        );
       };
 
       # FIXME: currently ICE, https://github.com/unionlabs/union/actions/runs/8882618404/job/24387814904

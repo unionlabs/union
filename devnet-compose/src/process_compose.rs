@@ -5,7 +5,7 @@ use serde_with::skip_serializing_none;
 
 use crate::LOGS_BASE_PATH;
 
-/// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/project.go#L11-L12
+/// <https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/project.go#L11-L12>
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct Project {
@@ -60,7 +60,7 @@ impl Default for Project {
     }
 }
 
-// /// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/logger.go
+/// <https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/logger.go>
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct LogConfiguration {
@@ -88,7 +88,7 @@ impl Default for LogConfiguration {
     }
 }
 
-// /// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/logger.go
+/// <https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/logger.go>
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct LogRotationConfig {
@@ -100,7 +100,7 @@ pub struct LogRotationConfig {
     pub compress: Option<bool>,
 }
 
-/// https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/process.go#L15
+/// <https://github.com/F1bonacc1/process-compose/blob/5a7b83ed8a0f6be58efa9e4940ff41517892eca2/src/types/process.go#L15>
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize)]
 pub struct Process {

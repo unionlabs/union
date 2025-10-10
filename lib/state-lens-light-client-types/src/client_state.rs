@@ -29,8 +29,8 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 ///
 /// ## EthAbi
 ///
-/// EthAbi encoding is supported for this structure through the [`DecodeExtra`] and
-/// [`ExtraToTokens`] traits.
+/// EthAbi encoding is supported for this structure through the [`DecodeExtra`][ethabi::DecodeExtra] and
+/// [`ExtraToTokens`][ethabi::ExtraToTokens] traits.
 ///
 /// The following is an example implementation of these traits for `Extra`:
 ///

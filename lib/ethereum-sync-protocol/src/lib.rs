@@ -36,7 +36,7 @@ pub const GENESIS_SLOT: Slot = Slot::new(0);
 pub const DST_POP_G2: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 pub trait BlsVerify {
-    /// Whether to provide non-signers or signers to [`aggregate_verify_signature`]
+    /// Whether to provide non-signers or signers to [`BlsVerify::aggregate_verify_signature`]
     const INVERSE: bool;
 
     /// Aggregate the public keys and verify the signature

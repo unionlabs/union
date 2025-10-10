@@ -76,7 +76,7 @@ pub fn verify_storage_absence(
 /// * `proof`: Proof of storage.
 /// * `storage_root`: Storage root of the contract.
 ///
-/// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
+/// NOTE: `root` is not verified in this function.
 pub fn verify_account_storage_root(
     root: H256,
     address: &H160,
@@ -108,7 +108,7 @@ pub fn verify_account_storage_root(
 /// * `proof`: Proof of storage.
 /// * `code_hash`: Bytecode hash of the contract.
 ///
-/// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
+/// NOTE: `root` is not verified in this function.
 pub fn verify_account_code_hash(
     root: H256,
     address: &H160,

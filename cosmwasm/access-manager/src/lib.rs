@@ -9,7 +9,7 @@
 //!
 //! The restriction rules for such functions are defined in terms of "roles" identified by a
 //! [`RoleId`] and scoped by target ([`Addr`][cosmwasm_std::Addr]) and function selectors
-//! ([`Selector`][crate::types::Selector]). These roles are stored in this contract and can be
+//! ([`Selector`][access_manager_types::Selector]). These roles are stored in this contract and can be
 //! configured by admins ([`RoleId::ADMIN_ROLE`] members) after a delay (see
 //! [`QueryMsg::GetTargetAdminDelay`]).
 //!
@@ -54,11 +54,11 @@
 //!   the default [serde externally tagged enum representation][et]. To reliably handle the
 //!   target/selector pattern of the original implementation, we enforce this
 //!   `ExecuteMsg`/`QueryMsg` enum pattern to be used by all contracts that will be targets of this
-//!   manager. See [`managed`] for more information.
+//!   manager. See [`access_manager_types::managed`] for more information.
 //! - Storage in CosmWasm functions quite differently than in the EVM. In Solidity, it is possible
 //!   to embed a mapping directly in a struct that is stored in storage, which allows for
 //!   multi-level deferred storage access. To emulate this behaviour in CosmWasm, a separate storage
-//!   item is used explicitly in these cases. See the [`state`] and [`types`] modules for examples.
+//!   item is used explicitly in these cases. See [`state`] and [`access_manager_types`] for examples.
 //! - CosmWasm does not allow for synchronous cross-contract calls, and instead uses a
 //!   submessage/reply pattern. As such, nested executions can not be run inline. In the original
 //!   Solidity implementation, `_executionId` is used to track the currently executing call, which

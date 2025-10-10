@@ -23,7 +23,7 @@ pub mod slots {
     /// _latestNodeCreated uint64;
     /// ```
     ///
-    /// [`_latestNodeCreated`] https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L62
+    /// [`_latestNodeCreated`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L62
     pub const ROLLUP_CORE_LATEST_NODE_CREATED: Slot =
         Slot::Offset(U256::from_limbs([117, 0, 0, 0]));
 
@@ -38,14 +38,12 @@ pub mod slots {
     /// _nodes mapping(uint64 => struct Node);
     /// ```
     ///
-    /// Use [`nodes()`] to calculate the slot for the mapping.
-    ///
-    /// [`_nodes`] https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#64
+    /// [`_nodes`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#64
     pub const ROLLUP_CORE_NODES_MAPPING_BASE: Slot = Slot::Offset(U256::from_limbs([118, 0, 0, 0]));
 
     /// The offset of the `confirmData` field in the storage layout of the [`Node`] struct.
     ///
-    /// The node value is stored in the mapping at [`ROLLUP_CORE_NODES_MAPPING_BASE_SLOT`].
+    /// The node value is stored in the mapping at [`ROLLUP_CORE_NODES_MAPPING_BASE`].
     ///
     /// [`Node`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L21-L46
     pub const NODE_CONFIRM_DATA_OFFSET: U256 = U256::from_limbs([2, 0, 0, 0]);
@@ -57,7 +55,7 @@ pub mod slots {
     /// _nodes mapping(uint64 => struct Node);
     /// ```
     ///
-    /// The base slot for this mapping is [`ROLLUP_CORE_NODES_MAPPING_BASE_SLOT`], and the
+    /// The base slot for this mapping is [`ROLLUP_CORE_NODES_MAPPING_BASE`], and the
     /// `confirmData` offset is [`NODE_CONFIRM_DATA_OFFSET`].
     ///
     /// [`confirmData`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L27

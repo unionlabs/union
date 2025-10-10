@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_primitives::{ChainId, ClientType, IbcSpecId, Timestamp};
 use voyager_types::RawClientId;
+#[cfg(doc)]
+use {
+    crate::{callback::AggregateSubmitTxFromOrderedHeaders, data::OrderedHeaders},
+    voyager_vm::{Op, QueueError},
+};
 
 use crate::{PluginMessage, data::IbcDatagram};
 
@@ -80,7 +85,7 @@ pub struct IndexRange {
     pub range: IndexRangeHeights,
 }
 
-/// The block range used in [`FetchBlockRange`].
+/// The block range used in [`IndexRange`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct IndexRangeHeights {
     from_height: Height,
@@ -150,7 +155,7 @@ impl<'de> Deserialize<'de> for IndexRangeHeights {
 /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data. This is the entrypoint
 /// called when a client update is requested, and is intended to be called in the queue of an
 /// [`AggregateSubmitTxFromOrderedHeaders`] message, which will be used to build the actual
-/// [`MsgUpdateClient`]s.
+/// `MsgUpdateClient`s.
 #[model]
 pub struct FetchUpdateHeaders {
     /// The type of client that is tracking the consensus on `self.chain_id`.
