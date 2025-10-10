@@ -733,9 +733,31 @@ impl Module {
                     .ok_or_else(|| ErrorObjectOwned::owned(-1, "receipt not found", None::<()>))?;
 
                 let logs = &receipt_with.inner.inner.inner.receipt.logs;
-                let block_number = receipt_with.inner.inner.inner.receipt.logs[0]
+                // let block_number = extract_block_number(&self.provider, receipt_with)
+                //     .await
+                //     .unwrap();
+
+                let block_number = receipt_with
+                    .inner
                     .block_number
-                    .unwrap();
+                    .or_else(|| {
+                        receipt_with
+                            .inner
+                            .inner
+                            .inner
+                            .receipt
+                            .logs
+                            .iter()
+                            .filter_map(|l| l.block_number)
+                            .next()
+                    })
+                    .ok_or_else(|| {
+                        ErrorObjectOwned::owned(
+                            -1,
+                            "block_number unavailable in receipt and logs",
+                            None::<()>,
+                        )
+                    })?;
 
                 for raw in logs {
                     if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner)
