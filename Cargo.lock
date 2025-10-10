@@ -16906,6 +16906,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-plugin-sui-packet-timeout"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "enumorph",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "macros",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-plugin-transaction-batch"
 version = "0.0.0"
 dependencies = [

@@ -155,6 +155,7 @@ module ibc::ibc {
     const E_MAKER_MSG_LEN_MISMATCH: u64 = 1062;
     const E_ALREADY_RECEIVED: u64 = 1063;
     const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 1064;
+    const E_COMMITMENT_NOT_FOUND: u64 = 1065;
 
     // This event is only emitted during the `init` phase
     // since the voyager event source module requires at least
@@ -1528,6 +1529,13 @@ module ibc::ibc {
             abort E_CHANNEL_NOT_FOUND
         };
         *ibc_store.channels.borrow(channel_id)
+    }
+
+    public fun get_commitment(ibc_store: &IBCStore, commitment_key: vector<u8>): vector<u8> {
+        if (!ibc_store.commitment.contains(commitment_key)) {
+            abort E_COMMITMENT_NOT_FOUND
+        };
+        *ibc_store.commitments.borrow(commitment_key)
     }
 
     fun inner_write_acknowledgement(
