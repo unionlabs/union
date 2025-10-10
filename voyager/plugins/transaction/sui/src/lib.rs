@@ -51,7 +51,6 @@ trait TransactionPlugin {
         &self,
         pk: SuiKeyPair,
         module_info: ModuleInfo,
-        fee_recipient: SuiAddress,
         data: MsgPacketTimeout,
     ) -> RpcResult<ProgrammableTransaction>;
 }

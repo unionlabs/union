@@ -305,7 +305,7 @@ impl Module {
                 Datagram::PacketTimeout(data) => {
                     // using the source channel id since the send happened on sui
                     let port_id =
-                        move_api::get_port_id(self, data.packet.destination_channel_id).await?;
+                        move_api::get_port_id(self, data.packet.source_channel_id).await?;
 
                     let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
 
@@ -314,7 +314,7 @@ impl Module {
                             self.chain_id.clone(),
                             QueryHeight::Latest,
                             ChannelPath {
-                                channel_id: data.packet.source_channel_id,
+                                channel_id: data.packet.destination_channel_id,
                             },
                         )
                         .await?
@@ -325,12 +325,7 @@ impl Module {
                     {
                         let p = voyager_client
                             .plugin_client(plugin_client)
-                            .on_timeout_packet(
-                                pk.copy(),
-                                module_info.clone(),
-                                fee_recipient,
-                                data.clone(),
-                            )
+                            .on_timeout_packet(pk.copy(), module_info.clone(), data.clone())
                             .await?;
                         merge_ptbs(&mut ptb, p);
                     } else {

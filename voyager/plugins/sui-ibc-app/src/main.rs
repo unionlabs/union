@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv};
+use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout};
 use jsonrpsee::{
     Extensions, MethodsError,
     core::{JsonValue as Value, RpcResult, async_trait},
@@ -170,8 +170,8 @@ impl TransactionPluginServer for Module {
         let coin_ts =
             zkgm::parse_coin_ts(data.packets.iter().map(|p| p.data.clone()).collect()).unwrap();
 
-        // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
-        // which means, we have to consume it within the same PTB via `end_recv`.
+        // We start the session by calling `begin_ack`. The returned `session` has no drop nor store,
+        // which means, we have to consume it within the same PTB via `end_ack`.
         let mut session = zkgm::begin_ack_call(&mut ptb, &module_info, data.clone());
 
         for coin_t in coin_ts {
@@ -189,6 +189,43 @@ impl TransactionPluginServer for Module {
         }
 
         zkgm::end_ack_call(&mut ptb, self, &module_info, fee_recipient, session, data);
+
+        Ok(ptb.finish())
+    }
+
+    async fn on_timeout_packet(
+        &self,
+        _: SuiKeyPair,
+        module_info: ModuleInfo,
+        data: MsgPacketTimeout,
+    ) -> RpcResult<ProgrammableTransaction> {
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
+        let vault_store_initial_seq = self.get_initial_seq(self.zkgm_config.vault_object_id).await;
+
+        // If the module is ZKGM, then we register the tokens if needed. Otherwise,
+        // the registered tokens are returned.
+        let coin_ts = zkgm::parse_coin_ts(vec![data.packet.data.clone()]).unwrap();
+
+        // We start the session by calling `begin_timeout`. The returned `session` has no drop nor store,
+        // which means, we have to consume it within the same PTB via `end_timeout`.
+        let mut session = zkgm::begin_timeout_call(&mut ptb, &module_info, data.clone());
+
+        for coin_t in coin_ts {
+            session = zkgm::timeout_packet_call(
+                &mut ptb,
+                self,
+                &module_info,
+                store_initial_seq,
+                self.zkgm_config.vault_object_id,
+                vault_store_initial_seq,
+                coin_t,
+                session,
+            );
+        }
+
+        zkgm::end_timeout_call(&mut ptb, self, &module_info, session, data);
 
         Ok(ptb.finish())
     }
