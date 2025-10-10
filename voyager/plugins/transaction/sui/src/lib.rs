@@ -1,5 +1,5 @@
 use fastcrypto::{hash::HashFunction, traits::Signer};
-use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv};
+use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
@@ -44,6 +44,15 @@ trait TransactionPlugin {
         module_info: ModuleInfo,
         fee_recipient: SuiAddress,
         data: MsgPacketAcknowledgement,
+    ) -> RpcResult<ProgrammableTransaction>;
+
+    #[method(name = "onTimeoutPacket")]
+    async fn on_timeout_packet(
+        &self,
+        pk: SuiKeyPair,
+        module_info: ModuleInfo,
+        fee_recipient: SuiAddress,
+        data: MsgPacketTimeout,
     ) -> RpcResult<ProgrammableTransaction>;
 }
 

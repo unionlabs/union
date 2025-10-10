@@ -260,24 +260,9 @@ impl Module {
 
                         merge_ptbs(&mut ptb, p);
                     } else {
-                        let _store_initial_seq = self
-                            .sui_client
-                            .read_api()
-                            .get_object_with_options(
-                                module_info.stores[0].into(),
-                                SuiObjectDataOptions::new().with_owner(),
-                            )
-                            .await
-                            .unwrap()
-                            .data
-                            .expect("object exists on chain")
-                            .owner
-                            .expect("owner will be present")
-                            .start_version()
-                            .expect("object is shared, hence it has a start version");
-
-                        // TODO(aeryz): regular recv_packet here
-                        todo!()
+                        // TODO(aeryz): Regular recv_packet here. Note that this is not used by us, therefore I don't want to rush
+                        // it until we have the use case.
+                        unimplemented!()
                     }
                 }
                 Datagram::PacketAcknowledgement(data) => {
@@ -312,24 +297,46 @@ impl Module {
                             .await?;
                         merge_ptbs(&mut ptb, p);
                     } else {
-                        let _store_initial_seq = self
-                            .sui_client
-                            .read_api()
-                            .get_object_with_options(
-                                module_info.stores[0].into(),
-                                SuiObjectDataOptions::new().with_owner(),
-                            )
-                            .await
-                            .unwrap()
-                            .data
-                            .expect("object exists on chain")
-                            .owner
-                            .expect("owner will be present")
-                            .start_version()
-                            .expect("object is shared, hence it has a start version");
+                        // TODO(aeryz): Regular ack_packet here. Note that this is not used by us, therefore I don't want to rush
+                        // it until we have the use case.
+                        unimplemented!()
+                    }
+                }
+                Datagram::PacketTimeout(data) => {
+                    // using the source channel id since the send happened on sui
+                    let port_id =
+                        move_api::get_port_id(self, data.packet.destination_channel_id).await?;
 
-                        // TODO(aeryz): regular recv_packet here
-                        todo!()
+                    let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
+
+                    let channel_version = voyager_client
+                        .query_ibc_state(
+                            self.chain_id.clone(),
+                            QueryHeight::Latest,
+                            ChannelPath {
+                                channel_id: data.packet.source_channel_id,
+                            },
+                        )
+                        .await?
+                        .version;
+
+                    if let Some(plugin_client) =
+                        self.channel_version_to_plugin.get(&channel_version)
+                    {
+                        let p = voyager_client
+                            .plugin_client(plugin_client)
+                            .on_timeout_packet(
+                                pk.copy(),
+                                module_info.clone(),
+                                fee_recipient,
+                                data.clone(),
+                            )
+                            .await?;
+                        merge_ptbs(&mut ptb, p);
+                    } else {
+                        // TODO(aeryz): Regular timeout_packet here. Note that this is not used by us, therefore I don't want to rush
+                        // it until we have the use case.
+                        unimplemented!()
                     }
                 }
                 _ => todo!(),
