@@ -144,7 +144,6 @@ impl Module {
         Ibc::new::<_, AnyNetwork>(self.ibc_handler_address.get().into(), self.provider.clone())
     }
 
-    // TODO: This can definitely be cached
     #[instrument(skip(self))]
     pub async fn client_address(
         &self,
