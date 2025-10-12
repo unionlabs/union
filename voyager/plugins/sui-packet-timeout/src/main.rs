@@ -2,9 +2,9 @@ use std::collections::VecDeque;
 
 use ibc_union_spec::{
     IbcUnion,
-    datagram::{Datagram, MsgPacketTimeout},
+    datagram::{Datagram, MsgCommitTimedOutPacket, MsgPacketTimeout},
     event::{FullEvent, PacketSend},
-    path::{BatchReceiptsPath, TimedOutPacketPath},
+    path::{BatchPacketsPath, BatchReceiptsPath, TimedOutPacketPath},
 };
 use jsonrpsee::{
     Extensions,
@@ -13,8 +13,13 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use sui_sdk::{
+    SuiClient, SuiClientBuilder,
+    rpc_types::{SuiMoveValue, SuiParsedData, SuiTransactionBlockResponseOptions},
+    types::{TypeTag, base_types::ObjectID, dynamic_field::DynamicFieldName},
+};
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{self, ErrorReporter, never::Never};
+use unionlabs::{self, ErrorReporter, ibc::core::client::height::Height, never::Never};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     message::{
@@ -29,7 +34,10 @@ use voyager_sdk::{
     vm::{Op, call, defer, noop, pass::PassResult, seq},
 };
 
-use crate::call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt};
+use crate::call::{
+    MakeMsgTimeout, MakeMsgTimeoutCommitment, ModuleCall, WaitForTimeoutCommitment,
+    WaitForTimeoutOrReceipt,
+};
 
 pub mod call;
 
@@ -39,12 +47,18 @@ async fn main() {
 }
 
 pub struct Module {
-    chain_id: ChainId,
+    pub chain_id: ChainId,
+
+    pub sui_client: SuiClient,
+
+    pub ibc_store: ObjectID,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
-    chain_id: ChainId,
+    pub chain_id: ChainId,
+    pub rpc_url: String,
+    pub ibc_store: ObjectID,
 }
 
 impl Plugin for Module {
@@ -55,14 +69,12 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> anyhow::Result<Self> {
-        Ok(Module::new(config))
+        Ok(Module::new(config).await?)
     }
 
     fn info(config: Self::Config) -> PluginInfo {
-        let module = Module::new(config);
-
         PluginInfo {
-            name: module.plugin_name(),
+            name: Module::plugin_name(),
             // TODO: Support IBC classic
             interest_filter: format!(
                 r#"
@@ -78,7 +90,7 @@ else
 end
 "#,
                 ibc_union_id = IbcUnion::ID,
-                chain_id = module.chain_id
+                chain_id = config.chain_id
             ),
         }
     }
@@ -91,12 +103,24 @@ end
 pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
 impl Module {
-    fn plugin_name(&self) -> String {
+    fn plugin_name() -> String {
         PLUGIN_NAME.to_string()
     }
 
-    pub fn new(Config { chain_id }: Config) -> Self {
-        Self { chain_id }
+    pub async fn new(
+        Config {
+            chain_id,
+            rpc_url,
+            ibc_store,
+        }: Config,
+    ) -> anyhow::Result<Self> {
+        let sui_client = SuiClientBuilder::default().build(&rpc_url).await?;
+
+        Ok(Self {
+            chain_id,
+            sui_client,
+            ibc_store,
+        })
     }
 }
 
@@ -136,7 +160,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     FullEvent::PacketSend(packet_send) => Ok((
                         vec![idx],
                         call(PluginMessage::new(
-                            self.plugin_name(),
+                            Module::plugin_name(),
                             ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
                                 event: packet_send,
                                 chain_id: chain_event.chain_id.clone(),
@@ -174,6 +198,150 @@ impl PluginServer<ModuleCall, Never> for Module {
         match msg {
             ModuleCall::WaitForTimeoutOrReceipt(call) => {
                 self.wait_for_timeout_or_receipt(voyager_client, call).await
+            }
+            ModuleCall::MakeMsgTimeoutCommitment(MakeMsgTimeoutCommitment { event, chain_id }) => {
+                let client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        chain_id.clone(),
+                        QueryHeight::Latest,
+                        event.packet.source_channel.connection.client_id,
+                    )
+                    .await?;
+
+                let proof_sent = voyager_client
+                    .query_ibc_proof(
+                        chain_id.clone(),
+                        QueryHeight::Specific(client_meta.counterparty_height),
+                        BatchPacketsPath::from_packets(&[event.packet()]),
+                    )
+                    .await?
+                    .into_result()?;
+
+                match proof_sent.proof_type {
+                    ProofType::NonMembership => {
+                        warn!(
+                            packet_hash = %event.packet().hash(),
+                            "packet is not even sent, aborting the timeout commitment"
+                        );
+
+                        Ok(noop())
+                    }
+                    ProofType::Membership => {
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(
+                                chain_id.clone(),
+                                event.packet.source_channel.connection.client_id,
+                            )
+                            .await?;
+
+                        let encoded_proof_commitment = voyager_client
+                            .encode_proof::<IbcUnion>(
+                                client_info.client_type,
+                                client_info.ibc_interface,
+                                proof_sent.proof,
+                            )
+                            .await?;
+
+                        Ok(seq([
+                            call(SubmitTx {
+                                chain_id: chain_id.clone(),
+                                datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
+                                    MsgCommitTimedOutPacket {
+                                        packet: event.packet(),
+                                        proof: encoded_proof_commitment,
+                                        proof_height: client_meta.counterparty_height.height(),
+                                    },
+                                ))],
+                            }),
+                            call(PluginMessage::new(
+                                Module::plugin_name(),
+                                ModuleCall::from(MakeMsgTimeout { event, chain_id }),
+                            )),
+                        ]))
+                    }
+                }
+            }
+            ModuleCall::WaitForTimeoutCommitment(WaitForTimeoutCommitment { event, chain_id }) => {
+                let timeout_path = TimedOutPacketPath::from_packet(&event.packet());
+
+                let SuiParsedData::MoveObject(object) = self
+                    .sui_client
+                    .read_api()
+                    .get_dynamic_field_object(
+                        self.ibc_store,
+                        DynamicFieldName {
+                            type_: TypeTag::Vector(Box::new(TypeTag::U8)),
+                            value: serde_json::to_value(timeout_path).expect("serde will work"),
+                        },
+                    )
+                    .await
+                    .map_err(|err| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("unable to fetch the packet hash: {}", ErrorReporter(err)),
+                            None::<()>,
+                        )
+                    })?
+                    .data
+                    .expect("data exists")
+                    .content
+                    .expect("content exists")
+                else {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        "unexpected data found when trying to fetch the packet hash to digest",
+                        None::<()>,
+                    ));
+                };
+
+                let SuiMoveValue::Vector(v) = object
+                    .fields
+                    .field_value("value")
+                    .expect("table has a value")
+                else {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        "invalid value type when parsing the packet to digest",
+                        None::<()>,
+                    ));
+                };
+
+                let digest: Vec<u8> = v
+                    .into_iter()
+                    .map(|n| {
+                        let SuiMoveValue::Number(n) = n else {
+                            panic!("this will always be u8");
+                        };
+
+                        n as u8
+                    })
+                    .collect();
+
+                let height = self
+                    .sui_client
+                    .read_api()
+                    .get_transaction_with_options(
+                        digest.try_into().expect("ibc saves tx digest"),
+                        SuiTransactionBlockResponseOptions::new(),
+                    )
+                    .await
+                    .unwrap()
+                    .checkpoint
+                    .unwrap();
+
+                let proof_timeout = voyager_client
+                    .query_ibc_proof(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(Height::new(height)),
+                        TimedOutPacketPath::from_packet(&event.packet()),
+                    )
+                    .await?
+                    .into_result()?;
+
+                match proof_timeout.proof_type {
+                    ProofType::NonMembership => todo!(),
+                    ProofType::Membership => Ok(noop()),
+                }
             }
             ModuleCall::MakeMsgTimeout(MakeMsgTimeout { event, chain_id }) => {
                 let client_meta = voyager_client
@@ -223,7 +391,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
                                 MsgPacketTimeout {
                                     packet: event.packet(),
-                                    proof: encoded_proof_commtment,
+                                    proof: encoded_proof_commitment,
                                     proof_height: client_meta.counterparty_height.height(),
                                 },
                             ))],

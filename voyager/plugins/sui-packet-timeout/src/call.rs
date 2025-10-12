@@ -7,6 +7,8 @@ use voyager_sdk::primitives::ChainId;
 #[derive(Enumorph)]
 pub enum ModuleCall {
     WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt),
+    MakeMsgTimeoutCommitment(MakeMsgTimeoutCommitment),
+    WaitForTimeoutCommitment(WaitForTimeoutCommitment),
     MakeMsgTimeout(MakeMsgTimeout),
 }
 
@@ -18,6 +20,18 @@ pub struct WaitForTimeoutOrReceipt {
 
 #[model]
 pub struct MakeMsgTimeout {
+    pub event: PacketSend,
+    pub chain_id: ChainId,
+}
+
+#[model]
+pub struct MakeMsgTimeoutCommitment {
+    pub event: PacketSend,
+    pub chain_id: ChainId,
+}
+
+#[model]
+pub struct WaitForTimeoutCommitment {
     pub event: PacketSend,
     pub chain_id: ChainId,
 }

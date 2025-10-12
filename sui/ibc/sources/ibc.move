@@ -293,7 +293,8 @@ module ibc::ibc {
         next_client_sequence: u32,
         next_channel_sequence: u32,
         next_connection_sequence: u32,
-        packet_hash_to_digest: Table<vector<u8>, vector<u8>>
+        commitment_to_digest: Table<vector<u8>, vector<u8>>,
+        
     }
 
     fun init(ctx: &mut TxContext) {
@@ -308,7 +309,7 @@ module ibc::ibc {
             next_client_sequence: 1,
             next_channel_sequence: 1,
             next_connection_sequence: 1,
-            packet_hash_to_digest: table::new(ctx)
+            commitment_to_digest: table::new(ctx)
         });
     }
 
@@ -991,7 +992,7 @@ module ibc::ibc {
 
         // This is very important for the relayers to be able to get the exact transaction from the `packet_hash`.
         // They will later use this to get the full packet.
-        ibc_store.packet_hash_to_digest.add(packet_hash, *ctx.digest());
+        ibc_store.commitment_to_digest.add(packet_hash, *ctx.digest());
 
         event::emit(
             PacketSend {
@@ -1446,6 +1447,7 @@ module ibc::ibc {
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
+        ctx: &mut TxContext,
     ) {
         let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
         assert!(
@@ -1488,8 +1490,15 @@ module ibc::ibc {
             abort err
         };
 
+        let commitment_key = commitment::timed_out_packet_commitment_key(packet_hash);
+
+        ibc_store.commitment_to_digest.add(
+            commitment_key,
+            *ctx.digest(),
+        );
+
         ibc_store.commitments.add(
-            commitment::timed_out_packet_commitment_key(packet_hash),
+            commitment_key,
             COMMITMENT_MAGIC
         );
     }

@@ -16916,6 +16916,7 @@ dependencies = [
  "macros",
  "serde",
  "serde_json",
+ "sui-sdk",
  "tokio",
  "tracing",
  "unionlabs",
