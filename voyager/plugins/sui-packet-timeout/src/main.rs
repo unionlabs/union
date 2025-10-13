@@ -21,7 +21,8 @@ use sui_sdk::{
 use tracing::{debug, info, instrument, warn};
 use unionlabs::{self, ErrorReporter, ibc::core::client::height::Height, never::Never};
 use voyager_sdk::{
-    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient,
+    anyhow::{self, anyhow},
     message::{
         PluginMessage, VoyagerMessage,
         call::{SubmitTx, WaitForTrustedTimestamp},
@@ -31,7 +32,7 @@ use voyager_sdk::{
     primitives::{ChainId, IbcSpec, QueryHeight},
     rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
     types::{ProofType, RawClientId},
-    vm::{Op, call, defer, noop, pass::PassResult, seq},
+    vm::{Op, call, defer, defer_relative, noop, pass::PassResult, seq},
 };
 
 use crate::call::{
@@ -262,16 +263,19 @@ impl PluginServer<ModuleCall, Never> for Module {
                 }
             }
             ModuleCall::WaitForTimeoutCommitment(WaitForTimeoutCommitment { event, chain_id }) => {
-                match self.wait_for_timeout_commitment(event, chain_id) {
+                match self
+                    .wait_for_timeout_commitment(voyager_client, event.clone(), chain_id.clone())
+                    .await
+                {
                     Ok(op) => Ok(op),
                     Err(err) => {
-                        warn!(err);
+                        warn!("{err}");
 
                         Ok(seq([
                             defer_relative(1),
                             call(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
+                                Self::plugin_name(),
+                                ModuleCall::WaitForTimeoutCommitment(WaitForTimeoutCommitment {
                                     event,
                                     chain_id,
                                 }),
@@ -400,7 +404,7 @@ impl Module {
                     Ok(self.mk_wait(chain_id, event))
                 } else {
                     Ok(call(PluginMessage::new(
-                        self.plugin_name(),
+                        Self::plugin_name(),
                         ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
                             event,
                             chain_id,
@@ -425,11 +429,14 @@ impl Module {
             }),
             // then make the timeout message
             call(PluginMessage::new(
-                self.plugin_name(),
-                ModuleCall::from(MakeMsgTimeout { event, chain_id }),
+                Self::plugin_name(),
+                ModuleCall::from(MakeMsgTimeout {
+                    event: event.clone(),
+                    chain_id: chain_id.clone(),
+                }),
             )),
             call(PluginMessage::new(
-                self.plugin_name(),
+                Self::plugin_name(),
                 ModuleCall::from(WaitForTimeoutCommitment { event, chain_id }),
             )),
         ])
@@ -437,6 +444,7 @@ impl Module {
 
     async fn wait_for_timeout_commitment(
         &self,
+        voyager_client: &VoyagerClient,
         event: PacketSend,
         chain_id: ChainId,
     ) -> anyhow::Result<Op<VoyagerMessage>> {
@@ -457,9 +465,9 @@ impl Module {
                 anyhow!("could not get the dynamic field object, this might be an RPC issue")
             })?
             .data
-            .map_err(|_| anyhow!("data does not exist"))?
+            .ok_or(anyhow!("data does not exist"))?
             .content
-            .map_err(|_| anyhow!("content does not exist"))?
+            .ok_or(anyhow!("content does not exist"))?
         else {
             return Err(anyhow!(
                 "data type is not `MoveObject`, this might be an RPC issue"
@@ -500,9 +508,9 @@ impl Module {
                 anyhow!("The tx exists. But we might be having an RPC issue, so will retry.")
             })?
             .checkpoint
-            .map_err(|_| {
+            .ok_or(
                 anyhow!("The tx exists and it has checkpoint in it. But we might be having an RPC issue, so will retry.")
-            })?;
+            )?;
 
         let proof_timeout = voyager_client
             .query_ibc_proof(
@@ -517,7 +525,7 @@ impl Module {
             ProofType::NonMembership => Ok(seq([
                 defer_relative(1),
                 call(PluginMessage::new(
-                    self.plugin_name(),
+                    Self::plugin_name(),
                     ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
                         event,
                         chain_id,

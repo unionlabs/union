@@ -420,7 +420,7 @@ ucs03-zkgm-packet                         = { path = "lib/ucs03-zkgm-packet", de
 ucs03-zkgm-token-minter-api               = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 ucs03-zkgmable                            = { path = "lib/ucs03-zkgmable", default-features = false }
 ucs04                                     = { path = "lib/ucs04", default-features = false }
-unionlabs                                 = { path = "lib/unionlabs", default-features = false, features = ["proto"] }                           # TODO: Properly feature gate proto in unionlabs
+unionlabs                                 = { path = "lib/unionlabs", default-features = false, features = ["proto"] }                 # TODO: Properly feature gate proto in unionlabs
 unionlabs-encoding                        = { path = "lib/unionlabs-encoding", default-features = false }
 unionlabs-primitives                      = { path = "lib/unionlabs-primitives", default-features = false }
 voyager-client                            = { path = "lib/voyager-client", default-features = false }
