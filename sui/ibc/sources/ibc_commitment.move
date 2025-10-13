@@ -57,8 +57,7 @@
 // EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
-#[allow(implicit_const_copy)]
-#[allow(unused_const)]
+#[allow(implicit_const_copy, unused_const)]
 module ibc::commitment {
     use sui::hash;
     use sui::address;
@@ -176,7 +175,7 @@ module ibc::commitment {
     ): vector<u8> {
         bcs::to_bytes(&PacketTimeoutCommitmentBcs {
             prefix: PACKET_TIMEOUTS,
-            batch_hash: address::from_bytes(packet_hash)
+            batch_hash: address::from_bytes(batch_hash)
         })
     }
 

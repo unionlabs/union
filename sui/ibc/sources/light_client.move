@@ -230,3 +230,126 @@ module ibc::light_client {
         }
     }
 }
+
+#[test_only]
+module ibc::light_client {
+    use std::option::Option;
+    use std::string::{Self, String};
+
+    use sui::table::{Self, Table};
+    use sui::clock::Clock;
+    use sui::object_bag::{Self, ObjectBag};
+
+    use ibc::height::Height;
+    use ibc::create_lens_client_event::CreateLensClientEvent;
+    use ibc::cometbls_light_client;
+
+    const E_CLIENT_TYPE_NOT_SUPPORTED: u64 = 1;
+
+    public struct LightClientManager has store {
+        clients: ObjectBag,
+        client_id_to_type: Table<u32, String>,
+    }
+
+    public(package) fun new(ctx: &mut TxContext): LightClientManager {
+        LightClientManager {
+            clients: object_bag::new(ctx),
+            client_id_to_type: table::new(ctx)
+        }
+    }
+
+    public(package) fun exists(
+        store: &LightClientManager,
+        client_id: u32
+    ): bool {
+        store.client_id_to_type.contains(client_id)
+    }
+
+    public(package) fun create_client(
+        store: &mut LightClientManager,
+        client_type: String,
+        client_id: u32,
+        client_state_bytes: vector<u8>,
+        consensus_state_bytes: vector<u8>,
+        ctx: &mut TxContext,
+    ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
+        store.client_id_to_type.add(client_id, client_type);
+
+        (client_state_bytes, consensus_state_bytes, utf8(b"chain"), option::none())
+    }
+
+    public(package) fun status(
+        store: &LightClientManager,
+        client_id: u32
+    ): u64 {
+        1
+    }
+
+    public(package) fun misbehaviour(
+        store: &mut LightClientManager,
+        client_id: u32,
+        misbehaviour: vector<u8>,
+        relayer: address
+    ) {
+    }
+
+    public(package) fun get_timestamp_at_height(store: &LightClientManager, client_id: u32, height: u64): u64  {
+    }
+
+    public(package) fun verify_non_membership(
+        store: &LightClientManager,
+        client_id: u32,
+        height: u64,
+        proof: vector<u8>,
+        path: vector<u8>
+    ): u64 {
+        0
+    }
+
+    public(package) fun update_client(
+        store: &mut LightClientManager,
+        client_id: u32,
+        clock: &Clock,
+        client_msg: vector<u8>,
+        relayer: address,
+    ): (vector<u8>, vector<u8>, u64) {
+        (
+            client_msg,
+            client_msg,
+            10
+        )
+    }
+
+    public(package) fun latest_height(
+        store: &LightClientManager,
+        client_id: u32
+    ): u64 {
+        0
+    }
+
+    public(package) fun verify_membership(
+        store: &LightClientManager,
+        client_id: u32,
+        height: u64,
+        proof: vector<u8>,
+        key: vector<u8>,
+        value: vector<u8>
+    ): u64 {
+        0
+    }
+
+    public(package) fun get_client_state(
+        store: &LightClientManager,
+        client_id: u32
+    ): vector<u8> {        
+        vector::empty()
+    }
+
+    public(package) fun get_consensus_state(
+        store: &LightClientManager,
+        client_id: u32,
+        height: u64,
+    ): vector<u8> {
+        vector::empty()
+    }
+}

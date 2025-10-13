@@ -1541,7 +1541,7 @@ module ibc::ibc {
     }
 
     public fun get_commitment(ibc_store: &IBCStore, commitment_key: vector<u8>): vector<u8> {
-        if (!ibc_store.commitment.contains(commitment_key)) {
+        if (!ibc_store.commitments.contains(commitment_key)) {
             abort E_COMMITMENT_NOT_FOUND
         };
         *ibc_store.commitments.borrow(commitment_key)
