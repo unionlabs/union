@@ -8,9 +8,7 @@ use alloy::sol_types::SolValue;
 use hex_literal::hex;
 use ibc_union_spec::{ChannelId, datagram::MsgPacketAcknowledgement};
 use jsonrpsee::tracing::debug;
-use move_core_types_sui::{
-    account_address::AccountAddress, ident_str, language_storage::StructTag,
-};
+use move_core_types::{account_address::AccountAddress, ident_str, language_storage::StructTag};
 use sha3::{Digest, Keccak256};
 use sui_sdk::{
     rpc_types::{ObjectChange, SuiMoveValue, SuiParsedData, SuiTransactionBlockResponseOptions},

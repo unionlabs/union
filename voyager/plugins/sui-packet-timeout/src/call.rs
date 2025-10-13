@@ -17,17 +17,17 @@ pub enum ModuleCall {
 #[model]
 pub struct WaitForTimeoutOrReceipt {
     pub event: PacketSend,
-    pub chain_id: ChainId,
+    pub sender_chain_id: ChainId,
 }
 
 #[model]
 pub struct MakeMsgTimeoutCommitment {
     pub event: PacketSend,
-    pub chain_id: ChainId,
+    pub sender_chain_id: ChainId,
 }
 
 #[model]
 pub struct WaitForTimeoutCommitmentAndMakeMsgTimeout {
     pub event: PacketSend,
-    pub chain_id: ChainId,
+    pub sender_chain_id: ChainId,
 }

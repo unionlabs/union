@@ -58,6 +58,7 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 #[allow(implicit_const_copy)]
+#[allow(unused_const)]
 module ibc::commitment {
     use sui::hash;
     use sui::address;
@@ -74,8 +75,8 @@ module ibc::commitment {
     const CHANNELS: address = @0x03;
     const PACKETS: address = @0x04;
     const PACKET_ACKS: address = @0x05;
-    // const MEMBERSHIP_PROOF: address = @0x06;
-    // const NON_MEMBERSHIP_PROOF: address = @0x07;
+    const MEMBERSHIP_PROOF: address = @0x06;
+    const NON_MEMBERSHIP_PROOF: address = @0x07;
     const PACKET_TIMEOUTS: address = @0x08;
 
     public struct ClientStateCommitmentBcs has drop {

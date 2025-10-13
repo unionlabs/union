@@ -375,7 +375,7 @@ impl BatchTimeoutPath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(PACKET_TIMEOUTS.to_be_bytes())
-            .chain_update(&self.batch_hash)
+            .chain_update(self.batch_hash)
             .finalize()
             .into()
     }

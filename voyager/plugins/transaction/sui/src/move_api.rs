@@ -7,7 +7,7 @@ use ibc_union_spec::{
         MsgUpdateClient,
     },
 };
-use move_core_types_sui::{ident_str, identifier::IdentStr};
+use move_core_types::{ident_str, identifier::IdentStr};
 use sui_sdk::{
     SuiClient,
     rpc_types::{SuiObjectDataOptions, SuiTypeTag},

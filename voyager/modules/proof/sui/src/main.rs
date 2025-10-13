@@ -284,7 +284,7 @@ fn convert_type_tag(tag: sui_sdk::types::TypeTag) -> TypeTag {
     }
 }
 
-fn convert_struct_tag(tag: move_core_types_sui::language_storage::StructTag) -> StructTag {
+fn convert_struct_tag(tag: move_core_types::language_storage::StructTag) -> StructTag {
     StructTag {
         address: tag.address.into_bytes().into(),
         module: tag.module.into_string(),
