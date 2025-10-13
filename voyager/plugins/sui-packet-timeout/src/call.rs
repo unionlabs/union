@@ -7,19 +7,15 @@ use voyager_sdk::primitives::ChainId;
 #[derive(Enumorph)]
 pub enum ModuleCall {
     WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt),
+    /// Makes the timeout commitment message.
     MakeMsgTimeoutCommitment(MakeMsgTimeoutCommitment),
-    WaitForTimeoutCommitment(WaitForTimeoutCommitment),
-    MakeMsgTimeout(MakeMsgTimeout),
+    /// Waits until the timeout commitment is complete. Fetches the commitment height and
+    /// fetches the timeout commitment at that specific height. Then it makes the timeout message.
+    WaitForTimeoutCommitmentAndMakeMsgTimeout(WaitForTimeoutCommitmentAndMakeMsgTimeout),
 }
 
 #[model]
 pub struct WaitForTimeoutOrReceipt {
-    pub event: PacketSend,
-    pub chain_id: ChainId,
-}
-
-#[model]
-pub struct MakeMsgTimeout {
     pub event: PacketSend,
     pub chain_id: ChainId,
 }
@@ -31,7 +27,7 @@ pub struct MakeMsgTimeoutCommitment {
 }
 
 #[model]
-pub struct WaitForTimeoutCommitment {
+pub struct WaitForTimeoutCommitmentAndMakeMsgTimeout {
     pub event: PacketSend,
     pub chain_id: ChainId,
 }

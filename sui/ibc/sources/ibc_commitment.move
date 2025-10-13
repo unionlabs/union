@@ -74,10 +74,9 @@ module ibc::commitment {
     const CHANNELS: address = @0x03;
     const PACKETS: address = @0x04;
     const PACKET_ACKS: address = @0x05;
-    const NEXT_SEQ_SEND: address = @0x06;
-    const NEXT_SEQ_RECV: address = @0x07;
-    const NEXT_SEQ_ACK: address = @0x08;
-    const TIMED_OUT_PACKET: address = @0xdeadbeef;
+    // const MEMBERSHIP_PROOF: address = @0x06;
+    // const NON_MEMBERSHIP_PROOF: address = @0x07;
+    const PACKET_TIMEOUTS: address = @0x08;
 
     public struct ClientStateCommitmentBcs has drop {
         prefix: address,
@@ -165,18 +164,18 @@ module ibc::commitment {
         })
     }
 
-    public struct TimedOutPacketCommitmentBcs has drop {
+    public struct PacketTimeoutCommitmentBcs has drop {
         prefix: address,
-        packet_hash: address,
+        batch_hash: address,
     }
 
     // Generate the path for channel
-    public fun timed_out_packet_commitment_path(
-        packet_hash: vector<u8>
+    public fun packet_timeout_commitment_path(
+        batch_hash: vector<u8>
     ): vector<u8> {
-        bcs::to_bytes(&TimedOutPacketCommitmentBcs {
-            prefix: TIMED_OUT_PACKET,
-            packet_hash: address::from_bytes(packet_hash)
+        bcs::to_bytes(&PacketTimeoutCommitmentBcs {
+            prefix: PACKET_TIMEOUTS,
+            batch_hash: address::from_bytes(packet_hash)
         })
     }
 
@@ -210,10 +209,10 @@ module ibc::commitment {
         keccak256(&batch_receipts_commitment_path(batch_hash))
     }
 
-    public fun timed_out_packet_commitment_key(
+    public fun packet_timeout_commitment_key(
         batch_hash: vector<u8>
     ): vector<u8> {
-        keccak256(&timed_out_packet_commitment_path(batch_hash))
+        keccak256(&packet_timeout_commitment_path(batch_hash))
     }
 
     public struct SinglePacketCommitmentBcs has drop {

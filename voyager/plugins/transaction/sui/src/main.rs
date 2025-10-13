@@ -334,8 +334,8 @@ impl Module {
                         unimplemented!()
                     }
                 }
-                Datagram::CommitTimedOutPacket(data) => {
-                    move_api::commit_timed_out_packet_call(&mut ptb_builder, self, data)?
+                Datagram::CommitPacketTimeout(data) => {
+                    move_api::packet_timeout_commitment_call(&mut ptb_builder, self, data)?
                 }
                 _ => todo!(),
             }

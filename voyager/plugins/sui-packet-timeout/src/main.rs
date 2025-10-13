@@ -2,9 +2,9 @@ use std::collections::VecDeque;
 
 use ibc_union_spec::{
     IbcUnion,
-    datagram::{Datagram, MsgCommitTimedOutPacket, MsgPacketTimeout},
+    datagram::{Datagram, MsgCommitPacketTimeout, MsgPacketTimeout},
     event::{FullEvent, PacketSend},
-    path::{BatchPacketsPath, BatchReceiptsPath, TimedOutPacketPath},
+    path::{BatchPacketsPath, BatchReceiptsPath, BatchTimeoutPath},
 };
 use jsonrpsee::{
     Extensions,
@@ -36,7 +36,7 @@ use voyager_sdk::{
 };
 
 use crate::call::{
-    MakeMsgTimeout, MakeMsgTimeoutCommitment, ModuleCall, WaitForTimeoutCommitment,
+    MakeMsgTimeoutCommitment, ModuleCall, WaitForTimeoutCommitmentAndMakeMsgTimeout,
     WaitForTimeoutOrReceipt,
 };
 
@@ -243,26 +243,22 @@ impl PluginServer<ModuleCall, Never> for Module {
                             )
                             .await?;
 
-                        Ok(seq([
-                            call(SubmitTx {
-                                chain_id: chain_id.clone(),
-                                datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
-                                    MsgCommitTimedOutPacket {
-                                        packet: event.packet(),
-                                        proof: encoded_proof_commitment,
-                                        proof_height: client_meta.counterparty_height.height(),
-                                    },
-                                ))],
-                            }),
-                            call(PluginMessage::new(
-                                Module::plugin_name(),
-                                ModuleCall::from(MakeMsgTimeout { event, chain_id }),
-                            )),
-                        ]))
+                        Ok(seq([call(SubmitTx {
+                            chain_id: chain_id.clone(),
+                            datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
+                                MsgCommitPacketTimeout {
+                                    packet: event.packet(),
+                                    proof: encoded_proof_commitment,
+                                    proof_height: client_meta.counterparty_height.height(),
+                                },
+                            ))],
+                        })]))
                     }
                 }
             }
-            ModuleCall::WaitForTimeoutCommitment(WaitForTimeoutCommitment { event, chain_id }) => {
+            ModuleCall::WaitForTimeoutCommitmentAndMakeMsgTimeout(
+                WaitForTimeoutCommitmentAndMakeMsgTimeout { event, chain_id },
+            ) => {
                 match self
                     .wait_for_timeout_commitment(voyager_client, event.clone(), chain_id.clone())
                     .await
@@ -275,68 +271,11 @@ impl PluginServer<ModuleCall, Never> for Module {
                             defer_relative(1),
                             call(PluginMessage::new(
                                 Self::plugin_name(),
-                                ModuleCall::WaitForTimeoutCommitment(WaitForTimeoutCommitment {
-                                    event,
-                                    chain_id,
-                                }),
+                                ModuleCall::WaitForTimeoutCommitmentAndMakeMsgTimeout(
+                                    WaitForTimeoutCommitmentAndMakeMsgTimeout { event, chain_id },
+                                ),
                             )),
                         ]))
-                    }
-                }
-            }
-            ModuleCall::MakeMsgTimeout(MakeMsgTimeout { event, chain_id }) => {
-                let client_meta = voyager_client
-                    .client_state_meta::<IbcUnion>(
-                        chain_id.clone(),
-                        QueryHeight::Latest,
-                        event.packet.source_channel.connection.client_id,
-                    )
-                    .await?;
-
-                let proof_unreceived = voyager_client
-                    .query_ibc_proof(
-                        self.chain_id.clone(),
-                        QueryHeight::Specific(client_meta.counterparty_height),
-                        TimedOutPacketPath::from_packet(&event.packet()),
-                    )
-                    .await?
-                    .into_result()?;
-
-                match proof_unreceived.proof_type {
-                    ProofType::NonMembership => {
-                        warn!(
-                            packet_hash = %event.packet().hash(),
-                            "packet timed out, but the time out commitment is not made yet"
-                        );
-
-                        Ok(noop())
-                    }
-                    ProofType::Membership => {
-                        let client_info = voyager_client
-                            .client_info::<IbcUnion>(
-                                chain_id.clone(),
-                                event.packet.source_channel.connection.client_id,
-                            )
-                            .await?;
-
-                        let encoded_proof_commitment = voyager_client
-                            .encode_proof::<IbcUnion>(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                proof_unreceived.proof,
-                            )
-                            .await?;
-
-                        Ok(call(SubmitTx {
-                            chain_id,
-                            datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
-                                MsgPacketTimeout {
-                                    packet: event.packet(),
-                                    proof: encoded_proof_commitment,
-                                    proof_height: client_meta.counterparty_height.height(),
-                                },
-                            ))],
-                        }))
                     }
                 }
             }
@@ -427,17 +366,21 @@ impl Module {
                 timestamp: event.packet.timeout_timestamp,
                 finalized: false,
             }),
-            // then make the timeout message
+            // then make the timeout commitment message
             call(PluginMessage::new(
                 Self::plugin_name(),
-                ModuleCall::from(MakeMsgTimeout {
+                ModuleCall::from(MakeMsgTimeoutCommitment {
                     event: event.clone(),
                     chain_id: chain_id.clone(),
                 }),
             )),
+            // then wait for the commitment to be done and make the timeout message
             call(PluginMessage::new(
                 Self::plugin_name(),
-                ModuleCall::from(WaitForTimeoutCommitment { event, chain_id }),
+                ModuleCall::from(WaitForTimeoutCommitmentAndMakeMsgTimeout {
+                    event: event.clone(),
+                    chain_id: chain_id.clone(),
+                }),
             )),
         ])
     }
@@ -448,7 +391,7 @@ impl Module {
         event: PacketSend,
         chain_id: ChainId,
     ) -> anyhow::Result<Op<VoyagerMessage>> {
-        let timeout_path = TimedOutPacketPath::from_packet(&event.packet());
+        let timeout_path = BatchTimeoutPath::from_packet(&event.packet());
 
         let SuiParsedData::MoveObject(object) = self
             .sui_client
@@ -516,7 +459,7 @@ impl Module {
             .query_ibc_proof(
                 self.chain_id.clone(),
                 QueryHeight::Specific(Height::new(height)),
-                TimedOutPacketPath::from_packet(&event.packet()),
+                BatchTimeoutPath::from_packet(&event.packet()),
             )
             .await?
             .into_result()?;
@@ -526,13 +469,37 @@ impl Module {
                 defer_relative(1),
                 call(PluginMessage::new(
                     Self::plugin_name(),
-                    ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
-                        event,
-                        chain_id,
-                    }),
+                    ModuleCall::WaitForTimeoutCommitmentAndMakeMsgTimeout(
+                        WaitForTimeoutCommitmentAndMakeMsgTimeout { event, chain_id },
+                    ),
                 )),
             ])),
-            ProofType::Membership => Ok(noop()),
+            ProofType::Membership => {
+                let client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        chain_id.clone(),
+                        event.packet.source_channel.connection.client_id,
+                    )
+                    .await?;
+
+                let encoded_proof_commitment = voyager_client
+                    .encode_proof::<IbcUnion>(
+                        client_info.client_type,
+                        client_info.ibc_interface,
+                        proof_timeout.proof,
+                    )
+                    .await?;
+                Ok(call(SubmitTx {
+                    chain_id,
+                    datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
+                        MsgPacketTimeout {
+                            packet: event.packet(),
+                            proof: encoded_proof_commitment,
+                            proof_height: height,
+                        },
+                    ))],
+                }))
+            }
         }
     }
 }

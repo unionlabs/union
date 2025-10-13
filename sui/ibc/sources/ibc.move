@@ -1441,7 +1441,7 @@ module ibc::ibc {
         }
     }
 
-    public fun commit_timed_out_packet(
+    public fun commit_packet_timeout(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
         packet: Packet,
@@ -1490,7 +1490,7 @@ module ibc::ibc {
             abort err
         };
 
-        let commitment_key = commitment::timed_out_packet_commitment_key(packet_hash);
+        let commitment_key = commitment::packet_timeout_commitment_key(packet_hash);
 
         ibc_store.commitment_to_digest.add(
             commitment_key,

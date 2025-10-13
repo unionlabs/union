@@ -2,7 +2,7 @@ use ibc_union_spec::{
     ChannelId,
     datagram::{
         MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
-        MsgCommitTimedOutPacket, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
+        MsgCommitPacketTimeout, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
         MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv,
         MsgUpdateClient,
     },
@@ -350,15 +350,15 @@ pub fn channel_open_confirm_call(
     )
 }
 
-pub fn commit_timed_out_packet_call(
+pub fn packet_timeout_commitment_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
-    data: MsgCommitTimedOutPacket,
+    data: MsgCommitPacketTimeout,
 ) -> anyhow::Result<()> {
     ptb.move_call(
         module.ibc_handler_address.into(),
         IBC_IDENT.into(),
-        ident_str!("commit_timed_out_packet").into(),
+        ident_str!("commit_packet_timeout").into(),
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {

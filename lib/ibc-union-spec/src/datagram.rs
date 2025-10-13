@@ -36,7 +36,7 @@ pub enum Datagram {
     BatchAcks(MsgBatchAcks),
     CommitMembershipProof(MsgCommitMembershipProof),
     CommitNonMembershipProof(MsgCommitNonMembershipProof),
-    CommitTimedOutPacket(MsgCommitTimedOutPacket),
+    CommitPacketTimeout(MsgCommitPacketTimeout),
 }
 
 impl Datagram {
@@ -64,7 +64,7 @@ impl Datagram {
             Self::BatchAcks(_msg) => todo!(),
             Self::CommitMembershipProof(msg) => Some(Height::new(msg.proof_height)),
             Self::CommitNonMembershipProof(msg) => Some(Height::new(msg.proof_height)),
-            Self::CommitTimedOutPacket(msg) => Some(Height::new(msg.proof_height)),
+            Self::CommitPacketTimeout(msg) => Some(Height::new(msg.proof_height)),
         }
     }
 
@@ -90,7 +90,7 @@ impl Datagram {
             Self::BatchAcks(_) => "batch_acks",
             Self::CommitMembershipProof(_) => "commit_membership_proof",
             Self::CommitNonMembershipProof(_) => "commit_non_membership_proof",
-            Self::CommitTimedOutPacket(_) => "commit_timed_out_packet",
+            Self::CommitPacketTimeout(_) => "commit_packet_timeout",
         }
     }
 }
@@ -365,7 +365,7 @@ pub struct MsgCommitNonMembershipProof {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
-pub struct MsgCommitTimedOutPacket {
+pub struct MsgCommitPacketTimeout {
     pub packet: Packet,
     pub proof_height: u64,
     pub proof: Bytes,
