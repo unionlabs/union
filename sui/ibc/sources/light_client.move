@@ -75,12 +75,14 @@ module ibc::light_client {
     public struct LightClientManager has store {
         clients: ObjectBag,
         client_id_to_type: Table<u32, String>,
+        test_mode: bool,
     }
 
-    public(package) fun new(ctx: &mut TxContext): LightClientManager {
+    public(package) fun new(ctx: &mut TxContext, test_mode: bool): LightClientManager {
         LightClientManager {
             clients: object_bag::new(ctx),
-            client_id_to_type: table::new(ctx)
+            client_id_to_type: table::new(ctx),
+            test_mode
         }
     }
 
@@ -99,6 +101,10 @@ module ibc::light_client {
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
     ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
+        if (store.test_mode) {
+            return (client_state_bytes, consensus_state_bytes, string::utf8(b"test-chain-id"), option::none())  
+        };
+
         let (csb, consb, c_cid, l_event) =  if (client_type.bytes() == b"cometbls") {
             let (client, csb, consb, c_cid, l_event) = cometbls_light_client::create_client(client_id, client_state_bytes, consensus_state_bytes, ctx);
             store.clients.add(client_id, client);
@@ -116,6 +122,10 @@ module ibc::light_client {
         store: &LightClientManager,
         client_id: u32
     ): u64 {
+        if (store.test_mode) {
+            return 0;  
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status()
@@ -130,6 +140,10 @@ module ibc::light_client {
         misbehaviour: vector<u8>,
         relayer: address
     ) {
+        if (store.test_mode) {
+            return
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).misbehaviour(misbehaviour, relayer);
@@ -139,6 +153,10 @@ module ibc::light_client {
     }
 
     public(package) fun get_timestamp_at_height(store: &LightClientManager, client_id: u32, height: u64): u64  {
+        if (store.test_mode) {
+            return height * 10   
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_timestamp_at_height(height)
@@ -154,6 +172,10 @@ module ibc::light_client {
         proof: vector<u8>,
         path: vector<u8>
     ): u64 {
+        if (store.test_mode) {
+            return 0
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_non_membership(height, proof, path)
@@ -169,6 +191,10 @@ module ibc::light_client {
         client_msg: vector<u8>,
         relayer: address,
     ): (vector<u8>, vector<u8>, u64) {
+        if (store.test_mode) {
+            return (client_msg, client_msg, 10_000)
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).update_client(clock, client_msg, relayer)
@@ -181,6 +207,10 @@ module ibc::light_client {
         store: &LightClientManager,
         client_id: u32
     ): u64 {
+        if (store.test_mode) {
+            return 10_000
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).latest_height()
@@ -197,6 +227,10 @@ module ibc::light_client {
         key: vector<u8>,
         value: vector<u8>
     ): u64 {
+        if (store.test_mode) {
+            return 0
+        };
+
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_membership(height, proof, key, value)
@@ -228,128 +262,5 @@ module ibc::light_client {
         } else {
             abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
-    }
-}
-
-#[test_only]
-module ibc::light_client {
-    use std::option::Option;
-    use std::string::{Self, String};
-
-    use sui::table::{Self, Table};
-    use sui::clock::Clock;
-    use sui::object_bag::{Self, ObjectBag};
-
-    use ibc::height::Height;
-    use ibc::create_lens_client_event::CreateLensClientEvent;
-    use ibc::cometbls_light_client;
-
-    const E_CLIENT_TYPE_NOT_SUPPORTED: u64 = 1;
-
-    public struct LightClientManager has store {
-        clients: ObjectBag,
-        client_id_to_type: Table<u32, String>,
-    }
-
-    public(package) fun new(ctx: &mut TxContext): LightClientManager {
-        LightClientManager {
-            clients: object_bag::new(ctx),
-            client_id_to_type: table::new(ctx)
-        }
-    }
-
-    public(package) fun exists(
-        store: &LightClientManager,
-        client_id: u32
-    ): bool {
-        store.client_id_to_type.contains(client_id)
-    }
-
-    public(package) fun create_client(
-        store: &mut LightClientManager,
-        client_type: String,
-        client_id: u32,
-        client_state_bytes: vector<u8>,
-        consensus_state_bytes: vector<u8>,
-        ctx: &mut TxContext,
-    ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
-        store.client_id_to_type.add(client_id, client_type);
-
-        (client_state_bytes, consensus_state_bytes, utf8(b"chain"), option::none())
-    }
-
-    public(package) fun status(
-        store: &LightClientManager,
-        client_id: u32
-    ): u64 {
-        1
-    }
-
-    public(package) fun misbehaviour(
-        store: &mut LightClientManager,
-        client_id: u32,
-        misbehaviour: vector<u8>,
-        relayer: address
-    ) {
-    }
-
-    public(package) fun get_timestamp_at_height(store: &LightClientManager, client_id: u32, height: u64): u64  {
-    }
-
-    public(package) fun verify_non_membership(
-        store: &LightClientManager,
-        client_id: u32,
-        height: u64,
-        proof: vector<u8>,
-        path: vector<u8>
-    ): u64 {
-        0
-    }
-
-    public(package) fun update_client(
-        store: &mut LightClientManager,
-        client_id: u32,
-        clock: &Clock,
-        client_msg: vector<u8>,
-        relayer: address,
-    ): (vector<u8>, vector<u8>, u64) {
-        (
-            client_msg,
-            client_msg,
-            10
-        )
-    }
-
-    public(package) fun latest_height(
-        store: &LightClientManager,
-        client_id: u32
-    ): u64 {
-        0
-    }
-
-    public(package) fun verify_membership(
-        store: &LightClientManager,
-        client_id: u32,
-        height: u64,
-        proof: vector<u8>,
-        key: vector<u8>,
-        value: vector<u8>
-    ): u64 {
-        0
-    }
-
-    public(package) fun get_client_state(
-        store: &LightClientManager,
-        client_id: u32
-    ): vector<u8> {        
-        vector::empty()
-    }
-
-    public(package) fun get_consensus_state(
-        store: &LightClientManager,
-        client_id: u32,
-        height: u64,
-    ): vector<u8> {
-        vector::empty()
     }
 }
