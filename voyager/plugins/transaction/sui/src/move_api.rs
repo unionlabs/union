@@ -2,11 +2,12 @@ use ibc_union_spec::{
     ChannelId,
     datagram::{
         MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
-        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv, MsgUpdateClient,
+        MsgCommitPacketTimeout, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
+        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv,
+        MsgUpdateClient,
     },
 };
-use move_core_types_sui::{ident_str, identifier::IdentStr};
+use move_core_types::{ident_str, identifier::IdentStr};
 use sui_sdk::{
     SuiClient,
     rpc_types::{SuiObjectDataOptions, SuiTypeTag},
@@ -344,6 +345,29 @@ pub fn channel_open_confirm_call(
             }),
             data.channel_id.raw().into(),
             (&data.proof_ack.into_vec()).into(),
+            data.proof_height.into(),
+        ],
+    )
+}
+
+pub fn packet_timeout_commitment_call(
+    ptb: &mut ProgrammableTransactionBuilder,
+    module: &Module,
+    data: MsgCommitPacketTimeout,
+) -> anyhow::Result<()> {
+    ptb.move_call(
+        module.ibc_handler_address.into(),
+        IBC_IDENT.into(),
+        ident_str!("commit_packet_timeout").into(),
+        vec![],
+        vec![
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module.ibc_store.into(),
+                initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            SUI_CALL_ARG_CLOCK,
+            (&data.proof.into_vec()).into(),
             data.proof_height.into(),
         ],
     )

@@ -1045,6 +1045,7 @@ fn process_msgs(
                                 },
                             ))
                         }
+                        Datagram::CommitPacketTimeout(_) => unimplemented!(),
                     }
                 }
             };

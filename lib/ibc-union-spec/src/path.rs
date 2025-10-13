@@ -41,6 +41,7 @@ pub const PACKETS: U256 = U256::from_limbs([4, 0, 0, 0]);
 pub const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
 pub const MEMBERSHIP_PROOF: U256 = U256::from_limbs([6, 0, 0, 0]);
 pub const NON_MEMBERSHIP_PROOF: U256 = U256::from_limbs([7, 0, 0, 0]);
+pub const PACKET_TIMEOUTS: U256 = U256::from_limbs([8, 0, 0, 0]);
 
 #[cfg(feature = "ethabi")]
 #[must_use]
@@ -69,6 +70,7 @@ pub enum StorePath {
     BatchPackets(BatchPacketsPath),
     MembershipProof(MembershipProofPath),
     NonMembershipProof(NonMembershipProofPath),
+    BatchTimeouts(BatchTimeoutPath),
 }
 
 impl StorePath {
@@ -83,6 +85,7 @@ impl StorePath {
             Self::BatchPackets(path) => path.key(),
             Self::MembershipProof(path) => path.key(),
             Self::NonMembershipProof(path) => path.key(),
+            Self::BatchTimeouts(path) => path.key(),
         }
     }
 }
@@ -339,4 +342,47 @@ impl IbcStorePathKey for NonMembershipProofPath {
     type Spec = IbcUnion;
 
     type Value = ();
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct BatchTimeoutPath {
+    pub batch_hash: H256,
+}
+
+impl BatchTimeoutPath {
+    #[cfg(feature = "ethabi")]
+    #[must_use]
+    pub fn from_packet(packet: &Packet) -> Self {
+        use alloy_sol_types::SolValue;
+
+        Self {
+            batch_hash: {
+                Keccak256::new()
+                    .chain_update(packet.abi_encode())
+                    .finalize()
+                    .into()
+            },
+        }
+    }
+
+    #[must_use]
+    pub fn key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update(PACKET_TIMEOUTS.to_be_bytes())
+            .chain_update(self.batch_hash)
+            .finalize()
+            .into()
+    }
+}
+
+impl IbcStorePathKey for BatchTimeoutPath {
+    type Spec = IbcUnion;
+
+    type Value = H256;
 }

@@ -17,7 +17,7 @@ clap                   = { workspace = true, features = ["derive"] }
 embed-commit           = { workspace = true }
 ibc-union-spec         = { workspace = true, features = ["serde"] }
 jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
-move-core-types-sui    = { workspace = true }
+move-core-types        = { workspace = true }
 reqwest                = { workspace = true, features = ["json"] }
 serde                  = { workspace = true, features = ["derive"] }
 serde_json             = { workspace = true }

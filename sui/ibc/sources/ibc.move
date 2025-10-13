@@ -154,6 +154,8 @@ module ibc::ibc {
     const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 1061;
     const E_MAKER_MSG_LEN_MISMATCH: u64 = 1062;
     const E_ALREADY_RECEIVED: u64 = 1063;
+    const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 1064;
+    const E_COMMITMENT_NOT_FOUND: u64 = 1065;
 
     // This event is only emitted during the `init` phase
     // since the voyager event source module requires at least
@@ -291,7 +293,8 @@ module ibc::ibc {
         next_client_sequence: u32,
         next_channel_sequence: u32,
         next_connection_sequence: u32,
-        packet_hash_to_digest: Table<vector<u8>, vector<u8>>
+        commitment_to_digest: Table<vector<u8>, vector<u8>>,
+        
     }
 
     fun init(ctx: &mut TxContext) {
@@ -306,7 +309,7 @@ module ibc::ibc {
             next_client_sequence: 1,
             next_channel_sequence: 1,
             next_connection_sequence: 1,
-            packet_hash_to_digest: table::new(ctx)
+            commitment_to_digest: table::new(ctx)
         });
     }
 
@@ -989,7 +992,7 @@ module ibc::ibc {
 
         // This is very important for the relayers to be able to get the exact transaction from the `packet_hash`.
         // They will later use this to get the full packet.
-        ibc_store.packet_hash_to_digest.add(packet_hash, *ctx.digest());
+        ibc_store.commitment_to_digest.add(packet_hash, *ctx.digest());
 
         event::emit(
             PacketSend {
@@ -1438,6 +1441,68 @@ module ibc::ibc {
         }
     }
 
+    public fun commit_packet_timeout(
+        ibc_store: &mut IBCStore,
+        clock: &clock::Clock,
+        packet: Packet,
+        proof: vector<u8>,
+        proof_height: u64,
+        ctx: &mut TxContext,
+    ) {
+        let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
+        assert!(
+            current_timestamp >= packet.timeout_timestamp(),
+            E_PACKET_HAVE_NOT_TIMED_OUT
+        );
+
+        let packet_hash = commitment::commit_packet(&packet);
+
+        assert!(
+            !ibc_store.commitments.contains(commitment::batch_receipts_commitment_key(packet_hash)),
+            E_PACKET_ALREADY_RECEIVED
+        );
+
+        let channel = ibc_store.channels.borrow(packet.destination_channel_id());
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let connection_id = channel.connection_id();
+
+        let connection = ibc_store.connections.borrow(connection_id);
+        assert!(
+            connection.state() == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+        let client_id = connection.client_id();
+
+        // make sure that the packet is sent
+        let err =
+            ibc_store.client_mgr.verify_membership(
+                client_id,
+                proof_height,
+                proof,
+                commitment::batch_packets_commitment_key(
+                    packet_hash
+                ),
+                COMMITMENT_MAGIC
+            );
+
+        if (err != 0) {
+            abort err
+        };
+
+        let commitment_key = commitment::packet_timeout_commitment_key(packet_hash);
+
+        ibc_store.commitment_to_digest.add(
+            commitment_key,
+            *ctx.digest(),
+        );
+
+        ibc_store.commitments.add(
+            commitment_key,
+            COMMITMENT_MAGIC
+        );
+    }
+
     public fun get_client_state(ibc_store: &IBCStore, client_id: u32): vector<u8> {
         if (!ibc_store.client_mgr.exists(client_id)) {
             abort E_CLIENT_NOT_FOUND
@@ -1473,6 +1538,13 @@ module ibc::ibc {
             abort E_CHANNEL_NOT_FOUND
         };
         *ibc_store.channels.borrow(channel_id)
+    }
+
+    public fun get_commitment(ibc_store: &IBCStore, commitment_key: vector<u8>): vector<u8> {
+        if (!ibc_store.commitments.contains(commitment_key)) {
+            abort E_COMMITMENT_NOT_FOUND
+        };
+        *ibc_store.commitments.borrow(commitment_key)
     }
 
     fun inner_write_acknowledgement(

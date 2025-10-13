@@ -687,6 +687,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .query_non_membership_proof(at, path.client_id, path.proof_height, path.path)
                 .await
                 .map(into_value),
+            StorePath::BatchTimeouts(_) => unimplemented!(),
         }
     }
 }

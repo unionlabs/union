@@ -57,7 +57,7 @@
 // EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
-#[allow(implicit_const_copy)]
+#[allow(implicit_const_copy, unused_const)]
 module ibc::commitment {
     use sui::hash;
     use sui::address;
@@ -74,9 +74,9 @@ module ibc::commitment {
     const CHANNELS: address = @0x03;
     const PACKETS: address = @0x04;
     const PACKET_ACKS: address = @0x05;
-    const NEXT_SEQ_SEND: address = @0x06;
-    const NEXT_SEQ_RECV: address = @0x07;
-    const NEXT_SEQ_ACK: address = @0x08;
+    const MEMBERSHIP_PROOF: address = @0x06;
+    const NON_MEMBERSHIP_PROOF: address = @0x07;
+    const PACKET_TIMEOUTS: address = @0x08;
 
     public struct ClientStateCommitmentBcs has drop {
         prefix: address,
@@ -164,6 +164,21 @@ module ibc::commitment {
         })
     }
 
+    public struct PacketTimeoutCommitmentBcs has drop {
+        prefix: address,
+        batch_hash: address,
+    }
+
+    // Generate the path for channel
+    public fun packet_timeout_commitment_path(
+        batch_hash: vector<u8>
+    ): vector<u8> {
+        bcs::to_bytes(&PacketTimeoutCommitmentBcs {
+            prefix: PACKET_TIMEOUTS,
+            batch_hash: address::from_bytes(batch_hash)
+        })
+    }
+
     public fun client_state_commitment_key(channel_id: u32): vector<u8> {
         client_state_path(channel_id)
     }
@@ -192,6 +207,12 @@ module ibc::commitment {
         batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(&batch_receipts_commitment_path(batch_hash))
+    }
+
+    public fun packet_timeout_commitment_key(
+        batch_hash: vector<u8>
+    ): vector<u8> {
+        keccak256(&packet_timeout_commitment_path(batch_hash))
     }
 
     public struct SinglePacketCommitmentBcs has drop {

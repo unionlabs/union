@@ -1,4 +1,4 @@
-use move_core_types_sui::ident_str;
+use move_core_types::ident_str;
 use serde::Serialize;
 use sui_sdk::types::{
     TypeTag,
