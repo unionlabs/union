@@ -383,7 +383,7 @@ linea-types                               = { path = "lib/linea-types", default-
 linea-zktrie                              = { path = "lib/linea-zktrie", default-features = false }
 lst                                       = { path = "cosmwasm/lst", default-features = false }
 macros                                    = { path = "lib/macros", default-features = false }
-move-core-types-sui                       = { package = "move-core-types", git = "https://github.com/mystenlabs/sui", default-features = false }
+move-core-types                           = { git = "https://github.com/mystenlabs/sui", default-features = false }
 movement-light-client-types               = { path = "lib/movement-light-client-types", default-features = false }
 mpc-shared                                = { path = "mpc/shared", default-features = false }
 on-zkgm-call-proxy                        = { path = "cosmwasm/on-zkgm-call-proxy", default-features = false }

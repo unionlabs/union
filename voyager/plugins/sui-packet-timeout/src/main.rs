@@ -262,85 +262,22 @@ impl PluginServer<ModuleCall, Never> for Module {
                 }
             }
             ModuleCall::WaitForTimeoutCommitment(WaitForTimeoutCommitment { event, chain_id }) => {
-                let timeout_path = TimedOutPacketPath::from_packet(&event.packet());
+                match self.wait_for_timeout_commitment(event, chain_id) {
+                    Ok(op) => Ok(op),
+                    Err(err) => {
+                        warn!(err);
 
-                let SuiParsedData::MoveObject(object) = self
-                    .sui_client
-                    .read_api()
-                    .get_dynamic_field_object(
-                        self.ibc_store,
-                        DynamicFieldName {
-                            type_: TypeTag::Vector(Box::new(TypeTag::U8)),
-                            value: serde_json::to_value(timeout_path).expect("serde will work"),
-                        },
-                    )
-                    .await
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("unable to fetch the packet hash: {}", ErrorReporter(err)),
-                            None::<()>,
-                        )
-                    })?
-                    .data
-                    .expect("data exists")
-                    .content
-                    .expect("content exists")
-                else {
-                    return Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "unexpected data found when trying to fetch the packet hash to digest",
-                        None::<()>,
-                    ));
-                };
-
-                let SuiMoveValue::Vector(v) = object
-                    .fields
-                    .field_value("value")
-                    .expect("table has a value")
-                else {
-                    return Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "invalid value type when parsing the packet to digest",
-                        None::<()>,
-                    ));
-                };
-
-                let digest: Vec<u8> = v
-                    .into_iter()
-                    .map(|n| {
-                        let SuiMoveValue::Number(n) = n else {
-                            panic!("this will always be u8");
-                        };
-
-                        n as u8
-                    })
-                    .collect();
-
-                let height = self
-                    .sui_client
-                    .read_api()
-                    .get_transaction_with_options(
-                        digest.try_into().expect("ibc saves tx digest"),
-                        SuiTransactionBlockResponseOptions::new(),
-                    )
-                    .await
-                    .unwrap()
-                    .checkpoint
-                    .unwrap();
-
-                let proof_timeout = voyager_client
-                    .query_ibc_proof(
-                        self.chain_id.clone(),
-                        QueryHeight::Specific(Height::new(height)),
-                        TimedOutPacketPath::from_packet(&event.packet()),
-                    )
-                    .await?
-                    .into_result()?;
-
-                match proof_timeout.proof_type {
-                    ProofType::NonMembership => todo!(),
-                    ProofType::Membership => Ok(noop()),
+                        Ok(seq([
+                            defer_relative(1),
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
+                                    event,
+                                    chain_id,
+                                }),
+                            )),
+                        ]))
+                    }
                 }
             }
             ModuleCall::MakeMsgTimeout(MakeMsgTimeout { event, chain_id }) => {
@@ -491,6 +428,103 @@ impl Module {
                 self.plugin_name(),
                 ModuleCall::from(MakeMsgTimeout { event, chain_id }),
             )),
+            call(PluginMessage::new(
+                self.plugin_name(),
+                ModuleCall::from(WaitForTimeoutCommitment { event, chain_id }),
+            )),
         ])
+    }
+
+    async fn wait_for_timeout_commitment(
+        &self,
+        event: PacketSend,
+        chain_id: ChainId,
+    ) -> anyhow::Result<Op<VoyagerMessage>> {
+        let timeout_path = TimedOutPacketPath::from_packet(&event.packet());
+
+        let SuiParsedData::MoveObject(object) = self
+            .sui_client
+            .read_api()
+            .get_dynamic_field_object(
+                self.ibc_store,
+                DynamicFieldName {
+                    type_: TypeTag::Vector(Box::new(TypeTag::U8)),
+                    value: serde_json::to_value(timeout_path).expect("serde will work"),
+                },
+            )
+            .await
+            .map_err(|_| {
+                anyhow!("could not get the dynamic field object, this might be an RPC issue")
+            })?
+            .data
+            .map_err(|_| anyhow!("data does not exist"))?
+            .content
+            .map_err(|_| anyhow!("content does not exist"))?
+        else {
+            return Err(anyhow!(
+                "data type is not `MoveObject`, this might be an RPC issue"
+            ));
+        };
+
+        let SuiMoveValue::Vector(v) = object
+            .fields
+            .field_value("value")
+            .expect("table has a value")
+        else {
+            return Err(anyhow!(
+                "Returned data is not a `vector<u8>`. Either the data is not committed, or we are having an RPC issue."
+            ));
+        };
+
+        let digest: Vec<u8> = v
+            .into_iter()
+            .map(|n| {
+                let SuiMoveValue::Number(n) = n else {
+                    // if there is already a commitment, we are 100% sure that it will be a `vector<u8>`
+                    panic!("digest commitment is `vector<u8>`");
+                };
+
+                n as u8
+            })
+            .collect();
+
+        let height = self
+            .sui_client
+            .read_api()
+            .get_transaction_with_options(
+                digest.try_into().expect("ibc saves tx digest"),
+                SuiTransactionBlockResponseOptions::new(),
+            )
+            .await
+            .map_err(|_| {
+                anyhow!("The tx exists. But we might be having an RPC issue, so will retry.")
+            })?
+            .checkpoint
+            .map_err(|_| {
+                anyhow!("The tx exists and it has checkpoint in it. But we might be having an RPC issue, so will retry.")
+            })?;
+
+        let proof_timeout = voyager_client
+            .query_ibc_proof(
+                self.chain_id.clone(),
+                QueryHeight::Specific(Height::new(height)),
+                TimedOutPacketPath::from_packet(&event.packet()),
+            )
+            .await?
+            .into_result()?;
+
+        match proof_timeout.proof_type {
+            ProofType::NonMembership => Ok(seq([
+                defer_relative(1),
+                call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
+                        event,
+                        chain_id,
+                    }),
+                )),
+            ])),
+            ProofType::Membership => Ok(noop()),
+        }
     }
 }
