@@ -304,7 +304,23 @@ module ibc::ibc {
             commitments: table::new(ctx),
             connections: table::new(ctx),
             channels: table::new(ctx),
-            client_mgr: light_client::new(ctx),
+            client_mgr: light_client::new(ctx, false),
+            channel_to_port: table::new(ctx),
+            next_client_sequence: 1,
+            next_channel_sequence: 1,
+            next_connection_sequence: 1,
+            commitment_to_digest: table::new(ctx)
+        });
+    }
+
+    #[test_only]
+    fun init_for_tests(ctx: &mut TxContext) {
+        transfer::share_object(IBCStore {
+            id: object::new(ctx),
+            commitments: table::new(ctx),
+            connections: table::new(ctx),
+            channels: table::new(ctx),
+            client_mgr: light_client::new(ctx, true),
             channel_to_port: table::new(ctx),
             next_client_sequence: 1,
             next_channel_sequence: 1,
@@ -1627,6 +1643,51 @@ module ibc::ibc {
 
         event::emit(TimeoutPacket { packet_hash });
     }
+
+    #[test_only]
+    const TEST_LATEST_HEIGHT: u64 = 10_000;
+
+    #[test]
+    fun test_create_client() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+
+        let client_state = b"client-state";
+        let consensus_state = b"consensus-state";
+
+        ibc_store.create_client(
+            utf8(b"doesntmatter"),
+            client_state,
+            consensus_state,
+            test_case.ctx()
+        );
+
+        assert!(
+            ibc_store.commitments.borrow(
+                commitment::client_state_commitment_key(1),
+            ) == &client_state,
+            1
+        );
+
+        assert!(
+            ibc_store.commitments.borrow(
+                commitment::consensus_state_commitment_key(1, TEST_LATEST_HEIGHT),
+            ) == &consensus_state,
+            1
+        );
+
+        assert!(
+            ibc_store.next_client_sequence == 2,
+            1
+        );
+
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
+
 
     // #[test]
     // fun test_generate_channel_identifier() {
