@@ -14,7 +14,6 @@ use tracing::{error, instrument};
 use unionlabs::{
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    option_unwrap,
 };
 use voyager_sdk::{
     anyhow, into_value,
@@ -132,7 +131,7 @@ impl ProofModuleServer<IbcClassic> for Module {
         if query_result
             .response
             .code
-            .is_err_code(option_unwrap!(NonZeroU32::new(26)))
+            .is_err_code(const { NonZeroU32::new(26).unwrap() })
         {
             return Err(ErrorObject::owned(
                 -1,

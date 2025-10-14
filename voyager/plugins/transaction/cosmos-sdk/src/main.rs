@@ -33,7 +33,6 @@ use unionlabs::{
     cosmos::base::coin::Coin,
     google::protobuf::any::mk_any,
     never::Never,
-    option_unwrap,
     primitives::{Bech32, Bytes, H160, H256},
 };
 use voyager_sdk::{
@@ -160,15 +159,15 @@ impl GasFillerConfig {
 
 const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[
     // https://github.com/cosmos/ibc-go/blob/main/modules/light-clients/08-wasm/types/errors.go
-    ("08-wasm", option_unwrap!(NonZeroU32::new(4))),
+    ("08-wasm", NonZeroU32::new(4).unwrap()),
     // https://github.com/cosmos/ibc-go/blob/7f89b7dd8796eca1bfe07f8a7833f3ce2d7a8e04/modules/core/02-client/types/errors.go
-    ("client", option_unwrap!(NonZeroU32::new(4))),
+    ("client", NonZeroU32::new(4).unwrap()),
 ];
 
 static ACCOUNT_SEQUENCE_ERRORS: LazyLock<HashSet<(&str, NonZeroU32)>> = LazyLock::new(|| {
     [
-        // ("sdk", option_unwrap!(NonZeroU32::new(6))),
-        ("sdk", option_unwrap!(NonZeroU32::new(32))),
+        // ("sdk", NonZeroU32::new(6).unwrap()),
+        ("sdk", NonZeroU32::new(32).unwrap()),
     ]
     .into_iter()
     .collect()

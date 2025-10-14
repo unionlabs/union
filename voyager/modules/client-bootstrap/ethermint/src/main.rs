@@ -17,7 +17,6 @@ use tracing::{error, instrument};
 use unionlabs::{
     ErrorReporter,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-    option_unwrap,
     primitives::{Bytes, H160},
     result_unwrap,
 };
@@ -190,7 +189,7 @@ impl ClientBootstrapModuleServer for Module {
                 // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
                 trust_level: Fraction {
                     numerator: 1,
-                    denominator: const { option_unwrap!(NonZeroU64::new(3)) },
+                    denominator: const { NonZeroU64::new(3).unwrap() },
                 },
                 // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
                 trusting_period: unionlabs::google::protobuf::duration::Duration::new(

@@ -20,7 +20,6 @@ use tracing::{Instrument, debug, debug_span, instrument, trace};
 use unionlabs::{
     ErrorReporter,
     bounded::{BoundedI64, BoundedU8},
-    option_unwrap,
     primitives::H256,
     result_unwrap,
 };
@@ -127,7 +126,7 @@ impl Client {
         const PER_PAGE: BoundedU8<1, 100> =
             const { result_unwrap!(BoundedU8::<1, 100>::new_const(100)) };
 
-        let mut page = const { option_unwrap!(NonZeroU64::new(1)) };
+        let mut page = const { NonZeroU64::new(1).unwrap() };
 
         let mut out = vec![];
 

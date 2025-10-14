@@ -115,7 +115,7 @@ macro_rules! impl_ssz_for_uint {
     ($T:ident) => {
         impl Ssz for $T {
             const SSZ_FIXED_LEN: Option<NonZeroUsize> =
-                Some(option_unwrap!(NonZeroUsize::new(($T::BITS / 8) as usize)));
+                Some(const { NonZeroUsize::new(($T::BITS / 8) as usize).unwrap() });
 
             const TREE_HASH_TYPE: TreeHashType = TreeHashType::Basic {
                 size: {
@@ -422,23 +422,6 @@ where
     .map_err(|e| DecodeError::BytesInvalid(format!("Error collecting into container: {:?}", e)))
 }
 
-// Useful in const contexts in place of `.unwrap()`
-macro_rules! option_unwrap {
-    ($expr:expr) => {{
-        // assign to a const here so this can't be called in non-const contexts
-        const _: () = match $expr {
-            Some(_) => {}
-            None => panic!("called `Option::unwrap()` on an `None` value"),
-        };
-
-        match $expr {
-            Some(some) => some,
-            None => panic!("called `Option::unwrap()` on an `None` value"),
-        }
-    }};
-}
-pub(crate) use option_unwrap;
-
 impl<const BYTES: usize, E: unionlabs_primitives::encoding::Encoding> Ssz
     for unionlabs_primitives::FixedBytes<BYTES, E>
 where
@@ -466,7 +449,7 @@ where
 }
 
 impl Ssz for unionlabs_primitives::U256 {
-    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some(option_unwrap!(NonZeroUsize::new(32)));
+    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some(NonZeroUsize::new(32).unwrap());
 
     const TREE_HASH_TYPE: TreeHashType = TreeHashType::Basic { size: 32 };
 
@@ -477,7 +460,7 @@ impl Ssz for unionlabs_primitives::U256 {
     }
 
     fn ssz_bytes_len(&self) -> NonZeroUsize {
-        option_unwrap!(NonZeroUsize::new(32))
+        const { NonZeroUsize::new(32).unwrap() }
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
