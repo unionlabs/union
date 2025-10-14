@@ -1,7 +1,7 @@
 use beacon_api_types::{
     altair::{SyncAggregate, SyncCommittee},
     custom_types::Slot,
-    deneb, electra,
+    deneb, electra, fulu,
 };
 use unionlabs_primitives::H256;
 
@@ -44,6 +44,20 @@ impl From<deneb::LightClientUpdate> for LightClientUpdate {
 
 impl From<electra::LightClientUpdate> for LightClientUpdate {
     fn from(value: electra::LightClientUpdate) -> Self {
+        Self {
+            attested_header: value.attested_header.into(),
+            next_sync_committee: Some(value.next_sync_committee),
+            next_sync_committee_branch: Some(value.next_sync_committee_branch.to_vec()),
+            finalized_header: value.finalized_header.into(),
+            finality_branch: value.finality_branch.to_vec(),
+            sync_aggregate: value.sync_aggregate,
+            signature_slot: value.signature_slot,
+        }
+    }
+}
+
+impl From<fulu::LightClientUpdate> for LightClientUpdate {
+    fn from(value: fulu::LightClientUpdate) -> Self {
         Self {
             attested_header: value.attested_header.into(),
             next_sync_committee: Some(value.next_sync_committee),

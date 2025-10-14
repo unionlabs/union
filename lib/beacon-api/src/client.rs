@@ -331,6 +331,7 @@ where
 }
 
 impl<T: VersionedResponseTypes> VersionedResponse<T> {
+    #[allow(clippy::too_many_arguments)]
     pub fn fold<U>(
         self,
         phase0: impl FnOnce(T::Phase0) -> U,
@@ -352,6 +353,7 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn fold_ref<U>(
         &self,
         phase0: impl FnOnce(&T::Phase0) -> U,
