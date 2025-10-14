@@ -175,6 +175,12 @@ pub struct CommitResponse {
     pub canonical: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HeaderResponse {
+    pub header: Header,
+}
+
 #[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TxResponse {

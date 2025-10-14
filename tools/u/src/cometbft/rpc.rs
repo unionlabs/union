@@ -63,7 +63,10 @@ pub enum Method {
     /// /genesis_chunked?chunk=_
     GenesisChunked,
     /// /header?height=_
-    Header,
+    Header {
+        #[arg(long, short = 'H')]
+        height: Option<BoundedI64<1>>,
+    },
     /// /header_by_hash?hash=_
     HeaderByHash,
     /// /health?
@@ -105,6 +108,7 @@ impl Cmd {
             Method::Block { height } => print_json(&client.block(height).await?),
             Method::Status => print_json(&client.status().await?),
             Method::Commit { height } => print_json(&client.commit(height).await?),
+            Method::Header { height } => print_json(&client.header(height).await?),
             _ => bail!("not yet implemented"),
         }
 
