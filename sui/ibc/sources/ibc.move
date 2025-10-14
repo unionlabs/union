@@ -2220,6 +2220,138 @@ module ibc::ibc {
         t.end();
     }
 
+    #[test]
+    #[expected_failure(abort_code = E_INVALID_CONNECTION_STATE)]
+    fun test_channel_open_init_connection_not_open_fails() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
+
+        t.next_tx(@0x0);
+        let port = string::utf8(
+            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+        );
+        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = E_INVALID_CONNECTION_STATE)]
+    fun test_channel_open_try_connection_not_open_fails() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
+
+        t.next_tx(@0x0);
+        let port = string::utf8(
+            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+        );
+        ibc_store.channel_open_try(
+            port,
+            1,
+            7,
+            b"cp-port",
+            string::utf8(b"v1"),
+            string::utf8(b"v1-cp"),
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = E_INVALID_CHANNEL_STATE)]
+    fun test_channel_open_ack_wrong_state_fails() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_try(2, 15, 1, b"p", 1);
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_confirm(1, b"p", 1);
+
+        t.next_tx(@0x0);
+        let port = string::utf8(
+            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+        );
+        ibc_store.channel_open_try(
+            port,
+            1,
+            7,
+            b"cp-port",
+            string::utf8(b"v1"),
+            string::utf8(b"v1-cp"),
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        t.next_tx(@0x0);
+        ibc_store.channel_open_ack(
+            string::utf8(b"ignored"),
+            1,
+            string::utf8(b"v1-cp"),
+            22,
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = E_INVALID_CHANNEL_STATE)]
+    fun test_channel_open_confirm_wrong_state_fails() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        t.next_tx(@0x0);
+        let port = string::utf8(
+            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+        );
+        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
+
+        t.next_tx(@0x0);
+        ibc_store.channel_open_confirm(1, b"p", 1, IbcAppWitness {});
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
+
     public struct IbcAppWitness has drop {}
     #[test]
     fun validate_port_bro() {
