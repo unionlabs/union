@@ -1767,97 +1767,98 @@ module ibc::ibc {
         test_case.end();
     }
     #[test]
-fun test_connection_open_try_success() {
-    let mut test_case = test_scenario::begin(@0x0);
-    init_for_tests(test_case.ctx());
+    fun test_connection_open_try_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
 
-    test_case.next_tx(@0x0);
-    let mut ibc_store = test_case.take_shared<IBCStore>();
-    ibc_store.create_client(
-        string::utf8(b"cometbls"),
-        b"cs",
-        b"cons",
-        test_case.ctx()
-    );
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(
+            string::utf8(b"cometbls"),
+            b"cs",
+            b"cons",
+            test_case.ctx()
+        );
 
-    test_case.next_tx(@0x0);
-    ibc_store.connection_open_try(2, 11, 1, b"p", 1);
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_try(2, 11, 1, b"p", 1);
 
-    let connection_id = 1;
-    let c = ibc_store.connections.borrow(connection_id);
-    assert!(connection_end::state(c) == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
-    assert!(connection_end::client_id(c) == 1, 1);
-    assert!(connection_end::counterparty_client_id(c) == 2, 1);
-    assert!(connection_end::counterparty_connection_id(c) == 11, 1);
+        let connection_id = 1;
+        let c = ibc_store.connections.borrow(connection_id);
+        assert!(connection_end::state(c) == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
+        assert!(connection_end::client_id(c) == 1, 1);
+        assert!(connection_end::counterparty_client_id(c) == 2, 1);
+        assert!(connection_end::counterparty_connection_id(c) == 11, 1);
 
-    let key = commitment::connection_commitment_key(connection_id);
-    assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
-    assert!(ibc_store.next_connection_sequence == 2, 1);
+        let key = commitment::connection_commitment_key(connection_id);
+        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(ibc_store.next_connection_sequence == 2, 1);
 
-    test_scenario::return_shared(ibc_store);
-    test_case.end();
-}
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
 
-#[test]
-fun test_connection_open_ack_success() {
-    let mut test_case = test_scenario::begin(@0x0);
-    init_for_tests(test_case.ctx());
+    #[test]
+    fun test_connection_open_ack_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
 
-    test_case.next_tx(@0x0);
-    let mut ibc_store = test_case.take_shared<IBCStore>();
-    ibc_store.create_client(
-        string::utf8(b"cometbls"),
-        b"cs",
-        b"cons",
-        test_case.ctx()
-    );
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(
+            string::utf8(b"cometbls"),
+            b"cs",
+            b"cons",
+            test_case.ctx()
+        );
 
-    test_case.next_tx(@0x0);
-    ibc_store.connection_open_init(1, 2);
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
 
-    test_case.next_tx(@0x0);
-    ibc_store.connection_open_ack(1, 9, b"p", 1);
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
 
-    let c = ibc_store.connections.borrow(1);
-    assert!(connection_end::state(c) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
-    assert!(connection_end::counterparty_connection_id(c) == 9, 1);
+        let c = ibc_store.connections.borrow(1);
+        assert!(connection_end::state(c) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(connection_end::counterparty_connection_id(c) == 9, 1);
 
-    let key = commitment::connection_commitment_key(1);
-    assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        let key = commitment::connection_commitment_key(1);
+        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
 
-    test_scenario::return_shared(ibc_store);
-    test_case.end();
-}
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
 
-#[test]
-fun test_connection_open_confirm_success() {
-    let mut test_case = test_scenario::begin(@0x0);
-    init_for_tests(test_case.ctx());
+    #[test]
+    fun test_connection_open_confirm_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
 
-    test_case.next_tx(@0x0);
-    let mut ibc_store = test_case.take_shared<IBCStore>();
-    ibc_store.create_client(
-        string::utf8(b"cometbls"),
-        b"cs",
-        b"cons",
-        test_case.ctx()
-    );
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(
+            string::utf8(b"cometbls"),
+            b"cs",
+            b"cons",
+            test_case.ctx()
+        );
 
-    test_case.next_tx(@0x0);
-    ibc_store.connection_open_try(2, 13, 1, b"p", 1);
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_try(2, 13, 1, b"p", 1);
 
-    test_case.next_tx(@0x0);
-    ibc_store.connection_open_confirm(1, b"p", 1);
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_confirm(1, b"p", 1);
 
-    let c = ibc_store.connections.borrow(1);
-    assert!(connection_end::state(c) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        let c = ibc_store.connections.borrow(1);
+        assert!(connection_end::state(c) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
 
-    let key = commitment::connection_commitment_key(1);
-    assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        let key = commitment::connection_commitment_key(1);
+        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
 
-    test_scenario::return_shared(ibc_store);
-    test_case.end();
-}
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
+
 
     public struct IbcAppWitness has drop {}
     #[test]
