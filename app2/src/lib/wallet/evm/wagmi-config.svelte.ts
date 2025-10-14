@@ -150,6 +150,17 @@ export const ownedFallbacks: Transports = {
       retryDelay: 1_000,
     }),
   ]),
+  [baseSepolia.id]: fallback([
+    http(baseSepolia.rpcUrls.default.http.at(0), { name: "default Base Sepolia RPC" }),
+    http("https://base-sepolia.therpc.io", {
+      name: "https://base-sepolia.therpc.io",
+      retryDelay: 1_000,
+    }),
+    http(`https://rpc.84532.base.chain.kitchen`, {
+      name: "Chain Kitchen - Base",
+      retryDelay: 1_000,
+    }),
+  ]),
 }
 
 export const fallbackTransport = flow(
