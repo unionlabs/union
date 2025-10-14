@@ -930,8 +930,8 @@
       "sui": {
         "address": "union1zvlmhucarsrul3jv0tf7hfzcrgdlqgdkzyyzcvf84fsvxvjrnyhq90s2wt",
         "height": 3397571,
-        "commit": "dirty",
-        "code_id": 260
+        "commit": "9043ad10ddba73db3bdaae96f16a81ce24e9a0e5",
+        "code_id": 261
       },
       "tendermint": {
         "address": "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju",
