@@ -1,4 +1,4 @@
-use beacon_api_types::{altair, bellatrix, capella, deneb, electra};
+use beacon_api_types::{altair, bellatrix, capella, deneb, electra, fulu};
 use serde::{Deserialize, Serialize};
 use unionlabs::never::Never;
 
@@ -14,4 +14,5 @@ impl VersionedResponseTypes for LightClientFinalityUpdateResponseTypes {
     type Capella = capella::LightClientFinalityUpdate;
     type Deneb = deneb::LightClientFinalityUpdate;
     type Electra = electra::LightClientFinalityUpdate;
+    type Fulu = fulu::LightClientFinalityUpdate;
 }

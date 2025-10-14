@@ -253,6 +253,7 @@ pub const SEPOLIA: _ = [
     ("90000072", 56832),  // capella
     ("90000073", 132608), // deneb
     ("90000074", 222464), // electra
+    ("90000075", 272640), // fulu
 ];
 
 /// Sepolia chain id.
@@ -271,6 +272,7 @@ pub const HOLESKY: _ = [
     ("04017000", 256),    // capella
     ("05017000", 29696),  // deneb
     ("06017000", 115968), // electra
+    ("07017000", 165120), // fulu
 ];
 
 /// Holesky chain id.

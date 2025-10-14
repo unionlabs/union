@@ -148,6 +148,7 @@ impl BeaconApiClient {
             VersionedResponse::Capella(block) => block.message.body.execution_payload.block_number,
             VersionedResponse::Deneb(block) => block.message.body.execution_payload.block_number,
             VersionedResponse::Electra(block) => block.message.body.execution_payload.block_number,
+            VersionedResponse::Fulu(block) => block.message.body.execution_payload.block_number,
         };
 
         debug!("beacon height {block_id} is execution height {height}");
@@ -262,6 +263,7 @@ pub enum VersionedResponse<T: VersionedResponseTypes> {
     Capella(T::Capella),
     Deneb(T::Deneb),
     Electra(T::Electra),
+    Fulu(T::Fulu),
 }
 
 #[derive(Deserialize)]
@@ -291,7 +293,10 @@ impl<'a, T: VersionedResponseTypes> TryFrom<VersionedResponseRaw<'a>> for Versio
             Some("deneb") => Self::Deneb(
                 serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
             ),
-            Some("electra") | None => Self::Electra(
+            Some("electra") => Self::Electra(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            Some("fulu") | None => Self::Fulu(
                 serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
             ),
             v => return Err(format!("unknown version {v:?}")),
@@ -308,6 +313,7 @@ where
             Capella = <T as VersionedResponseTypes>::Phase0,
             Deneb = <T as VersionedResponseTypes>::Phase0,
             Electra = <T as VersionedResponseTypes>::Phase0,
+            Fulu = <T as VersionedResponseTypes>::Phase0,
         >,
 {
     /// "Unwrap" the inner type. This is only possible if all of the inner types are all the same.
@@ -319,6 +325,7 @@ where
             VersionedResponse::Capella(t) => t,
             VersionedResponse::Deneb(t) => t,
             VersionedResponse::Electra(t) => t,
+            VersionedResponse::Fulu(t) => t,
         }
     }
 }
@@ -332,6 +339,7 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
         capella: impl FnOnce(T::Capella) -> U,
         deneb: impl FnOnce(T::Deneb) -> U,
         electra: impl FnOnce(T::Electra) -> U,
+        fulu: impl FnOnce(T::Fulu) -> U,
     ) -> U {
         match self {
             VersionedResponse::Phase0(t) => phase0(t),
@@ -340,6 +348,7 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
             VersionedResponse::Capella(t) => capella(t),
             VersionedResponse::Deneb(t) => deneb(t),
             VersionedResponse::Electra(t) => electra(t),
+            VersionedResponse::Fulu(t) => fulu(t),
         }
     }
 
@@ -351,6 +360,7 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
         capella: impl FnOnce(&T::Capella) -> U,
         deneb: impl FnOnce(&T::Deneb) -> U,
         electra: impl FnOnce(&T::Electra) -> U,
+        fulu: impl FnOnce(&T::Fulu) -> U,
     ) -> U {
         match self {
             VersionedResponse::Phase0(t) => phase0(t),
@@ -359,6 +369,7 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
             VersionedResponse::Capella(t) => capella(t),
             VersionedResponse::Deneb(t) => deneb(t),
             VersionedResponse::Electra(t) => electra(t),
+            VersionedResponse::Fulu(t) => fulu(t),
         }
     }
 }
@@ -370,6 +381,7 @@ pub trait VersionedResponseTypes {
     type Capella: Debug + Serialize + DeserializeOwned;
     type Deneb: Debug + Serialize + DeserializeOwned;
     type Electra: Debug + Serialize + DeserializeOwned;
+    type Fulu: Debug + Serialize + DeserializeOwned;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

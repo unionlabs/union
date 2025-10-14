@@ -16,6 +16,9 @@ pub mod deneb;
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/electra>
 pub mod electra;
 
+/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/fulu>
+pub mod fulu;
+
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#custom-types>
 pub mod custom_types;
 

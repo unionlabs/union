@@ -1,4 +1,4 @@
-use beacon_api_types::{bellatrix, capella, deneb, electra, phase0};
+use beacon_api_types::{bellatrix, capella, deneb, electra, fulu, phase0};
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 use unionlabs::{ErrorReporter, primitives::H256};
@@ -31,6 +31,7 @@ impl VersionedResponseTypes for BeaconBlockResponseTypes {
     type Capella = capella::SignedBeaconBlock;
     type Deneb = deneb::SignedBeaconBlock;
     type Electra = electra::SignedBeaconBlock;
+    type Fulu = fulu::SignedBeaconBlock;
 }
 
 #[derive(Deserialize)]
