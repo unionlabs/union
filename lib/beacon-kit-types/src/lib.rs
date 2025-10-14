@@ -2,7 +2,7 @@ use cometbft_types::types::commit_sig::CommitSigRaw;
 use unionlabs::{
     errors::UnknownEnumVariant,
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
-    primitives::{encoding::HexPrefixed, Bytes, FixedBytesError, H160},
+    primitives::{Bytes, FixedBytesError, H160, encoding::HexPrefixed},
 };
 
 /// Custom BlockIDFlag for BeaconKit.
@@ -283,7 +283,7 @@ pub mod proto {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs::primitives::{encoding::Base64, Bytes};
+    use unionlabs::primitives::{Bytes, encoding::Base64};
 
     use crate::CommitSig;
 

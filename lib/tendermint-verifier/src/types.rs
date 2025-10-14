@@ -29,7 +29,7 @@ pub trait Verification {
     ///        if the signature check is aggregated such as BLS, you can return the `signature` as `None` so that
     ///        `process_signature` won't be called but the voting count will be processed.
     fn filter_commit(&self, commit_sig: &CommitSigRaw)
-        -> Result<Option<ValidatorSig>, Self::Error>;
+    -> Result<Option<ValidatorSig>, Self::Error>;
 
     /// On every iteration of the verification loop, if the `filter_commit` returns `Ok(Some(..))` with the signature value
     /// `Some(..)`, this function is being called to be able to process the signature. For example, for the case where you do

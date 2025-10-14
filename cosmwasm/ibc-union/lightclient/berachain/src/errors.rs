@@ -37,13 +37,17 @@ pub enum Error {
     #[error("trusted validators don't match ({calculated} != {given})")]
     TrustedValidatorsMismatch { calculated: H256, given: H256 },
 
-    #[error("revision number mismatch with trusted {trusted_revision_number} and the header {header_revision_number}")]
+    #[error(
+        "revision number mismatch with trusted {trusted_revision_number} and the header {header_revision_number}"
+    )]
     RevisionNumberMismatch {
         trusted_revision_number: u64,
         header_revision_number: u64,
     },
 
-    #[error("the signed header height {signed_height} must be more recent than the trusted height {trusted_height}")]
+    #[error(
+        "the signed header height {signed_height} must be more recent than the trusted height {trusted_height}"
+    )]
     SignedHeaderHeightMustBeMoreRecent {
         signed_height: u64,
         trusted_height: u64,

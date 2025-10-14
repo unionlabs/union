@@ -1,7 +1,7 @@
 use ibc_union_spec::Timestamp;
 use unionlabs::{
     ibc::core::commitment::merkle_root::MerkleRoot,
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 #[derive(Debug, Clone, PartialEq)]

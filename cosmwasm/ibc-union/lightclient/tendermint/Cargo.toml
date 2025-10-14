@@ -36,8 +36,8 @@ unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }
-lazy_static = "1.5.0"
 hex-literal = { workspace = true }
+lazy_static = "1.5.0"
 serde_json  = { workspace = true }
 
 

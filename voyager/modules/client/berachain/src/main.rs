@@ -1,26 +1,25 @@
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
+    core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{debug, instrument};
 use unionlabs::{
-    self,
+    self, ErrorReporter,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
-    ErrorReporter,
 };
 use voyager_message::{
+    ClientModule, FATAL_JSONRPC_ERROR_CODE,
     module::{ClientModuleInfo, ClientModuleServer},
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         IbcSpecId,
     },
-    ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
