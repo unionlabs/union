@@ -2086,7 +2086,99 @@ module ibc::ibc {
         test_scenario::return_shared(ibc_store);
         t.end();
     }
+    
+    #[test]
+    fun test_packet_flow_recv_and_ack_success() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
 
+        t.next_tx(@0x0);
+        let mut clk0 = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk0, 1_000);
+        clock::share_for_testing(clk0);
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs1", b"cons1", t.ctx());
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs2", b"cons2", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_init(2, 1);
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        t.next_tx(@0x0);
+        let port = string::utf8(
+            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+        );
+        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
+
+        t.next_tx(@0x0);
+        ibc_store.channel_open_ack(
+            string::utf8(b"ignored"),
+            1,
+            string::utf8(b"v1-cp"),
+            1,
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        t.next_tx(@0x0);
+        let clk = t.take_shared<Clock>();
+        let now_ns = clock::timestamp_ms(&clk) * 1_000_000;
+        let timeout_ts = now_ns + 1_000_000_000;
+
+        let pkt = ibc_store.send_packet(
+            &clk,
+            1,
+            0,
+            timeout_ts,
+            b"hello",
+            IbcAppWitness {},
+            t.ctx()
+        );
+        test_scenario::return_shared(clk);
+
+        let pkt_hash = commitment::commit_packet(&pkt);
+        let packets_key = commitment::batch_packets_commitment_key(pkt_hash);
+        assert!(ibc_store.get_commitment(packets_key) == COMMITMENT_MAGIC, 1);
+
+        t.next_tx(@0x0);
+        let clk2 = t.take_shared<Clock>();
+        ibc_store.recv_packet(
+            &clk2,
+            vector[pkt],
+            @0x111,
+            vector[b"maker-msg"],
+            b"p",
+            1,
+            vector[b"ack-ok"],
+            IbcAppWitness {}
+        );
+        test_scenario::return_shared(clk2);
+
+        let receipts_key = commitment::batch_receipts_commitment_key(pkt_hash);
+        let receipts_val = ibc_store.get_commitment(receipts_key);
+        assert!(receipts_val == commitment::commit_ack(b"ack-ok"), 1);
+
+        t.next_tx(@0x0);
+        ibc_store.acknowledge_packet(
+            vector[pkt],
+            vector[b"ack-ok"],
+            b"p",
+            1,
+            @0x222,
+            IbcAppWitness {}
+        );
+
+        let packets_val_after = ibc_store.get_commitment(packets_key);
+        assert!(packets_val_after == COMMITMENT_MAGIC_ACK, 1);
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
 
     
 
