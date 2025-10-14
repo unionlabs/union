@@ -14,6 +14,7 @@ import {
 import {
   arbitrumSepolia,
   base,
+  baseSepolia,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
@@ -290,6 +291,15 @@ const transports: Transports = {
       name: "unstable_connector-injected-bsc",
     }),
     ownedFallbacks[base.id],
+  ]),
+  [baseSepolia.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-base-sepolia",
+      name: "unstable_connector-injected-bsc",
+    }),
+    ownedFallbacks[baseSepolia.id],
   ]),
 }
 
