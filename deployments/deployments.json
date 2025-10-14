@@ -927,6 +927,12 @@
         "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
         "code_id": 61
       },
+      "sui": {
+        "address": "union1zvlmhucarsrul3jv0tf7hfzcrgdlqgdkzyyzcvf84fsvxvjrnyhq90s2wt",
+        "height": 3397571,
+        "commit": "dirty",
+        "code_id": 260
+      },
       "tendermint": {
         "address": "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju",
         "height": 354910,
