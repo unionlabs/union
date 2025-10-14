@@ -28,7 +28,8 @@ use unionlabs::{
 use crate::rpc_types::{
     AbciInfoResponse, AbciQueryResponse, AllValidatorsResponse, BlockResponse,
     BlockResultsResponse, BlockchainResponse, BroadcastTxSyncResponse, CommitResponse,
-    GrpcAbciQueryResponse, Order, StatusResponse, TxResponse, TxSearchResponse, ValidatorsResponse,
+    GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse, TxResponse, TxSearchResponse,
+    ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -89,6 +90,15 @@ impl Client {
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
         self.inner
             .request("commit", (height.map(|x| x.to_string()),))
+            .await
+    }
+
+    pub async fn header(
+        &self,
+        height: Option<BoundedI64<1>>,
+    ) -> Result<HeaderResponse, JsonRpcError> {
+        self.inner
+            .request("header", (height.map(|x| x.to_string()),))
             .await
     }
 
