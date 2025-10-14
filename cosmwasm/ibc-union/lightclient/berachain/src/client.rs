@@ -11,7 +11,6 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
     spec::{Status, Timestamp},
 };
-use ibc_union_msg::lightclient::Status;
 use tendermint_verifier::types::Verification;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,

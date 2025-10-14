@@ -9,13 +9,6 @@ pub struct SignedHeader {
     pub commit: Commit,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct SignedHeader2 {
-    pub header: Header,
-    pub commit: super::commit::TmpCommit,
-}
-
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{errors::MissingField, required};

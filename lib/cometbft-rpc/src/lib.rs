@@ -418,135 +418,135 @@ impl ClientT for ClientInner {
     }
 }
 
-// These tests are useful in testing and debugging, but should not be run in CI
-#[cfg(test)]
-mod live_tests {
-    use hex_literal::hex;
+// // These tests are useful in testing and debugging, but should not be run in CI
+// #[cfg(test)]
+// mod live_tests {
+//     use hex_literal::hex;
 
-    use super::*;
+//     use super::*;
 
-    const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
-    const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
-    const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
-    const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
-    const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
+//     const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
+//     const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
+//     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
+//     const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
+//     const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
 
-    const TEST_URL: &str = UNION_TESTNET;
+//     const TEST_URL: &str = UNION_TESTNET;
 
-    #[tokio::test]
-    async fn commit() {
-        let client = Client::new("https://berachain-beacon-rpc.publicnode.com")
-            .await
-            .unwrap();
+//     #[tokio::test]
+//     async fn commit() {
+//         let client = Client::new("https://berachain-beacon-rpc.publicnode.com")
+//             .await
+//             .unwrap();
 
-        // 3805040
+//         // 3805040
 
-        for block in (1..=3805039).rev() {
-            let result = client
-                .commit(Some(block.try_into().unwrap()))
-                .await
-                .unwrap();
+//         for block in (1..=3805039).rev() {
+//             let result = client
+//                 .commit(Some(block.try_into().unwrap()))
+//                 .await
+//                 .unwrap();
 
-            dbg!(block, result.signed_header.commit.signatures.len());
+//             dbg!(block, result.signed_header.commit.signatures.len());
 
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-        }
-    }
+//             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+//         }
+//     }
 
-    #[tokio::test]
-    async fn abci_query() {
-        // let _ = tracing_subscriber::fmt().try_init();
+//     #[tokio::test]
+//     async fn abci_query() {
+//         // let _ = tracing_subscriber::fmt().try_init();
 
-        let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new(TEST_URL).await.unwrap();
 
-        let result = client
-            .abci_query(
-                "store/beacon/key",
-                &[0x11],
-                Some(3358.try_into().unwrap()),
-                true,
-            )
-            .await;
+//         let result = client
+//             .abci_query(
+//                 "store/beacon/key",
+//                 &[0x11],
+//                 Some(3358.try_into().unwrap()),
+//                 true,
+//             )
+//             .await;
 
-        dbg!(result);
-    }
+//         dbg!(result);
+//     }
 
-    #[tokio::test]
-    async fn validators() {
-        // let _ = tracing_subscriber::fmt().try_init();
+//     #[tokio::test]
+//     async fn validators() {
+//         // let _ = tracing_subscriber::fmt().try_init();
 
-        let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new(TEST_URL).await.unwrap();
 
-        // let result = client
-        //     .validators(
-        //         Some(100.try_into().unwrap()),
-        //         Some(ValidatorsPagination {
-        //             page: 1.try_into().unwrap(),
-        //             per_page: None,
-        //         }),
-        //     )
-        //     .await;
+//         // let result = client
+//         //     .validators(
+//         //         Some(100.try_into().unwrap()),
+//         //         Some(ValidatorsPagination {
+//         //             page: 1.try_into().unwrap(),
+//         //             per_page: None,
+//         //         }),
+//         //     )
+//         //     .await;
 
-        let result = client.all_validators(None).await.unwrap();
+//         let result = client.all_validators(None).await.unwrap();
 
-        dbg!(result.validators.len(),);
+//         dbg!(result.validators.len(),);
 
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&result.validators).unwrap()
-        );
-    }
+//         println!(
+//             "{}",
+//             serde_json::to_string_pretty(&result.validators).unwrap()
+//         );
+//     }
 
-    #[tokio::test]
-    async fn status() {
-        // let _ = tracing_subscriber::fmt().try_init();
+//     #[tokio::test]
+//     async fn status() {
+//         // let _ = tracing_subscriber::fmt().try_init();
 
-        let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new(TEST_URL).await.unwrap();
 
-        let result = client.status().await.unwrap();
+//         let result = client.status().await.unwrap();
 
-        dbg!(result);
-    }
+//         dbg!(result);
+//     }
 
-    #[tokio::test]
-    async fn block() {
-        // let _ = tracing_subscriber::fmt().try_init();
+//     #[tokio::test]
+//     async fn block() {
+//         // let _ = tracing_subscriber::fmt().try_init();
 
-        let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new(TEST_URL).await.unwrap();
 
-        // let mut i = 1376377;
+//         // let mut i = 1376377;
 
-        // loop {
-        //     dbg!(i);
+//         // loop {
+//         //     dbg!(i);
 
-        let result = client
-            .block(Some(1.try_into().unwrap()))
-            // .block(None)
-            .await
-            .unwrap();
+//         let result = client
+//             .block(Some(1.try_into().unwrap()))
+//             // .block(None)
+//             .await
+//             .unwrap();
 
-        dbg!(result.block);
+//         dbg!(result.block);
 
-        //     i += 1;
+//         //     i += 1;
 
-        //     tokio::time::sleep(Duration::from_millis(100)).await;
-        // }
-    }
+//         //     tokio::time::sleep(Duration::from_millis(100)).await;
+//         // }
+//     }
 
-    #[tokio::test]
-    async fn tx() {
-        // let _ = tracing_subscriber::fmt().try_init();
+//     #[tokio::test]
+//     async fn tx() {
+//         // let _ = tracing_subscriber::fmt().try_init();
 
-        let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new(TEST_URL).await.unwrap();
 
-        let result = client
-            .tx(
-                hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
-                true,
-            )
-            .await
-            .unwrap();
+//         let result = client
+//             .tx(
+//                 hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+//                 true,
+//             )
+//             .await
+//             .unwrap();
 
-        dbg!(result);
-    }
-}
+//         dbg!(result);
+//     }
+// }

@@ -199,7 +199,8 @@ fn update_state(
                 .state_proof
                 .latest_ledger_info()
                 .commit_info
-                .timestamp_usecs,
+                .timestamp_usecs
+                * 1000,
         ),
         state_proof_hash: H256::default(), // TODO(aeryz): im not sure if we need this
     };

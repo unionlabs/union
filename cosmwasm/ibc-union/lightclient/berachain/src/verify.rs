@@ -1,5 +1,5 @@
-use cometbft_types::crypto::public_key::PublicKey;
-use cosmwasm_std::{Deps, BLS12_381_G1_GENERATOR};
+use cometbft_types::{crypto::public_key::PublicKey, types::commit_sig::CommitSigRaw};
+use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps};
 use tendermint_verifier::{
     error::Error,
     types::{ValidatorSig, Verification},
@@ -30,6 +30,8 @@ impl<'a> Bls12381Verifier<'a> {
 pub enum VerificationError {
     #[error("timestamp must be set for the committed validators")]
     TimestampMustBeSet,
+    #[error("address must be set for commit sig with block id flag 4")]
+    AddressMustBeSet,
     #[error("signature must exist for the committed validators")]
     SignatureMustExist,
     #[error("message must exist for all commits")]
@@ -40,7 +42,9 @@ pub enum VerificationError {
     InnerVerification(#[source] cosmwasm_std::VerificationError),
     #[error("signature verification failed")]
     SignatureVerificationFailed,
-    #[error("multiple signatures are provided, the light client is only capable of verifying a single aggregated signature")]
+    #[error(
+        "multiple signatures are provided, the light client is only capable of verifying a single aggregated signature"
+    )]
     MultipleSignaturesAreProvided,
     #[error("message must be set before doing the verification")]
     MessageNotSet,
@@ -61,7 +65,7 @@ impl<'a> Verification for Bls12381Verifier<'a> {
 
     fn filter_commit(
         &self,
-        commit_sig: &cometbft_types::types::commit_sig::CommitSigRaw,
+        commit_sig: &CommitSigRaw,
     ) -> Result<Option<ValidatorSig>, Self::Error> {
         if commit_sig.block_id_flag == 4 {
             let Some(signature) = commit_sig.signature.clone() else {
@@ -69,7 +73,10 @@ impl<'a> Verification for Bls12381Verifier<'a> {
             };
 
             Ok(Some(ValidatorSig {
-                validator_address: commit_sig.validator_address.into_encoding(),
+                validator_address: commit_sig
+                    .validator_address
+                    .ok_or(VerificationError::AddressMustBeSet)?
+                    .into_encoding(),
                 timestamp: Timestamp::default(),
                 signature: Some(signature.into_vec()),
             }))

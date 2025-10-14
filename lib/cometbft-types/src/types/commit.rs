@@ -16,16 +16,6 @@ pub struct Commit {
     pub signatures: Vec<CommitSigRaw>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct TmpCommit {
-    #[serde(with = "::serde_utils::string")]
-    pub height: BoundedI64<0, { i64::MAX }>,
-    pub round: BoundedI32<0, { i32::MAX }>,
-    pub block_id: BlockId,
-    pub signatures: Vec<super::commit_sig::CommitSig>,
-}
-
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{bounded::BoundedIntError, errors::MissingField, required};

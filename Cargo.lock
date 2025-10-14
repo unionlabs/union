@@ -16408,6 +16408,7 @@ dependencies = [
  "serde",
  "serde_json",
  "ssz",
+ "tendermint-light-client-types",
  "thiserror 2.0.12",
  "tokio",
  "tracing",

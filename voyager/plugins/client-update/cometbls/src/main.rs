@@ -195,48 +195,49 @@ impl Module {
                 .ensure_within_power_threshold(&trusted_map, trusted_power_threshold, mid)
                 .await?
             {
-            // 1. fetch commit
-            let signed_header = self
-                .cometbft_client
-                .commit(Some(mid.height().try_into().unwrap()))
-                .await
-                .unwrap()
-                .signed_header;
+                // 1. fetch commit
+                let signed_header = self
+                    .cometbft_client
+                    .commit(Some(mid.height().try_into().unwrap()))
+                    .await
+                    .unwrap()
+                    .signed_header;
 
-            // 2. fetch untrusted validators
-            let untrusted_validators = self
-                .cometbft_client
-                .all_validators(Some(mid.height().try_into().unwrap()))
-                .await
-                .unwrap()
-                .validators;
+                // 2. fetch untrusted validators
+                let untrusted_validators = self
+                    .cometbft_client
+                    .all_validators(Some(mid.height().try_into().unwrap()))
+                    .await
+                    .unwrap()
+                    .validators;
 
-            let untrusted_map = sort(untrusted_validators);
+                let untrusted_map = sort_validators(untrusted_validators);
 
-            // 2. compute trusted power
-            let mut trusted_power = 0;
-            for sig in signed_header.commit.signatures.iter() {
-                if sig.block_id_flag == (BlockIdFlag::Commit as i32) {
-                    let address = sig.validator_address.as_encoding();
-                    match (trusted_map.get(address), untrusted_map.get(address)) {
-                        (Some(trusted_validator), Some(untrusted_validator))
-                            if trusted_validator.voting_power
-                                == untrusted_validator.voting_power =>
-                        {
-                            trusted_power += trusted_validator.voting_power.inner();
+                // 2. compute trusted power
+                let mut trusted_power = 0;
+                for sig in signed_header.commit.signatures.iter() {
+                    if sig.block_id_flag == (BlockIdFlag::Commit as i32) {
+                        let address = sig.validator_address.as_ref().unwrap().as_encoding();
+                        match (trusted_map.get(address), untrusted_map.get(address)) {
+                            (Some(trusted_validator), Some(untrusted_validator))
+                                if trusted_validator.voting_power
+                                    == untrusted_validator.voting_power =>
+                            {
+                                trusted_power += trusted_validator.voting_power.inner();
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
-            }
 
-            info!(%trusted_power, %trusted_power_threshold);
+                info!(%trusted_power, %trusted_power_threshold);
 
-            // 3. ensure trusted power is higher than threshold
-            if trusted_power > trusted_power_threshold {
-                low = mid.increment();
-            } else {
-                high = mid;
+                // 3. ensure trusted power is higher than threshold
+                if trusted_power > trusted_power_threshold {
+                    low = mid.increment();
+                } else {
+                    high = mid;
+                }
             }
         }
 
@@ -273,11 +274,8 @@ impl Module {
         // 3. compute trusted power
         let mut trusted_power = 0;
         for sig in signed_header.commit.signatures.iter() {
-            if let CommitSig::Commit {
-                validator_address, ..
-            } = sig
-            {
-                let address = validator_address.as_encoding();
+            if sig.block_id_flag == (BlockIdFlag::Commit as i32) {
+                let address = sig.validator_address.as_ref().unwrap().as_encoding();
                 match (trusted_map.get(address), untrusted_map.get(address)) {
                     (Some(trusted_validator), Some(untrusted_validator))
                         if trusted_validator.voting_power == untrusted_validator.voting_power =>

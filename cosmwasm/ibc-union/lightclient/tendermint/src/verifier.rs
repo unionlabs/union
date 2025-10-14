@@ -29,6 +29,8 @@ pub enum VerificationError {
     TimestampMustBeSet,
     #[error("signature must exist for the committed validators")]
     SignatureMustExist,
+    #[error("validator address must exist for the committed validators")]
+    ValidatorAddressMustExist,
     #[error("message must exist for all commits")]
     MessageMustExist,
     #[error("invalid public key type: {0}")]
@@ -63,8 +65,13 @@ impl<'a> Verification for Ed25519Verifier<'a> {
                 .clone()
                 .ok_or(VerificationError::SignatureMustExist)?;
 
+            let validator_address = commit_sig
+                .validator_address
+                .ok_or(VerificationError::SignatureMustExist)?
+                .into_encoding();
+
             Ok(Some(ValidatorSig {
-                validator_address: commit_sig.validator_address.into_encoding(),
+                validator_address,
                 timestamp,
                 signature: Some(signature.into_vec()),
             }))

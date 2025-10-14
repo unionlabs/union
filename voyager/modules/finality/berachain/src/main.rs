@@ -16,7 +16,7 @@ use unionlabs::{
     ibc::core::client::height::Height,
 };
 use voyager_sdk::{
-    ExtensionsExt, anyhow,
+    anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
     rpc::{FinalityModuleServer, types::FinalityModuleInfo},
@@ -47,7 +47,7 @@ impl FinalityModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
-        let tm_client = cometbft_rpc::Client::new(config.comet_ws_url).await?;
+        let comet_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;
 
         let eth_provider =
             DynProvider::new(ProviderBuilder::new().connect(&config.eth_rpc_url).await?);

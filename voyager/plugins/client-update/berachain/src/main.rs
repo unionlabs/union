@@ -24,23 +24,22 @@ use unionlabs::{
     encoding::{DecodeAs, Ssz},
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     never::Never,
-    primitives::H160,
+    primitives::{H160, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
     DefaultCmd,
-    anyhow::{self, bail},
+    anyhow::{self, anyhow},
     hook::UpdateHook,
     into_value,
     message::{
         PluginMessage, VoyagerMessage,
-        call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
+        call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientType, IbcSpecId},
+    primitives::{ChainId, ClientType},
     rpc::{PluginServer, types::PluginInfo},
-    types::RawClientId,
-    vm::{Op, Visit, call, conc, data, pass::PassResult, seq},
+    vm::{Op, Visit, data, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -84,11 +83,11 @@ impl Plugin for Module {
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 
         if chain_id != config.chain_id {
-            return Err(format!(
+            return Err(anyhow!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            ));
         }
 
         let tm_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;
