@@ -11,6 +11,7 @@ import (
 	grpc "galois/grpc/api/v3"
 	"galois/pkg/lightclient"
 	bls12381gadget "galois/pkg/lightclient/bls12381"
+
 	// "io"
 	"math/big"
 	"os"
@@ -29,8 +30,9 @@ import (
 	cs_bls12381 "github.com/consensys/gnark/constraint/bls12-381"
 	cs_bn254 "github.com/consensys/gnark/constraint/bn254"
 	"github.com/consensys/gnark/frontend"
-	"github.com/consensys/gnark/frontend/cs/r1cs"
+	// "github.com/consensys/gnark/frontend/cs/r1cs"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
+	"github.com/consensys/gnark/std/math/emulated"
 	"github.com/consensys/gnark/std/recursion/groth16"
 	"github.com/holiman/uint256"
 	"github.com/rs/zerolog/log"
@@ -118,11 +120,14 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 
 	prove := func() (*grpc.ProveResponse, error) {
 		innerProof, err := Prove(req, &p.innerCs, &p.innerPk, &p.innerVk)
-
-		circuitVk, err := groth16.ValueOfVerifyingKey[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](backend.VerifyingKey(&p.innerVk))
 		if err != nil {
-			return nil, fmt.Errorf("Could not get the verifying key %s", err)
+			return nil, fmt.Errorf("Could not do the inner proving %s", err)
 		}
+
+		// circuitVk, err := groth16.ValueOfVerifyingKeyFixed[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](backend.VerifyingKey(&p.innerVk))
+		// if err != nil {
+		// 	return nil, fmt.Errorf("Could not get the verifying key %s", err)
+		// }
 
 		circuitWitness, err := groth16.ValueOfWitness[gadget.ScalarField](innerProof.PublicWitness)
 		if err != nil {
@@ -136,9 +141,10 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 
 		commitmentHash := cometbn254.HashToField(innerProof.ProofCommitment.Marshal())
 		bls12381Witness := &bls12381gadget.Circuit{
+			// verifying key is baked in, so we don't set here since it has no effect on the witness generation
+			// VerifyingKey:    circuitVk,
 			InnerWitness:    circuitWitness,
 			Proof:           circuitProof,
-			VerifyingKey:    circuitVk,
 			CommitmentHash:  commitmentHash.BigInt(new(big.Int)),
 			CommitmentX:     innerProof.ProofCommitment.X.BigInt(new(big.Int)),
 			CommitmentY:     innerProof.ProofCommitment.Y.BigInt(new(big.Int)),
@@ -370,14 +376,22 @@ func loadOrCreateBls12381(r1csPath, pkPath, vkPath, innerR1csPath, innerPkPath, 
 		}
 	}
 
-	circuit := &bls12381gadget.Circuit{
-		Proof:        groth16.PlaceholderProof[gadget.G1Affine, gadget.G2Affine](&csInner),
-		InnerWitness: groth16.PlaceholderWitness[gadget.ScalarField](&csInner),
-		VerifyingKey: groth16.PlaceholderVerifyingKey[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](&csInner),
+	verifyingKey, err := groth16.ValueOfVerifyingKeyFixed[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](&vkInner)
+
+	if err != nil {
+		return cs, pk, vk, csInner, pkInner, vkInner, err
 	}
 
 	log.Info().Msg("Compiling circuit...")
-	r1csInstance, err := frontend.Compile(ecc.BLS12_381.ScalarField(), r1cs.NewBuilder, circuit, frontend.WithCompressThreshold(300))
+	r1csInstance, err := bls12381gadget.Compile(
+		groth16.PlaceholderProof[gadget.G1Affine, gadget.G2Affine](&csInner),
+		groth16.Witness[gadget.ScalarField]{
+			Public: make([]emulated.Element[gadget.ScalarField], csInner.GetNbPublicVariables()),
+		},
+		verifyingKey,
+	)
+
+	// r1csInstance, err := frontend.Compile(ecc.BLS12_381.ScalarField(), r1cs.NewBuilder, circuit, frontend.WithCompressThreshold(300))
 	if err != nil {
 		return cs, pk, vk, csInner, pkInner, vkInner, err
 	}
