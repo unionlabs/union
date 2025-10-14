@@ -282,6 +282,15 @@ pub fn get_lc_execution_root<C: ChainSpec>(chain_id: u64, header: &LightClientHe
 
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
+    // No new field in fulu
+    if let Some(fork) = fs.fork(Forks::Fulu)
+        && epoch >= fork.epoch
+    {
+        return TryInto::<deneb::ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
+            .unwrap()
+            .tree_hash_root();
+    }
+
     // No new field in electra
     if let Some(fork) = fs.fork(Forks::Electra)
         && epoch >= fork.epoch
