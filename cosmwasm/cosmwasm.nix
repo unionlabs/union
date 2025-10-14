@@ -137,6 +137,7 @@ _: {
             "ethermint"
             "tendermint-bls"
             "parlia"
+            "sui"
             # "movement"
             "state-lens-ics23-mpt"
             # "state-lens-ics23-smt"
