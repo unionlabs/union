@@ -2180,7 +2180,45 @@ module ibc::ibc {
         t.end();
     }
 
-    
+    #[test]
+    #[expected_failure(abort_code = E_INVALID_CONNECTION_STATE)]
+    fun test_connection_open_ack_wrong_state_fails() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_try(2, 11, 1, b"p", 1);
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 99, b"p", 1);
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
+
+    #[test]
+    #[expected_failure(abort_code = E_INVALID_CONNECTION_STATE)]
+    fun test_connection_open_confirm_wrong_state_fails() {
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", t.ctx());
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_confirm(1, b"p", 1);
+
+        test_scenario::return_shared(ibc_store);
+        t.end();
+    }
 
     public struct IbcAppWitness has drop {}
     #[test]
