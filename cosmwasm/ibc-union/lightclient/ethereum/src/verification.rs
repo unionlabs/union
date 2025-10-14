@@ -1,4 +1,4 @@
-use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps, Empty, HashFunction};
+use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps, Empty, HashFunction, to_hex};
 use ethereum_sync_protocol::{BlsVerify, DST_POP_G2};
 use unionlabs::primitives::{H384, H768};
 
@@ -27,16 +27,28 @@ impl BlsVerify for VerificationContext<'_> {
             .api
             .bls12_381_aggregate_g1(&pubkeys)
             .map_err(|e| {
-                ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
+                ethereum_sync_protocol::error::Error::ClientSignatureVerification(format!(
+                    "bls12_381_aggregate_g1: {e}"
+                ))
             })?;
+
+        self.deps
+            .api
+            .debug(&format!("[CONTRACT] pubkey: {}", to_hex(pubkey)));
 
         let hashed_msg = self
             .deps
             .api
             .bls12_381_hash_to_g2(HashFunction::Sha256, &msg, DST_POP_G2)
             .map_err(|e| {
-                ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
+                ethereum_sync_protocol::error::Error::ClientSignatureVerification(format!(
+                    "bls12_381_hash_to_g2: {e}"
+                ))
             })?;
+
+        self.deps
+            .api
+            .debug(&format!("[CONTRACT] hashed_msg: {}", to_hex(hashed_msg)));
 
         let valid = self
             .deps
@@ -48,7 +60,9 @@ impl BlsVerify for VerificationContext<'_> {
                 &hashed_msg,
             )
             .map_err(|e| {
-                ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
+                ethereum_sync_protocol::error::Error::ClientSignatureVerification(format!(
+                    "bls12_381_pairing_equality: {e}"
+                ))
             })?;
 
         if valid {

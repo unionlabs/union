@@ -30,15 +30,15 @@ pub fn compute_fork_version(chain_id: u64, epoch: Epoch) -> Version {
         && epoch >= fork.epoch
     {
         fork.current_version
-    } else if let Some(fork) = fs.fork(Forks::Deneb)
+    } else if let Some(fork) = fs.fork(Forks::Capella)
         && epoch >= fork.epoch
     {
         fork.current_version
-    } else if let Some(fork) = fs.fork(Forks::Deneb)
+    } else if let Some(fork) = fs.fork(Forks::Bellatrix)
         && epoch >= fork.epoch
     {
         fork.current_version
-    } else if let Some(fork) = fs.fork(Forks::Deneb)
+    } else if let Some(fork) = fs.fork(Forks::Altair)
         && epoch >= fork.epoch
     {
         fork.current_version

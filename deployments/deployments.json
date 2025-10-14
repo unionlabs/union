@@ -906,8 +906,8 @@
       "ethereum": {
         "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
         "height": 354890,
-        "commit": "6c123ee887ea348c75976e51c5e99815c406c08e",
-        "code_id": 262
+        "commit": "08f1b4a52a3761bd9c177145bdac512977886d41",
+        "code_id": 263
       },
       "ethermint": {
         "address": "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh",

@@ -1,5 +1,5 @@
 use std::{
-    fmt::Display,
+    fmt,
     ops::{Add, Div, Mul, Sub},
 };
 
@@ -65,14 +65,20 @@ impl DomainType {
 
 macro_rules! u64_newtype {
     ($T:ident) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
         #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
         #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
         pub struct $T(u64);
 
+        impl fmt::Debug for $T {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "{}({})", stringify!($T), self.0)
+            }
+        }
+
         impl $T {
-            pub const fn new(slot: u64) -> Self {
-                Self(slot)
+            pub const fn new(inner: u64) -> Self {
+                Self(inner)
             }
 
             pub const fn get(&self) -> u64 {
@@ -148,8 +154,8 @@ macro_rules! u64_newtype {
             }
         }
 
-        impl Display for $T {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        impl fmt::Display for $T {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, "{}", self.0)
             }
         }
