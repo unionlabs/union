@@ -19,7 +19,6 @@ import {
 export const VIEM_CHAINS = [
   arbitrumSepolia,
   base,
-  base,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
