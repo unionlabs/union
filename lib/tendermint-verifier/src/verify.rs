@@ -549,7 +549,6 @@ mod tests {
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
     use tendermint_light_client_types::Header;
-    use unionlabs::option_unwrap;
 
     use super::*;
 
@@ -608,7 +607,7 @@ mod tests {
             Duration::new(100_000_000, 0).unwrap(),
             &Fraction {
                 numerator: 1,
-                denominator: const { option_unwrap!(NonZeroU64::new(3)) },
+                denominator: const { NonZeroU64::new(3).unwrap() },
             },
             &SignatureVerifier::new(EdVerifier),
         )

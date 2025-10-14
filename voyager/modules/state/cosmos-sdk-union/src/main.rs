@@ -5,6 +5,7 @@ use std::num::{NonZeroU8, NonZeroU32, ParseIntError};
 use cometbft_rpc::rpc_types::Order;
 use cosmos_sdk_event::CosmosSdkEvent;
 use futures::{TryFutureExt, TryStreamExt, stream::FuturesUnordered};
+use ibc_union_msg::query::QueryMsg;
 use ibc_union_spec::{
     Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet, Status,
     Timestamp,
@@ -26,7 +27,6 @@ use tracing::{debug, error, instrument, trace};
 use unionlabs::{
     ErrorReporter,
     ibc::core::client::height::Height,
-    option_unwrap,
     primitives::{Bech32, Bytes, H256, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
@@ -118,8 +118,8 @@ impl Module {
             .tx_search(
                 query,
                 false,
-                option_unwrap!(NonZeroU32::new(1)),
-                option_unwrap!(NonZeroU8::new(1)),
+                const { NonZeroU32::new(1).unwrap() },
+                const { NonZeroU8::new(1).unwrap() },
                 Order::Asc,
             )
             .await
@@ -184,8 +184,8 @@ impl Module {
             .tx_search(
                 query,
                 false,
-                option_unwrap!(NonZeroU32::new(1)),
-                option_unwrap!(NonZeroU8::new(1)),
+                const { NonZeroU32::new(1).unwrap() },
+                const { NonZeroU8::new(1).unwrap() },
                 Order::Asc,
             )
             .await
@@ -261,7 +261,7 @@ impl Module {
         // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
         if response
             .code
-            .is_err_code(option_unwrap!(NonZeroU32::new(26)))
+            .is_err_code(const { NonZeroU32::new(26).unwrap() })
         {
             Err(ErrorObject::owned(
                 -1,
@@ -306,10 +306,7 @@ impl Module {
         client_id: ClientId,
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
-            .query_smart::<_, Bytes>(
-                &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
-                Some(height),
-            )
+            .query_smart::<_, Bytes>(&QueryMsg::GetClientState { client_id }, Some(height))
             .await?;
 
         Ok(client_state.map(Bytes::into_encoding))
@@ -332,7 +329,7 @@ impl Module {
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
             .query_smart::<_, Bytes>(
-                &ibc_union_msg::query::QueryMsg::GetConsensusState {
+                &QueryMsg::GetConsensusState {
                     client_id,
                     height: trusted_height,
                 },
@@ -357,10 +354,7 @@ impl Module {
         connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
         let client_state = self
-            .query_smart::<_, Connection>(
-                &ibc_union_msg::query::QueryMsg::GetConnection { connection_id },
-                Some(height),
-            )
+            .query_smart::<_, Connection>(&QueryMsg::GetConnection { connection_id }, Some(height))
             .await?;
 
         Ok(client_state)
@@ -380,10 +374,7 @@ impl Module {
         channel_id: ChannelId,
     ) -> RpcResult<Option<Channel>> {
         let channel = self
-            .query_smart::<_, Channel>(
-                &ibc_union_msg::query::QueryMsg::GetChannel { channel_id },
-                Some(height),
-            )
+            .query_smart::<_, Channel>(&QueryMsg::GetChannel { channel_id }, Some(height))
             .await?;
 
         Ok(channel)
@@ -403,10 +394,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetBatchPackets { batch_hash },
-                Some(height),
-            )
+            .query_smart::<_, Option<H256>>(&QueryMsg::GetBatchPackets { batch_hash }, Some(height))
             .await?;
 
         Ok(commitment.flatten())
@@ -427,7 +415,7 @@ impl Module {
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetBatchReceipts { batch_hash },
+                &QueryMsg::GetBatchReceipts { batch_hash },
                 Some(height),
             )
             .await?;
@@ -454,7 +442,7 @@ impl Module {
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetCommittedMembershipProof {
+                &QueryMsg::GetCommittedMembershipProof {
                     client_id,
                     proof_height,
                     path,
@@ -485,7 +473,7 @@ impl Module {
     ) -> RpcResult<bool> {
         let commitment = self
             .query_smart::<_, bool>(
-                &ibc_union_msg::query::QueryMsg::GetCommittedNonMembershipProof {
+                &QueryMsg::GetCommittedNonMembershipProof {
                     client_id,
                     proof_height,
                     path,
@@ -531,8 +519,8 @@ impl StateModuleServer<IbcUnion> for Module {
                     .tx_search(
                         query,
                         false,
-                        option_unwrap!(NonZeroU32::new(1)),
-                        option_unwrap!(NonZeroU8::new(1)),
+                        const { NonZeroU32::new(1).unwrap() },
+                        const { NonZeroU8::new(1).unwrap() },
                         Order::Asc,
                     )
                     .await
@@ -604,7 +592,7 @@ impl StateModuleServer<IbcUnion> for Module {
             Query::ClientStatus(ClientStatus { client_id, height }) => {
                 let status = self
                     .query_smart::<_, Status>(
-                        &ibc_union_msg::query::QueryMsg::GetStatus { client_id },
+                        &QueryMsg::GetStatus { client_id },
                         height.map(Height::new),
                     )
                     .await?
@@ -629,10 +617,7 @@ impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let client_type = self
-            .query_smart::<_, String>(
-                &ibc_union_msg::query::QueryMsg::GetClientType { client_id },
-                None,
-            )
+            .query_smart::<_, String>(&QueryMsg::GetClientType { client_id }, None)
             .await?
             .ok_or(ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,

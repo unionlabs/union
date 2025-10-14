@@ -714,9 +714,7 @@ pub struct IbcUnionMigrateMsg {}
 pub mod version {
     use std::num::NonZeroU32;
 
-    use unionlabs::option_unwrap;
-
-    pub const INIT: NonZeroU32 = option_unwrap!(NonZeroU32::new(1));
+    pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

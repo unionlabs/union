@@ -28,7 +28,6 @@ use unionlabs::{
     },
     id::{ChannelId, ConnectionId, PortId},
     never::Never,
-    option_unwrap,
     primitives::{Bech32, H256},
 };
 use voyager_sdk::{
@@ -56,7 +55,7 @@ pub mod ibc_events;
 
 pub mod call;
 
-const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(100));
+const PER_PAGE_LIMIT: NonZeroU8 = NonZeroU8::new(100).unwrap();
 
 #[tokio::main]
 async fn main() {
@@ -512,7 +511,7 @@ impl Module {
         // event hashes found while fetching this block
         let mut found_events = BTreeSet::new();
 
-        let mut page = const { option_unwrap!(NonZeroU32::new(1)) };
+        let mut page = const { NonZeroU32::new(1).unwrap() };
 
         let mut total_count = 0;
 

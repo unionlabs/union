@@ -309,7 +309,7 @@ mod tests {
 
     macro_rules! nz {
         ($n:expr) => {
-            const { crate::option_unwrap!(NonZeroU64::new($n)) }
+            const { NonZeroU64::new($n).unwrap() }
         };
     }
 
