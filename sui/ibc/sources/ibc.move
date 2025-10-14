@@ -1859,6 +1859,173 @@ module ibc::ibc {
         test_case.end();
     }
 
+    
+    #[test]
+    fun test_channel_open_init_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        test_case.next_tx(@0x0);
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        ibc_store.channel_open_init(
+            port,
+            b"cp-port",
+            1,
+            string::utf8(b"v1"),
+            IbcAppWitness {}
+        );
+
+        let ch_id = 1;
+        let ch = ibc_store.channels.borrow(ch_id);
+        assert!(channel::state(ch) == CHAN_STATE_INIT, E_INVALID_CHANNEL_STATE);
+        assert!(*ibc_store.channel_to_port.borrow(ch_id) == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"), 1);
+        let key = commitment::channel_commitment_key(ch_id);
+        assert!(ibc_store.commitments.contains(key), 1);
+
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
+
+    #[test]
+    fun test_channel_open_try_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_try(2, 15, 1, b"p", 1);
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_confirm(1, b"p", 1);
+        
+        test_case.next_tx(@0x0);
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        ibc_store.channel_open_try(
+            port,
+            1,
+            7,
+            b"cp-port",
+            string::utf8(b"v1"),
+            string::utf8(b"v1-cp"),
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        let ch_id = 1;
+        let ch = ibc_store.channels.borrow(ch_id);
+        assert!(channel::state(ch) == CHAN_STATE_TRYOPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel::connection_id(ch) == 1, 1);
+        assert!(channel::counterparty_channel_id(ch) == 7, 1);
+        let key = commitment::channel_commitment_key(ch_id);
+        assert!(ibc_store.commitments.contains(key), 1);
+
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
+
+    #[test]
+    fun test_channel_open_ack_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_init(1, 2);
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        test_case.next_tx(@0x0);
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        ibc_store.channel_open_init(
+            port,
+            b"cp-port",
+            1,
+            string::utf8(b"v1"),
+            IbcAppWitness {}
+        );
+
+        test_case.next_tx(@0x0);
+        ibc_store.channel_open_ack(
+            string::utf8(b"ignored"),
+            1,
+            string::utf8(b"v1-cp"),
+            22,
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        let ch = ibc_store.channels.borrow(1);
+        assert!(channel::state(ch) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel::counterparty_channel_id(ch) == 22, 1);
+        let key = commitment::channel_commitment_key(1);
+        assert!(ibc_store.commitments.contains(key), 1);
+
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
+
+    #[test]
+    fun test_channel_open_confirm_success() {
+        let mut test_case = test_scenario::begin(@0x0);
+        init_for_tests(test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        let mut ibc_store = test_case.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs", b"cons", test_case.ctx());
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_try(2, 17, 1, b"p", 1);
+
+        test_case.next_tx(@0x0);
+        ibc_store.connection_open_confirm(1, b"p", 1);
+
+        test_case.next_tx(@0x0);
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        ibc_store.channel_open_try(
+            port,
+            1,
+            5,
+            b"cp-port",
+            string::utf8(b"v1"),
+            string::utf8(b"v1-cp"),
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        test_case.next_tx(@0x0);
+        ibc_store.channel_open_confirm(1, b"p", 1, IbcAppWitness {});
+
+        let ch = ibc_store.channels.borrow(1);
+        assert!(channel::state(ch) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        let key = commitment::channel_commitment_key(1);
+        assert!(ibc_store.commitments.contains(key), 1);
+
+        test_scenario::return_shared(ibc_store);
+        test_case.end();
+    }
+    
+
+    
 
     public struct IbcAppWitness has drop {}
     #[test]
