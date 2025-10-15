@@ -172,4 +172,36 @@ module ibc::bcs_utils {
     //     };
     //     vec
     // }
+
+
+    #[test]
+    fun test_peel_u32_ok() {
+        // BCS u32 little-endian of 0x01020304 == [4,3,2,1]
+        let mut buf = new(vector[4u8, 3, 2, 1]);
+        let v = peel_u32(&mut buf);
+        assert!(v == 0x01020304, 1);
+        let rem = remaining(&buf);
+        assert!(vector::length(&rem) == 0, 2);
+    }
+
+    #[test]
+    fun test_peel_u64_ok() {
+        // BCS u64 little-endian of 0x0807060504030201 == [1,2,3,4,5,6,7,8]
+        let mut buf = new(vector[1u8,2,3,4,5,6,7,8]);
+        let v = peel_u64(&mut buf);
+        assert!(v == 0x0807060504030201, 1);
+        let rem = remaining(&buf);
+        assert!(vector::length(&rem) == 0, 2);
+    }
+
+
+
+    #[test]
+    #[expected_failure(abort_code = 9000)]
+    fun test_invalid_prefix_fails() {
+        // Invalid: multi-byte ULEB128 with a zero "digit" after the first byte: [0x80, 0x00]
+        let mut buf = new(vector[0x80u8, 0x00]);
+        let _ = peel_length_prefix(&mut buf);
+    }
 }
+
