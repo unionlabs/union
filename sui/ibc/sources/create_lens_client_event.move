@@ -59,7 +59,7 @@
 // TITLE.
 
 module ibc::create_lens_client_event {
-    use std::string::String;
+    use std::string::{String, utf8};
 
     public struct CreateLensClientEvent has copy, drop, store {
         client_id: u32,
@@ -92,4 +92,51 @@ module ibc::create_lens_client_event {
     public(package) fun l2_client_id(self: &CreateLensClientEvent): u32 {
         self.l2_client_id
     }
+        #[test]
+    fun test_create_and_getters_ok() {
+        let ev = new(7, utf8(b"lens-sepolia"), 1001, 2002);
+
+        assert!(client_id(&ev) == 7, 1);
+        assert!(l1_client_id(&ev) == 1001, 2);
+        assert!(l2_client_id(&ev) == 2002, 3);
+        assert!(l2_chain_id(&ev) == utf8(b"lens-sepolia"), 4);
+    }
+
+    #[test]
+    fun test_multiple_instances_distinct_values() {
+        let ev1 = new(1, utf8(b"a"), 10, 20);
+        let ev2 = new(2, utf8(b"b"), 11, 21);
+
+        assert!(client_id(&ev1) == 1, 1);
+        assert!(client_id(&ev2) == 2, 2);
+
+        assert!(l1_client_id(&ev1) == 10, 3);
+        assert!(l1_client_id(&ev2) == 11, 4);
+
+        assert!(l2_client_id(&ev1) == 20, 5);
+        assert!(l2_client_id(&ev2) == 21, 6);
+
+        assert!(l2_chain_id(&ev1) == utf8(b"a"), 7);
+        assert!(l2_chain_id(&ev2) == utf8(b"b"), 8);
+    }
+
+    #[test]
+    fun test_copy_ability_and_getters_still_work() {
+        let ev = new(42, utf8(b"chain-x"), 111, 222);
+
+        let ev_copy = copy ev;
+
+        assert!(client_id(&ev) == 42, 1);
+        assert!(client_id(&ev_copy) == 42, 2);
+
+        assert!(l1_client_id(&ev) == 111, 3);
+        assert!(l1_client_id(&ev_copy) == 111, 4);
+
+        assert!(l2_client_id(&ev) == 222, 5);
+        assert!(l2_client_id(&ev_copy) == 222, 6);
+
+        assert!(l2_chain_id(&ev) == utf8(b"chain-x"), 7);
+        assert!(l2_chain_id(&ev_copy) == utf8(b"chain-x"), 8);
+    }
+
 }
