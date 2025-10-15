@@ -14,6 +14,7 @@ import {
 import {
   arbitrumSepolia,
   base,
+  baseSepolia,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
@@ -145,6 +146,17 @@ export const ownedFallbacks: Transports = {
       retryDelay: 1_000,
     }),
     http(`https://rpc.8453.base.chain.kitchen`, {
+      name: "Chain Kitchen - Base",
+      retryDelay: 1_000,
+    }),
+  ]),
+  [baseSepolia.id]: fallback([
+    http(baseSepolia.rpcUrls.default.http.at(0), { name: "default Base Sepolia RPC" }),
+    http("https://base-sepolia.therpc.io", {
+      name: "https://base-sepolia.therpc.io",
+      retryDelay: 1_000,
+    }),
+    http(`https://rpc.84532.base.chain.kitchen`, {
       name: "Chain Kitchen - Base",
       retryDelay: 1_000,
     }),
@@ -287,9 +299,18 @@ const transports: Transports = {
       retryCount: 3,
       retryDelay: 100,
       key: "unstable_connector-injected-base",
-      name: "unstable_connector-injected-bsc",
+      name: "unstable_connector-injected-base",
     }),
     ownedFallbacks[base.id],
+  ]),
+  [baseSepolia.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-base-sepolia",
+      name: "unstable_connector-injected-base-sepolia",
+    }),
+    ownedFallbacks[baseSepolia.id],
   ]),
 }
 

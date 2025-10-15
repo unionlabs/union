@@ -7,6 +7,9 @@
       "base.8453": {
         "environment": "production"
       },
+      "base.84532": {
+        "environment": "staging"
+      },
       "bob.808813": {
         "environment": "staging"
       },
