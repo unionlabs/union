@@ -59,7 +59,9 @@
 // TITLE.
 
 module ibc::height {
-    use sui::bcs::BCS;
+    use sui::bcs::BCS;    
+    use std::vector;
+    use sui::bcs;
 
     public struct Height has drop, copy, store {
         revision_number: u64,
@@ -119,4 +121,110 @@ module ibc::height {
             revision_height: buf.peel_u64()
         }
     }
+
+
+    #[test]
+    fun test_new_and_getters_ok() {
+        let h = new(3, 42);
+        assert!(get_revision_number(&h) == 3, 1);
+        assert!(get_revision_height(&h) == 42, 2);
+        assert!(!is_zero(&h), 3);
+    }
+
+    #[test]
+    fun test_default_is_zero_ok() {
+        let h = default();
+        assert!(get_revision_number(&h) == 0, 1);
+        assert!(get_revision_height(&h) == 0, 2);
+        assert!(is_zero(&h), 3);
+    }
+
+    #[test]
+    fun test_ordering_same_revision_ok() {
+        let a = new(5, 100);
+        let b = new(5, 101);
+
+        // a < b (same revision_number, height smaller)
+        assert!(lt(&a, &b), 1);
+        assert!(!gte(&a, &b), 2);
+
+        // b >= a (same revision_number, height larger)
+        assert!(gte(&b, &a), 3);
+        assert!(!lt(&b, &a), 4);
+
+        // a >= a, not lt
+        assert!(gte(&a, &a), 5);
+        assert!(!lt(&a, &a), 6);
+    }
+
+    #[test]
+    fun test_ordering_different_revision_ok() {
+        let low_rev  = new(1, 9_999);
+        let high_rev = new(2, 0);
+
+        // revision_number wins
+        assert!(lt(&low_rev, &high_rev), 1);
+        assert!(gte(&high_rev, &low_rev), 2);
+    }
+
+    #[test]
+    fun test_set_revision_height_mutates_ok() {
+        let mut h = new(7, 1);
+        set_revision_height(&mut h, 999);
+        assert!(get_revision_number(&h) == 7, 1);
+        assert!(get_revision_height(&h) == 999, 2);
+    }
+
+    #[test]
+    fun test_decode_bcs_two_u64s_ok() {
+        // Prepare bytes = BCS(u64=rev_number) || BCS(u64=rev_height)
+        let rn: u64 = 11;
+        let rh: u64 = 222;
+
+        let mut bytes = bcs::to_bytes(&rn);
+        let tail = bcs::to_bytes(&rh);
+        vector::append(&mut bytes, tail);
+
+        // Decode
+        let mut reader = bcs::new(bytes);
+        let h = decode_bcs(&mut reader);
+
+        assert!(get_revision_number(&h) == rn, 1);
+        assert!(get_revision_height(&h) == rh, 2);
+    }
+
+    #[test]
+    fun test_decode_bcs_zeros_ok() {
+        // rn=0, rh=0
+        let mut bytes = bcs::to_bytes(&0u64);
+        let tail = bcs::to_bytes(&0u64);
+        vector::append(&mut bytes, tail);
+
+        let mut reader = bcs::new(bytes);
+        let h = decode_bcs(&mut reader);
+
+        assert!(is_zero(&h), 1);
+    }
+
+    #[test]
+    fun test_decode_bcs_large_values_ok() {
+        let rn: u64 = 0xFFFFFFFFFFFFFFF0; // large
+        let rh: u64 = 0x0000000000000007;
+
+        let mut bytes = bcs::to_bytes(&rn);
+        let tail = bcs::to_bytes(&rh);
+        vector::append(&mut bytes, tail);
+
+        let mut reader = bcs::new(bytes);
+        let h = decode_bcs(&mut reader);
+
+        assert!(get_revision_number(&h) == rn, 1);
+        assert!(get_revision_height(&h) == rh, 2);
+
+        // sanity against another height
+        let other = new(rn, rh + 1);
+        assert!(lt(&h, &other), 3);
+        assert!(gte(&other, &h), 4);
+    }
+
 }
