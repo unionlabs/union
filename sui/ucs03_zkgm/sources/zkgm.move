@@ -65,6 +65,7 @@ module zkgm::zkgm {
     use sui::bcs;
     use sui::clock::Clock; 
     use sui::coin::{Self, Coin};
+    use sui::event;
     use sui::object_bag::{Self, ObjectBag};
     use sui::table::{Self, Table};
 
@@ -151,6 +152,16 @@ module zkgm::zkgm {
         token_origin: Table<vector<u8>, u256>,
         wrapped_denom_to_t: Table<vector<u8>, String>,
         object_store: ObjectBag,
+    }
+
+    public struct CreateWrappedToken has copy, drop, store {
+        path: u256,
+        channel_id: u32,
+        base_token: vector<u8>,
+        quote_token: vector<u8>,
+        native_token: vector<u8>,
+        metadata: vector<u8>,
+        kind: u8
     }
 
     public struct ChannelBalancePair has copy, drop, store {
@@ -1212,7 +1223,17 @@ module zkgm::zkgm {
 
         if (quote_token == wrapped_token && base_amount_covers_quote_amount) {
             // TODO: rate limit
-            zkgm.save_token_origin(wrapped_token, path, ibc_packet.destination_channel_id());
+            if (!zkgm.save_token_origin(wrapped_token, path, ibc_packet.destination_channel_id())) {
+                event::emit(CreateWrappedToken {
+                    path,
+                    channel_id: ibc_packet.destination_channel_id(), 
+                    base_token: *order.base_token(),
+                    quote_token,
+                    native_token: type_name::get<T>().into_string().into_bytes(),
+                    metadata: *order.metadata(),
+                    kind: order.kind()
+                });
+            };
             
             // We expect the token to be deployed already here and the treasury cap is registered previously with type T
             zkgm.protocol_fill_mint<T>(
@@ -1760,10 +1781,13 @@ module zkgm::zkgm {
         wrapped_token: vector<u8>,
         path: u256,
         channel_id: u32
-    ) {
+    ): bool {
         let updated_channel_path = helper::update_channel_path(path, channel_id);
         if (!zkgm.token_origin.contains(wrapped_token)) {
             zkgm.token_origin.add(wrapped_token, updated_channel_path);
-        };
+            false
+        } else {
+            true
+        }
     }
 }
