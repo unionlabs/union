@@ -37,7 +37,7 @@ ucs03-zkgmable              = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi", "schemars"] }
 
 [dev-dependencies]
-cw-multi-test     = { version = "2.4", features = ["cosmwasm_2_2"] }
+cw-multi-test     = { version = "=2.4", features = ["cosmwasm_2_2"] }
 cw20              = { workspace = true }
 cw20-base         = { workspace = true }
 cw20-token-minter = { workspace = true }
