@@ -1,4 +1,4 @@
-use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps, Empty, HashFunction, to_hex};
+use cosmwasm_std::{BLS12_381_G1_GENERATOR, Deps, Empty, HashFunction};
 use ethereum_sync_protocol::{BlsVerify, DST_POP_G2};
 use unionlabs::primitives::{H384, H768};
 
