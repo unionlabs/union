@@ -190,3 +190,43 @@ export class Unbond extends S.TaggedClass<Unbond>("Unbond")("Unbond", {
     )
   }
 }
+
+export class Withdrawal extends S.TaggedClass<Withdrawal>("Withdrawal")("Withdrawal", {
+  packet_hash: PacketHash,
+  packet_shape: S.String,
+  source_universal_chain_id: UniversalChainId,
+  destination_universal_chain_id: UniversalChainId,
+  staker_canonical: S.String,
+  staker_display: S.String,
+  staker_zkgm: S.String,
+  quote_token: TokenRawDenom,
+  quote_amount: S.BigInt,
+  withdraw_send_timestamp: S.DateTimeUtc,
+  withdraw_send_transaction_hash: TransactionHash,
+  withdraw_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  withdraw_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+  withdraw_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  withdraw_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
+  sort_order: S.String,
+  source_chain: Chain,
+  destination_chain: Chain,
+  quote_token_meta: Token,
+}) {
+  get sortDate() {
+    return this.withdraw_send_timestamp
+  }
+  get amountFormatted() {
+    return pipe(
+      this.quote_amount,
+      BigDecimal.fromBigInt,
+      BigDecimal.unsafeDivide(BigDecimal.make(1n, -O.getOrThrow(this.quote_token_meta.decimals))),
+      Utils.formatBigDecimal,
+    )
+  }
+  get sendTimestampFormatted() {
+    return pipe(
+      this.withdraw_send_timestamp,
+      DateTime.formatIso,
+    )
+  }
+}
