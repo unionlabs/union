@@ -32,10 +32,6 @@ impl BlsVerify for VerificationContext<'_> {
                 ))
             })?;
 
-        self.deps
-            .api
-            .debug(&format!("[CONTRACT] pubkey: {}", to_hex(pubkey)));
-
         let hashed_msg = self
             .deps
             .api
@@ -45,10 +41,6 @@ impl BlsVerify for VerificationContext<'_> {
                     "bls12_381_hash_to_g2: {e}"
                 ))
             })?;
-
-        self.deps
-            .api
-            .debug(&format!("[CONTRACT] hashed_msg: {}", to_hex(hashed_msg)));
 
         let valid = self
             .deps
