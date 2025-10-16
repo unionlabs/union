@@ -1,21 +1,22 @@
 <script lang="ts">
 import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
+import WithdrawalListItemComponent from "$lib/components/model/WithdrawalListItemComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import { matchRuntimeResult } from "$lib/utils/snippets.svelte"
-import type { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
+import type { Bond, Unbond, Withdrawal } from "@unionlabs/sdk/schema/stake"
 import { Array as A, Option as O } from "effect"
 import type { Exit } from "effect"
 
 interface Props {
-  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>, unknown>>
+  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal>>, unknown>>
   walletConnected: boolean
 }
 
 let { data, walletConnected }: Props = $props()
 
-type TableFilter = "all" | "bond" | "unbond"
+type TableFilter = "all" | "bond" | "unbond" | "withdrawal"
 
 let tableFilter = $state<TableFilter>("all")
 let currentPage = $state<number>(1)
@@ -28,12 +29,15 @@ $effect(() => {
 })
 </script>
 
-{#snippet renderBondsTable(maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond>>)}
+{#snippet renderBondsTable(
+  maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal>>,
+)}
   {@const bonds = O.getOrElse(maybeBonds, () => [])}
   {@const filteredBonds = bonds.filter(bond =>
     tableFilter === "all"
     || (tableFilter === "bond" && bond._tag === "Bond")
     || (tableFilter === "unbond" && bond._tag === "Unbond")
+    || (tableFilter === "withdrawal" && bond._tag === "Withdrawal")
   )}
   {@const totalItems = filteredBonds.length}
   {@const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))}
@@ -50,6 +54,7 @@ $effect(() => {
             { id: "all", label: "All" },
             { id: "bond", label: "Stakes" },
             { id: "unbond", label: "Unstakes" },
+            { id: "withdrawal", label: "Withdrawals" },
           ]}
           activeId={tableFilter}
           onTabChange={(id) => tableFilter = id as TableFilter}
@@ -82,7 +87,11 @@ $effect(() => {
     <div class="relative overflow-auto">
       {#if hasData}
         {#each paginatedBonds as item}
-          <StakingListItemComponent {item} />
+          {#if item._tag === "Withdrawal"}
+            <WithdrawalListItemComponent {item} />
+          {:else}
+            <StakingListItemComponent {item} />
+          {/if}
         {/each}
       {:else}
         {#each Array(5) as _}
