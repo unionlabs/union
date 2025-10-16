@@ -88,6 +88,11 @@ module zkgm::zkgm {
     use zkgm::zkgm_packet;
     use zkgm::solver_metadata;
 
+    #[test_only]
+    use sui::test_scenario;
+    
+
+    use sui::clock;
     // Constants
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
@@ -1790,4 +1795,65 @@ module zkgm::zkgm {
             true
         }
     }
+
+
+    #[test]
+    fun test_is_valid_version_true() {
+        assert!(is_valid_version(string::utf8(b"ucs03-zkgm-0")), 1)
+    }
+
+    #[test]
+    fun test_is_valid_version_false() {
+        assert!(!is_valid_version(string::utf8(b"ucs03-zkgm-1")), 1)
+    }
+
+    #[test]
+    fun test_increase_then_decrease_outstanding_ok() {
+        let mut t = test_scenario::begin(@0x0);
+
+        t.next_tx(@0x0);
+        init(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut store = t.take_shared<RelayStore>();
+
+        let channel: u32 = 7;
+        let path: u256 = 0xAA;
+        let token: vector<u8> = b"TKN";
+        let meta: vector<u8> = b"IMG";
+        let amt: u256 = 5;
+
+        increase_outstanding(&mut store, channel, path, token, meta, amt);
+        let rc1 = decrease_outstanding(&mut store, channel, path, token, meta, amt);
+        assert!(rc1 == 0, rc1);
+
+        test_scenario::return_shared(store);
+        t.end();
+    }
+
+    #[test]
+    fun test_decrease_outstanding_pair_not_found_code() {
+        let mut t = test_scenario::begin(@0x0);
+
+        t.next_tx(@0x0);
+        init(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut store = t.take_shared<RelayStore>();
+
+        let rc = decrease_outstanding(
+            &mut store,
+            1,
+            0x1,
+            b"A",
+            b"B",
+            1
+        );
+        assert!(rc == E_CHANNEL_BALANCE_PAIR_NOT_FOUND, rc);
+
+        test_scenario::return_shared(store);
+        t.end();
+    }
+
+
 }
