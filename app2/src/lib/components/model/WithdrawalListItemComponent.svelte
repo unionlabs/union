@@ -33,7 +33,7 @@ const status = $derived(
     ? "success"
     : Option.isSome(item.withdraw_timeout_timestamp)
     ? "failure"
-    : "pending"
+    : "pending",
 )
 
 type StatusConfigType = {
@@ -47,7 +47,7 @@ const statusConfig = $derived<StatusConfigType>(
     ? { bg: "bg-accent/20 border-accent/40", icon: "text-accent", type: "checkmark" }
     : status === "failure"
     ? { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
-    : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" }
+    : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" },
 )
 </script>
 
@@ -134,4 +134,3 @@ const statusConfig = $derived<StatusConfigType>(
     </div>
   </div>
 {/if}
-
