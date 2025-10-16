@@ -101,6 +101,8 @@ module ibc::light_client {
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
     ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
+        store.client_id_to_type.add(client_id, client_type);
+        
         if (store.test_mode) {
             return (client_state_bytes, consensus_state_bytes, string::utf8(b"test-chain-id"), option::none())  
         };
@@ -113,7 +115,6 @@ module ibc::light_client {
             abort E_CLIENT_TYPE_NOT_SUPPORTED
         };
 
-        store.client_id_to_type.add(client_id, client_type);
 
         (csb, consb, c_cid, l_event)
     }
