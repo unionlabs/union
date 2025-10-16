@@ -183,7 +183,7 @@ module ibc::height {
 
         let mut bytes = bcs::to_bytes(&rn);
         let tail = bcs::to_bytes(&rh);
-        vector::append(&mut bytes, tail);
+        bytes.append(tail);
 
         // Decode
         let mut reader = bcs::new(bytes);
@@ -198,7 +198,7 @@ module ibc::height {
         // rn=0, rh=0
         let mut bytes = bcs::to_bytes(&0u64);
         let tail = bcs::to_bytes(&0u64);
-        vector::append(&mut bytes, tail);
+        bytes.append(tail);
 
         let mut reader = bcs::new(bytes);
         let h = decode_bcs(&mut reader);
@@ -213,7 +213,7 @@ module ibc::height {
 
         let mut bytes = bcs::to_bytes(&rn);
         let tail = bcs::to_bytes(&rh);
-        vector::append(&mut bytes, tail);
+        bytes.append(tail);
 
         let mut reader = bcs::new(bytes);
         let h = decode_bcs(&mut reader);

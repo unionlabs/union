@@ -1136,7 +1136,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::connection_commitment_key(connection_id),
-            keccak256(&connection_end::encode(&counterparty_connection))
+            keccak256(&counterparty_connection.encode())
         )
     }
 
@@ -1207,7 +1207,7 @@ module ibc::ibc {
         connection_id: u32
     ): u32 {
         let connection = ibc_store.connections.borrow(connection_id);
-        connection_end::counterparty_connection_id(connection)
+        connection.counterparty_connection_id()
     }
 
     fun set_packet_receive(ibc_store: &mut IBCStore, commitment_key: vector<u8>): bool {
@@ -1750,8 +1750,8 @@ module ibc::ibc {
         let connection_id = 1;
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(connection.state() == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
-        assert!(connection_end::client_id(connection) == client_id, E_CONNECTION_NOT_FOUND);
-        assert!(connection_end::counterparty_client_id(connection) == counterparty_client_id, E_CONNECTION_NOT_FOUND);
+        assert!(connection.client_id() == client_id, E_CONNECTION_NOT_FOUND);
+        assert!(connection.counterparty_client_id() == counterparty_client_id, E_CONNECTION_NOT_FOUND);
 
         let key = commitment::connection_commitment_key(connection_id);
         assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
@@ -1787,8 +1787,8 @@ module ibc::ibc {
         let c2 = ibc_store.connections.borrow(2);
         assert!(c1.state() == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
         assert!(c2.state() == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
-        assert!(connection_end::counterparty_client_id(c1) == 42, 1);
-        assert!(connection_end::counterparty_client_id(c2) == 43, 1);
+        assert!(c1.counterparty_client_id() == 42, 1);
+        assert!(c2.counterparty_client_id() == 43, 1);
 
         let k1 = commitment::connection_commitment_key(1);
         let k2 = commitment::connection_commitment_key(2);
@@ -1820,9 +1820,9 @@ module ibc::ibc {
         let connection_id = 1;
         let c = ibc_store.connections.borrow(connection_id);
         assert!(c.state() == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
-        assert!(connection_end::client_id(c) == 1, 1);
-        assert!(connection_end::counterparty_client_id(c) == 2, 1);
-        assert!(connection_end::counterparty_connection_id(c) == 11, 1);
+        assert!(c.client_id() == 1, 1);
+        assert!(c.counterparty_client_id() == 2, 1);
+        assert!(c.counterparty_connection_id() == 11, 1);
 
         let key = commitment::connection_commitment_key(connection_id);
         assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
@@ -1854,7 +1854,7 @@ module ibc::ibc {
 
         let c = ibc_store.connections.borrow(1);
         assert!(c.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
-        assert!(connection_end::counterparty_connection_id(c) == 9, 1);
+        assert!(c.counterparty_connection_id() == 9, 1);
 
         let key = commitment::connection_commitment_key(1);
         assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
