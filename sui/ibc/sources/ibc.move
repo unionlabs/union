@@ -608,7 +608,7 @@ module ibc::ibc {
     ) {
         let connection = ibc_store.connections.borrow_mut(connection_id);
         assert!(
-            connection_end::state(connection) == CONN_STATE_TRYOPEN,
+            connection.state() == CONN_STATE_TRYOPEN,
             E_INVALID_CONNECTION_STATE
         );
 
@@ -673,7 +673,7 @@ module ibc::ibc {
         // Ensure the connection exists and is in the OPEN state
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
+            connection.state() == CONN_STATE_OPEN,
             E_INVALID_CONNECTION_STATE
         );
 
@@ -1715,7 +1715,7 @@ module ibc::ibc {
 
         let connection_id = 1;
         let connection = ibc_store.connections.borrow(connection_id);
-        assert!(connection_end::state(connection) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
+        assert!(connection.state() == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
         assert!(connection_end::client_id(connection) == client_id, E_CONNECTION_NOT_FOUND);
         assert!(connection_end::counterparty_client_id(connection) == counterparty_client_id, E_CONNECTION_NOT_FOUND);
 
@@ -1751,8 +1751,8 @@ module ibc::ibc {
 
         let c1 = ibc_store.connections.borrow(1);
         let c2 = ibc_store.connections.borrow(2);
-        assert!(connection_end::state(c1) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
-        assert!(connection_end::state(c2) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
+        assert!(c1.state() == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
+        assert!(c2.state() == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
         assert!(connection_end::counterparty_client_id(c1) == 42, 1);
         assert!(connection_end::counterparty_client_id(c2) == 43, 1);
 
@@ -1785,7 +1785,7 @@ module ibc::ibc {
 
         let connection_id = 1;
         let c = ibc_store.connections.borrow(connection_id);
-        assert!(connection_end::state(c) == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
+        assert!(c.state() == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
         assert!(connection_end::client_id(c) == 1, 1);
         assert!(connection_end::counterparty_client_id(c) == 2, 1);
         assert!(connection_end::counterparty_connection_id(c) == 11, 1);
@@ -1819,7 +1819,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         let c = ibc_store.connections.borrow(1);
-        assert!(connection_end::state(c) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(c.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
         assert!(connection_end::counterparty_connection_id(c) == 9, 1);
 
         let key = commitment::connection_commitment_key(1);
@@ -1850,7 +1850,7 @@ module ibc::ibc {
         ibc_store.connection_open_confirm(1, b"p", 1);
 
         let c = ibc_store.connections.borrow(1);
-        assert!(connection_end::state(c) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(c.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
 
         let key = commitment::connection_commitment_key(1);
         assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
