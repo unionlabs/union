@@ -169,7 +169,6 @@ pub fn extract_consensus_state(
     l2_consensus_state: &Bytes,
     client_state_extra: &Extra,
 ) -> ConsensusState {
-    // NOTE: The timestamp stored by the counterparty is expected to be in nanos.
     let l2_timestamp = Timestamp::from_nanos(extract_uint64(
         l2_consensus_state,
         client_state_extra.timestamp_offset as usize,

@@ -8,7 +8,6 @@ use ibc_union_light_client::{
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client::verifier::Ed25519Verifier;
 use tendermint_light_client_types::{ConsensusState, Header};
-use tendermint_verifier::types::SignatureVerifier;
 use unionlabs::{
     encoding::Bincode, ethereum::ibc_commitment_key,
     ibc::core::commitment::merkle_proof::MerkleProof,
@@ -121,7 +120,7 @@ impl IbcClient for EthermintLightClient {
                     consensus_state,
                     header,
                     ctx.env.block.time,
-                    &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
+                    Ed25519Verifier::new(ctx.deps),
                 )
                 .map_err(Error::from)?;
                 let state_update = StateUpdate::new(height, consensus_state);

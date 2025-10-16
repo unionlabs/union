@@ -3,6 +3,7 @@ use unionlabs::errors::UnknownEnumVariant;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[repr(i32)]
 pub enum BlockIdFlag {
     Unknown = 0,
     Absent = 1,

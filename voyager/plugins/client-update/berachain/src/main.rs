@@ -1,39 +1,45 @@
-use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
+use std::{
+    collections::VecDeque,
+    error::Error,
+    fmt::{Debug, Display},
+    num::ParseIntError,
+};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::Header;
+use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
 use ethereum_light_client_types::AccountProof;
 use jsonrpsee::{
     Extensions,
     core::{RpcResult, async_trait},
-    types::ErrorObject,
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::instrument;
 use unionlabs::{
     ErrorReporter,
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{DecodeAs, Ssz},
-    ibc::core::commitment::merkle_proof::MerkleProof,
+    ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     never::Never,
-    primitives::H160,
+    primitives::{H160, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
     DefaultCmd,
-    anyhow::{self, bail},
+    anyhow::{self, anyhow},
     hook::UpdateHook,
     into_value,
     message::{
         PluginMessage, VoyagerMessage,
-        call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
+        call::Call,
         data::{Data, DecodedHeaderMeta, OrderedHeaders},
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientType, IbcSpecId},
+    primitives::{ChainId, ClientType},
     rpc::{PluginServer, types::PluginInfo},
-    types::RawClientId,
-    vm::{Op, Visit, call, conc, data, pass::PassResult, seq},
+    vm::{Op, Visit, data, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -47,20 +53,17 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub l1_client_id: u32,
-    pub l1_chain_id: ChainId,
-    pub l2_chain_id: ChainId,
+    pub chain_id: ChainId,
     pub ibc_handler_address: H160,
     pub eth_provider: DynProvider,
     pub cometbft_client: cometbft_rpc::Client,
+    pub chain_revision: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub l1_client_id: u32,
-    pub l1_chain_id: ChainId,
-    pub l2_chain_id: ChainId,
+    pub chain_id: ChainId,
     pub ibc_handler_address: H160,
     pub comet_rpc_url: String,
     pub eth_rpc_url: String,
@@ -79,32 +82,34 @@ impl Plugin for Module {
 
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 
-        if chain_id != config.l2_chain_id {
-            bail!(
+        if chain_id != config.chain_id {
+            return Err(anyhow!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.l2_chain_id,
+                config.chain_id,
                 chain_id
-            );
+            ));
         }
 
         let tm_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;
 
         Ok(Self {
-            l1_client_id: config.l1_client_id,
-            l2_chain_id: config.l2_chain_id,
-            l1_chain_id: config.l1_chain_id,
+            chain_id: config.chain_id,
             ibc_handler_address: config.ibc_handler_address,
             eth_provider,
             cometbft_client: tm_client,
+            chain_revision: chain_id
+                .as_str()
+                .parse()
+                .expect("expected a numeric chain id"),
         })
     }
 
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
-            name: plugin_name(&config.l2_chain_id),
+            name: plugin_name(&config.chain_id),
             interest_filter: UpdateHook::filter(
-                &config.l2_chain_id,
-                &ClientType::new(ClientType::BEACON_KIT),
+                &config.chain_id,
+                &ClientType::new(ClientType::BERACHAIN),
             ),
         }
     }
@@ -122,7 +127,7 @@ fn plugin_name(chain_id: &ChainId) -> String {
 
 impl Module {
     fn plugin_name(&self) -> String {
-        plugin_name(&self.l2_chain_id)
+        plugin_name(&self.chain_id)
     }
 
     // TODO: deduplicate with eth client update module?
@@ -161,7 +166,7 @@ pub struct ChainIdParseError {
 
 #[async_trait]
 impl PluginServer<ModuleCall, Never> for Module {
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
@@ -173,13 +178,12 @@ impl PluginServer<ModuleCall, Never> for Module {
                 .into_iter()
                 .map(|mut op| {
                     UpdateHook::new(
-                        &self.l2_chain_id,
-                        &ClientType::new(ClientType::BEACON_KIT),
+                        &self.chain_id,
+                        &ClientType::new(ClientType::BERACHAIN),
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
                                 self.plugin_name(),
                                 ModuleCall::from(FetchUpdate {
-                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
                                     update_from: fetch.update_from,
                                     update_to: fetch.update_to,
                                 }),
@@ -196,17 +200,45 @@ impl PluginServer<ModuleCall, Never> for Module {
         })
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
-                counterparty_chain_id,
                 update_from,
                 update_to,
             }) => {
-                // NOTE: the implementation is simple because the
-                // cometbft/beacon/execution heights are guaranteed to be the
-                // same
+                let trusted_height = update_from
+                    .increment()
+                    .height()
+                    .try_into()
+                    .expect("valid height");
+                let untrusted_height = update_to.height().try_into().expect("valid height");
+
+                let trusted_commit = self
+                    .cometbft_client
+                    .commit(Some(trusted_height))
+                    .await
+                    .map_err(rpc_error("trusted commit", None))?;
+
+                let untrusted_commit = self
+                    .cometbft_client
+                    .commit(Some(untrusted_height))
+                    .await
+                    .map_err(rpc_error("untrusted commit", None))?;
+
+                let trusted_validators = self
+                    .cometbft_client
+                    .all_validators(Some(trusted_height))
+                    .await
+                    .map_err(rpc_error("trusted validators", None))?;
+
+                let untrusted_validators = self
+                    .cometbft_client
+                    .all_validators(Some(untrusted_height))
+                    .await
+                    .map_err(rpc_error("untrusted validators", None))?;
+
+                // NOTE: The implementation is simple because the cometbft/beacon/execution heights are guaranteed to be the same (i.e. we don't need to find the consensus height to match the execution height)
                 let query_result = self
                     .cometbft_client
                     .abci_query(
@@ -228,7 +260,21 @@ impl PluginServer<ModuleCall, Never> for Module {
                 let account_proof = self.fetch_account_update(update_to.height()).await?;
 
                 let header = Header {
-                    l1_height: update_to,
+                    tm_header: tendermint_light_client_types::header::Header {
+                        validator_set: mk_validator_set(
+                            untrusted_validators.validators,
+                            untrusted_commit.signed_header.header.proposer_address,
+                        ),
+                        signed_header: untrusted_commit.signed_header,
+                        trusted_height: Height::new_with_revision(
+                            self.chain_revision,
+                            update_from.height(),
+                        ),
+                        trusted_validators: mk_validator_set(
+                            trusted_validators.validators,
+                            trusted_commit.signed_header.header.proposer_address,
+                        ),
+                    },
                     execution_header: execution_header.into(),
                     execution_header_proof:
                         MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
@@ -249,38 +295,14 @@ impl PluginServer<ModuleCall, Never> for Module {
                     account_proof,
                 };
 
-                // Recursively dispatch a L1 update before dispatching the L2 update.
-                Ok(conc([
-                    call(FetchUpdateHeaders {
-                        client_type: ClientType::new(ClientType::BEACON_KIT),
-                        counterparty_chain_id: counterparty_chain_id.clone(),
-                        chain_id: self.l1_chain_id.clone(),
-                        client_id: RawClientId::new(self.l1_client_id),
-                        update_from,
-                        update_to,
-                    }),
-                    seq([call(WaitForTrustedHeight {
-                        chain_id: counterparty_chain_id,
-                        ibc_spec_id: IbcSpecId::new(IbcSpecId::UNION),
-                        // TODO: abstract away the L1 client id and read it from
-                        // the L2 client state (l2_client_id) on the
-                        // `counterparty_chain_id`
-                        client_id: RawClientId::new(self.l1_client_id),
-                        height: update_to,
-                        finalized: true,
-                    })]),
-                    data(OrderedHeaders {
-                        headers: vec![(
-                            DecodedHeaderMeta { height: update_to },
-                            into_value(header),
-                        )],
-                    }),
-                ]))
+                Ok(data(OrderedHeaders {
+                    headers: vec![(DecodedHeaderMeta { height: update_to }, into_value(header))],
+                }))
             }
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
         _: &Extensions,
@@ -288,5 +310,38 @@ impl PluginServer<ModuleCall, Never> for Module {
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match callback {}
+    }
+}
+
+fn mk_validator_set(
+    validators: Vec<Validator>,
+    proposer_address: H160<HexUnprefixed>,
+) -> ValidatorSet {
+    let proposer = validators
+        .iter()
+        .find(|val| val.address == proposer_address)
+        .expect("proposer must exist in set")
+        .clone();
+
+    let total_voting_power = validators
+        .iter()
+        .map(|v| v.voting_power.inner())
+        .sum::<i64>();
+
+    ValidatorSet {
+        validators,
+        proposer,
+        total_voting_power,
+    }
+}
+
+fn rpc_error<E: Error>(
+    message: impl Display,
+    data: Option<Value>,
+) -> impl FnOnce(E) -> ErrorObjectOwned {
+    move |e| {
+        let message = format!("{message}: {}", ErrorReporter(e));
+        // error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        ErrorObject::owned(-1, message, data)
     }
 }

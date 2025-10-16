@@ -3,7 +3,7 @@ use unionlabs::primitives::FixedBytesError;
 
 use crate::client::EthermintLightClient;
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("tendermint light client error")]
     Tendermint(#[source] tendermint_light_client::errors::Error),
