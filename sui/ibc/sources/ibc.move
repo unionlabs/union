@@ -1647,6 +1647,40 @@ module ibc::ibc {
     #[test_only]
     const TEST_LATEST_HEIGHT: u64 = 10_000;
 
+    #[test_only]
+    fun open_channel_for_tests(t: &mut test_scenario::Scenario) {
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<IBCStore>();
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs1", b"cons1", t.ctx()); // id = 1
+        ibc_store.create_client(string::utf8(b"cometbls"), b"cs2", b"cons2", t.ctx()); // id = 2
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_init(2, 1);
+
+        t.next_tx(@0x0);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        t.next_tx(@0x0);
+        let port = string::utf8(
+            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+        );
+        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
+
+        t.next_tx(@0x0);
+        ibc_store.channel_open_ack(
+            string::utf8(b"ignored"),
+            1,
+            string::utf8(b"v1-cp"),
+            1,
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+        test_scenario::return_shared(ibc_store);
+    }
+
+
+
     #[test]
     fun test_create_client() {
         let mut test_case = test_scenario::begin(@0x0);
@@ -2022,7 +2056,7 @@ module ibc::ibc {
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
-    }
+    }   
 
     #[test]
     fun test_packet_send_success_only() {
@@ -2034,35 +2068,10 @@ module ibc::ibc {
         clock::increment_for_testing(&mut clk0, /*millis=*/ 1_000);
         clock::share_for_testing(clk0);
 
+        open_channel_for_tests(&mut t);
+
         t.next_tx(@0x0);
         let mut ibc_store = t.take_shared<IBCStore>();
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs1", b"cons1", t.ctx()); // id = 1
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs2", b"cons2", t.ctx()); // id = 2
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_init(2, 1);
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_ack(1, 9, b"p", 1);
-
-        t.next_tx(@0x0);
-        let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
-        );
-        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
-
-        t.next_tx(@0x0);
-        ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
-            1,
-            string::utf8(b"v1-cp"),
-            1,
-            b"p",
-            1,
-            IbcAppWitness {}
-        );
-
-        t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
         let now_ns = clock::timestamp_ms(&clk) * 1_000_000;
         let timeout_ts = now_ns + 1_000_000_000;
@@ -2097,33 +2106,10 @@ module ibc::ibc {
         clock::increment_for_testing(&mut clk0, 1_000);
         clock::share_for_testing(clk0);
 
+        open_channel_for_tests(&mut t);
+
         t.next_tx(@0x0);
         let mut ibc_store = t.take_shared<IBCStore>();
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs1", b"cons1", t.ctx());
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs2", b"cons2", t.ctx());
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_init(2, 1);
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_ack(1, 9, b"p", 1);
-
-        t.next_tx(@0x0);
-        let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
-        );
-        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
-
-        t.next_tx(@0x0);
-        ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
-            1,
-            string::utf8(b"v1-cp"),
-            1,
-            b"p",
-            1,
-            IbcAppWitness {}
-        );
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2781,33 +2767,11 @@ module ibc::ibc {
         clock::increment_for_testing(&mut clk0, 1_000);
         clock::share_for_testing(clk0);
 
+        
+        open_channel_for_tests(&mut t);
+
         t.next_tx(@0x0);
         let mut ibc_store = t.take_shared<IBCStore>();
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs1", b"cons1", t.ctx());
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs2", b"cons2", t.ctx());
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_init(2, 1);
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_ack(1, 9, b"p", 1);
-
-        t.next_tx(@0x0);
-        let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
-        );
-        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
-
-        t.next_tx(@0x0);
-        ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
-            1,
-            string::utf8(b"v1-cp"),
-            1,
-            b"p",
-            1,
-            IbcAppWitness {}
-        );
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2857,33 +2821,11 @@ module ibc::ibc {
         clock::increment_for_testing(&mut clk0, 1_000);
         clock::share_for_testing(clk0);
 
+        
+        open_channel_for_tests(&mut t);
+
         t.next_tx(@0x0);
         let mut ibc_store = t.take_shared<IBCStore>();
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs1", b"cons1", t.ctx());
-        ibc_store.create_client(string::utf8(b"cometbls"), b"cs2", b"cons2", t.ctx());
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_init(2, 1);
-
-        t.next_tx(@0x0);
-        ibc_store.connection_open_ack(1, 9, b"p", 1);
-
-        t.next_tx(@0x0);
-        let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
-        );
-        ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
-
-        t.next_tx(@0x0);
-        ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
-            1,
-            string::utf8(b"v1-cp"),
-            1,
-            b"p",
-            1,
-            IbcAppWitness {}
-        );
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
