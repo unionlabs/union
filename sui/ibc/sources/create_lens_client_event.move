@@ -92,7 +92,8 @@ module ibc::create_lens_client_event {
     public(package) fun l2_client_id(self: &CreateLensClientEvent): u32 {
         self.l2_client_id
     }
-        #[test]
+
+    #[test]
     fun test_create_and_getters_ok() {
         let ev = new(7, utf8(b"lens-sepolia"), 1001, 2002);
 
@@ -138,5 +139,4 @@ module ibc::create_lens_client_event {
         assert!(l2_chain_id(&ev) == utf8(b"chain-x"), 7);
         assert!(l2_chain_id(&ev_copy) == utf8(b"chain-x"), 8);
     }
-
 }
