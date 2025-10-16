@@ -1,7 +1,7 @@
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{INSTR_VERSION_0, OP_FORWARD};
-use unionlabs_primitives::U256;
+use unionlabs_primitives::{Bytes, U256};
 
 use crate::{Instruction, Result, root::Root};
 
@@ -100,6 +100,20 @@ pub enum ForwardAck {
     V0(ForwardV0Ack),
 }
 
+impl ForwardAck {
+    pub(crate) fn decode(shape: ForwardShape, bz: impl AsRef<[u8]>) -> Result<Self> {
+        match shape {
+            ForwardShape::V0 => ForwardV0Ack::decode(bz).map(Self::V0),
+        }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            ForwardAck::V0(ack) => ack.encode(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
     feature = "serde",
@@ -116,12 +130,8 @@ impl ForwardV0Ack {
             Err("Forward v0 ack must be empty".into())
         }
     }
-}
 
-impl ForwardAck {
-    pub(crate) fn decode(shape: ForwardShape, bz: impl AsRef<[u8]>) -> Result<Self> {
-        match shape {
-            ForwardShape::V0 => ForwardV0Ack::decode(bz).map(Self::V0),
-        }
+    pub(crate) fn encode(&self) -> Bytes {
+        Bytes::default()
     }
 }

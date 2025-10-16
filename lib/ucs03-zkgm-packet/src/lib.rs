@@ -79,8 +79,31 @@ impl Ack {
             invalid => Err(format!("invalid ack tag {invalid}"))?,
         }
     }
+
+    pub fn encode(&self) -> Bytes {
+        match self {
+            Ack::Success(inner_ack) => ucs03_zkgm::com::Ack {
+                tag: TAG_ACK_SUCCESS,
+                inner_ack: inner_ack.encode().into(),
+            }
+            .abi_encode_params()
+            .into(),
+            Ack::Failure(inner_ack) => ucs03_zkgm::com::Ack {
+                tag: TAG_ACK_FAILURE,
+                inner_ack: inner_ack.clone().into(),
+            }
+            .abi_encode_params()
+            .into(),
+        }
+    }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 pub struct Instruction {
     opcode: u8,
     version: u8,
@@ -186,7 +209,7 @@ mod tests {
         let ack = Ack::decode(decoded_packet.instruction.shape(), ack).unwrap();
 
         let expected_ack = Ack::Success(RootAck::Batch(BatchAck::V0(BatchV0Ack {
-            instructions: vec![
+            acknowledgements: vec![
                 BatchInstructionV0Ack::TokenOrder(TokenOrderAck::V1(TokenOrderV1Ack::Protocol)),
                 BatchInstructionV0Ack::Call(CallAck::V0(CallV0Ack::NonEureka)),
             ],

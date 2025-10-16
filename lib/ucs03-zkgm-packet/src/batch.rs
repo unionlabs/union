@@ -1,6 +1,7 @@
-use alloy_sol_types::SolType;
+use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{INSTR_VERSION_0, OP_BATCH, OP_CALL, OP_TOKEN_ORDER};
+use unionlabs_primitives::Bytes;
 
 use crate::{
     Instruction, Result,
@@ -80,9 +81,27 @@ impl BatchAck {
                         .zip(instructions)
                         .map(|(ack, shape)| BatchInstructionV0Ack::decode(shape, ack))
                         .collect::<Result<Vec<_>>>()
-                        .map(|instructions| BatchAck::V0(BatchV0Ack { instructions }))
+                        .map(|instructions| {
+                            BatchAck::V0(BatchV0Ack {
+                                acknowledgements: instructions,
+                            })
+                        })
                 }
             }
+        }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            BatchAck::V0(ack) => ucs03_zkgm::com::BatchAck {
+                acknowledgements: ack
+                    .acknowledgements
+                    .iter()
+                    .map(|ack| ack.encode().into())
+                    .collect(),
+            }
+            .abi_encode_params()
+            .into(),
         }
     }
 }
@@ -106,7 +125,7 @@ pub struct BatchV0 {
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
 pub struct BatchV0Ack {
-    pub instructions: Vec<BatchInstructionV0Ack>,
+    pub acknowledgements: Vec<BatchInstructionV0Ack>,
 }
 
 // TODO: Non-empty
@@ -181,6 +200,13 @@ impl BatchInstructionV0Ack {
             BatchInstructionV0Shape::Call(shape) => {
                 CallAck::decode(shape, ack).map(BatchInstructionV0Ack::Call)
             }
+        }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            BatchInstructionV0Ack::TokenOrder(ack) => ack.encode(),
+            BatchInstructionV0Ack::Call(ack) => ack.encode(),
         }
     }
 }

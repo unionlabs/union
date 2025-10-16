@@ -1,4 +1,4 @@
-use alloy_sol_types::SolType;
+use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{INSTR_VERSION_0, OP_CALL, TAG_ACK_SUCCESS};
 use unionlabs_primitives::Bytes;
@@ -115,6 +115,12 @@ impl CallAck {
             CallShape::V0(shape) => CallV0Ack::decode(shape, ack).map(CallAck::V0),
         }
     }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            CallAck::V0(ack) => ack.encode(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -136,6 +142,13 @@ impl CallV0Ack {
             Ok(Self::NonEureka)
         } else {
             Err("invalid call v1 eureka ack, expected bytes32(TAG_ACK_SUCCESS)")?
+        }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            CallV0Ack::NonEureka => TAG_ACK_SUCCESS.to_be_bytes::<32>().into(),
+            CallV0Ack::Eureka(bytes) => bytes.clone(),
         }
     }
 }
