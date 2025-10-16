@@ -1,5 +1,4 @@
 <script lang="ts">
-import { page } from "$app/state"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
@@ -11,8 +10,15 @@ import { Indexer } from "@unionlabs/sdk"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { ConfigProvider, Effect, Layer, pipe } from "effect"
 import { graphql } from "gql.tada"
+import type { PageData } from "./$types"
 
-const packetHash = $derived(page.params.packet_hash!)
+interface Props {
+  data: PageData
+}
+
+const { data }: Props = $props()
+
+const packetHash = $derived(data.packetHash)
 
 const QlpConfigProvider = Layer.setConfigProvider(
   ConfigProvider.fromMap(
