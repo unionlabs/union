@@ -92,4 +92,99 @@ module zkgm::solver_metadata {
         }
     }
 
+    public fun encode(meta: &SolverMetadata): vector<u8> {
+        let mut buf = vector::empty();
+
+        let mut solver_address = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut solver_address, &meta.solver_address);
+
+        let mut metadata = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut metadata, &meta.metadata);
+
+        // Each static slot is 32 bytes. There are 2 dynamic fields, so we store offsets.
+        let mut dyn_offset = 0x20 * 2;
+
+        // offset for solver_address
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        dyn_offset = dyn_offset + vector::length(&solver_address);
+
+        // offset for metadata
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+
+        vector::append(&mut buf, solver_address);
+        vector::append(&mut buf, metadata);
+
+        buf
+    }
+
+    /// Encode into an existing buffer using *absolute offsets* from the start of `buf`.
+    public fun encode_into(buf: &mut vector<u8>, m: &SolverMetadata) {
+
+        let mut body_solver = vector::empty<u8>();
+        zkgm_ethabi::encode_bytes(&mut body_solver, solver_address(m));
+        let mut body_meta = vector::empty<u8>();
+        zkgm_ethabi::encode_bytes(&mut body_meta, metadata(m));
+
+        let base: u64 = vector::length(buf) as u64;
+
+
+        let off_solver: u64 = base + 64;
+
+        let off_meta: u64 = off_solver + (vector::length(&body_solver) as u64);
+
+        zkgm_ethabi::encode_uint<u64>(buf, off_solver);
+        zkgm_ethabi::encode_uint<u64>(buf, off_meta);
+
+        vector::append(buf, body_solver);
+        vector::append(buf, body_meta);
+    }
+
+    #[test]
+    public fun test_solver_metadata_roundtrip() {
+        use sui::bcs;
+
+        let m = new(
+            bcs::to_bytes(&@0x1111111111111111111111111111111111111111),
+            b"hello-world"
+        );
+        let enc = encode(&m);
+        let dec = decode(&enc);
+
+        assert!(*solver_address(&dec)
+                == *solver_address(&m), 1);
+        assert!(*metadata(&dec)
+                == *metadata(&m), 2);
+    }
+
+    #[test]
+    public fun test_solver_metadata_empty_metadata() {
+        use sui::bcs;
+
+        let m = new(
+            bcs::to_bytes(&@0x0c8C6f58156D10d18193A8fFdD853e1b9F8D8836),
+            x""
+        );
+        let enc = encode(&m);
+
+
+        std::debug::print(&std::string::utf8(b"encoded solvermetadata::"));
+        std::debug::print(&enc);
+
+        let dec = decode(&enc);
+
+        assert!(*solver_address(&dec)
+                == *solver_address(&m), 1);
+        assert!(*metadata(&dec)
+                == *metadata(&m), 2);
+
+
+        let data_is = x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020d7d5df03683eeb343cb259ff2bab8dc590ea8d4c0c0d96bfdcf86846f7dcb2aa";
+
+        let decoded = decode(&data_is);
+        
+        std::debug::print(&std::string::utf8(b"decoded::"));
+        std::debug::print(&decoded);
+    }
+
+
 }

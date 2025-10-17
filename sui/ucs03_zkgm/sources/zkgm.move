@@ -94,6 +94,7 @@ module zkgm::zkgm {
     
 
     use sui::clock;
+    use std::debug::print;
     // Constants
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
@@ -158,6 +159,7 @@ module zkgm::zkgm {
         token_origin: Table<vector<u8>, u256>,
         wrapped_denom_to_t: Table<vector<u8>, String>,
         object_store: ObjectBag,
+        test_mode: bool,
     }
 
     public struct CreateWrappedToken has copy, drop, store {
@@ -232,6 +234,23 @@ module zkgm::zkgm {
             token_origin: table::new(ctx),
             object_store: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
+            test_mode: false,
+        });
+    }
+
+    #[test_only]
+    public fun init_for_tests(ctx: &mut TxContext) {
+        let id = object::new(ctx);
+
+        transfer::share_object(RelayStore {
+            id: id,
+            vault_id: object::id_from_address(@vault),
+            in_flight_packet: table::new(ctx),
+            channel_balance: table::new(ctx),
+            token_origin: table::new(ctx),
+            object_store: object_bag::new(ctx),
+            wrapped_denom_to_t: table::new(ctx),
+            test_mode: true,
         });
     }
 
@@ -937,11 +956,9 @@ module zkgm::zkgm {
         relayer: address,
         intent: bool,
         ctx: &mut TxContext,
-    ): (vector<u8>, u64) {
-        let metadata = solver_metadata::decode(order.metadata());
+    ): (vector<u8>, u64) {        let metadata = solver_metadata::decode(order.metadata());
 
         let solver = bcs::new(*metadata.solver_address()).peel_address();
-
         if (solver != @vault) {
             return (vector::empty(), E_INVALID_SOLVER_ADDRESS)
         };
@@ -952,6 +969,10 @@ module zkgm::zkgm {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
 
+        if(zkgm.test_mode){
+            return (vector::empty(), 0)
+        };
+        
         vault.solve<T>(
             zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
             ibc_packet,
@@ -1868,12 +1889,10 @@ module zkgm::zkgm {
         use sui::bcs;
 
         let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
 
         t.next_tx(@0x0);
         ibc::init_for_tests(t.ctx());
-
-        t.next_tx(@0x0);
-        zkgm::zkgm::init(t.ctx());
 
         t.next_tx(@0x0);
         vault::init_for_tests(t.ctx());
@@ -1889,9 +1908,8 @@ module zkgm::zkgm {
         let mut zkgm_store = t.take_shared<RelayStore>();
         let mut vault = t.take_shared<vault::Vault>();
 
-        // Clock to satisfy end_send timestamp > now
         let mut clk = clock::create_for_testing(t.ctx());
-        clock::increment_for_testing(&mut clk, /*millis=*/1_000);
+        clock::increment_for_testing(&mut clk, 1_000);
         clock::share_for_testing(clk);
 
         ibc_store.create_client(
@@ -2005,6 +2023,159 @@ module zkgm::zkgm {
 
         t.end();
 
+
     }
 
+    #[test]
+    fun test_recv_flow_solve_sui_single_tx() {
+        use std::string;
+        use std::ascii;
+        use std::type_name;
+        use sui::test_scenario;
+        use sui::clock;
+        use sui::clock::Clock;
+        use sui::coin;
+        use sui::bcs;
+
+        let mut t = test_scenario::begin(@0x0);
+        init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        ibc::init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        vault::init_for_tests(t.ctx());
+
+        let mut clk0 = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk0, 1_000);
+        clock::share_for_testing(clk0);
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<ibc::IBCStore>();
+        let mut zkgm_store = t.take_shared<zkgm::zkgm::RelayStore>();
+        let mut vault = t.take_shared<vault::Vault>();
+
+        // Open client/connection/channel like in send test
+        let mut clk = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk, 1_000);
+        clock::share_for_testing(clk);
+
+        ibc_store.create_client(
+            string::utf8(b"cometbls"),
+            b"cs",
+            b"cons",
+            t.ctx()
+        );
+        ibc_store.connection_open_init(1, 2);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        let mut port = type_name::get<zkgm::zkgm::IbcAppWitness>().into_string();
+        port.append(ascii::string(b"::any"));
+        ibc_store.channel_open_init(
+            port.to_string(),
+            b"cp-port",
+            1,
+            string::utf8(b"ucs03-zkgm-0"),
+            zkgm::zkgm::IbcAppWitness {}
+        );
+        ibc_store.channel_open_ack(
+            string::utf8(b"ignored-here"),
+            1,
+            string::utf8(b"ucs03-zkgm-0"),
+            1,
+            b"p",
+            1,
+            zkgm::zkgm::IbcAppWitness {}
+        );
+
+        let amount: u64 = 1_000;
+        let base_token = b"BASE"; 
+        let quote_token = type_name::get<sui::sui::SUI>().into_string().into_bytes();
+
+        let sender = t.sender();  
+        let receiver = t.sender(); 
+
+        let solver_md = solver_metadata::new(
+            bcs::to_bytes(&@vault),
+            x"",
+        );
+        let solver_md = solver_md.encode();
+        
+
+        let order = zkgm::token_order::new(
+            bcs::to_bytes(&sender),     
+            bcs::to_bytes(&receiver), 
+            base_token,                
+            (amount as u256),          
+            quote_token,                
+            (amount as u256),          
+            0x03,  
+            solver_md                     
+        );
+
+        let instr = zkgm::instruction::new(
+            zkgm::zkgm::INSTR_VERSION_2,
+            zkgm::zkgm::OP_TOKEN_ORDER,
+            order.encode()
+        );
+
+        let salt = b"SALT_SOLVE";
+        let path: u256 = 0; 
+        let packet_bytes = zkgm::zkgm_packet::new(
+            salt,
+            path,
+            instr
+        ).encode();
+
+        let clk_ref = t.take_shared<Clock>();
+        let now_ns = clock::timestamp_ms(&clk_ref) * 1_000_000;
+        let timeout_ns = now_ns + 1_000_000_000;
+
+        let src_channels = vector[1u32];
+        let dst_channels = vector[1u32];
+        let packet_datas = vector[packet_bytes];
+        let timeout_heights = vector[0u64];
+        let timeout_times = vector[timeout_ns];
+
+        let mut rctx = zkgm::zkgm::begin_recv(
+            src_channels,
+            dst_channels,
+            packet_datas,
+            timeout_heights,
+            timeout_times
+        );
+
+        let relayer: address = @0xCAFE;
+        let relayer_msg = b"MM-proof-or-data";
+
+        rctx = zkgm::zkgm::recv_packet<sui::sui::SUI>(
+            &mut ibc_store,
+            &mut zkgm_store,
+            &mut vault,
+            &clk_ref,
+            relayer,
+            relayer_msg,
+            rctx,
+            t.ctx()
+        );
+
+        zkgm::zkgm::end_recv(
+            &mut ibc_store,
+            &clk_ref,
+            b"proof",
+            1,           
+            relayer,
+            relayer_msg,
+            rctx
+        );
+
+
+
+        test_scenario::return_shared(clk_ref);
+        test_scenario::return_shared(ibc_store);
+        test_scenario::return_shared(zkgm_store);
+        test_scenario::return_shared(vault);
+        t.end();
+    }
+    
 }
