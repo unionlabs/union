@@ -105,15 +105,16 @@ export class GetWithdrawals
  * @category requests
  * @since 2.0.0
  */
-export class GetDustWithdrawals
-  extends S.TaggedRequest<GetDustWithdrawals>()("@unionlabs/sdk/Staking/GetDustWithdrawalsRequest", {
+export class GetDustWithdrawals extends S.TaggedRequest<GetDustWithdrawals>()(
+  "@unionlabs/sdk/Staking/GetDustWithdrawalsRequest",
+  {
     failure: StakingError,
     success: S.Option(S.NonEmptyArray(DustWithdrawal)),
     payload: {
       addresses: S.ArrayEnsure(S.Union(Ucs05.AnyDisplay, Ucs05.AnyDisplayFromString)),
     },
-  })
-{
+  },
+) {
   /**
    * @since 2.0.0
    */
@@ -580,4 +581,3 @@ query GetDustWithdrawalsByAddress($addresses: jsonb!) @cached(ttl: 10) {
     }),
   )
 }
-

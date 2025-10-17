@@ -231,36 +231,38 @@ export class Withdrawal extends S.TaggedClass<Withdrawal>("Withdrawal")("Withdra
   }
 }
 
-export class DustWithdrawal extends S.TaggedClass<DustWithdrawal>("DustWithdrawal")("DustWithdrawal", {
-  packet_hash: PacketHash,
-  delivery_packet_hash: S.OptionFromNullOr(PacketHash),
-  dust_withdraw_success: S.OptionFromNullOr(S.Boolean),
-  delivery_success: S.OptionFromNullOr(S.Boolean),
-  packet_shape: S.String,
-  source_universal_chain_id: UniversalChainId,
-  destination_universal_chain_id: UniversalChainId,
-  staker_canonical: S.String,
-  staker_display: S.String,
-  staker_zkgm: S.String,
-  quote_token: TokenRawDenom,
-  quote_amount: S.BigInt,
-  dust_withdraw_send_timestamp: S.DateTimeUtc,
-  dust_withdraw_send_transaction_hash: TransactionHash,
-  dust_withdraw_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
-  dust_withdraw_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
-  dust_withdraw_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
-  dust_withdraw_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
-  delivery_send_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
-  delivery_send_transaction_hash: S.OptionFromNullOr(TransactionHash),
-  delivery_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
-  delivery_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
-  delivery_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
-  delivery_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
-  sort_order: S.String,
-  source_chain: Chain,
-  destination_chain: Chain,
-  quote_token_meta: Token,
-}) {
+export class DustWithdrawal
+  extends S.TaggedClass<DustWithdrawal>("DustWithdrawal")("DustWithdrawal", {
+    packet_hash: PacketHash,
+    delivery_packet_hash: S.OptionFromNullOr(PacketHash),
+    dust_withdraw_success: S.OptionFromNullOr(S.Boolean),
+    delivery_success: S.OptionFromNullOr(S.Boolean),
+    packet_shape: S.String,
+    source_universal_chain_id: UniversalChainId,
+    destination_universal_chain_id: UniversalChainId,
+    staker_canonical: S.String,
+    staker_display: S.String,
+    staker_zkgm: S.String,
+    quote_token: TokenRawDenom,
+    quote_amount: S.BigInt,
+    dust_withdraw_send_timestamp: S.DateTimeUtc,
+    dust_withdraw_send_transaction_hash: TransactionHash,
+    dust_withdraw_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    dust_withdraw_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    dust_withdraw_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    dust_withdraw_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    delivery_send_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    delivery_send_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    delivery_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    delivery_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    delivery_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    delivery_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    sort_order: S.String,
+    source_chain: Chain,
+    destination_chain: Chain,
+    quote_token_meta: Token,
+  })
+{
   get sortDate() {
     return this.dust_withdraw_send_timestamp
   }

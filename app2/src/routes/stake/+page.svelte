@@ -80,8 +80,12 @@ const refreshStakingData = () => {
 
 // State to hold the latest staking data
 let stakingData = $state<
-  O.Option<readonly [(Bond | Unbond | Withdrawal | DustWithdrawal), 
-  ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>]>
+  O.Option<
+    readonly [
+      (Bond | Unbond | Withdrawal | DustWithdrawal),
+      ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>,
+    ]
+  >
 >(O.none())
 
 // Start the polling effect that updates stakingData
@@ -104,7 +108,9 @@ AppRuntime.runPromiseExit$(() => {
                 Effect.catchAll(() => Effect.succeed(O.none())),
               ),
               pipe(
-                staking.getDustWithdrawals(Staking.GetDustWithdrawals.make({ addresses: [address] })),
+                staking.getDustWithdrawals(
+                  Staking.GetDustWithdrawals.make({ addresses: [address] }),
+                ),
                 Effect.catchAll(() => Effect.succeed(O.none())),
               ),
             ], { concurrency: "unbounded" }),
@@ -127,7 +133,10 @@ AppRuntime.runPromiseExit$(() => {
             Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
             Effect.map(x =>
               x as O.Option<
-                readonly [(Bond | Unbond | Withdrawal | DustWithdrawal), ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>]
+                readonly [
+                  (Bond | Unbond | Withdrawal | DustWithdrawal),
+                  ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>,
+                ]
               >
             ),
           )

@@ -1,7 +1,7 @@
 <script lang="ts">
+import DustWithdrawalListItemComponent from "$lib/components/model/DustWithdrawalListItemComponent.svelte"
 import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
 import WithdrawalListItemComponent from "$lib/components/model/WithdrawalListItemComponent.svelte"
-import DustWithdrawalListItemComponent from "$lib/components/model/DustWithdrawalListItemComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
@@ -11,7 +11,12 @@ import { Array as A, Option as O } from "effect"
 import type { Exit } from "effect"
 
 interface Props {
-  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal | DustWithdrawal>>, unknown>>
+  data: O.Option<
+    Exit.Exit<
+      O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal | DustWithdrawal>>,
+      unknown
+    >
+  >
   walletConnected: boolean
 }
 

@@ -41,14 +41,17 @@ const status = $derived(
       }
 
       // Both are true = success
-      if (Option.isSome(dustWithdraw) && dustWithdraw.value && Option.isSome(delivery) && delivery.value) {
+      if (
+        Option.isSome(dustWithdraw) && dustWithdraw.value && Option.isSome(delivery)
+        && delivery.value
+      ) {
         return "success"
       }
 
       // Otherwise pending (includes cases where dust_withdraw is true and delivery is null)
       return "pending"
     },
-  )
+  ),
 )
 
 type StatusConfigType = {
@@ -62,7 +65,7 @@ const statusConfig = $derived<StatusConfigType>(
     ? { bg: "bg-accent/20 border-accent/40", icon: "text-accent", type: "checkmark" }
     : status === "failure"
     ? { bg: "bg-red-500/20 border-red-500/40", icon: "text-red-400", type: "warning" }
-    : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" }
+    : { bg: "bg-orange-500/20 border-orange-500/40", icon: "text-orange-400", type: "spinner" },
 )
 </script>
 
@@ -149,4 +152,3 @@ const statusConfig = $derived<StatusConfigType>(
     </div>
   </div>
 {/if}
-
