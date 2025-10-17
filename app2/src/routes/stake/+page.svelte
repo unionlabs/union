@@ -78,7 +78,9 @@ const refreshStakingData = () => {
   }, 1000)
 }
 
-let stakingData = $state<O.Option<readonly (Bond | Unbond | Withdrawal | DustWithdrawal)[]>>(O.none())
+let stakingData = $state<O.Option<readonly (Bond | Unbond | Withdrawal | DustWithdrawal)[]>>(
+  O.none(),
+)
 
 // Start the polling effect that updates stakingData
 AppRuntime.runPromiseExit$(() => {
