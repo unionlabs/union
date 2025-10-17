@@ -299,6 +299,7 @@ dependencies = [
  "alloy-contract",
  "alloy-core",
  "alloy-eips",
+ "alloy-genesis",
  "alloy-network",
  "alloy-provider",
  "alloy-pubsub",
@@ -396,6 +397,7 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
+ "alloy-rlp",
  "alloy-sol-types",
 ]
 
@@ -471,6 +473,20 @@ dependencies = [
  "serde_with",
  "sha2 0.10.9",
  "thiserror 2.0.12",
+]
+
+[[package]]
+name = "alloy-genesis"
+version = "1.0.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1421f6c9d15e5b86afbfe5865ca84dea3b9f77173a0963c1a2ee4e626320ada9"
+dependencies = [
+ "alloy-eips",
+ "alloy-primitives",
+ "alloy-serde",
+ "alloy-trie",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1133,6 +1149,7 @@ name = "arbitrum-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "arbitrum-types",
  "bincode 2.0.1",
  "ethereum-light-client-types",
  "hex-literal 0.4.1",
@@ -1149,6 +1166,7 @@ version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
  "hex-literal 0.4.1",
+ "serde",
  "solidity-slot",
  "unionlabs-primitives",
 ]
@@ -15193,6 +15211,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "anyhow",
+ "arbitrum-client",
  "arbitrum-light-client-types",
  "base64 0.22.1",
  "bcs",

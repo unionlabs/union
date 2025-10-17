@@ -1,41 +1,31 @@
 use ethereum_light_client::client::EthereumLightClient;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{
-    ibc::core::client::height::Height,
-    primitives::{H256, U256},
-};
+use unionlabs::primitives::U256;
 
 use crate::client::ArbitrumLightClient;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    Evm(#[from] ethereum_light_client::errors::Error),
-
-    // REVIEW: Move this variant to IbcClientError?
-    #[error("consensus state not found at height {0}")]
-    ConsensusStateNotFound(Height),
+    EthereumLightClient(#[from] IbcClientError<EthereumLightClient>),
 
     #[error("the l2 height {0} is too large (> u64::MAX)")]
     L2HeightTooLarge(U256),
 
-    #[error("IBC path is empty")]
-    EmptyIbcPath,
+    #[error("failed to verify arbitrum header (v1)")]
+    HeaderVerifyV1(#[from] arbitrum_verifier::v1::Error),
 
-    #[error("proof is empty")]
-    EmptyProof,
-
-    #[error("expected value ({expected}) and stored value ({stored}) don't match")]
-    StoredValueMismatch { expected: H256, stored: H256 },
-
-    #[error("failed to verify arbitrum header: {0}")]
-    HeaderVerify(#[from] arbitrum_verifier::Error),
+    #[error("failed to verify arbitrum header (v2)")]
+    HeaderVerifyV2(#[from] arbitrum_verifier::v2::Error),
 
     #[error("the operation has not been implemented yet")]
     Unimplemented,
 
-    #[error(transparent)]
-    EvmIbcClient(#[from] IbcClientError<EthereumLightClient>),
+    #[error("invalid header, must be v1")]
+    HeaderMustBeV1,
+
+    #[error("invalid header, must be v2")]
+    HeaderMustBeV2,
 }
 
 impl From<Error> for IbcClientError<ArbitrumLightClient> {

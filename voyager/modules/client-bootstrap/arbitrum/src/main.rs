@@ -2,7 +2,7 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
-use arbitrum_light_client_types::{ClientState, ClientStateV1, ConsensusState};
+use arbitrum_light_client_types::{ClientState, ClientStateV1, ClientStateV2, ConsensusState};
 use ibc_union_spec::{ClientId, IbcUnion, Timestamp};
 use jsonrpsee::{
     Extensions,
@@ -65,6 +65,15 @@ pub struct ClientStateConfig {
     /// The chain that the new client will be created on.
     // TODO: Consider threading this through the self_*_state endpoints
     pub host_chain_id: ChainId,
+
+    pub version: Version,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum Version {
+    V1,
+    V2,
 }
 
 impl Module {
@@ -152,18 +161,30 @@ impl ClientBootstrapModuleServer for Module {
         )
         .await?;
 
-        Ok(into_value(ClientState::V1(ClientStateV1 {
-            l1_client_id: config.l1_client_id,
-            latest_height: height.height(),
-            chain_id: self
-                .chain_id
-                .as_str()
-                .parse()
-                .expect("self.chain_id is a valid u256; qed;"),
-            l1_contract_address: self.l1_contract_address,
-            frozen_height: Height::new(0),
-            ibc_contract_address: self.ibc_handler_address,
-        })))
+        let chain_id = self
+            .chain_id
+            .as_str()
+            .parse()
+            .expect("self.chain_id is a valid u256; qed;");
+
+        Ok(into_value(match config.version {
+            Version::V1 => ClientState::V1(ClientStateV1 {
+                l1_client_id: config.l1_client_id,
+                latest_height: height.height(),
+                chain_id,
+                l1_contract_address: self.l1_contract_address,
+                frozen_height: Height::new(0),
+                ibc_contract_address: self.ibc_handler_address,
+            }),
+            Version::V2 => ClientState::V2(ClientStateV2 {
+                l1_client_id: config.l1_client_id,
+                latest_height: height.height(),
+                chain_id,
+                l1_contract_address: self.l1_contract_address,
+                frozen_height: Height::new(0),
+                ibc_contract_address: self.ibc_handler_address,
+            }),
+        }))
     }
 
     /// The consensus state on this chain at the specified `Height`.

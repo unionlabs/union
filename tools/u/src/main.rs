@@ -16,10 +16,10 @@ use unionlabs::primitives::{
     encoding::{HexPrefixed, HexUnprefixed},
 };
 
+pub mod arbitrum;
 pub mod codec;
 pub mod cometbft;
 pub mod deployments;
-pub mod mine;
 pub mod packet;
 pub mod path;
 pub mod vanity;
@@ -61,6 +61,8 @@ pub enum LogFormat {
 
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
+    #[command(visible_alias = "arb", subcommand)]
+    Arbitrum(arbitrum::Cmd),
     #[command(visible_alias = "c", subcommand)]
     Codec(codec::Cmd),
     #[command(visible_aliases(["comet", "cmt"]), subcommand)]
@@ -115,6 +117,7 @@ async fn main() -> Result<()> {
     }
 
     match app.cmd {
+        Cmd::Arbitrum(cmd) => cmd.run().await,
         Cmd::Codec(cmd) => cmd.run(),
         Cmd::Cometbft(cmd) => cmd.run().await,
         Cmd::Zkgm(cmd) => cmd.run().await,

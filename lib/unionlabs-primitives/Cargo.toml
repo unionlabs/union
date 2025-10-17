@@ -47,7 +47,7 @@ schemars = ["dep:schemars"]
 serde    = ["dep:serde", "dep:serde_bytes"]
 
 alloy-primitives-compat = ["dep:alloy-primitives"]
-alloy-sol-types-compat = ["dep:alloy-sol-types"]
+alloy-sol-types-compat = ["dep:alloy-sol-types", "dep:alloy-primitives"]
 generic-array-compat = ["dep:generic-array", "dep:typenum", "typenum/const-generics"]
 primitive-types-compat = [
   # TODO: Make this dep optional again once we switch to ruint

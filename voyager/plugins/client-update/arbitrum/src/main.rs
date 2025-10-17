@@ -6,9 +6,10 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
-use arbitrum_client::finalized_l2_block_of_l1_height;
-use arbitrum_light_client_types::{ClientState, Header, L2Header};
-use arbitrum_types::slots::{ROLLUP_CORE_LATEST_NODE_CREATED, rollup_core_nodes_confirm_data_slot};
+use arbitrum_light_client_types::{
+    ClientState, Header, HeaderV1, HeaderV2, L2Header,
+    header::{AssertionState, MachineStatus},
+};
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{ClientId, IbcUnion, path::ClientStatePath};
 use jsonrpsee::{
@@ -22,7 +23,7 @@ use unionlabs::{
     ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
-    primitives::{H160, U256},
+    primitives::{H160, H256, U256},
 };
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
@@ -36,7 +37,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, rpc_error, types::PluginInfo},
     types::RawClientId,
     vm::{Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
@@ -235,6 +236,11 @@ impl PluginServer<ModuleCall, Never> for Module {
 
 impl Module {
     /// Fetch the account update of the Rollup contract in the L1 state root at the specified ***L1*** block number.
+    ///
+    /// # Versions
+    ///
+    /// - v1
+    /// - v2
     #[instrument(
         skip_all,
         fields(
@@ -272,6 +278,10 @@ impl Module {
     }
 
     /// Fetch the settlement state and proofs, stored in the L1 Rollup contract at the specified ***L1*** block number.
+    ///
+    /// # Versions
+    ///
+    /// - v1
     #[instrument(
         skip_all,
         fields(
@@ -282,8 +292,8 @@ impl Module {
     async fn fetch_l1_latest_confirmed_proofs(
         &self,
         l1_block_number: u64,
-    ) -> LatestConfirmedProofs {
-        let latest_confirmed = arbitrum_client::next_node_num_at_l1_height(
+    ) -> RpcResult<LatestConfirmedProofs> {
+        let latest_confirmed = arbitrum_client::v1::next_node_num_at_l1_height(
             &self.l1_provider,
             self.l1_contract_address,
             l1_block_number,
@@ -297,20 +307,26 @@ impl Module {
             .get_proof(
                 self.l1_contract_address.into(),
                 vec![
-                    ROLLUP_CORE_LATEST_NODE_CREATED.slot().to_be_bytes().into(),
-                    rollup_core_nodes_confirm_data_slot(latest_confirmed)
+                    arbitrum_types::v1::ROLLUP_CORE_LATEST_NODE_CREATED
+                        .slot()
+                        .to_be_bytes()
+                        .into(),
+                    arbitrum_types::v1::rollup_core_nodes_confirm_data_slot(latest_confirmed)
                         .to_be_bytes()
                         .into(),
                 ],
             )
             .block_id(l1_block_number.into())
             .await
-            .unwrap()
+            .map_err(rpc_error(
+                "error fetching finalized l2 block of l1 height",
+                None,
+            ))?
             .storage_proof
             .try_into()
             .unwrap();
 
-        LatestConfirmedProofs {
+        Ok(LatestConfirmedProofs {
             latest_confirmed,
             // TODO: Extract this logic into a fn, we do it all over the place
             latest_confirmed_slot_proof: StorageProof {
@@ -331,22 +347,113 @@ impl Module {
                     .map(|bytes| bytes.into())
                     .collect(),
             },
-        }
+        })
+    }
+
+    /// Fetch the settlement assertion state and proof, stored in the L1 Rollup contract at the specified ***L1*** block number.
+    ///
+    /// # Versions
+    ///
+    /// - v2
+    #[instrument(
+        skip_all,
+        fields(
+            %l1_block_number,
+            l1_contract_address = %self.l1_contract_address
+        )
+    )]
+    async fn fetch_l1_assertion_proof(&self, l1_block_number: u64) -> RpcResult<AssertionProof> {
+        let assertion_created_event =
+            arbitrum_client::v2::assertion_created_event_at_l1_block_height(
+                &self.l1_provider,
+                self.l1_contract_address,
+                l1_block_number,
+            )
+            .await
+            .map_err(|e| rpc_error("error fetching AssertionCreated event", None)(&*e))?;
+
+        let [assertion_proof]: [_; 1] = self
+            .l1_provider
+            .get_proof(
+                self.l1_contract_address.into(),
+                vec![
+                    arbitrum_types::v2::rollup_core_assertions_slot(
+                        assertion_created_event.assertionHash.into(),
+                    )
+                    .to_be_bytes()
+                    .into(),
+                ],
+            )
+            .block_id(l1_block_number.into())
+            .await
+            .map_err(rpc_error("error fetching _assertions proof", None))?
+            .storage_proof
+            .try_into()
+            .unwrap();
+
+        Ok(AssertionProof {
+            parent_assertion_hash: assertion_created_event.parentAssertionHash.into(),
+            inbox_acc: assertion_created_event.afterInboxBatchAcc.into(),
+            after_state: AssertionState {
+                global_state: arbitrum_light_client_types::header::GlobalState {
+                    bytes32_vals: assertion_created_event
+                        .assertion
+                        .afterState
+                        .globalState
+                        .bytes32Vals
+                        .map(Into::into),
+                    u64_vals: assertion_created_event
+                        .assertion
+                        .afterState
+                        .globalState
+                        .u64Vals,
+                },
+                machine_status: match assertion_created_event.assertion.afterState.machineStatus {
+                    arbitrum_types::v2::MachineStatus::RUNNING => MachineStatus::Running,
+                    arbitrum_types::v2::MachineStatus::FINISHED => MachineStatus::Finished,
+                    arbitrum_types::v2::MachineStatus::ERRORED => MachineStatus::Errored,
+                    _ => todo!(),
+                },
+                end_history_root: assertion_created_event
+                    .assertion
+                    .afterState
+                    .endHistoryRoot
+                    .into(),
+            },
+            // TODO: Extract this logic into a fn, we do it all over the place
+            l1_assertions_proof: StorageProof {
+                key: U256::from_be_bytes(assertion_proof.key.as_b256().0),
+                value: assertion_proof.value.into(),
+                proof: assertion_proof
+                    .proof
+                    .into_iter()
+                    .map(|bytes| bytes.into())
+                    .collect(),
+            },
+        })
     }
 
     /// Fetch the account update of the IBCHandler contract in the L2 state root at the specified ***L2*** block number.
-    async fn fetch_l2_ibc_contract_root_proof(&self, l2_block_number: u64) -> AccountProof {
+    ///
+    /// # Versions
+    ///
+    /// - v1
+    /// - v2
+    async fn fetch_l2_ibc_contract_root_proof(
+        &self,
+        l2_block_number: u64,
+    ) -> RpcResult<AccountProof> {
         let proof = self
             .l2_provider
             .get_proof(self.ibc_handler_address.into(), vec![])
             .block_id(l2_block_number.into())
             .await
-            .unwrap();
+            .map_err(rpc_error("error fetching l2 ibc contract root proof", None))?;
 
-        AccountProof {
+        Ok(AccountProof {
             storage_root: proof.storage_hash.into(),
             proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
-        }
+        })
     }
 
     #[instrument(
@@ -393,7 +500,7 @@ impl Module {
             .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
             .await?;
 
-        let ClientState::V1(arbitrum_client_state) = voyager_client
+        let client_state = voyager_client
             .decode_client_state::<IbcUnion, ClientState>(
                 arbitrum_client_info.client_type,
                 arbitrum_client_info.ibc_interface,
@@ -401,88 +508,180 @@ impl Module {
             )
             .await?;
 
-        // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
-        let l1_client_meta = voyager_client
-            .client_state_meta::<IbcUnion>(
-                counterparty_chain_id.clone(),
-                QueryHeight::Latest,
-                arbitrum_client_state.l1_client_id,
-            )
-            .await?;
+        match client_state {
+            ClientState::V1(arbitrum_client_state_v1) => {
+                // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
+                let l1_client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        arbitrum_client_state_v1.l1_client_id,
+                    )
+                    .await?;
 
-        let l1_client_info = voyager_client
-            .client_info::<IbcUnion>(
-                counterparty_chain_id.clone(),
-                arbitrum_client_state.l1_client_id,
-            )
-            .await?;
+                let l1_client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        arbitrum_client_state_v1.l1_client_id,
+                    )
+                    .await?;
 
-        let l1_latest_height = voyager_client
-            .query_latest_height(l1_client_meta.counterparty_chain_id.clone(), true)
-            .await?;
+                let l1_latest_height = voyager_client
+                    .query_latest_height(l1_client_meta.counterparty_chain_id.clone(), true)
+                    .await?;
 
-        let l2_settlement_block = finalized_l2_block_of_l1_height(
-            &self.l1_provider,
-            &self.l2_provider,
-            self.l1_contract_address,
-            l1_latest_height.height(),
-        )
-        .await
-        .unwrap();
+                let l2_settlement_block = arbitrum_client::v1::finalized_l2_block_of_l1_height(
+                    &self.l1_provider,
+                    &self.l2_provider,
+                    self.l1_contract_address,
+                    l1_latest_height.height(),
+                )
+                .await
+                .map_err(|e| {
+                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                })?;
 
-        info!(
-            number = %l2_settlement_block.header.number,
-            extra_data = %l2_settlement_block.header.extra_data,
-            "l2_settlement_block"
-        );
+                info!(
+                    number = %l2_settlement_block.header.number,
+                    extra_data = %l2_settlement_block.header.extra_data,
+                    "l2_settlement_block"
+                );
 
-        if l2_settlement_block.header.number == arbitrum_client_state.latest_height {
-            info!("update is a noop, l2 client will not be updated either");
+                if l2_settlement_block.header.number == arbitrum_client_state_v1.latest_height {
+                    info!("update is a noop, l2 client will not be updated either");
 
-            return Ok(data(OrderedHeaders { headers: vec![] }));
+                    return Ok(data(OrderedHeaders { headers: vec![] }));
+                }
+
+                Ok(conc([
+                    promise(
+                        [call(FetchUpdateHeaders {
+                            client_type: l1_client_info.client_type,
+                            chain_id: l1_client_meta.counterparty_chain_id.clone(),
+                            counterparty_chain_id: counterparty_chain_id.clone(),
+                            client_id: RawClientId::new(arbitrum_client_state_v1.l1_client_id),
+                            update_from: l1_client_meta.counterparty_height,
+                            update_to: l1_latest_height,
+                        })],
+                        [],
+                        AggregateSubmitTxFromOrderedHeaders {
+                            ibc_spec_id: IbcUnion::ID,
+                            chain_id: counterparty_chain_id.clone(),
+                            client_id: RawClientId::new(arbitrum_client_state_v1.l1_client_id),
+                        },
+                    ),
+                    seq([
+                        call(WaitForTrustedHeight {
+                            chain_id: counterparty_chain_id.clone(),
+                            ibc_spec_id: IbcUnion::ID,
+                            client_id: RawClientId::new(arbitrum_client_state_v1.l1_client_id),
+                            height: l1_latest_height,
+                            finalized: false,
+                        }),
+                        // wait for 1 extra block to ensure that the L1 update is in state, and this update will not end up in the same block (and potentially get reordered)
+                        call(WaitForHeightRelative {
+                            chain_id: counterparty_chain_id.clone(),
+                            height_diff: 1,
+                            finalized: false,
+                        }),
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchL2Update {
+                                update_from,
+                                counterparty_chain_id,
+                                client_id,
+                            }),
+                        )),
+                    ]),
+                ]))
+            }
+            ClientState::V2(arbitrum_client_state_v2) => {
+                // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
+                let l1_client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        arbitrum_client_state_v2.l1_client_id,
+                    )
+                    .await?;
+
+                let l1_client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        arbitrum_client_state_v2.l1_client_id,
+                    )
+                    .await?;
+
+                let l1_latest_height = voyager_client
+                    .query_latest_height(l1_client_meta.counterparty_chain_id.clone(), true)
+                    .await?;
+
+                let l2_settlement_block = arbitrum_client::v2::finalized_l2_block_of_l1_height(
+                    &self.l1_provider,
+                    &self.l2_provider,
+                    self.l1_contract_address,
+                    l1_latest_height.height(),
+                )
+                .await
+                .map_err(|e| {
+                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                })?;
+
+                info!(
+                    number = %l2_settlement_block.header.number,
+                    extra_data = %l2_settlement_block.header.extra_data,
+                    "l2_settlement_block"
+                );
+
+                if l2_settlement_block.header.number == arbitrum_client_state_v2.latest_height {
+                    info!("update is a noop, l2 client will not be updated either");
+
+                    return Ok(data(OrderedHeaders { headers: vec![] }));
+                }
+
+                Ok(conc([
+                    promise(
+                        [call(FetchUpdateHeaders {
+                            client_type: l1_client_info.client_type,
+                            chain_id: l1_client_meta.counterparty_chain_id.clone(),
+                            counterparty_chain_id: counterparty_chain_id.clone(),
+                            client_id: RawClientId::new(arbitrum_client_state_v2.l1_client_id),
+                            update_from: l1_client_meta.counterparty_height,
+                            update_to: l1_latest_height,
+                        })],
+                        [],
+                        AggregateSubmitTxFromOrderedHeaders {
+                            ibc_spec_id: IbcUnion::ID,
+                            chain_id: counterparty_chain_id.clone(),
+                            client_id: RawClientId::new(arbitrum_client_state_v2.l1_client_id),
+                        },
+                    ),
+                    seq([
+                        call(WaitForTrustedHeight {
+                            chain_id: counterparty_chain_id.clone(),
+                            ibc_spec_id: IbcUnion::ID,
+                            client_id: RawClientId::new(arbitrum_client_state_v2.l1_client_id),
+                            height: l1_latest_height,
+                            finalized: false,
+                        }),
+                        // wait for 1 extra block to ensure that the L1 update is in state, and this update will not end up in the same block (and potentially get reordered)
+                        call(WaitForHeightRelative {
+                            chain_id: counterparty_chain_id.clone(),
+                            height_diff: 1,
+                            finalized: false,
+                        }),
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchL2Update {
+                                update_from,
+                                counterparty_chain_id,
+                                client_id,
+                            }),
+                        )),
+                    ]),
+                ]))
+            }
         }
-
-        Ok(conc([
-            promise(
-                [call(FetchUpdateHeaders {
-                    client_type: l1_client_info.client_type,
-                    chain_id: l1_client_meta.counterparty_chain_id.clone(),
-                    counterparty_chain_id: counterparty_chain_id.clone(),
-                    client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
-                    update_from: l1_client_meta.counterparty_height,
-                    update_to: l1_latest_height,
-                })],
-                [],
-                AggregateSubmitTxFromOrderedHeaders {
-                    ibc_spec_id: IbcUnion::ID,
-                    chain_id: counterparty_chain_id.clone(),
-                    client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
-                },
-            ),
-            seq([
-                call(WaitForTrustedHeight {
-                    chain_id: counterparty_chain_id.clone(),
-                    ibc_spec_id: IbcUnion::ID,
-                    client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
-                    height: l1_latest_height,
-                    finalized: false,
-                }),
-                // wait for 1 extra block to ensure that the L1 update is in state, and this update will not end up in the same block (and potentially get reordered)
-                call(WaitForHeightRelative {
-                    chain_id: counterparty_chain_id.clone(),
-                    height_diff: 1,
-                    finalized: false,
-                }),
-                call(PluginMessage::new(
-                    self.plugin_name(),
-                    ModuleCall::from(FetchL2Update {
-                        update_from,
-                        counterparty_chain_id,
-                        client_id,
-                    }),
-                )),
-            ]),
-        ]))
     }
 
     #[instrument(
@@ -530,7 +729,7 @@ impl Module {
             "arbitrum client info"
         );
 
-        let ClientState::V1(arbitrum_client_state) = voyager_client
+        let client_state = voyager_client
             .decode_client_state::<IbcUnion, ClientState>(
                 arbitrum_client_info.client_type,
                 arbitrum_client_info.ibc_interface,
@@ -538,110 +737,249 @@ impl Module {
             )
             .await?;
 
-        debug!(?arbitrum_client_state, "arbitrum client state");
+        match client_state {
+            ClientState::V1(arbitrum_client_state_v1) => {
+                debug!(?arbitrum_client_state_v1, "arbitrum client state");
 
-        // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
-        let l1_client_meta = voyager_client
-            .client_state_meta::<IbcUnion>(
-                counterparty_chain_id.clone(),
-                QueryHeight::Latest,
-                arbitrum_client_state.l1_client_id,
-            )
-            .await?;
+                // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
+                let l1_client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        arbitrum_client_state_v1.l1_client_id,
+                    )
+                    .await?;
 
-        debug!(
-            %l1_client_meta.counterparty_height,
-            %l1_client_meta.counterparty_chain_id,
-            "l1 client meta"
-        );
+                debug!(
+                    %l1_client_meta.counterparty_height,
+                    %l1_client_meta.counterparty_chain_id,
+                    "l1 client meta"
+                );
 
-        let l2_settlement_block = finalized_l2_block_of_l1_height(
-            &self.l1_provider,
-            &self.l2_provider,
-            self.l1_contract_address,
-            l1_client_meta.counterparty_height.height(),
-        )
-        .await
-        .unwrap();
-
-        debug!(?l2_settlement_block, "l2 settlement block");
-
-        if l2_settlement_block.header.number < update_from.height() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "attempted to update to a height ({to_height}) \
-                    < the intended update_from height {update_from}",
-                    to_height = l2_settlement_block.header.number
-                ),
-                None::<()>,
-            ));
-        }
-
-        if l2_settlement_block.header.number == arbitrum_client_state.latest_height {
-            info!("update is a noop");
-
-            Ok(data(OrderedHeaders { headers: vec![] }))
-        } else {
-            let l1_account_proof = self
-                .fetch_l1_rollup_account_update(l1_client_meta.counterparty_height.height())
+                let l2_settlement_block = arbitrum_client::v1::finalized_l2_block_of_l1_height(
+                    &self.l1_provider,
+                    &self.l2_provider,
+                    self.l1_contract_address,
+                    l1_client_meta.counterparty_height.height(),
+                )
                 .await
-                .unwrap();
+                .map_err(|e| {
+                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                })?;
 
-            let l1_latest_confirmed_proofs = self
-                .fetch_l1_latest_confirmed_proofs(l1_client_meta.counterparty_height.height())
-                .await;
+                debug!(?l2_settlement_block, "l2 settlement block");
 
-            let l2_ibc_account_proof = self
-                .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
-                .await;
+                if l2_settlement_block.header.number < update_from.height() {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!(
+                            "attempted to update to a height ({to_height}) \
+                            < the intended update_from height {update_from}",
+                            to_height = l2_settlement_block.header.number
+                        ),
+                        None::<()>,
+                    ));
+                }
 
-            Ok(data(OrderedHeaders {
-                headers: vec![(
-                    DecodedHeaderMeta {
-                        height: Height::new(l2_settlement_block.header.number),
-                    },
-                    into_value(Header {
-                        l1_height: l1_client_meta.counterparty_height,
-                        l1_account_proof,
-                        l2_ibc_account_proof,
-                        l1_next_node_num_slot_proof: l1_latest_confirmed_proofs
-                            .latest_confirmed_slot_proof,
-                        l1_nodes_slot_proof: l1_latest_confirmed_proofs.nodes_slot_proof,
-                        l2_header: L2Header {
-                            parent_hash: l2_settlement_block.header.parent_hash.into(),
-                            sha3_uncles: l2_settlement_block.header.ommers_hash.into(),
-                            miner: l2_settlement_block.header.beneficiary.into(),
-                            state_root: l2_settlement_block.header.state_root.into(),
-                            transactions_root: l2_settlement_block.header.transactions_root.into(),
-                            receipts_root: l2_settlement_block.header.receipts_root.into(),
-                            logs_bloom: Box::new(l2_settlement_block.header.logs_bloom.0.into()),
-                            difficulty: l2_settlement_block.header.difficulty.into(),
-                            number: l2_settlement_block.header.number.into(),
-                            gas_limit: l2_settlement_block.header.gas_limit,
-                            gas_used: l2_settlement_block.header.gas_used,
-                            timestamp: l2_settlement_block.header.timestamp,
-                            extra_data: l2_settlement_block
-                                .header
-                                .extra_data
-                                .to_vec()
-                                .try_into()
-                                .unwrap(),
-                            mix_hash: l2_settlement_block
-                                .header
-                                .mix_hash
-                                .unwrap_or_default()
-                                .into(),
-                            nonce: l2_settlement_block.header.nonce.unwrap_or_default().into(),
-                            base_fee_per_gas: l2_settlement_block
-                                .header
-                                .base_fee_per_gas
-                                .unwrap_or_default()
-                                .into(),
-                        },
-                    }),
-                )],
-            }))
+                if l2_settlement_block.header.number == arbitrum_client_state_v1.latest_height {
+                    info!("update is a noop");
+
+                    Ok(data(OrderedHeaders { headers: vec![] }))
+                } else {
+                    let l1_account_proof = self
+                        .fetch_l1_rollup_account_update(l1_client_meta.counterparty_height.height())
+                        .await?;
+
+                    let l1_latest_confirmed_proofs = self
+                        .fetch_l1_latest_confirmed_proofs(
+                            l1_client_meta.counterparty_height.height(),
+                        )
+                        .await?;
+
+                    let l2_ibc_account_proof = self
+                        .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
+                        .await
+                        .map_err(rpc_error(
+                            "error fetching finalized l2 block of l1 height",
+                            None,
+                        ))?;
+
+                    Ok(data(OrderedHeaders {
+                        headers: vec![(
+                            DecodedHeaderMeta {
+                                height: Height::new(l2_settlement_block.header.number),
+                            },
+                            into_value(Header::V1(HeaderV1 {
+                                l1_height: l1_client_meta.counterparty_height,
+                                l1_account_proof,
+                                l2_ibc_account_proof,
+                                l1_next_node_num_slot_proof: l1_latest_confirmed_proofs
+                                    .latest_confirmed_slot_proof,
+                                l1_nodes_slot_proof: l1_latest_confirmed_proofs.nodes_slot_proof,
+                                l2_header: L2Header {
+                                    parent_hash: l2_settlement_block.header.parent_hash.into(),
+                                    sha3_uncles: l2_settlement_block.header.ommers_hash.into(),
+                                    miner: l2_settlement_block.header.beneficiary.into(),
+                                    state_root: l2_settlement_block.header.state_root.into(),
+                                    transactions_root: l2_settlement_block
+                                        .header
+                                        .transactions_root
+                                        .into(),
+                                    receipts_root: l2_settlement_block.header.receipts_root.into(),
+                                    logs_bloom: Box::new(
+                                        l2_settlement_block.header.logs_bloom.0.into(),
+                                    ),
+                                    difficulty: l2_settlement_block.header.difficulty.into(),
+                                    number: l2_settlement_block.header.number.into(),
+                                    gas_limit: l2_settlement_block.header.gas_limit,
+                                    gas_used: l2_settlement_block.header.gas_used,
+                                    timestamp: l2_settlement_block.header.timestamp,
+                                    extra_data: l2_settlement_block
+                                        .header
+                                        .extra_data
+                                        .to_vec()
+                                        .try_into()
+                                        .unwrap(),
+                                    mix_hash: l2_settlement_block
+                                        .header
+                                        .mix_hash
+                                        .unwrap_or_default()
+                                        .into(),
+                                    nonce: l2_settlement_block
+                                        .header
+                                        .nonce
+                                        .unwrap_or_default()
+                                        .into(),
+                                    base_fee_per_gas: l2_settlement_block
+                                        .header
+                                        .base_fee_per_gas
+                                        .unwrap_or_default()
+                                        .into(),
+                                },
+                            })),
+                        )],
+                    }))
+                }
+            }
+            ClientState::V2(arbitrum_client_state_v2) => {
+                debug!(?arbitrum_client_state_v2, "arbitrum client state");
+
+                // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
+                let l1_client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        arbitrum_client_state_v2.l1_client_id,
+                    )
+                    .await?;
+
+                debug!(
+                    %l1_client_meta.counterparty_height,
+                    %l1_client_meta.counterparty_chain_id,
+                    "l1 client meta"
+                );
+
+                let l2_settlement_block = arbitrum_client::v2::finalized_l2_block_of_l1_height(
+                    &self.l1_provider,
+                    &self.l2_provider,
+                    self.l1_contract_address,
+                    l1_client_meta.counterparty_height.height(),
+                )
+                .await
+                .map_err(|e| {
+                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                })?;
+
+                debug!(?l2_settlement_block, "l2 settlement block");
+
+                if l2_settlement_block.header.number < update_from.height() {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!(
+                            "attempted to update to a height ({to_height}) \
+                            < the intended update_from height {update_from}",
+                            to_height = l2_settlement_block.header.number
+                        ),
+                        None::<()>,
+                    ));
+                }
+
+                if l2_settlement_block.header.number == arbitrum_client_state_v2.latest_height {
+                    info!("update is a noop");
+
+                    Ok(data(OrderedHeaders { headers: vec![] }))
+                } else {
+                    let l1_account_proof = self
+                        .fetch_l1_rollup_account_update(l1_client_meta.counterparty_height.height())
+                        .await
+                        .unwrap();
+
+                    let assertion_proof = self
+                        .fetch_l1_assertion_proof(l1_client_meta.counterparty_height.height())
+                        .await?;
+
+                    let l2_ibc_account_proof = self
+                        .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
+                        .await?;
+
+                    Ok(data(OrderedHeaders {
+                        headers: vec![(
+                            DecodedHeaderMeta {
+                                height: Height::new(l2_settlement_block.header.number),
+                            },
+                            into_value(Header::V2(HeaderV2 {
+                                l1_height: l1_client_meta.counterparty_height,
+                                l1_account_proof,
+                                l2_ibc_account_proof,
+                                assertion_state: assertion_proof.after_state,
+                                parent_assertion_hash: assertion_proof.parent_assertion_hash,
+                                inbox_acc: assertion_proof.inbox_acc,
+                                l1_assertions_proof: assertion_proof.l1_assertions_proof,
+                                l2_header: L2Header {
+                                    parent_hash: l2_settlement_block.header.parent_hash.into(),
+                                    sha3_uncles: l2_settlement_block.header.ommers_hash.into(),
+                                    miner: l2_settlement_block.header.beneficiary.into(),
+                                    state_root: l2_settlement_block.header.state_root.into(),
+                                    transactions_root: l2_settlement_block
+                                        .header
+                                        .transactions_root
+                                        .into(),
+                                    receipts_root: l2_settlement_block.header.receipts_root.into(),
+                                    logs_bloom: Box::new(
+                                        l2_settlement_block.header.logs_bloom.0.into(),
+                                    ),
+                                    difficulty: l2_settlement_block.header.difficulty.into(),
+                                    number: l2_settlement_block.header.number.into(),
+                                    gas_limit: l2_settlement_block.header.gas_limit,
+                                    gas_used: l2_settlement_block.header.gas_used,
+                                    timestamp: l2_settlement_block.header.timestamp,
+                                    extra_data: l2_settlement_block
+                                        .header
+                                        .extra_data
+                                        .to_vec()
+                                        .try_into()
+                                        .unwrap(),
+                                    mix_hash: l2_settlement_block
+                                        .header
+                                        .mix_hash
+                                        .unwrap_or_default()
+                                        .into(),
+                                    nonce: l2_settlement_block
+                                        .header
+                                        .nonce
+                                        .unwrap_or_default()
+                                        .into(),
+                                    base_fee_per_gas: l2_settlement_block
+                                        .header
+                                        .base_fee_per_gas
+                                        .unwrap_or_default()
+                                        .into(),
+                                },
+                            })),
+                        )],
+                    }))
+                }
+            }
         }
     }
 }
@@ -650,4 +988,11 @@ pub struct LatestConfirmedProofs {
     pub latest_confirmed: u64,
     pub latest_confirmed_slot_proof: StorageProof,
     pub nodes_slot_proof: StorageProof,
+}
+
+pub struct AssertionProof {
+    pub parent_assertion_hash: H256,
+    pub inbox_acc: H256,
+    pub after_state: AssertionState,
+    pub l1_assertions_proof: StorageProof,
 }
