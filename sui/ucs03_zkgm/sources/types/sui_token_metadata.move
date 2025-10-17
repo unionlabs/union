@@ -127,4 +127,85 @@ module zkgm::sui_token_metadata {
     public(package) fun description(m: &SuiTokenMetadata): &String {
         &m.description
     }
+    #[test]
+    fun test_decode_with_icon_some() {
+        use std::option;
+
+        let name = string::utf8(b"Token");
+        let symbol = string::utf8(b"TKN");
+        let decimals: u8 = 9;
+        let owner: address = @0xA11CE;
+        let icon = string::utf8(b"https://icon");
+        let description = string::utf8(b"desc");
+
+        let mut buf: vector<u8> = vector::empty();
+        buf.append(bcs::to_bytes(&name.into_bytes()));
+        buf.append(bcs::to_bytes(&symbol.into_bytes()));
+        buf.append(bcs::to_bytes(&decimals));
+        buf.append(bcs::to_bytes(&owner));
+        buf.append(bcs::to_bytes(&option::some(icon.into_bytes())));
+        buf.append(bcs::to_bytes(&description.into_bytes()));
+
+        let m = decode(buf);
+        assert!(*name(&m) == string::utf8(b"Token"), 1);
+        assert!(*symbol(&m) == string::utf8(b"TKN"), 2);
+        assert!(decimals(&m) == 9, 3);
+        assert!(owner(&m) == @0xA11CE, 4);
+        let iu = icon_url(&m);
+        assert!(option::is_some(iu), 5);
+        let iu_ref = option::borrow(iu);
+        assert!(*iu_ref == string::utf8(b"https://icon"), 6);
+        assert!(*description(&m) == string::utf8(b"desc"), 7);
+    }
+
+    #[test]
+    fun test_decode_with_icon_none() {
+        use std::option;
+
+        let name = string::utf8(b"N");
+        let symbol = string::utf8(b"S");
+        let decimals: u8 = 6;
+        let owner: address = @0xB0B;
+        let description = string::utf8(b"D");
+
+        let mut buf: vector<u8> = vector::empty();
+        buf.append(bcs::to_bytes(&name.into_bytes()));
+        buf.append(bcs::to_bytes(&symbol.into_bytes()));
+        buf.append(bcs::to_bytes(&decimals));
+        buf.append(bcs::to_bytes(&owner));
+        buf.append(bcs::to_bytes(&option::none<vector<u8>>()));
+        buf.append(bcs::to_bytes(&description.into_bytes()));
+
+        let m = decode(buf);
+        assert!(*name(&m) == string::utf8(b"N"), 1);
+        assert!(*symbol(&m) == string::utf8(b"S"), 2);
+        assert!(decimals(&m) == 6, 3);
+        assert!(owner(&m) == @0xB0B, 4);
+        assert!(option::is_none(icon_url(&m)), 5);
+        assert!(*description(&m) == string::utf8(b"D"), 6);
+    }
+
+    #[test]
+    fun test_new_and_getters() {
+        use std::option;
+
+        let m = new(
+            string::utf8(b"Alpha"),
+            string::utf8(b"ALP"),
+            8,
+            @0xC0FFEE,
+            option::some(string::utf8(b"https://a")),
+            string::utf8(b"zzz"),
+        );
+        assert!(*name(&m) == string::utf8(b"Alpha"), 1);
+        assert!(*symbol(&m) == string::utf8(b"ALP"), 2);
+        assert!(decimals(&m) == 8, 3);
+        assert!(owner(&m) == @0xC0FFEE, 4);
+        let iu = icon_url(&m);
+        assert!(option::is_some(iu), 5);
+        let iu_ref = option::borrow(iu);
+        assert!(*iu_ref == string::utf8(b"https://a"), 6);
+        assert!(*description(&m) == string::utf8(b"zzz"), 7);
+    }
+
 }
