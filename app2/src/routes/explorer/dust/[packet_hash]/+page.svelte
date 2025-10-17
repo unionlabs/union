@@ -11,6 +11,7 @@ import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { ConfigProvider, Effect, Layer, pipe } from "effect"
 import { graphql } from "gql.tada"
 import type { PageData } from "./$types"
+import * as AppRuntime from "$lib/runtime"
 
 interface Props {
   data: PageData
@@ -86,11 +87,9 @@ const dustWithdrawalData = $derived(pipe(
 
     return dustWithdrawals[0]
   }),
-  Effect.provide(Layer.mergeAll(
-    QlpConfigProvider,
-    Indexer.Indexer.Default,
-  )),
-  Effect.runPromise,
+  Effect.provide(Layer.fresh(Indexer.Indexer.Default)),
+  Effect.provide(QlpConfigProvider),
+  AppRuntime.runPromise,
 ))
 </script>
 
@@ -266,13 +265,6 @@ const dustWithdrawalData = $derived(pipe(
               {:else}
                 <div class="text-sm text-zinc-500">{dw.destination_universal_chain_id}</div>
               {/if}
-            </div>
-
-            <div>
-              <Label>Staker</Label>
-              <div class="font-mono text-sm text-zinc-400 break-all">
-                {dw.staker_display}
-              </div>
             </div>
 
             {#if dw.delivery_packet_hash}
