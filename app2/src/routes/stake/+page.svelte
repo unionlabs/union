@@ -23,7 +23,7 @@ import { Staking, Ucs05, Utils } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { EU_ERC20, EU_LST, EU_STAKING_HUB, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
-import { Bond, Unbond, Withdrawal } from "@unionlabs/sdk/schema/stake"
+import { Bond, DustWithdrawal, Unbond, Withdrawal } from "@unionlabs/sdk/schema/stake"
 import {
   BigDecimal,
   Brand,
@@ -52,7 +52,7 @@ let showInverseRate = $state(false)
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
     new Map([
-      ["GRAPHQL_ENDPOINT", "https://graphql.union.build/v1/graphql"],
+      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
     ]),
   ),
   Layer.setConfigProvider,
@@ -80,7 +80,8 @@ const refreshStakingData = () => {
 
 // State to hold the latest staking data
 let stakingData = $state<
-  O.Option<readonly [(Bond | Unbond | Withdrawal), ...Array<(Bond | Unbond | Withdrawal)>]>
+  O.Option<readonly [(Bond | Unbond | Withdrawal | DustWithdrawal), 
+  ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>]>
 >(O.none())
 
 // Start the polling effect that updates stakingData
@@ -102,17 +103,22 @@ AppRuntime.runPromiseExit$(() => {
                 staking.getWithdrawals(Staking.GetWithdrawals.make({ addresses: [address] })),
                 Effect.catchAll(() => Effect.succeed(O.none())),
               ),
+              pipe(
+                staking.getDustWithdrawals(Staking.GetDustWithdrawals.make({ addresses: [address] })),
+                Effect.catchAll(() => Effect.succeed(O.none())),
+              ),
             ], { concurrency: "unbounded" }),
-            Effect.map(([bonds, unbonds, withdrawals]) => {
-              const allItems: Array<Bond | Unbond | Withdrawal> = [
+            Effect.map(([bonds, unbonds, withdrawals, dustWithdrawals]) => {
+              const allItems: Array<Bond | Unbond | Withdrawal | DustWithdrawal> = [
                 ...O.getOrElse(bonds, () => []),
                 ...O.getOrElse(unbonds, () => []),
                 ...O.getOrElse(withdrawals, () => []),
+                ...O.getOrElse(dustWithdrawals, () => []),
               ]
               return allItems
             }),
             Effect.map(A.sort(pipe(
-              Order.mapInput<Date, Bond | Unbond | Withdrawal>(
+              Order.mapInput<Date, Bond | Unbond | Withdrawal | DustWithdrawal>(
                 Order.Date,
                 (x) => DateTime.toDate(x.sortDate),
               ),
@@ -121,7 +127,7 @@ AppRuntime.runPromiseExit$(() => {
             Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
             Effect.map(x =>
               x as O.Option<
-                readonly [(Bond | Unbond | Withdrawal), ...Array<(Bond | Unbond | Withdrawal)>]
+                readonly [(Bond | Unbond | Withdrawal | DustWithdrawal), ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>]
               >
             ),
           )
