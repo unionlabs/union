@@ -82,7 +82,12 @@ export const createContext = Effect.fn((
       args.fee.baseToken,
     )
 
-    const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+    const shouldIncludeFees = shouldChargeFees(
+      args.fee,
+      uiStore.edition,
+      args.sourceChain,
+      args.destinationChain,
+    )
 
     const produceBatch = Effect.gen(function*() {
       if (shouldIncludeFees) {
@@ -173,7 +178,12 @@ export const createContext = Effect.fn((
 )
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
-  const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+  const shouldIncludeFees = shouldChargeFees(
+    args.fee,
+    uiStore.edition,
+    args.sourceChain,
+    args.destinationChain,
+  )
   const baseIntent = createBaseIntent(args, baseAmount)
 
   return Match.value(args.sourceChain.rpc_type).pipe(
@@ -241,7 +251,19 @@ const createBaseIntent = (
 })
 
 // Fee strategy: BTC edition only charges fees when going FROM Babylon
-const shouldChargeFees = (fee: FeeIntent, edition: string, sourceChain: Chain): boolean => {
+const shouldChargeFees = (
+  fee: FeeIntent,
+  edition: string,
+  sourceChain: Chain,
+  destinationChain?: Chain,
+): boolean => {
+  const skip = ["union.union-1", "union.union-testnet-10"]
+  if (
+    skip.includes(sourceChain.universal_chain_id)
+    || (destinationChain && skip.includes(destinationChain.universal_chain_id))
+  ) {
+    return false
+  }
   if (fee.baseAmount === 0n) {
     return false
   }
