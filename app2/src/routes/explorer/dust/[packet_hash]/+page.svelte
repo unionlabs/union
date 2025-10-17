@@ -23,7 +23,7 @@ const packetHash = $derived(data.packetHash)
 const QlpConfigProvider = Layer.setConfigProvider(
   ConfigProvider.fromMap(
     new Map([
-      ["GRAPHQL_ENDPOINT", "https://staging.graphql.union.build/v1/graphql"],
+      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
     ]),
   ),
 )
@@ -87,8 +87,8 @@ const dustWithdrawalData = $derived(pipe(
     return dustWithdrawals[0]
   }),
   Effect.provide(Layer.mergeAll(
-    Indexer.Indexer.Default,
     QlpConfigProvider,
+    Indexer.Indexer.Default,
   )),
   Effect.runPromise,
 ))

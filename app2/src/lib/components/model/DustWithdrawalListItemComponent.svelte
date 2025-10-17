@@ -25,7 +25,7 @@ const destinationChain = $derived(pipe(
 ))
 
 const handleClick = () => {
-  goto(`/explorer/dust-withdrawals/${item.packet_hash}`)
+  goto(`/explorer/dust/${item.packet_hash}`)
 }
 
 const status = $derived(
