@@ -314,7 +314,7 @@ module ibc::ibc {
     }
 
     #[test_only]
-    fun init_for_tests(ctx: &mut TxContext) {
+    public fun init_for_tests(ctx: &mut TxContext) {
         transfer::share_object(IBCStore {
             id: object::new(ctx),
             commitments: table::new(ctx),
