@@ -1,6 +1,7 @@
-use alloy_sol_types::SolType;
+use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER};
+use unionlabs_primitives::Bytes;
 
 use crate::{
     Instruction, Result,
@@ -59,6 +60,13 @@ impl Root {
             Root::Forward(forward) => forward.into_instruction(),
         }
     }
+
+    pub fn encode(self) -> Bytes {
+        self.into_instruction()
+            .into_raw()
+            .abi_encode_params()
+            .into()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
@@ -96,6 +104,15 @@ impl RootAck {
             }
             RootShape::Call(shape) => CallAck::decode(shape, inner_ack).map(RootAck::Call),
             RootShape::Forward(shape) => ForwardAck::decode(shape, inner_ack).map(RootAck::Forward),
+        }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            RootAck::Batch(ack) => ack.encode(),
+            RootAck::TokenOrder(ack) => ack.encode(),
+            RootAck::Call(ack) => ack.encode(),
+            RootAck::Forward(ack) => ack.encode(),
         }
     }
 }

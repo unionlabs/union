@@ -1,11 +1,17 @@
-use alloy::{network::AnyNetwork, primitives::Address, providers::ProviderBuilder, sol};
+use alloy::{
+    network::AnyNetwork,
+    primitives::{Address, keccak256},
+    providers::ProviderBuilder,
+    sol,
+    sol_types::SolValue,
+};
 use anyhow::{Context, Result, anyhow, bail};
 use clap::Args;
 use deployments::{DEPLOYMENTS, Deployment};
 use ibc_union_spec::ChannelId;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
-use unionlabs::primitives::{Bytes, U256};
+use unionlabs::primitives::{Bytes, H256, U256};
 use voyager_primitives::IbcInterface;
 
 #[derive(Debug, Args)]
@@ -18,9 +24,11 @@ pub struct Cmd {
     /// This is required if using a custom chain.
     #[arg(long, required_if_eq("chain_id", "custom"))]
     rpc_url: Option<String>,
+
     /// The address of the ucs03-zkgm implementation to query the wrapped token from.
     #[arg(long, required_if_eq("chain_id", "custom"), help_heading = "Custom")]
     address: Option<String>,
+
     /// Force usage of the specified interface.
     ///
     /// This can usually be inferred from the address format, but it can be explicitly set with this option.
@@ -41,23 +49,88 @@ pub struct PredictWrappedTokenArgs {
     ///
     /// For tokens that will be wrapped, this is 0. For tokens that will be unwrapped, this is the channel id that the token was originally wrapped over.
     path: U256,
+
     /// The destination channel id.
     channel_id: ChannelId,
+
     /// The base token.
     token: String,
+
     /// Treat `token` as if it were ascii bytes.
     #[arg(long)]
-    ascii: bool,
+    token_ascii: bool,
+
+    /// The metadata image (hash) to use for the wrapped token.
+    #[arg(long, help_heading = "Image")]
+    image: Option<H256>,
+
+    /// The implementation for the wrapped token metadata.
+    #[arg(
+        long,
+        // conflicts_with = 
+        // required_unless_present("image"),
+        conflicts_with("image"),
+        help_heading = "Preimage"
+    )]
+    implementation: Option<String>,
+
+    /// Treat `implementation` as if it were ascii bytes.
+    #[arg(long, conflicts_with("image"), help_heading = "Preimage")]
+    implementation_ascii: bool,
+
+    /// The initializer for the wrapped token metadata.
+    #[arg(
+        long,
+        // required_unless_present("image"),
+        conflicts_with("image"),
+        help_heading = "Preimage"
+    )]
+    initializer: Option<String>,
+
+    /// Treat `initializer` as if it were ascii bytes.
+    #[arg(long, conflicts_with("image"), help_heading = "Preimage")]
+    initializer_ascii: bool,
 }
 
 impl PredictWrappedTokenArgs {
     fn token_bytes(&self) -> Result<Vec<u8>> {
-        Ok(if self.ascii {
+        Ok(if self.token_ascii {
             self.token.clone().into_bytes()
         } else {
             self.token.parse::<Bytes>()?.into_vec()
         })
     }
+
+    fn metadata(&self) -> Result<Metadata> {
+        if let Some(image) = self.image {
+            Ok(Metadata::Image(image))
+        } else {
+            let implementation = if self.implementation_ascii {
+                self.implementation.clone().unwrap().into_bytes().into()
+            } else {
+                self.implementation.as_ref().unwrap().parse::<Bytes>()?
+            };
+
+            let initializer = if self.initializer_ascii {
+                self.initializer.clone().unwrap().into_bytes().into()
+            } else {
+                self.initializer.as_ref().unwrap().parse::<Bytes>()?
+            };
+
+            Ok(Metadata::Preimage {
+                implementation,
+                initializer,
+            })
+        }
+    }
+}
+
+enum Metadata {
+    Image(H256),
+    Preimage {
+        implementation: Bytes,
+        initializer: Bytes,
+    },
 }
 
 impl Cmd {
@@ -165,22 +238,46 @@ async fn predict_wrapped_token_ibc_solidity(
     rpc_url: String,
     address: Address,
     args: PredictWrappedTokenArgs,
-) -> std::result::Result<(), anyhow::Error> {
+) -> Result<()> {
     let provider = ProviderBuilder::new()
         .network::<AnyNetwork>()
         .connect(&rpc_url)
         .await?;
 
-    let res = IZkgm::new(address, provider)
-        .predictWrappedToken(
-            args.path.into(),
-            args.channel_id.raw(),
-            args.token_bytes()?.into(),
-        )
-        .call()
-        .await?;
+    let zkgm = IZkgm::new(address, provider);
 
-    println!("{}", res._0);
+    let res = match args.metadata()? {
+        Metadata::Image(hash) => {
+            zkgm.predictWrappedTokenFromMetadataImageV2(
+                args.path.into(),
+                args.channel_id.raw(),
+                args.token_bytes()?.into(),
+                hash.into(),
+            )
+            .call()
+            .await?
+            ._0
+        }
+        Metadata::Preimage {
+            implementation,
+            initializer,
+        } => {
+            zkgm.predictWrappedTokenV2(
+                args.path.into(),
+                args.channel_id.raw(),
+                args.token_bytes()?.into(),
+                IZkgm::TokenMetadata {
+                    implementation: implementation.into(),
+                    initializer: initializer.into(),
+                },
+            )
+            .call()
+            .await?
+            ._0
+        }
+    };
+
+    println!("{}", res);
 
     Ok(())
 }
@@ -189,7 +286,7 @@ async fn predict_wrapped_token_ibc_cosmwasm(
     rpc_url: String,
     address: String,
     args: PredictWrappedTokenArgs,
-) -> std::result::Result<(), anyhow::Error> {
+) -> Result<()> {
     let client = cometbft_rpc::Client::new(rpc_url).await?;
 
     let res = client
@@ -197,12 +294,30 @@ async fn predict_wrapped_token_ibc_cosmwasm(
             "/cosmwasm.wasm.v1.Query/SmartContractState",
             &QuerySmartContractStateRequest {
                 address,
-                query_data: serde_json::to_vec(&QueryMsg::PredictWrappedToken {
-                    path: args.path.to_string(),
-                    channel_id: args.channel_id,
-                    token: args.token_bytes()?.into(),
-                })
-                .unwrap(),
+                query_data: match args.metadata()? {
+                    Metadata::Image(metadata_image) => {
+                        serde_json::to_vec(&QueryMsg::PredictWrappedTokenV2 {
+                            path: args.path.to_string(),
+                            channel_id: args.channel_id,
+                            token: args.token_bytes()?.into(),
+                            metadata_image,
+                        })
+                        .unwrap()
+                    }
+                    Metadata::Preimage {
+                        implementation,
+                        initializer,
+                    } => serde_json::to_vec(&QueryMsg::PredictWrappedTokenV2 {
+                        path: args.path.to_string(),
+                        channel_id: args.channel_id,
+                        token: args.token_bytes()?.into(),
+                        metadata_image: keccak256(
+                            (implementation, initializer).abi_encode_params(),
+                        )
+                        .into(),
+                    })
+                    .unwrap(),
+                },
             },
             None,
             false,
@@ -222,22 +337,23 @@ sol! {
     #![sol(rpc)]
 
     interface IZkgm {
-        // function send(
-        //     uint32 channelId,
-        //     uint64 timeoutHeight,
-        //     uint64 timeoutTimestamp,
-        //     bytes32 salt,
-        //     Instruction calldata instruction
-        // ) external payable;
+        struct TokenMetadata {
+            bytes implementation;
+            bytes initializer;
+        }
 
-        function predictWrappedToken(
+        function predictWrappedTokenV2(
             uint256 path,
             uint32 channel,
-            bytes calldata token
-        ) external view returns (address, bytes32);
+            bytes calldata token,
+            TokenMetadata calldata metadata
+        ) external returns (address, bytes32);
 
-        function tokenOrigin(
-            address token
-        ) external view returns (uint256);
+        function predictWrappedTokenFromMetadataImageV2(
+            uint256 path,
+            uint32 channel,
+            bytes calldata token,
+            bytes32 metadataHash
+        ) external returns (address, bytes32);
     }
 }

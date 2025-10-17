@@ -1,4 +1,4 @@
-use alloy_sol_types::SolType;
+use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
 use ucs03_zkgm::com::{
     FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, INSTR_VERSION_1, INSTR_VERSION_2, OP_TOKEN_ORDER,
@@ -77,6 +77,13 @@ impl TokenOrderAck {
         match shape {
             TokenOrderShape::V1 => TokenOrderV1Ack::decode(ack).map(TokenOrderAck::V1),
             TokenOrderShape::V2 => TokenOrderV2Ack::decode(ack).map(TokenOrderAck::V2),
+        }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            TokenOrderAck::V1(ack) => ack.encode(),
+            TokenOrderAck::V2(ack) => ack.encode(),
         }
     }
 }
@@ -185,6 +192,21 @@ impl TokenOrderV1Ack {
             invalid => Err(format!("invalid token order v1 fill type: {invalid}"))?,
         }
     }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            TokenOrderV1Ack::Protocol => ucs03_zkgm::com::TokenOrderAck {
+                fill_type: FILL_TYPE_PROTOCOL,
+                market_maker: Default::default(),
+            },
+            TokenOrderV1Ack::MarketMaker { market_maker } => ucs03_zkgm::com::TokenOrderAck {
+                fill_type: FILL_TYPE_MARKETMAKER,
+                market_maker: market_maker.clone().into(),
+            },
+        }
+        .abi_encode_params()
+        .into()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -221,6 +243,21 @@ impl TokenOrderV2Ack {
             }),
             invalid => Err(format!("invalid token order v2 fill type: {invalid}"))?,
         }
+    }
+
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            TokenOrderV2Ack::Protocol => ucs03_zkgm::com::TokenOrderAck {
+                fill_type: FILL_TYPE_PROTOCOL,
+                market_maker: Default::default(),
+            },
+            TokenOrderV2Ack::MarketMaker { market_maker } => ucs03_zkgm::com::TokenOrderAck {
+                fill_type: FILL_TYPE_MARKETMAKER,
+                market_maker: market_maker.clone().into(),
+            },
+        }
+        .abi_encode_params()
+        .into()
     }
 }
 
@@ -287,7 +324,7 @@ impl TokenOrderV2 {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
+    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@kind")
 )]
 pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),

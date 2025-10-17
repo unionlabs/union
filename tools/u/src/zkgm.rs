@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::Subcommand;
 
 pub mod decode;
+pub mod encode;
 pub mod make;
 pub mod predict_proxy_account_address;
 pub mod predict_wrapped_token;
@@ -16,6 +17,8 @@ pub enum Cmd {
     Make(make::Cmd),
     #[command(visible_alias = "d")]
     Decode(decode::Cmd),
+    #[command(visible_alias = "e")]
+    Encode(encode::Cmd),
 }
 
 impl Cmd {
@@ -25,6 +28,7 @@ impl Cmd {
             Cmd::PredictProxyAccountAddress(cmd) => cmd.run().await,
             Cmd::Make(cmd) => cmd.run(),
             Cmd::Decode(cmd) => cmd.run(),
+            Cmd::Encode(cmd) => cmd.run(),
         }
     }
 }
