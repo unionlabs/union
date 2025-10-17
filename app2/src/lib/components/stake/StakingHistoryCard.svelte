@@ -1,22 +1,23 @@
 <script lang="ts">
 import StakingListItemComponent from "$lib/components/model/StakingListItemComponent.svelte"
 import WithdrawalListItemComponent from "$lib/components/model/WithdrawalListItemComponent.svelte"
+import DustWithdrawalListItemComponent from "$lib/components/model/DustWithdrawalListItemComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import { matchRuntimeResult } from "$lib/utils/snippets.svelte"
-import type { Bond, Unbond, Withdrawal } from "@unionlabs/sdk/schema/stake"
+import type { Bond, DustWithdrawal, Unbond, Withdrawal } from "@unionlabs/sdk/schema/stake"
 import { Array as A, Option as O } from "effect"
 import type { Exit } from "effect"
 
 interface Props {
-  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal>>, unknown>>
+  data: O.Option<Exit.Exit<O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal | DustWithdrawal>>, unknown>>
   walletConnected: boolean
 }
 
 let { data, walletConnected }: Props = $props()
 
-type TableFilter = "all" | "bond" | "unbond" | "withdrawal"
+type TableFilter = "all" | "bond" | "unbond" | "withdrawal" | "dust"
 
 let tableFilter = $state<TableFilter>("all")
 let currentPage = $state<number>(1)
@@ -29,8 +30,19 @@ $effect(() => {
 })
 </script>
 
+<style>
+.tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</style>
+
 {#snippet renderBondsTable(
-  maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal>>,
+  maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal | DustWithdrawal>>,
 )}
   {@const bonds = O.getOrElse(maybeBonds, () => [])}
   {@const filteredBonds = bonds.filter(bond =>
@@ -38,6 +50,7 @@ $effect(() => {
     || (tableFilter === "bond" && bond._tag === "Bond")
     || (tableFilter === "unbond" && bond._tag === "Unbond")
     || (tableFilter === "withdrawal" && bond._tag === "Withdrawal")
+    || (tableFilter === "dust" && bond._tag === "DustWithdrawal")
   )}
   {@const totalItems = filteredBonds.length}
   {@const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))}
@@ -48,24 +61,27 @@ $effect(() => {
 
   <div class="relative">
     <div class="px-4 py-2.5 border-b border-zinc-800">
-      <div class="flex items-center justify-between gap-1 sm:gap-2">
-        <Tabs
-          items={[
-            { id: "all", label: "All" },
-            { id: "bond", label: "Stakes" },
-            { id: "unbond", label: "Unstakes" },
-            { id: "withdrawal", label: "Withdrawals" },
-          ]}
-          activeId={tableFilter}
-          onTabChange={(id) => tableFilter = id as TableFilter}
-        />
+      <div class="flex items-center justify-between gap-2">
+        <div class="tabs-scroll flex-1 overflow-x-auto">
+          <Tabs
+            items={[
+              { id: "all", label: "All" },
+              { id: "bond", label: "Stakes" },
+              { id: "unbond", label: "Unstakes" },
+              { id: "withdrawal", label: "Withdrawals" },
+              { id: "dust", label: "Dust" },
+            ]}
+            activeId={tableFilter}
+            onTabChange={(id) => tableFilter = id as TableFilter}
+          />
+        </div>
 
-        {#if hasData && totalPages > 1}
-          <div class="flex gap-0.5 sm:gap-1">
+        {#if hasData}
+          <div class="flex gap-0.5 sm:gap-1 flex-shrink-0">
             <button
               onclick={() => currentPage = Math.max(1, currentPage - 1)}
-              disabled={currentPage <= 1}
-              class="px-1 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-zinc-500 hover:text-zinc-300 w-5 sm:w-8 bg-zinc-900 hover:bg-zinc-800"
+              disabled={currentPage <= 1 || totalPages <= 1}
+              class="px-1 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-zinc-500 hover:text-zinc-300 w-5 sm:w-8 bg-zinc-900 hover:enabled:bg-zinc-800"
             >
               ←
             </button>
@@ -74,8 +90,8 @@ $effect(() => {
             </div>
             <button
               onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
-              disabled={currentPage >= totalPages}
-              class="px-1 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-zinc-500 hover:text-zinc-300 w-5 sm:w-8 bg-zinc-900 hover:bg-zinc-800"
+              disabled={currentPage >= totalPages || totalPages <= 1}
+              class="px-1 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-zinc-500 hover:text-zinc-300 w-5 sm:w-8 bg-zinc-900 hover:enabled:bg-zinc-800"
             >
               →
             </button>
@@ -89,6 +105,8 @@ $effect(() => {
         {#each paginatedBonds as item}
           {#if item._tag === "Withdrawal"}
             <WithdrawalListItemComponent {item} />
+          {:else if item._tag === "DustWithdrawal"}
+            <DustWithdrawalListItemComponent {item} />
           {:else}
             <StakingListItemComponent {item} />
           {/if}
@@ -128,7 +146,11 @@ $effect(() => {
                   ? "transactions"
                   : tableFilter === "bond"
                   ? "stakes"
-                  : "unstakes"
+                  : tableFilter === "unbond"
+                  ? "unstakes"
+                  : tableFilter === "withdrawal"
+                  ? "withdrawals"
+                  : "dust withdrawals"
                 } yet
               </div>
               <div class="text-zinc-500 text-xs mt-1">
