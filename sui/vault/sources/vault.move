@@ -125,6 +125,22 @@ module vault::vault {
         });
     }
 
+    #[test_only]
+    public fun init_for_tests(ctx: &mut TxContext) {
+        transfer::share_object(Vault {
+            id: object::new(ctx),
+            token_type_to_treasury: object_bag::new(ctx),
+            intent_whitelists: table::new(ctx),
+            fungible_counterparties: table::new(ctx),
+        });
+
+        transfer::transfer(
+            VaultCap { id: object::new(ctx) },
+            ctx.sender()
+        );
+    }
+
+
     public fun register_capability<T>(
         vault: &mut Vault,
         mut capability: TreasuryCap<T>,

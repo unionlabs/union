@@ -251,4 +251,91 @@ module zkgm::helper {
         hash::keccak256(&data)
     }
 
+
+    #[test]
+    fun test_is_allowed_flags() {
+        assert!(is_allowed_batch_instruction(0x01), 1);
+        assert!(is_allowed_batch_instruction(0x03), 2);
+        assert!(!is_allowed_batch_instruction(0x00), 3);
+        assert!(!is_allowed_batch_instruction(0x02), 4);
+
+        assert!(is_allowed_forward(0x01), 5);
+        assert!(is_allowed_forward(0x02), 6);
+        assert!(is_allowed_forward(0x03), 7);
+        assert!(!is_allowed_forward(0xFF), 8);
+    }
+
+
+    #[test]
+    fun test_derive_batch_salt_determinism_and_uniqueness() {
+        let s0 = derive_batch_salt(0, b"seed");
+        let s1 = derive_batch_salt(1, b"seed");
+        let s1b = derive_batch_salt(1, b"seed");
+        let s1_other_seed = derive_batch_salt(1, b"seed2");
+
+        assert!(s1 == s1b, 1);         
+        assert!(s0 != s1, 2);            
+        assert!(s1 != s1_other_seed, 3); 
+    }
+
+
+    #[test, expected_failure(abort_code = 2)]
+    fun test_update_channel_path_hop_limit_aborts_on_9th() {
+
+        let mut path: u256 = 0;
+        path = update_channel_path(path, 1);
+        path = update_channel_path(path, 2);
+        path = update_channel_path(path, 3);
+        path = update_channel_path(path, 4);
+        path = update_channel_path(path, 5);
+        path = update_channel_path(path, 6);
+        path = update_channel_path(path, 7);
+        path = update_channel_path(path, 8);
+
+        let _ = update_channel_path(path, 9);
+    }
+
+    #[test]
+    fun test_pop_on_zero_path() {
+        let (t, h) = pop_channel_from_path(0);
+        assert!(t == 0 && h == 0, 1);
+    }
+
+    #[test]
+    fun test_fls_examples() {
+        assert!(fls(0) == 256, 1);                         
+        assert!(fls(1) == 0, 2);                          
+        assert!(fls(2) == 1, 3);                           
+        assert!(fls(16) == 4, 4);                        
+        assert!(fls(255) == 7, 5);                       
+        assert!(fls(((1 as u256) << 16)) == 16, 6);        
+        assert!(fls(((1 as u256) << 32)) == 32, 7);       
+        assert!(fls(((1 as u256) << 64)) == 64, 8);      
+    }
+
+    #[test]
+    fun test_compute_salt_consistency_and_sensitivity() {
+        let path: u256 = 0xAABBCC;
+        let channel: u32 = 42;
+
+        let metadata = b"hello-metadata";
+        let metadata_image = hash::keccak256(&metadata);
+
+        let s1 = compute_salt(path, channel, b"BASE", b"hello-metadata");
+        let s2 = compute_salt_from_metadata_image(path, channel, b"BASE", metadata_image);
+        assert!(s1 == s2, 1); 
+
+        let s_path = compute_salt(path + 1, channel, b"BASE", b"hello-metadata");
+        assert!(s_path != s1, 2);
+
+        let s_ch = compute_salt(path, channel + 1, b"BASE", b"hello-metadata");
+        assert!(s_ch != s1, 3);
+
+        let s_tok = compute_salt(path, channel, b"BASE2", b"hello-metadata");
+        assert!(s_tok != s1, 4);
+
+        let s_meta = compute_salt(path, channel, b"BASE", b"hello-metadata!");
+        assert!(s_meta != s1, 5);
+    }
+
 }
