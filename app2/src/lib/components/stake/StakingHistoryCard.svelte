@@ -12,10 +12,7 @@ import type { Exit } from "effect"
 
 interface Props {
   data: O.Option<
-    Exit.Exit<
-      O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal | DustWithdrawal>>,
-      unknown
-    >
+    Exit.Exit<O.Option<readonly (Bond | Unbond | Withdrawal | DustWithdrawal)[]>, unknown>
   >
   walletConnected: boolean
 }
@@ -47,7 +44,7 @@ $effect(() => {
 </style>
 
 {#snippet renderBondsTable(
-  maybeBonds: O.Option<A.NonEmptyReadonlyArray<Bond | Unbond | Withdrawal | DustWithdrawal>>,
+  maybeBonds: O.Option<readonly (Bond | Unbond | Withdrawal | DustWithdrawal)[]>,
 )}
   {@const bonds = O.getOrElse(maybeBonds, () => [])}
   {@const filteredBonds = bonds.filter(bond =>

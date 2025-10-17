@@ -78,15 +78,7 @@ const refreshStakingData = () => {
   }, 1000)
 }
 
-// State to hold the latest staking data
-let stakingData = $state<
-  O.Option<
-    readonly [
-      (Bond | Unbond | Withdrawal | DustWithdrawal),
-      ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>,
-    ]
-  >
->(O.none())
+let stakingData = $state<O.Option<readonly (Bond | Unbond | Withdrawal | DustWithdrawal)[]>>(O.none())
 
 // Start the polling effect that updates stakingData
 AppRuntime.runPromiseExit$(() => {
@@ -114,15 +106,12 @@ AppRuntime.runPromiseExit$(() => {
                 Effect.catchAll(() => Effect.succeed(O.none())),
               ),
             ], { concurrency: "unbounded" }),
-            Effect.map(([bonds, unbonds, withdrawals, dustWithdrawals]) => {
-              const allItems: Array<Bond | Unbond | Withdrawal | DustWithdrawal> = [
-                ...O.getOrElse(bonds, () => []),
-                ...O.getOrElse(unbonds, () => []),
-                ...O.getOrElse(withdrawals, () => []),
-                ...O.getOrElse(dustWithdrawals, () => []),
-              ]
-              return allItems
-            }),
+            Effect.map(([bonds, unbonds, withdrawals, dustWithdrawals]) => [
+              ...O.getOrElse(bonds, () => []),
+              ...O.getOrElse(unbonds, () => []),
+              ...O.getOrElse(withdrawals, () => []),
+              ...O.getOrElse(dustWithdrawals, () => []),
+            ]),
             Effect.map(A.sort(pipe(
               Order.mapInput<Date, Bond | Unbond | Withdrawal | DustWithdrawal>(
                 Order.Date,
@@ -131,14 +120,6 @@ AppRuntime.runPromiseExit$(() => {
               Order.reverse,
             ))),
             Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
-            Effect.map(x =>
-              x as O.Option<
-                readonly [
-                  (Bond | Unbond | Withdrawal | DustWithdrawal),
-                  ...Array<(Bond | Unbond | Withdrawal | DustWithdrawal)>,
-                ]
-              >
-            ),
           )
         }).pipe(
           Effect.provide(Staking.Staking.DefaultWithoutDependencies),
@@ -291,7 +272,6 @@ const exchangeRate = $derived(pipe(
       {eUOnEvmBalance}
       {purchaseRate}
       {redemptionRate}
-      stakingHistory={stakingData}
     />
   </div>
 
@@ -367,7 +347,6 @@ const exchangeRate = $derived(pipe(
         {eUOnEvmBalance}
         {purchaseRate}
         {redemptionRate}
-        stakingHistory={stakingData}
       />
 
       <!-- Stats Grid -->
