@@ -52,7 +52,7 @@ let showInverseRate = $state(false)
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
     new Map([
-      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
+      ["GRAPHQL_ENDPOINT", "https://graphql.union.build/v1/graphql"],
     ]),
   ),
   Layer.setConfigProvider,
