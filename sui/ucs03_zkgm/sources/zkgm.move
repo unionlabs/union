@@ -74,6 +74,7 @@ module zkgm::zkgm {
     use ibc::packet::{Self, Packet};
 
     use vault::vault::{Vault, VaultCap};
+    use vault::vault;
 
     use zkgm::ack::{Self, Ack};
     use zkgm::batch;
@@ -1855,5 +1856,155 @@ module zkgm::zkgm {
         t.end();
     }
 
+    #[test]
+    fun test_send_flow_escrow_sui_single_tx() {
+        use std::string;
+        use std::ascii;
+        use std::type_name;
+        use sui::test_scenario;
+        use sui::clock;
+        use sui::clock::Clock;
+        use sui::coin;
+        use sui::bcs;
+
+        let mut t = test_scenario::begin(@0x0);
+
+        t.next_tx(@0x0);
+        ibc::init_for_tests(t.ctx());
+
+        t.next_tx(@0x0);
+        zkgm::zkgm::init(t.ctx());
+
+        t.next_tx(@0x0);
+        vault::init_for_tests(t.ctx());
+
+
+        let mut clk0 = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk0, 1_000);
+        clock::share_for_testing(clk0);
+        
+
+        t.next_tx(@0x0);
+        let mut ibc_store = t.take_shared<ibc::IBCStore>();
+        let mut zkgm_store = t.take_shared<RelayStore>();
+        let mut vault = t.take_shared<vault::Vault>();
+
+        // Clock to satisfy end_send timestamp > now
+        let mut clk = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk, /*millis=*/1_000);
+        clock::share_for_testing(clk);
+
+        ibc_store.create_client(
+            string::utf8(b"cometbls"),    
+            b"cs",                       
+            b"cons",                    
+            t.ctx()
+        );
+
+        ibc_store.connection_open_init(1, 2);
+        ibc_store.connection_open_ack(1, 9, b"p", 1);
+
+        let mut port = type_name::get<IbcAppWitness>().into_string();
+        port.append(ascii::string(b"::any"));
+        ibc_store.channel_open_init(
+            port.to_string(),
+            b"cp-port",
+            1,
+            string::utf8(b"ucs03-zkgm-0"),   
+            IbcAppWitness {}
+        );
+        ibc_store.channel_open_ack(
+            string::utf8(b"ignored-here"),
+            1,
+            string::utf8(b"ucs03-zkgm-0"),
+            1,
+            b"p",
+            1,
+            IbcAppWitness {}
+        );
+
+        let amount: u64 = 1_000;
+        let sui_coin = coin::mint_for_testing<sui::sui::SUI>(amount, t.ctx());
+
+        let sender = t.sender();
+        let receiver = t.sender();
+        let base_token = b"BASE";
+        let quote_token = std::type_name::get<sui::sui::SUI>().into_string().into_bytes();
+        let md = vector[
+            0u8,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,1,
+            2,3,4,5,6,7,8,9,
+            10,11,12,13,14,15,16,17
+        ];
+
+        let order = zkgm::token_order::new(
+            sui::bcs::to_bytes(&sender),
+            sui::bcs::to_bytes(&receiver),
+            base_token,
+            amount as u256,
+            quote_token,
+            0,
+            0x01,
+            x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31793035653070326a6376686a7a66376b63717372717839336434673375393368633268796b6171386872766b717270356c7472737361677a7964"
+        );
+        
+        let instr = zkgm::instruction::new(
+            INSTR_VERSION_2,
+            OP_TOKEN_ORDER,
+            order.encode()
+        );
+
+        let salt = b"SALT";
+        let mut send_ctx = zkgm::zkgm::begin_send(1, salt);
+        send_ctx = zkgm::zkgm::send_with_coin<sui::sui::SUI>(
+            &mut zkgm_store,
+            &mut vault,
+            &mut ibc_store,
+            sui_coin,
+            INSTR_VERSION_2,
+            OP_TOKEN_ORDER,
+            order.encode(),
+            send_ctx,
+            t.ctx()
+        );
+
+
+        let clk_ref = t.take_shared<Clock>();
+        let now_ns = clock::timestamp_ms(&clk_ref) * 1_000_000;
+        let timeout_ns = now_ns + 1_000_000_000;
+        zkgm::zkgm::end_send(
+            &mut ibc_store,
+            &clk_ref,
+            0,
+            timeout_ns,
+            send_ctx,
+            t.ctx()
+        );
+
+        
+        let key = string::from_ascii(type_name::get<sui::sui::SUI>().into_string());
+        assert!(zkgm_store.object_store.contains(key), 1);
+        let bag_coin: &Coin<sui::sui::SUI> = zkgm_store.object_store.borrow(key);
+        assert!(coin::value(bag_coin) == amount, 2);
+
+        let pair = ChannelBalancePair {
+            channel: 1,
+            path: 0,
+            token: base_token,
+            metadata_image: quote_token,
+        };
+        assert!(zkgm_store.channel_balance.contains(pair), 3);
+        let tracked: u256 = *zkgm_store.channel_balance.borrow(pair);
+        assert!(tracked == (amount as u256), 4);
+
+        
+        test_scenario::return_shared(clk_ref);
+        test_scenario::return_shared(ibc_store);
+        test_scenario::return_shared(zkgm_store);
+        test_scenario::return_shared(vault);
+
+        t.end();
+
+    }
 
 }
