@@ -11,6 +11,7 @@ import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { ConfigProvider, Effect, Layer, pipe } from "effect"
 import { graphql } from "gql.tada"
 import type { PageData } from "./$types"
+import * as AppRuntime from "$lib/runtime"
 
 interface Props {
   data: PageData
@@ -77,11 +78,9 @@ const withdrawalData = $derived(pipe(
 
     return withdrawals[0]
   }),
-  Effect.provide(Layer.mergeAll(
-    Indexer.Indexer.Default,
-    QlpConfigProvider,
-  )),
-  Effect.runPromise,
+  Effect.provide(Layer.fresh(Indexer.Indexer.Default)),
+  Effect.provide(QlpConfigProvider),
+  AppRuntime.runPromise,
 ))
 </script>
 
