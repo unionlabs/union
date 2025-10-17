@@ -111,6 +111,7 @@ impl Module {
                 |b| b.message.slot,
                 |b| b.message.slot,
                 |b| b.message.slot,
+                |b| b.message.slot,
             );
 
         trace!("beacon slot of exution block {block_number} is {beacon_slot}");
@@ -225,6 +226,7 @@ impl ClientBootstrapModuleServer for Module {
                     |_| todo!("capella not supported"),
                     |u| u.into(),
                     |u| u.into(),
+                    |u| u.into(),
                 )
         };
 
@@ -256,6 +258,7 @@ impl ClientBootstrapModuleServer for Module {
                 |l| match l {},
                 |_| todo!("altair not supported"),
                 |_| todo!("bellatrix not supported"),
+                |l| l.current_sync_committee,
                 |l| l.current_sync_committee,
                 |l| l.current_sync_committee,
                 |l| l.current_sync_committee,
@@ -326,6 +329,7 @@ impl ClientBootstrapModuleServer for Module {
                 |_| todo!("altair not supported"),
                 |_| todo!("bellatrix not supported"),
                 |_| todo!("capella not supported"),
+                |l| l.header.into(),
                 |l| l.header.into(),
                 |l| l.header.into(),
             );

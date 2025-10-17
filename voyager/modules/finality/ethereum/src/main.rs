@@ -81,6 +81,7 @@ impl Module {
                             |f| Some(f.finalized_header.execution.timestamp),
                             |f| Some(f.finalized_header.execution.timestamp),
                             |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
                         ) else {
                             return put().await;
                         };
@@ -149,6 +150,12 @@ impl Module {
                         f.finalized_header.execution.timestamp,
                     )
                 },
+                |f| {
+                    (
+                        f.finalized_header.execution.block_number,
+                        f.finalized_header.execution.timestamp,
+                    )
+                },
             ))
     }
 
@@ -192,6 +199,7 @@ impl Module {
             })?
             .response
             .fold(
+                |b| b.message.slot,
                 |b| b.message.slot,
                 |b| b.message.slot,
                 |b| b.message.slot,

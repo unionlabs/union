@@ -181,6 +181,7 @@ fn client_impl<T: IbcClient>(
     Ok(addr)
 }
 
+#[derive(Debug)]
 pub struct StateUpdate<T: IbcClient> {
     pub height: u64,
     pub client_state: Option<T::ClientState>,

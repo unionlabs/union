@@ -1,4 +1,4 @@
-use beacon_api_types::{bellatrix, capella, deneb, electra, phase0};
+use beacon_api_types::{bellatrix, capella, deneb, electra, fulu, phase0};
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 use unionlabs::{ErrorReporter, primitives::H256};
@@ -31,6 +31,7 @@ impl VersionedResponseTypes for BeaconBlockResponseTypes {
     type Capella = capella::SignedBeaconBlock;
     type Deneb = deneb::SignedBeaconBlock;
     type Electra = electra::SignedBeaconBlock;
+    type Fulu = fulu::SignedBeaconBlock;
 }
 
 #[derive(Deserialize)]
@@ -88,10 +89,18 @@ impl<'a> TryFrom<BeaconBlockResponseRaw<'a>> for BeaconBlockResponse {
                         .map_err(|e| ErrorReporter(e).to_string())?,
                 ),
             },
-            Some("electra") | None => Self {
+            Some("electra") => Self {
                 execution_optimistic: value.execution_optimistic,
                 finalized: value.finalized,
                 response: VersionedResponse::Electra(
+                    serde_json::from_str(value.data.get())
+                        .map_err(|e| ErrorReporter(e).to_string())?,
+                ),
+            },
+            Some("fulu") | None => Self {
+                execution_optimistic: value.execution_optimistic,
+                finalized: value.finalized,
+                response: VersionedResponse::Fulu(
                     serde_json::from_str(value.data.get())
                         .map_err(|e| ErrorReporter(e).to_string())?,
                 ),

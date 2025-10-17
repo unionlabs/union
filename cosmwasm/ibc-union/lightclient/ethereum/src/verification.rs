@@ -27,7 +27,9 @@ impl BlsVerify for VerificationContext<'_> {
             .api
             .bls12_381_aggregate_g1(&pubkeys)
             .map_err(|e| {
-                ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
+                ethereum_sync_protocol::error::Error::ClientSignatureVerification(format!(
+                    "bls12_381_aggregate_g1: {e}"
+                ))
             })?;
 
         let hashed_msg = self
@@ -35,7 +37,9 @@ impl BlsVerify for VerificationContext<'_> {
             .api
             .bls12_381_hash_to_g2(HashFunction::Sha256, &msg, DST_POP_G2)
             .map_err(|e| {
-                ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
+                ethereum_sync_protocol::error::Error::ClientSignatureVerification(format!(
+                    "bls12_381_hash_to_g2: {e}"
+                ))
             })?;
 
         let valid = self
@@ -48,7 +52,9 @@ impl BlsVerify for VerificationContext<'_> {
                 &hashed_msg,
             )
             .map_err(|e| {
-                ethereum_sync_protocol::error::Error::ClientSignatureVerification(e.to_string())
+                ethereum_sync_protocol::error::Error::ClientSignatureVerification(format!(
+                    "bls12_381_pairing_equality: {e}"
+                ))
             })?;
 
         if valid {

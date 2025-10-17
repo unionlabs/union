@@ -306,6 +306,7 @@ impl Module {
             |b| b.message.slot,
             |b| b.message.slot,
             |b| b.message.slot,
+            |b| b.message.slot,
         ))
     }
 
@@ -356,6 +357,13 @@ impl Module {
                 |_| todo!("altair is not supported"),
                 |_| todo!("bellatrix is not supported"),
                 |_| todo!("capella is not supported"),
+                |f| LightClientUpdateData {
+                    attested_header: f.attested_header.into(),
+                    finalized_header: f.finalized_header.into(),
+                    finality_branch: f.finality_branch.to_vec(),
+                    sync_aggregate: f.sync_aggregate,
+                    signature_slot: f.signature_slot,
+                },
                 |f| LightClientUpdateData {
                     attested_header: f.attested_header.into(),
                     finalized_header: f.finalized_header.into(),
@@ -461,6 +469,7 @@ impl Module {
                         |_| todo!("altair is not supported"),
                         |_| todo!("bellatrix is not supported"),
                         |_| todo!("capella is not supported"),
+                        |u| u.into(),
                         |u| u.into(),
                         |u| u.into(),
                     )

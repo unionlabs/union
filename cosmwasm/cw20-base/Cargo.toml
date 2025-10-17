@@ -31,7 +31,7 @@ serde           = { workspace = true }
 thiserror       = { workspace = true }
 
 [dev-dependencies]
-cw-multi-test = "2.4.0"
+cw-multi-test = "=2.4.0"
 cw-utils      = { workspace = true }
 
 [[bin]]

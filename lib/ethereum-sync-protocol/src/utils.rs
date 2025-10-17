@@ -18,7 +18,11 @@ use crate::{GENESIS_SLOT, error::InvalidMerkleBranch};
 pub fn compute_fork_version(chain_id: u64, epoch: Epoch) -> Version {
     let fs = ForkSchedule::for_chain_id(chain_id);
 
-    if let Some(fork) = fs.fork(Forks::Electra)
+    if let Some(fork) = fs.fork(Forks::Fulu)
+        && epoch >= fork.epoch
+    {
+        fork.current_version
+    } else if let Some(fork) = fs.fork(Forks::Electra)
         && epoch >= fork.epoch
     {
         fork.current_version
@@ -26,15 +30,15 @@ pub fn compute_fork_version(chain_id: u64, epoch: Epoch) -> Version {
         && epoch >= fork.epoch
     {
         fork.current_version
-    } else if let Some(fork) = fs.fork(Forks::Deneb)
+    } else if let Some(fork) = fs.fork(Forks::Capella)
         && epoch >= fork.epoch
     {
         fork.current_version
-    } else if let Some(fork) = fs.fork(Forks::Deneb)
+    } else if let Some(fork) = fs.fork(Forks::Bellatrix)
         && epoch >= fork.epoch
     {
         fork.current_version
-    } else if let Some(fork) = fs.fork(Forks::Deneb)
+    } else if let Some(fork) = fs.fork(Forks::Altair)
         && epoch >= fork.epoch
     {
         fork.current_version

@@ -34,6 +34,7 @@ use crate::{
     errors::Error, inverse_sync_committee::InverseSyncCommittee, verification::VerificationContext,
 };
 
+#[derive(Debug)]
 pub enum EthereumLightClient {}
 
 impl IbcClient for EthereumLightClient {

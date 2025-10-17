@@ -906,8 +906,8 @@
       "ethereum": {
         "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
         "height": 354890,
-        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
-        "code_id": 58
+        "commit": "d716d8c2a5f47f30d63c65b408677b1682ab040b",
+        "code_id": 265
       },
       "ethermint": {
         "address": "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh",
@@ -930,8 +930,8 @@
       "sui": {
         "address": "union1zvlmhucarsrul3jv0tf7hfzcrgdlqgdkzyyzcvf84fsvxvjrnyhq90s2wt",
         "height": 3397571,
-        "commit": "9043ad10ddba73db3bdaae96f16a81ce24e9a0e5",
-        "code_id": 261
+        "commit": "9ed4d0b9c5d3c93e2875c282fd756ed3688e8f17",
+        "code_id": 266
       },
       "tendermint": {
         "address": "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju",

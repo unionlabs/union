@@ -58,7 +58,8 @@ let
     "--no-default-features --lib ${
       if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""
     }";
-  rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion -Zlocation-detail=none";
+  # TODO: Add back -C opt-level=z once https://github.com/CosmWasm/cosmwasm/issues/2557 is resolved
+  rustflags = "-C link-arg=-s -C target-cpu=mvp -C passes=adce,loop-deletion -Zlocation-detail=none";
 in
 crateDirFromRoot:
 {

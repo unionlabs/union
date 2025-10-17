@@ -1,5 +1,5 @@
 use beacon_api_types::custom_types::Slot;
-use cosmwasm_std::{StdError, VerificationError};
+use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::primitives::{H256, U256};
 
@@ -45,24 +45,8 @@ pub enum Error {
     #[error("invalid commitment key, expected ({expected:#x}) but found ({found:#x})")]
     InvalidCommitmentKey { expected: U256, found: U256 },
 
-    // REVIEW: Unused?
-    #[error(
-        "client state's latest slot ({client_state_latest_slot}) \
-        expected to be equal to consensus state's slot ({consensus_state_slot})"
-    )]
-    InvalidInitialState {
-        client_state_latest_slot: u64,
-        consensus_state_slot: u64,
-    },
-
     #[error("the misbehaviour headers must be different")]
     IdenticalMisbehaviourHeaders,
-
-    #[error("aggregate pubkey mismatch")]
-    AggregatePubkeyMismatch,
-
-    #[error(transparent)]
-    VerificationError(#[from] VerificationError),
 
     #[error("the initial sync committee must be provided during client creation")]
     NoInitialSyncCommittee,
