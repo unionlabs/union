@@ -190,3 +190,111 @@ export class Unbond extends S.TaggedClass<Unbond>("Unbond")("Unbond", {
     )
   }
 }
+
+export class Withdrawal extends S.TaggedClass<Withdrawal>("Withdrawal")("Withdrawal", {
+  packet_hash: PacketHash,
+  packet_shape: S.String,
+  source_universal_chain_id: UniversalChainId,
+  destination_universal_chain_id: UniversalChainId,
+  staker_canonical: S.String,
+  staker_display: S.String,
+  staker_zkgm: S.String,
+  quote_token: TokenRawDenom,
+  quote_amount: S.BigInt,
+  withdraw_send_timestamp: S.DateTimeUtc,
+  withdraw_send_transaction_hash: TransactionHash,
+  withdraw_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  withdraw_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+  withdraw_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  withdraw_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
+  sort_order: S.String,
+  source_chain: Chain,
+  destination_chain: Chain,
+  quote_token_meta: Token,
+}) {
+  get sortDate() {
+    return this.withdraw_send_timestamp
+  }
+  get amountFormatted() {
+    return pipe(
+      this.quote_amount,
+      BigDecimal.fromBigInt,
+      BigDecimal.unsafeDivide(BigDecimal.make(1n, -O.getOrThrow(this.quote_token_meta.decimals))),
+      Utils.formatBigDecimal,
+    )
+  }
+  get sendTimestampFormatted() {
+    return pipe(
+      this.withdraw_send_timestamp,
+      DateTime.formatIso,
+    )
+  }
+}
+
+export class DustWithdrawal
+  extends S.TaggedClass<DustWithdrawal>("DustWithdrawal")("DustWithdrawal", {
+    packet_hash: PacketHash,
+    delivery_packet_hash: S.OptionFromNullOr(PacketHash),
+    dust_withdraw_success: S.OptionFromNullOr(S.Boolean),
+    delivery_success: S.OptionFromNullOr(S.Boolean),
+    packet_shape: S.String,
+    source_universal_chain_id: UniversalChainId,
+    destination_universal_chain_id: UniversalChainId,
+    staker_canonical: S.String,
+    staker_display: S.String,
+    staker_zkgm: S.String,
+    quote_token: TokenRawDenom,
+    quote_amount: S.BigInt,
+    dust_withdraw_send_timestamp: S.DateTimeUtc,
+    dust_withdraw_send_transaction_hash: TransactionHash,
+    dust_withdraw_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    dust_withdraw_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    dust_withdraw_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    dust_withdraw_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    delivery_send_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    delivery_send_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    delivery_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    delivery_recv_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    delivery_timeout_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+    delivery_timeout_transaction_hash: S.OptionFromNullOr(TransactionHash),
+    sort_order: S.String,
+    source_chain: Chain,
+    destination_chain: Chain,
+    quote_token_meta: Token,
+  })
+{
+  get sortDate() {
+    return this.dust_withdraw_send_timestamp
+  }
+  get amountFormatted() {
+    return pipe(
+      this.quote_amount,
+      BigDecimal.fromBigInt,
+      BigDecimal.unsafeDivide(BigDecimal.make(1n, -O.getOrThrow(this.quote_token_meta.decimals))),
+      Utils.formatBigDecimal,
+    )
+  }
+  get sendTimestampFormatted() {
+    return pipe(
+      this.dust_withdraw_send_timestamp,
+      DateTime.formatIso,
+    )
+  }
+  get status() {
+    return pipe(
+      { dustWithdraw: this.dust_withdraw_success, delivery: this.delivery_success },
+      ({ dustWithdraw, delivery }) => {
+        if (O.isSome(dustWithdraw) && !dustWithdraw.value) {
+          return "failure" as const
+        }
+        if (O.isSome(delivery) && !delivery.value) {
+          return "failure" as const
+        }
+        if (O.isSome(dustWithdraw) && dustWithdraw.value && O.isSome(delivery) && delivery.value) {
+          return "success" as const
+        }
+        return "pending" as const
+      },
+    )
+  }
+}

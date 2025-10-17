@@ -23,7 +23,7 @@ import { Staking, Ucs05, Utils } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { EU_ERC20, EU_LST, EU_STAKING_HUB, U_ERC20 } from "@unionlabs/sdk/Constants"
 import { Indexer } from "@unionlabs/sdk/Indexer"
-import { Bond, Unbond } from "@unionlabs/sdk/schema/stake"
+import { Bond, DustWithdrawal, Unbond, Withdrawal } from "@unionlabs/sdk/schema/stake"
 import {
   BigDecimal,
   Brand,
@@ -43,7 +43,7 @@ import * as O from "effect/Option"
 import { onMount } from "svelte"
 
 type StakeTab = "bond" | "unbond" | "withdraw" | "instant-exit"
-type TableFilter = "all" | "bond" | "unbond"
+type TableFilter = "all" | "bond" | "unbond" | "withdrawal"
 
 const EVM_UNIVERSAL_CHAIN_ID = ETHEREUM_CHAIN_ID
 
@@ -52,7 +52,7 @@ let showInverseRate = $state(false)
 const QlpConfigProvider = pipe(
   ConfigProvider.fromMap(
     new Map([
-      ["GRAPHQL_ENDPOINT", "https://graphql.union.build/v1/graphql"],
+      ["GRAPHQL_ENDPOINT", "https://development.graphql.union.build/v1/graphql"],
     ]),
   ),
   Layer.setConfigProvider,
@@ -78,8 +78,9 @@ const refreshStakingData = () => {
   }, 1000)
 }
 
-// State to hold the latest staking data
-let stakingData = $state<O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>>(O.none())
+let stakingData = $state<O.Option<readonly (Bond | Unbond | Withdrawal | DustWithdrawal)[]>>(
+  O.none(),
+)
 
 // Start the polling effect that updates stakingData
 AppRuntime.runPromiseExit$(() => {
@@ -96,18 +97,31 @@ AppRuntime.runPromiseExit$(() => {
             Effect.all([
               staking.getBonds(Staking.GetBonds.make({ addresses: [address] })),
               staking.getUnbonds(Staking.GetUnbonds.make({ addresses: [address] })),
+              pipe(
+                staking.getWithdrawals(Staking.GetWithdrawals.make({ addresses: [address] })),
+                Effect.catchAll(() => Effect.succeed(O.none())),
+              ),
+              pipe(
+                staking.getDustWithdrawals(
+                  Staking.GetDustWithdrawals.make({ addresses: [address] }),
+                ),
+                Effect.catchAll(() => Effect.succeed(O.none())),
+              ),
             ], { concurrency: "unbounded" }),
-            Effect.map(A.getSomes),
-            Effect.map(A.flatten),
+            Effect.map(([bonds, unbonds, withdrawals, dustWithdrawals]) => [
+              ...O.getOrElse(bonds, () => []),
+              ...O.getOrElse(unbonds, () => []),
+              ...O.getOrElse(withdrawals, () => []),
+              ...O.getOrElse(dustWithdrawals, () => []),
+            ]),
             Effect.map(A.sort(pipe(
-              Order.mapInput<Date, Bond | Unbond>(
+              Order.mapInput<Date, Bond | Unbond | Withdrawal | DustWithdrawal>(
                 Order.Date,
                 (x) => DateTime.toDate(x.sortDate),
               ),
               Order.reverse,
             ))),
             Effect.map(O.liftPredicate(A.isNonEmptyReadonlyArray)),
-            Effect.map(x => x as O.Option<readonly [(Bond | Unbond), ...Array<(Bond | Unbond)>]>),
           )
         }).pipe(
           Effect.provide(Staking.Staking.DefaultWithoutDependencies),
@@ -260,7 +274,6 @@ const exchangeRate = $derived(pipe(
       {eUOnEvmBalance}
       {purchaseRate}
       {redemptionRate}
-      stakingHistory={stakingData}
     />
   </div>
 
@@ -336,7 +349,6 @@ const exchangeRate = $derived(pipe(
         {eUOnEvmBalance}
         {purchaseRate}
         {redemptionRate}
-        stakingHistory={stakingData}
       />
 
       <!-- Stats Grid -->

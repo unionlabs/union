@@ -24,7 +24,6 @@ interface Props {
   eUOnEvmBalance: O.Option<bigint>
   purchaseRate: O.Option<BigDecimal.BigDecimal>
   redemptionRate: O.Option<BigDecimal.BigDecimal>
-  stakingHistory?: O.Option<Array.NonEmptyReadonlyArray<any>>
 }
 
 let {
@@ -35,7 +34,6 @@ let {
   eUOnEvmBalance,
   purchaseRate,
   redemptionRate,
-  stakingHistory = O.none(),
 }: Props = $props()
 
 // Calculate eU value of U balance

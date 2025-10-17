@@ -11,19 +11,10 @@ import * as AppRuntime from "$lib/runtime"
 import { Indexer } from "@unionlabs/sdk"
 import { PacketHash, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { ConfigProvider, Effect, Layer, pipe } from "effect"
-import * as O from "effect/Option"
 import { graphql } from "gql.tada"
 
 // TODO: enforce param presence at type level
 const packetHash = $derived(PacketHash.make(page.params.packet_hash!))
-
-const QlpConfigProvider = Layer.setConfigProvider(
-  ConfigProvider.fromMap(
-    new Map([
-      ["GRAPHQL_ENDPOINT", "https://graphql.union.build/v1/graphql"],
-    ]),
-  ),
-)
 
 const bondData = $derived(pipe(
   Effect.gen(function*() {
@@ -93,9 +84,8 @@ const bondData = $derived(pipe(
 
     return bonds[0]
   }),
-  Effect.provide(Indexer.Indexer.Default),
-  Effect.provide(QlpConfigProvider),
-  Effect.runPromise,
+  Effect.provide(Layer.fresh(Indexer.Indexer.Default)),
+  AppRuntime.runPromise,
 ))
 </script>
 
