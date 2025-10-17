@@ -4,29 +4,17 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import * as AppRuntime from "$lib/runtime"
-import { chains } from "$lib/stores/chains.svelte"
 import { Indexer } from "@unionlabs/sdk"
 import { PacketHash, TokenRawAmount } from "@unionlabs/sdk/schema"
-import { ConfigProvider, Effect, Layer, Option, pipe } from "effect"
-import * as O from "effect/Option"
+import { ConfigProvider, Effect, Layer, pipe } from "effect"
 import { graphql } from "gql.tada"
 
 // TODO: enforce param presence at type level
 const packetHash = $derived(PacketHash.make(page.params.packet_hash!))
-
-// GraphQL config for development endpoint
-const QlpConfigProvider = Layer.setConfigProvider(
-  ConfigProvider.fromMap(
-    new Map([
-      ["GRAPHQL_ENDPOINT", "https://graphql.union.build/v1/graphql"],
-    ]),
-  ),
-)
 
 const unbondData = $derived(pipe(
   Effect.gen(function*() {
@@ -78,11 +66,8 @@ const unbondData = $derived(pipe(
 
     return unbonds[0]
   }),
-  Effect.provide(Layer.mergeAll(
-    Indexer.Indexer.Default,
-    QlpConfigProvider,
-  )),
-  Effect.runPromise,
+  Effect.provide(Indexer.Indexer.Default),
+  AppRuntime.runPromise,
 ))
 </script>
 
