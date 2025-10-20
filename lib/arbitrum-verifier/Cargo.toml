@@ -15,7 +15,7 @@ workspace = true
 # test-include = ["lib/arbitrum-verifier/tests"]
 
 [dependencies]
-arbitrum-light-client-types = { workspace = true }
+arbitrum-light-client-types = { workspace = true, features = ["ethabi"] }
 arbitrum-types              = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 rlp                         = { workspace = true }
@@ -25,6 +25,8 @@ unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 arbitrum-light-client-types = { workspace = true, features = ["serde", "bincode"] }
+ethereum-light-client-types = { workspace = true, features = ["serde", "bincode"] }
 hex-literal                 = { workspace = true }
+ibc-union-spec              = { workspace = true }
 serde_json                  = { workspace = true }
 unionlabs                   = { workspace = true, features = ["bincode"] }

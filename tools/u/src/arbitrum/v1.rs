@@ -1,5 +1,5 @@
 use alloy::{network::AnyNetwork, providers::ProviderBuilder};
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use arbitrum_client::v1::{finalized_l2_block_of_l1_height, next_node_num_at_l1_height};
 use clap::Subcommand;
 use unionlabs::primitives::H160;

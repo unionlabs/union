@@ -32,7 +32,10 @@ pub struct HeaderV1 {
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct HeaderV2 {
     pub l1_height: Height,
+
+    /// Proof of the `l1_contract_address` in the state root of the L1.
     pub l1_account_proof: AccountProof,
+
     pub l2_ibc_account_proof: AccountProof,
 
     pub parent_assertion_hash: H256,

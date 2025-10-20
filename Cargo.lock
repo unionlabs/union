@@ -1156,6 +1156,7 @@ dependencies = [
  "ibc-union-spec",
  "rlp",
  "serde",
+ "serde-utils",
  "sha3",
  "unionlabs",
 ]
@@ -1177,8 +1178,10 @@ version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
  "arbitrum-types",
+ "ethereum-light-client-types",
  "evm-storage-verifier",
  "hex-literal 0.4.1",
+ "ibc-union-spec",
  "rlp",
  "serde_json",
  "sha3",
@@ -15213,6 +15216,7 @@ dependencies = [
  "anyhow",
  "arbitrum-client",
  "arbitrum-light-client-types",
+ "arbitrum-types",
  "base64 0.22.1",
  "bcs",
  "bech32 0.11.0",

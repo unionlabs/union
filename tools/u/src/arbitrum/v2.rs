@@ -4,7 +4,7 @@ use arbitrum_client::v2::{
     assertion_created_event_at_l1_block_height, finalized_l2_block_of_l1_height,
 };
 use clap::Subcommand;
-use unionlabs::primitives::H160;
+use unionlabs::primitives::{H160, H256};
 
 use crate::print_json;
 
@@ -27,6 +27,9 @@ pub enum Cmd {
         l1_contract_address: H160,
         #[arg(long)]
         l1_height: u64,
+    },
+    AssertionsSlot {
+        assertion_hash: H256,
     },
 }
 
@@ -67,6 +70,11 @@ impl Cmd {
                 .map_err(anyhow::Error::from_boxed)?;
 
                 print_json(&l2_block);
+            }
+            Cmd::AssertionsSlot { assertion_hash } => {
+                print_json(&arbitrum_types::v2::rollup_core_assertions_slot(
+                    assertion_hash,
+                ));
             }
         }
 

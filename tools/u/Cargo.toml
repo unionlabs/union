@@ -15,6 +15,7 @@ workspace = true
 alloy              = { workspace = true, features = ["default", "contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 anyhow             = { workspace = true }
 arbitrum-client    = { workspace = true }
+arbitrum-types     = { workspace = true }
 base64             = { workspace = true }
 bcs                = { workspace = true }
 bech32             = "0.11.0"
