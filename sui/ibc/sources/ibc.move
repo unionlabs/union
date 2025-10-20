@@ -65,9 +65,6 @@ module ibc::ibc {
     use sui::hash::keccak256;
     use sui::clock;
     use sui::clock::Clock;
-    #[test_only]
-    use sui::test_scenario;
-
     use ibc::packet::{Self, Packet};
     use ibc::connection_end::{Self, ConnectionEnd};
     use ibc::channel::{Self, Channel}; 
@@ -764,7 +761,6 @@ module ibc::ibc {
     /// The name MUST be `IbcAppWitness`.
     public fun channel_open_ack<T: drop>(
         ibc_store: &mut IBCStore,
-        _port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -1599,6 +1595,13 @@ module ibc::ibc {
     const TEST_LATEST_HEIGHT: u64 = 10_000;
 
     #[test_only]
+    use sui::test_scenario;
+
+    #[test_only]
+    use std::string;
+
+
+    #[test_only]
     fun open_channel_for_tests(t: &mut test_scenario::Scenario) {
         t.next_tx(@0x0);
         let mut ibc_store = t.take_shared<IBCStore>();
@@ -1619,7 +1622,6 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
             1,
             string::utf8(b"v1-cp"),
             1,
@@ -1705,7 +1707,7 @@ module ibc::ibc {
         assert!(connection.counterparty_client_id() == counterparty_client_id, E_CONNECTION_NOT_FOUND);
 
         let key = commitment::connection_commitment_key(connection_id);
-        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(ibc_store.commitments.contains(key), 1);
 
         assert!(ibc_store.next_connection_sequence == 2, 1);
 
@@ -1743,8 +1745,8 @@ module ibc::ibc {
 
         let k1 = commitment::connection_commitment_key(1);
         let k2 = commitment::connection_commitment_key(2);
-        assert!(ibc_store.commitments.contains(k1), E_CONNECTION_DOES_NOT_EXIST);
-        assert!(ibc_store.commitments.contains(k2), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(ibc_store.commitments.contains(k1), 1);
+        assert!(ibc_store.commitments.contains(k2), 1);
 
         assert!(ibc_store.next_connection_sequence == 3, 1);
 
@@ -1776,7 +1778,7 @@ module ibc::ibc {
         assert!(c.counterparty_connection_id() == 11, 1);
 
         let key = commitment::connection_commitment_key(connection_id);
-        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(ibc_store.commitments.contains(key), 1);
         assert!(ibc_store.next_connection_sequence == 2, 1);
 
         test_scenario::return_shared(ibc_store);
@@ -1808,7 +1810,7 @@ module ibc::ibc {
         assert!(c.counterparty_connection_id() == 9, 1);
 
         let key = commitment::connection_commitment_key(1);
-        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(ibc_store.commitments.contains(key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -1838,7 +1840,7 @@ module ibc::ibc {
         assert!(c.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
 
         let key = commitment::connection_commitment_key(1);
-        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(ibc_store.commitments.contains(key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -1949,7 +1951,6 @@ module ibc::ibc {
 
         test_case.next_tx(@0x0);
         ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
             1,
             string::utf8(b"v1-cp"),
             22,
@@ -2247,7 +2248,6 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         ibc_store.channel_open_ack(
-            string::utf8(b"ignored"),
             1,
             string::utf8(b"v1-cp"),
             22,
@@ -2316,7 +2316,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2355,7 +2355,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2394,7 +2394,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2433,7 +2433,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2473,7 +2473,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2512,7 +2512,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
@@ -2551,7 +2551,7 @@ module ibc::ibc {
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
-        ibc_store.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc_store.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let pkt = packet::new(1, 1, b"x", 0, 999999999999);
@@ -2622,7 +2622,6 @@ module ibc::ibc {
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
         ibc.channel_open_ack(
-            string::utf8(b"ignored"),
             1,
             string::utf8(b"v1-cp"),
             1,
@@ -2673,7 +2672,6 @@ module ibc::ibc {
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
         ibc.channel_open_ack(
-            string::utf8(b"ignored"),
             1,
             string::utf8(b"v1-cp"),
             1,
@@ -2851,7 +2849,7 @@ module ibc::ibc {
         let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
-        ibc.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
 
         t.next_tx(@0x0);
         let pkt = packet::new(1, 1, b"z", 0, 1);
@@ -2890,7 +2888,7 @@ module ibc::ibc {
         let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
-        ibc.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
+        ibc.channel_open_ack(1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
         t.next_tx(@0x0);
         let clk = t.take_shared<Clock>();
         let now_ns = clock::timestamp_ms(&clk) * 1_000_000;

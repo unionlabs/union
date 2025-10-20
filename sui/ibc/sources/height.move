@@ -118,6 +118,8 @@ module ibc::height {
         }
     }
 
+    #[test_only]
+    use sui::bcs;
 
     #[test]
     fun test_new_and_getters_ok() {
