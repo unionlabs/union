@@ -417,7 +417,7 @@ impl ClientT for ClientInner {
     }
 }
 
-// These tests are useful in testing and debugging, but should not be run in CI
+// // These tests are useful in testing and debugging, but should not be run in CI
 // #[cfg(test)]
 // mod live_tests {
 //     use hex_literal::hex;
@@ -434,32 +434,35 @@ impl ClientT for ClientInner {
 
 //     #[tokio::test]
 //     async fn commit() {
-//         let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new("https://berachain-beacon-rpc.publicnode.com")
+//             .await
+//             .unwrap();
 
-//         let result = client.commit(Some(1.try_into().unwrap())).await;
+//         // 3805040
 
-//         dbg!(result);
+//         for block in (1..=3805039).rev() {
+//             let result = client
+//                 .commit(Some(block.try_into().unwrap()))
+//                 .await
+//                 .unwrap();
+
+//             dbg!(block, result.signed_header.commit.signatures.len());
+
+//             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+//         }
 //     }
 
 //     #[tokio::test]
 //     async fn abci_query() {
 //         // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new("https://rpc.pacific-1.sei.io").await.unwrap();
+//         let client = Client::new(TEST_URL).await.unwrap();
 
 //         let result = client
 //             .abci_query(
-//                 "store/evm/key",
-//                 &[
-//                     [0x03].as_slice(),
-//                     &hex!("4a4d9abD36F923cBA0Af62A39C01dEC2944fb638"),
-//                     &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
-//                 ]
-//                 .into_iter()
-//                 .flatten()
-//                 .copied()
-//                 .collect::<Vec<_>>(),
-//                 Some(142070066.try_into().unwrap()),
+//                 "store/beacon/key",
+//                 &[0x11],
+//                 Some(3358.try_into().unwrap()),
 //                 true,
 //             )
 //             .await;

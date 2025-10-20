@@ -1,3 +1,5 @@
+#![feature(trait_alias)]
+
 pub mod abci;
 pub mod crypto;
 pub mod p2p;

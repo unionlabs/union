@@ -1,7 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
 use unionlabs::ibc::core::client::height::Height;
-use voyager_sdk::primitives::ChainId;
 
 #[model]
 #[derive(Enumorph)]
@@ -11,7 +10,6 @@ pub enum ModuleCall {
 
 #[model]
 pub struct FetchUpdate {
-    pub counterparty_chain_id: ChainId,
     pub update_from: Height,
     pub update_to: Height,
 }
