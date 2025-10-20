@@ -48,6 +48,7 @@
     "@unionlabs/sdk": "workspace:*",
     "@unionlabs/sdk-cosmos": "workspace:*",
     "@unionlabs/sdk-evm": "workspace:*",
+    "@unionlabs/sdk-sui": "workspace:*",
     "@wagmi/connectors": "^5.7.12",
     "@wagmi/core": "^2.16.7",
     "clsx": "^2.1.1",

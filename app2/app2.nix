@@ -35,6 +35,7 @@ _: {
             ../ts-sdk
             ../ts-sdk-evm
             ../ts-sdk-cosmos
+            ../ts-sdk-sui
           ];
           hash = "sha256-VkzzXZr7WNTSE8pBOcLLd9vZThjFqsSJaEKwb7bi4PY=";
           buildInputs = deps;
@@ -44,6 +45,7 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-evm"
             "@unionlabs/sdk-cosmos"
+            "@unionlabs/sdk-sui"
           ];
           buildPhase = ''
             runHook preBuild

@@ -12,6 +12,9 @@
       "path": "../ts-sdk-cosmos"
     },
     {
+      "path": "../ts-sdk-sui"
+    },
+    {
       "path": "tsconfig.examples.json"
     }
   ],
