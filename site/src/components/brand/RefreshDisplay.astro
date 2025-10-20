@@ -4,13 +4,12 @@ interface Props {
 }
 
 const { class: className = "" } = Astro.props
-const brandKitLink = "https://drive.google.com/drive/folders/1KLOuxQi9nhqzeram8Ay3_sGPn97Q0XRj?usp=drive_link"
+const brandKitLink =
+  "https://drive.google.com/drive/folders/1KLOuxQi9nhqzeram8Ay3_sGPn97Q0XRj?usp=drive_link"
 ---
 
 <div class="flex flex-col gap-4">
-  <div
-    class={`w-full h-72 bg-[#FF6F00] flex flex-col items-center justify-center border border-gray-200 p-8 relative overflow-hidden ${className}`}
-  >
+  <div class={`w-full h-72 bg-[#FF6F00] flex flex-col items-center justify-center border border-gray-200 p-8 relative overflow-hidden ${className}`}>
     <img
       src="/pattern-refresh.svg"
       alt="Pattern overlay"
@@ -21,7 +20,8 @@ const brandKitLink = "https://drive.google.com/drive/folders/1KLOuxQi9nhqzeram8A
         Union Is Evolving.
       </h2>
       <p class="text-black text-sm md:text-base font-geist">
-        The Union website and brand is being updated, follow the provided link for the new Brand Assets.
+        The Union website and brand is being updated, follow the provided link for the new Brand
+        Assets.
       </p>
       <a
         href={brandKitLink}
@@ -33,5 +33,4 @@ const brandKitLink = "https://drive.google.com/drive/folders/1KLOuxQi9nhqzeram8A
       </a>
     </div>
   </div>
-
 </div>
