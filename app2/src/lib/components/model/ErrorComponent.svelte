@@ -28,6 +28,7 @@ import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ZkgmClientError } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm, Safe } from "@unionlabs/sdk-evm"
+import { Sui } from "@unionlabs/sdk-sui"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   CreateViemPublicClientError,
@@ -67,6 +68,8 @@ interface Props {
     | Cosmos.ClientError
     | Evm.CreatePublicClientError
     | Evm.CreateWalletClientError
+    | Sui.CreatePublicClientError
+    | Sui.CreateWalletClientError
     | ZkgmClientError.RequestError
     | ZkgmClientError.ResponseError
     | CreateWalletClientError

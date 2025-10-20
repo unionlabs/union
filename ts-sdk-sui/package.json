@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/sdk-sui",
-  "version": "0.0.0",
+  "version": "0.0.0-beta.0",
   "type": "module",
   "license": "MIT",
   "author": "@unionlabs",
