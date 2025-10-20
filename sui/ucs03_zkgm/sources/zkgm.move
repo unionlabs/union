@@ -1932,64 +1932,10 @@ module zkgm::zkgm {
         use sui::bcs;
 
         let mut t = test_scenario::begin(@0x0);
-        init_for_tests(t.ctx());
-
-        t.next_tx(@0x0);
-        ibc::init_for_tests(t.ctx());
-        owned_vault::init_for_tests(t.ctx());
-        escrow_vault::init_for_tests(t.ctx());
-
-        let mut clk0 = clock::create_for_testing(t.ctx());
-        clock::increment_for_testing(&mut clk0, 1_000);
-        clock::share_for_testing(clk0);
-        
-
-        t.next_tx(@0x0);
-        let mut ibc_store = t.take_shared<ibc::IBCStore>();
-        let mut zkgm_store = t.take_shared<RelayStore>();
-        let mut vault = t.take_shared<owned_vault::OwnedVault>();
-
-        let owned_vault_cap = test_scenario::take_from_sender<owned_vault::ZkgmCap>(&t);
-        let escrow_vault_cap = test_scenario::take_from_sender<escrow_vault::ZkgmCap>(&t);
-        t.next_tx(@0x0);
-        zkgm_store.register_owned_vault_cap(owned_vault_cap);
-        zkgm_store.register_escrow_vault_cap(escrow_vault_cap);
-        t.next_tx(@0x0);
-
-        
-        let mut clk = clock::create_for_testing(t.ctx());
-        clock::increment_for_testing(&mut clk, 1_000);
-        clock::share_for_testing(clk);
-
-        ibc_store.create_client(
-            string::utf8(b"cometbls"),    
-            b"cs",                       
-            b"cons",                    
-            t.ctx()
-        );
-
-        ibc_store.connection_open_init(1, 2);
-        ibc_store.connection_open_ack(1, 9, b"p", 1);
-
-        let mut port = type_name::get<IbcAppWitness>().into_string();
-        port.append(ascii::string(b"::any"));
-        ibc_store.channel_open_init(
-            port.to_string(),
-            b"cp-port",
-            1,
-            string::utf8(b"ucs03-zkgm-0"),   
-            IbcAppWitness {}
-        );
-        ibc_store.channel_open_ack(
-            string::utf8(b"ignored-here"),
-            1,
-            string::utf8(b"ucs03-zkgm-0"),
-            1,
-            b"p",
-            1,
-            IbcAppWitness {}
-        );
-
+        let (mut ibc, mut zkgm, mut owned_vault, escrow_vault) = prepare_test_ctx(&mut t);
+        let zkgm_cap = test_scenario::take_from_sender<owned_vault::ZkgmCap>(&t);
+        zkgm.register_owned_vault_cap(zkgm_cap);
+      
         let amount: u64 = 1_000;
         let sui_coin = coin::mint_for_testing<sui::sui::SUI>(amount, t.ctx());
 
@@ -2022,11 +1968,11 @@ module zkgm::zkgm {
         );
 
         let salt = b"SALT";
-        let mut send_ctx = zkgm::zkgm::begin_send(1, salt);
-        send_ctx = zkgm::zkgm::send_with_coin<sui::sui::SUI>(
-            &mut zkgm_store,
-            &mut vault,
-            &mut ibc_store,
+        let mut send_ctx = begin_send(1, salt);
+        send_ctx = send_with_coin<sui::sui::SUI>(
+            &mut zkgm,
+            &mut owned_vault,
+            &mut ibc,
             sui_coin,
             INSTR_VERSION_2,
             OP_TOKEN_ORDER,
@@ -2040,7 +1986,7 @@ module zkgm::zkgm {
         let now_ns = clock::timestamp_ms(&clk_ref) * 1_000_000;
         let timeout_ns = now_ns + 1_000_000_000;
         zkgm::zkgm::end_send(
-            &mut ibc_store,
+            &mut ibc,
             &clk_ref,
             0,
             timeout_ns,
@@ -2050,8 +1996,8 @@ module zkgm::zkgm {
 
         
         let key = string::from_ascii(type_name::get<sui::sui::SUI>().into_string());
-        assert!(zkgm_store.object_store.contains(key), 1);
-        let bag_coin: &Coin<sui::sui::SUI> = zkgm_store.object_store.borrow(key);
+        assert!(zkgm.object_store.contains(key), 1);
+        let bag_coin: &Coin<sui::sui::SUI> = zkgm.object_store.borrow(key);
         assert!(coin::value(bag_coin) == amount, 2);
 
         let pair = ChannelBalancePair {
@@ -2060,19 +2006,19 @@ module zkgm::zkgm {
             token: base_token,
             metadata_image: quote_token,
         };
-        assert!(zkgm_store.channel_balance.contains(pair), 3);
-        let tracked: u256 = *zkgm_store.channel_balance.borrow(pair);
+        assert!(zkgm.channel_balance.contains(pair), 3);
+        let tracked: u256 = *zkgm.channel_balance.borrow(pair);
         assert!(tracked == (amount as u256), 4);
-
         
-        test_scenario::return_shared(clk_ref);
-        test_scenario::return_shared(ibc_store);
-        test_scenario::return_shared(zkgm_store);
-        test_scenario::return_shared(vault);
+        end_test(
+            clk_ref,
+            ibc,
+            zkgm,
+            owned_vault,
+            escrow_vault,
+        );
 
         t.end();
-
-
     }
 
     #[test]
@@ -2175,11 +2121,13 @@ module zkgm::zkgm {
             rctx
         );
 
-        test_scenario::return_shared(clk_ref);
-        test_scenario::return_shared(ibc);
-        test_scenario::return_shared(zkgm);
-        test_scenario::return_shared(owned_vault);
-        test_scenario::return_shared(escrow_vault);
+        end_test(
+            clk_ref,
+            ibc,
+            zkgm,
+            owned_vault,
+            escrow_vault,
+        );
         t.end();
     }
 
@@ -2239,6 +2187,15 @@ module zkgm::zkgm {
         );
 
         (ibc, zkgm, owned_vault, escrow_vault) 
+    }
+
+    #[test_only]
+    fun end_test<A: key, B: key, C: key, D: key, E: key>(a: A, b: B, c: C, d: D, e: E) {
+        test_scenario::return_shared(a);
+        test_scenario::return_shared(b);
+        test_scenario::return_shared(c);
+        test_scenario::return_shared(d);
+        test_scenario::return_shared(e);
     }
     
 }

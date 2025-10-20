@@ -58,15 +58,12 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-
+#[allow(implicit_const_copy)]
 module ibc::ibc {
     use std::string::{String, utf8};
     use sui::table::{Self, Table};
-    use sui::object::{Self, UID};
     use sui::hash::keccak256;
     use sui::clock;
-    use sui::transfer;
-    use std::string;
     use sui::clock::Clock;
     #[test_only]
     use sui::test_scenario;
@@ -76,70 +73,30 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel}; 
     use ibc::light_client::{Self, LightClientManager};
     use ibc::commitment;
-    use ibc::create_lens_client_event;
 
-    use std::debug;
-    use sui::bcs;
     use sui::event;
 
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
 
-    const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
-
-    const CHAN_STATE_UNINITIALIZED: u8 = 0;
     const CHAN_STATE_INIT: u8 = 1;
     const CHAN_STATE_TRYOPEN: u8 = 2;
     const CHAN_STATE_OPEN: u8 = 3;
-    const CHAN_STATE_CLOSED: u8 = 4;
 
-    const CHAN_ORDERING_NONE: u8 = 0;
-    const CHAN_ORDERING_UNORDERED: u8 = 1;
-    const CHAN_ORDERING_ORDERED: u8 = 2;
-
-    const CONN_STATE_UNSPECIFIED: u8 = 0;
     const CONN_STATE_INIT: u8 = 1;
     const CONN_STATE_TRYOPEN: u8 = 2;
     const CONN_STATE_OPEN: u8 = 3;
 
-    const VAULT_SEED: vector<u8> = b"IBC_VAULT_SEED";
-
-    const E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE: u64 = 1001;
     const E_CLIENT_NOT_FOUND: u64 = 1002;
-    const E_VERSION_MUST_BE_UNSET: u64 = 1006;
-    const E_UNSUPPORTED_VERSION: u64 = 1007;
     const E_INVALID_CONNECTION_STATE: u64 = 1008;
-    const E_CONNECTION_ALREADY_EXISTS: u64 = 1009;
-    const E_CONN_NOT_SINGLE_HOP: u64 = 1011;
-    const E_CONN_NOT_SINGLE_VERSION: u64 = 1012;
-    const E_UNSUPPORTED_FEATURE: u64 = 1013;
-    const E_PORT_ID_MUST_BE_LOWERCASE: u64 = 1015;
     const E_INVALID_CHANNEL_STATE: u64 = 1016;
-    const E_COUNTERPARTY_CHANNEL_NOT_EMPTY: u64 = 1017;
-    const E_INVALID_TIMEOUT_HEIGHT: u64 = 1018;
     const E_LATEST_TIMESTAMP_NOT_FOUND: u64 = 1019;
     const E_UNAUTHORIZED: u64 = 1020;
-    const E_INVALID_TIMEOUT_TIMESTAMP: u64 = 1021;
-    const E_LATEST_HEIGHT_NOT_FOUND: u64 = 1022;
-    const E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH: u64 = 1023;
-    const E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH: u64 = 1022;
     const E_TIMESTAMP_TIMEOUT: u64 = 1023;
-    const E_HEIGHT_TIMEOUT: u64 = 1024;
     const E_PACKET_ALREADY_RECEIVED: u64 = 1025;
-    const E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH: u64 = 1026;
-    const E_UNKNOWN_CHANNEL_ORDERING: u64 = 1027;
-    const E_CONNECTION_DOES_NOT_EXIST: u64 = 1028;
     const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 1028;
-    const E_ACKNOWLEDGEMENT_ALREADY_EXISTS: u64 = 1029;
-    const E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH: u64 = 1030;
-    const E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH: u64 = 1031;
     const E_PACKET_COMMITMENT_NOT_FOUND: u64 = 1032;
-    const E_INVALID_PACKET_COMMITMENT: u64 = 1033;
     const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 1034;
-    const E_TIMEOUT_HEIGHT_NOT_REACHED: u64 = 1035;
-    const E_INVALID_UPDATE: u64 = 1036;
-    const E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE: u64 = 1037;
     const E_CLIENT_NOT_ACTIVE: u64 = 1038;
     const E_NOT_ENOUGH_PACKETS: u64 = 1040;
     const E_PACKET_NOT_RECEIVED: u64 = 1041;
@@ -746,7 +703,7 @@ module ibc::ibc {
             CHAN_STATE_INIT,
             connection.counterparty_connection_id(),
             0,
-            *port_id.bytes(),
+            *port_id.as_bytes(),
             counterparty_version
         );
 
@@ -807,7 +764,7 @@ module ibc::ibc {
     /// The name MUST be `IbcAppWitness`.
     public fun channel_open_ack<T: drop>(
         ibc_store: &mut IBCStore,
-        port_id: String,
+        _port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -845,7 +802,7 @@ module ibc::ibc {
                 CHAN_STATE_TRYOPEN,
                 connection.counterparty_connection_id(),
                 channel_id,
-                *port_id.bytes(),
+                *port_id.as_bytes(),
                 counterparty_version
             );
 
@@ -923,7 +880,7 @@ module ibc::ibc {
                 CHAN_STATE_OPEN,
                 connection.counterparty_connection_id(),
                 channel_id,
-                *port_id.bytes(),
+                *port_id.as_bytes(),
                 *channel.version()
             );
 
@@ -1182,7 +1139,7 @@ module ibc::ibc {
 
         assert!(parts.length() >= 3, 1);
 
-        let mut a = sui::address::from_ascii_bytes(parts[0].bytes()).to_ascii_string();
+        let mut a = sui::address::from_ascii_bytes(parts[0].as_bytes()).to_ascii_string();
         a.append(std::ascii::string(b"::"));
         a.append(parts[1].to_ascii());
 
@@ -1193,8 +1150,6 @@ module ibc::ibc {
         port_id: String,
         _: T,
     ) {       
-        let caller_t = std::type_name::get<T>();
-
         let mut addr_module = deconstruct_port_id(port_id);
         addr_module.append(std::ascii::string(b"::IbcAppWitness"));
         
@@ -1405,8 +1360,6 @@ module ibc::ibc {
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
-        let destination_channel = packets[0].destination_channel_id();
-
         let connection = ibc_store.connections.borrow(channel.connection_id());
         assert!(connection.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
 
@@ -1591,8 +1544,6 @@ module ibc::ibc {
         let port_id = *ibc_store.channel_to_port.borrow(source_channel);
         validate_port(port_id, witness);
 
-        let destination_channel = packet.destination_channel_id();
-
         if(!ibc_store.channels.contains(source_channel)) {
             abort E_CHANNEL_NOT_FOUND
         };
@@ -1662,7 +1613,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
@@ -1910,7 +1861,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         test_case.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(
             port,
             b"cp-port",
@@ -1922,7 +1873,7 @@ module ibc::ibc {
         let ch_id = 1;
         let ch = ibc_store.channels.borrow(ch_id);
         assert!(channel::state(ch) == CHAN_STATE_INIT, E_INVALID_CHANNEL_STATE);
-        assert!(*ibc_store.channel_to_port.borrow(ch_id) == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"), 1);
+        assert!(*ibc_store.channel_to_port.borrow(ch_id) == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"), 1);
         let key = commitment::channel_commitment_key(ch_id);
         assert!(ibc_store.commitments.contains(key), 1);
 
@@ -1946,7 +1897,7 @@ module ibc::ibc {
         ibc_store.connection_open_confirm(1, b"p", 1);
         
         test_case.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_try(
             port,
             1,
@@ -1987,7 +1938,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         test_case.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(
             port,
             b"cp-port",
@@ -2033,7 +1984,7 @@ module ibc::ibc {
         ibc_store.connection_open_confirm(1, b"p", 1);
 
         test_case.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_try(
             port,
             1,
@@ -2221,7 +2172,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
@@ -2244,7 +2195,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc_store.channel_open_try(
             port,
@@ -2280,7 +2231,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc_store.channel_open_try(
             port,
@@ -2327,7 +2278,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
@@ -2361,7 +2312,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2400,7 +2351,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2439,7 +2390,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2478,7 +2429,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2518,7 +2469,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2557,7 +2508,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2596,7 +2547,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1);
 
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc_store.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
 
         t.next_tx(@0x0);
@@ -2666,7 +2617,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
@@ -2717,7 +2668,7 @@ module ibc::ibc {
 
         t.next_tx(@0x0);
         let port = string::utf8(
-            b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
+            b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"
         );
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
@@ -2897,7 +2848,7 @@ module ibc::ibc {
         t.next_tx(@0x0);
         ibc.connection_open_ack(1, 9, b"p", 1);
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
         ibc.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
@@ -2936,7 +2887,7 @@ module ibc::ibc {
         t.next_tx(@0x0);
         ibc.connection_open_ack(1, 9, b"p", 1);
         t.next_tx(@0x0);
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
         ibc.channel_open_init(port, b"cp-port", 1, string::utf8(b"v1"), IbcAppWitness {});
         t.next_tx(@0x0);
         ibc.channel_open_ack(string::utf8(b"ignored"), 1, string::utf8(b"v1-cp"), 1, b"p", 1, IbcAppWitness {});
@@ -2956,7 +2907,7 @@ module ibc::ibc {
     public struct IbcAppWitness has drop {}
     #[test]
     fun validate_port_bro() {
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
 
         validate_port(
             port,

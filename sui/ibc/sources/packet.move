@@ -59,7 +59,6 @@
 // TITLE.
 
 module ibc::packet {
-    use ibc::ethabi;
     use sui::address;
     use sui::bcs;
 
@@ -271,18 +270,6 @@ module ibc::packet {
         encoded
     }
 
-    // public fun encode(packet: &Packet): vector<u8> {
-    //     let mut buf = vector::empty();
-
-    //     ethabi::encode_uint<u32>(&mut buf, packet.source_channel_id);
-    //     ethabi::encode_uint<u32>(&mut buf, packet.destination_channel_id);
-    //     ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
-    //     ethabi::encode_uint<u64>(&mut buf, packet.timeout_height);
-    //     ethabi::encode_uint<u64>(&mut buf, packet.timeout_timestamp);
-    //     ethabi::encode_bytes(&mut buf, &packet.data);
-    //     buf
-    // }
-    //
     #[test]
     fun test_encode_packet() {
         let output = x"0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";

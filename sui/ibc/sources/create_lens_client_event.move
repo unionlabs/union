@@ -59,7 +59,7 @@
 // TITLE.
 
 module ibc::create_lens_client_event {
-    use std::string::{String, utf8};
+    use std::string::{String};
 
     public struct CreateLensClientEvent has copy, drop, store {
         client_id: u32,
@@ -92,6 +92,9 @@ module ibc::create_lens_client_event {
     public(package) fun l2_client_id(self: &CreateLensClientEvent): u32 {
         self.l2_client_id
     }
+
+    #[test_only]
+    use std::string::utf8;
 
     #[test]
     fun test_create_and_getters_ok() {

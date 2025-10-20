@@ -59,8 +59,6 @@
 // TITLE.
 
 module ibc::connection_end {
-    use ibc::ethabi;
-
     use sui::bcs;
     use sui::address;
 

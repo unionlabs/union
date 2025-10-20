@@ -59,7 +59,6 @@
 // TITLE.
 #[allow(implicit_const_copy, unused_const)]
 module ibc::commitment {
-    use sui::hash;
     use sui::address;
     use std::bcs;
     use ibc::packet::{Self, Packet, PacketBcs};
@@ -267,7 +266,7 @@ module ibc::commitment {
         let final_offset = offsets.pop_back();
         let final_offset_bytes = bcs::to_bytes(&final_offset);
 
-        let mut comm_bcs = PacketCommitmentBcs {
+        let comm_bcs = PacketCommitmentBcs {
             offset_0x20: address::from_u256(0x20),
             // 30 bytes
             len: x"000000000000000000000000000000000000000000000000000000000000",

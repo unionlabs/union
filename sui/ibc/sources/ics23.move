@@ -59,14 +59,12 @@
 // TITLE.
 
 module ibc::ics23 {
-    use std::vector;
-    use std::option::Option;
     use std::hash;
 
     use sui::bcs::{Self, BCS};
 
     const E_EMPTY_LEAF_PREFIX: u64 = 35200;
-    const E_EMPTY_LEAF_KEY: u64 = 35201;
+    // const E_EMPTY_LEAF_KEY: u64 = 35201;
     const E_EMPTY_INNER_KEY: u64 = 35202;
     const E_EMPTY_CHILD: u64 = 35203;
     const E_PROOF_KEY_MISMATCH: u64 = 35204;
@@ -93,11 +91,11 @@ module ibc::ics23 {
         suffix: vector<u8>
     }
 
-    public struct NonExistenceProof has drop {
-        key: vector<u8>,
-        left: Option<ExistenceProof>,
-        right: Option<ExistenceProof>
-    }
+    // public struct NonExistenceProof has drop {
+    //     key: vector<u8>,
+    //     left: Option<ExistenceProof>,
+    //     right: Option<ExistenceProof>
+    // }
 
     public struct ProofSpec has drop {
         child_size: u64,
