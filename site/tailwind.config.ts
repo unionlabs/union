@@ -60,6 +60,8 @@ export default {
         ],
         mono: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
         jetbrains: ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
+        geist: ["Geist", ...defaultTheme.fontFamily.sans],
+        geistMono: ["Geist Mono", ...defaultTheme.fontFamily.mono],
       },
     },
   },
