@@ -73,7 +73,7 @@ module zkgm::zkgm {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
 
-    use vault::vault::{Vault, VaultCap};
+    use vault::vault::{Vault, ZkgmCap};
     use vault::vault;
 
     use zkgm::ack::{Self, Ack};
@@ -256,7 +256,7 @@ module zkgm::zkgm {
 
     public fun register_vault_cap(
         zkgm: &mut RelayStore,
-        vault_cap: VaultCap,
+        vault_cap: ZkgmCap,
     ) {
         zkgm.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
     }
@@ -1450,7 +1450,7 @@ module zkgm::zkgm {
             // because the prediction would fail otherwise and we would fall
             // back in the else branch.
             vault.burn_with_cap<T>(
-                zkgm.object_store.borrow<_, VaultCap>(VAULT_CAP_OBJECT_KEY),
+                zkgm.object_store.borrow<_, ZkgmCap>(VAULT_CAP_OBJECT_KEY),
                 coin,
                 ctx
             );
@@ -1908,7 +1908,7 @@ module zkgm::zkgm {
         let mut zkgm_store = t.take_shared<RelayStore>();
         let mut vault = t.take_shared<vault::Vault>();
 
-        let vault_cap = test_scenario::take_from_sender<vault::VaultCap>(&t);
+        let vault_cap = test_scenario::take_from_sender<vault::ZkgmCap>(&t);
         // zkgm.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
         t.next_tx(@0x0);
         // zkgm_store.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);

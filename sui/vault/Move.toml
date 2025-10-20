@@ -11,8 +11,8 @@ ibc = { local = "../ibc" }
 [addresses]
 # ibc   = "_"
 # vault = "_"
-ibc   = "_"
-vault = "_"
+ibc   = "0x0"
+vault = "0x0"
 
 # [dev-dependencies]
 # [dev-addresses]

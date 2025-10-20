@@ -58,43 +58,30 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module vault::vault {
+module escrow_vault::escrow_vault {
     use sui::bcs;
     use sui::table::{Self, Table};
     use sui::object_bag::{Self, ObjectBag};
-    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-    use sui::balance;
-    use std::string;
+    use sui::coin::{Self, Coin};
     use std::type_name;
-
-    use vault::metadata::{Self, Metadata};
 
     const E_UNAUTHORIZED: u64 = 1;
     const E_INVALID_PACKET_HASH: u64 = 2;
     const E_INTENT_WHITELISTED_ONLY: u64 = 3;
     const E_BASE_AMOUNT_MUST_COVER_QUOTE_AMOUNT: u64 = 4;
-    const E_NO_TREASURY_CAPABILITY: u64 = 5;
     const E_INVALID_QUOTE_TOKEN: u64 = 6;
     const E_ONLY_MAKER: u64 = 0xdeadc0de;
 
-    public struct Vault has key {
+    public struct EscrowVault has key {
         id: UID,
-        token_type_to_treasury: ObjectBag,
+        admin: address,
+        coin_bag: ObjectBag,
         intent_whitelists: Table<IntentWhitelistKey, bool>,
         fungible_counterparties: Table<FungibleLane, FungibleCounterparty>,
     }
 
     public struct ZkgmCap has key, store {
         id: UID
-    }
-
-    public struct IntentWhitelistKey has copy, drop, store {
-        token: vector<u8>,
-        packet_hash: vector<u8>,
-    }
-
-    public struct FungibleCounterparty has copy, drop, store {
-        beneficiary: vector<u8>
     }
 
     public struct FungibleLane has copy, drop, store {
@@ -104,16 +91,15 @@ module vault::vault {
         base_token: vector<u8>,
     }
 
-    public struct TreasuryCapWithMetadata<phantom T> has key, store {
-        id: UID,
-        cap: TreasuryCap<T>,
-        metadata: Metadata,
+    public struct FungibleCounterparty has copy, drop, store {
+        beneficiary: vector<u8>
     }
 
-    public struct TreasuryCapReleaseCtx<phantom T> {
-        metadata: Metadata,
+    public struct IntentWhitelistKey has copy, drop, store {
+        token: vector<u8>,
+        packet_hash: vector<u8>,
     }
-    
+
     fun init(ctx: &mut TxContext) {
         transfer::transfer(
             ZkgmCap {
@@ -121,75 +107,28 @@ module vault::vault {
             },
             ctx.sender()
         );
-        transfer::share_object(Vault {
+        transfer::share_object(EscrowVault {
             id: object::new(ctx),
-            token_type_to_treasury: object_bag::new(ctx),
+            admin: ctx.sender(),
+            coin_bag: object_bag::new(ctx),
             intent_whitelists: table::new(ctx),
             fungible_counterparties: table::new(ctx),
-        });
-    }
-
-    #[test_only]
-    public fun init_for_tests(ctx: &mut TxContext) {
-        transfer::share_object(Vault {
-            id: object::new(ctx),
-            token_type_to_treasury: object_bag::new(ctx),
-            intent_whitelists: table::new(ctx),
-            fungible_counterparties: table::new(ctx),
-        });
-
-        transfer::transfer(
-            ZkgmCap { id: object::new(ctx) },
-            ctx.sender()
-        );
-    }
-    
-    public fun register_capability<T>(
-        vault: &mut Vault,
-        mut capability: TreasuryCap<T>,
-        metadata: &CoinMetadata<T>,
-        owner: address,
-        ctx: &mut TxContext,
-    ) {
-        if (owner != @0x0) {
-            assert!(ctx.sender() == owner, E_UNAUTHORIZED);
-        };
-    
-        let supply = coin::supply(&mut capability);
-        if (balance::supply_value(supply) != 0 ) {
-            abort 0
-        };
-
-        vault.token_type_to_treasury.add(type_name::get<T>().into_string().into_bytes(), TreasuryCapWithMetadata {
-            id: object::new(ctx),
-            cap: capability,
-            metadata: metadata::new(
-                coin::get_name(metadata),
-                string::from_ascii(coin::get_symbol(metadata)),
-                coin::get_decimals(metadata),
-                coin::get_icon_url(metadata).map!(|url| string::utf8(url.inner_url().into_bytes())),
-                coin::get_description(metadata),
-                owner
-            )
         });
     }
 
     public fun set_fungible_counterparty<T>(
-        vault: &mut Vault,
+        vault: &mut EscrowVault,
         path: u256,
         channel: u32,
         base_token: vector<u8>,
         beneficiary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let token =  type_name::get<T>().into_string().into_bytes();
-        let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
-
-        assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
-
+        assert!(vault.admin == ctx.sender(), E_UNAUTHORIZED);
+    
         vault.fungible_counterparties.add(
             FungibleLane {
-                token,
+                token: type_name::get<T>().into_string().into_bytes(),
                 path,
                 channel,
                 base_token
@@ -201,21 +140,18 @@ module vault::vault {
     }
 
     public fun whitelist_intent<T>(
-        vault: &mut Vault,
+        vault: &mut EscrowVault,
         packet_hashes: vector<vector<u8>>,
         whitelist: bool,
         ctx: &mut TxContext,
     ) {
-        let token = type_name::get<T>().into_string();
-        let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
-
-        assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
+        assert!(vault.admin == ctx.sender(), E_UNAUTHORIZED);
 
         packet_hashes.do!(|hash| {
             assert!(hash.length() == 32, E_INVALID_PACKET_HASH);
 
             let whitelist_key = IntentWhitelistKey {
-                token: token.into_bytes(),
+                token: type_name::get<T>().into_string().into_bytes(),
                 packet_hash: hash
             };
 
@@ -230,7 +166,7 @@ module vault::vault {
     }
 
     public fun solve<T>(
-        vault: &mut Vault,
+        vault: &mut EscrowVault,
         _: &ZkgmCap,
         packet: ibc::packet::Packet,
         base_token: vector<u8>,
@@ -277,94 +213,40 @@ module vault::vault {
 
         let (base_amount, quote_amount) = (base_amount, quote_amount);
 
-        let capability = vault.borrow_mut_treasury_cap<T>();
         let fee = base_amount - quote_amount;
         if (fee > 0) {
-            coin::mint_and_transfer<T>(capability, fee as u64, relayer, ctx);
+            vault.unescrow<T>(fee as u64, relayer, ctx);
         };
 
         if (quote_amount > 0) {
             let receiver = bcs::new(receiver).peel_address();
-            coin::mint_and_transfer<T>(capability, quote_amount as u64, receiver, ctx);
+            vault.unescrow<T>(fee as u64, receiver, ctx);
         };
 
         (counterparty_beneficiary, 0)
     }
 
-    // Temporarily get access to the `TreasuryCap<T>`. Note that it is enforced to give it back to this contract via
-    // `give_back_treasury_cap` or the PTB will fail since the `TreasuryCapReleaseCtx` has no drop ability. So, it must
-    // be consumed by the `give_back_treasury_cap` function.
-    //
-    // We could just return a mutable ref to the `TreasuryCap<T>` but it's not allowed in the MoveVM to return a mutable reference
-    // from a PTB command.
-    public fun release_treasury_cap<T>(vault: &mut Vault, ctx: &TxContext): (TreasuryCap<T>, TreasuryCapReleaseCtx<T>) {
-        let token =  type_name::get<T>().into_string().into_bytes();
-        let cap: TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.remove(token);
-
-        assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
-
-        let TreasuryCapWithMetadata<T> {
-            cap,
-            metadata,
-            id
-        } = cap;
-
-        object::delete(id);
-
-        (cap, TreasuryCapReleaseCtx<T> {
-            metadata
-        })
-    }
-
-    // Give back the temporarily accessed `TreasuryCap<T>`
-    public fun give_back_treasury_cap<T>(vault: &mut Vault, cap: TreasuryCap<T>, handle: TreasuryCapReleaseCtx<T>, ctx: &mut TxContext) {
-        assert!(ctx.sender() == handle.metadata.owner(), E_UNAUTHORIZED);
-
-        let token =  type_name::get<T>().into_string().into_bytes();
-        let TreasuryCapReleaseCtx {
-            metadata
-        } = handle;
-        vault.token_type_to_treasury.add(token, TreasuryCapWithMetadata {
-            id: object::new(ctx),
-            cap,
-            metadata
-        });
-    }
-
-    public fun burn<T>(vault: &mut Vault, _: &ZkgmCap, c: Coin<T>): u64 {
-        let cap = vault.borrow_mut_treasury_cap<T>();
-
-        coin::burn<T>(cap, c)
-    }
-
-    public fun mint<T>(
-        vault: &mut Vault,
-        _: &ZkgmCap,
+    fun unescrow<T>(
+        vault: &mut EscrowVault,
         amount: u64,
         recipient: address,
         ctx: &mut TxContext
-    ) {
-        let cap = vault.borrow_mut_treasury_cap<T>();
-
-        coin::mint_and_transfer<T>(cap, amount, recipient, ctx);
+    ) {        
+        let coin: &mut Coin<T> = vault.coin_bag.borrow_mut(type_name::get<T>());
+        let coin = coin.split<T>(amount, ctx);
+        transfer::public_transfer(coin, recipient);
     }
 
-    public fun get_metadata<T>(
-        vault: &Vault,
-    ): &Metadata {
-        let typename_t = type_name::get<T>().into_string().into_bytes();
-        let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(typename_t);
-
-        &cap.metadata
-    }
-    
-    fun borrow_mut_treasury_cap<T>(
-        vault: &mut Vault
-    ): &mut TreasuryCap<T> {
-        let key = type_name::get<T>().into_string().into_bytes();
-        if (!vault.token_type_to_treasury.contains(key)) {
-            abort E_NO_TREASURY_CAPABILITY             
-        };
-        &mut vault.token_type_to_treasury.borrow_mut<_, TreasuryCapWithMetadata<T>>(key).cap
+    public fun escrow<T>(
+        vault: &mut EscrowVault,
+        coin: Coin<T>,
+    ) {        
+        let key = type_name::get<T>();
+        if (vault.coin_bag.contains(key)) {
+            let self_coin: &mut Coin<T> = vault.coin_bag.borrow_mut(key);
+            coin::join(self_coin, coin)
+        } else{
+            vault.coin_bag.add(key, coin)
+        }
     }
 }
