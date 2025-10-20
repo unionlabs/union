@@ -250,4 +250,9 @@ module escrow_vault::escrow_vault {
             vault.coin_bag.add(key, coin)
         }
     }
+
+    #[test_only]
+    public fun init_for_tests(ctx: &mut TxContext) {
+        init(ctx);
+    } 
 }
