@@ -165,7 +165,8 @@ pub mod v1 {
     }
 }
 
-/// Types and constant slot values for the [`RollupCore`] contract on the L1, after the [BoLD] upgrade.
+/// Types and constant slot values for the [`RollupCore`] contract on the L1, after the [BoLD]
+/// upgrade.
 ///
 /// Slot values can be verified by running the following command:
 ///
@@ -194,9 +195,11 @@ pub mod v2 {
     pub const ROLLUP_CORE_ASSERTIONS_MAPPING_BASE: Slot =
         Slot::Offset(U256::from_limbs([117, 0, 0, 0]));
 
-    /// The byte offset of the `status` field in the first slot of the storage layout of the [`AssertionNode`] struct.
+    /// The byte offset of the `status` field in the first slot of the storage layout of the
+    /// [`AssertionNode`] struct.
     ///
-    /// The assertion node value is stored in the mapping at [`ROLLUP_CORE_ASSERTIONS_MAPPING_BASE`].
+    /// The assertion node value is stored in the mapping at
+    /// [`ROLLUP_CORE_ASSERTIONS_MAPPING_BASE`].
     ///
     /// # Explanation
     ///
@@ -247,7 +250,8 @@ pub mod v2 {
     /// 0x0000000000000201000000000167590000000000000000000000000001675a03
     /// ```
     ///
-    /// Deconstructing this value, we can see how the values are stored (note that `configHash` is stored in the next slot):
+    /// Deconstructing this value, we can see how the values are stored (note that `configHash` is
+    /// stored in the next slot):
     ///
     /// ```txt
     /// 0000000000000201000000000167590000000000000000000000000001675a03
