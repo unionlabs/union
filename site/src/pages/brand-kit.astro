@@ -6,6 +6,7 @@ import ColorPalette from "../components/brand/ColorPalette.astro"
 import FontDisplay from "../components/brand/FontDisplay.astro"
 import LogoDisplay from "../components/brand/LogoDisplay.astro"
 import PdfDisplay from "../components/brand/PdfDisplay.astro"
+import RefreshDisplay from "../components/brand/RefreshDisplay.astro"
 import ContainedSection from "../components/ContainedSection.astro"
 import H1 from "../components/typography/h1.astro"
 import Layout from "../layouts/Layout.astro"
@@ -14,6 +15,16 @@ import Layout from "../layouts/Layout.astro"
 <Layout title="Brand">
   <ContainedSection className="py-16">
     <H1>Our <span class="text-accent-500">brand</span></H1>
+
+    <div class="flex flex-col gap-4 mt-8">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-accent-500"></div>
+          <p class="font-mono text-2xl">REFRESH</p>
+        </div>
+        <RefreshDisplay />
+      </div>
+    </div>
 
     <div class="flex flex-col gap-4 mt-8">
       <div class="flex flex-col gap-4">
@@ -49,7 +60,7 @@ import Layout from "../layouts/Layout.astro"
           label="Secondary"
           colors={["#A0ECFD", "#030711", "#9CA3AF", "#111214"]}
           class="col-span-full md:col-span-2"
-          vertical
+          cols={2}
         />
       </div>
     </div>
