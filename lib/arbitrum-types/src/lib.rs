@@ -228,7 +228,7 @@ pub mod v2 {
     /// The storage slot can be calculated using [`rollup_core_assertions_slot`]:
     ///
     /// ```rust
-    /// # use arbitrum_types::v2::slots::rollup_core_assertions_slot;
+    /// # use arbitrum_types::v2::rollup_core_assertions_slot;
     /// # use hex_literal::hex;
     /// let slot = rollup_core_assertions_slot(hex!(
     ///     "8ddd22a1705b4a85846edb930e9bea085a61cb60b528a4c74708b61f02ebf3fe"
@@ -260,7 +260,7 @@ pub mod v2 {
     /// And finally, the status can be extracted by indexing into the stored value with this offset:
     ///
     /// ```rust
-    /// # use arbitrum_types::v2::slots::ASSERTION_NODE_STATUS_BYTE_OFFSET;
+    /// # use arbitrum_types::v2::ASSERTION_NODE_STATUS_BYTE_OFFSET;
     /// # use hex_literal::hex;
     /// let value = hex!("0000000000000201000000000167590000000000000000000000000001675a03");
     ///
