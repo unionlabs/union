@@ -969,9 +969,9 @@ module zkgm::zkgm {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
 
-        if(zkgm.test_mode){
-            return (vector::empty(), 0)
-        };
+        // if(zkgm.test_mode){
+        //     return (vector::empty(), 0)
+        // };
         
         vault.solve<T>(
             zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
@@ -1908,6 +1908,14 @@ module zkgm::zkgm {
         let mut zkgm_store = t.take_shared<RelayStore>();
         let mut vault = t.take_shared<vault::Vault>();
 
+        let vault_cap = test_scenario::take_from_sender<vault::VaultCap>(&t);
+        // zkgm.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
+        t.next_tx(@0x0);
+        // zkgm_store.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
+        register_vault_cap(&mut zkgm_store, vault_cap);
+        t.next_tx(@0x0);
+
+        
         let mut clk = clock::create_for_testing(t.ctx());
         clock::increment_for_testing(&mut clk, 1_000);
         clock::share_for_testing(clk);
