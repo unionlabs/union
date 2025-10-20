@@ -19,8 +19,8 @@ ibc = { local = "../ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc = "0x0"
-escrow_vault = "0x0"
+ibc = "_"
+escrow_vault = "_"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -32,6 +32,8 @@ escrow_vault = "0x0"
 # Local = { local = "../path/to/dev-build" }
 
 [dev-addresses]
+ibc = "0x1111"
+escrow_vault = "0x2222"
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"

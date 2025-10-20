@@ -1,6 +1,6 @@
 [package]
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-name    = "vault"
+name    = "owned_vault"
 # published-at = "0x3dd0287ae5f29902b4a2d00988d4b3d69f29ea431811df7b9dd5b4f13d829d2e"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
@@ -9,12 +9,9 @@ name    = "vault"
 ibc = { local = "../ibc" }
 
 [addresses]
-# ibc   = "_"
-# vault = "_"
-ibc   = "0x0"
-vault = "0x0"
+ibc   = "_"
+owned_vault = "_"
 
-# [dev-dependencies]
-# [dev-addresses]
-# ibc   = "0x22222"
-# vault = "0x2334"
+[dev-addresses]
+ibc = "0x1111"
+owned_vault = "0x3333"

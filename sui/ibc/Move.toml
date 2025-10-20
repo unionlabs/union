@@ -34,8 +34,8 @@ ibc = "_"
 # `--dev` modes. You can introduce test-only dependencies here.
 # Local = { local = "../path/to/dev-build" }
 
-# [dev-addresses]
-# ibc = "0x22222"
+[dev-addresses]
+ibc = "0x1111"
 # # The dev-addresses section allows overwriting named addresses for the `--test`
 # # and `--dev` modes.
 # # alice = "0xB0B"

@@ -239,6 +239,7 @@ module escrow_vault::escrow_vault {
 
     public fun escrow<T>(
         vault: &mut EscrowVault,
+        _: &ZkgmCap,
         coin: Coin<T>,
     ) {        
         let key = type_name::get<T>();

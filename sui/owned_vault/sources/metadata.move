@@ -58,7 +58,7 @@
 // EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
-module vault::metadata {
+module owned_vault::metadata {
     use std::string::String;
 
     public struct Metadata has copy, drop, store {
