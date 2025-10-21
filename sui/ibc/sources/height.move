@@ -60,8 +60,6 @@
 
 module ibc::height {
     use sui::bcs::BCS;    
-    use std::vector;
-    use sui::bcs;
 
     public struct Height has drop, copy, store {
         revision_number: u64,
@@ -114,14 +112,14 @@ module ibc::height {
     }
 
     public fun decode_bcs(buf: &mut BCS): Height {
-        // let length = bcs_utils::peel_length_prefix(buf);
-        // assert!(length == 2, 1); // TODO: Better error code here
         Height {
             revision_number: buf.peel_u64(),
             revision_height: buf.peel_u64()
         }
     }
 
+    #[test_only]
+    use sui::bcs;
 
     #[test]
     fun test_new_and_getters_ok() {

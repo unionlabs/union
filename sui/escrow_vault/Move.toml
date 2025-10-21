@@ -1,0 +1,14 @@
+[package]
+edition = "2024.beta"
+name    = "escrow_vault"
+
+[dependencies]
+ibc = { local = "../ibc" }
+
+[addresses]
+escrow_vault = "0x0"
+ibc          = "0x0"
+
+[dev-addresses]
+escrow_vault = "0x2222"
+ibc          = "0x1111"

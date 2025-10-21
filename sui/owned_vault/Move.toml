@@ -1,0 +1,14 @@
+[package]
+edition = "2024.beta"
+name    = "owned_vault"
+
+[dependencies]
+ibc = { local = "../ibc" }
+
+[addresses]
+ibc         = "_"
+owned_vault = "_"
+
+[dev-addresses]
+ibc         = "0x1111"
+owned_vault = "0x3333"

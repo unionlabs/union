@@ -2,15 +2,16 @@
 
 [move]
 version = 3
-manifest_digest = "D1D60C42F4FC7F4C809B75ED3582A55FE3A61984289A6215531A848F3EAF282B"
-deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
+manifest_digest = "4C39E6F377CC2C635F728C8628FE5C35AC6A42B77CC6A99E90CCA6FDD42C03A4"
+deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
   { id = "SuiSystem", name = "SuiSystem" },
+  { id = "escrow_vault", name = "escrow_vault" },
   { id = "ibc", name = "ibc" },
-  { id = "vault", name = "vault" },
+  { id = "owned_vault", name = "owned_vault" },
 ]
 
 [[move.package]]
@@ -45,6 +46,18 @@ dependencies = [
 ]
 
 [[move.package]]
+id = "escrow_vault"
+source = { local = "../escrow_vault" }
+
+dependencies = [
+  { id = "Bridge", name = "Bridge" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Sui", name = "Sui" },
+  { id = "SuiSystem", name = "SuiSystem" },
+  { id = "ibc", name = "ibc" },
+]
+
+[[move.package]]
 id = "ibc"
 source = { local = "../ibc" }
 
@@ -56,8 +69,8 @@ dependencies = [
 ]
 
 [[move.package]]
-id = "vault"
-source = { local = "../vault" }
+id = "owned_vault"
+source = { local = "../owned_vault" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },

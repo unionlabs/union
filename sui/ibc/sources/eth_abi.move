@@ -60,41 +60,34 @@
 
 module ibc::ethabi {
     use sui::bcs;
-    use std::vector;
     use std::string::{Self, String};
 
-    const ZERO_32_BYTES: vector<u8> = vector[
-        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
-    ];
-
     public fun encode_string(buf: &mut vector<u8>, str: &String) {
-        encode_bytes(buf, string::bytes(str))
+        encode_bytes(buf, str.as_bytes())
     }
 
     public fun encode_bytes(buf: &mut vector<u8>, bytes: &vector<u8>) {
-        let len = vector::length(bytes);
+        let len = bytes.length();
         let mut len_bytes = bcs::to_bytes(&(len as u256));
-        vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
+        len_bytes.reverse(); // Reverse the bytes to big-endian
 
-        vector::append(buf, len_bytes);
-        vector::append(buf, *bytes);
+        buf.append(len_bytes);
+        buf.append(*bytes);
 
         // Calculate padding to align to 32 bytes
         let padding_len = (32 - (len % 32)) % 32;
         let mut padding = vector::empty<u8>();
         let mut i = 0;
         while (i < padding_len) {
-            vector::push_back(&mut padding, 0);
+            padding.push_back(0);
             i = i + 1;
         };
-        // Append the padding
-        vector::append(buf, padding);
+        buf.append(padding);
     }
 
     public fun encode_address(buf: &mut vector<u8>, addr: address) {
         let sender_bytes = bcs::to_bytes(&addr);
-        vector::append(buf, sender_bytes);
+        buf.append(sender_bytes);
     }
 
 

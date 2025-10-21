@@ -59,11 +59,9 @@
 // TITLE.
 
 module ibc::cometbls_light_client {
-    use std::option::{Self, Option};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
     use sui::clock;
-    use sui::object::{Self, UID};
     use sui::bcs::{Self, BCS};
     use ibc::ethabi;
     use ibc::height::{Self, Height};
@@ -71,7 +69,7 @@ module ibc::cometbls_light_client {
     use ibc::ics23;
     use ibc::groth16_verifier::{Self, ZKP};
 
-    const E_INVALID_CLIENT_STATE: u64 = 35100;
+    // const E_INVALID_CLIENT_STATE: u64 = 35100;
     const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
     const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
     const E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT: u64 = 35103;
@@ -80,8 +78,7 @@ module ibc::cometbls_light_client {
     const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
     const E_INVALID_ZKP: u64 = 35107;
     const E_FROZEN_CLIENT: u64 = 35108;
-    const E_INVALID_MISBEHAVIOUR: u64 = 35109;
-    const E_UNIMPLEMENTED: u64 = 35199;
+    // const E_INVALID_MISBEHAVIOUR: u64 = 35109;
 
     const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
 
@@ -139,7 +136,7 @@ module ibc::cometbls_light_client {
 
 
     public(package) fun create_client(
-        client_id: u32,
+        _client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
@@ -164,12 +161,12 @@ module ibc::cometbls_light_client {
         0
     }
 
-    public(package) fun check_for_misbehaviour(client: &Client, header: vector<u8>): bool {
+    public(package) fun check_for_misbehaviour(_client: &Client, _header: vector<u8>): bool {
         false
     }
 
     public(package) fun misbehaviour(
-        client: &Client, misbehaviour: vector<u8>, relayer: address
+        _client: &Client, _misbehaviour: vector<u8>, _relayer: address
     ) {
 
     }

@@ -73,7 +73,9 @@ module zkgm::zkgm {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
 
-    use vault::vault::{Vault, VaultCap};
+    use owned_vault::owned_vault::{Self, OwnedVault};
+
+    use escrow_vault::escrow_vault::{Self, EscrowVault};
 
     use zkgm::ack::{Self, Ack};
     use zkgm::batch;
@@ -87,6 +89,10 @@ module zkgm::zkgm {
     use zkgm::sui_token_metadata;
     use zkgm::zkgm_packet;
     use zkgm::solver_metadata;
+
+    #[test_only]
+    use sui::test_scenario;
+    
 
     // Constants
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
@@ -137,21 +143,21 @@ module zkgm::zkgm {
     const E_INVALID_SOLVER_ADDRESS: u64 = 45;
     const E_INVALID_QUOTE_TOKEN: u64 = 46;
     const E_EXECUTION_ALREADY_COMPLETE: u64 = 47;
-    const E_VAULT_MISMATCH: u64 = 48;
     // const E_ONLY_MAKER: u64 = 0xdeadc0de;
 
-    const VAULT_CAP_OBJECT_KEY: vector<u8> = b"VAULT_CAP";
+    const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
+    const ESCROW_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-escrow-vault";
 
     public struct IbcAppWitness has drop {}
 
     public struct RelayStore has key {
         id: UID,
-        vault_id: ID,
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
         token_origin: Table<vector<u8>, u256>,
         wrapped_denom_to_t: Table<vector<u8>, String>,
         object_store: ObjectBag,
+        test_mode: bool,
     }
 
     public struct CreateWrappedToken has copy, drop, store {
@@ -220,20 +226,27 @@ module zkgm::zkgm {
 
         transfer::share_object(RelayStore {
             id: id,
-            vault_id: object::id_from_address(@vault),
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
             object_store: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
+            test_mode: false,
         });
     }
 
-    public fun register_vault_cap(
+    public fun register_owned_vault_cap(
         zkgm: &mut RelayStore,
-        vault_cap: VaultCap,
+        vault_cap: owned_vault::ZkgmCap,
     ) {
-        zkgm.object_store.add(VAULT_CAP_OBJECT_KEY, vault_cap);
+        zkgm.object_store.add(OWNED_VAULT_OBJECT_KEY, vault_cap);
+    }
+
+    public fun register_escrow_vault_cap(
+        zkgm: &mut RelayStore,
+        vault_cap: escrow_vault::ZkgmCap,
+    ) {
+        zkgm.object_store.add(ESCROW_VAULT_OBJECT_KEY, vault_cap);
     }
 
     public fun channel_open_init(
@@ -342,7 +355,7 @@ module zkgm::zkgm {
 
     public fun send_with_coin<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         ibc_store: &mut ibc::IBCStore,
         coin: Coin<T>,
         version: u8,
@@ -468,15 +481,14 @@ module zkgm::zkgm {
     public fun recv_packet<T>(
         ibc: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         clock: &Clock,
         relayer: address,
         relayer_msg: vector<u8>,
         mut exec_ctx: RecvCtx,
         ctx: &mut TxContext
     ): RecvCtx {
-        // assert!(object::id(vault) == zkgm.vault_id, E_VAULT_MISMATCH);
-
         // aborts if there is not a session
         let packet_cursor = exec_ctx.cursor;
         let packet = exec_ctx.packets[exec_ctx.cursor];
@@ -499,6 +511,7 @@ module zkgm::zkgm {
             
             let (ack, err) = zkgm.execute_internal<T>(
                 vault,
+                escrow_vault,
                 ibc,
                 packet,
                 zkgm_packet,
@@ -575,7 +588,8 @@ module zkgm::zkgm {
 
     fun execute_internal<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc: &mut ibc::IBCStore,
         packet: Packet,
         packet_ctx: &ZkgmPacketCtx,
@@ -595,6 +609,7 @@ module zkgm::zkgm {
                 };
                 zkgm.execute_token_order<T>(
                     vault,
+                    escrow_vault,
                     packet,
                     relayer,
                     relayer_msg,
@@ -674,8 +689,9 @@ module zkgm::zkgm {
 
     public fun acknowledge_packet<T>(
         ibc: &mut ibc::IBCStore,
-        vault: &mut Vault,
         zkgm: &mut RelayStore,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         relayer: address,
         mut ack_ctx: AckCtx,
         ctx: &mut TxContext
@@ -722,6 +738,7 @@ module zkgm::zkgm {
 
             zkgm.acknowledge_internal<T>(
                 vault,
+                escrow_vault,
                 packet,
                 relayer,
                 zkgm_packet.path,
@@ -804,7 +821,7 @@ module zkgm::zkgm {
 
     public fun timeout_packet<T>(
         ibc: &mut ibc::IBCStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         zkgm: &mut RelayStore,
         relayer: address,
         mut timeout_ctx: TimeoutCtx,
@@ -887,7 +904,8 @@ module zkgm::zkgm {
 
     fun market_maker_fill<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -900,6 +918,7 @@ module zkgm::zkgm {
         if (order.kind() == TOKEN_ORDER_KIND_SOLVE) {
             return zkgm.solver_fill<T>(
                 vault,
+                escrow_vault,
                 ibc_packet,
                 order,
                 path,
@@ -924,7 +943,8 @@ module zkgm::zkgm {
 
     fun solver_fill<T>(
         zkgm: &RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc_packet: Packet,
         order: TokenOrderV2,
         path: u256,
@@ -934,32 +954,60 @@ module zkgm::zkgm {
     ): (vector<u8>, u64) {
         let metadata = solver_metadata::decode(order.metadata());
 
-        let solver = bcs::new(*metadata.solver_address()).peel_address();
-
-        if (solver != @vault) {
-            return (vector::empty(), E_INVALID_SOLVER_ADDRESS)
-        };
-
         let quote_token = *order.quote_token();
 
         if (type_name::get<T>().into_string().into_bytes() != quote_token) {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
+        
+        let solver = metadata.solver_address();
 
-        vault.solve<T>(
-            zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
-            ibc_packet,
-            *order.base_token(),
-            quote_token,
-            order.base_amount(),
-            order.quote_amount(),
-            *order.receiver(),
-            path,
-            relayer,
-            vector::empty(),
-            intent,
-            ctx
-        )
+        match (solver) {
+            OWNED_VAULT_OBJECT_KEY => vault.solve<T>(
+                zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
+                ibc_packet,
+                *order.base_token(),
+                quote_token,
+                order.base_amount(),
+                order.quote_amount(),
+                *order.receiver(),
+                path,
+                relayer,
+                vector::empty(),
+                intent,
+                ctx
+            ),
+            ESCROW_VAULT_OBJECT_KEY => escrow_vault.solve<T>(
+                zkgm.object_store.borrow(ESCROW_VAULT_OBJECT_KEY),
+                ibc_packet,
+                *order.base_token(),
+                quote_token,
+                order.base_amount(),
+                order.quote_amount(),
+                *order.receiver(),
+                path,
+                relayer,
+                vector::empty(),
+                intent,
+                ctx
+            ),
+            _ => (vector::empty(), E_INVALID_SOLVER_ADDRESS)
+        }
+    }
+
+    fun split_coin<T>(
+        relay_store: &mut RelayStore,
+        amount: u64,
+        ctx: &mut TxContext
+    ): Coin<T> {
+        let typename_t = type_name::get<T>();
+        let key = typename_t.into_string();
+        if(!relay_store.object_store.contains(string::from_ascii(key))) {
+            abort E_NO_COIN_IN_BAG
+        };
+        let coin = relay_store.object_store.borrow_mut<String, Coin<T>>(string::from_ascii(key));
+
+        coin.split<T>(amount, ctx)
     }
 
     fun distribute_coin<T>(
@@ -968,20 +1016,13 @@ module zkgm::zkgm {
         amount: u64,
         ctx: &mut TxContext
     ) {
-        let typename_t = type_name::get<T>();
-        let key = typename_t.into_string();
-        if(!relay_store.object_store.contains(string::from_ascii(key))) {
-            abort E_NO_COIN_IN_BAG
-        };
-        let coin = relay_store.object_store.borrow_mut<String, Coin<T>>(string::from_ascii(key));
-
-        let transferred_coin = coin.split<T>(amount, ctx);
+        let transferred_coin = relay_store.split_coin<T>(amount, ctx);
         transfer::public_transfer(transferred_coin, receiver);
     }
 
     fun protocol_fill_mint<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         _channel_id: u32,
         _path: u256,
         wrapped_token: vector<u8>,
@@ -999,16 +1040,16 @@ module zkgm::zkgm {
             return (vector::empty(), E_ANOTHER_TOKEN_IS_REGISTERED)
         };
         if (quote_amount > 0) {
-            vault.mint_and_transfer_with_cap<T>(
-                zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+            vault.mint<T>(
+                zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
                 quote_amount as u64,
                 receiver,
                 ctx
             );
         };
         if (fee > 0){
-            vault.mint_and_transfer_with_cap<T>(
-                zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+            vault.mint<T>(
+                zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
                 fee,
                 relayer,
                 ctx
@@ -1142,7 +1183,8 @@ module zkgm::zkgm {
 
     fun execute_token_order<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -1162,6 +1204,7 @@ module zkgm::zkgm {
         if (intent || order.kind() == TOKEN_ORDER_KIND_SOLVE) {
             return zkgm.market_maker_fill<T>(
                 vault,
+                escrow_vault,
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -1253,6 +1296,7 @@ module zkgm::zkgm {
             // non wrapped assets).
             zkgm.market_maker_fill<T>(
                 vault,
+                escrow_vault,
                 ibc_packet,
                 relayer,
                 relayer_msg,
@@ -1334,7 +1378,7 @@ module zkgm::zkgm {
 
     fun verify_internal<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         ibc_store: &mut ibc::IBCStore,
         coin: Option<Coin<T>>,
         sender: address,
@@ -1380,13 +1424,13 @@ module zkgm::zkgm {
 
     fun verify_token_order<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         coin: Coin<T>,
         _sender: address,
         channel_id: u32,
         path: u256,
         order: TokenOrderV2,
-        ctx: &TxContext
+        _: &TxContext
     ) {
         let base_token = *order.base_token();
 
@@ -1422,10 +1466,9 @@ module zkgm::zkgm {
             // We don't have to verify that metadataImage matches the stored one
             // because the prediction would fail otherwise and we would fall
             // back in the else branch.
-            vault.burn_with_cap<T>(
-                zkgm.object_store.borrow<_, VaultCap>(VAULT_CAP_OBJECT_KEY),
-                coin,
-                ctx
+            vault.burn<T>(
+                zkgm.object_store.borrow<_, owned_vault::ZkgmCap>(OWNED_VAULT_OBJECT_KEY),
+                coin
             );
         } else {
             
@@ -1444,7 +1487,7 @@ module zkgm::zkgm {
 
     fun verify_forward<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         ibc_store: &mut ibc::IBCStore,
         coin: Option<Coin<T>>,
         sender: address,
@@ -1471,7 +1514,8 @@ module zkgm::zkgm {
 
     fun acknowledge_internal<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc_packet: Packet,
         relayer: address,
         path: u256,
@@ -1490,6 +1534,7 @@ module zkgm::zkgm {
                     
                     zkgm.acknowledge_token_order<T>(
                         vault,
+                        escrow_vault,
                         ibc_packet,
                         relayer,
                         path,
@@ -1507,6 +1552,7 @@ module zkgm::zkgm {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
                 zkgm.acknowledge_forward<T>(
                     vault,
+                    escrow_vault,
                     ibc_packet,
                     relayer,
                     salt,
@@ -1525,7 +1571,8 @@ module zkgm::zkgm {
 
     fun acknowledge_token_order<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc_packet: Packet,
         _relayer: address,
         path: u256,
@@ -1545,8 +1592,8 @@ module zkgm::zkgm {
                 let market_maker = bcs::new(*asset_order_ack.market_maker()).peel_address();
 
                 if (order.kind() == TOKEN_ORDER_KIND_UNESCROW) {
-                    vault.mint_and_transfer_with_cap<T>(
-                        zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
+                    vault.mint<T>(
+                        zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
                         order.base_amount() as u64,
                         market_maker,
                         ctx
@@ -1567,16 +1614,20 @@ module zkgm::zkgm {
                             );
                             coin.split<T>(order.base_amount() as u64, ctx)
                         };
-                        vault.burn_with_cap<T>(
-                            zkgm.object_store.borrow(VAULT_CAP_OBJECT_KEY),
-                            coin,
-                            ctx
+                        vault.burn<T>(
+                            zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
+                            coin
+                        );
+                    } else if (bcs::to_bytes(&market_maker) == ESCROW_VAULT_OBJECT_KEY) {
+                        let coin = zkgm.split_coin<T>(order.base_amount() as u64, ctx);
+                        escrow_vault.escrow<T>(
+                            zkgm.object_store.borrow(ESCROW_VAULT_OBJECT_KEY),
+                            coin
                         );
                     } else {
                         zkgm.distribute_coin<T>(market_maker, order.base_amount() as u64, ctx);
                     };
                 }
-                
             } else {
                 abort E_INVALID_FILL_TYPE
             };
@@ -1594,7 +1645,8 @@ module zkgm::zkgm {
 
     fun acknowledge_forward<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
+        escrow_vault: &mut EscrowVault,
         ibc_packet: Packet,
         relayer: address,
         salt: vector<u8>,
@@ -1605,6 +1657,7 @@ module zkgm::zkgm {
     ) {
         zkgm.acknowledge_internal<T>(
             vault,
+            escrow_vault,
             ibc_packet,
             relayer,
             forward_packet.path(),
@@ -1618,7 +1671,7 @@ module zkgm::zkgm {
 
     fun timeout_internal<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         ibc_packet: Packet,
         relayer: address,
         path: u256,
@@ -1662,7 +1715,7 @@ module zkgm::zkgm {
 
     fun timeout_token_order<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         packet: Packet,
         path: u256,
         order: TokenOrderV2,
@@ -1679,7 +1732,7 @@ module zkgm::zkgm {
 
     fun refund<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         source_channel: u32,
         path: u256,
         order: TokenOrderV2,
@@ -1688,7 +1741,10 @@ module zkgm::zkgm {
         let sender = bcs::new(*order.sender()).peel_address();
 
         if (order.kind() == TOKEN_ORDER_KIND_UNESCROW) {
-            vault.mint_and_transfer<T>(order.base_amount() as u64, sender, ctx);
+            vault.mint<T>(
+                zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
+                order.base_amount() as u64, sender, ctx
+            );
         } else {
             zkgm.decrease_outstanding(
                 source_channel,
@@ -1704,7 +1760,7 @@ module zkgm::zkgm {
 
     fun timeout_forward<T>(
         zkgm: &mut RelayStore,
-        vault: &mut Vault,
+        vault: &mut OwnedVault,
         packet: Packet,
         relayer: address,
         path: u256,
@@ -1723,7 +1779,7 @@ module zkgm::zkgm {
 
     fun claim_wrapped_denom<T>(
         zkgm: &mut RelayStore,
-        vault: &Vault,
+        vault: &OwnedVault,
         wrapped_denom: vector<u8>,
         metadata: Option<TokenMetadata>,
     ): bool {
@@ -1790,4 +1846,356 @@ module zkgm::zkgm {
             true
         }
     }
+
+    #[test_only]
+    public fun init_for_tests(ctx: &mut TxContext) {
+        let id = object::new(ctx);
+
+        transfer::share_object(RelayStore {
+            id: id,
+            in_flight_packet: table::new(ctx),
+            channel_balance: table::new(ctx),
+            token_origin: table::new(ctx),
+            object_store: object_bag::new(ctx),
+            wrapped_denom_to_t: table::new(ctx),
+            test_mode: true,
+        });
+    }
+
+    #[test]
+    fun test_is_valid_version_true() {
+        assert!(is_valid_version(string::utf8(b"ucs03-zkgm-0")), 1)
+    }
+
+    #[test]
+    fun test_is_valid_version_false() {
+        assert!(!is_valid_version(string::utf8(b"ucs03-zkgm-1")), 1)
+    }
+
+    #[test]
+    fun test_increase_then_decrease_outstanding_ok() {
+        let mut t = test_scenario::begin(@0x0);
+
+        t.next_tx(@0x0);
+        init(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut store = t.take_shared<RelayStore>();
+
+        let channel: u32 = 7;
+        let path: u256 = 0xAA;
+        let token: vector<u8> = b"TKN";
+        let meta: vector<u8> = b"IMG";
+        let amt: u256 = 5;
+
+        increase_outstanding(&mut store, channel, path, token, meta, amt);
+        let rc1 = decrease_outstanding(&mut store, channel, path, token, meta, amt);
+        assert!(rc1 == 0, rc1);
+
+        test_scenario::return_shared(store);
+        t.end();
+    }
+
+    #[test]
+    fun test_decrease_outstanding_pair_not_found_code() {
+        let mut t = test_scenario::begin(@0x0);
+
+        t.next_tx(@0x0);
+        init(t.ctx());
+
+        t.next_tx(@0x0);
+        let mut store = t.take_shared<RelayStore>();
+
+        let rc = decrease_outstanding(
+            &mut store,
+            1,
+            0x1,
+            b"A",
+            b"B",
+            1
+        );
+        assert!(rc == E_CHANNEL_BALANCE_PAIR_NOT_FOUND, rc);
+
+        test_scenario::return_shared(store);
+        t.end();
+    }
+
+    #[test]
+    fun test_send_flow_escrow_sui_single_tx() {
+        use std::string;
+        use std::ascii;
+        use std::type_name;
+        use sui::test_scenario;
+        use sui::clock;
+        use sui::clock::Clock;
+        use sui::coin;
+        use sui::bcs;
+
+        let mut t = test_scenario::begin(@0x0);
+        let (mut ibc, mut zkgm, mut owned_vault, escrow_vault) = prepare_test_ctx(&mut t);
+        let zkgm_cap = test_scenario::take_from_sender<owned_vault::ZkgmCap>(&t);
+        zkgm.register_owned_vault_cap(zkgm_cap);
+      
+        let amount: u64 = 1_000;
+        let sui_coin = coin::mint_for_testing<sui::sui::SUI>(amount, t.ctx());
+
+        let sender = t.sender();
+        let receiver = t.sender();
+        let base_token = b"BASE";
+        let quote_token = std::type_name::get<sui::sui::SUI>().into_string().into_bytes();
+        let md = vector[
+            0u8,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,1,
+            2,3,4,5,6,7,8,9,
+            10,11,12,13,14,15,16,17
+        ];
+
+        let order = zkgm::token_order::new(
+            sui::bcs::to_bytes(&sender),
+            sui::bcs::to_bytes(&receiver),
+            base_token,
+            amount as u256,
+            quote_token,
+            0,
+            0x01,
+            x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31793035653070326a6376686a7a66376b63717372717839336434673375393368633268796b6171386872766b717270356c7472737361677a7964"
+        );
+        
+        let instr = zkgm::instruction::new(
+            INSTR_VERSION_2,
+            OP_TOKEN_ORDER,
+            order.encode()
+        );
+
+        let salt = b"SALT";
+        let mut send_ctx = begin_send(1, salt);
+        send_ctx = send_with_coin<sui::sui::SUI>(
+            &mut zkgm,
+            &mut owned_vault,
+            &mut ibc,
+            sui_coin,
+            INSTR_VERSION_2,
+            OP_TOKEN_ORDER,
+            order.encode(),
+            send_ctx,
+            t.ctx()
+        );
+
+
+        let clk_ref = t.take_shared<Clock>();
+        let now_ns = clock::timestamp_ms(&clk_ref) * 1_000_000;
+        let timeout_ns = now_ns + 1_000_000_000;
+        zkgm::zkgm::end_send(
+            &mut ibc,
+            &clk_ref,
+            0,
+            timeout_ns,
+            send_ctx,
+            t.ctx()
+        );
+
+        
+        let key = string::from_ascii(type_name::get<sui::sui::SUI>().into_string());
+        assert!(zkgm.object_store.contains(key), 1);
+        let bag_coin: &Coin<sui::sui::SUI> = zkgm.object_store.borrow(key);
+        assert!(coin::value(bag_coin) == amount, 2);
+
+        let pair = ChannelBalancePair {
+            channel: 1,
+            path: 0,
+            token: base_token,
+            metadata_image: quote_token,
+        };
+        assert!(zkgm.channel_balance.contains(pair), 3);
+        let tracked: u256 = *zkgm.channel_balance.borrow(pair);
+        assert!(tracked == (amount as u256), 4);
+        
+        end_test(
+            clk_ref,
+            ibc,
+            zkgm,
+            owned_vault,
+            escrow_vault,
+        );
+
+        t.end();
+    }
+
+    #[test]
+    fun test_recv_flow_solve_sui_single_tx() {
+        use sui::test_scenario;
+        use sui::clock;
+
+        let mut t = test_scenario::begin(@0x0);
+
+        let (mut ibc, mut zkgm, mut owned_vault, mut escrow_vault) = prepare_test_ctx(&mut t);
+        let zkgm_cap = test_scenario::take_from_sender<escrow_vault::ZkgmCap>(&t);
+
+        let base_token = b"SUI";
+
+        let coin = coin::mint_for_testing<sui::sui::SUI>(100_000, t.ctx());        
+
+        escrow_vault.set_fungible_counterparty<sui::sui::SUI>(
+            0,
+            1,
+            base_token,
+            b"beneficiary",
+            t.ctx(),
+        );
+
+        escrow_vault.escrow<sui::sui::SUI>(
+            &zkgm_cap,
+            coin
+        );
+
+        zkgm.register_escrow_vault_cap(zkgm_cap);
+
+        let amount: u64 = 1_000;
+        let quote_token = type_name::get<sui::sui::SUI>().into_string().into_bytes();
+
+        let sender = t.sender();  
+        let receiver = t.sender(); 
+
+        let solver_md = solver_metadata::new(
+            ESCROW_VAULT_OBJECT_KEY,
+            x"",
+        );
+        let solver_md = solver_md.encode();
+
+        let order = zkgm::token_order::new(
+            bcs::to_bytes(&sender),     
+            bcs::to_bytes(&receiver), 
+            base_token,                
+            (amount as u256),          
+            quote_token,                
+            (amount as u256),          
+            0x03,  
+            solver_md                     
+        );
+
+        let instr = zkgm::instruction::new(
+            zkgm::zkgm::INSTR_VERSION_2,
+            zkgm::zkgm::OP_TOKEN_ORDER,
+            order.encode()
+        );
+
+        let salt = b"SALT_SOLVE";
+        let path: u256 = 0; 
+        let packet_bytes = zkgm::zkgm_packet::new(
+            salt,
+            path,
+            instr
+        ).encode();
+
+        let clk_ref = t.take_shared<Clock>();
+        let mut rctx = begin_recv(
+            vector[1],
+            vector[1],
+            vector[packet_bytes],
+            vector[0],
+            vector[clock::timestamp_ms(&clk_ref) * 1_000_000 + 1_000_000_000]
+        );
+
+        let relayer: address = @0xCAFE;
+        let relayer_msg = b"MM-proof-or-data";
+
+        rctx = recv_packet<sui::sui::SUI>(
+            &mut ibc,
+            &mut zkgm,
+            &mut owned_vault,
+            &mut escrow_vault,
+            &clk_ref,
+            relayer,
+            relayer_msg,
+            rctx,
+            t.ctx()
+        );
+
+        end_recv(
+            &mut ibc,
+            &clk_ref,
+            b"proof",
+            1,           
+            relayer,
+            relayer_msg,
+            rctx
+        );
+
+        end_test(
+            clk_ref,
+            ibc,
+            zkgm,
+            owned_vault,
+            escrow_vault,
+        );
+        t.end();
+    }
+
+    #[test_only]
+    fun prepare_test_ctx(t: &mut test_scenario::Scenario): (ibc::IBCStore, RelayStore, OwnedVault, EscrowVault) {
+        use std::ascii;
+        use sui::test_scenario;
+        use sui::clock;
+
+        init_for_tests(t.ctx());
+        ibc::init_for_tests(t.ctx());
+        owned_vault::init_for_tests(t.ctx());
+        escrow_vault::init_for_tests(t.ctx());
+
+
+        let mut clk0 = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk0, 1_000);
+        clock::share_for_testing(clk0);
+
+        t.next_tx(@0x0);
+        let mut ibc = t.take_shared<ibc::IBCStore>();
+        let mut zkgm = t.take_shared<zkgm::zkgm::RelayStore>();
+        let mut owned_vault = t.take_shared<owned_vault::OwnedVault>();
+        let mut escrow_vault = t.take_shared<escrow_vault::EscrowVault>();
+
+        // Open client/connection/channel like in send test
+        let mut clk = clock::create_for_testing(t.ctx());
+        clock::increment_for_testing(&mut clk, 1_000);
+        clock::share_for_testing(clk);
+
+        ibc.create_client(
+            string::utf8(b"cometbls"),
+            b"cs",
+            b"cons",
+            t.ctx()
+        );
+        ibc.connection_open_init(1, 2);
+        ibc.connection_open_ack(1, 9, b"p", 1);
+
+        let mut port = type_name::get<zkgm::zkgm::IbcAppWitness>().into_string();
+        port.append(ascii::string(b"::any"));
+        ibc.channel_open_init(
+            port.to_string(),
+            b"cp-port",
+            1,
+            string::utf8(b"ucs03-zkgm-0"),
+            zkgm::zkgm::IbcAppWitness {}
+        );
+        ibc.channel_open_ack(
+            string::utf8(b"ignored-here"),
+            1,
+            string::utf8(b"ucs03-zkgm-0"),
+            1,
+            b"p",
+            1,
+            zkgm::zkgm::IbcAppWitness {}
+        );
+
+        (ibc, zkgm, owned_vault, escrow_vault) 
+    }
+
+    #[test_only]
+    fun end_test<A: key, B: key, C: key, D: key, E: key>(a: A, b: B, c: C, d: D, e: E) {
+        test_scenario::return_shared(a);
+        test_scenario::return_shared(b);
+        test_scenario::return_shared(c);
+        test_scenario::return_shared(d);
+        test_scenario::return_shared(e);
+    }
+    
 }

@@ -59,9 +59,7 @@
 // TITLE.
 
 module ibc::channel {
-    use std::option::{Self, Option};
     use std::string::{Self, String};
-    use std::vector;
     use ibc::ethabi;
 
     const E_PACKET_VERSION_LENGTH_EXCEEDS_MAX: u64 = 1;
