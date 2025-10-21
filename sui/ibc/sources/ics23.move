@@ -73,10 +73,24 @@ module ibc::ics23 {
     const E_INVALID_LEAF_PREFIX: u64 = 35207;
     const E_INVALID_INNER_PREFIX: u64 = 35208;
     const E_EMPTY_INNER_VALUE: u64 = 35209;
+    const E_EMPTY_PROOF: u64 = 35210;
+    const E_LEFT_AND_RIGHT_KEY_EMPTY: u64 = 35211;
+    const E_RIGHT_KEY_RANGE: u64 = 35212;
+    const E_LEFT_KEY_RANGE: u64 = 35213;
+    const E_RIGHT_PROOF_LEFT_MOST: u64 = 35214;
+    const E_LEFT_PROOF_RIGHT_MOST: u64 = 35215;
+    const E_IS_LEFT_NEIGHBOR: u64 = 35216;
+    const E_ORDER_PADDING_NOT_FOUND: u64 = 35217;
+    const E_ROOT_MISMATCH: u64 = 35218;
 
     public struct MembershipProof has drop {
         sub_proof: ExistenceProof,
-        top_level_proof: ExistenceProof
+        top_level_proof: ExistenceProof,
+    }
+
+    public struct NonMembershipProof has drop {
+        non_existence_proof: NonExistenceProof,
+        existence_proof: ExistenceProof,
     }
 
     public struct ExistenceProof has drop, copy {
@@ -91,11 +105,11 @@ module ibc::ics23 {
         suffix: vector<u8>
     }
 
-    // public struct NonExistenceProof has drop {
-    //     key: vector<u8>,
-    //     left: Option<ExistenceProof>,
-    //     right: Option<ExistenceProof>
-    // }
+    public struct NonExistenceProof has drop {
+        key: vector<u8>,
+        left: Option<ExistenceProof>,
+        right: Option<ExistenceProof>
+    }
 
     public struct ProofSpec has drop {
         child_size: u64,
@@ -122,23 +136,47 @@ module ibc::ics23 {
 
         verify_no_root_check(
             &proof.sub_proof,
-            iavl_proof_spec(),
+            &iavl_proof_spec(),
             key,
             value
         );
 
         verify_existence(
             &proof.top_level_proof,
-            tm_proof_spec(),
+            &tm_proof_spec(),
             root,
             prefix,
             subroot
         );
     }
 
+    public(package) fun verify_non_membership(
+        proof: NonMembershipProof,
+        root: vector<u8>,
+        prefix: vector<u8>,
+        key: vector<u8>
+    ) {
+        let subroot = calculate_non_existence_root(&proof.non_existence_proof);
+
+        verify_non_existence(&proof.non_existence_proof, &iavl_proof_spec(), subroot, key);
+
+        verify_no_root_check(
+            &proof.existence_proof,
+            &tm_proof_spec(),
+            prefix,
+            subroot,
+        );
+
+        let subroot2 = calculate_existence_root(&proof.existence_proof);
+
+        if (root != subroot2) {
+            abort E_ROOT_MISMATCH
+        };
+    }
+
     fun verify_existence(
         proof: &ExistenceProof,
-        proof_spec: ProofSpec,
+        proof_spec: &ProofSpec,
         commitment_root: vector<u8>,
         key: vector<u8>,
         value: vector<u8>
@@ -156,7 +194,7 @@ module ibc::ics23 {
 
     fun verify_no_root_check(
         proof: &ExistenceProof,
-        proof_spec: ProofSpec,
+        proof_spec: &ProofSpec,
         key: vector<u8>,
         value: vector<u8>
     ) {
@@ -167,7 +205,66 @@ module ibc::ics23 {
         check_against_spec(proof, proof_spec);
     }
 
-    fun check_against_spec(proof: &ExistenceProof, proof_spec: ProofSpec) {
+    fun verify_non_existence(
+        proof: &NonExistenceProof,
+        proof_spec: &ProofSpec,
+        commitment_root: vector<u8>,
+        key: vector<u8>,
+    ) {
+        if (proof.left.is_some()) {
+            let proof_left = proof.left.borrow();
+            verify_existence(
+                proof_left,
+                proof_spec,
+                commitment_root,
+                proof_left.key,
+                proof_left.value
+            );
+        };
+
+        if (proof.right.is_some()) {
+            let proof_right = proof.right.borrow();
+            verify_existence(
+                proof_right,
+                proof_spec,
+                commitment_root,
+                proof_right.key,
+                proof_right.value
+            );
+
+            
+        };
+
+        if (proof.left.is_none() && proof.right.is_none()) {
+            abort E_LEFT_AND_RIGHT_KEY_EMPTY
+        };
+
+        if (proof.right.is_some() && compare(&key, &proof.right.borrow().key) >= 1) {
+            abort E_RIGHT_KEY_RANGE
+        };
+
+        if (proof.left.is_some() && compare(&key, &proof.left.borrow().key) <= 1) {
+            abort E_LEFT_KEY_RANGE
+        };
+
+        if (proof.left.is_none()) {
+            let proof_right = proof.right.borrow();
+            if (!is_left_most(proof_spec, &proof_right.path, proof_right.path.length())) {
+                abort E_RIGHT_PROOF_LEFT_MOST
+            };
+        } else if (proof.right.is_none()) {
+            let proof_left = proof.left.borrow();
+            if (!is_right_most(proof_spec, &proof_left.path, proof_left.path.length())) {
+                abort E_LEFT_PROOF_RIGHT_MOST
+            };
+        } else {
+            if (!is_left_neighbor(proof_spec, &proof.left.borrow().path, &proof.right.borrow().path)) {
+                abort E_IS_LEFT_NEIGHBOR
+            };
+        };
+    }
+
+    fun check_against_spec(proof: &ExistenceProof, proof_spec: &ProofSpec) {
         assert!(!vector::is_empty(&proof.leaf_prefix), E_EMPTY_LEAF_PREFIX);
 
         assert!(*vector::borrow(&proof.leaf_prefix, 0) == 0, E_INVALID_LEAF_PREFIX);
@@ -199,6 +296,18 @@ module ibc::ics23 {
         };
 
         root
+    }
+
+    fun calculate_non_existence_root(
+        proof: &NonExistenceProof
+    ): vector<u8> {
+        if (proof.left.is_some()) {
+            return calculate_existence_root(proof.left.borrow())
+        } else if (proof.right.is_some()) {
+            return calculate_existence_root(proof.right.borrow())
+        };
+        
+        abort E_EMPTY_PROOF
     }
 
     fun apply_leaf_op(
@@ -242,6 +351,15 @@ module ibc::ics23 {
         }
     }
 
+    public(package) fun decode_non_membership_proof(buf: vector<u8>): NonMembershipProof {
+        let mut buf = bcs::new(buf);
+
+        NonMembershipProof {
+            non_existence_proof: decode_non_existence_proof(&mut buf),
+            existence_proof: decode_existence_proof(&mut buf),
+        }
+    }
+
     public(package) fun decode_existence_proof(buf: &mut BCS): ExistenceProof {
         let key = buf.peel_vec_u8();
         let value = buf.peel_vec_u8();
@@ -258,6 +376,169 @@ module ibc::ics23 {
                 }
             )
         }
+    }
+
+    public(package) fun decode_non_existence_proof(buf: &mut BCS): NonExistenceProof {
+        let key = buf.peel_vec_u8();
+        let left = buf.peel_option!<ExistenceProof>(|buf| {
+            decode_existence_proof(buf)
+        });
+        let right = buf.peel_option!<ExistenceProof>(|buf| {
+            decode_existence_proof(buf)
+        });
+        
+        NonExistenceProof {
+            key,
+            left,
+            right,
+        }
+    }
+
+    fun is_left_most(
+        proof_spec: &ProofSpec,
+        path: &vector<InnerOp>,
+        length: u64
+    ): bool {
+        let (min_prefix, max_prefix, suffix) = get_padding(proof_spec, 0);
+
+        let mut i = 0;
+        while (i < length) {
+            if (!has_padding(&path[i], min_prefix, max_prefix, suffix)) {
+                return false
+            };
+            i = i + 1;
+        };
+
+        true
+    }
+
+    fun is_right_most(
+        proof_spec: &ProofSpec,
+        path: &vector<InnerOp>,
+        length: u64
+    ): bool {
+        let (min_prefix, max_prefix, suffix) = get_padding(proof_spec, 1);
+
+        let mut i = 0;
+        while (i < length) {
+            if (!has_padding(&path[i], min_prefix, max_prefix, suffix)) {
+                return false
+            };
+            i = i + 1;
+        };
+
+        true
+    }
+
+    fun is_left_step(
+        proof_spec: &ProofSpec,
+        left: &InnerOp,
+        right: &InnerOp, 
+    ): bool {
+        let left_idx = order_from_padding(proof_spec, left);
+        let right_idx = order_from_padding(proof_spec, right);
+
+        right_idx == left_idx + 1
+    }
+
+    fun is_left_neighbor(
+        proof_spec: &ProofSpec,
+        left: &vector<InnerOp>,
+        right: &vector<InnerOp>
+    ): bool {
+        let mut left_idx = left.length() - 1;
+        let mut right_idx = right.length() - 1;
+
+        while (left_idx >= 0 && right_idx >= 0) {
+            if (left[left_idx] == right[right_idx]) {
+                left_idx = left_idx - 1;
+                right_idx = right_idx - 1;
+                continue
+            };
+
+            break;
+        };
+
+        if (!is_left_step(proof_spec, &left[left_idx], &right[right_idx])) {
+            return false
+        };
+
+        if (!is_right_most(proof_spec, left, left_idx)) {
+            return false
+        };
+
+        if (!is_left_most(proof_spec, right, right_idx)) {
+            return false
+        };
+
+        true
+    }
+
+    fun order_from_padding(
+        proof_spec: &ProofSpec,
+        op: &InnerOp,
+    ): u64 {
+        let mut branch = 0;
+        while (branch < 2) {
+            let (minp, maxp, suffix) = get_padding(proof_spec, branch);
+            if (has_padding(op, minp, maxp, suffix)) {
+                return branch
+            };
+            branch = branch + 1;
+        };
+
+        abort E_ORDER_PADDING_NOT_FOUND
+    }
+
+    fun get_padding(
+        proof_spec: &ProofSpec,
+        branch: u64
+    ): (u64, u64, u64) {
+        let prefix = branch * proof_spec.child_size;
+        let min_prefix = prefix + proof_spec.min_prefix_length;
+        let max_prefix = prefix + proof_spec.max_prefix_length;
+        let suffix = (1 - branch) * proof_spec.child_size;
+
+        (min_prefix, max_prefix, suffix)
+    }
+
+    fun has_padding(
+        op: &InnerOp,
+        min_prefix: u64,
+        max_prefix: u64,
+        suffix: u64
+    ): bool {
+        if (op.prefix.length() < min_prefix || op.prefix.length() > max_prefix) {
+            false
+        } else {
+            op.suffix.length() == suffix
+        }
+    }
+
+    fun compare(
+        a: &vector<u8>,
+        b: &vector<u8>,
+    ): u64 {
+        let min_len = std::u64::min(a.length(), b.length());
+        let mut i = 0;
+        while (i < min_len) {
+            if (a[i] < b[i]) {
+                return 0
+            } else if (a[i] > b[i]) {
+                return 2
+            };
+            i = i + 1;
+        };
+
+        if (a.length() > min_len) {
+            return 2
+        };
+
+        if (b.length() > min_len) {
+            return 0
+        };
+
+        1
     }
 
     fun encode_varint(mut value: u64): vector<u8> {
