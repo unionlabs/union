@@ -417,6 +417,24 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "421614";
+          ucs04-chain-id = "arbitrum.421614";
+
+          name = "arbitrum-sepolia";
+          rpc-url = "https://arb-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73";
+          rate-limit-enabled = "false";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
         # {
         #   network = "0g-testnet";
         #   rpc-url = "https://evmrpc-testnet.0g.ai";
@@ -539,6 +557,24 @@ _: {
           verifier-url = mkTenderlyVerifierUrl chain-id;
 
           u = ba5ed;
+        }
+        rec {
+          chain-id = "42161";
+          ucs04-chain-id = "arbitrum.42161";
+
+          name = "arbitrum";
+          rpc-url = "https://arb-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+          rate-limit-enabled = "false";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
 
         # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
