@@ -991,8 +991,8 @@
     "core": {
       "address": "xion1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqjrkp8m",
       "height": 2864397,
-      "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-      "code_id": 1471
+      "commit": "d8bbb667422485b5ddccdecfc7eb3148fa28310e",
+      "code_id": 1738
     },
     "lightclient": {
       "cometbls": {
@@ -1024,8 +1024,8 @@
       "ucs03": {
         "address": "xion1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qlzhdk9",
         "height": 2864437,
-        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-        "code_id": 1470,
+        "commit": "d8bbb667422485b5ddccdecfc7eb3148fa28310e",
+        "code_id": 1737,
         "minter": {
           "type": "cw20",
           "address": "xion1ak8muzgf2nv5ukzeg2wpf2vls74247et33cfhmg87uvpey73xdeqexkzgc",
