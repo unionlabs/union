@@ -7,6 +7,13 @@ _: {
       buildPnpmPackage,
       ...
     }:
+    let
+      deps = with pkgs; [
+        python3
+        stdenv.cc
+        pkg-config
+      ];
+    in
     {
       packages = {
         site = mkCi false (buildPnpmPackage {
@@ -18,6 +25,8 @@ _: {
           pnpmWorkspaces = [
             "site"
           ];
+          buildInputs = deps;
+          nativeBuildInputs = deps;
           buildPhase = ''
             runHook preBuild
             export PUPPETEER_SKIP_DOWNLOAD=1;
@@ -39,13 +48,14 @@ _: {
           type = "app";
           program = pkgs.writeShellApplication {
             name = "site-dev-server";
+            runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/
 
               export PUPPETEER_SKIP_DOWNLOAD=1 
-              npm install
-              npm run dev -- --host
+              pnpm install
+              pnpm dev -- --host
             '';
           };
         };

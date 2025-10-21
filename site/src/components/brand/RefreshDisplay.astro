@@ -1,0 +1,36 @@
+---
+interface Props {
+  class?: string
+}
+
+const { class: className = "" } = Astro.props
+const brandKitLink =
+  "https://drive.google.com/drive/folders/1KLOuxQi9nhqzeram8Ay3_sGPn97Q0XRj?usp=drive_link"
+---
+
+<div class="flex flex-col gap-4">
+  <div class={`w-full h-72 bg-[#FF6F00] flex flex-col items-center justify-center border border-gray-200 p-8 relative overflow-hidden ${className}`}>
+    <img
+      src="/pattern-refresh.svg"
+      alt="Pattern overlay"
+      class="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none"
+    />
+    <div class="flex flex-col gap-4 text-center max-w-md relative z-10">
+      <h2 class="text-black font-geist text-3xl md:text-4xl font-bold">
+        Union Is Evolving.
+      </h2>
+      <p class="text-black text-sm md:text-base font-geist">
+        The Union website and brand is being updated, follow the provided link for the new Brand
+        Assets.
+      </p>
+      <a
+        href={brandKitLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-black font-semibold underline hover:opacity-80 transition-opacity duration-300 text-sm md:text-base"
+      >
+        2025 Union Brand Kit
+      </a>
+    </div>
+  </div>
+</div>

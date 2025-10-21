@@ -4,9 +4,11 @@ interface Props {
   colors: Array<string>
   class?: string
   vertical?: boolean
+  cols?: number
 }
 
-const { label, colors, class: className = "", vertical = false } = Astro.props
+const { label, colors, class: className = "", vertical = false, cols = 0 } = Astro.props
+const useGrid = cols > 0
 
 // Function to determine if text should be black or white based on background color
 function shouldUseBlackText(hexColor: string) {
@@ -33,29 +35,56 @@ function shouldUseBlackText(hexColor: string) {
       <div class="w-4 h-[1px] md:h-4 md:w-[1px] bg-accent-500"></div>
     </div>
   </div>
-  <div class="flex flex-col md:flex-row border border-white w-full h-72">
-    {
-      colors.map((color) => (
-        <button
-          class:list={[
-            "flex items-center justify-center p-4 w-full h-full cursor-pointer transition-all hover:opacity-90",
-            { "text-black": shouldUseBlackText(color) },
-            { "text-white": !shouldUseBlackText(color) },
-            { "md:[writing-mode:vertical-lr]": vertical },
-          ]}
-          style={`background-color: ${color}`}
-          data-color={color}
-        >
-          <span
-            data-copy
-            class="font-mono uppercase"
-          >
-            {color}
-          </span>
-        </button>
-      ))
-    }
-  </div>
+  {
+    useGrid && cols === 2 ? (
+      <div class="flex flex-row border border-white w-full h-72 gap-2">
+        {
+          colors.map((color) => (
+            <button
+              class:list={[
+                "flex items-center justify-center p-4 flex-1 h-full cursor-pointer transition-all hover:opacity-90 [writing-mode:vertical-lr]",
+                { "text-black": shouldUseBlackText(color) },
+                { "text-white": !shouldUseBlackText(color) },
+              ]}
+              style={`background-color: ${color}`}
+              data-color={color}
+            >
+              <span
+                data-copy
+                class="font-mono uppercase"
+              >
+                {color}
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    ) : (
+      <div class="flex flex-col md:flex-row border border-white w-full h-72 gap-2">
+        {
+          colors.map((color) => (
+            <button
+              class:list={[
+                "flex items-center justify-center p-4 flex-1 h-full cursor-pointer transition-all hover:opacity-90",
+                { "text-black": shouldUseBlackText(color) },
+                { "text-white": !shouldUseBlackText(color) },
+                { "md:[writing-mode:vertical-lr]": vertical },
+              ]}
+              style={`background-color: ${color}`}
+              data-color={color}
+            >
+              <span
+                data-copy
+                class="font-mono uppercase"
+              >
+                {color}
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    )
+  }
 </div>
 
 <script>
