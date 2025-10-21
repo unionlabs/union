@@ -37,6 +37,9 @@
       "sei.1329": {
         "environment": "production"
       },
+      "sui.103": {
+        "environment": "development"
+      },
       "union.union-1": {
         "environment": "production"
       },
