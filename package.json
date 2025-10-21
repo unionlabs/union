@@ -1,6 +1,9 @@
 {
   "private": true,
   "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "prepare": "effect-language-service patch",
     "docgen": "pnpm --recursive --filter @unionlabs/sdk --filter @unionlabs/sdk-evm --filter @unionlabs/sdk-cosmos exec docgen && node scripts/docs.mjs"
