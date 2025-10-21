@@ -52,7 +52,8 @@ pub struct Module {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ZkgmConfig {
-    vault_object_id: ObjectID,
+    owned_vault_object_id: ObjectID,
+    escrow_vault_object_id: ObjectID,
     /// ID of the `wrapped_token_to_t` mapping
     wrapped_token_to_t: ObjectID,
 }
@@ -108,7 +109,13 @@ impl TransactionPluginServer for Module {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
-        let vault_store_initial_seq = self.get_initial_seq(self.zkgm_config.vault_object_id).await;
+        let owned_vault_store_initial_seq = self
+            .get_initial_seq(self.zkgm_config.owned_vault_object_id)
+            .await;
+
+        let escrow_vault_store_initial_seq = self
+            .get_initial_seq(self.zkgm_config.escrow_vault_object_id)
+            .await;
 
         // If the module is ZKGM, then we register the tokens if needed. Otherwise,
         // the registered tokens are returned.
@@ -136,8 +143,10 @@ impl TransactionPluginServer for Module {
                 self,
                 &module_info,
                 store_initial_seq,
-                self.zkgm_config.vault_object_id,
-                vault_store_initial_seq,
+                self.zkgm_config.owned_vault_object_id,
+                owned_vault_store_initial_seq,
+                self.zkgm_config.escrow_vault_object_id,
+                escrow_vault_store_initial_seq,
                 coin_t,
                 fee_recipient,
                 data.relayer_msgs.clone(),
@@ -163,7 +172,12 @@ impl TransactionPluginServer for Module {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
-        let vault_store_initial_seq = self.get_initial_seq(self.zkgm_config.vault_object_id).await;
+        let owned_vault_store_initial_seq = self
+            .get_initial_seq(self.zkgm_config.owned_vault_object_id)
+            .await;
+        let escrow_vault_store_initial_seq = self
+            .get_initial_seq(self.zkgm_config.escrow_vault_object_id)
+            .await;
 
         // If the module is ZKGM, then we register the tokens if needed. Otherwise,
         // the registered tokens are returned.
@@ -180,8 +194,10 @@ impl TransactionPluginServer for Module {
                 self,
                 &module_info,
                 store_initial_seq,
-                self.zkgm_config.vault_object_id,
-                vault_store_initial_seq,
+                self.zkgm_config.owned_vault_object_id,
+                owned_vault_store_initial_seq,
+                self.zkgm_config.escrow_vault_object_id,
+                escrow_vault_store_initial_seq,
                 coin_t,
                 fee_recipient,
                 session,
@@ -202,7 +218,9 @@ impl TransactionPluginServer for Module {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
-        let vault_store_initial_seq = self.get_initial_seq(self.zkgm_config.vault_object_id).await;
+        let vault_store_initial_seq = self
+            .get_initial_seq(self.zkgm_config.owned_vault_object_id)
+            .await;
 
         // If the module is ZKGM, then we register the tokens if needed. Otherwise,
         // the registered tokens are returned.
@@ -218,7 +236,7 @@ impl TransactionPluginServer for Module {
                 self,
                 &module_info,
                 store_initial_seq,
-                self.zkgm_config.vault_object_id,
+                self.zkgm_config.owned_vault_object_id,
                 vault_store_initial_seq,
                 coin_t,
                 session,

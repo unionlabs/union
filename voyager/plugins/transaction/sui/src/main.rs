@@ -212,7 +212,6 @@ impl Module {
                         &mut ptb_builder,
                         self,
                         try_parse_port(&self.graphql_url, port_id.as_bytes()).await?,
-                        port_id,
                         data,
                     )?
                 }

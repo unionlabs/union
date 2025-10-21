@@ -302,7 +302,6 @@ pub fn channel_open_ack(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: ModuleInfo,
-    port_id: String,
     data: MsgChannelOpenAck,
 ) -> anyhow::Result<()> {
     ptb.move_call(
@@ -316,7 +315,6 @@ pub fn channel_open_ack(
                 initial_shared_version: module.ibc_store_initial_seq,
                 mutable: true,
             }),
-            (&port_id.into_bytes()).into(),
             data.channel_id.raw().into(),
             (&data.counterparty_version.into_bytes()).into(),
             data.counterparty_channel_id.raw().into(),
