@@ -1,5 +1,6 @@
 {
+  "nodeVersion": "22.x",
   "buildCommand": "pnpm --filter=site build",
-  "installCommand": "pnpm install --frozen-lockfile && pnpm --filter=site install",
+  "installCommand": "pnpm install --frozen-lockfile",
   "outputDirectory": "site/.vercel/output"
 }
