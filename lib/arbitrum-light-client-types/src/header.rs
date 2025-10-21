@@ -60,7 +60,7 @@ pub struct AssertionState {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct GlobalState {
-    /// NOTE: [0] is the L2 block hash.
+    /// NOTE: `[0]` is the L2 block hash.
     pub bytes32_vals: [H256; 2],
     pub u64_vals: [u64; 2],
 }

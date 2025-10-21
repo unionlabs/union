@@ -270,8 +270,6 @@ pub mod v2 {
     ///
     /// assert_eq!(value[ASSERTION_NODE_STATUS_BYTE_OFFSET], 2);
     /// ```
-    ///
-    /// [`AssertionNode`]: super::AssertionNode
     pub const ASSERTION_NODE_STATUS_BYTE_OFFSET: usize = 6;
 
     /// Calculate the slot of the [`confirmData`] field of the `Node` struct stored in the `_nodes`
@@ -388,7 +386,7 @@ pub mod v2 {
         #[derive(Debug)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         struct GlobalState {
-            /// NOTE: [0] is the L2 block hash.
+            /// NOTE: `[0]` is the L2 block hash.
             bytes32[2] bytes32Vals;
             uint64[2] u64Vals;
         }

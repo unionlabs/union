@@ -1,4 +1,4 @@
-use arbitrum_light_client_types::{ClientState, ConsensusState, Header, HeaderV1};
+use arbitrum_light_client_types::{ClientState, ConsensusState, Header};
 use ethereum_light_client_types::StorageProof;
 use jsonrpsee::{
     Extensions,
