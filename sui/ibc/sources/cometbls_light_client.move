@@ -175,15 +175,6 @@ module ibc::cometbls_light_client {
         client.consensus_states.borrow(height).timestamp
     }
 
-    public(package) fun verify_non_membership(
-        _client: &Client,
-        _height: u64,
-        _proof: vector<u8>,
-        _path: vector<u8>
-    ): u64 {
-        0
-    }
-
     fun decode_consensus_state(buf: vector<u8>): ConsensusState {
         let mut index = 0;
         let timestamp = ethabi::decode_uint(&buf, &mut index);
@@ -351,6 +342,10 @@ module ibc::cometbls_light_client {
         key: vector<u8>,
         value: vector<u8>
     ): u64 {
+        if (client.status() != 0) {
+            abort E_FROZEN_CLIENT
+        };
+
         let consensus_state = client.consensus_states.borrow(height);
 
         let mut path = vector<u8>[0x03];
@@ -365,6 +360,33 @@ module ibc::cometbls_light_client {
             b"wasm", // HARDCODED PREFIX
             path,
             value
+        );
+
+        0
+    }
+
+    public(package) fun verify_non_membership(
+        client: &Client,
+        height: u64,
+        proof: vector<u8>,
+        key: vector<u8>
+    ): u64 {
+        if (client.status() != 0) {
+            abort E_FROZEN_CLIENT
+        };
+
+        let consensus_state = client.consensus_states.borrow(height);
+
+        let mut path = vector<u8>[0x03];
+        path.append(client.client_state.contract_address);
+        path.push_back(0x0);
+        path.append(key);
+
+        ics23::verify_non_membership(
+            ics23::decode_non_membership_proof(proof),
+            consensus_state.app_hash.hash,
+            b"wasm",
+            path,
         );
 
         0

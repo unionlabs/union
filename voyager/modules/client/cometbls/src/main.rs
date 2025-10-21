@@ -521,6 +521,12 @@ struct MoveMembershipProof {
     top_level_proof: ics23::existence_proof::ExistenceProof,
 }
 
+#[model]
+struct MoveNonMembershipProof {
+    existence_proof: ics23::existence_proof::ExistenceProof,
+    non_existence_proof: ics23::non_existence_proof::NonExistenceProof,
+}
+
 fn encode_merkle_proof_for_move(proof: ics23::merkle_proof::MerkleProof) -> Vec<u8> {
     match proof {
         ics23::merkle_proof::MerkleProof::Membership(sub_proof, top_level_proof) => {
@@ -528,8 +534,14 @@ fn encode_merkle_proof_for_move(proof: ics23::merkle_proof::MerkleProof) -> Vec<
                 sub_proof,
                 top_level_proof,
             }
+            .encode_as::<Bcs>()
         }
-        ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
+        ics23::merkle_proof::MerkleProof::NonMembership(non_existence_proof, existence_proof) => {
+            MoveNonMembershipProof {
+                existence_proof,
+                non_existence_proof,
+            }
+            .encode_as::<Bcs>()
+        }
     }
-    .encode_as::<Bcs>()
 }
