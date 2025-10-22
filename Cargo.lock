@@ -17080,7 +17080,6 @@ dependencies = [
 name = "voyager-plugin-transaction-batch"
 version = "0.0.0"
 dependencies = [
- "alloy",
  "either",
  "embed-commit",
  "enumorph",

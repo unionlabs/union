@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy            = { workspace = true, features = ["sol-types", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+# alloy            = { workspace = true, features = ["sol-types", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 either           = { workspace = true }
 embed-commit     = { workspace = true }
 enumorph         = { workspace = true }

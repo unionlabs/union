@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
 base-client                 = { workspace = true }
 base-light-client-types     = { workspace = true, features = ["serde"] }
 base-verifier               = { workspace = true }

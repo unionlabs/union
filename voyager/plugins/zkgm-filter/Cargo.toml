@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                            = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+alloy                            = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
 clap                             = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc                     = { workspace = true }
 crc                              = "3.3.0"
