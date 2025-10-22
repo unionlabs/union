@@ -87,7 +87,6 @@ pub struct MsgForceUpdateClient {
     pub client_id: ClientId,
     pub client_state_bytes: Bytes,
     pub consensus_state_bytes: Bytes,
-    pub height: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

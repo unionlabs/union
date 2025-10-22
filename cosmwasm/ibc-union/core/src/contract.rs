@@ -220,27 +220,20 @@ pub fn execute(
             client_id,
             client_state_bytes,
             consensus_state_bytes,
-            height,
         }) => {
             ensure_relayer_admin(deps.storage, &info.sender)?;
 
-            store_commit(
-                deps.branch(),
-                &ClientStatePath { client_id }.key(),
-                &commit(&client_state_bytes),
-            );
-            store_commit(
-                deps.branch(),
-                &ConsensusStatePath { client_id, height }.key(),
-                &commit(&consensus_state_bytes),
-            );
+            let client_impl = client_impl(deps.as_ref(), client_id)?;
 
-            deps.storage
-                .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
-            deps.storage.write::<ClientConsensusStates>(
-                &(client_id, height),
-                &consensus_state_bytes.into_vec().into(),
-            );
+            let (_, height) = init_client(
+                deps,
+                info.clone(),
+                client_state_bytes.into(),
+                consensus_state_bytes.into(),
+                info.sender,
+                client_impl,
+                client_id,
+            )?;
 
             Ok(Response::new().add_event(
                 Event::new("force_update_client")
@@ -996,57 +989,16 @@ fn create_client(
     deps.storage.write::<ClientTypes>(&client_id, &client_type);
     deps.storage.write::<ClientImpls>(&client_id, &client_impl);
 
-    // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
-    // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
-
-    // 1. write these states first, so they can be read by the light client contract during VerifyCreation
-    deps.storage
-        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
-    // 2. once the client state is saved, query the light client impl for the height of that client state (the state we just saved is the latest height)...
-    let latest_height = query_light_client::<u64>(
-        deps.as_ref(),
-        client_impl.clone(),
-        LightClientQuery::GetLatestHeight { client_id },
-    )?;
-    // 3. save the consensus state, so that it can be read during VerifyCreation as well
-    deps.storage.write::<ClientConsensusStates>(
-        &(client_id, latest_height),
-        &consensus_state_bytes.to_vec().into(),
-    );
-    // 4. finally, call VerifyCreation, which will read the states we just stored
-    let verify_creation_response = query_light_client::<VerifyCreationResponse>(
-        deps.as_ref(),
+    let (verify_creation_response, _) = init_client(
+        deps,
+        info,
+        client_state_bytes,
+        consensus_state_bytes,
+        relayer,
         client_impl,
-        LightClientQuery::VerifyCreation {
-            caller: info.sender.into(),
-            client_id,
-            relayer: relayer.into(),
-        },
+        client_id,
     )?;
-    if let Some(client_state_bytes) = verify_creation_response.client_state_bytes {
-        // ...if VerifyCreation returns a new client state to save, overwrite the state we just wrote.
-        deps.storage
-            .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
-    }
-    store_commit(
-        deps.branch(),
-        &ClientStatePath { client_id }.key(),
-        &commit(client_state_bytes),
-    );
-    store_commit(
-        deps.branch(),
-        &ConsensusStatePath {
-            client_id,
-            height: latest_height,
-        }
-        .key(),
-        &commit(consensus_state_bytes),
-    );
 
-    for (k, v) in verify_creation_response.storage_writes {
-        deps.storage
-            .write::<ClientStore<RawStore>>(&(client_id, k), &v);
-    }
     let response = verify_creation_response
         .events
         .into_iter()
@@ -1063,6 +1015,76 @@ fn create_client(
             ),
         ])),
     )
+}
+
+/// Shared functionality between CreateClient and ForceUpdateClient.
+fn init_client(
+    mut deps: DepsMut<'_>,
+    info: MessageInfo,
+    client_state_bytes: Vec<u8>,
+    consensus_state_bytes: Vec<u8>,
+    relayer: Addr,
+    client_impl: Addr,
+    client_id: ClientId,
+) -> Result<(VerifyCreationResponse, u64), ContractError> {
+    // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
+    // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
+
+    // 1. write these states first, so they can be read by the light client contract during VerifyCreation
+    deps.storage
+        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+
+    // 2. once the client state is saved, query the light client impl for the height of that client state (the state we just saved is the latest height)
+    let latest_height = query_light_client::<u64>(
+        deps.as_ref(),
+        client_impl.clone(),
+        LightClientQuery::GetLatestHeight { client_id },
+    )?;
+
+    // 3. save the consensus state, so that it can be read during VerifyCreation as well
+    deps.storage.write::<ClientConsensusStates>(
+        &(client_id, latest_height),
+        &consensus_state_bytes.to_vec().into(),
+    );
+
+    // 4. finally, call VerifyCreation, which will read the states we just stored
+    let verify_creation_response = query_light_client::<VerifyCreationResponse>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyCreation {
+            caller: info.sender.into(),
+            client_id,
+            relayer: relayer.into(),
+        },
+    )?;
+    if let Some(client_state_bytes) = verify_creation_response.client_state_bytes.as_ref() {
+        // if VerifyCreation returns a new client state to save, overwrite the state we just wrote.
+        deps.storage
+            .write::<ClientStates>(&client_id, client_state_bytes);
+    }
+
+    store_commit(
+        deps.branch(),
+        &ClientStatePath { client_id }.key(),
+        &commit(client_state_bytes),
+    );
+
+    store_commit(
+        deps.branch(),
+        &ConsensusStatePath {
+            client_id,
+            height: latest_height,
+        }
+        .key(),
+        &commit(consensus_state_bytes),
+    );
+
+    for (k, v) in &verify_creation_response.storage_writes {
+        deps.storage
+            .write::<ClientStore<RawStore>>(&(client_id, k.clone()), v);
+    }
+
+    Ok((verify_creation_response, latest_height))
 }
 
 fn update_client(
