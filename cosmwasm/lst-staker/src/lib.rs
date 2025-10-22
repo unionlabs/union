@@ -1,9 +1,11 @@
 use std::{collections::BTreeMap, num::NonZeroU32};
 
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Addr, Binary, Coin, DecCoin, Decimal256, DelegatorReward, Deps, DepsMut, DistributionMsg, Env,
-    Event, Int256, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, entry_point,
-    to_json_binary, wasm_execute,
+    Event, Int256, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, to_json_binary,
+    wasm_execute,
 };
 use cw_account::ensure_local_admin_or_self;
 use cw_utils::{PaymentError, must_pay};
@@ -33,7 +35,7 @@ pub fn ensure_lst_hub(deps: Deps, info: &MessageInfo) -> Result<(), ContractErro
     }
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
     _: Env,
@@ -45,7 +47,7 @@ pub fn instantiate(
     Ok(cw_account::init(deps, msg))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -359,7 +361,7 @@ fn withdraw_all_rewards(
     ))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Validators {} => Ok(to_json_binary(&deps.storage.read_item::<Validators>()?)?),
@@ -367,7 +369,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
     }
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _: Env,

@@ -83,7 +83,7 @@ in
         ")
 
       # run the tests, note that we do `1>&2` because otherwise we won't get the full prints
-      devnetUnion.wait_until_succeeds("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>&2")
+      devnetUnion.succeed("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>&2")
     '';
   };
 }

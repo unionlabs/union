@@ -34,4 +34,5 @@ hex-literal = { workspace = true }
 
 [features]
 default  = []
+library  = []
 schemars = ["dep:schemars"]
