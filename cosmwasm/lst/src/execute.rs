@@ -59,11 +59,11 @@
 // TITLE.
 
 use cosmwasm_std::{
-    Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response, Uint128, ensure,
-    wasm_execute,
+    ensure, wasm_execute, Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    Uint128,
 };
-use cw_utils::{must_pay, nonpayable};
 use cw20::Cw20ExecuteMsg;
+use cw_utils::{must_pay, nonpayable};
 use depolama::StorageExt;
 
 use crate::{
@@ -76,9 +76,8 @@ use crate::{
         SubmittedBatches, UnstakeRequests, UnstakeRequestsByStakerHash,
     },
     types::{
-        AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
+        staker_hash, AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
         ProtocolFeeConfig, ReceivedBatch, SubmittedBatch, UnstakeRequest, UnstakeRequestKey,
-        staker_hash,
     },
 };
 
@@ -419,6 +418,14 @@ pub fn submit_batch(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResul
         ));
 
     Ok(Response::new()
+        // unstake the native tokens
+        .add_message(wasm_execute(
+            deps.storage.read_item::<StakerAddress>()?.to_string(),
+            &StakerExecuteMsg::Unstake {
+                amount: unbond_amount.into(),
+            },
+            vec![],
+        )?)
         // burn all unbonded LST tokens on batch submission
         .add_message(wasm_execute(
             deps.storage.read_item::<LstAddress>()?,

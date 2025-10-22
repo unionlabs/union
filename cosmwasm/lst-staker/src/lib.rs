@@ -76,6 +76,11 @@ pub fn execute(
 
             stake(deps.as_ref(), &env, &info)
         }
+        ExecuteMsg::Staker(StakerExecuteMsg::Unstake { amount }) => {
+            ensure_lst_hub(deps.as_ref(), &info)?;
+
+            unstake(deps.as_ref(), &env, amount.into())
+        }
         ExecuteMsg::Staker(StakerExecuteMsg::Rebase {}) => {
             ensure_lst_hub(deps.as_ref(), &info)?;
 
@@ -181,6 +186,38 @@ fn stake(deps: Deps, env: &Env, info: &MessageInfo) -> Result<Response, Contract
                 .add_attribute("total", amount_to_stake)
                 .add_attribute("pending_rewards", total_pending_rewards),
         ))
+}
+
+fn unstake(deps: Deps, env: &Env, amount: u128) -> Result<Response, ContractError> {
+    let validators = deps.storage.read_item::<Validators>()?;
+
+    let native_token_denom = query_native_token_denom(deps)?;
+
+    let total_shares = validators.values().fold(0_u128, |total, shares| {
+        total
+            .checked_add(*shares)
+            .expect("should never fail, checked before written; qed;")
+    });
+
+    let msgs = validators
+        .iter()
+        .map(|(validator, shares)| StakingMsg::Undelegate {
+            validator: validator.clone(),
+            amount: Coin::new(
+                calculate_validator_delegation(amount, *shares, total_shares),
+                native_token_denom.clone(),
+            ),
+        });
+
+    // rebasing first to withdraw all the rewards manually so that we don't have the rewards
+    // sitting in the contract after we unstake
+    let rebase_response = rebase(deps, env)?;
+
+    Ok(Response::new()
+        .add_events(rebase_response.events)
+        .add_submessages(rebase_response.messages)
+        .add_event(Event::new("unstake").add_attribute("total", amount.to_string()))
+        .add_messages(msgs))
 }
 
 fn rebase(deps: Deps, env: &Env) -> Result<Response, ContractError> {
