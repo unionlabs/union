@@ -33,6 +33,7 @@
     "@eslint/js": "^9.24.0",
     "@keplr-wallet/types": "^0.12.220",
     "@leapwallet/types": "^0.0.5",
+    "@mysten/sui": "^1.38.0",
     "@number-flow/svelte": "^0.3.7",
     "@safe-global/safe-apps-sdk": "^9.1.0",
     "@safe-global/safe-gateway-typescript-sdk": "^3.23.1",
