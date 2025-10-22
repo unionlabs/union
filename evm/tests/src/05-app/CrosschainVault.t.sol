@@ -566,6 +566,177 @@ contract CrosschainVaultDebtTest is CrosschainVaultTestBase {
         );
         vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, 100001);
     }
+
+    function testRepayFullDebt() public {
+        _setupCounterparty();
+        _fundVault(10000000);
+
+        TokenOrderV2 memory order = _createTokenOrder(1000000, 985000);
+        IBCPacket memory packet = _createPacket();
+
+        vm.prank(address(zkgm));
+        vault.solve(packet, order, DEFAULT_PATH, address(0), RELAYER, "", false);
+
+        uint256 debt = vault.fungibleCounterparty(
+            DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN
+        ).debt;
+        assertEq(debt, 1000000, "Initial debt should be 1000000");
+
+        quoteToken.mint(REPAYER, debt);
+
+        vm.startPrank(REPAYER);
+        quoteToken.approve(address(vault), debt);
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, debt);
+        vm.stopPrank();
+
+        assertEq(
+            vault.fungibleCounterparty(
+                DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN
+            ).debt,
+            0,
+            "Debt should be fully repaid"
+        );
+        assertEq(
+            vault.deployedCapital(),
+            0,
+            "Deployed capital should be zero after full repayment"
+        );
+    }
+
+    function testRepayExactDebtAmount() public {
+        _setupCounterparty();
+        _fundVault(10000000);
+
+        TokenOrderV2 memory order = _createTokenOrder(1000000, 985000);
+        IBCPacket memory packet = _createPacket();
+
+        vm.prank(address(zkgm));
+        vault.solve(packet, order, DEFAULT_PATH, address(0), RELAYER, "", false);
+
+        uint256 repayAmount = 1000000;
+        quoteToken.mint(REPAYER, repayAmount);
+
+        uint256 vaultBalanceBefore = quoteToken.balanceOf(address(vault));
+        uint256 repayerBalanceBefore = quoteToken.balanceOf(REPAYER);
+
+        vm.startPrank(REPAYER);
+        quoteToken.approve(address(vault), repayAmount);
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, repayAmount);
+        vm.stopPrank();
+
+        assertEq(
+            quoteToken.balanceOf(address(vault)),
+            vaultBalanceBefore + repayAmount,
+            "Vault should receive exact repayment amount"
+        );
+        assertEq(
+            quoteToken.balanceOf(REPAYER),
+            repayerBalanceBefore - repayAmount,
+            "Repayer should send exact repayment amount"
+        );
+        assertEq(
+            vault.fungibleCounterparty(
+                DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN
+            ).debt,
+            0,
+            "Debt should be zero"
+        );
+    }
+
+    function testRepayMultipleConsecutivePayments() public {
+        _setupCounterparty();
+        _fundVault(10000000);
+
+        TokenOrderV2 memory order = _createTokenOrder(1000000, 985000);
+        IBCPacket memory packet = _createPacket();
+
+        vm.prank(address(zkgm));
+        vault.solve(packet, order, DEFAULT_PATH, address(0), RELAYER, "", false);
+
+        uint256 totalDebt = 1000000;
+        uint256 firstPayment = 300000;
+        uint256 secondPayment = 400000;
+        uint256 thirdPayment = 300000;
+
+        quoteToken.mint(REPAYER, totalDebt);
+
+        // First repayment
+        vm.startPrank(REPAYER);
+        quoteToken.approve(address(vault), firstPayment);
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, firstPayment);
+        assertEq(
+            vault.fungibleCounterparty(
+                DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN
+            ).debt,
+            700000,
+            "Debt after first payment"
+        );
+
+        // Second repayment
+        quoteToken.approve(address(vault), secondPayment);
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, secondPayment);
+        assertEq(
+            vault.fungibleCounterparty(
+                DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN
+            ).debt,
+            300000,
+            "Debt after second payment"
+        );
+
+        // Third repayment
+        quoteToken.approve(address(vault), thirdPayment);
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, thirdPayment);
+        assertEq(
+            vault.fungibleCounterparty(
+                DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN
+            ).debt,
+            0,
+            "Debt should be fully repaid after three payments"
+        );
+        vm.stopPrank();
+    }
+
+    function testRepayRevertInsufficientApproval() public {
+        _setupCounterparty();
+        _fundVault(10000000);
+
+        TokenOrderV2 memory order = _createTokenOrder(1000000, 985000);
+        IBCPacket memory packet = _createPacket();
+
+        vm.prank(address(zkgm));
+        vault.solve(packet, order, DEFAULT_PATH, address(0), RELAYER, "", false);
+
+        uint256 repayAmount = 500000;
+        quoteToken.mint(REPAYER, repayAmount);
+
+        vm.startPrank(REPAYER);
+        // Approve less than the repayment amount
+        quoteToken.approve(address(vault), repayAmount - 1);
+        vm.expectRevert();
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, repayAmount);
+        vm.stopPrank();
+    }
+
+    function testRepayRevertInsufficientBalance() public {
+        _setupCounterparty();
+        _fundVault(10000000);
+
+        TokenOrderV2 memory order = _createTokenOrder(1000000, 985000);
+        IBCPacket memory packet = _createPacket();
+
+        vm.prank(address(zkgm));
+        vault.solve(packet, order, DEFAULT_PATH, address(0), RELAYER, "", false);
+
+        uint256 repayAmount = 500000;
+        // Only mint half of what's needed
+        quoteToken.mint(REPAYER, repayAmount / 2);
+
+        vm.startPrank(REPAYER);
+        quoteToken.approve(address(vault), repayAmount);
+        vm.expectRevert();
+        vault.repay(DEFAULT_PATH, DEFAULT_CHANNEL_ID, BASE_TOKEN, repayAmount);
+        vm.stopPrank();
+    }
 }
 
 contract CrosschainVaultERC4626Test is CrosschainVaultTestBase {
