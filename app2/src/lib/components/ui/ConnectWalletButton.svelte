@@ -36,6 +36,11 @@ import Button from "./Button.svelte"
       title="Cosmos"
     >
     </div>
+    <div
+      class="{Option.isSome(wallets.suiAddress) ? 'pulse-3 bg-green-500 shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]' : 'bg-zinc-800'} w-2 h-2 rounded-full transition-colors duration-200"
+      title="Sui"
+    >
+    </div>
   </div>
 </Button>
 
