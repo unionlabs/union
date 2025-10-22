@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                     = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws", "sol-types", "contract"] }
+alloy                     = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws", "sol-types", "contract"] }
 embed-commit              = { workspace = true }
 ibc-union-spec            = { workspace = true }
 jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
