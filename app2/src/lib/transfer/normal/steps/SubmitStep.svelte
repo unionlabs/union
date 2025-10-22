@@ -52,6 +52,8 @@ import type { NoSuchElementException } from "effect/Cause"
 import { pipe } from "effect/Function"
 import { onDestroy } from "svelte"
 import { custom } from "viem"
+import { Sui } from "@unionlabs/sdk-sui"
+import { SuiZkgmClient } from "@unionlabs/sdk-sui"
 
 type Props = {
   stepIndex: number
@@ -79,6 +81,9 @@ let error = $state<
     | Evm.CreateWalletClientError
     | Evm.CreatePublicClientError
     | Cosmos.ClientError
+    | Sui.CreatePublicClientError
+    | Sui.CreateWalletClientError
+    | Sui.WriteContractError
     | NoSuchElementException
     | CryptoError
     | ExecuteContractError
@@ -195,6 +200,34 @@ export const submit = Effect.gen(function*() {
       Effect.provide(walletClient),
     )
   })
+  const doSui = Effect.gen(function* () {
+    const chain = step.intent.sourceChain
+
+    const url = yield* chain.getRpcUrl("rpc")
+
+    const { signer } =
+      (yield* (wallets as any).getSuiSigner?.()) ??
+      (yield* Effect.fail(new Error("Sui signer not available. Connect a Sui wallet.")))
+
+    ctaCopy = "Switching Network..."
+    yield* Effect.sleep("1.5 seconds")
+
+    const publicClient = Sui.PublicClient.Live({ url })
+    const walletClient = Sui.WalletClient.Live({ url, signer })
+
+    // 5) Execute ZKGM request
+    ctaCopy = "Executing..."
+
+    const response = yield* ZkgmClient.execute(request).pipe(
+      Effect.provide(SuiZkgmClient.layerWithoutWallet),
+      Effect.provide(publicClient),
+      Effect.provide(walletClient),
+    )
+
+    ctaCopy = "Confirming Transaction..."
+    return response.txHash
+  })
+
 
   const doCosmos = Effect.gen(function*() {
     const chain = step.intent.sourceChain
@@ -229,6 +262,7 @@ export const submit = Effect.gen(function*() {
   return yield* Match.value(sourceChainRpcType).pipe(
     Match.when("evm", () => doEvm),
     Match.when("cosmos", () => doCosmos),
+    Match.when("sui", () => doSui),
     Match.orElse(() =>
       Effect.gen(function*() {
         yield* Effect.logFatal("Unknown chain type")
