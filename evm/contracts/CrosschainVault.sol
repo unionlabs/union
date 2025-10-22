@@ -8,6 +8,7 @@ import
     "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 import
     "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "solady/utils/LibBytes.sol";
 
@@ -25,6 +26,7 @@ contract CrosschainVault is
 {
     using LibBytes for *;
     using Math for *;
+    using SafeERC20 for *;
 
     uint256 public constant BPS_SCALE = 1_000_000;
 
@@ -207,7 +209,7 @@ contract CrosschainVault is
         if (counterparty.debt < amount) {
             revert CrosschainVault_RepayingTooMuch();
         }
-        IERC20(asset()).transferFrom(msg.sender, address(this), amount);
+        IERC20(asset()).safeTransferFrom(msg.sender, address(this), amount);
         counterparty.debt -= amount;
         $.deployedCapital -= amount;
     }
