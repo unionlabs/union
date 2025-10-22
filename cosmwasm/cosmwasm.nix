@@ -796,6 +796,7 @@ _: {
               full-app = pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
                 pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
               );
+              isCw20 = apps.ucs03.token_minter_config ? cw20;
             in
             {
               inherit name;
@@ -818,16 +819,18 @@ _: {
 
                   echo "token minter code id: $(cat token-minter-code-id.txt)"
 
-                  PRIVATE_KEY=${private_key} \
-                  RUST_LOG=info \
-                    cosmwasm-deployer \
-                    store-code \
-                    --rpc-url ${rpc_url} \
-                    --bytecode ${apps.ucs03.token_minter_config.cw20.cw20_impl} \
-                    --output cw20-impl-code-id.txt \
-                    ${mk-gas-args gas_config}
+                  ${pkgs.lib.optionalString isCw20 ''
+                    PRIVATE_KEY=${private_key} \
+                    RUST_LOG=info \
+                      cosmwasm-deployer \
+                      store-code \
+                      --rpc-url ${rpc_url} \
+                      --bytecode ${apps.ucs03.token_minter_config.cw20.cw20_impl} \
+                      --output cw20-impl-code-id.txt \
+                      ${mk-gas-args gas_config}
 
-                  echo "cw20 impl code id: $(cat cw20-impl-code-id.txt)"
+                    echo "cw20 impl code id: $(cat cw20-impl-code-id.txt)"
+                  ''}
 
                   PRIVATE_KEY=${private_key} \
                   RUST_LOG=info \
@@ -867,7 +870,9 @@ _: {
                     migrate \
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo "{\"new_cw20_code_id\":$(cat cw20-impl-code-id.txt)}" | base64)\"}, \"rate_limit_disabled\":${
+                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo ${
+                      if isCw20 then ''"{\"new_cw20_code_id\":$(cat cw20-impl-code-id.txt)}"'' else ''"{}"''
+                    } | base64)\"}, \"rate_limit_disabled\":${
                       if apps.ucs03.rate_limit_disabled then "true" else "false"
                     }, \"cw_account_code_id\": $(cat cw-account-code-id.txt), \"dummy_code_id\": $(cat proxy-code-id.txt)}" \
                     --force \
