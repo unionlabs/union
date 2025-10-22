@@ -17,22 +17,22 @@ let
   mkFeaturesString =
     features: if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
   allChecks =
-    checks: _maxSize:
+    checks: maxSize:
     builtins.concatLists [
       checks
-      # [
-      #   (file_name: ''
-      #     file_size=$(stat -c %s "${file_name}")
-      #     max_size_str="${toString maxSize}"
+      [
+        (file_name: ''
+          file_size=$(stat -c %s "${file_name}")
+          max_size_str="${toString maxSize}"
 
-      #     if [ "$file_size" -gt "$max_size_str" ]; then
-      #       echo "Error: File size: $file_size exceeds $max_size_str bytes"
-      #       exit 1
-      #     else
-      #       echo "File size: $file_size bytes"
-      #     fi
-      #   '')
-      # ]
+          if [ "$file_size" -gt "$max_size_str" ]; then
+            echo "Error: File size: $file_size exceeds $max_size_str bytes"
+            exit 1
+          else
+            echo "File size: $file_size bytes"
+          fi
+        '')
+      ]
     ];
 
   cargoBuildInstallPhase =
@@ -46,7 +46,7 @@ let
       # mkdir -p $out/lib
       mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out
 
-      ${pkgs.binaryen}/bin/wasm-opt -O3 $out -o $out
+      ${pkgs.binaryen}/bin/wasm-opt -Oz $out -o $out
 
       ${builtins.concatStringsSep "\n\n" (map (check: check "$out") (allChecks checks maxSize))}
 
@@ -59,7 +59,10 @@ let
       if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""
     }";
   # TODO: Add back -C opt-level=z once https://github.com/CosmWasm/cosmwasm/issues/2557 is resolved
-  rustflags = "-C link-arg=-s -C target-cpu=mvp -C passes=adce,loop-deletion -Zlocation-detail=none";
+  mkRustflags =
+    buildWithOz:
+    (pkgs.lib.optionalString buildWithOz "-C opt-level=z")
+    + " -C link-arg=-s -C target-cpu=mvp -C passes=adce,loop-deletion -Zlocation-detail=none";
 in
 crateDirFromRoot:
 {
@@ -70,6 +73,7 @@ crateDirFromRoot:
   maxSize ? DEFAULT_MAX_SIZE,
   extraBuildInputs ? [ ],
   extraNativeBuildInputs ? [ ],
+  buildWithOz ? false,
 }:
 let
   packageName = "${(crateCargoToml crateDirFromRoot).package.name}${mkFeaturesString features}";
@@ -82,13 +86,8 @@ let
     pnameSuffix = mkFeaturesString features;
 
     cargoBuildExtraArgs = cargoBuildExtraArgs features;
-    inherit rustflags;
+    rustflags = mkRustflags buildWithOz;
 
-    cargoBuildCheckPhase = ''
-      ls target/wasm32-unknown-unknown/release
-
-      sha256sum target/wasm32-unknown-unknown/release/${contract-basename}.wasm  
-    '';
     cargoBuildInstallPhase = cargoBuildInstallPhase {
       inherit
         features

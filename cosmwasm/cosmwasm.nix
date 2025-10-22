@@ -506,7 +506,7 @@ _: {
       ucs03-configs = {
         cw20 = cw20-impl: {
           type = "cw20";
-          path = "${ucs03-zkgm.release}";
+          path = "${(mk-app "ucs03-zkgm").release}";
           cw_account_path = "${cw-account.release}";
           token_minter_path = "${cw20-token-minter.release}";
           token_minter_config = {
@@ -519,7 +519,7 @@ _: {
         osmosis_tokenfactory = {
           type = "osmosis-tokenfactory";
           rate_limit_disabled = false;
-          path = "${ucs03-zkgm.release}";
+          path = "${(mk-app "ucs03-zkgm").release}";
           cw_account_path = "${cw-account.release}";
           token_minter_path = "${osmosis-tokenfactory-token-minter.release}";
           token_minter_config = {
@@ -1003,13 +1003,12 @@ _: {
           }
         );
 
-      mk-app = dir: crane.buildWasmContract "cosmwasm/ibc-union/app/${dir}" { };
-
-      # ucs00-pingpong = crane.buildWasmContract {
-      #   crateDirFromRoot = "cosmwasm/ucs00-pingpong";
-      # };
-
-      ucs03-zkgm = crane.buildWasmContract "cosmwasm/ibc-union/app/ucs03-zkgm" { };
+      mk-app =
+        dir:
+        crane.buildWasmContract "cosmwasm/ibc-union/app/${dir}" {
+          # none of our apps use bls precompiles, so the miscompilation is not an issue
+          buildWithOz = true;
+        };
 
       cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
 
@@ -1083,7 +1082,6 @@ _: {
         {
           inherit
             bytecode-base
-            ucs03-zkgm
             cw20-base
             cw20-wrapped-tokenfactory
             cosmwasm-deployer
