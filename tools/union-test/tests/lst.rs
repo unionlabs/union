@@ -341,13 +341,7 @@ async fn set_validators(t: &LstContext, validators: &[(&str, Uint128)]) -> TxRes
                 ))
                 .unwrap()
                 .into(),
-                vec![ProtoCoin {
-                    denom: "au".to_string(),
-                    amount: validators
-                        .iter()
-                        .fold(0, |acc, (_, v)| acc + v.u128())
-                        .to_string(),
-                }],
+                vec![],
             ),
             acc,
         )

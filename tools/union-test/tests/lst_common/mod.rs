@@ -146,9 +146,11 @@ pub async fn run_test_in_queue<
 
     loop {
         {
-            let mut lock = ctx.0.lock().unwrap();
-            if lock.tests.last().unwrap() == key {
-                lock.shared_data = test_fn(ctx.1.clone(), lock.shared_data.clone()).await;
+            if ctx.0.lock().unwrap().tests.last().unwrap() == key {
+                let shared_data = ctx.0.lock().unwrap().shared_data.clone();
+                let shared_data = test_fn(ctx.1.clone(), shared_data).await;
+                let mut lock = ctx.0.lock().unwrap();
+                lock.shared_data = shared_data;
                 let _ = lock.tests.pop();
                 return;
             }
