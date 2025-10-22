@@ -262,9 +262,9 @@ _: {
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "fixed";
-            gas_price = "0.005";
+            gas_price = "0.01";
             gas_denom = "uosmo";
-            gas_multiplier = "1.1";
+            gas_multiplier = "1.2";
             max_gas = 60000000;
           };
           apps = {
