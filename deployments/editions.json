@@ -34,11 +34,11 @@
       "ethereum.17000": {
         "environment": "production"
       },
-      "osmosis.osmosis-1": {
-        "environment": "staging"
-      },
       "osmosis.osmo-test-5": {
         "environment": "production"
+      },
+      "osmosis.osmosis-1": {
+        "environment": "staging"
       },
       "sei.1328": {
         "environment": "production"
