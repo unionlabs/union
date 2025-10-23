@@ -9,7 +9,7 @@
   "corn": ["21000000", "21000001"],
   "ethereum": ["11155111", "17000", "1"],
   "movement": ["250"],
-  "osmosis": ["osmo-test-5"],
+  "osmosis": ["osmo-test-5", "osmosis-1"],
   "scroll": ["534351"],
   "sei": ["pacific-1", "atlantic-2", "1328", "1329"],
   "stargaze": ["elgafar-1"],
