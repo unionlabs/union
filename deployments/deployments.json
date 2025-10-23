@@ -772,6 +772,11 @@
       "height": 0,
       "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
     },
+    "vram": {
+      "address": "0x5f422eac8ed9d1c87b3d033915fdfde4355e945db190e85e07a480cf662bb13f::vram",
+      "height": 0,
+      "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+    },
     "app": {
       "ucs03": {
         "address": "0xfac0dbde0b039cdfd940cc729495cdbb1c1a3c1d1e91a2c2b29eb4dddd6388b2::zkgm",
