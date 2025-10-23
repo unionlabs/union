@@ -1,4 +1,11 @@
 {
+  "arbitrum.421614": {
+    "1": {
+      "client_type": "cometbls",
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    }
+  },
   "babylon.bbn-1": {
     "1": {
       "client_type": "cometbls",
@@ -438,6 +445,11 @@
     "16": {
       "client_type": "base",
       "counterparty": "base.84532",
+      "refresh_rate": "5000"
+    },
+    "20": {
+      "client_type": "arbitrum",
+      "counterparty": "arbitrum.421614",
       "refresh_rate": "5000"
     }
   },
