@@ -851,8 +851,8 @@
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 461578,
-      "commit": "be6bf0aa480ed8ff8d3ee776b96695858eb2ab17",
-      "code_id": 51
+      "commit": "f89eac6d13cff2a27c72a6397ef1daaf913cc171",
+      "code_id": 69
     },
     "lightclient": {
       "arbitrum": {
@@ -955,15 +955,15 @@
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 354875,
-      "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-      "code_id": 187
+      "commit": "f89eac6d13cff2a27c72a6397ef1daaf913cc171",
+      "code_id": 268
     },
     "lightclient": {
       "arbitrum": {
         "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
         "height": 354878,
-        "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f",
-        "code_id": 67
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1",
+        "code_id": 269
       },
       "base": {
         "address": "union1xll86ajefrwsjn0msw89xhnmyd85fyzc6203j8p5uc6t7kyuvusqkutpsu",
