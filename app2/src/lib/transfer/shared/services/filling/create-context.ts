@@ -55,7 +55,8 @@ export const createContext = Effect.fn((
   never
 > =>
   Effect.gen(function*() {
-    console.debug("[createContext] args:", args)
+
+    console.log("[createContext] args:", args)
 
     const sendOrder = yield* TokenOrder.make({
       baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
@@ -140,12 +141,18 @@ export const createContext = Effect.fn((
 
     const batch = yield* produceBatch
 
+    const maybeTransport =
+      args.transport?.sui && args.sourceChain.rpc_type === "sui"
+        ? { sui: args.transport.sui }
+        : undefined
+        
     const request = ZkgmClientRequest.make({
       channelId: args.sourceChannelId,
       destination: args.destinationChain,
       source: args.sourceChain,
       instruction: batch,
       ucs03Address: args.ucs03address,
+      ...(maybeTransport ? { transport: maybeTransport } : {}),
     }).pipe(
       Option.some,
     )
@@ -219,6 +226,26 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
 
       return shouldIncludeFees ? [intent, feeIntent] : [intent]
     }),
+    Match.when("sui", () => {
+      const intent: Intent = {
+        ...baseIntent,
+        baseToken: args.baseToken,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
+      }
+
+      const feeIntent: Intent = {
+        ...baseIntent,
+        baseToken: args.fee.baseToken,
+        baseAmount: args.fee.baseAmount,
+        quoteAmount: args.fee.quoteAmount,
+        decimals: args.fee.decimals,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
+      }
+      return shouldIncludeFees ? [intent, feeIntent] : [intent]
+    }),
+
     Match.orElse(() => []),
   )
 }
