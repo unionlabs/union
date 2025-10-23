@@ -14,14 +14,29 @@ pub struct L2Header {
     pub receipts_root: H256,
     // Box since 256 bytes is quite large
     pub logs_bloom: Box<H2048>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")
+    )]
     pub difficulty: U256,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")
+    )]
     pub number: U256,
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub gas_limit: u64,
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub gas_used: u64,
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub timestamp: u64,
     pub extra_data: H256,
     pub mix_hash: H256,
     pub nonce: H64,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")
+    )]
     pub base_fee_per_gas: U256,
 }
 

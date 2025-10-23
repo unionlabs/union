@@ -13,8 +13,14 @@ workspace = true
 
 [dependencies]
 alloy-sol-types      = { workspace = true }
+serde                = { workspace = true, optional = true, features = ["derive"] }
 solidity-slot        = { workspace = true }
-unionlabs-primitives = { workspace = true }
+unionlabs-primitives = { workspace = true, features = ["alloy-sol-types-compat"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
+
+[features]
+default = []
+
+serde = ["dep:serde"]

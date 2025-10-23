@@ -86,6 +86,10 @@ impl ClientModuleServer for Module {
                 counterparty_chain_id: ChainId::new(v1.chain_id.to_string()),
                 counterparty_height: Module::make_height(v1.latest_height),
             }),
+            ClientState::V2(v2) => Ok(ClientStateMeta {
+                counterparty_chain_id: ChainId::new(v2.chain_id.to_string()),
+                counterparty_height: Module::make_height(v2.latest_height),
+            }),
         }
     }
 

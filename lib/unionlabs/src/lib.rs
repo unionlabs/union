@@ -91,17 +91,17 @@ pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
     expr.then_some(()).ok_or(err)
 }
 
-pub struct ErrorReporter<T: core::error::Error>(pub T);
+pub struct ErrorReporter<T: core::error::Error + ?Sized>(pub T);
 
-impl<T: core::error::Error> ErrorReporter<T> {
+impl<T: core::error::Error + ?Sized> ErrorReporter<T> {
     pub fn with_message(&self, message: &str) -> String {
         format!("{message}: {self}")
     }
 }
 
-impl<T: core::error::Error> Display for ErrorReporter<T> {
+impl<T: core::error::Error + ?Sized> Display for ErrorReporter<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)?;
+        write!(f, "{}", &self.0)?;
 
         for e in iter::successors(self.0.source(), |e| (*e).source()) {
             write!(f, ": {e}")?;

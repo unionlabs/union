@@ -1,5 +1,7 @@
 #![warn(clippy::unwrap_used)]
 
+use core::fmt;
+
 use alloy::{
     eips::BlockId,
     network::AnyNetwork,
@@ -35,6 +37,8 @@ pub struct Module {
 
     pub l1_provider: DynProvider,
     pub l2_provider: DynProvider<AnyNetwork>,
+
+    pub version: Version,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,8 +56,26 @@ pub struct Config {
     /// The RPC endpoint for the main (L2) execution chain.
     pub l2_rpc_url: String,
 
+    pub version: Version,
+
     #[serde(default)]
     pub max_cache_size: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum Version {
+    V1,
+    V2,
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Version::V1 => f.write_str("v1"),
+            Version::V2 => f.write_str("v2"),
+        }
+    }
 }
 
 impl FinalityModule for Module {
@@ -87,6 +109,7 @@ impl FinalityModule for Module {
             l1_contract_address: config.l1_contract_address,
             l1_provider,
             l2_provider,
+            version: config.version,
         })
     }
 }
@@ -94,7 +117,14 @@ impl FinalityModule for Module {
 #[async_trait]
 impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            finalized,
+            version = %self.version,
+        )
+    )]
     async fn query_latest_height(&self, e: &Extensions, finalized: bool) -> RpcResult<Height> {
         if finalized {
             let voyager_client = e.voyager_client()?;
@@ -102,24 +132,48 @@ impl FinalityModuleServer for Module {
             let l1_latest_height = voyager_client
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
+            match self.version {
+                Version::V1 => {
+                    let block = arbitrum_client::v1::finalized_l2_block_of_l1_height(
+                        &self.l1_provider,
+                        &self.l2_provider,
+                        self.l1_contract_address,
+                        l1_latest_height.height(),
+                    )
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(&*e).with_message(
+                                "error fetching finalized execution block of l1 height",
+                            ),
+                            None::<()>,
+                        )
+                    })?;
 
-            let block = arbitrum_client::finalized_l2_block_of_l1_height(
-                &self.l1_provider,
-                &self.l2_provider,
-                self.l1_contract_address,
-                l1_latest_height.height(),
-            )
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(&*e)
-                        .with_message("error fetching finalized execution block of l1 height"),
-                    None::<()>,
-                )
-            })?;
+                    Ok(Height::new(block.header.number))
+                }
+                Version::V2 => {
+                    let block = arbitrum_client::v2::finalized_l2_block_of_l1_height(
+                        &self.l1_provider,
+                        &self.l2_provider,
+                        self.l1_contract_address,
+                        l1_latest_height.height(),
+                    )
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(&*e).with_message(
+                                "error fetching finalized execution block of l1 height",
+                            ),
+                            None::<()>,
+                        )
+                    })?;
 
-            Ok(Height::new(block.header.number))
+                    Ok(Height::new(block.header.number))
+                }
+            }
         } else {
             self.l2_provider
                 .get_block_number()
@@ -130,7 +184,14 @@ impl FinalityModuleServer for Module {
     }
 
     /// Query the latest finalized timestamp of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            finalized,
+            version = %self.version,
+        )
+    )]
     async fn query_latest_timestamp(
         &self,
         e: &Extensions,
@@ -143,22 +204,44 @@ impl FinalityModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block = arbitrum_client::finalized_l2_block_of_l1_height(
-                &self.l1_provider,
-                &self.l2_provider,
-                self.l1_contract_address,
-                l1_latest_height.height(),
-            )
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(&*e).with_message("error fetching finalized l2 block"),
-                    None::<()>,
-                )
-            })?;
+            match self.version {
+                Version::V1 => {
+                    let block = arbitrum_client::v1::finalized_l2_block_of_l1_height(
+                        &self.l1_provider,
+                        &self.l2_provider,
+                        self.l1_contract_address,
+                        l1_latest_height.height(),
+                    )
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(&*e).with_message("error fetching finalized l2 block"),
+                            None::<()>,
+                        )
+                    })?;
 
-            Ok(Timestamp::from_secs(block.header.timestamp))
+                    Ok(Timestamp::from_secs(block.header.timestamp))
+                }
+                Version::V2 => {
+                    let block = arbitrum_client::v2::finalized_l2_block_of_l1_height(
+                        &self.l1_provider,
+                        &self.l2_provider,
+                        self.l1_contract_address,
+                        l1_latest_height.height(),
+                    )
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(&*e).with_message("error fetching finalized l2 block"),
+                            None::<()>,
+                        )
+                    })?;
+
+                    Ok(Timestamp::from_secs(block.header.timestamp))
+                }
+            }
         } else {
             self.l2_provider
                 .get_block(BlockId::latest())
