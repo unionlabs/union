@@ -12,6 +12,7 @@ import {
   unstable_connector,
 } from "@wagmi/core"
 import {
+  arbitrum,
   arbitrumSepolia,
   base,
   baseSepolia,
@@ -30,7 +31,7 @@ import {
   sepolia,
 } from "@wagmi/core/chains"
 import { Option } from "effect"
-import { flow, pipe } from "effect/Function"
+import { flow } from "effect/Function"
 import type { Chain, Chain as ViemChain, FallbackTransport, Transport } from "viem"
 
 let wagmiConfig: Option.Option<ReturnType<typeof createWagmiConfigInstance>> = Option.none()
@@ -69,9 +70,32 @@ export const ownedFallbacks: Transports = {
       name: "default Berachain RPC",
     }),
   ]),
+  [arbitrum.id]: fallback([
+    http(arbitrum.rpcUrls.default.http.at(0), {
+      name: "default Arbitrum RPC",
+    }),
+    http(`https://rpc.42161.arbitrum.chain.kitchen`, {
+      name: "Chain Kitchen - Arbitrum",
+    }),
+    http(`https://arbitrum.therpc.io`, {
+      name: "therpc.io - Arbitrum",
+    }),
+    http(`https://arbitrum.drpc.org`, {
+      name: "drpc.org - Arbitrum",
+    }),
+  ]),
   [arbitrumSepolia.id]: fallback([
     http(arbitrumSepolia.rpcUrls.default.http.at(0), {
       name: "default Arbitrum Sepolia RPC",
+    }),
+    http(`https://rpc.421614.arbitrum.chain.kitchen`, {
+      name: "Chain Kitchen - Arbitrum Sepolia",
+    }),
+    http(`https://arbitrum-sepolia.therpc.io`, {
+      name: "therpc.io - Arbitrum Sepolia",
+    }),
+    http(`https://arbitrum-sepolia.drpc.org`, {
+      name: "drpc.org - Arbitrum Sepolia",
     }),
   ]),
   [scrollSepolia.id]: fallback([
@@ -203,6 +227,15 @@ const transports: Transports = {
       name: "unstable_connector-injected-berachain",
     }),
     ownedFallbacks[berachainTestnetbArtio.id],
+  ]),
+  [arbitrum.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-arbitrum",
+      name: "unstable_connector-injected-arbitrum",
+    }),
+    ownedFallbacks[arbitrum.id],
   ]),
   [arbitrumSepolia.id]: fallback([
     unstable_connector(injected, {
