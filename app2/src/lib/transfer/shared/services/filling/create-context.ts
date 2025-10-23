@@ -10,11 +10,12 @@ import type {
   TokenRawAmount,
   UniversalChainId,
 } from "@unionlabs/sdk/schema"
-import { Effect, Match, Option, ParseResult, pipe } from "effect"
+import { Effect, Either, flow, Match, Option, ParseResult, pipe } from "effect"
 import * as A from "effect/Array"
 import type { NoSuchElementException, UnknownException } from "effect/Cause"
 import * as S from "effect/Schema"
 import { fromHex, isHex } from "viem"
+import { GenericFlowError } from "../../errors"
 import type { TransferArgs } from "./check-filling"
 
 export type Intent = {
@@ -51,17 +52,35 @@ export const createContext = Effect.fn((
   args: TransferArgs,
 ): Effect.Effect<
   TransferContext,
-  NoSuchElementException | ParseResult.ParseError | UnknownException,
+  ParseResult.ParseError | GenericFlowError | UnknownException | NoSuchElementException,
   never
 > =>
   Effect.gen(function*() {
     console.debug("[createContext] args:", args)
 
+    const baseAmount = yield* parseBaseAmount(args.baseAmount).pipe(
+      Effect.mapError((cause) =>
+        new GenericFlowError({
+          message: "Could not parse base amount",
+          cause,
+        })
+      ),
+    )
+
+    const quoteAmount = yield* parseBaseAmount(args.quoteAmount).pipe(
+      Effect.mapError((cause) =>
+        new GenericFlowError({
+          message: "Could not parse quote amount",
+          cause,
+        })
+      ),
+    )
+
     const sendOrder = yield* TokenOrder.make({
-      baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
+      baseAmount,
       baseToken: args.baseToken,
       quoteToken: args.quoteToken,
-      quoteAmount: Option.getOrThrow(parseBaseAmount(args.quoteAmount)),
+      quoteAmount,
       destination: args.destinationChain,
       receiver: args.receiver,
       sender: args.sender,
@@ -78,43 +97,67 @@ export const createContext = Effect.fn((
     })
 
     // on destination chain tokens, find wrappings[] such that one exists where unwrapped_denom matches basetoken and unwrapped_chain and wrapped_chain universal ids match
-    const encodedFeeBaseToken = S.encodeSync(Token.AnyFromEncoded(args.sourceChain.rpc_type))(
+    const encodedFeeBaseToken = yield* pipe(
       args.fee.baseToken,
+      S.encode(Token.AnyFromEncoded(args.sourceChain.rpc_type)),
+      Effect.mapError((cause) =>
+        new GenericFlowError({
+          message: "Could not base token",
+          cause,
+        })
+      ),
     )
 
-    const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+    const shouldIncludeFees = shouldChargeFees(
+      args.fee,
+      uiStore.edition,
+      args.sourceChain,
+      args.destinationChain,
+    )
+
+    console.log({ shouldIncludeFees })
 
     const produceBatch = Effect.gen(function*() {
       if (shouldIncludeFees) {
-        const feeQuoteToken = yield* maybeFeeQuoteToken.pipe(
-          Option.orElse(() =>
+        const feeQuoteToken = yield* Effect.if(args.baseToken.address === "au", {
+          onTrue: () => Effect.succeed(args.quoteToken),
+          onFalse: () =>
             pipe(
-              tokensStore.getData(args.destinationChain.universal_chain_id),
-              Option.flatMap(
-                A.findFirst((token) =>
-                  A.filter(token.wrapping, (x) =>
-                    x.unwrapped_denom === encodedFeeBaseToken
-                    && x.unwrapped_chain.universal_chain_id === args.sourceChain.universal_chain_id
-                    && x.wrapped_chain.universal_chain_id
-                      === args.destinationChain.universal_chain_id)
-                    .length
-                    === 1
-                ),
+              maybeFeeQuoteToken,
+              Either.fromOption(() => "No fee quote token"),
+              Either.orElse(() =>
+                pipe(
+                  tokensStore.getData(args.destinationChain.universal_chain_id),
+                  Either.fromOption(() => "No matching token in token store"),
+                  Either.flatMap(flow(
+                    A.findFirst((token) =>
+                      A.filter(token.wrapping, (x) =>
+                        x.unwrapped_denom === encodedFeeBaseToken
+                        && x.unwrapped_chain.universal_chain_id
+                          === args.sourceChain.universal_chain_id
+                        && x.wrapped_chain.universal_chain_id
+                          === args.destinationChain.universal_chain_id)
+                        .length
+                        === 1
+                    ),
+                    Either.fromOption(() =>
+                      `No quote token wrapping found for ${args.destinationChain.universal_chain_id} given ${args.fee.baseToken}`
+                    ),
+                  )),
+                  Either.map(x => x.denom),
+                  Either.flatMap((raw) =>
+                    S.decodeEither(Token.AnyFromEncoded(args.destinationChain.rpc_type))(raw)
+                  ),
+                )
               ),
-              Option.map(x => x.denom),
-              Option.flatMap((raw) =>
-                S.decodeOption(Token.AnyFromEncoded(args.destinationChain.rpc_type))(raw)
+              Effect.mapError((cause) =>
+                new GenericFlowError({
+                  message: "Could not determine fee quote token",
+                  cause,
+                })
               ),
-            )
-          ),
-          Option.orElse(() => {
-            if (args.baseToken.address === "au") {
-              return Option.some(args.quoteToken)
-            }
-            console.error("Could not determine fee quote token.")
-            return Option.none()
-          }),
-        )
+            ),
+        })
 
         const feeOrder = yield* TokenOrder.make({
           baseAmount: args.fee.baseAmount,
@@ -130,7 +173,8 @@ export const createContext = Effect.fn((
           version: args.version,
         })
 
-        return Batch.make([sendOrder, feeOrder]).pipe(
+        return pipe(
+          Batch.make([sendOrder, feeOrder]),
           Batch.optimize,
         )
       } else {
@@ -150,19 +194,17 @@ export const createContext = Effect.fn((
       Option.some,
     )
 
-    const ctx = yield* parseBaseAmount(args.baseAmount).pipe(
-      Option.flatMap((baseAmount) => {
-        const intents = createIntents(args, baseAmount)
-
-        return intents.length > 0
+    const ctx = yield* pipe(
+      createIntents(args, baseAmount),
+      (intents) =>
+        intents.length > 0
           ? Option.some({
             intents,
             allowances: Option.none(),
             request: Option.none(),
             message: Option.none(),
           })
-          : Option.none()
-      }),
+          : Option.none(),
     )
 
     return {
@@ -173,7 +215,12 @@ export const createContext = Effect.fn((
 )
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
-  const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
+  const shouldIncludeFees = shouldChargeFees(
+    args.fee,
+    uiStore.edition,
+    args.sourceChain,
+    args.destinationChain,
+  )
   const baseIntent = createBaseIntent(args, baseAmount)
 
   return Match.value(args.sourceChain.rpc_type).pipe(
@@ -241,12 +288,24 @@ const createBaseIntent = (
 })
 
 // Fee strategy: BTC edition only charges fees when going FROM Babylon
-const shouldChargeFees = (fee: FeeIntent, edition: string, sourceChain: Chain): boolean => {
+const shouldChargeFees = (
+  fee: FeeIntent,
+  edition: string,
+  sourceChain: Chain,
+  destinationChain: Chain,
+): boolean => {
   if (fee.baseAmount === 0n) {
     return false
   }
   if (sourceChain.testnet) {
     return true
+  }
+  // skip fees babylon to bsc for now
+  if (
+    destinationChain.universal_chain_id === "bsc.56"
+    && sourceChain.universal_chain_id === "babylon.bbn-1"
+  ) {
+    return false
   }
   return sourceChain.universal_chain_id === "babylon.bbn-1"
 }

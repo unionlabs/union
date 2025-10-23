@@ -162,7 +162,7 @@
           "PACKET_SEND_LC_UPDATE_L2": "2116634"
         }
       },
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     },
     "2": {
       "comments": "ethereum.1 channel 3",
