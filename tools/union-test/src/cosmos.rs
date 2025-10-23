@@ -551,14 +551,15 @@ impl Module {
             .await
     }
 
-    pub async fn query<Req: prost::Message + prost::Name, Res: prost::Message + Default>(
+    pub async fn query<Req: prost::Message, Res: prost::Message + Default>(
         &self,
+        type_url: &str,
         req: Req,
     ) -> anyhow::Result<Res> {
         Ok(self
             .rpc
             .client()
-            .grpc_abci_query::<Req, Res>(Req::type_url(), &req, None, false)
+            .grpc_abci_query::<Req, Res>(type_url, &req, None, false)
             .await?
             .into_result()?
             .unwrap())

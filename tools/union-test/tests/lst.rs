@@ -351,26 +351,24 @@ async fn set_validators(t: &LstContext, validators: &[(&str, Uint128)]) -> TxRes
 }
 
 async fn query_delegation(t: &LstContext, validator: &str) -> anyhow::Result<Uint128> {
-    let shares = Decimal::from_str(
-        &t.ctx
-            .src
-            .query::<_, staking_proto::QueryDelegationResponse>(
-                staking_proto::QueryDelegationRequest {
-                    delegator_addr: t.union_address.lst_staker.to_string(),
-                    validator_addr: validator.to_string(),
-                },
-            )
-            .await
-            .unwrap()
-            .delegation_response
-            .unwrap()
-            .delegation
-            .unwrap()
-            .shares,
-    )
-    .unwrap();
+    let balance = &t
+        .ctx
+        .src
+        .query::<_, staking_proto::QueryDelegationResponse>(
+            "/cosmos.staking.v1beta1.Query/Delegation",
+            staking_proto::QueryDelegationRequest {
+                delegator_addr: t.union_address.lst_staker.to_string(),
+                validator_addr: validator.to_string(),
+            },
+        )
+        .await
+        .unwrap()
+        .delegation_response
+        .unwrap()
+        .balance
+        .unwrap();
 
-    Ok(shares.to_uint_ceil())
+    Ok(balance.amount.parse().unwrap())
 }
 
 async fn query_lst_hub<Q: Clone + Serialize, Res: DeserializeOwned>(
@@ -412,6 +410,16 @@ async fn get_accounting_state(t: &LstContext) -> anyhow::Result<AccountingStateR
 #[tokio::test]
 async fn test_redelegation() {
     run_test_in_queue("redelegation", async |t, shared_data| {
+        let delegation_1 = query_delegation(&t, VALIDATORS[0]).await.unwrap();
+        let delegation_2 = query_delegation(&t, VALIDATORS[1]).await.unwrap();
+        let delegation_3 = query_delegation(&t, VALIDATORS[2]).await.unwrap();
+        let delegation_4 = query_delegation(&t, VALIDATORS[3]).await.unwrap();
+
+        println!("[LST_OUTPUT] delegation 1 before: {delegation_1}");
+        println!("[LST_OUTPUT] delegation 2 before: {delegation_2}");
+        println!("[LST_OUTPUT] delegation 3 before: {delegation_3}");
+        println!("[LST_OUTPUT] delegation 4 before: {delegation_4}");
+
         let _ = set_validators(
             &t,
             &[
@@ -423,6 +431,9 @@ async fn test_redelegation() {
 
         let delegation_1 = query_delegation(&t, VALIDATORS[0]).await.unwrap();
         let delegation_2 = query_delegation(&t, VALIDATORS[1]).await.unwrap();
+
+        println!("[LST_OUTPUT] delegation 1 after: {delegation_1}");
+        println!("[LST_OUTPUT] delegation 2 after: {delegation_2}");
 
         assert_eq!(delegation_1.u128(), 600);
 

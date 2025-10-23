@@ -40,7 +40,7 @@ pub fn calculate_proxy_address(
     channel_id: u32,
     sender: &[u8],
 ) -> Addr {
-    let addr = Bech32::<FixedBytes<32>>::from_str(zkgm_address.as_str()).unwrap();
+    let addr = zkgm_address.as_str().parse::<Bech32>().unwrap();
     let canonical_addr = instantiate2_address(
         &COSMOS_BASE_CONTRACT_HASH,
         &CanonicalAddr::from(addr.data().as_ref()),
