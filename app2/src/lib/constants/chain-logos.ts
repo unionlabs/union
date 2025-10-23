@@ -8,6 +8,14 @@ export const chainLogoMap = new Map([
     },
   ],
   [
+    "arbitrum.42161",
+    {
+      color: "/logos/chains/color/ARBITRUM.svg",
+      light: "/logos/chains/light/ARBITRUM.svg",
+      dark: "/logos/chains/dark/ARBITRUM.svg",
+    },
+  ],
+  [
     "arbitrum.421614",
     {
       color: "/logos/chains/color/ARBITRUM.svg",
