@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                 = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws", "sol-types", "contract"] }
+alloy                 = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws", "sol-types", "contract"] }
 anyhow                = { workspace = true, features = ["std"] }
 clap                  = { workspace = true, features = ["derive", "error-context", "help", "env"] }
 cometbft-rpc          = { workspace = true }
