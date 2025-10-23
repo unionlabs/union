@@ -8,6 +8,8 @@ import { Data, flow, Option, pipe, Struct } from "effect"
 import * as A from "effect/Array"
 import * as E from "effect/Either"
 import * as S from "effect/Schema"
+// in create-context (or wherever you define TransferArgs)
+import type { Transport as ZkgmTransport } from "@unionlabs/sdk/ZkgmClientRequest"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -28,6 +30,7 @@ export interface TransferArgs {
   sourceChannelId: ChannelId
   fee: FeeIntent
   version: 1 | 2
+  transport?: ZkgmTransport.Params
 }
 
 export type FillingState = Data.TaggedEnum<{
@@ -156,6 +159,7 @@ export const getFillingState = (
         version: transferData.version,
       })
 
+      console.log("✅ [getFillingState] derived filling state",)
       return Option.match(unwrapped, {
         onNone: () => {
           console.warn("❌ [getFillingState] Option.all failed — shouldn't happen now")
