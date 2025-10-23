@@ -1,6 +1,12 @@
 {
   "app": {
     "chains": {
+      "arbitrum.42161": {
+        "environment": "staging"
+      },
+      "arbitrum.421614": {
+        "environment": "staging"
+      },
       "babylon.bbn-test-5": {
         "environment": "production"
       },
@@ -30,6 +36,9 @@
       },
       "osmosis.osmo-test-5": {
         "environment": "production"
+      },
+      "osmosis.osmosis-1": {
+        "environment": "staging"
       },
       "sei.1328": {
         "environment": "production"

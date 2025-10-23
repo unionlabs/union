@@ -8,6 +8,14 @@ export const chainLogoMap = new Map([
     },
   ],
   [
+    "arbitrum.42161",
+    {
+      color: "/logos/chains/color/ARBITRUM.svg",
+      light: "/logos/chains/light/ARBITRUM.svg",
+      dark: "/logos/chains/dark/ARBITRUM.svg",
+    },
+  ],
+  [
     "arbitrum.421614",
     {
       color: "/logos/chains/color/ARBITRUM.svg",
@@ -288,38 +296,6 @@ export const chainLogoMap = new Map([
     },
   ],
   [
-    "sei.pacific-1",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.pacific-1",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.atlantic-2",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.atlantic-2",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
     "sei.atlantic-2",
     {
       color: "/logos/chains/color/SEI.svg",
@@ -329,38 +305,6 @@ export const chainLogoMap = new Map([
   ],
   [
     "sei.1328",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.1328",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.1328",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.1329",
-    {
-      color: "/logos/chains/color/SEI.svg",
-      light: "/logos/chains/light/SEI.svg",
-      dark: "/logos/chains/dark/SEI.svg",
-    },
-  ],
-  [
-    "sei.1329",
     {
       color: "/logos/chains/color/SEI.svg",
       light: "/logos/chains/light/SEI.svg",

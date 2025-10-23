@@ -125,6 +125,10 @@ const BNB_METADATA: GasDenomMetadata = {
  * @since 2.0.0
  */
 export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
+  // Arbitrum chains
+  [UniversalChainId.make("arbitrum.42161")]: ETH_METADATA,
+  [UniversalChainId.make("arbitrum.421614")]: ETH_METADATA,
+
   // Ethereum chains
   [UniversalChainId.make("ethereum.11155111")]: ETH_METADATA,
   [UniversalChainId.make("ethereum.1")]: ETH_METADATA,
