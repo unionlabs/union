@@ -1,4 +1,5 @@
 import {
+  arbitrum,
   arbitrumSepolia,
   base,
   baseSepolia,
@@ -18,6 +19,7 @@ import {
 } from "viem/chains"
 
 export const VIEM_CHAINS = [
+  arbitrum,
   arbitrumSepolia,
   base,
   baseSepolia,
