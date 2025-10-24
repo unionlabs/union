@@ -22,6 +22,7 @@ use unionlabs::{
     cosmwasm::wasm::{
         msg_execute_contract::MsgExecuteContract,
         msg_instantiate_contract2::MsgInstantiateContract2, msg_store_code::MsgStoreCode,
+        msg_update_admin::MsgUpdateAdmin,
     },
     google::protobuf::any::Any,
     primitives::{Bech32, H256},
@@ -1010,6 +1011,28 @@ async fn setup_contracts(
         .await?
         .1
         .address;
+
+    alice_client
+        .tx(
+            MsgUpdateAdmin {
+                sender: alice_client.wallet().address().map_data(|d| d.into_bytes()),
+                new_admin: managed_address.clone().map_data(Into::into),
+                contract: managed_address.clone(),
+            },
+            "",
+            true,
+        )
+        .await?;
+
+    execute(
+        alice_client,
+        &managed_address,
+        &[upgradable::msg::ExecuteMsg::Upgrade {
+            new_code_id: code_id.get(),
+            msg: serde_json::to_value(&access_managed_example::msg::MigrateMsg {}).unwrap(),
+        }],
+    )
+    .await?;
 
     info!(%managed_address, %manager_address, "contracts set up");
 

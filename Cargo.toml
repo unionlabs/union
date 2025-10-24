@@ -424,6 +424,7 @@ ucs04                                     = { path = "lib/ucs04", default-featur
 unionlabs                                 = { path = "lib/unionlabs", default-features = false, features = ["proto"] }                 # TODO: Properly feature gate proto in unionlabs
 unionlabs-encoding                        = { path = "lib/unionlabs-encoding", default-features = false }
 unionlabs-primitives                      = { path = "lib/unionlabs-primitives", default-features = false }
+upgradable                                = { path = "cosmwasm/upgradable", default-features = false }
 voyager-client                            = { path = "lib/voyager-client", default-features = false }
 voyager-core                              = { path = "lib/voyager-core", default-features = false }
 voyager-message                           = { path = "lib/voyager-message", default-features = false }
