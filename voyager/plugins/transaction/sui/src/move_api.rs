@@ -288,7 +288,7 @@ pub fn channel_open_try(
             }),
             (&data.port_id.into_vec()).into(),
             data.channel.connection_id.raw().into(),
-            CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_channel_id).unwrap()),
+            data.channel.counterparty_channel_id.unwrap().raw().into(),
             (&data.channel.counterparty_port_id.into_vec()).into(),
             (&data.channel.version.into_bytes()).into(),
             (&data.counterparty_version.into_bytes()).into(),

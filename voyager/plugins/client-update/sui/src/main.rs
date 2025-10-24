@@ -158,7 +158,7 @@ impl Module {
         let mut is_first = true;
         for epoch in from..to {
             let query = json!({
-              "query": "query ($epoch_id: UInt53) { epoch(id: $epoch_id) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
+              "query": "query ($epoch_id: UInt53) { epoch(epochId: $epoch_id) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
               "variables": { "epoch_id": epoch }
             });
 
@@ -174,6 +174,7 @@ impl Module {
                 .unwrap();
 
             let v: serde_json::Value = serde_json::from_str(&resp).unwrap();
+
             let update_to = v["data"]["epoch"]["checkpoints"]["edges"][0]["node"]["sequenceNumber"]
                 .as_u64()
                 .unwrap();

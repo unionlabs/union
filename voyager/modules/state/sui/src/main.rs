@@ -60,6 +60,8 @@ pub struct Module {
 
     pub ibc_store: ObjectID,
 
+    pub commitment_to_digest: ObjectID,
+
     pub ibc_contract: ObjectID,
 }
 
@@ -81,7 +83,7 @@ impl Module {
             .sui_client
             .read_api()
             .get_dynamic_field_object(
-                self.ibc_store,
+                self.commitment_to_digest,
                 DynamicFieldName {
                     type_: TypeTag::Vector(Box::new(TypeTag::U8)),
                     value: serde_json::to_value(packet_hash).expect("serde will work"),
@@ -181,6 +183,7 @@ impl StateModule<IbcUnion> for Module {
             rpc_url: config.rpc_url,
             ibc_store: config.ibc_store,
             ibc_contract: config.ibc_contract,
+            commitment_to_digest: config.commitment_to_digest,
         })
     }
 }
@@ -190,6 +193,7 @@ impl StateModule<IbcUnion> for Module {
 pub struct Config {
     pub rpc_url: String,
     pub ibc_store: ObjectID,
+    pub commitment_to_digest: ObjectID,
     pub ibc_contract: ObjectID,
 }
 
