@@ -51,6 +51,8 @@ export class AuthenticationError extends Data.TaggedError("AuthenticationError")
 
 export class ExperienceError extends Data.TaggedError("ExperienceError")<BaseErrorArgs> {}
 
+export class BTCFIError extends Data.TaggedError("BTCFIError")<BaseErrorArgs> {}
+
 // Helper to map Supabase error codes to our error types
 export function mapSupabaseErrorToCustomError(
   errorCode: string,

@@ -109,6 +109,13 @@ export const navigation: Array<NavSection> = [
     }],
   },
   {
+    items: [{
+      path: "/btcfi",
+      title: "BTCfi Points",
+      icon: AirdropIcon,
+    }],
+  },
+  {
     title: "Developer",
     items: [
       {
