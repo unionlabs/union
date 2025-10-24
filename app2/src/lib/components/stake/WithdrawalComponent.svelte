@@ -4,14 +4,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
-import {
-  DESTINATION_CHANNEL_ID,
-  ETHEREUM_CHAIN_ID,
-  SOURCE_CHANNEL_ID,
-  UCS03_EVM_ADDRESS,
-  UCS03_ZKGM,
-  UNION_CHAIN_ID,
-} from "$lib/stake/config"
+import { lstConfig } from "$lib/stake/config.svelte.ts"
 import { predictProxy } from "$lib/stake/instantiate2"
 import { BatchResponseSchema, type UnstakeRequest, UnstakeRequestSchema } from "$lib/stake/schemas"
 import { uiStore } from "$lib/stores/ui.svelte"
@@ -41,10 +34,9 @@ import { BigDecimal, Data, Effect, Layer, Match, pipe, Schema } from "effect"
 import * as A from "effect/Array"
 import * as O from "effect/Option"
 import { custom } from "viem"
-import { mainnet } from "viem/chains"
 import StatusDisplay from "./StatusDisplay.svelte"
 
-const UCS03_EVM = Ucs05.EvmDisplay.make({ address: UCS03_EVM_ADDRESS })
+const UCS03_EVM = Ucs05.EvmDisplay.make({ address: lstConfig.UCS03_EVM_ADDRESS })
 
 interface Props {
   evmChain: O.Option<Chain>
@@ -91,7 +83,7 @@ const withdrawalData = runPromiseExit$(() => {
         Effect.gen(function*() {
           const proxy = yield* predictProxy({
             path: 0n,
-            channel: DESTINATION_CHANNEL_ID,
+            channel: lstConfig.DESTINATION_CHANNEL_ID,
             sender: address,
           })
 
@@ -208,11 +200,11 @@ const executeWithdraw = (
   batches: Array<{ batchId: string; withdrawableAmount: BigDecimal.BigDecimal }>,
 ) =>
   Effect.gen(function*() {
-    const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
-    const unionChain = yield* ChainRegistry.byUniversalId(UNION_CHAIN_ID)
+    const ethereumChain = yield* ChainRegistry.byUniversalId(lstConfig.ETHEREUM_CHAIN_ID)
+    const unionChain = yield* ChainRegistry.byUniversalId(lstConfig.UNION_CHAIN_ID)
     const proxy = yield* predictProxy({
       path: 0n,
-      channel: DESTINATION_CHANNEL_ID,
+      channel: lstConfig.DESTINATION_CHANNEL_ID,
       sender,
     })
 
@@ -270,7 +262,7 @@ const executeWithdraw = (
       Effect.flatMap(Schema.encode(Ucs03.Ucs03WithInstructionFromHex)),
       Effect.map((instruction) => ({
         send: {
-          channel_id: DESTINATION_CHANNEL_ID,
+          channel_id: lstConfig.DESTINATION_CHANNEL_ID,
           timeout_height: 0n,
           timeout_timestamp,
           salt,
@@ -281,7 +273,7 @@ const executeWithdraw = (
       Effect.map((msg) => ({
         wasm: {
           execute: {
-            contract_addr: UCS03_ZKGM.address,
+            contract_addr: lstConfig.UCS03_ZKGM.address,
             msg,
             funds: [
               { denom: "au", amount: totalAmount },
@@ -311,7 +303,7 @@ const executeWithdraw = (
     const request = ZkgmClientRequest.make({
       source: ethereumChain,
       destination: unionChain,
-      channelId: SOURCE_CHANNEL_ID,
+      channelId: lstConfig.SOURCE_CHANNEL_ID,
       ucs03Address: UCS03_EVM.address,
       instruction: batchInstruction,
     })
@@ -343,7 +335,19 @@ runPromiseExit$(() =>
 
       withdrawalState = WithdrawalState.Loading()
 
-      const VIEM_CHAIN = mainnet
+      const VIEM_CHAIN = yield* pipe(
+        evmChain,
+        Effect.flatMap(chain =>
+          pipe(
+            chain.toViemChain(),
+            O.match({
+              onNone: () => Effect.fail(new Error("No viem chain available")),
+              onSome: Effect.succeed,
+            }),
+          )
+        ),
+      )
+
       const connectorClient = yield* getWagmiConnectorClient
       const isSafeWallet = getLastConnectedWalletId() === "safe"
 
