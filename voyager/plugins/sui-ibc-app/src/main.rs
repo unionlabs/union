@@ -52,6 +52,7 @@ pub struct Module {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ZkgmConfig {
+    owned_vault_package_id: SuiAddress,
     owned_vault_object_id: ObjectID,
     escrow_vault_object_id: ObjectID,
     /// ID of the `wrapped_token_to_t` mapping

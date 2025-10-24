@@ -85,23 +85,23 @@ pub async fn send_transactions(
         })?;
 
     println!("ptb bro: {ptb:?}");
-    println!(
-        "{}",
-        serde_json::to_string(
-            &sui_client
-                .read_api()
-                .dev_inspect_transaction_block(
-                    sender,
-                    TransactionKind::ProgrammableTransaction(ptb.clone()),
-                    None,
-                    None,
-                    None
-                )
-                .await
-                .unwrap()
-        )
-        .unwrap()
-    );
+    // println!(
+    //     "{}",
+    //     serde_json::to_string(
+    //         &sui_client
+    //             .read_api()
+    //             .dev_inspect_transaction_block(
+    //                 sender,
+    //                 TransactionKind::ProgrammableTransaction(ptb.clone()),
+    //                 None,
+    //                 None,
+    //                 None
+    //             )
+    //             .await
+    //             .unwrap()
+    //     )
+    //     .unwrap()
+    // );
 
     let tx_data = TransactionData::new_programmable(
         sender,
