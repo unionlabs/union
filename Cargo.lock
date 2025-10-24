@@ -72,6 +72,7 @@ dependencies = [
  "serde",
  "thiserror 2.0.12",
  "unionlabs-encoding",
+ "upgradable",
 ]
 
 [[package]]
@@ -120,6 +121,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]
@@ -15676,6 +15678,18 @@ dependencies = [
  "ucs04",
  "unionlabs",
  "voyager-primitives",
+]
+
+[[package]]
+name = "upgradable"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "embed-commit",
+ "frissitheto",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
 ]
 
 [[package]]

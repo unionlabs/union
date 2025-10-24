@@ -3,10 +3,7 @@ use std::num::NonZero;
 use access_managed::{
     EnsureCanCallResult, Restricted, handle_consume_scheduled_op_reply, state::Authority,
 };
-use access_manager_types::{
-    managed::msg::{InitMsg, MigrateMsg},
-    manager,
-};
+use access_manager_types::{managed::msg::InitMsg, manager};
 use cosmwasm_std::{
     Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, StdError, SubMsg, entry_point,
     to_json_binary, wasm_execute,
@@ -15,7 +12,7 @@ use depolama::StorageExt;
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 
 use crate::{
-    msg::{ExecuteMsg, QueryMsg},
+    msg::{ExecuteMsg, MigrateMsg, QueryMsg},
     state::{Counter, Executing, IncrementInReplyValue},
 };
 
@@ -134,6 +131,9 @@ pub fn execute(
         ExecuteMsg::AccessManaged(msg) => {
             access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }
+        ExecuteMsg::Upgradable(msg) => {
+            upgradable::execute(deps, env, info, msg).map_err(Into::into)
+        }
     }
 }
 
@@ -199,6 +199,9 @@ pub enum ContractError {
 
     #[error(transparent)]
     AccessManaged(#[from] access_managed::error::ContractError),
+
+    #[error(transparent)]
+    Upgradable(#[from] upgradable::error::ContractError),
 
     #[error("not executing")]
     NotExecuting,

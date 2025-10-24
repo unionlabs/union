@@ -1,7 +1,7 @@
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Increment {
@@ -30,6 +30,8 @@ pub enum ExecuteMsg {
     },
     #[serde(untagged)]
     AccessManaged(access_manager_types::managed::msg::ExecuteMsg),
+    #[serde(untagged)]
+    Upgradable(upgradable::msg::ExecuteMsg),
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -39,3 +41,7 @@ pub enum QueryMsg {
     #[serde(untagged)]
     AccessManaged(access_manager_types::managed::msg::QueryMsg),
 }
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct MigrateMsg {}

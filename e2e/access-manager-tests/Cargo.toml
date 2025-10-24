@@ -29,6 +29,7 @@ tokio                  = { workspace = true, features = ["full"] }
 tracing                = { workspace = true }
 tracing-subscriber     = { workspace = true }
 unionlabs              = { workspace = true }
+upgradable             = { workspace = true, features = ["library"] }
 
 [lints]
 workspace = true
