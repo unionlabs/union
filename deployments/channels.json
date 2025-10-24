@@ -1,7 +1,7 @@
 {
   "arbitrum.421614": {
-    "3": {
-      "comments": "union.union-testnet-10 channel 20",
+    "1": {
+      "comments": "union.union-testnet-10 channel 23",
       "fees": {
         "forward": {
           "PACKET_RECV": "938092",
