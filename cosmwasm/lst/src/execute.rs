@@ -419,6 +419,14 @@ pub fn submit_batch(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResul
         ));
 
     Ok(Response::new()
+        // unstake the native tokens
+        .add_message(wasm_execute(
+            deps.storage.read_item::<StakerAddress>()?.to_string(),
+            &StakerExecuteMsg::Unstake {
+                amount: unbond_amount.into(),
+            },
+            vec![],
+        )?)
         // burn all unbonded LST tokens on batch submission
         .add_message(wasm_execute(
             deps.storage.read_item::<LstAddress>()?,

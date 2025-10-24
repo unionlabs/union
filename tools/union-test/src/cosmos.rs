@@ -551,6 +551,19 @@ impl Module {
             .await
     }
 
+    pub async fn query<Req: prost::Message + prost::Name, Res: prost::Message + Default>(
+        &self,
+        req: Req,
+    ) -> anyhow::Result<Res> {
+        Ok(self
+            .rpc
+            .client()
+            .grpc_abci_query::<Req, Res>(Req::type_url(), &req, None, false)
+            .await?
+            .into_result()?
+            .unwrap())
+    }
+
     pub async fn query_wasm_smart<Req: Serialize, Res: DeserializeOwned>(
         &self,
         contract: Addr,

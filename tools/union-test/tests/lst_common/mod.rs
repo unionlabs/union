@@ -1,4 +1,8 @@
-use std::{future::Future, sync::Arc, time::Duration};
+use std::{
+    future::Future,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use alloy::{network::AnyNetwork, providers::DynProvider};
 use alloy_sol_types::SolValue as _;
@@ -7,7 +11,7 @@ use hex_literal::hex;
 use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
 use rand::RngCore as _;
 use serde::Deserialize;
-use tokio::sync::{Mutex, OnceCell};
+use tokio::sync::OnceCell;
 use tracing::info;
 use tracing_subscriber::FmtSubscriber;
 use ucs03_zkgm::com::{
@@ -98,7 +102,12 @@ pub async fn run_test_in_queue<
             (
                 Mutex::new(Queue {
                     tests: {
-                        let mut t = vec!["bond".into(), "unbond".into(), "withdraw".into()];
+                        let mut t = vec![
+                            "bond".into(),
+                            "redelegation".into(),
+                            "redelegation_too_soon".into(),
+                        ];
+                        // "unbond".into(), "withdraw".into()];
                         t.reverse();
                         t
                     },
@@ -137,9 +146,11 @@ pub async fn run_test_in_queue<
 
     loop {
         {
-            let mut lock = ctx.0.lock().await;
-            if lock.tests.last().unwrap() == key {
-                lock.shared_data = test_fn(ctx.1.clone(), lock.shared_data.clone()).await;
+            if ctx.0.lock().unwrap().tests.last().unwrap() == key {
+                let shared_data = ctx.0.lock().unwrap().shared_data.clone();
+                let shared_data = test_fn(ctx.1.clone(), shared_data).await;
+                let mut lock = ctx.0.lock().unwrap();
+                lock.shared_data = shared_data;
                 let _ = lock.tests.pop();
                 return;
             }

@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use cosmwasm_std::{
-    Addr, ContractResult, DecCoin, Decimal, DistributionMsg, Event, Order, OwnedDeps,
-    QuerierResult, Response, Uint128, WasmQuery, from_json,
+    Addr, Coin, ContractResult, DecCoin, Decimal, DistributionMsg, Event, Order, OwnedDeps,
+    QuerierResult, Response, StakingMsg, Uint128, WasmQuery, from_json,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
     to_json_binary,
 };
@@ -13,7 +13,9 @@ use cw_account::{
 use depolama::StorageExt;
 use lst::{msg::ConfigResponse, types::ProtocolFeeConfig};
 
-use crate::{ContractError, execute, msg::ExecuteMsg, withdraw_all_rewards};
+use crate::{
+    ContractError, execute, msg::ExecuteMsg, redisribute_delegations, withdraw_all_rewards,
+};
 
 const ADMIN: &str = "admin";
 const LST_HUB: &str = "lst-hub";
@@ -238,6 +240,60 @@ fn withdraw_all_rewards_floors_correctly() {
             },
             DistributionMsg::WithdrawDelegatorReward {
                 validator: "val-2".to_owned()
+            }
+        ]
+    );
+}
+
+#[test]
+fn redelegate() {
+    let msgs = redisribute_delegations(
+        "au",
+        [
+            ("a".to_owned(), 1_000_000),
+            ("b".to_owned(), 1_000_000),
+            ("c".to_owned(), 1_000_000),
+        ]
+        .into_iter()
+        .collect(),
+        [
+            ("b".to_owned(), 25),
+            ("c".to_owned(), 175),
+            ("d".to_owned(), 100),
+        ]
+        .into_iter()
+        .collect(),
+    )
+    .unwrap();
+
+    // previous shares:
+    // - a: 100
+    // - b: 100
+    // - c: 100
+
+    // 75 of a goes to c, to get it to it's 175
+    // a now at 25
+    // the remaining 25 of a goes to d
+    // a now at 0 (fully undelegated) and d now at 25
+    // 75 of b goes to d, to get b down to it's 25 and d up to it's 100
+
+    assert_eq!(
+        msgs,
+        vec![
+            StakingMsg::Redelegate {
+                src_validator: "a".to_owned(),
+                dst_validator: "c".to_owned(),
+                amount: Coin::new(750000_u128, "au")
+            },
+            StakingMsg::Redelegate {
+                src_validator: "a".to_owned(),
+                dst_validator: "d".to_owned(),
+                amount: Coin::new(250000_u128, "au")
+            },
+            StakingMsg::Redelegate {
+                src_validator: "b".to_owned(),
+                dst_validator: "d".to_owned(),
+                amount: Coin::new(750000_u128, "au")
             }
         ]
     );

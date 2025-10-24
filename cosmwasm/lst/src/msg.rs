@@ -330,6 +330,10 @@ pub enum StakerExecuteMsg {
     ///
     /// This must only be callable by the LST hub itself.
     Stake {},
+    /// Unstake `amount` of tokens.
+    ///
+    /// This must only be callable by the LST hub itself.
+    Unstake { amount: Uint128 },
     /// Rebase the current rewards by restaking them through the LST hub.
     ///
     /// This must only be callable by the LST hub itself.

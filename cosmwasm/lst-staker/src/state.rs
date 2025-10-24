@@ -17,7 +17,8 @@ impl ValueCodecViaEncoding for LstHub {
 
 /// The config for all of the validators to stake against for new stake operations.
 ///
-/// This is a map of all validator addresses to shares. Shares are used to calculate the percentage of stake that will be allocated to the respective validator:
+/// This is a map of all validator addresses to shares. Shares are used to calculate the percentage
+/// of stake that will be allocated to the respective validator:
 ///
 /// | validator | shares (400 total) | percentage |
 /// |-----------|--------------------|------------|
