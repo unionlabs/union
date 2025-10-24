@@ -257,6 +257,21 @@ export type Database = {
         }
         Relationships: []
       }
+      btcfi: {
+        Row: {
+          address: string
+          points: string | null
+        }
+        Insert: {
+          address: string
+          points?: string | null
+        }
+        Update: {
+          address?: string
+          points?: string | null
+        }
+        Relationships: []
+      }
       call_attendees: {
         Row: {
           call: string
@@ -2433,14 +2448,14 @@ export type Database = {
           bucket_done: boolean | null
           bucket_start_time: string | null
           calls: number | null
-          client_ip: unknown | null
+          client_ip: unknown
           cmd_type: number | null
           cmd_type_text: string | null
           comments: string | null
           cpu_sys_time: number | null
           cpu_user_time: number | null
           datname: string | null
-          dbid: unknown | null
+          dbid: unknown
           elevel: number | null
           jit_emission_count: number | null
           jit_emission_time: number | null
@@ -2486,7 +2501,7 @@ export type Database = {
           toplevel: boolean | null
           total_exec_time: number | null
           total_plan_time: number | null
-          userid: unknown | null
+          userid: unknown
           username: string | null
           wal_bytes: number | null
           wal_fpi: number | null
@@ -2625,10 +2640,7 @@ export type Database = {
       }
     }
     Functions: {
-      bech32_charset: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
+      bech32_charset: { Args: never; Returns: string[] }
       bech32_create_checksum: {
         Args: { hrp: string; input_data: number[] }
         Returns: number[]
@@ -2637,14 +2649,8 @@ export type Database = {
         Args: { hrp: string; input_data: number[] }
         Returns: string
       }
-      bech32_hrp_expand: {
-        Args: { hrp: string }
-        Returns: number[]
-      }
-      bech32_polymod: {
-        Args: { input_vals: number[] }
-        Returns: number
-      }
+      bech32_hrp_expand: { Args: { hrp: string }; Returns: number[] }
+      bech32_polymod: { Args: { input_vals: number[] }; Returns: number }
       bulk_import_nfts: {
         Args: {
           nft_records: Json[]
@@ -2653,10 +2659,7 @@ export type Database = {
         }
         Returns: Json
       }
-      bytea_to_text: {
-        Args: { data: string }
-        Returns: string
-      }
+      bytea_to_text: { Args: { data: string }; Returns: string }
       check_twitter_follow: {
         Args: { p_leader_id: number; p_user_id: string }
         Returns: boolean
@@ -2670,24 +2673,12 @@ export type Database = {
         }
         Returns: number[]
       }
-      decode_error_level: {
-        Args: { elevel: number }
-        Returns: string
-      }
-      eth_to_initia_address: {
-        Args: { eth_address: string }
-        Returns: string
-      }
-      generate_initial_codes_for_all_users: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_readable_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      decode_error_level: { Args: { elevel: number }; Returns: string }
+      eth_to_initia_address: { Args: { eth_address: string }; Returns: string }
+      generate_initial_codes_for_all_users: { Args: never; Returns: undefined }
+      generate_readable_code: { Args: never; Returns: string }
       generate_user_codes_readable: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           generated_code: string
           user_email: string
@@ -2695,17 +2686,14 @@ export type Database = {
         }[]
       }
       get_and_update_twitter_leader: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           exit_on_duplicate: boolean
           screen_name: string
           twitter_id: string
         }[]
       }
-      get_cmd_type: {
-        Args: { cmd_type: number }
-        Returns: string
-      }
+      get_cmd_type: { Args: { cmd_type: number }; Returns: string }
       get_discord_member: {
         Args: { p_guild_id: number; p_user_id: string }
         Returns: {
@@ -2728,33 +2716,45 @@ export type Database = {
           repo: string
         }[]
       }
-      get_histogram_timings: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_next_user_batch: {
-        Args:
-          | { batch_size: number }
-          | { batch_size: number; update_interval: unknown }
-        Returns: {
-          mission_ids: number[]
-          user_id: string
-        }[]
-      }
+      get_histogram_timings: { Args: never; Returns: string }
+      get_next_user_batch:
+        | {
+          Args: { batch_size: number; update_interval: unknown }
+          Returns: {
+            mission_ids: number[]
+            user_id: string
+          }[]
+        }
+        | {
+          Args: { batch_size: number }
+          Returns: {
+            mission_ids: number[]
+            user_id: string
+          }[]
+        }
       get_twitter_follows: {
         Args: { p_user_id: string }
         Returns: {
           leader_id: string
         }[]
       }
-      get_unearned_achievements: {
-        Args: { achievement_type: number } | { p_user_id: string }
-        Returns: {
-          id: number
-          meta: Json
-          type: string
-        }[]
-      }
+      get_unearned_achievements:
+        | {
+          Args: { achievement_type: number }
+          Returns: {
+            achievement_id: number
+            meta: Json
+            user_id: string
+          }[]
+        }
+        | {
+          Args: { p_user_id: string }
+          Returns: {
+            id: number
+            meta: Json
+            type: string
+          }[]
+        }
       get_unearned_active_missions: {
         Args: { mission_type: number }
         Returns: {
@@ -2764,10 +2764,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_unique_chains: {
-        Args: { p_user_id: string }
-        Returns: number
-      }
+      get_unique_chains: { Args: { p_user_id: string }; Returns: number }
       get_user_missions: {
         Args: { p_user_id: string }
         Returns: {
@@ -2776,10 +2773,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      hex_to_bytea: {
-        Args: { hex_string: string }
-        Returns: string
-      }
+      hex_to_bytea: { Args: { hex_string: string }; Returns: string }
       histogram: {
         Args: { _bucket: number; _quryid: number }
         Returns: Record<string, unknown>[]
@@ -2787,27 +2781,77 @@ export type Database = {
       http: {
         Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "http_request"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      http_delete: {
-        Args:
-          | { content: string; content_type: string; uri: string }
-          | { uri: string }
-        Returns: Database["public"]["CompositeTypes"]["http_response"]
-      }
-      http_get: {
-        Args: { data: Json; uri: string } | { uri: string }
-        Returns: Database["public"]["CompositeTypes"]["http_response"]
-      }
+      http_delete:
+        | {
+          Args: { uri: string }
+          Returns: Database["public"]["CompositeTypes"]["http_response"]
+          SetofOptions: {
+            from: "*"
+            to: "http_response"
+            isOneToOne: true
+            isSetofReturn: false
+          }
+        }
+        | {
+          Args: { content: string; content_type: string; uri: string }
+          Returns: Database["public"]["CompositeTypes"]["http_response"]
+          SetofOptions: {
+            from: "*"
+            to: "http_response"
+            isOneToOne: true
+            isSetofReturn: false
+          }
+        }
+      http_get:
+        | {
+          Args: { uri: string }
+          Returns: Database["public"]["CompositeTypes"]["http_response"]
+          SetofOptions: {
+            from: "*"
+            to: "http_response"
+            isOneToOne: true
+            isSetofReturn: false
+          }
+        }
+        | {
+          Args: { data: Json; uri: string }
+          Returns: Database["public"]["CompositeTypes"]["http_response"]
+          SetofOptions: {
+            from: "*"
+            to: "http_response"
+            isOneToOne: true
+            isSetofReturn: false
+          }
+        }
       http_head: {
         Args: { uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       http_header: {
         Args: { field: string; value: string }
         Returns: Database["public"]["CompositeTypes"]["http_header"]
+        SetofOptions: {
+          from: "*"
+          to: "http_header"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       http_list_curlopt: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           curlopt: string
           value: string
@@ -2816,29 +2860,50 @@ export type Database = {
       http_patch: {
         Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      http_post: {
-        Args:
-          | { content: string; content_type: string; uri: string }
-          | { data: Json; uri: string }
-        Returns: Database["public"]["CompositeTypes"]["http_response"]
-      }
+      http_post:
+        | {
+          Args: { content: string; content_type: string; uri: string }
+          Returns: Database["public"]["CompositeTypes"]["http_response"]
+          SetofOptions: {
+            from: "*"
+            to: "http_response"
+            isOneToOne: true
+            isSetofReturn: false
+          }
+        }
+        | {
+          Args: { data: Json; uri: string }
+          Returns: Database["public"]["CompositeTypes"]["http_response"]
+          SetofOptions: {
+            from: "*"
+            to: "http_response"
+            isOneToOne: true
+            isSetofReturn: false
+          }
+        }
       http_put: {
         Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      http_reset_curlopt: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      http_reset_curlopt: { Args: never; Returns: boolean }
       http_set_curlopt: {
         Args: { curlopt: string; value: string }
         Returns: boolean
       }
-      insert_nfts_from_stargaze_json: {
-        Args: { data: Json }
-        Returns: Json
-      }
+      insert_nfts_from_stargaze_json: { Args: { data: Json }; Returns: Json }
       insert_points: {
         Args: {
           end_time: string
@@ -2850,46 +2915,19 @@ export type Database = {
         }
         Returns: undefined
       }
-      migrate_raccoons_nfts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      migrate_raccoons_nfts: { Args: never; Returns: undefined }
       pg_stat_monitor_internal: {
         Args: { showtext: boolean }
         Returns: Record<string, unknown>[]
       }
-      pg_stat_monitor_reset: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      pg_stat_monitor_version: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      pgsm_create_11_view: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      pgsm_create_13_view: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      pgsm_create_14_view: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      pgsm_create_15_view: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      pgsm_create_17_view: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      pgsm_create_view: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      pg_stat_monitor_reset: { Args: never; Returns: undefined }
+      pg_stat_monitor_version: { Args: never; Returns: string }
+      pgsm_create_11_view: { Args: never; Returns: number }
+      pgsm_create_13_view: { Args: never; Returns: number }
+      pgsm_create_14_view: { Args: never; Returns: number }
+      pgsm_create_15_view: { Args: never; Returns: number }
+      pgsm_create_17_view: { Args: never; Returns: number }
+      pgsm_create_view: { Args: never; Returns: number }
       process_users_in_batches: {
         Args: { batch_size?: number }
         Returns: {
@@ -2901,14 +2939,8 @@ export type Database = {
           total_done: number
         }[]
       }
-      range: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
-      silent_process_all_users: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      range: { Args: never; Returns: string[] }
+      silent_process_all_users: { Args: never; Returns: undefined }
       snag_mark_queue_completed: {
         Args: { queue_ids: number[] }
         Returns: undefined
@@ -2917,14 +2949,8 @@ export type Database = {
         Args: { error_msg: string; queue_ids: number[] }
         Returns: undefined
       }
-      text_to_bytea: {
-        Args: { data: string }
-        Returns: string
-      }
-      tick_user: {
-        Args: { user_id_param: string }
-        Returns: undefined
-      }
+      text_to_bytea: { Args: { data: string }; Returns: string }
+      tick_user: { Args: { user_id_param: string }; Returns: undefined }
       upsert_user_achievements: {
         Args: {
           p_achievements: Json[]
@@ -2939,10 +2965,24 @@ export type Database = {
           threshold: number
         }[]
       }
-      urlencode: {
-        Args: { data: Json } | { string: string } | { string: string }
-        Returns: string
-      }
+      urlencode:
+        | { Args: { data: Json }; Returns: string }
+        | {
+          Args: { string: string }
+          Returns:
+            & {
+              error: true
+            }
+            & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+        }
+        | {
+          Args: { string: string }
+          Returns:
+            & {
+              error: true
+            }
+            & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+        }
     }
     Enums: {
       [_ in never]: never
@@ -2953,7 +2993,7 @@ export type Database = {
         value: string | null
       }
       http_request: {
-        method: unknown | null
+        method: unknown
         uri: string | null
         headers: Database["public"]["CompositeTypes"]["http_header"][] | null
         content_type: string | null

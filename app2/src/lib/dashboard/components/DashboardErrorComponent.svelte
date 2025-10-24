@@ -7,6 +7,7 @@ import type {
   AccountError,
   AchievementError,
   AuthenticationError,
+  BTCFIError,
   CategoryError,
   ChainError,
   DashboardUnknownException,
@@ -40,6 +41,7 @@ interface Props {
     | CategoryError
     | AccountError
     | ExperienceError
+    | BTCFIError
   onClose?: () => void
 }
 
@@ -71,6 +73,7 @@ const getUserFriendlyMessage = pipe(
     CategoryError: (x) => x.message || `Failed to ${x.operation} category data. Please try again.`,
     AccountError: (x) => x.message || `Failed to ${x.operation} account. Please try again.`,
     ExperienceError: (x) => x.message || `Failed to ${x.operation} experience. Please try again.`,
+    BTCFIError: (x) => x.message || `Failed to ${x.operation} BTCFI points. Please try again.`,
   }),
   Match.orElse(() => "An unexpected error occurred."),
 )

@@ -2,6 +2,7 @@ import type {
   AccountError,
   AchievementError,
   AuthenticationError,
+  BTCFIError,
   CategoryError,
   ChainError,
   DashboardUnknownException,
@@ -16,7 +17,7 @@ import type {
   WalletError,
 } from "$lib/dashboard/errors"
 
-type DashboardError =
+export type DashboardError =
   | AuthenticationError
   | SupabaseClientError
   | ChainError
@@ -32,6 +33,7 @@ type DashboardError =
   | EmailLinkError
   | AccountError
   | ExperienceError
+  | BTCFIError
 
 class ErrorStore {
   current: DashboardError | null = $state(null)

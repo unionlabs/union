@@ -4,6 +4,7 @@ import { type Entity, SupabaseClient } from "../client"
 import { CACHE_VERSION, STALE, TTL } from "../config"
 import {
   AchievementError,
+  BTCFIError,
   CategoryError,
   ChainError,
   LeaderboardError,
@@ -34,6 +35,8 @@ export type YapsSeason = {
 export type CurrentIncentives = {
   incentives_percent_effective: number
 }
+
+export type BTCFI = Entity<"btcfi">
 
 export const getChains = () =>
   withLocalStorageCacheStale(
@@ -344,4 +347,38 @@ export const getCurrentIncentives = () =>
         return Effect.succeed(Option.none())
       }),
     ),
+  )
+
+export const getBTCFIPoints = (address: string) =>
+  pipe(
+    SupabaseClient,
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client.functions.invoke("btcfi", {
+            body: { address },
+          }),
+        catch: (error) =>
+          new BTCFIError({
+            operation: "getBTCFIPoints",
+            cause: extractErrorDetails(error as Error),
+          }),
+      })
+    ),
+    Effect.flatMap((response) =>
+      response.error
+        ? Effect.fail(
+          new BTCFIError({
+            operation: "getBTCFIPoints",
+            cause: response.error,
+          }),
+        ) // we either have string i.e "99" or null if not found
+        : Effect.succeed(response.data as { address: string; points: string | null })
+    ),
+    Effect.map((data) => Option.fromNullable(data?.points ? parseInt(data.points, 10) : null)),
+    Effect.catchAll((error) => {
+      const btcfiError = new BTCFIError({ cause: error, operation: "getBTCFIPoints" })
+      errorStore.showError(btcfiError)
+      return Effect.succeed(Option.none())
+    }),
   )
