@@ -15679,6 +15679,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "upgradable"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "embed-commit",
+ "frissitheto",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "url"
 version = "2.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
