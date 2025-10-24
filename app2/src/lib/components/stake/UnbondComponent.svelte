@@ -554,7 +554,7 @@ function handleButtonClick() {
 
     <div class="flex justify-between items-center">
       <span class="text-xs text-zinc-500">Unbond Period</span>
-      <span class="text-sm font-medium text-zinc-200">27 days</span>
+      <span class="text-sm font-medium text-zinc-200">27 - 31 days</span>
     </div>
 
     <div class="pt-2 border-t border-zinc-800">
