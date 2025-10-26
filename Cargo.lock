@@ -17392,6 +17392,7 @@ dependencies = [
  "macros",
  "reqwest 0.11.27",
  "serde",
+ "serde-utils",
  "serde_json",
  "sui-sdk",
  "tokio",

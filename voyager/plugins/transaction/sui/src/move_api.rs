@@ -505,7 +505,7 @@ pub mod zkgm {
                         p.source_channel_id,
                         p.destination_channel_id,
                         p.data.clone(),
-                        0,
+                        0u64,
                         p.timeout_timestamp,
                     )
                 })

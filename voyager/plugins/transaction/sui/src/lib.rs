@@ -11,12 +11,11 @@ use sui_sdk::{
         base_types::SuiAddress,
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         signature::GenericSignature,
-        transaction::{ProgrammableTransaction, Transaction, TransactionData, TransactionKind},
+        transaction::{ProgrammableTransaction, Transaction, TransactionData},
     },
 };
 use tracing::info;
 use unionlabs::ErrorReporter;
-use voyager_sdk::serde_json;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleInfo {

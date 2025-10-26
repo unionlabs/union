@@ -181,7 +181,7 @@ pub fn begin_ack_call(
                 p.source_channel_id,
                 p.destination_channel_id,
                 p.data.clone(),
-                0,
+                0u64,
                 p.timeout_timestamp,
             )
         })
@@ -230,6 +230,11 @@ pub fn acknowledge_packet_call(
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].into(),
+            initial_shared_version: zkgm_store_initial_seq,
+            mutable: true,
+        }),
+        CallArg::Object(ObjectArg::SharedObject {
             id: owned_vault_object_id,
             initial_shared_version: owned_vault_store_initial_seq,
             mutable: true,
@@ -237,11 +242,6 @@ pub fn acknowledge_packet_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: escrow_vault_object_id,
             initial_shared_version: escrow_vault_store_initial_seq,
-            mutable: true,
-        }),
-        CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: zkgm_store_initial_seq,
             mutable: true,
         }),
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
@@ -644,8 +644,6 @@ pub async fn register_token_if_zkgm(
     packet: &ibc_union_spec::Packet,
     zkgm_packet: &ZkgmPacket,
     fao: TokenOrderV2,
-    module_info: &ModuleInfo,
-    store_initial_seq: SequenceNumber,
 ) -> anyhow::Result<Option<TypeTag>> {
     let (metadata_image, coin_metadata) = match fao.kind {
         TOKEN_ORDER_KIND_INITIALIZE => {
@@ -835,8 +833,6 @@ pub async fn register_tokens_if_zkgm(
     ptb: &mut ProgrammableTransactionBuilder,
     pk: &SuiKeyPair,
     packet: &ibc_union_spec::Packet,
-    module_info: &ModuleInfo,
-    store_initial_seq: SequenceNumber,
 ) -> anyhow::Result<Vec<TypeTag>> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
         return Ok(vec![]);
@@ -865,17 +861,9 @@ pub async fn register_tokens_if_zkgm(
                         coin_ts.push(e.get().clone());
                     }
                     Entry::Vacant(e) => {
-                        if let Some(type_tag) = register_token_if_zkgm(
-                            module,
-                            ptb,
-                            pk,
-                            packet,
-                            &zkgm_packet,
-                            fao,
-                            module_info,
-                            store_initial_seq,
-                        )
-                        .await?
+                        if let Some(type_tag) =
+                            register_token_if_zkgm(module, ptb, pk, packet, &zkgm_packet, fao)
+                                .await?
                         {
                             coin_ts.push(type_tag.clone());
                             e.insert(type_tag);
@@ -887,17 +875,8 @@ pub async fn register_tokens_if_zkgm(
         OP_TOKEN_ORDER => {
             let fao = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
                 .expect("impossible");
-            if let Some(type_tag) = register_token_if_zkgm(
-                module,
-                ptb,
-                pk,
-                packet,
-                &zkgm_packet,
-                fao,
-                module_info,
-                store_initial_seq,
-            )
-            .await?
+            if let Some(type_tag) =
+                register_token_if_zkgm(module, ptb, pk, packet, &zkgm_packet, fao).await?
             {
                 coin_ts.push(type_tag);
             }
