@@ -32,7 +32,7 @@ let cosmosAddressBbn1 = $derived(
         cosmosDisplay,
         Ucs05.anyDisplayToCanonical,
         canonical =>
-          S.decodeUnknownSync(Ucs05.Bech32FromCanonicalBytesWithPrefix("bbn1"))(canonical),
+          S.decodeUnknownSync(Ucs05.Bech32FromCanonicalBytesWithPrefix("bbn"))(canonical),
       )
     ),
   ),
