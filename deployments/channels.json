@@ -43,12 +43,6 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
-  "sui.4c78adac": {
-    "1": {
-      "comments": "union.union-testnet-10 channel 1",
-      "tags": ["canonical"]
-    }
-  },
   "babylon.bbn-test-5": {
     "3": {
       "comments": "corn.21000001 channel 1",
@@ -463,6 +457,12 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
+  "sui.4c78adac": {
+    "1": {
+      "comments": "union.union-testnet-10 channel 1",
+      "tags": ["canonical", "tokenorder-v2"]
+    }
+  },
   "union.union-1": {
     "1": {
       "comments": "ethereum.1 channel 2",
@@ -550,7 +550,7 @@
     },
     "22": {
       "comments": "sui.4c78adac channel 1",
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     },
     "33": {
       "comments": "base.84532 channel 1",

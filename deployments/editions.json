@@ -40,14 +40,14 @@
       "osmosis.osmosis-1": {
         "environment": "staging"
       },
-      "sui.4c78adac": {
-        "environment": "development"
-      },
       "sei.1328": {
         "environment": "production"
       },
       "sei.1329": {
         "environment": "production"
+      },
+      "sui.4c78adac": {
+        "environment": "development"
       },
       "union.union-1": {
         "environment": "production"
