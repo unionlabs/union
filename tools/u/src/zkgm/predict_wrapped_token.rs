@@ -229,6 +229,7 @@ impl Cmd {
                     )
                     .await
                 }
+                _ => todo!(),
             }
         }
     }

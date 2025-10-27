@@ -48,6 +48,11 @@ pub enum Deployment {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         eu: Option<DeployedContract<H160>>,
     },
+    #[serde(rename = "ibc-move/sui")]
+    IbcMoveSui {
+        core: DeployedContract<String>,
+        app: App<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

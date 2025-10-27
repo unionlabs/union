@@ -107,6 +107,7 @@ impl Cmd {
                         .to_string(),
                     args,
                 ),
+                _ => todo!(),
             }
         }
     }
