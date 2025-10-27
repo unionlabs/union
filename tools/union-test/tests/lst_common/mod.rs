@@ -8,7 +8,7 @@ use alloy::{network::AnyNetwork, providers::DynProvider};
 use alloy_sol_types::SolValue as _;
 use cosmwasm_std::Addr;
 use hex_literal::hex;
-use protos::cosmos::{base::v1beta1::Coin as ProtoCoin, staking::v1beta1 as staking_proto};
+use protos::cosmos::base::v1beta1::Coin as ProtoCoin;
 use rand::RngCore as _;
 use serde::Deserialize;
 use tokio::sync::OnceCell;
@@ -106,8 +106,9 @@ pub async fn run_test_in_queue<
                             "bond".into(),
                             "redelegation".into(),
                             "redelegation_too_soon".into(),
+                            "unbond".into(),
+                            "withdraw".into(),
                         ];
-                        // "unbond".into(), "withdraw".into()];
                         t.reverse();
                         t
                     },

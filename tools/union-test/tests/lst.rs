@@ -1,7 +1,8 @@
-use std::{collections::BTreeMap, str::FromStr as _, time::Duration};
+use std::{collections::BTreeMap, time::Duration};
 
 use alloy::{network::AnyNetwork, primitives::Address, providers::DynProvider};
 use cometbft_rpc::{rpc_types::TxResponse, types::code::Code};
+use cosmos_client::BroadcastTxCommitError;
 use cosmwasm_std::{
     Addr, Binary, Coin as CwCoin, CosmosMsg, Decimal, Uint128, WasmMsg, to_json_binary,
 };
@@ -322,7 +323,10 @@ async fn withdraw(
     assert_eq!(ack.tag, TAG_ACK_SUCCESS);
 }
 
-async fn set_validators(t: &LstContext, validators: &[(&str, Uint128)]) -> TxResponse {
+async fn set_validators(
+    t: &LstContext,
+    validators: &[(&str, Uint128)],
+) -> Result<TxResponse, BroadcastTxCommitError> {
     let acc = t
         .ctx
         .src
@@ -346,7 +350,6 @@ async fn set_validators(t: &LstContext, validators: &[(&str, Uint128)]) -> TxRes
             acc,
         )
         .await
-        .unwrap()
         .unwrap()
 }
 
@@ -410,34 +413,49 @@ async fn get_accounting_state(t: &LstContext) -> anyhow::Result<AccountingStateR
 #[tokio::test]
 async fn test_redelegation() {
     run_test_in_queue("redelegation", async |t, shared_data| {
-        let delegation_1 = query_delegation(&t, VALIDATORS[0]).await.unwrap();
-        let delegation_2 = query_delegation(&t, VALIDATORS[1]).await.unwrap();
-        let delegation_3 = query_delegation(&t, VALIDATORS[2]).await.unwrap();
-        let delegation_4 = query_delegation(&t, VALIDATORS[3]).await.unwrap();
-
-        println!("[LST_OUTPUT] delegation 1 before: {delegation_1}");
-        println!("[LST_OUTPUT] delegation 2 before: {delegation_2}");
-        println!("[LST_OUTPUT] delegation 3 before: {delegation_3}");
-        println!("[LST_OUTPUT] delegation 4 before: {delegation_4}");
-
-        let _ = set_validators(
+        let tx_resp = set_validators(
             &t,
             &[
                 (VALIDATORS[0], 100u128.into()),
                 (VALIDATORS[1], 50u128.into()),
             ],
         )
-        .await;
+        .await
+        .unwrap();
+
+        // we are also testing the receive rewards happened properly
+        let reward_amount: u128 = tx_resp
+            .tx_result
+            .events
+            .iter()
+            .find_map(|e| {
+                if e.ty == "wasm-receive_rewards" {
+                    Some(
+                        e.attributes
+                            .iter()
+                            .find(|a| a.key == "amount_after_protocol_fee")
+                            .unwrap()
+                            .value
+                            .parse()
+                            .unwrap(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .unwrap();
+
+        println!("[REWARD_AMOUNT] {reward_amount}");
 
         let delegation_1 = query_delegation(&t, VALIDATORS[0]).await.unwrap();
         let delegation_2 = query_delegation(&t, VALIDATORS[1]).await.unwrap();
+        let delegation_3 = query_delegation(&t, VALIDATORS[2]).await.unwrap();
+        let delegation_4 = query_delegation(&t, VALIDATORS[3]).await.unwrap();
 
-        println!("[LST_OUTPUT] delegation 1 after: {delegation_1}");
-        println!("[LST_OUTPUT] delegation 2 after: {delegation_2}");
-
-        assert_eq!(delegation_1.u128(), 600);
-
-        assert_eq!(delegation_2.u128(), 300);
+        assert_eq!(delegation_1.u128(), 600 + (reward_amount * 2 / 3));
+        assert_eq!(delegation_2.u128(), 300 + (reward_amount / 3));
+        assert_eq!(delegation_3.u128(), 0);
+        assert_eq!(delegation_4.u128(), 0);
 
         shared_data
     })
@@ -447,16 +465,17 @@ async fn test_redelegation() {
 #[tokio::test]
 async fn test_redelegation_failure() {
     run_test_in_queue("redelegation_too_soon", async |t, shared_data| {
-        let tx_resp = set_validators(
-            &t,
-            &[
-                (VALIDATORS[0], 100u128.into()),
-                (VALIDATORS[1], 50u128.into()),
-            ],
-        )
-        .await;
-
-        assert!(matches!(tx_resp.tx_result.code, Code::Err(_)));
+        assert!(matches!(
+            set_validators(
+                &t,
+                &[
+                    (VALIDATORS[2], 100u128.into()),
+                    (VALIDATORS[3], 50u128.into()),
+                ],
+            )
+            .await,
+            Err(_)
+        ));
 
         shared_data
     })
@@ -558,6 +577,9 @@ async fn test_bond_success() {
 #[tokio::test]
 async fn test_unbond_success() {
     run_test_in_queue("unbond", async |t, shared_data| {
+        // We need to wait at least two mins to unbond
+        tokio::time::sleep(Duration::from_secs(130)).await;
+
         let dst_channel_id = 1;
         let src_channel_id = 1;
 
