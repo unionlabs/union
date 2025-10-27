@@ -43,6 +43,12 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
+  "sui.4c78adac": {
+    "1": {
+      "comments": "union.union-testnet-10 channel 1",
+      "tags": ["canonical"]
+    }
+  },
   "babylon.bbn-test-5": {
     "3": {
       "comments": "corn.21000001 channel 1",
@@ -540,6 +546,10 @@
           "PACKET_SEND_LC_UPDATE_L0": "2116634"
         }
       },
+      "tags": ["canonical"]
+    },
+    "22": {
+      "comments": "sui.4c78adac channel 1",
       "tags": ["canonical"]
     },
     "33": {
