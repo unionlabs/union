@@ -366,7 +366,7 @@
         "forward": "PT20M",
         "reverse": "PT20M"
       },
-      "tags": ["canonical"]
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "sei.1328": {
