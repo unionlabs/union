@@ -548,10 +548,6 @@
       },
       "tags": ["canonical"]
     },
-    "22": {
-      "comments": "sui.4c78adac channel 1",
-      "tags": ["canonical", "tokenorder-v2"]
-    },
     "33": {
       "comments": "base.84532 channel 1",
       "forward": {
