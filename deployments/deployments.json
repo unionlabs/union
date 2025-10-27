@@ -1114,5 +1114,21 @@
         }
       }
     }
+  },
+  "sui.4c78adac": {
+    "ibc_interface": "ibc-move/sui",
+    "core": {
+      "address": "0x20ce81524276132a2aaee23a8dad22d26b80adfef5dcf765c68567b44ed4dfb7::ibc",
+      "height": 0,
+      "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+    },
+    "app": {
+      "ucs03": {
+        "address": "0xb9e0f478ab1bb759694368de62ced7cb04057f489d56f2b0a6a7d5ebc1407079::zkgm",
+        "height": 0,
+        "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+      }
+    },
+    "lightclients": {}
   }
 }
