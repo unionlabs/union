@@ -858,8 +858,8 @@
       "arbitrum": {
         "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
         "height": 461749,
-        "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f",
-        "code_id": 20
+        "commit": "f44f814da96fac08dfcbb6a1afc558f46ad35b2f",
+        "code_id": 70
       },
       "base": {
         "address": "union1xll86ajefrwsjn0msw89xhnmyd85fyzc6203j8p5uc6t7kyuvusqkutpsu",
