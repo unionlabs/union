@@ -198,8 +198,8 @@ const handleCheck = () => {
 
         <Button
           variant="primary"
-          onclick={isConnected ? handleCheck : handleConnectWallet}
-          disabled={!walletAddress.trim() || isLoading}
+          onclick={walletAddress.trim() ? handleCheck : handleConnectWallet}
+          disabled={(!walletAddress.trim() && !isConnected) || isLoading}
           class="w-full"
         >
           {#if isLoading}
@@ -208,10 +208,10 @@ const handleCheck = () => {
               </div>
               <span>Checking...</span>
             </div>
-          {:else if !isConnected}
-            Connect Wallet
-          {:else}
+          {:else if walletAddress.trim()}
             Check Points
+          {:else}
+            Connect Wallet
           {/if}
         </Button>
       </div>
