@@ -1,27 +1,32 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
+import { Option } from "effect"
 import StepLayout from "./StepLayout.svelte"
 
 interface Props {
   walletAddress: string
-  btcfiPoints: number | null
+  btcfiPoints: Option.Option<number>
   onBack: () => void
+  onReceiveEthereum?: () => void
 }
 
-let { walletAddress, btcfiPoints, onBack }: Props = $props()
+let { walletAddress, btcfiPoints, onBack, onReceiveEthereum }: Props = $props()
 
-let isEligible = $derived(btcfiPoints && btcfiPoints > 0)
+let points = $derived(Option.getOrElse(btcfiPoints, () => 0))
+let isEligible = $derived(points > 0)
 
 // Tier based on points
-const tierEmoji = btcfiPoints === null || btcfiPoints === 0
-  ? ""
-  : btcfiPoints >= 100000
-  ? "🐋"
-  : btcfiPoints >= 15000
-  ? "🐬"
-  : btcfiPoints >= 5000
-  ? "🐟"
-  : "🦐"
+const tierEmoji = $derived(
+  points === 0
+    ? ""
+    : points >= 100000
+    ? "🐋"
+    : points >= 15000
+    ? "🐬"
+    : points >= 5000
+    ? "🐟"
+    : "🦐",
+)
 </script>
 
 <StepLayout>
@@ -56,26 +61,32 @@ const tierEmoji = btcfiPoints === null || btcfiPoints === 0
 
       <div class="flex flex-col gap-3">
         <div class="flex-1 flex items-center justify-center">
-          {#if isEligible}
-            <div class="bg-accent/10 border border-accent/20 rounded-lg p-6 w-full">
-              <div class="text-5xl font-bold text-accent text-center">
-                {btcfiPoints?.toLocaleString()}
-              </div>
-              <div class="text-sm text-zinc-400 mt-3 text-center">Points</div>
+          <div class="bg-accent/10 border border-accent/20 rounded-lg p-6 w-full text-center">
+            <div class="text-5xl font-bold text-accent text-center">
+              {points.toLocaleString()}
             </div>
-          {:else}
-            <div class="bg-accent/10 border border-accent/20 rounded-lg p-6 w-full text-center">
-              <div class="text-5xl font-bold text-accent text-center">
-                {btcfiPoints?.toLocaleString()}
+            <div class="text-sm text-zinc-400 mt-3 text-center">Points</div>
+
+            {#if isEligible}
+              <div class="mt-6 -mx-6 pt-6 px-6 border-t border-zinc-700/30">
+                <div class="text-xs text-zinc-400 mb-3">
+                  Rewards will be distributed on Babylon by default.
+                </div>
+                <Button
+                  variant="primary"
+                  onclick={onReceiveEthereum}
+                  class="w-full"
+                >
+                  Receive on Ethereum Instead
+                </Button>
               </div>
-              <div class="text-sm text-zinc-400 mt-3 text-center">Points</div>
-            </div>
-          {/if}
+            {/if}
+          </div>
         </div>
 
         <div class="space-y-3">
           <Button
-            variant="primary"
+            variant="secondary"
             onclick={onBack}
             class="w-full"
           >
