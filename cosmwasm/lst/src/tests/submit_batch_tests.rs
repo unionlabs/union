@@ -70,10 +70,11 @@ use crate::{
     contract::{execute, init},
     error::ContractError,
     helpers::shares_to_assets,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, StakerExecuteMsg},
     state::{AccountingStateStore, ConfigStore, CurrentPendingBatch, SubmittedBatches},
     tests::test_helper::{
-        ADMIN, LST_ADDRESS, NATIVE_TOKEN, UNION1, UNION2, UNION3, mock_init_msg, set_rewards, setup,
+        ADMIN, LST_ADDRESS, NATIVE_TOKEN, STAKER_ADDRESS, UNION1, UNION2, UNION3, mock_init_msg,
+        set_rewards, setup,
     },
     types::{BatchId, PendingBatch, SubmittedBatch},
 };
@@ -156,9 +157,30 @@ fn submit_batch_works() {
     )
     .unwrap();
 
-    // the given unbond amount will be burnt
+    let expected_native_unstaked = shares_to_assets(
+        union1_bond_amount + union2_bond_amount + pending_rewards,
+        union1_shares + union2_shares,
+        union3_unbond_amount,
+    );
+
+    assert_eq!(expected_native_unstaked, 750);
+
+    // expected amount will be unstaked by the staker contract
     assert_eq!(
         res.messages[0].msg,
+        CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: STAKER_ADDRESS.into(),
+            msg: to_json_binary(&StakerExecuteMsg::Unstake {
+                amount: expected_native_unstaked.into()
+            })
+            .unwrap(),
+            funds: vec![]
+        })
+    );
+
+    // the given unbond amount will be burnt
+    assert_eq!(
+        res.messages[1].msg,
         CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: LST_ADDRESS.into(),
             msg: to_json_binary(&Cw20ExecuteMsg::Burn {
@@ -170,7 +192,7 @@ fn submit_batch_works() {
     );
 
     // no further messages
-    assert_eq!(res.messages.len(), 1);
+    assert_eq!(res.messages.len(), 2);
 
     // event is emitted correctly
     assert_eq!(
@@ -195,14 +217,6 @@ fn submit_batch_works() {
                     .batch_period_seconds
         ),
     );
-
-    let expected_native_unstaked = shares_to_assets(
-        union1_bond_amount + union2_bond_amount + pending_rewards,
-        union1_shares + union2_shares,
-        union3_unbond_amount,
-    );
-
-    assert_eq!(expected_native_unstaked, 750);
 
     let state = deps.storage.read_item::<AccountingStateStore>().unwrap();
 

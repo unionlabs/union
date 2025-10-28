@@ -50,22 +50,6 @@ in
           --gas-prices 1au\
         ")
 
-      # set the validators on the staker
-      devnetUnion.wait_until_succeeds("\
-        ${self'.packages.uniond}/bin/uniond tx \
-          wasm execute \
-          union160a75a608j6w80x5ykckvd9cavs2xk8yfjzy2eqhpq0nprxg05qqf067nj \
-          '{\"set_validators\": { \"unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej\": \"100\" }}' \
-          --from alice \
-          --gas auto \
-          --gas-adjustment 10.0 \
-          --node http://devnetUnion:26657 \
-          --chain-id union-devnet-1 -y  \
-          --home ${self'.packages.devnet-union-home} \
-          --keyring-backend test \
-          --gas-prices 1au\
-        ")
-
       # set the lst hub address on staker
       devnetUnion.wait_until_succeeds("\
         ${self'.packages.uniond}/bin/uniond tx \
@@ -83,7 +67,7 @@ in
         ")
 
       # run the tests, note that we do `1>&2` because otherwise we won't get the full prints
-      devnetUnion.wait_until_succeeds("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>&2")
+      devnetUnion.succeed("RUST_LOG=info ${self'.packages.e2e-lst-tests}/lst --nocapture 1>&2")
     '';
   };
 }

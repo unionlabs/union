@@ -15510,6 +15510,7 @@ dependencies = [
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
  "lst",
+ "lst-staker",
  "once_cell",
  "prost 0.12.6",
  "protos",

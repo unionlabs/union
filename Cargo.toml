@@ -383,6 +383,7 @@ linea-light-client-types                  = { path = "lib/linea-light-client-typ
 linea-types                               = { path = "lib/linea-types", default-features = false }
 linea-zktrie                              = { path = "lib/linea-zktrie", default-features = false }
 lst                                       = { path = "cosmwasm/lst", default-features = false }
+lst-staker                                = { path = "cosmwasm/lst-staker", default-features = false }
 macros                                    = { path = "lib/macros", default-features = false }
 move-core-types                           = { git = "https://github.com/mystenlabs/sui", default-features = false }
 movement-light-client-types               = { path = "lib/movement-light-client-types", default-features = false }
