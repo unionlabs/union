@@ -25,7 +25,7 @@ use sui_sdk::{
     },
 };
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::Bytes};
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
@@ -116,17 +116,9 @@ impl ProofModuleServer<IbcUnion> for Module {
 
         let target_object_id = sui_verifier::calculate_dynamic_field_object_id(
             *self.ibc_store.get(),
-            StructTag {
-                address: self.ibc_contract,
-                module: "ibc".into(),
-                name: "CommitmentKey".into(),
-                type_params: vec![],
-            }
-            .into(),
+            0x1,
             key.get().as_slice(),
         );
-
-        panic!("TARGET OBRJECT ID BROTHER: {path:?} {target_object_id}");
 
         let target_object = self
             .sui_client

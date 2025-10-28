@@ -41,6 +41,8 @@ use voyager_sdk::{
     rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, types::StateModuleInfo},
 };
 
+const COMMITMENT_TO_DIGEST: u8 = 0x2;
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
@@ -63,8 +65,6 @@ pub struct Module {
     pub sui_client: sui_sdk::SuiClient,
 
     pub ibc_store: ObjectID,
-
-    pub commitment_to_digest: ObjectID,
 
     pub ibc_contract: ObjectID,
 
@@ -108,14 +108,18 @@ impl Module {
         _channel_id: ChannelId,
         packet_hash: H256,
     ) -> RpcResult<PacketByHashResponse> {
+        let key = &[COMMITMENT_TO_DIGEST]
+            .iter()
+            .chain(packet_hash.as_ref())
+            .collect::<Vec<_>>();
         let SuiParsedData::MoveObject(object) = self
             .sui_client
             .read_api()
             .get_dynamic_field_object(
-                self.commitment_to_digest,
+                self.ibc_store,
                 DynamicFieldName {
                     type_: TypeTag::Vector(Box::new(TypeTag::U8)),
-                    value: serde_json::to_value(packet_hash).expect("serde will work"),
+                    value: serde_json::to_value(key).expect("serde will work"),
                 },
             )
             .await
@@ -231,7 +235,6 @@ impl StateModule<IbcUnion> for Module {
             ibc_store: config.ibc_store,
             ibc_contract: config.ibc_contract,
             ibc_event_address: config.ibc_event_address,
-            commitment_to_digest: config.commitment_to_digest,
         })
     }
 }
@@ -241,7 +244,6 @@ impl StateModule<IbcUnion> for Module {
 pub struct Config {
     pub rpc_url: String,
     pub ibc_store: ObjectID,
-    pub commitment_to_digest: ObjectID,
     pub ibc_contract: ObjectID,
     pub ibc_event_address: ObjectID,
 }

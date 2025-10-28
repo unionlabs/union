@@ -70,7 +70,7 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel}; 
     use ibc::light_client::{Self, LightClientManager};
     use ibc::commitment;
-    use ibc::prefixed_dynamic_field;
+    use ibc::state;
     use sui::event;
 
     const VERSION: u32 = 1;
@@ -304,13 +304,15 @@ module ibc::ibc {
 
         assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
-        ibc_store.commit(
+        state::commit(
+            &mut ibc_store.id,
             commitment::client_state_commitment_key(client_id),
             client_state_bytes
         );
 
         let latest_height = ibc_store.client_mgr.latest_height(client_id);
-        ibc_store.commit(
+        state::commit(
+            &mut ibc_store.id,
             commitment::consensus_state_commitment_key(client_id, latest_height),
             consensus_state_bytes
         );
@@ -344,7 +346,7 @@ module ibc::ibc {
             ibc_store.client_mgr.update_client(client_id, clock, client_message, relayer);
 
         // Update the client state commitment
-        *ibc_store.borrow_commitment_mut(commitment::client_state_commitment_key(client_id)) = client_state;
+        *state::borrow_commitment_mut(&mut ibc_store.id, commitment::client_state_commitment_key(client_id)) = client_state;
 
         // Update the consensus state commitment
         ibc_store.add_or_update_commitment(
@@ -963,13 +965,13 @@ module ibc::ibc {
                 packet_hash
             );
 
-        assert!(!ibc_store.has_commitment(commitment_key), E_PACKET_ALREADY_SENT);
+        assert!(!state::has_commitment(&ibc_store.id, commitment_key), E_PACKET_ALREADY_SENT);
 
-        ibc_store.commit(commitment_key, COMMITMENT_MAGIC);
+        state::commit(&mut ibc_store.id, commitment_key, COMMITMENT_MAGIC);
 
         // This is very important for the relayers to be able to get the exact transaction from the `packet_hash`.
         // They will later use this to get the full packet.
-        prefixed_dynamic_field::add(&mut ibc_store.id, 0x02, packet_hash, *ctx.digest());
+        state::add_commitment_to_digest(&mut ibc_store.id, packet_hash, *ctx.digest());
 
         event::emit(
             PacketSend {
@@ -1060,22 +1062,24 @@ module ibc::ibc {
     }
 
     fun add_or_update_commitment(ibc_store: &mut IBCStore, key: vector<u8>, value: vector<u8>) {
-        if (ibc_store.has_commitment(key)) {
-            *ibc_store.borrow_commitment_mut(key) = value;
+        if (state::has_commitment(&ibc_store.id, key)) {
+            *state::borrow_commitment_mut(&mut ibc_store.id, key) = value;
         } else {
-            ibc_store.commit(key, value);
+            state::commit(&mut ibc_store.id, key, value);
         };
     }
 
     fun commit_connection(ibc_store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd) {
-        ibc_store.commit(  
+        state::commit(  
+            &mut ibc_store.id,
             commitment::connection_commitment_key(connection_id),
             keccak256(&connection.encode())
         );
     }
 
     fun commit_channel(ibc_store: &mut IBCStore, channel_id: u32, channel: Channel) {
-        ibc_store.commit(
+        state::commit(  
+            &mut ibc_store.id,
             commitment::channel_commitment_key(channel_id),
             keccak256(&channel.encode())
         );
@@ -1167,18 +1171,18 @@ module ibc::ibc {
     }
 
     fun set_packet_receive(ibc_store: &mut IBCStore, commitment_key: vector<u8>): bool {
-        if (ibc_store.has_commitment(commitment_key)) {
+        if (state::has_commitment(&ibc_store.id, commitment_key)) {
             true
         } else {
-            ibc_store.commit(commitment_key, COMMITMENT_MAGIC);
+            state::commit(&mut ibc_store.id, commitment_key, COMMITMENT_MAGIC);
             false
         }
     }
 
     fun set_packet_acknowledged(ibc_store: &mut IBCStore, commitment_key: vector<u8>) {
-        assert!(ibc_store.has_commitment(commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
+        assert!(state::has_commitment(&ibc_store.id, commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
 
-        let commitment = ibc_store.borrow_commitment_mut(commitment_key);
+        let commitment = state::borrow_commitment_mut(&mut ibc_store.id, commitment_key);
         assert!(commitment != COMMITMENT_MAGIC_ACK, E_PACKET_ALREADY_ACKNOWLEDGED);
         assert!(commitment == COMMITMENT_MAGIC, E_PACKET_COMMITMENT_NOT_FOUND);
 
@@ -1434,7 +1438,7 @@ module ibc::ibc {
         let packet_hash = commitment::commit_packet(&packet);
 
         assert!(
-            !ibc_store.has_commitment(commitment::batch_receipts_commitment_key(packet_hash)),
+            !state::has_commitment(&ibc_store.id, commitment::batch_receipts_commitment_key(packet_hash)),
             E_PACKET_ALREADY_RECEIVED
         );
 
@@ -1468,14 +1472,14 @@ module ibc::ibc {
 
         let commitment_key = commitment::packet_timeout_commitment_key(packet_hash);
 
-        prefixed_dynamic_field::add(
+        state::add_commitment_to_digest(
             &mut ibc_store.id,
-            0x02,
             commitment_key,
             *ctx.digest()
         );
 
-        ibc_store.commit(
+        state::commit(
+            &mut ibc_store.id,
             commitment_key,
             COMMITMENT_MAGIC
         );
@@ -1519,20 +1523,20 @@ module ibc::ibc {
     }
 
     public fun get_commitment(ibc_store: &IBCStore, commitment_key: vector<u8>): vector<u8> {
-        if (!ibc_store.has_commitment(commitment_key)) {
+        if (!state::has_commitment(&ibc_store.id, commitment_key)) {
             abort E_COMMITMENT_NOT_FOUND
         };
-        *ibc_store.borrow_commitment(commitment_key)
+        *state::borrow_commitment(&ibc_store.id, commitment_key)
     }
 
     fun inner_write_acknowledgement(
         ibc_store: &mut IBCStore,
         commitment_key: vector<u8>, acknowledgement: vector<u8>
     ) {
-        if (!ibc_store.has_commitment(commitment_key)) {
+        if (!state::has_commitment(&ibc_store.id, commitment_key)) {
             abort E_PACKET_NOT_RECEIVED
         };
-        let commitment = ibc_store.borrow_commitment_mut(commitment_key);
+        let commitment = state::borrow_commitment_mut(&mut ibc_store.id, commitment_key);
         assert!(
             *commitment == COMMITMENT_MAGIC,
             E_ACK_ALREADY_EXIST
@@ -1608,22 +1612,6 @@ module ibc::ibc {
 
     fun assert_version(ibc_store: &IBCStore) {
         assert!(ibc_store.version == VERSION, E_VERSION_MISMATCH);
-    }
-
-    fun commit(ibc: &mut IBCStore, key: vector<u8>, value: vector<u8>) {
-        prefixed_dynamic_field::add(&mut ibc.id, 0x01, key, value);
-    }
-
-    fun has_commitment(ibc: &IBCStore, key: vector<u8>): bool {
-        prefixed_dynamic_field::exists(&ibc.id, 0x01, key)
-    }
-
-    fun borrow_commitment(ibc: &IBCStore, key: vector<u8>): &vector<u8> {
-        prefixed_dynamic_field::borrow(&ibc.id, 0x01, key)
-    }
-
-    fun borrow_commitment_mut(ibc: &mut IBCStore, key: vector<u8>): &mut vector<u8> {
-        prefixed_dynamic_field::borrow_mut(&mut ibc.id, 0x01, key)
     }
 
     #[test_only]

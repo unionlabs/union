@@ -12,6 +12,8 @@ use unionlabs::encoding::{Bincode, DecodeAs, EncodeAs};
 
 use crate::{error::Error, verifier::Verifier};
 
+const COMMITMENT_PREFIX: u8 = 0x1;
+
 pub enum SuiLightClient {}
 
 impl IbcClient for SuiLightClient {
@@ -43,7 +45,8 @@ impl IbcClient for SuiLightClient {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
         sui_verifier::verify_membership(
-            client_state.ibc_commitments_object_id,
+            client_state.ibc_store,
+            COMMITMENT_PREFIX,
             key.into(),
             value.into(),
             storage_proof.object,
