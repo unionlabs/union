@@ -465,7 +465,7 @@ async fn test_redelegation() {
 #[tokio::test]
 async fn test_redelegation_failure() {
     run_test_in_queue("redelegation_too_soon", async |t, shared_data| {
-        assert!(matches!(
+        assert!(
             set_validators(
                 &t,
                 &[
@@ -473,9 +473,9 @@ async fn test_redelegation_failure() {
                     (VALIDATORS[3], 50u128.into()),
                 ],
             )
-            .await,
-            Err(_)
-        ));
+            .await
+            .is_err()
+        );
 
         shared_data
     })
@@ -488,7 +488,7 @@ async fn test_bond_success() {
         let dst_channel_id = 1;
         let src_channel_id = 1;
 
-        set_validators(&t, INITIAL_VALIDATOR_SHARES).await;
+        let _ = set_validators(&t, INITIAL_VALIDATOR_SHARES).await.unwrap();
 
         // setting "au" as the fungible counterparty
         eth_set_fungible_counterparty(
