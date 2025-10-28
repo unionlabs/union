@@ -12,6 +12,7 @@
   "osmosis": ["osmo-test-5", "osmosis-1"],
   "scroll": ["534351"],
   "sei": ["pacific-1", "atlantic-2", "1328", "1329"],
+  "sui": ["4c78adac"],
   "stargaze": ["elgafar-1"],
   "stride": ["stride-internal-1"],
   "union": ["union-testnet-8", "union-testnet-9", "union-testnet-10", "union-1"],

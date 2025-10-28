@@ -478,6 +478,7 @@ async fn do_main() -> Result<()> {
                 *eu = None;
             }
         }
+        _ => todo!(),
     }
 
     std::fs::write(
