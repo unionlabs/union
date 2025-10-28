@@ -382,3 +382,42 @@ export const getBTCFIPoints = (address: string) =>
       return Effect.succeed(Option.none())
     }),
   )
+
+export const verifyBTCFIWallet = (params: {
+  bbnAddress: string
+  message: string
+  signature: string
+  evmAddress: string
+}) =>
+  pipe(
+    SupabaseClient,
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client.functions.invoke("btcfi-verify-wallet", {
+            body: params,
+          }),
+        catch: (error) =>
+          new BTCFIError({
+            operation: "verifyBTCFIWallet",
+            cause: extractErrorDetails(error as Error),
+          }),
+      })
+    ),
+    Effect.flatMap((response) =>
+      response.error
+        ? Effect.fail(
+          new BTCFIError({
+            operation: "verifyBTCFIWallet",
+            cause: response.error,
+          }),
+        )
+        : Effect.succeed(response.data as { verified: boolean; owner: string; receiver: string })
+    ),
+    Effect.map((data) => data.verified),
+    Effect.catchAll((error) => {
+      const btcfiError = new BTCFIError({ cause: error, operation: "verifyBTCFIWallet" })
+      errorStore.showError(btcfiError)
+      return Effect.succeed(false)
+    }),
+  )
