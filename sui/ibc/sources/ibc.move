@@ -70,7 +70,7 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel}; 
     use ibc::light_client::{Self, LightClientManager};
     use ibc::commitment;
-    use sui::dynamic_field as df;
+    use ibc::prefixed_dynamic_field;
     use sui::event;
 
     const VERSION: u32 = 1;
@@ -237,15 +237,6 @@ module ibc::ibc {
 
     public struct Misbehaviour has drop, store, copy {
         client_id: u32
-    }
-
-    // Commitments are done under `IBCStore` as dynamic field's with this key
-    public struct CommitmentKey has copy, drop, store {
-        key: vector<u8>
-    }
-
-    public struct CommitmentToDigestKey has copy, drop, store {
-        commitment: vector<u8>
     }
 
     public struct IBCStore has key {
@@ -978,7 +969,7 @@ module ibc::ibc {
 
         // This is very important for the relayers to be able to get the exact transaction from the `packet_hash`.
         // They will later use this to get the full packet.
-        df::add(&mut ibc_store.id, CommitmentToDigestKey { commitment: packet_hash }, *ctx.digest());
+        prefixed_dynamic_field::add(&mut ibc_store.id, 0x02, packet_hash, *ctx.digest());
 
         event::emit(
             PacketSend {
@@ -1477,9 +1468,10 @@ module ibc::ibc {
 
         let commitment_key = commitment::packet_timeout_commitment_key(packet_hash);
 
-        df::add(
+        prefixed_dynamic_field::add(
             &mut ibc_store.id,
-            CommitmentToDigestKey { commitment: commitment_key },
+            0x02,
+            commitment_key,
             *ctx.digest()
         );
 
@@ -1619,19 +1611,19 @@ module ibc::ibc {
     }
 
     fun commit(ibc: &mut IBCStore, key: vector<u8>, value: vector<u8>) {
-        df::add(&mut ibc.id, CommitmentKey { key }, value);
+        prefixed_dynamic_field::add(&mut ibc.id, 0x01, key, value);
     }
 
     fun has_commitment(ibc: &IBCStore, key: vector<u8>): bool {
-        df::exists_(&ibc.id, CommitmentKey { key })
+        prefixed_dynamic_field::exists(&ibc.id, 0x01, key)
     }
 
     fun borrow_commitment(ibc: &IBCStore, key: vector<u8>): &vector<u8> {
-        df::borrow(&ibc.id, CommitmentKey { key })
+        prefixed_dynamic_field::borrow(&ibc.id, 0x01, key)
     }
 
     fun borrow_commitment_mut(ibc: &mut IBCStore, key: vector<u8>): &mut vector<u8> {
-        df::borrow_mut(&mut ibc.id, CommitmentKey { key })
+        prefixed_dynamic_field::borrow_mut(&mut ibc.id, 0x01, key)
     }
 
     #[test_only]

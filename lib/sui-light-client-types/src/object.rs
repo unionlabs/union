@@ -95,3 +95,9 @@ pub enum TypeTag {
     U32,
     U256,
 }
+
+impl From<StructTag> for TypeTag {
+    fn from(value: StructTag) -> Self {
+        Self::Struct(Box::new(value))
+    }
+}

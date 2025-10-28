@@ -91,7 +91,8 @@ pub fn verify_membership(
     contents_digest: Digest,
 ) -> Result<(), Error> {
     // STEP 1: check if the given `object` has the correct object address
-    let commitment_object = calculate_dynamic_field_object_id(*commitments_object.get(), &key);
+    let commitment_object =
+        calculate_dynamic_field_object_id(*commitments_object.get(), TypeTag::U8, &key);
 
     let Data::Move(ref object_data) = object.data;
     let (proven_object, proven_key, proven_value): (ObjectID, Bytes, Bytes) =
@@ -174,7 +175,11 @@ fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<D
 }
 
 /// Calculate the object_id of the dynamic field within the commitments mapping
-pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> ObjectID {
+pub fn calculate_dynamic_field_object_id(
+    parent: [u8; 32],
+    type_tag: TypeTag,
+    key_bytes: &[u8],
+) -> ObjectID {
     #[repr(u8)]
     enum HashingIntentScope {
         ChildObjectId = 0xf0,
@@ -192,9 +197,7 @@ pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> 
     // since the table we are verifying uses `vector<u8>` keys
     hasher.update([key_bytes.len() as u8]);
     hasher.update(key_bytes);
-    hasher.update(
-        bcs::to_bytes(&TypeTag::Vector(Box::new(TypeTag::U8))).expect("bcs serialization works"),
-    );
+    hasher.update(bcs::to_bytes(&type_tag).expect("bcs serialization works"));
     let hash = hasher.finalize();
 
     ObjectID::new(hash.into())
