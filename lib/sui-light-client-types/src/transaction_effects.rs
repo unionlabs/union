@@ -1,6 +1,9 @@
 use blake2::{Blake2b, Digest as _};
 
-use crate::{Digest, ObjectID, ObjectRef, Owner, checkpoint_summary::GasCostSummary};
+use crate::{
+    AccountAddress, Digest, ObjectID, ObjectRef, Owner, SuiAddress,
+    checkpoint_summary::GasCostSummary,
+};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -156,12 +159,181 @@ pub enum IDOperation {
     Deleted,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ExecutionStatus {
     // We don't care about the failure case
     Success,
+
+    /// Gas used in the failed case, and the error.
+    Failure {
+        /// The error
+        error: ExecutionFailureStatus,
+        /// Which command the error occurred
+        command: Option<usize>,
+    },
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ModuleId {
+    address: AccountAddress,
+    name: String,
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct MoveLocation {
+    pub module: ModuleId,
+    pub function: u16,
+    pub instruction: u16,
+    pub function_name: Option<String>,
+}
+
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub enum CommandArgumentError {
+    TypeMismatch,
+    InvalidBCSBytes,
+    InvalidUsageOfPureArg,
+    InvalidArgumentToPrivateEntryFunction,
+    IndexOutOfBounds { idx: u16 },
+    SecondaryIndexOutOfBounds { result_idx: u16, secondary_idx: u16 },
+    InvalidResultArity { result_idx: u16 },
+    InvalidGasCoinUsage,
+    InvalidValueUsage,
+    InvalidObjectByValue,
+    InvalidObjectByMutRef,
+    SharedObjectOperationNotAllowed,
+    InvalidArgumentArity,
+    InvalidTransferObject,
+    InvalidMakeMoveVecNonObjectArgument,
+    ArgumentWithoutValue,
+    CannotMoveBorrowedValue,
+    CannotWriteToExtendedReference,
+    InvalidReferenceArgument,
+}
+
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub enum TypeArgumentError {
+    TypeNotFound,
+    ConstraintNotSatisfied,
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub enum PackageUpgradeError {
+    UnableToFetchPackage {
+        package_id: ObjectID,
+    },
+    NotAPackage {
+        object_id: ObjectID,
+    },
+    IncompatibleUpgrade,
+    DigestDoesNotMatch {
+        digest: Vec<u8>,
+    },
+    UnknownUpgradePolicy {
+        policy: u8,
+    },
+    PackageIDDoesNotMatch {
+        package_id: ObjectID,
+        ticket_id: ObjectID,
+    },
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub enum ExecutionFailureStatus {
+    InsufficientGas,
+    InvalidGasObject,
+    InvariantViolation,
+    FeatureNotYetSupported,
+    MoveObjectTooBig {
+        object_size: u64,
+        max_object_size: u64,
+    },
+    MovePackageTooBig {
+        object_size: u64,
+        max_object_size: u64,
+    },
+    CircularObjectOwnership {
+        object: ObjectID,
+    },
+    InsufficientCoinBalance,
+    CoinBalanceOverflow,
+    PublishErrorNonZeroAddress,
+    SuiMoveVerificationError,
+    MovePrimitiveRuntimeError(Option<MoveLocation>),
+    MoveAbort(MoveLocation, u64),
+    VMVerificationOrDeserializationError,
+    VMInvariantViolation,
+    FunctionNotFound,
+    ArityMismatch,
+    TypeArityMismatch,
+    NonEntryFunctionInvoked,
+    CommandArgumentError {
+        arg_idx: u16,
+        kind: CommandArgumentError,
+    },
+    TypeArgumentError {
+        argument_idx: u16,
+        kind: TypeArgumentError,
+    },
+    UnusedValueWithoutDrop {
+        result_idx: u16,
+        secondary_idx: u16,
+    },
+    InvalidPublicFunctionReturnType {
+        idx: u16,
+    },
+    InvalidTransferObject,
+    EffectsTooLarge {
+        current_size: u64,
+        max_size: u64,
+    },
+    PublishUpgradeMissingDependency,
+    PublishUpgradeDependencyDowngrade,
+    PackageUpgradeError {
+        upgrade_error: PackageUpgradeError,
+    },
+    WrittenObjectsTooLarge {
+        current_size: u64,
+        max_size: u64,
+    },
+    CertificateDenied,
+    SuiMoveVerificationTimedout,
+    SharedObjectOperationNotAllowed,
+    InputObjectDeleted,
+    ExecutionCancelledDueToSharedObjectCongestion {
+        congested_objects: Vec<ObjectID>,
+    },
+    AddressDeniedForCoin {
+        address: SuiAddress,
+        coin_type: String,
+    },
+    CoinTypeGlobalPause {
+        coin_type: String,
+    },
+    ExecutionCancelledDueToRandomnessUnavailable,
+    MoveVectorElemTooBig {
+        value_size: u64,
+        max_scaled_size: u64,
+    },
+    MoveRawValueTooBig {
+        value_size: u64,
+        max_scaled_size: u64,
+    },
+    InvalidLinkage,
+    InsufficientBalanceForWithdraw,
 }
 
 impl TransactionEffects {

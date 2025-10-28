@@ -1,9 +1,10 @@
 use std::fmt::Debug;
 
 use ibc_union_spec::{
-    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionState, IbcUnion, Packet,
+    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionState, IbcUnion, MustBeZero,
+    Timestamp,
     path::{BatchReceiptsPath, StorePath},
-    query::{PacketByHash, Query},
+    query::{PacketByHash, PacketByHashResponse, Query},
 };
 use jsonrpsee::{
     Extensions,
@@ -14,7 +15,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
     SuiClient, SuiClientBuilder,
-    rpc_types::{SuiMoveValue, SuiObjectDataOptions, SuiParsedData, SuiTypeTag},
+    rpc_types::{
+        SuiMoveValue, SuiObjectDataOptions, SuiParsedData, SuiTransactionBlockResponseOptions,
+        SuiTypeTag,
+    },
     types::{
         Identifier, TypeTag,
         base_types::{ObjectID, SuiAddress},
@@ -60,7 +64,34 @@ pub struct Module {
 
     pub ibc_store: ObjectID,
 
+    pub commitment_to_digest: ObjectID,
+
     pub ibc_contract: ObjectID,
+
+    pub ibc_event_address: ObjectID,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Packet {
+    pub source_channel_id: ChannelId,
+    pub destination_channel_id: ChannelId,
+    pub data: Vec<u8>,
+    #[serde(with = "serde_utils::string")]
+    pub timeout_height: MustBeZero,
+    #[serde(with = "serde_utils::string")]
+    pub timeout_timestamp: u64,
+}
+
+impl From<Packet> for ibc_union_spec::Packet {
+    fn from(val: Packet) -> ibc_union_spec::Packet {
+        ibc_union_spec::Packet {
+            source_channel_id: val.source_channel_id,
+            destination_channel_id: val.destination_channel_id,
+            data: val.data.into(),
+            timeout_height: MustBeZero,
+            timeout_timestamp: Timestamp::from_nanos(val.timeout_timestamp),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -76,12 +107,12 @@ impl Module {
         &self,
         _channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<Packet> {
+    ) -> RpcResult<PacketByHashResponse> {
         let SuiParsedData::MoveObject(object) = self
             .sui_client
             .read_api()
             .get_dynamic_field_object(
-                self.ibc_store,
+                self.commitment_to_digest,
                 DynamicFieldName {
                     type_: TypeTag::Vector(Box::new(TypeTag::U8)),
                     value: serde_json::to_value(packet_hash).expect("serde will work"),
@@ -119,7 +150,7 @@ impl Module {
             ));
         };
 
-        let digest: Vec<u8> = v
+        let tx_hash: H256 = v
             .into_iter()
             .map(|n| {
                 let SuiMoveValue::Number(n) = n else {
@@ -128,17 +159,31 @@ impl Module {
 
                 n as u8
             })
-            .collect();
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap();
+
+        let height = self
+            .sui_client
+            .read_api()
+            .get_transaction_with_options(
+                (*tx_hash.get()).into(),
+                SuiTransactionBlockResponseOptions::new(),
+            )
+            .await
+            .expect("tx must exist")
+            .checkpoint
+            .expect("checkpoint sequence exists");
 
         let packet = self
             .sui_client
             .event_api()
-            .get_events(digest.try_into().expect("ibc saves tx digest"))
+            .get_events((*tx_hash.get()).into())
             .await
             .expect("there must be some events exist")
             .into_iter()
             .find_map(|e| {
-                if e.type_.address == self.ibc_contract.into()
+                if e.type_.address == self.ibc_event_address.into()
                     && e.type_.module.as_str() == "ibc"
                     && e.type_.name.as_str() == "PacketSend"
                 {
@@ -161,7 +206,11 @@ impl Module {
                 None::<()>,
             ))?;
 
-        Ok(packet)
+        Ok(PacketByHashResponse {
+            packet: packet.into(),
+            tx_hash,
+            provable_height: height,
+        })
     }
 }
 
@@ -181,6 +230,8 @@ impl StateModule<IbcUnion> for Module {
             rpc_url: config.rpc_url,
             ibc_store: config.ibc_store,
             ibc_contract: config.ibc_contract,
+            ibc_event_address: config.ibc_event_address,
+            commitment_to_digest: config.commitment_to_digest,
         })
     }
 }
@@ -190,7 +241,9 @@ impl StateModule<IbcUnion> for Module {
 pub struct Config {
     pub rpc_url: String,
     pub ibc_store: ObjectID,
+    pub commitment_to_digest: ObjectID,
     pub ibc_contract: ObjectID,
+    pub ibc_event_address: ObjectID,
 }
 
 #[async_trait]

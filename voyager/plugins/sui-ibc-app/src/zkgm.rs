@@ -53,7 +53,7 @@ pub fn begin_recv_call(
                 p.source_channel_id,
                 p.destination_channel_id,
                 p.data.clone(),
-                0,
+                0u64,
                 p.timeout_timestamp,
             )
         })
@@ -181,7 +181,7 @@ pub fn begin_ack_call(
                 p.source_channel_id,
                 p.destination_channel_id,
                 p.data.clone(),
-                0,
+                0u64,
                 p.timeout_timestamp,
             )
         })
@@ -230,6 +230,11 @@ pub fn acknowledge_packet_call(
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].into(),
+            initial_shared_version: zkgm_store_initial_seq,
+            mutable: true,
+        }),
+        CallArg::Object(ObjectArg::SharedObject {
             id: owned_vault_object_id,
             initial_shared_version: owned_vault_store_initial_seq,
             mutable: true,
@@ -237,11 +242,6 @@ pub fn acknowledge_packet_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: escrow_vault_object_id,
             initial_shared_version: escrow_vault_store_initial_seq,
-            mutable: true,
-        }),
-        CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: zkgm_store_initial_seq,
             mutable: true,
         }),
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
@@ -392,7 +392,8 @@ pub fn end_timeout_call(
 
 pub fn register_capability_call(
     ptb: &mut ProgrammableTransactionBuilder,
-    module_info: &ModuleInfo,
+    vault_address: SuiAddress,
+    vault_object_id: ObjectID,
     initial_seq: SequenceNumber,
     treasury_ref: ObjectRef,
     metadata_ref: ObjectRef,
@@ -400,7 +401,7 @@ pub fn register_capability_call(
 ) {
     let arguments = [
         ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
+            id: vault_object_id,
             initial_shared_version: initial_seq,
             mutable: true,
         }))
@@ -420,8 +421,8 @@ pub fn register_capability_call(
         .unwrap(),
     ];
     ptb.command(Command::move_call(
-        module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        vault_address.into(),
+        ident_str!("owned_vault").into(),
         ident_str!("register_capability").into(),
         vec![coin_t.clone()],
         arguments.to_vec(),
@@ -643,8 +644,6 @@ pub async fn register_token_if_zkgm(
     packet: &ibc_union_spec::Packet,
     zkgm_packet: &ZkgmPacket,
     fao: TokenOrderV2,
-    module_info: &ModuleInfo,
-    store_initial_seq: SequenceNumber,
 ) -> anyhow::Result<Option<TypeTag>> {
     let (metadata_image, coin_metadata) = match fao.kind {
         TOKEN_ORDER_KIND_INITIALIZE => {
@@ -743,22 +742,28 @@ pub async fn register_token_if_zkgm(
     let (treasury_ref, metadata_ref, coin_t) =
         publish_new_coin(module, pk, coin_metadata.decimals).await?;
 
-    // let treasury_ref = module.sui_client
+    // let treasury_ref = module
+    //     .sui_client
     //     .read_api()
     //     .get_object_with_options(
-    //         ObjectID::from_str("0xca5366bca6f671b348be40c1ecabae26ddbb85b15487739f8541edc257ee1ed2").unwrap(),
+    //         ObjectID::from_str(
+    //             "0x9053c2370c0c751cea3f937339c0ee429dadca72220b51186b6f23fab6d4b2eb",
+    //         )
+    //         .unwrap(),
     //         SuiObjectDataOptions::default().with_owner(),
     //     )
     //     .await
     //     .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
     //     .data
-    //     .expect("ibc store object exists on chain").object_ref();
+    //     .expect("ibc store object exists on chain")
+    //     .object_ref();
 
-    // let metadata_ref= module.sui_client
+    // let metadata_ref = module
+    //     .sui_client
     //     .read_api()
     //     .get_object_with_options(
     //         ObjectID::from_str(
-    //             "0xe937ecb9e589f24408de40d8ba43c7ff9b96a7d0180f5447576f02dc06155103",
+    //             "0x3df31bdfc6452c2e72cfc0e3d9ac0dfd92ee375e4f294504e89e2c539847f9b4",
     //         )
     //         .unwrap(),
     //         SuiObjectDataOptions::default().with_owner(),
@@ -770,7 +775,7 @@ pub async fn register_token_if_zkgm(
     //     .object_ref();
 
     // let coin_t =
-    //         TypeTag::from_str("0xd722567ac2efe67cd6ab3f56a382a473b2c156208d0c5675de06e23ae16e4ee6::fungible_token::FUNGIBLE_TOKEN").unwrap();
+    //         TypeTag::from_str("0x7ebeecc2437ea672e74b1c554e087a15d8e1f502e20df62f23f1159455c596dc::fungible_token::FUNGIBLE_TOKEN").unwrap();
 
     // updating name, symbol, icon_url and the description since we don't have these in the published binary right now
     // TODO(aeryz): we should generate the move binary to contain the necessary data and don't do these calls
@@ -805,11 +810,16 @@ pub async fn register_token_if_zkgm(
         coin::update_icon_url(ptb, treasury_ref, metadata_ref, coin_t.clone(), icon_url).await;
     }
 
+    let owned_vault_store_initial_seq = module
+        .get_initial_seq(module.zkgm_config.owned_vault_object_id)
+        .await;
+
     // We are finally registering the token before calling the recv
     zkgm::register_capability_call(
         ptb,
-        module_info,
-        store_initial_seq,
+        module.zkgm_config.owned_vault_package_id,
+        module.zkgm_config.owned_vault_object_id,
+        owned_vault_store_initial_seq,
         treasury_ref,
         metadata_ref,
         coin_t.clone(),
@@ -823,8 +833,6 @@ pub async fn register_tokens_if_zkgm(
     ptb: &mut ProgrammableTransactionBuilder,
     pk: &SuiKeyPair,
     packet: &ibc_union_spec::Packet,
-    module_info: &ModuleInfo,
-    store_initial_seq: SequenceNumber,
 ) -> anyhow::Result<Vec<TypeTag>> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
         return Ok(vec![]);
@@ -838,31 +846,24 @@ pub async fn register_tokens_if_zkgm(
                 panic!("impossible");
             };
 
-            let mut base_tokens: HashMap<alloy::primitives::Bytes, TypeTag> = HashMap::new();
+            let mut base_tokens: HashMap<
+                (alloy::primitives::Bytes, alloy::primitives::Bytes),
+                TypeTag,
+            > = HashMap::new();
 
             for instr in batch.instructions {
                 let Ok(fao) = TokenOrderV2::abi_decode_params(&instr.operand) else {
                     continue;
                 };
 
-                let base_token = fao.base_token.clone();
-
-                match base_tokens.entry(base_token) {
+                match base_tokens.entry((fao.base_token.clone(), fao.metadata.clone())) {
                     Entry::Occupied(e) => {
                         coin_ts.push(e.get().clone());
                     }
                     Entry::Vacant(e) => {
-                        if let Some(type_tag) = register_token_if_zkgm(
-                            module,
-                            ptb,
-                            pk,
-                            packet,
-                            &zkgm_packet,
-                            fao,
-                            module_info,
-                            store_initial_seq,
-                        )
-                        .await?
+                        if let Some(type_tag) =
+                            register_token_if_zkgm(module, ptb, pk, packet, &zkgm_packet, fao)
+                                .await?
                         {
                             coin_ts.push(type_tag.clone());
                             e.insert(type_tag);
@@ -874,17 +875,8 @@ pub async fn register_tokens_if_zkgm(
         OP_TOKEN_ORDER => {
             let fao = TokenOrderV2::abi_decode_params(&zkgm_packet.instruction.operand)
                 .expect("impossible");
-            if let Some(type_tag) = register_token_if_zkgm(
-                module,
-                ptb,
-                pk,
-                packet,
-                &zkgm_packet,
-                fao,
-                module_info,
-                store_initial_seq,
-            )
-            .await?
+            if let Some(type_tag) =
+                register_token_if_zkgm(module, ptb, pk, packet, &zkgm_packet, fao).await?
             {
                 coin_ts.push(type_tag);
             }

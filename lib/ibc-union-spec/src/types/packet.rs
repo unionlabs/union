@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use unionlabs::{primitives::Bytes, tuple::AsTuple};
 use voyager_primitives::Timestamp;
 
@@ -47,6 +49,28 @@ impl schemars::JsonSchema for MustBeZero {
             ..Default::default()
         }
         .into()
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("value must be zero but found {0}")]
+pub struct MustBeZeroFromStrError(String);
+
+impl FromStr for MustBeZero {
+    type Err = MustBeZeroFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s != "0" {
+            Err(MustBeZeroFromStrError(s.into()))
+        } else {
+            Ok(MustBeZero)
+        }
+    }
+}
+
+impl Display for MustBeZero {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0")
     }
 }
 

@@ -179,9 +179,9 @@ impl Module {
                 Some(events::IbcEvent::ChannelOpenConfirm(channel_open))
             }
             "PacketSend" => {
-                let channel_open: events::PacketSend =
+                let packet_send: events::PacketSend =
                     serde_json::from_value(e.parsed_json).unwrap();
-                Some(events::IbcEvent::PacketSend(channel_open))
+                Some(events::IbcEvent::PacketSend(packet_send))
             }
             "PacketRecv" => {
                 let packet_recv: events::PacketRecv =

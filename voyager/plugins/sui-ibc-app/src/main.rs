@@ -52,6 +52,7 @@ pub struct Module {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ZkgmConfig {
+    owned_vault_package_id: SuiAddress,
     owned_vault_object_id: ObjectID,
     escrow_vault_object_id: ObjectID,
     /// ID of the `wrapped_token_to_t` mapping
@@ -122,7 +123,7 @@ impl TransactionPluginServer for Module {
         let mut coin_ts = vec![];
         for p in &data.packets {
             coin_ts.extend_from_slice(
-                &register_tokens_if_zkgm(self, &mut ptb, &pk, p, &module_info, store_initial_seq)
+                &register_tokens_if_zkgm(self, &mut ptb, &pk, p)
                     .await
                     .map_err(|e| {
                         ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, e.to_string(), None::<()>)
