@@ -208,7 +208,7 @@ const bondData = $derived(pipe(
                     inline-flex items-center px-2 py-1 rounded text-xs font-medium {
                     bond.delivery_success === true
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
-                    : bond.delivery_success === false
+                    : (bond.delivery_success === false || bond.bond_success === false)
                     ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                     : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                     }
@@ -217,7 +217,8 @@ const bondData = $derived(pipe(
                   {
                     bond.delivery_success === true
                     ? "success"
-                    : bond.delivery_success === false
+                    : (bond.delivery_success === false
+                        || bond.bond_success === false)
                     ? "failure"
                     : "pending"
                   }
