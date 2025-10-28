@@ -3,6 +3,7 @@ import { page } from "$app/state"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import A from "$lib/components/ui/A.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
 import Label from "$lib/components/ui/Label.svelte"
@@ -113,7 +114,10 @@ const unbondData = $derived(pipe(
             <div>
               <Label>Packet Hash</Label>
               <div class="font-mono text-sm text-zinc-400 break-all">
-                {unbond.packet_hash}
+                <A
+                  external={false}
+                  href={`/explorer/packets/${unbond.packet_hash}`}
+                >{unbond.packet_hash}</A>
               </div>
             </div>
 

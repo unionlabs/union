@@ -18,7 +18,8 @@ import * as AppRuntime from "$lib/runtime"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
 import * as S from "effect/Schema"
 import { pipe } from "effect/Function"
-    import { getOrUndefined } from "effect/Option";
+import { getOrUndefined } from "effect/Option";
+import A from "../ui/A.svelte";
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
@@ -42,7 +43,12 @@ const destinationChain = $derived(
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
       <div>
         <Label>Packet Hash</Label>
-        <div class="text-sm font-mono break-all">{packetDetails.data.value.packet_hash}</div>
+        <div class="text-sm font-mono break-all">
+          <A
+            external={false}
+            href={`/explorer/packets/${packetDetails.data.value.packet_hash}`}
+          >{packetDetails.data.value.packet_hash}</A>
+        </div>
       </div>
       <div>
         <Label>Channel Version</Label>

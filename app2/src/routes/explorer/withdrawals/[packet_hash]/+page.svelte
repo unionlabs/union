@@ -1,17 +1,18 @@
 <script lang="ts">
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import A from "$lib/components/ui/A.svelte"
 import Card from "$lib/components/ui/Card.svelte"
+import JsonPreview from "$lib/components/ui/JsonPreview.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import * as AppRuntime from "$lib/runtime"
 import { Indexer } from "@unionlabs/sdk"
 import { TokenRawAmount } from "@unionlabs/sdk/schema"
 import { ConfigProvider, Effect, Layer, pipe } from "effect"
 import { graphql } from "gql.tada"
 import type { PageData } from "./$types"
-import * as AppRuntime from "$lib/runtime"
 
 interface Props {
   data: PageData
@@ -126,7 +127,10 @@ const withdrawalData = $derived(pipe(
             <div>
               <Label>Packet Hash</Label>
               <div class="font-mono text-sm text-zinc-400 break-all">
-                {w.packet_hash}
+                <A
+                  external={false}
+                  href={`/explorer/packets/${w.packet_hash}`}
+                >{w.packet_hash}</A>
               </div>
             </div>
 
@@ -253,7 +257,6 @@ const withdrawalData = $derived(pipe(
                 <div class="text-sm text-zinc-500">{w.destination_universal_chain_id}</div>
               {/if}
             </div>
-
           </div>
         </div>
       </div>
