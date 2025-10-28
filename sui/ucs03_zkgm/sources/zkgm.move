@@ -305,7 +305,6 @@ module zkgm::zkgm {
 
     public fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
-        port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -314,7 +313,6 @@ module zkgm::zkgm {
     ) {
         ibc::channel_open_ack(
             ibc_store,
-            port_id,
             channel_id,
             counterparty_version,
             counterparty_channel_id,
@@ -2177,7 +2175,6 @@ module zkgm::zkgm {
             zkgm::zkgm::IbcAppWitness {}
         );
         ibc.channel_open_ack(
-            string::utf8(b"ignored-here"),
             1,
             string::utf8(b"ucs03-zkgm-0"),
             1,

@@ -70,8 +70,10 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel}; 
     use ibc::light_client::{Self, LightClientManager};
     use ibc::commitment;
-
+    use sui::dynamic_field as df;
     use sui::event;
+
+    const VERSION: u32 = 1;
 
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
@@ -84,6 +86,7 @@ module ibc::ibc {
     const CONN_STATE_TRYOPEN: u8 = 2;
     const CONN_STATE_OPEN: u8 = 3;
 
+    const E_VERSION_MISMATCH: u64 = 1001;
     const E_CLIENT_NOT_FOUND: u64 = 1002;
     const E_INVALID_CONNECTION_STATE: u64 = 1008;
     const E_INVALID_CHANNEL_STATE: u64 = 1016;
@@ -236,50 +239,39 @@ module ibc::ibc {
         client_id: u32
     }
 
-    // Resource to hold the global state
+    // Commitments are done under `IBCStore` as dynamic field's with this key
+    public struct CommitmentKey has copy, drop, store {
+        key: vector<u8>
+    }
+
+    public struct CommitmentToDigestKey has copy, drop, store {
+        commitment: vector<u8>
+    }
+
     public struct IBCStore has key {
         id: UID,
+        version: u32,
         client_mgr: LightClientManager,
-        commitments: Table<vector<u8>, vector<u8>>,
         connections: Table<u32, ConnectionEnd>,
         channels: Table<u32, Channel>,
         channel_to_port: Table<u32, String>,
         next_client_sequence: u32,
         next_channel_sequence: u32,
         next_connection_sequence: u32,
-        commitment_to_digest: Table<vector<u8>, vector<u8>>,
-        
     }
 
     fun init(ctx: &mut TxContext) {
         event::emit(Initiated {});
         transfer::share_object(IBCStore {
             id: object::new(ctx),
-            commitments: table::new(ctx),
+            version: VERSION,
             connections: table::new(ctx),
             channels: table::new(ctx),
             client_mgr: light_client::new(ctx, false),
             channel_to_port: table::new(ctx),
             next_client_sequence: 1,
             next_channel_sequence: 1,
-            next_connection_sequence: 1,
-            commitment_to_digest: table::new(ctx)
-        });
-    }
-
-    #[test_only]
-    public fun init_for_tests(ctx: &mut TxContext) {
-        transfer::share_object(IBCStore {
-            id: object::new(ctx),
-            commitments: table::new(ctx),
-            connections: table::new(ctx),
-            channels: table::new(ctx),
-            client_mgr: light_client::new(ctx, true),
-            channel_to_port: table::new(ctx),
-            next_client_sequence: 1,
-            next_channel_sequence: 1,
-            next_connection_sequence: 1,
-            commitment_to_digest: table::new(ctx)
+            next_connection_sequence: 1
         });
     }
 
@@ -295,6 +287,8 @@ module ibc::ibc {
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
     ) {
+        ibc_store.assert_version();
+
         let client_id = ibc_store.generate_client_identifier();
         
         let (client_state_bytes, consensus_state_bytes, counterparty_chain_id, mut lens_client_event) = ibc_store.client_mgr.create_client(
@@ -319,13 +313,14 @@ module ibc::ibc {
 
         assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
-        ibc_store.commitments.add(
+        ibc_store.commit(
             commitment::client_state_commitment_key(client_id),
             client_state_bytes
         );
 
-        ibc_store.commitments.add(
-            commitment::consensus_state_commitment_key(client_id, ibc_store.client_mgr.latest_height(client_id)),
+        let latest_height = ibc_store.client_mgr.latest_height(client_id);
+        ibc_store.commit(
+            commitment::consensus_state_commitment_key(client_id, latest_height),
             consensus_state_bytes
         );
 
@@ -349,6 +344,8 @@ module ibc::ibc {
         client_message: vector<u8>,
         relayer: address
     ) {
+        ibc_store.assert_version();
+
         assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update the client and consensus states using the client message
@@ -356,10 +353,10 @@ module ibc::ibc {
             ibc_store.client_mgr.update_client(client_id, clock, client_message, relayer);
 
         // Update the client state commitment
-        *ibc_store.commitments.borrow_mut(commitment::client_state_commitment_key(client_id)) = client_state;
+        *ibc_store.borrow_commitment_mut(commitment::client_state_commitment_key(client_id)) = client_state;
 
         // Update the consensus state commitment
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
+        ibc_store.add_or_update_commitment(
             commitment::consensus_state_commitment_key(client_id, height),
             keccak256(&consensus_state)
         );
@@ -382,6 +379,8 @@ module ibc::ibc {
         misbehaviour: vector<u8>,
         relayer: address
     ) {
+        ibc_store.assert_version();
+
         assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         ibc_store.client_mgr.misbehaviour(client_id, misbehaviour, relayer);
@@ -403,6 +402,8 @@ module ibc::ibc {
         client_id: u32,
         counterparty_client_id: u32
     ) {
+        ibc_store.assert_version();
+
         assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         let connection_id = ibc_store.generate_connection_identifier();
@@ -444,6 +445,8 @@ module ibc::ibc {
         proof_init: vector<u8>,
         proof_height: u64
     ) {
+        ibc_store.assert_version();
+
         assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         let connection_id = ibc_store.generate_connection_identifier();
@@ -505,6 +508,8 @@ module ibc::ibc {
         proof_try: vector<u8>,
         proof_height: u64
     ) {
+        ibc_store.assert_version();
+
         let connection = ibc_store.connections.borrow_mut(connection_id);
 
         // assert that this connection is at the `INIT` phase
@@ -560,6 +565,8 @@ module ibc::ibc {
         proof_ack: vector<u8>,
         proof_height: u64
     ) {
+        ibc_store.assert_version();
+
         let connection = ibc_store.connections.borrow_mut(connection_id);
         assert!(
             connection.state() == CONN_STATE_TRYOPEN,
@@ -621,6 +628,8 @@ module ibc::ibc {
         version: String,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         // Make sure that the `port_id` confirms the witness.
         validate_port(port_id, witness);
 
@@ -686,6 +695,8 @@ module ibc::ibc {
         proof_height: u64,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         validate_port(port_id, witness);
 
         // Ensure the connection exists and is in the OPEN state
@@ -768,6 +779,8 @@ module ibc::ibc {
         proof_height: u64,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         let port_id = *ibc_store.channel_to_port.borrow(channel_id);
         validate_port(port_id, witness);
 
@@ -850,6 +863,8 @@ module ibc::ibc {
         proof_height: u64,
         witness: T
     ) {
+        ibc_store.assert_version();
+
         let port_id = *ibc_store.channel_to_port.borrow(channel_id);
         validate_port(port_id, witness);
 
@@ -919,6 +934,8 @@ module ibc::ibc {
         witness: T,
         ctx: &TxContext
     ): packet::Packet {
+        ibc_store.assert_version();
+
         // Check if the channel exists in the store
         if(!ibc_store.channels.contains(source_channel)) {
             abort E_CHANNEL_NOT_FOUND
@@ -955,13 +972,13 @@ module ibc::ibc {
                 packet_hash
             );
 
-        assert!(!ibc_store.commitments.contains(commitment_key), E_PACKET_ALREADY_SENT);
+        assert!(!ibc_store.has_commitment(commitment_key), E_PACKET_ALREADY_SENT);
 
-        ibc_store.commitments.add(commitment_key, COMMITMENT_MAGIC);
+        ibc_store.commit(commitment_key, COMMITMENT_MAGIC);
 
         // This is very important for the relayers to be able to get the exact transaction from the `packet_hash`.
         // They will later use this to get the full packet.
-        ibc_store.commitment_to_digest.add(packet_hash, *ctx.digest());
+        df::add(&mut ibc_store.id, CommitmentToDigestKey { commitment: packet_hash }, *ctx.digest());
 
         event::emit(
             PacketSend {
@@ -986,6 +1003,8 @@ module ibc::ibc {
         acknowledgements: vector<vector<u8>>,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         let port_id = *ibc_store.channel_to_port.borrow(packets[0].destination_channel_id());
         validate_port(port_id, witness);
 
@@ -1012,6 +1031,8 @@ module ibc::ibc {
         acknowledgements: vector<vector<u8>>,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         let port_id = *ibc_store.channel_to_port.borrow(packets[0].destination_channel_id());
         validate_port(port_id, witness);
 
@@ -1047,30 +1068,23 @@ module ibc::ibc {
         seq
     }
 
-    // TODO(aeryz): update should only be allowed for:
-    // - client state,
-    // - connection end
-    // - channel end commitments, the rest should abort in `update`
-    fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, value: P) {
-        if (table.contains(key)) {
-            let val = table.borrow_mut(key);
-            *val = value;
+    fun add_or_update_commitment(ibc_store: &mut IBCStore, key: vector<u8>, value: vector<u8>) {
+        if (ibc_store.has_commitment(key)) {
+            *ibc_store.borrow_commitment_mut(key) = value;
         } else {
-            table.add(key, value);
-        }
+            ibc_store.commit(key, value);
+        };
     }
 
     fun commit_connection(ibc_store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd) {
-        add_or_update_table(
-            &mut ibc_store.commitments,
+        ibc_store.commit(  
             commitment::connection_commitment_key(connection_id),
             keccak256(&connection.encode())
         );
     }
 
     fun commit_channel(ibc_store: &mut IBCStore, channel_id: u32, channel: Channel) {
-       add_or_update_table(
-            &mut ibc_store.commitments,
+        ibc_store.commit(
             commitment::channel_commitment_key(channel_id),
             keccak256(&channel.encode())
         );
@@ -1162,18 +1176,18 @@ module ibc::ibc {
     }
 
     fun set_packet_receive(ibc_store: &mut IBCStore, commitment_key: vector<u8>): bool {
-        if (ibc_store.commitments.contains(commitment_key)) {
+        if (ibc_store.has_commitment(commitment_key)) {
             true
         } else {
-            ibc_store.commitments.add(commitment_key, COMMITMENT_MAGIC);
+            ibc_store.commit(commitment_key, COMMITMENT_MAGIC);
             false
         }
     }
 
     fun set_packet_acknowledged(ibc_store: &mut IBCStore, commitment_key: vector<u8>) {
-        assert!(ibc_store.commitments.contains(commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
+        assert!(ibc_store.has_commitment(commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
 
-        let commitment = ibc_store.commitments.borrow_mut(commitment_key);
+        let commitment = ibc_store.borrow_commitment_mut(commitment_key);
         assert!(commitment != COMMITMENT_MAGIC_ACK, E_PACKET_ALREADY_ACKNOWLEDGED);
         assert!(commitment == COMMITMENT_MAGIC, E_PACKET_COMMITMENT_NOT_FOUND);
 
@@ -1303,6 +1317,8 @@ module ibc::ibc {
         acknowledgement: vector<u8>,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         assert!(!acknowledgement.is_empty(), E_ACKNOWLEDGEMENT_IS_EMPTY);
 
         if(!ibc_store.channels.contains(packet.destination_channel_id())) {
@@ -1342,6 +1358,8 @@ module ibc::ibc {
         relayer: address,
         witness: T
     )  {
+        ibc_store.assert_version();
+
         let l = vector::length(&packets);
         assert!(l > 0, E_NOT_ENOUGH_PACKETS);
 
@@ -1414,6 +1432,8 @@ module ibc::ibc {
         proof_height: u64,
         ctx: &mut TxContext,
     ) {
+        ibc_store.assert_version();
+
         let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
         assert!(
             current_timestamp >= packet.timeout_timestamp(),
@@ -1423,7 +1443,7 @@ module ibc::ibc {
         let packet_hash = commitment::commit_packet(&packet);
 
         assert!(
-            !ibc_store.commitments.contains(commitment::batch_receipts_commitment_key(packet_hash)),
+            !ibc_store.has_commitment(commitment::batch_receipts_commitment_key(packet_hash)),
             E_PACKET_ALREADY_RECEIVED
         );
 
@@ -1457,12 +1477,13 @@ module ibc::ibc {
 
         let commitment_key = commitment::packet_timeout_commitment_key(packet_hash);
 
-        ibc_store.commitment_to_digest.add(
-            commitment_key,
-            *ctx.digest(),
+        df::add(
+            &mut ibc_store.id,
+            CommitmentToDigestKey { commitment: commitment_key },
+            *ctx.digest()
         );
 
-        ibc_store.commitments.add(
+        ibc_store.commit(
             commitment_key,
             COMMITMENT_MAGIC
         );
@@ -1506,20 +1527,20 @@ module ibc::ibc {
     }
 
     public fun get_commitment(ibc_store: &IBCStore, commitment_key: vector<u8>): vector<u8> {
-        if (!ibc_store.commitments.contains(commitment_key)) {
+        if (!ibc_store.has_commitment(commitment_key)) {
             abort E_COMMITMENT_NOT_FOUND
         };
-        *ibc_store.commitments.borrow(commitment_key)
+        *ibc_store.borrow_commitment(commitment_key)
     }
 
     fun inner_write_acknowledgement(
         ibc_store: &mut IBCStore,
         commitment_key: vector<u8>, acknowledgement: vector<u8>
     ) {
-        if (!ibc_store.commitments.contains(commitment_key)) {
+        if (!ibc_store.has_commitment(commitment_key)) {
             abort E_PACKET_NOT_RECEIVED
         };
-        let commitment = ibc_store.commitments.borrow_mut(commitment_key);
+        let commitment = ibc_store.borrow_commitment_mut(commitment_key);
         assert!(
             *commitment == COMMITMENT_MAGIC,
             E_ACK_ALREADY_EXIST
@@ -1535,6 +1556,8 @@ module ibc::ibc {
         proof_height: u64,
         witness: T,
     ) {
+        ibc_store.assert_version();
+
         let source_channel = packet.source_channel_id();
 
         let port_id = *ibc_store.channel_to_port.borrow(source_channel);
@@ -1591,6 +1614,26 @@ module ibc::ibc {
         event::emit(TimeoutPacket { packet_hash });
     }
 
+    fun assert_version(ibc_store: &IBCStore) {
+        assert!(ibc_store.version == VERSION, E_VERSION_MISMATCH);
+    }
+
+    fun commit(ibc: &mut IBCStore, key: vector<u8>, value: vector<u8>) {
+        df::add(&mut ibc.id, CommitmentKey { key }, value);
+    }
+
+    fun has_commitment(ibc: &IBCStore, key: vector<u8>): bool {
+        df::exists_(&ibc.id, CommitmentKey { key })
+    }
+
+    fun borrow_commitment(ibc: &IBCStore, key: vector<u8>): &vector<u8> {
+        df::borrow(&ibc.id, CommitmentKey { key })
+    }
+
+    fun borrow_commitment_mut(ibc: &mut IBCStore, key: vector<u8>): &mut vector<u8> {
+        df::borrow_mut(&mut ibc.id, CommitmentKey { key })
+    }
+
     #[test_only]
     const TEST_LATEST_HEIGHT: u64 = 10_000;
 
@@ -1600,6 +1643,21 @@ module ibc::ibc {
     #[test_only]
     use std::string;
 
+    #[test_only]
+    public fun init_for_tests(ctx: &mut TxContext) {
+        transfer::share_object(IBCStore {
+            id: object::new(ctx),
+            version: VERSION,
+            connections: table::new(ctx),
+            channels: table::new(ctx),
+            client_mgr: light_client::new(ctx, true),
+            channel_to_port: table::new(ctx),
+            next_client_sequence: 1,
+            next_channel_sequence: 1,
+            next_connection_sequence: 1,
+            commitment_to_digest: table::new(ctx)
+        });
+    }
 
     #[test_only]
     fun open_channel_for_tests(t: &mut test_scenario::Scenario) {
@@ -2901,24 +2959,6 @@ module ibc::ibc {
         t.end();
     }
 
-
+    #[test_only]
     public struct IbcAppWitness has drop {}
-    #[test]
-    fun validate_port_bro() {
-        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
-
-        validate_port(
-            port,
-            IbcAppWitness {}
-        );
-    }
-
-    #[test]
-    fun test_proof_bro() {
-        let proof = vector[66,3,157,163,60,194,185,78,153,137,118,116,88,181,5,164,168,56,94,112,42,200,1,32,109,2,153,49,174,114,139,182,11,247,0,230,95,246,128,140,252,192,16,252,63,105,55,31,168,195,28,213,244,195,214,49,113,37,39,71,124,87,139,52,8,77,241,32,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,2,226,34,8,38,2,4,226,34,32,6,244,144,16,166,62,131,72,63,110,140,80,68,56,17,205,5,81,152,192,156,19,38,64,129,239,188,82,220,80,10,172,32,0,38,4,6,226,34,32,26,34,239,233,254,192,95,202,132,192,62,204,91,211,180,148,89,83,213,224,39,36,1,16,9,99,214,209,129,142,123,201,32,0,5,6,10,226,34,32,33,32,246,158,154,124,28,103,4,32,35,158,173,157,123,111,139,167,158,232,170,134,126,91,217,78,206,212,180,160,165,6,233,246,5,8,16,226,34,32,33,32,165,28,108,126,162,136,226,141,54,82,253,35,183,63,253,107,66,25,135,8,233,114,49,195,108,180,148,89,236,223,220,158,5,10,28,226,34,32,33,32,232,158,110,200,166,214,0,77,69,210,84,233,29,217,85,205,3,125,200,86,247,61,96,62,99,195,59,114,102,250,11,150,5,12,46,226,34,32,33,32,69,127,104,73,59,175,120,242,44,215,154,107,16,118,172,161,73,26,58,205,103,39,58,112,27,170,101,147,13,186,194,148,38,14,100,226,34,32,99,64,196,88,239,62,120,58,187,98,35,91,198,226,113,62,117,175,113,122,143,18,82,250,3,216,207,84,28,35,37,130,32,0,6,16,154,1,226,34,32,33,32,94,9,159,210,244,168,3,254,192,41,45,181,221,82,164,143,172,53,0,28,201,94,117,231,43,60,203,197,10,148,138,249,4,119,97,115,109,32,57,3,118,217,61,244,79,2,241,168,95,102,130,112,144,213,213,64,116,170,6,46,48,165,77,47,72,22,239,112,128,218,1,0,3,33,1,2,163,112,214,244,208,16,106,162,251,190,254,83,88,186,2,81,154,49,248,130,202,227,178,59,147,127,0,47,194,183,150,0,33,1,203,227,131,25,2,252,250,94,200,191,229,120,254,131,31,121,86,45,230,213,180,224,159,117,29,73,134,123,108,85,158,200,0,33,1,255,201,233,159,104,240,196,120,96,190,81,147,182,148,20,24,89,245,220,63,245,230,130,179,84,241,234,117,202,19,91,148,0];
-
-        let proof = ibc::ics23::decode_membership_proof(proof); 
-    
-        std::debug::print(&proof);
-    }
 }
