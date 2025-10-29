@@ -32,6 +32,7 @@ ibc-union-spec     = { workspace = true, features = ["serde"] }
 jsonrpsee          = { workspace = true, features = ["client", "full", "tracing"] }
 keccak-asm         = "0.1.4"
 num_cpus           = "1.16"
+parlia-verifier    = { workspace = true }
 protos             = { workspace = true, features = ["proto_full", "serde"] }
 rand               = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }

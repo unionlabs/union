@@ -15243,6 +15243,7 @@ dependencies = [
  "movement-light-client-types",
  "num_cpus",
  "parlia-light-client-types",
+ "parlia-verifier",
  "protos",
  "rand 0.8.5",
  "scroll-light-client-types",

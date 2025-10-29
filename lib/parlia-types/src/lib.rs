@@ -6,6 +6,7 @@ use sha3::Digest as _;
 use unionlabs_primitives::{ByteArrayExt, Bytes, H64, H160, H256, H384, H768, H2048, U256};
 
 #[derive(Debug, Clone, PartialEq, RlpDecodable, RlpEncodable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VoteAttestation {
     // The bitset marks the voted validators.
     pub vote_address_set: ValidatorsBitSet,
@@ -18,7 +19,10 @@ pub struct VoteAttestation {
 }
 
 #[derive(Clone, PartialEq, RlpDecodableWrapper, RlpEncodableWrapper)]
-pub struct ValidatorsBitSet(u64);
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ValidatorsBitSet(
+    #[cfg_attr(feature = "serde", serde(with = "serde_utils::u64_hex"))] u64,
+);
 
 impl ValidatorsBitSet {
     pub const fn new(bits: u64) -> Self {
@@ -43,6 +47,7 @@ impl fmt::Debug for ValidatorsBitSet {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, RlpDecodable, RlpEncodable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VoteData {
     // The source block number should be the latest justified block number.
     pub source_number: u64,

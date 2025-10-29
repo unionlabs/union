@@ -27,8 +27,8 @@ pub const EXTRA_DATA_MIN_LEN: usize = EXTRA_VANITY_LEN + EXTRA_SEAL_LEN;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum ExtraDataDecodeError {
-    #[error("invalid extra data len")]
-    InvalidExtraDataLen,
+    #[error("invalid extra data len ({0}, min {EXTRA_DATA_MIN_LEN})")]
+    InvalidExtraDataLen(usize),
     #[error("invalid turn length (found {0}, expected {TURN_LENGTH})")]
     InvalidTurnLength(u64),
     #[error("not enough validators present in extra data")]
@@ -40,8 +40,8 @@ pub enum ExtraDataDecodeError {
 pub fn parse_epoch_rotation_header_extra_data(
     data: &[u8],
 ) -> Result<(Option<VoteAttestation>, Valset), ExtraDataDecodeError> {
-    if data.len() <= EXTRA_DATA_MIN_LEN {
-        return Err(ExtraDataDecodeError::InvalidExtraDataLen);
+    if data.len() < EXTRA_DATA_MIN_LEN {
+        return Err(ExtraDataDecodeError::InvalidExtraDataLen(data.len()));
     }
 
     let data = &data[EXTRA_VANITY_LEN..(data.len() - EXTRA_SEAL_LEN)];
@@ -85,8 +85,8 @@ pub fn parse_epoch_rotation_header_extra_data(
 pub fn parse_header_extra_data(
     data: &[u8],
 ) -> Result<Option<VoteAttestation>, ExtraDataDecodeError> {
-    if data.len() <= EXTRA_DATA_MIN_LEN {
-        return Err(ExtraDataDecodeError::InvalidExtraDataLen);
+    if data.len() < EXTRA_DATA_MIN_LEN {
+        return Err(ExtraDataDecodeError::InvalidExtraDataLen(data.len()));
     }
 
     let data = &data[EXTRA_VANITY_LEN..(data.len() - EXTRA_SEAL_LEN)];
@@ -211,20 +211,20 @@ pub fn verify_header<C: VerificationContext>(
     let vote_attestation =
         get_vote_attestation_from_header_extra_data(attestation)?.ok_or(Error::NoAttestation)?;
 
-    if (vote_attestation.data
-        != VoteData {
-            source_number: source
-                .number
-                .try_into()
-                .map_err(|()| Error::BlockNumberTooLarge)?,
-            source_hash: source.hash(),
-            target_number: target
-                .number
-                .try_into()
-                .map_err(|()| Error::BlockNumberTooLarge)?,
-            target_hash: target.hash(),
-        })
-    {
+    let expected_vote_data = VoteData {
+        source_number: source
+            .number
+            .try_into()
+            .map_err(|()| Error::BlockNumberTooLarge)?,
+        source_hash: source.hash(),
+        target_number: target
+            .number
+            .try_into()
+            .map_err(|()| Error::BlockNumberTooLarge)?,
+        target_hash: target.hash(),
+    };
+
+    if vote_attestation.data != expected_vote_data {
         return Err(Error::InvalidAttestation);
     }
 
@@ -270,7 +270,8 @@ pub fn verify_header<C: VerificationContext>(
 
     // 5.
     let maybe_epoch_rotation_data = if is_epoch_rotation_header(oldest_parent_header) {
-        let (_, new_valset) = parse_epoch_rotation_header_extra_data(&source.extra_data)?;
+        let (_, new_valset) =
+            parse_epoch_rotation_header_extra_data(&oldest_parent_header.extra_data)?;
         Some((
             oldest_parent_header
                 .number
