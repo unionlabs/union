@@ -8,12 +8,14 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
-include = ["../../deployments/deployments.json"]
+[package.metadata.crane]
+test-include = ["../../deployments/deployments.json"]
 
 [lints]
 workspace = true
 
 [dependencies]
+embed-commit         = { workspace = true, features = ["serde"] }
 serde                = { workspace = true, features = ["derive"] }
 serde_json           = { workspace = true }
 ucs04                = { workspace = true, features = ["serde"] }

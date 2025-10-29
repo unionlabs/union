@@ -7,12 +7,14 @@ use alloy::{
 };
 use anyhow::{Context, Result, anyhow, bail};
 use clap::Args;
-use deployments::{DEPLOYMENTS, Deployment};
+use deployments::Deployment;
 use ibc_union_spec::ChannelId;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::primitives::{Bytes, H256, U256};
 use voyager_primitives::IbcInterface;
+
+use crate::deployments::DEPLOYMENTS;
 
 #[derive(Debug, Args)]
 pub struct Cmd {
@@ -193,7 +195,7 @@ impl Cmd {
             }
 
             match deployment {
-                Deployment::IbcSolidity { app, .. } => {
+                Deployment::IbcSolidity { contracts, .. } => {
                     predict_wrapped_token_ibc_solidity(
                         rpc_url.unwrap_or_else(|| {
                             format!(
@@ -202,16 +204,18 @@ impl Cmd {
                                 chain_id.family(),
                             )
                         }),
-                        app.ucs03
+                        (*contracts
+                            .iter()
+                            .find(|(_, deployment)| deployment.name == "protocols/ucs03")
                             .as_ref()
                             .context(anyhow!("no ucs03 deployment for {chain_id}"))?
-                            .address
+                            .0)
                             .into(),
                         args,
                     )
                     .await
                 }
-                Deployment::IbcCosmwasm { app, .. } => {
+                Deployment::IbcCosmwasm { contracts, .. } => {
                     predict_wrapped_token_ibc_cosmwasm(
                         rpc_url.unwrap_or_else(|| {
                             format!(
@@ -220,10 +224,12 @@ impl Cmd {
                                 chain_id.family(),
                             )
                         }),
-                        app.ucs03
+                        contracts
+                            .iter()
+                            .find(|(_, deployment)| deployment.name == "protocols/ucs03")
                             .as_ref()
                             .context(anyhow!("no ucs03 deployment for {chain_id}"))?
-                            .address
+                            .0
                             .to_string(),
                         args,
                     )
