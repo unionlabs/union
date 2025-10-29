@@ -39,7 +39,7 @@ export class ChainReference extends S.Class<ChainReference>("ChainReference")({
   universal_chain_id: UniversalChainId,
 }) {}
 
-export const RpcProtocolType = S.Literal("rpc", "rest", "grpc")
+export const RpcProtocolType = S.Literal("rpc", "rest", "grpc", "graphql")
 export type RpcProtocolType = typeof RpcProtocolType.Type
 
 export class Rpc extends S.Class<Rpc>("Rpc")({
