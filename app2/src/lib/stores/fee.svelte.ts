@@ -425,6 +425,12 @@ const createFeeStore = () => {
           A.findFirst(VIEM_CHAINS, y => String(y.id) === x.chain_id),
           O.map(x => x.nativeCurrency.symbol),
         )),
+      Match.when({ rpc_type: "sui" }, (x) =>
+        pipe(
+          R.get(GAS_DENOMS, x.universal_chain_id),
+          O.map(g => (g as any).tickerSymbol ?? "SUI"),
+        )),
+
       Match.orElseAbsurd,
     )
 
@@ -446,6 +452,12 @@ const createFeeStore = () => {
           A.findFirst(VIEM_CHAINS, y => String(y.id) === x.chain_id),
           O.map(x => x.nativeCurrency.symbol),
         )),
+      Match.when({ rpc_type: "sui" }, (x) =>
+        pipe(
+          R.get(GAS_DENOMS, x.universal_chain_id),
+          O.map(g => (g as any).tickerSymbol ?? "SUI"),
+        )),
+
       Match.orElseAbsurd,
     )
 

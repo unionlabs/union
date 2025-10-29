@@ -193,6 +193,36 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
           }),
         ),
     ),
+    Match.when(
+    { rpc_type: "sui" },
+    (chain) =>
+      Layer.effect(
+        GasPrice.GasPrice,
+        Effect.gen(function* () {
+          // ── MOCKED SUI GAS PRICE ───────────────────────────────────────────── 
+          // TODO: Change it later.
+          const of = Effect.gen(function* () {
+            const atomic = BigDecimal.unsafeFromNumber(1_000)
+            const value  = GasPrice.AtomicGasPrice(atomic)
+
+            yield* Effect.logDebug(
+              `${chain.display_name} gas price (mock MIST): ${JSON.stringify(atomic)}`
+            )
+
+            return {
+              value,                   
+              minimalDenom: "MIST",     
+              denom: "SUI",             
+              additiveFee: O.none(),    
+              decimals: 9,              
+            }
+          }).pipe(Effect.tapError((cause) => Effect.logError("GasPrice.of (sui)", cause)))
+
+          return GasPrice.GasPrice.of({ of })
+        }),
+      ),
+  ),
+
     Match.orElseAbsurd,
   ),
   idleTimeToLive: "30 seconds",
