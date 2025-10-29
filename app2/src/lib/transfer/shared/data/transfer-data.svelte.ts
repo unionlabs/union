@@ -19,8 +19,10 @@ import {
   EU_SOLVER_ON_UNION_METADATA,
   U_BANK,
   U_ERC20,
+  U_SUI,
   U_SOLVER_ON_ETH_METADATA,
   U_SOLVER_ON_UNION_METADATA,
+  U_SOLVER_ON_SUI_METADATA
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
@@ -135,6 +137,10 @@ export class TransferData {
               Match.when(
                 ["0x6175", "evm", Match.any],
                 () => U_ERC20,
+              ),
+              Match.when(
+                ["0x6175", "sui", Str.startsWith("sui.")],
+                () => U_SUI,
               ),
               Match.when(
                 [U_ERC20.address.toLowerCase(), "evm", Match.any],
@@ -260,6 +266,10 @@ export class TransferData {
             ["solve", U_ERC20.address.toLowerCase(), "evm", Match.any],
             () => Option.some(U_SOLVER_ON_ETH_METADATA),
           ),
+          Match.whenOr(
+            ["solve", "0x6175", "sui", Str.startsWith("sui.")],
+            () => Option.some(U_SOLVER_ON_SUI_METADATA),
+          ),
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
             () => Option.some(U_SOLVER_ON_UNION_METADATA),
@@ -277,9 +287,14 @@ export class TransferData {
             () => Option.some(EU_SOLVER_ON_ETH_METADATA),
           ),
           Match.when(
+            ["solve", U_ERC20.address.toLowerCase(), "sui", Str.startsWith("sui.")],
+            () => Option.some(U_SOLVER_ON_SUI_METADATA),
+          ),
+          Match.when(
             ["solve", Match.any, Match.any, Match.any],
             () => Option.none(),
           ),
+
           // Match.when(
           //   ["solve", "eU (tohex)", Match.any],
           //   () => EU_FROM_UNION_SOLVER_METADATA,
