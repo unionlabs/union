@@ -23,8 +23,16 @@ use unionlabs::primitives::Bytes;
 pub enum ContractError {
     #[error("{kind} std error: {0}", kind = ContractErrorKind::from(self))]
     Std(#[from] StdError),
+
     #[error("{} migration error", ContractErrorKind::from(self))]
     Migrate(#[from] UpgradeError),
+
+    #[error("{} access management error", ContractErrorKind::from(self))]
+    AccessManaged(#[from] access_managed::error::ContractError),
+
+    #[error("{} upgradable error", ContractErrorKind::from(self))]
+    Upgradable(#[from] upgradable::error::ContractError),
+
     #[error(
         "{} the client type has been registered already",
         ContractErrorKind::from(self)

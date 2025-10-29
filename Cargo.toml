@@ -323,6 +323,7 @@ opt-level = 3
 [workspace.dependencies]
 access-managed                            = { path = "cosmwasm/access-managed", default-features = false }
 access-managed-example                    = { path = "e2e/access-managed-example", default-features = false }
+access-manager                            = { path = "cosmwasm/access-manager", default-features = false }
 access-manager-types                      = { path = "lib/access-manager-types", default-features = false }
 aptos-types                               = { path = "lib/aptos-types", default-features = false }
 arbitrum-client                           = { path = "lib/arbitrum-client", default-features = false }

@@ -1,6 +1,7 @@
 use core::str;
 use std::{slice, str::FromStr};
 
+use access_managed::{EnsureCanCallResult, Restricted, state::Authority};
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
@@ -17,6 +18,7 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{ChannelId, MustBeZero, Packet, Timestamp, path::BatchPacketsPath};
+use serde::{Deserialize, Serialize};
 use ucs03_solvable::Solvable;
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind, WrappedTokenMsg,
@@ -70,7 +72,9 @@ pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
 /// Instantiate `ucs03-zkgm`.
 ///
 /// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][ucs03_zkgm_token_minter_api::TokenMinterInitMsg]. The admin of the minter contract is set to `ucs03-zkgm`. All migrations for the minter will be threaded through the `ucs03-zkgm` migrate entrypoint.
-pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
+pub fn init(mut deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
+    access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
     CONFIG.save(deps.storage, &msg.config)?;
 
     let salt = minter_salt();
@@ -123,15 +127,22 @@ fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: ExecuteMsg,
+    msg: Restricted<ExecuteMsg>,
 ) -> Result<Response, ContractError> {
+    let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+        EnsureCanCallResult::Msg(msg) => msg,
+        EnsureCanCallResult::Scheduled(sub_msgs) => {
+            return Ok(Response::new().add_submessages(sub_msgs));
+        }
+    };
+
     match msg {
         ExecuteMsg::IbcUnionMsg(ibc_msg) => {
             if info.sender != CONFIG.load(deps.storage)?.ibc_host {
-                return Err(ContractError::OnlyIBCHost);
+                return Err(ContractError::OnlyIbcHost);
             }
 
             match ibc_msg {
@@ -269,30 +280,12 @@ pub fn execute(
             salt,
             Instruction::abi_decode_params_validate(&instruction)?,
         ),
-        ExecuteMsg::SetRateLimitOperators {
-            rate_limit_operators,
-        } => {
-            if info.sender != CONFIG.load(deps.storage)?.rate_limit_admin {
-                return Err(ContractError::OnlyRateLimitAdmin);
-            }
-            let mut config = CONFIG.load(deps.storage)?;
-            config.rate_limit_operators = rate_limit_operators;
-            CONFIG.save(deps.storage, &config)?;
-            Ok(Response::new().add_event(Event::new("rate_limit_operators_update")))
-        }
         ExecuteMsg::SetBucketConfig {
             denom,
             capacity,
             refill_rate,
             reset,
         } => {
-            if !CONFIG
-                .load(deps.storage)?
-                .rate_limit_operators
-                .contains(&info.sender)
-            {
-                return Err(ContractError::OnlyRateLimitOperator);
-            }
             let token_bucket = TOKEN_BUCKET.update(
                 deps.storage,
                 denom.clone(),
@@ -326,6 +319,12 @@ pub fn execute(
                 return Err(ContractError::OnlyAdmin);
             }
             migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations)
+        }
+        ExecuteMsg::AccessManaged(msg) => {
+            access_managed::execute(deps, env, info, msg).map_err(Into::into)
+        }
+        ExecuteMsg::Upgradable(msg) => {
+            upgradable::execute(deps, env, info, msg).map_err(Into::into)
         }
     }
 }
@@ -3016,7 +3015,8 @@ pub struct TokenMinterMigration {
 
 // The current structure is expected to be backward compatible, only idempotent
 // fields can be currently added.
-#[cosmwasm_schema::cw_serde]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct MigrateMsg {
     // Provide `token_minter_migration` to also migrate the token minter
     token_minter_migration: Option<TokenMinterMigration>,
@@ -3024,6 +3024,7 @@ pub struct MigrateMsg {
     rate_limit_disabled: bool,
     dummy_code_id: Option<u64>,
     cw_account_code_id: Option<u64>,
+    access_managed_int_msg: access_managed::InitMsg,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -3046,7 +3047,9 @@ pub fn migrate(
 
             Ok((res, None))
         },
-        |deps, migrate_msg, _current_version| {
+        |mut deps, migrate_msg, _current_version| {
+            access_managed::init(deps.branch(), migrate_msg.access_managed_int_msg)?;
+
             CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
                 config.rate_limit_disabled = migrate_msg.rate_limit_disabled;
                 if let Some(dummy_code_id) = migrate_msg.dummy_code_id {
@@ -3057,8 +3060,10 @@ pub fn migrate(
                 }
                 Ok(config)
             })?;
+
             if let Some(token_minter_migration) = migrate_msg.token_minter_migration {
                 let token_minter = TOKEN_MINTER.load(deps.storage)?;
+
                 Ok((
                     Response::default().add_message(WasmMsg::Migrate {
                         contract_addr: token_minter.to_string(),
@@ -3087,7 +3092,7 @@ fn make_wasm_msg(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::PredictWrappedToken {
             path,
@@ -3169,6 +3174,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             Ok(to_json_binary(&config)?)
         }
         QueryMsg::GetBurnAddress {} => Ok(to_json_binary(&get_burn_address(deps)?)?),
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
     }
 }
 

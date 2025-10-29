@@ -19,6 +19,7 @@ cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
 library           = []
 
 [dependencies]
+access-managed   = { workspace = true }
 alloy-primitives = { workspace = true }
 alloy-sol-types  = { workspace = true }
 cosmwasm-schema  = { workspace = true }
@@ -36,6 +37,8 @@ serde-json-wasm  = { workspace = true }
 strum            = { workspace = true, features = ["derive"] }
 thiserror        = { workspace = true }
 unionlabs        = { workspace = true, features = ["ethabi", "bincode"] }
+upgradable       = { workspace = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+access-manager-types = { workspace = true }
+hex-literal          = { workspace = true }

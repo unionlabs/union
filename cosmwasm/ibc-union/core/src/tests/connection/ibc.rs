@@ -18,8 +18,9 @@ fn connection_open_init_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -46,7 +47,7 @@ fn connection_open_init_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ConnectionOpenInit(msg),
+            Restricted::wrap(ExecuteMsg::ConnectionOpenInit(msg)),
         )
         .is_ok()
     )
@@ -58,8 +59,9 @@ fn connection_open_init_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -95,8 +97,9 @@ fn connection_open_try_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -128,7 +131,7 @@ fn connection_open_try_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ConnectionOpenTry(msg),
+            Restricted::wrap(ExecuteMsg::ConnectionOpenTry(msg)),
         )
         .is_ok()
     );
@@ -140,8 +143,9 @@ fn connection_open_try_client_not_found() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -172,7 +176,7 @@ fn connection_open_try_client_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ConnectionOpenTry(msg),
+            Restricted::wrap(ExecuteMsg::ConnectionOpenTry(msg)),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x636c69656e745f696d706c7300 0x00000001 not present"
@@ -191,8 +195,9 @@ fn connection_open_try_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -223,7 +228,7 @@ fn connection_open_try_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenTry(msg),
+        Restricted::wrap(ExecuteMsg::ConnectionOpenTry(msg)),
     )
     .expect("connection open try is ok");
 
@@ -244,8 +249,9 @@ fn connection_open_ack_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -277,7 +283,7 @@ fn connection_open_ack_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ConnectionOpenAck(msg),
+            Restricted::wrap(ExecuteMsg::ConnectionOpenAck(msg)),
         )
         .is_ok()
     )
@@ -294,8 +300,9 @@ fn connection_open_ack_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -326,7 +333,7 @@ fn connection_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ConnectionOpenAck(msg)),
     )
     .expect("connection open ack is ok");
 
@@ -347,8 +354,9 @@ fn connection_open_confirm_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -379,7 +387,7 @@ fn connection_open_confirm_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ConnectionOpenConfirm(msg),
+            Restricted::wrap(ExecuteMsg::ConnectionOpenConfirm(msg)),
         )
         .is_ok()
     );
@@ -396,8 +404,9 @@ fn connection_open_try_confirm_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();

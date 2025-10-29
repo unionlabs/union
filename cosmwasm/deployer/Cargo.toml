@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+access-manager-types        = { workspace = true }
 anyhow                      = { workspace = true, features = ["std"] }
 bip32                       = { workspace = true }
 clap                        = { workspace = true, features = ["derive", "error-context", "help", "env"] }

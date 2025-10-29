@@ -1,3 +1,4 @@
+use access_managed::Restricted;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
@@ -18,8 +19,9 @@ fn send_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -56,7 +58,7 @@ fn send_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketSend(msg)
+            Restricted::wrap(ExecuteMsg::PacketSend(msg))
         )
         .is_ok()
     )
@@ -68,8 +70,9 @@ fn send_packet_missing_timeout() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -106,7 +109,7 @@ fn send_packet_missing_timeout() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketSend(msg),
+            Restricted::wrap(ExecuteMsg::PacketSend(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::TimeoutMustBeSet) })
     )
@@ -118,8 +121,9 @@ fn send_packet_channel_does_not_exist() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -156,7 +160,7 @@ fn send_packet_channel_does_not_exist() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketSend(msg),
+            Restricted::wrap(ExecuteMsg::PacketSend(msg)),
         )
         .is_err_and(|err| {
             match err {
@@ -173,8 +177,9 @@ fn send_packet_module_is_not_channel_owner() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -211,7 +216,7 @@ fn send_packet_module_is_not_channel_owner() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr("not module"), &[]),
-            ExecuteMsg::PacketSend(msg),
+            Restricted::wrap(ExecuteMsg::PacketSend(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) })
     )
@@ -223,8 +228,9 @@ fn recv_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -270,7 +276,7 @@ fn recv_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketRecv(msg),
+            Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
         )
         .is_ok()
     )
@@ -282,8 +288,9 @@ fn recv_packet_invalid_channel_state() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -329,7 +336,7 @@ fn recv_packet_invalid_channel_state() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketRecv(msg),
+            Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
         )
         .is_err_and(|err| {
             match err {
@@ -348,8 +355,9 @@ fn recv_packet_timeout_timestamp() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -399,7 +407,7 @@ fn recv_packet_timeout_timestamp() {
             deps.as_mut(),
             env,
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketRecv(msg),
+            Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) })
     )
@@ -411,8 +419,9 @@ fn recv_intent_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -456,7 +465,7 @@ fn recv_intent_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::IntentPacketRecv(msg)
+            Restricted::wrap(ExecuteMsg::IntentPacketRecv(msg))
         )
         .is_ok()
     )
@@ -468,8 +477,9 @@ fn recv_intent_packet_timeout_timestamp() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -513,7 +523,7 @@ fn recv_intent_packet_timeout_timestamp() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::IntentPacketRecv(msg),
+            Restricted::wrap(ExecuteMsg::IntentPacketRecv(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) })
     )
@@ -525,8 +535,9 @@ fn acknowledge_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -562,7 +573,7 @@ fn acknowledge_packet_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -579,7 +590,7 @@ fn acknowledge_packet_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -592,7 +603,7 @@ fn acknowledge_packet_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+        Restricted::wrap(ExecuteMsg::PacketSend(msg)),
     )
     .expect("send packet ok");
 
@@ -615,7 +626,7 @@ fn acknowledge_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketAck(msg)
+            Restricted::wrap(ExecuteMsg::PacketAck(msg))
         )
         .is_ok()
     )
@@ -627,8 +638,9 @@ fn acknowledge_packet_tampered() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -664,7 +676,7 @@ fn acknowledge_packet_tampered() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -681,7 +693,7 @@ fn acknowledge_packet_tampered() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -694,7 +706,7 @@ fn acknowledge_packet_tampered() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+        Restricted::wrap(ExecuteMsg::PacketSend(msg)),
     )
     .expect("send packet ok");
 
@@ -717,7 +729,7 @@ fn acknowledge_packet_tampered() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketAck(msg)
+            Restricted::wrap(ExecuteMsg::PacketAck(msg))
         )
         .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound))
     )
@@ -729,8 +741,9 @@ fn acknowledge_packet_not_sent() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -766,7 +779,7 @@ fn acknowledge_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -783,7 +796,7 @@ fn acknowledge_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -806,7 +819,7 @@ fn acknowledge_packet_not_sent() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketAck(msg)
+            Restricted::wrap(ExecuteMsg::PacketAck(msg))
         )
         .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound))
     )
@@ -818,8 +831,9 @@ fn timeout_packet_timestamp_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -861,7 +875,7 @@ fn timeout_packet_timestamp_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+        Restricted::wrap(ExecuteMsg::PacketSend(msg)),
     )
     .expect("send packet ok");
 
@@ -882,7 +896,7 @@ fn timeout_packet_timestamp_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketTimeout(msg)
+            Restricted::wrap(ExecuteMsg::PacketTimeout(msg))
         )
         .is_ok()
     )
@@ -894,8 +908,9 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -937,7 +952,7 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+        Restricted::wrap(ExecuteMsg::PacketSend(msg)),
     )
     .expect("send packet ok");
 
@@ -958,7 +973,7 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketTimeout(msg)
+            Restricted::wrap(ExecuteMsg::PacketTimeout(msg))
         )
         .is_err_and(|err| { matches!(err, ContractError::TimeoutTimestampNotReached) })
     )
@@ -970,8 +985,9 @@ fn write_acknowledgement_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1013,7 +1029,7 @@ fn write_acknowledgement_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1029,7 +1045,7 @@ fn write_acknowledgement_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1050,7 +1066,7 @@ fn write_acknowledgement_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
 
@@ -1069,7 +1085,7 @@ fn write_acknowledgement_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::WriteAcknowledgement(msg),
+            Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
         )
         .is_ok()
     )
@@ -1081,8 +1097,9 @@ fn write_acknowledgement_module_is_not_channel_owner() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1124,7 +1141,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr("malicious"), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1140,7 +1157,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr("malicious"), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1161,7 +1178,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
 
@@ -1180,7 +1197,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::WriteAcknowledgement(msg),
+            Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) })
     )
@@ -1192,8 +1209,9 @@ fn write_acknowledgement_packet_not_received() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1231,7 +1249,7 @@ fn write_acknowledgement_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1247,7 +1265,7 @@ fn write_acknowledgement_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1266,7 +1284,7 @@ fn write_acknowledgement_packet_not_received() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::WriteAcknowledgement(msg),
+            Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketNotReceived) })
     )
@@ -1278,8 +1296,9 @@ fn write_acknowledgement_already_exists() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1321,7 +1340,7 @@ fn write_acknowledgement_already_exists() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1337,7 +1356,7 @@ fn write_acknowledgement_already_exists() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1358,7 +1377,7 @@ fn write_acknowledgement_already_exists() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
 
@@ -1377,7 +1396,7 @@ fn write_acknowledgement_already_exists() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::WriteAcknowledgement(msg),
+            Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
         )
         .is_ok()
     );
@@ -1396,7 +1415,7 @@ fn write_acknowledgement_already_exists() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::WriteAcknowledgement(msg),
+            Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
         )
         .is_err_and(|err| { matches!(err, ContractError::AlreadyAcknowledged) })
     )
@@ -1408,8 +1427,9 @@ fn batch_send_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1451,7 +1471,7 @@ fn batch_send_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1467,7 +1487,7 @@ fn batch_send_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1480,7 +1500,7 @@ fn batch_send_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+        Restricted::wrap(ExecuteMsg::PacketSend(msg)),
     )
     .expect("send packet is ok");
     let msg = MsgSendPacket {
@@ -1492,7 +1512,7 @@ fn batch_send_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
+        Restricted::wrap(ExecuteMsg::PacketSend(msg)),
     )
     .expect("send packet is ok");
 
@@ -1519,7 +1539,7 @@ fn batch_send_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchSend(msg)
+            Restricted::wrap(ExecuteMsg::BatchSend(msg))
         )
         .is_ok()
     )
@@ -1531,8 +1551,9 @@ fn batch_send_packet_not_sent() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1570,7 +1591,7 @@ fn batch_send_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1586,7 +1607,7 @@ fn batch_send_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1613,7 +1634,7 @@ fn batch_send_packet_not_sent() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchSend(msg)
+            Restricted::wrap(ExecuteMsg::BatchSend(msg))
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
@@ -1625,8 +1646,9 @@ fn batch_acks_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1667,7 +1689,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1683,7 +1705,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1704,7 +1726,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -1721,7 +1743,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+        Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
     )
     .expect("write ack is ok");
     let msg = MsgPacketRecv {
@@ -1741,7 +1763,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -1758,7 +1780,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+        Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
     )
     .expect("write ack is ok");
 
@@ -1786,7 +1808,7 @@ fn batch_acks_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchAcks(msg)
+            Restricted::wrap(ExecuteMsg::BatchAcks(msg))
         )
         .is_ok()
     )
@@ -1798,8 +1820,9 @@ fn batch_acks_packet_not_received() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1837,7 +1860,7 @@ fn batch_acks_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1853,7 +1876,7 @@ fn batch_acks_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1881,7 +1904,7 @@ fn batch_acks_packet_not_received() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchAcks(msg)
+            Restricted::wrap(ExecuteMsg::BatchAcks(msg))
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
@@ -1893,8 +1916,9 @@ fn batch_acks_tampered_packet() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1935,7 +1959,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1951,7 +1975,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -1972,7 +1996,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -1989,7 +2013,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+        Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
     )
     .expect("write ack is ok");
     let msg = MsgPacketRecv {
@@ -2009,7 +2033,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        Restricted::wrap(ExecuteMsg::PacketRecv(msg)),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -2026,7 +2050,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::WriteAcknowledgement(msg),
+        Restricted::wrap(ExecuteMsg::WriteAcknowledgement(msg)),
     )
     .expect("write ack is ok");
 
@@ -2054,7 +2078,7 @@ fn batch_acks_tampered_packet() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchAcks(msg)
+            Restricted::wrap(ExecuteMsg::BatchAcks(msg))
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )

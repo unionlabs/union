@@ -3677,6 +3677,7 @@ dependencies = [
 name = "cosmwasm-deployer"
 version = "0.0.0"
 dependencies = [
+ "access-manager-types",
  "anyhow",
  "bip32 0.5.3",
  "clap",
@@ -7052,6 +7053,8 @@ dependencies = [
 name = "ibc-union"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
+ "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
  "cosmwasm-schema",
@@ -7070,6 +7073,7 @@ dependencies = [
  "strum 0.27.2",
  "thiserror 2.0.12",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]
@@ -7095,6 +7099,7 @@ dependencies = [
 name = "ibc-union-msg"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
@@ -7102,6 +7107,7 @@ dependencies = [
  "schemars",
  "serde",
  "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]
@@ -15287,6 +15293,9 @@ dependencies = [
 name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
+ "access-manager",
+ "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
  "cosmwasm-schema",
@@ -15314,6 +15323,7 @@ dependencies = [
  "ucs03-zkgm-token-minter-api",
  "ucs03-zkgmable",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]

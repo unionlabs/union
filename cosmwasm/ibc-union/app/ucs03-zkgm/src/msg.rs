@@ -10,6 +10,7 @@ use unionlabs::primitives::{Bytes, H256};
 pub struct InitMsg {
     pub config: Config,
     pub minter_init_params: TokenMinterInitParams,
+    pub access_managed_init_msg: access_managed::InitMsg,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,10 +23,6 @@ pub struct Config {
     pub ibc_host: Addr,
     /// The code id of the `ucs03-zkgm-token-minter-api` implementor. This will be instantiated by `ucs03-zkgm` and used to mint and burn tokens.
     pub token_minter_code_id: u64,
-    /// The address that can update the rate limiters.
-    pub rate_limit_admin: Addr,
-    /// Addresses allowed to update token buckets for rate limiting.
-    pub rate_limit_operators: Vec<Addr>,
     /// Enable or disable rate limiting.
     #[serde(default, skip_serializing_if = "core::ops::Not::not")]
     pub rate_limit_disabled: bool,
@@ -75,14 +72,10 @@ impl TokenMinterInitParams {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    /// Update the set of rate limiters.
-    SetRateLimitOperators {
-        rate_limit_operators: Vec<Addr>,
-    },
     /// Update a token bucket for rate limiting.
     SetBucketConfig {
         denom: String,
@@ -109,6 +102,7 @@ pub enum ExecuteMsg {
     IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
     /// Execute an Zkgm packet.
     /// Can only be called by the contract itself during packet handling.
+    #[serde(rename = "$$internal_execute_packet")]
     InternalExecutePacket {
         caller: Addr,
         packet: Packet,
@@ -118,18 +112,20 @@ pub enum ExecuteMsg {
     },
     /// Write an acknowledgement for an Zkgm packet.
     /// Can only be called by the contract itself after packet execution.
-    InternalWriteAck {
-        ack: Bytes,
-    },
-    InternalBatch {
-        messages: Vec<CosmosMsg>,
-    },
+    #[serde(rename = "$$internal_write_ack")]
+    InternalWriteAck { ack: Bytes },
+    #[serde(rename = "$$internal_batch")]
+    InternalBatch { messages: Vec<CosmosMsg> },
     /// Migrate V1 to V2.
     /// Can only be called by admin.
     MigrateV1ToV2 {
         balance_migrations: Vec<V1ToV2Migration>,
         wrapped_migrations: Vec<V1ToV2WrappedMigration>,
     },
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+    #[serde(untagged)]
+    Upgradable(upgradable::msg::ExecuteMsg),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -157,7 +153,7 @@ pub struct V1ToV2WrappedMigration {
     pub quote_token: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -196,6 +192,8 @@ pub enum QueryMsg {
     },
     GetConfig {},
     GetBurnAddress {},
+    #[serde(untagged)]
+    AccessManaged(access_managed::QueryMsg),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

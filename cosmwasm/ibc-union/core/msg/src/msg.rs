@@ -2,11 +2,10 @@ use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet, Timesta
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InitMsg {
-    pub relayers_admin: Option<String>,
-    pub relayers: Vec<String>,
+    pub access_managed_init_msg: access_managed::InitMsg,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,12 +15,10 @@ pub struct MsgRegisterClient {
     pub client_address: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
-    AddRelayer(String),
-    RemoveRelayer(String),
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
@@ -53,6 +50,10 @@ pub enum ExecuteMsg {
     MigrateState(MsgMigrateState),
     CommitMembershipProof(MsgCommitMembershipProof),
     CommitNonMembershipProof(MsgCommitNonMembershipProof),
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+    #[serde(untagged)]
+    Upgradable(upgradable::msg::ExecuteMsg),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

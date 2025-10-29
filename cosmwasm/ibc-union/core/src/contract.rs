@@ -1,12 +1,13 @@
 use core::slice;
 use std::{collections::BTreeSet, num::NonZeroU32};
 
+use access_managed::{EnsureCanCallResult, Restricted, state::Authority};
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, OverflowError,
-    OverflowOperation, Response, StdError, StdResult, Storage, to_json_binary, wasm_execute,
+    OverflowOperation, Response, StdError, StdResult, to_json_binary, wasm_execute,
 };
 use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -152,35 +153,25 @@ fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2]
     .map(Into::into)
 }
 
-fn ensure_relayer_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    if sender != storage.read_item::<WhitelistedRelayersAdmin>()? {
-        Err(ContractError::OnlyRelayerAdmin)
-    } else {
-        Ok(())
-    }
-}
-
-fn ensure_relayer(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    if storage.read::<WhitelistedRelayers>(sender).is_ok() {
-        Ok(())
-    } else {
-        Err(ContractError::OnlyWhitelistedRelayer)
-    }
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: ExecuteMsg,
+    msg: Restricted<ExecuteMsg>,
 ) -> Result<Response, ContractError> {
+    let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+        EnsureCanCallResult::Msg(msg) => msg,
+        EnsureCanCallResult::Scheduled(sub_msgs) => {
+            return Ok(Response::new().add_submessages(sub_msgs));
+        }
+    };
+
     match msg {
         ExecuteMsg::RegisterClient(MsgRegisterClient {
             client_type,
             client_address,
         }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
             let address = deps.api.addr_validate(&client_address)?;
             register_client(deps.branch(), client_type, address)
         }
@@ -190,10 +181,9 @@ pub fn execute(
             consensus_state_bytes,
             relayer,
         }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             create_client(
-                deps.branch(),
+                deps,
                 info,
                 client_type,
                 client_state_bytes.to_vec(),
@@ -206,23 +196,14 @@ pub fn execute(
             client_message,
             relayer,
         }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
-            update_client(
-                deps.branch(),
-                info,
-                client_id,
-                client_message.to_vec(),
-                relayer,
-            )
+            update_client(deps, info, client_id, client_message.to_vec(), relayer)
         }
         ExecuteMsg::ForceUpdateClient(MsgForceUpdateClient {
             client_id,
             client_state_bytes,
             consensus_state_bytes,
         }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-
             let client_impl = client_impl(deps.as_ref(), client_id)?;
 
             let (_, height) = init_client(
@@ -244,7 +225,7 @@ pub fn execute(
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             client_id,
             counterparty_client_id,
-        }) => connection_open_init(deps.branch(), client_id, counterparty_client_id),
+        }) => connection_open_init(deps, client_id, counterparty_client_id),
         ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
             counterparty_client_id,
             counterparty_connection_id,
@@ -252,8 +233,7 @@ pub fn execute(
             proof_init,
             proof_height,
         }) => connection_open_try(
-            info,
-            deps.branch(),
+            deps,
             counterparty_client_id,
             counterparty_connection_id,
             client_id,
@@ -268,8 +248,7 @@ pub fn execute(
             proof_init,
             proof_height,
         }) => connection_open_try(
-            info,
-            deps.branch(),
+            deps,
             counterparty_client_id,
             counterparty_connection_id,
             client_id,
@@ -283,8 +262,7 @@ pub fn execute(
             proof_try,
             proof_height,
         }) => connection_open_ack(
-            info,
-            deps.branch(),
+            deps,
             connection_id,
             counterparty_connection_id,
             proof_try.to_vec(),
@@ -297,8 +275,7 @@ pub fn execute(
             proof_try,
             proof_height,
         }) => connection_open_ack(
-            info,
-            deps.branch(),
+            deps,
             connection_id,
             counterparty_connection_id,
             proof_try.to_vec(),
@@ -309,26 +286,12 @@ pub fn execute(
             connection_id,
             proof_ack,
             proof_height,
-        }) => connection_open_confirm(
-            info,
-            deps.branch(),
-            connection_id,
-            proof_ack.to_vec(),
-            proof_height,
-            true,
-        ),
+        }) => connection_open_confirm(deps, connection_id, proof_ack.to_vec(), proof_height, true),
         ExecuteMsg::ForceConnectionOpenConfirm(MsgConnectionOpenConfirm {
             connection_id,
             proof_ack,
             proof_height,
-        }) => connection_open_confirm(
-            info,
-            deps.branch(),
-            connection_id,
-            proof_ack.to_vec(),
-            proof_height,
-            false,
-        ),
+        }) => connection_open_confirm(deps, connection_id, proof_ack.to_vec(), proof_height, false),
         ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
             port_id,
             counterparty_port_id,
@@ -338,7 +301,7 @@ pub fn execute(
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_init(
-                deps.branch(),
+                deps,
                 info,
                 port_id,
                 counterparty_port_id,
@@ -357,7 +320,7 @@ pub fn execute(
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_try(
-                deps.branch(),
+                deps,
                 info,
                 port_id,
                 channel,
@@ -376,10 +339,9 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_try(
-                deps.branch(),
+                deps,
                 info,
                 port_id,
                 channel,
@@ -400,7 +362,7 @@ pub fn execute(
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_ack(
-                deps.branch(),
+                deps,
                 info,
                 channel_id,
                 counterparty_version,
@@ -419,10 +381,9 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_ack(
-                deps.branch(),
+                deps,
                 info,
                 channel_id,
                 counterparty_version,
@@ -441,7 +402,7 @@ pub fn execute(
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_confirm(
-                deps.branch(),
+                deps,
                 info,
                 channel_id,
                 proof_ack.to_vec(),
@@ -456,10 +417,9 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_confirm(
-                deps.branch(),
+                deps,
                 info,
                 channel_id,
                 proof_ack.to_vec(),
@@ -473,7 +433,7 @@ pub fn execute(
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            channel_close_init(deps.branch(), info, channel_id, relayer)
+            channel_close_init(deps, info, channel_id, relayer)
         }
         ExecuteMsg::ChannelCloseConfirm(MsgChannelCloseConfirm {
             channel_id,
@@ -483,7 +443,7 @@ pub fn execute(
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_close_confirm(
-                deps.branch(),
+                deps,
                 info,
                 channel_id,
                 proof_init.to_vec(),
@@ -497,20 +457,17 @@ pub fn execute(
             relayer,
             proof,
             proof_height,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            process_receive(
-                deps,
-                env,
-                info,
-                packets,
-                relayer_msgs.into_iter().collect(),
-                relayer,
-                proof,
-                proof_height,
-                false,
-            )
-        }
+        }) => process_receive(
+            deps,
+            env,
+            info,
+            packets,
+            relayer_msgs.into_iter().collect(),
+            relayer,
+            proof,
+            proof_height,
+            false,
+        ),
         ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
             packets,
             acknowledgements,
@@ -518,10 +475,9 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             acknowledge_packet(
-                deps.branch(),
+                deps,
                 info,
                 packets,
                 acknowledgements.into_iter().collect(),
@@ -536,35 +492,24 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
-            timeout_packet(
-                deps.branch(),
-                info,
-                packet,
-                proof.to_vec(),
-                proof_height,
-                relayer,
-            )
+            timeout_packet(deps, info, packet, proof.to_vec(), proof_height, relayer)
         }
         ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
             packets,
             market_maker_msgs,
             market_maker,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            process_receive(
-                deps,
-                env,
-                info,
-                packets,
-                market_maker_msgs.into_iter().collect(),
-                market_maker,
-                Bytes::new_static(&[]),
-                0,
-                true,
-            )
-        }
+        }) => process_receive(
+            deps,
+            env,
+            info,
+            packets,
+            market_maker_msgs.into_iter().collect(),
+            market_maker,
+            Bytes::new_static(&[]),
+            0,
+            true,
+        ),
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
             packet,
             acknowledgement,
@@ -585,12 +530,8 @@ pub fn execute(
             timeout_timestamp,
             data.into_vec(),
         ),
-        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            batch_send(deps, packets)
-        }
+        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => batch_send(deps, packets),
         ExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
             batch_acks(deps, packets, acks.into_iter().collect())
         }
         ExecuteMsg::MigrateState(MsgMigrateState {
@@ -606,44 +547,24 @@ pub fn execute(
             consensus_state,
             height,
         ),
-        ExecuteMsg::AddRelayer(relayer) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            deps.storage.write::<WhitelistedRelayers>(&relayer, &());
-            Ok(Response::new().add_event(
-                Event::new("whitelisted_relayers")
-                    .add_attribute("action", "grant")
-                    .add_attribute("relayer", relayer),
-            ))
-        }
-        ExecuteMsg::RemoveRelayer(relayer) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            deps.storage.delete::<WhitelistedRelayers>(&relayer);
-            Ok(Response::new().add_event(
-                Event::new("whitelisted_relayers")
-                    .add_attribute("action", "revoke")
-                    .add_attribute("relayer", relayer),
-            ))
-        }
         ExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
             client_id,
             proof_height,
             proof,
             path,
             value,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            commit_membership_proof(deps, client_id, proof_height, proof, path, value)
-        }
+        }) => commit_membership_proof(deps, client_id, proof_height, proof, path, value),
         ExecuteMsg::CommitNonMembershipProof(MsgCommitNonMembershipProof {
             client_id,
             proof_height,
             proof,
             path,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            commit_non_membership_proof(deps, client_id, proof_height, proof, path)
+        }) => commit_non_membership_proof(deps, client_id, proof_height, proof, path),
+        ExecuteMsg::AccessManaged(msg) => {
+            access_managed::execute(deps, env, info, msg).map_err(Into::into)
+        }
+        ExecuteMsg::Upgradable(msg) => {
+            upgradable::execute(deps, env, info, msg).map_err(Into::into)
         }
     }
 }
@@ -702,12 +623,24 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct IbcUnionMigrateMsg {}
+pub struct IbcUnionMigrateMsg {
+    pub access_managed_init_msg: access_managed::InitMsg,
+}
 
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
 pub mod version {
     use std::num::NonZeroU32;
 
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
     pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -716,33 +649,40 @@ pub fn migrate(
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, version| match version {
-        version::INIT => Ok((Response::new(), None)),
+    msg.run(deps, init, |mut deps, msg, version| match version {
+        version::INIT => {
+            access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+            deps.storage.delete_item::<WhitelistedRelayersAdmin>();
+
+            for (k, ()) in deps
+                .storage
+                .iter::<WhitelistedRelayers>(cosmwasm_std::Order::Ascending)
+                .collect::<Result<Vec<_>, _>>()?
+            {
+                deps.storage.delete::<WhitelistedRelayers>(&k);
+            }
+
+            Ok((Response::new(), Some(version::MANAGED)))
+        }
+        version::MANAGED => Ok((Response::new(), None)),
         _ => Err(UpgradeError::UnknownStateVersion(version).into()),
     })
 }
 
 pub(crate) fn init(
-    deps: DepsMut<'_>,
-    InitMsg {
-        relayers_admin,
-        relayers,
-    }: InitMsg,
+    mut deps: DepsMut<'_>,
+    msg: InitMsg,
 ) -> Result<(Response, Option<NonZeroU32>), ContractError> {
+    access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+    // init all id storages to 1 (ids are non-zero, and for simplicity in the rest of the contract we assume the storages exist)
     deps.storage.write_item::<NextChannelId>(&ChannelId!(1));
     deps.storage
         .write_item::<NextConnectionId>(&ConnectionId!(1));
     deps.storage.write_item::<NextClientId>(&ClientId!(1));
-    if let Some(relayers_admin) = relayers_admin {
-        let relayers_admin = deps.api.addr_validate(&relayers_admin)?;
-        deps.storage
-            .write_item::<WhitelistedRelayersAdmin>(&relayers_admin);
-    }
-    for relayer in relayers {
-        let relayer = deps.api.addr_validate(&relayer)?;
-        deps.storage.write::<WhitelistedRelayers>(&relayer, &());
-    }
-    Ok((Response::default(), None))
+
+    Ok((Response::default(), Some(version::LATEST)))
 }
 
 fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
@@ -1194,7 +1134,6 @@ fn connection_open_init(
 
 #[allow(clippy::too_many_arguments)]
 fn connection_open_try(
-    info: MessageInfo,
     mut deps: DepsMut,
     counterparty_client_id: ClientId,
     counterparty_connection_id: ConnectionId,
@@ -1204,18 +1143,21 @@ fn connection_open_try(
     verify: bool,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
+
     let connection = Connection {
         state: ConnectionState::TryOpen,
         client_id,
         counterparty_client_id,
         counterparty_connection_id: Some(counterparty_connection_id),
     };
+
     let expected_connection = Connection {
         state: ConnectionState::Init,
         client_id: counterparty_client_id,
         counterparty_client_id: client_id,
         counterparty_connection_id: None,
     };
+
     if verify {
         let client_impl = client_impl(deps.as_ref(), client_id)?;
         query_light_client::<()>(
@@ -1233,10 +1175,10 @@ fn connection_open_try(
                 value: commit(expected_connection.abi_encode_params()).into_bytes(),
             },
         )?;
-    } else {
-        ensure_relayer_admin(deps.storage, &info.sender)?;
     }
+
     save_connection(deps.branch(), connection_id, &connection)?;
+
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_TRY).add_attributes([
             (events::attribute::CONNECTION_ID, connection_id.to_string()),
@@ -1254,7 +1196,6 @@ fn connection_open_try(
 }
 
 fn connection_open_ack(
-    info: MessageInfo,
     mut deps: DepsMut,
     connection_id: ConnectionId,
     counterparty_connection_id: ConnectionId,
@@ -1263,12 +1204,14 @@ fn connection_open_ack(
     verify: bool,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
+
     if connection.state != ConnectionState::Init {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
             expected: ConnectionState::Init,
         });
     }
+
     if verify {
         let expected_connection = Connection {
             state: ConnectionState::TryOpen,
@@ -1292,12 +1235,13 @@ fn connection_open_ack(
                 value: commit(expected_connection.abi_encode_params()).into_bytes(),
             },
         )?;
-    } else {
-        ensure_relayer_admin(deps.storage, &info.sender)?;
     }
+
     connection.state = ConnectionState::Open;
     connection.counterparty_connection_id = Some(counterparty_connection_id);
+
     save_connection(deps.branch(), connection_id, &connection)?;
+
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_ACK).add_attributes([
             (events::attribute::CONNECTION_ID, connection_id.to_string()),
@@ -1318,7 +1262,6 @@ fn connection_open_ack(
 }
 
 fn connection_open_confirm(
-    info: MessageInfo,
     mut deps: DepsMut,
     connection_id: ConnectionId,
     proof_ack: Vec<u8>,
@@ -1326,20 +1269,24 @@ fn connection_open_confirm(
     verify: bool,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
+
     if connection.state != ConnectionState::TryOpen {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
             expected: ConnectionState::TryOpen,
         });
     }
+
     let expected_connection = Connection {
         state: ConnectionState::Open,
         client_id: connection.counterparty_client_id,
         counterparty_client_id: connection.client_id,
         counterparty_connection_id: Some(connection_id),
     };
+
     if verify {
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
@@ -1357,11 +1304,12 @@ fn connection_open_confirm(
                 value: commit(expected_connection.abi_encode_params()).into_bytes(),
             },
         )?;
-    } else {
-        ensure_relayer_admin(deps.storage, &info.sender)?;
     }
+
     connection.state = ConnectionState::Open;
+
     save_connection(deps.branch(), connection_id, &connection)?;
+
     Ok(Response::new().add_event(
         Event::new(events::connection::OPEN_CONFIRM).add_attributes([
             (events::attribute::CONNECTION_ID, connection_id.to_string()),
@@ -1394,7 +1342,9 @@ fn channel_open_init(
     relayer: Addr,
 ) -> ContractResult {
     let port_id = deps.api.addr_validate(&port_id)?;
+
     ensure_connection_state(deps.as_ref(), connection_id)?;
+
     let (channel_id, _) = create_channel(
         deps.branch(),
         port_id.clone(),
@@ -1404,6 +1354,7 @@ fn channel_open_init(
         counterparty_port_id.clone(),
         version.clone(),
     )?;
+
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_INIT).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -1446,10 +1397,13 @@ fn channel_open_try(
             expected: ChannelState::TryOpen,
         });
     }
+
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+
     let connection_id = connection
         .counterparty_connection_id
         .expect("connection is open; qed;");
+
     let expected_channel = Channel {
         state: ChannelState::Init,
         connection_id,
@@ -1457,10 +1411,13 @@ fn channel_open_try(
         counterparty_port_id: port_id.as_bytes().to_vec().into(),
         version: counterparty_version.clone(),
     };
+
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
     let counterparty_channel_id = channel
         .counterparty_channel_id
         .ok_or(ContractError::CounterpartyChannelIdInvalid)?;
+
     if verify {
         query_light_client::<()>(
             deps.as_ref(),
@@ -1478,7 +1435,9 @@ fn channel_open_try(
             },
         )?;
     }
+
     let port_id = deps.api.addr_validate(&port_id)?;
+
     let (channel_id, channel) = create_channel(
         deps.branch(),
         port_id.clone(),
@@ -1488,6 +1447,7 @@ fn channel_open_try(
         channel.counterparty_port_id,
         channel.version,
     )?;
+
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_TRY).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -2108,6 +2068,7 @@ fn create_channel(
     version: String,
 ) -> Result<(ChannelId, Channel), ContractError> {
     let channel_id = next_channel_id(deps.branch())?;
+
     let channel = Channel {
         state,
         connection_id,
@@ -2115,6 +2076,7 @@ fn create_channel(
         counterparty_port_id,
         version,
     };
+
     deps.storage.write::<ChannelOwner>(&channel_id, &owner);
     deps.storage
         .upsert::<ContractChannels, _>(&owner, |v| -> Result<_, ContractError> {
@@ -2127,7 +2089,9 @@ fn create_channel(
                 None => BTreeSet::from([channel_id]),
             })
         })?;
+
     save_channel(deps, channel_id, &channel)?;
+
     Ok((channel_id, channel))
 }
 
@@ -2196,7 +2160,7 @@ fn get_timestamp_at_height(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::GetClientType { client_id } => Ok(to_json_binary(
             &deps.storage.read::<ClientTypes>(&client_id)?,
@@ -2296,6 +2260,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
                 unreachable!()
             }
         }
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
     }
 }
 

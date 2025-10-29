@@ -46,4 +46,6 @@ pub enum QueryMsg {
     GetClientImpl { client_id: ClientId },
     #[cfg_attr(feature = "cw-orch-interface", returns(String))]
     GetRegisteredClientType { client_type: String },
+    #[serde(untagged)]
+    AccessManaged(access_managed::QueryMsg),
 }

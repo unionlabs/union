@@ -4,6 +4,7 @@ use std::{
     sync::LazyLock,
 };
 
+use access_manager_types::RoleId;
 use anyhow::{Context, Result, bail};
 use bip32::secp256k1::ecdsa::SigningKey;
 use clap::Parser;
@@ -58,16 +59,10 @@ enum App {
         /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
         #[arg(long)]
         permissioned: bool,
+        #[arg(long)]
+        manager: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
-        // #[arg(long)]
-        // relayers_admin: Bech32<Bytes>,
-        // #[arg(long)]
-        // relayers: Vec<Bech32<Bytes>>,
-        // #[arg(long)]
-        // rate_limit_admin: Bech32<Bytes>,
-        // #[arg(long)]
-        // rate_limit_operators: Vec<Bech32<Bytes>>,
     },
     DeployContract {
         #[arg(long)]
@@ -214,7 +209,7 @@ enum TxCmd {
         #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
-        contract: Bech32<H256>,
+        manager: Bech32<H256>,
         /// The relayer(s) to whitelist.
         #[arg(trailing_var_arg = true)]
         relayer: Vec<Bech32<Bytes>>,
@@ -492,6 +487,7 @@ async fn do_main() -> Result<()> {
             output,
             permissioned,
             gas_config,
+            manager,
             // relayers_admin,
             // relayers,
             // rate_limit_admin,
@@ -510,8 +506,9 @@ async fn do_main() -> Result<()> {
                     std::fs::read(contracts.core)?,
                     bytecode_base_code_id,
                     ibc_union_msg::msg::InitMsg {
-                        relayers_admin: Some(ctx.wallet().address().to_string()),
-                        relayers: vec![ctx.wallet().address().to_string()],
+                        access_managed_init_msg: access_manager_types::managed::msg::InitMsg {
+                            initial_authority: Addr::unchecked(manager.to_string()),
+                        },
                     },
                     &CORE,
                 )
@@ -785,17 +782,14 @@ async fn do_main() -> Result<()> {
                                 admin: Addr::unchecked(ctx.wallet().address().to_string()),
                                 ibc_host: Addr::unchecked(core_address.to_string()),
                                 token_minter_code_id: minter_code_id.into(),
-                                rate_limit_admin: Addr::unchecked(
-                                    ctx.wallet().address().to_string(),
-                                ),
-                                rate_limit_operators: vec![Addr::unchecked(
-                                    ctx.wallet().address().to_string(),
-                                )],
                                 rate_limit_disabled: ucs03_config.rate_limit_disabled,
                                 dummy_code_id: bytecode_base_code_id.get(),
                                 cw_account_code_id: cw_account_code_id.get(),
                             },
                             minter_init_params,
+                            access_managed_init_msg: access_manager_types::managed::msg::InitMsg {
+                                initial_authority: Addr::unchecked(manager.to_string()),
+                            },
                         },
                         &salt,
                     )
@@ -1153,7 +1147,7 @@ async fn do_main() -> Result<()> {
             TxCmd::WhitelistRelayers {
                 rpc_url,
                 private_key,
-                contract,
+                manager,
                 relayer,
                 gas_config,
             } => {
@@ -1166,11 +1160,13 @@ async fn do_main() -> Result<()> {
                         .tx(
                             MsgExecuteContract {
                                 sender: ctx.wallet().address().map_data(Into::into),
-                                contract: contract.clone(),
+                                contract: manager.clone(),
                                 msg: serde_json::to_vec(
-                                    &ibc_union_msg::msg::ExecuteMsg::AddRelayer(
-                                        relayer.to_string(),
-                                    ),
+                                    &access_manager_types::manager::msg::ExecuteMsg::GrantRole {
+                                        role_id: RoleId::new(1),
+                                        account: Addr::unchecked(relayer.to_string()),
+                                        execution_delay: 0,
+                                    },
                                 )
                                 .unwrap()
                                 .into(),

@@ -1,3 +1,4 @@
+use access_managed::Restricted;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use depolama::StorageExt;
 use ibc_union_msg::{
@@ -16,6 +17,8 @@ use crate::{
 
 const SENDER: &str = "unionsender";
 const RELAYER: &str = "unionrelayer";
+const MANAGER: &str = "manager";
+
 const VERSION: &str = "version";
 
 #[test]
@@ -24,8 +27,9 @@ fn channel_open_init_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -59,7 +63,7 @@ fn channel_open_init_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenInit(msg),
+            Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
         )
         .is_ok()
     );
@@ -71,8 +75,9 @@ fn channel_open_init_channel_claimed() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -107,8 +112,9 @@ fn channel_open_init_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -149,8 +155,9 @@ fn channel_open_try_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -192,7 +199,7 @@ fn channel_open_try_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenTry(msg),
+            Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
         )
         .is_ok()
     )
@@ -203,8 +210,9 @@ fn channel_open_try_invalid_state() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -246,7 +254,7 @@ fn channel_open_try_invalid_state() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenTry(msg),
+            Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
         )
         .is_err_and(|err| {
             matches!(
@@ -266,8 +274,9 @@ fn channel_open_try_channel_claimed() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -307,7 +316,7 @@ fn channel_open_try_channel_claimed() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
     )
     .expect("channel open try is ok");
 
@@ -323,8 +332,9 @@ fn channel_open_try_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -364,7 +374,7 @@ fn channel_open_try_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
     )
     .expect("channel open try is ok");
 
@@ -386,8 +396,9 @@ fn channel_open_ack_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -420,7 +431,7 @@ fn channel_open_ack_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is ok");
 
@@ -438,7 +449,7 @@ fn channel_open_ack_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenAck(msg)
+            Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
         )
         .is_ok()
     )
@@ -450,8 +461,9 @@ fn channel_open_ack_not_found() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -487,7 +499,7 @@ fn channel_open_ack_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenAck(msg)
+            Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x6368616e6e656c7300 0x00000001 not present"
@@ -501,8 +513,9 @@ fn channel_open_ack_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -535,7 +548,7 @@ fn channel_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
     )
     .expect("channel open init is ok");
 
@@ -552,7 +565,7 @@ fn channel_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
     )
     .expect("channel open ack is ok");
 
@@ -574,8 +587,9 @@ fn channel_open_confirm_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -615,7 +629,7 @@ fn channel_open_confirm_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
     )
     .expect("channel open try is ok");
 
@@ -630,7 +644,7 @@ fn channel_open_confirm_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenConfirm(msg),
+            Restricted::wrap(ExecuteMsg::ChannelOpenConfirm(msg)),
         )
         .is_ok()
     )
@@ -642,8 +656,9 @@ fn channel_open_try_invalid_counterparty() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -684,7 +699,7 @@ fn channel_open_try_invalid_counterparty() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenTry(msg),
+            Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
         ),
         Err(ContractError::CounterpartyChannelIdInvalid)
     )
@@ -696,8 +711,9 @@ fn channel_open_confirm_not_found() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -731,7 +747,7 @@ fn channel_open_confirm_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenConfirm(msg),
+            Restricted::wrap(ExecuteMsg::ChannelOpenConfirm(msg)),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x6368616e6e656c7300 0x00000001 not present"
@@ -745,8 +761,9 @@ fn channel_open_confirm_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -786,7 +803,7 @@ fn channel_open_confirm_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
     )
     .expect("channel open try is ok");
 
@@ -800,7 +817,7 @@ fn channel_open_confirm_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenConfirm(msg),
+        Restricted::wrap(ExecuteMsg::ChannelOpenConfirm(msg)),
     )
     .expect("channel open confirm is ok");
 

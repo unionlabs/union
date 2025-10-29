@@ -30,14 +30,21 @@ fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Even
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
+
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
+
+    deps.querier.update_wasm(wasm_query_handler(|msg| {
+        panic!("should not be called: {:?}", msg)
+    }));
+
     let res = register_client(deps.as_mut()).unwrap();
 
     assert!(
@@ -57,15 +64,23 @@ fn register_client_ok() {
 #[test]
 fn register_client_fails_when_duplicate() {
     let mut deps = mock_dependencies();
+
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
+
+    deps.querier.update_wasm(wasm_query_handler(|msg| {
+        panic!("should not be called: {:?}", msg)
+    }));
+
     register_client(deps.as_mut()).unwrap();
+
     assert_eq!(
         register_client(deps.as_mut()),
         Err(ContractError::ClientTypeAlreadyExists)
@@ -79,8 +94,9 @@ fn create_client_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -107,8 +123,9 @@ fn create_client_commitments_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -166,8 +183,9 @@ fn update_client_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -215,7 +233,7 @@ fn update_client_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            msg
+            Restricted::wrap(msg)
         )
         .is_ok()
     )
@@ -228,8 +246,9 @@ fn update_client_ko() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -272,7 +291,7 @@ fn update_client_ko() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            msg
+            Restricted::wrap(msg)
         )
         .is_err()
     )
@@ -285,8 +304,9 @@ fn update_client_commitments_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
@@ -333,7 +353,7 @@ fn update_client_commitments_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        msg,
+        Restricted::wrap(msg),
     )
     .expect("update client ok");
 
