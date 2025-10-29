@@ -5,7 +5,7 @@
  */
 import { Match, Schedule } from "effect"
 import { UniversalChainId } from "./schema/chain.js"
-import { TokenRawDenom } from "./schema/token.js"
+import { TokenRawDenom, SuiTypeTag } from "./schema/token.js"
 import * as Token from "./Token.js"
 import * as Ucs05 from "./Ucs05.js"
 
@@ -14,7 +14,7 @@ import * as Ucs05 from "./Ucs05.js"
  * @since 2.0.0
  */
 interface GasDenomMetadata {
-  address: TokenRawDenom
+  address: TokenRawDenom | SuiTypeTag
   name: string
   symbol: string
   /**
@@ -112,7 +112,7 @@ const XION_METADATA: GasDenomMetadata = {
  * @category constants
  * @since 2.0.0
  */
-const BNB_METADATA: GasDenomMetadata = {
+const BNB_METADATA: GasDenomMetadata = {  
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "BNB",
   symbol: "BNB",
@@ -120,6 +120,14 @@ const BNB_METADATA: GasDenomMetadata = {
   decimals: 18,
 } as const
 
+
+const SUI_METADATA: GasDenomMetadata = {
+  address: SuiTypeTag.make("0x2::sui::SUI"),
+  name: "SUI",
+  symbol: "SUI",
+  tickerSymbol: "SUI",
+  decimals: 9,
+} as const
 /**
  * @category constants
  * @since 2.0.0
@@ -169,6 +177,10 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Base
   [UniversalChainId.make("base.8453")]: ETH_METADATA,
   [UniversalChainId.make("base.84532")]: ETH_METADATA,
+
+
+  // Sui
+  [UniversalChainId.make("sui.4c78adac")]: SUI_METADATA,
 }
 
 /**
