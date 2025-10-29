@@ -14,3 +14,9 @@ workspace = true
 [dependencies]
 bytemuck  = { version = "1.23", default-features = false, features = ["derive"] }
 const-hex = { version = "1.14.1", default-features = false }
+serde     = { workspace = true, optional = true }
+
+[features]
+default = []
+
+serde = ["dep:serde"]
