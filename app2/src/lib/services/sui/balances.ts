@@ -1,4 +1,4 @@
-import { Effect, Data, Schema } from "effect"
+import { Data, Effect, Option, Schema, Unify } from "effect"
 import { type FromHexError, fromHexString } from "$lib/utils/hex"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
@@ -34,11 +34,11 @@ export const fetchSuiBalance = ({
     const publicClient = yield* getSuiPublicClient(chain)
 
     const total = yield* Sui.readTotalCoinBalance(coinType, walletAddress).pipe(
-      Effect.provide(publicClient),
+      Effect.provideService(Sui.PublicClient, publicClient),
       Effect.mapError((cause) => new ReadSuiCoinError({ cause })),
     )
 
-    return RawTokenBalance.make(TokenRawAmount.make(total))
+    return RawTokenBalance.make(Option.some(TokenRawAmount.make(total)))
   }).pipe(
     Effect.annotateLogs({
       universal_chain_id: chain.universal_chain_id,
