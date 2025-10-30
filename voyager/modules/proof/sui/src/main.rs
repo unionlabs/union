@@ -25,7 +25,7 @@ use sui_sdk::{
     },
 };
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::Bytes};
+use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,

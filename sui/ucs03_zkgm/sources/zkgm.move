@@ -954,7 +954,7 @@ module zkgm::zkgm {
 
         let quote_token = *order.quote_token();
 
-        if (type_name::get<T>().into_string().into_bytes() != quote_token) {
+        if (type_name::with_defining_ids<T>().into_string().into_bytes() != quote_token) {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
         
@@ -1007,7 +1007,7 @@ module zkgm::zkgm {
         amount: u64,
         ctx: &mut TxContext
     ): Coin<T> {
-        let typename_t = type_name::get<T>();
+        let typename_t = type_name::with_defining_ids<T>();
         let key = typename_t.into_string();
         if(!relay_store.object_store.contains(string::from_ascii(key))) {
             abort E_NO_COIN_IN_BAG
@@ -1279,7 +1279,7 @@ module zkgm::zkgm {
                     channel_id: ibc_packet.destination_channel_id(), 
                     base_token: *order.base_token(),
                     quote_token,
-                    native_token: type_name::get<T>().into_string().into_bytes(),
+                    native_token: type_name::with_defining_ids<T>().into_string().into_bytes(),
                     metadata: *order.metadata(),
                     kind: order.kind()
                 });
@@ -1617,7 +1617,7 @@ module zkgm::zkgm {
                     if (market_maker == @0x0) {
                         let coin = {
                             let coin: &mut Coin<T> = zkgm.object_store.borrow_mut(
-                                string::from_ascii(type_name::get<T>().into_string())
+                                string::from_ascii(type_name::with_defining_ids<T>().into_string())
                             );
                             coin.split<T>(order.base_amount() as u64, ctx)
                         };
@@ -1790,7 +1790,7 @@ module zkgm::zkgm {
         wrapped_denom: vector<u8>,
         metadata: Option<TokenMetadata>,
     ): bool {
-        let typename_t = type_name::get<T>();
+        let typename_t = type_name::with_defining_ids<T>();
         let key = string::from_ascii(typename_t.into_string());
         if (!zkgm.wrapped_denom_to_t.contains(wrapped_denom)) {
             if (metadata.is_none()) {
@@ -1825,7 +1825,7 @@ module zkgm::zkgm {
         relay_store: &mut RelayStore,
         coin: Coin<T>
     ) {
-        let typename_t = type_name::get<T>();
+        let typename_t = type_name::with_defining_ids<T>();
         let key = type_name::into_string(typename_t);
         if(relay_store.object_store.contains(string::from_ascii(key))) {
             let self_coin = relay_store.object_store.borrow_mut(string::from_ascii(key));
@@ -1949,7 +1949,7 @@ module zkgm::zkgm {
         let sender = t.sender();
         let receiver = t.sender();
         let base_token = b"BASE";
-        let quote_token = std::type_name::get<sui::sui::SUI>().into_string().into_bytes();
+        let quote_token = std::type_name::with_defining_ids<sui::sui::SUI>().into_string().into_bytes();
         let md = vector[
             0u8,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,1,
@@ -2002,7 +2002,7 @@ module zkgm::zkgm {
         );
 
         
-        let key = string::from_ascii(type_name::get<sui::sui::SUI>().into_string());
+        let key = string::from_ascii(type_name::with_defining_ids<sui::sui::SUI>().into_string());
         assert!(zkgm.object_store.contains(key), 1);
         let bag_coin: &Coin<sui::sui::SUI> = zkgm.object_store.borrow(key);
         assert!(coin::value(bag_coin) == amount, 2);
@@ -2058,7 +2058,7 @@ module zkgm::zkgm {
         zkgm.register_escrow_vault_cap(zkgm_cap);
 
         let amount: u64 = 1_000;
-        let quote_token = type_name::get<sui::sui::SUI>().into_string().into_bytes();
+        let quote_token = type_name::with_defining_ids<sui::sui::SUI>().into_string().into_bytes();
 
         let sender = t.sender();  
         let receiver = t.sender(); 
@@ -2174,7 +2174,7 @@ module zkgm::zkgm {
         ibc.connection_open_init(1, 2);
         ibc.connection_open_ack(1, 9, b"p", 1);
 
-        let mut port = type_name::get<zkgm::zkgm::IbcAppWitness>().into_string();
+        let mut port = type_name::with_defining_ids<zkgm::zkgm::IbcAppWitness>().into_string();
         port.append(ascii::string(b"::any"));
         ibc.channel_open_init(
             port.to_string(),

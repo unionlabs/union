@@ -1635,7 +1635,6 @@ module ibc::ibc {
             next_client_sequence: 1,
             next_channel_sequence: 1,
             next_connection_sequence: 1,
-            commitment_to_digest: table::new(ctx)
         });
     }
 
@@ -1691,14 +1690,16 @@ module ibc::ibc {
         );
 
         assert!(
-            ibc_store.commitments.borrow(
+            state::borrow_commitment(
+                &ibc_store.id,
                 commitment::client_state_commitment_key(1),
             ) == &client_state,
             1
         );
 
         assert!(
-            ibc_store.commitments.borrow(
+            state::borrow_commitment(
+                &ibc_store.id,
                 commitment::consensus_state_commitment_key(1, TEST_LATEST_HEIGHT),
             ) == &consensus_state,
             1
@@ -1745,7 +1746,7 @@ module ibc::ibc {
         assert!(connection.counterparty_client_id() == counterparty_client_id, E_CONNECTION_NOT_FOUND);
 
         let key = commitment::connection_commitment_key(connection_id);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         assert!(ibc_store.next_connection_sequence == 2, 1);
 
@@ -1783,8 +1784,8 @@ module ibc::ibc {
 
         let k1 = commitment::connection_commitment_key(1);
         let k2 = commitment::connection_commitment_key(2);
-        assert!(ibc_store.commitments.contains(k1), 1);
-        assert!(ibc_store.commitments.contains(k2), 1);
+        assert!(state::has_commitment(&ibc_store.id, k1), 1);
+        assert!(state::has_commitment(&ibc_store.id, k2), 1);
 
         assert!(ibc_store.next_connection_sequence == 3, 1);
 
@@ -1816,7 +1817,7 @@ module ibc::ibc {
         assert!(c.counterparty_connection_id() == 11, 1);
 
         let key = commitment::connection_commitment_key(connection_id);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
         assert!(ibc_store.next_connection_sequence == 2, 1);
 
         test_scenario::return_shared(ibc_store);
@@ -1848,7 +1849,7 @@ module ibc::ibc {
         assert!(c.counterparty_connection_id() == 9, 1);
 
         let key = commitment::connection_commitment_key(1);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -1878,7 +1879,7 @@ module ibc::ibc {
         assert!(c.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
 
         let key = commitment::connection_commitment_key(1);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -1915,7 +1916,7 @@ module ibc::ibc {
         assert!(channel::state(ch) == CHAN_STATE_INIT, E_INVALID_CHANNEL_STATE);
         assert!(*ibc_store.channel_to_port.borrow(ch_id) == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001111::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea"), 1);
         let key = commitment::channel_commitment_key(ch_id);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -1956,7 +1957,7 @@ module ibc::ibc {
         assert!(channel::connection_id(ch) == 1, 1);
         assert!(channel::counterparty_channel_id(ch) == 7, 1);
         let key = commitment::channel_commitment_key(ch_id);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -2001,7 +2002,7 @@ module ibc::ibc {
         assert!(channel::state(ch) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
         assert!(channel::counterparty_channel_id(ch) == 22, 1);
         let key = commitment::channel_commitment_key(1);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -2042,7 +2043,7 @@ module ibc::ibc {
         let ch = ibc_store.channels.borrow(1);
         assert!(channel::state(ch) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
         let key = commitment::channel_commitment_key(1);
-        assert!(ibc_store.commitments.contains(key), 1);
+        assert!(state::has_commitment(&ibc_store.id, key), 1);
 
         test_scenario::return_shared(ibc_store);
         test_case.end();
@@ -2618,7 +2619,7 @@ module ibc::ibc {
         ibc.update_client(&clk2, /*client_id=*/1, b"msg", @0xAAA);
         
         test_scenario::return_shared(clk2);
-        assert!(ibc.commitments.contains(commitment::client_state_commitment_key(1)), 1);
+        assert!(state::has_commitment(&ibc.id, commitment::client_state_commitment_key(1)), 1);
 
         t.next_tx(@0x0);
         // Freeze the client
@@ -2893,11 +2894,11 @@ module ibc::ibc {
         let pkt = packet::new(1, 1, b"z", 0, 1);
         let h = commitment::commit_packet(&pkt);
         let pk = commitment::batch_packets_commitment_key(h);
-        ibc.commitments.add(pk, COMMITMENT_MAGIC);
+        state::commit(&mut ibc.id, pk, COMMITMENT_MAGIC);
 
         t.next_tx(@0x0);
         ibc.timeout_packet(pkt, b"p", 1, IbcAppWitness {});
-        assert!(ibc.get_commitment(pk) == COMMITMENT_MAGIC_ACK, 1);
+        assert!(state::borrow_commitment(&ibc.id, pk) == &COMMITMENT_MAGIC_ACK, 1);
 
         test_scenario::return_shared(ibc);
         t.end();
