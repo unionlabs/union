@@ -30,6 +30,7 @@ import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
+import { suiStore } from "$lib/wallet/sui/config.svelte"
 import { ZkgmClientError, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import { ZkgmClient } from "@unionlabs/sdk"
 import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
@@ -54,6 +55,7 @@ import { onDestroy } from "svelte"
 import { custom } from "viem"
 import { Sui } from "@unionlabs/sdk-sui"
 import { SuiZkgmClient } from "@unionlabs/sdk-sui"
+import { getFullnodeUrl } from "@mysten/sui/client"
 
 type Props = {
   stepIndex: number
@@ -205,15 +207,26 @@ export const submit = Effect.gen(function*() {
 
     const url = yield* chain.getRpcUrl("rpc")
 
-    const { signer } =
-      (yield* (wallets as any).getSuiSigner?.()) ??
-      (yield* Effect.fail(new Error("Sui signer not available. Connect a Sui wallet.")))
+    const { address } = yield* wallets.getAddressForChain(chain)
+    const maybe = (wallets as any).getSuiSigner?.()
+
+    const signer = yield* pipe(
+      Effect.sync(() => suiStore.getSuiSigner()),
+      Effect.flatMap(
+        Option.match({
+          onNone: () =>
+            Effect.fail(new Error("Sui signer not available. Connect a Sui wallet.")),
+          onSome: (s) => Effect.succeed(s),
+        }),
+      ),
+    )
+
 
     ctaCopy = "Switching Network..."
     yield* Effect.sleep("1.5 seconds")
 
-    const publicClient = Sui.PublicClient.Live({ url })
-    const walletClient = Sui.WalletClient.Live({ url, signer })
+    const publicClient = Sui.PublicClient.Live({ url: getFullnodeUrl("testnet") }) // TODO(kaan): use original url coming from hubble when its right.
+    const walletClient = Sui.WalletClient.Live({ url: getFullnodeUrl("testnet"), signer })
 
     // 5) Execute ZKGM request
     ctaCopy = "Executing..."
@@ -248,7 +261,7 @@ export const submit = Effect.gen(function*() {
     const publicClient = Cosmos.Client.Live(rpcUrl)
 
     ctaCopy = "Executing..."
-
+    console.log("instruction:", step.instruction) // --- IGNORE ---
     const response = yield* ZkgmClient.execute(step.instruction).pipe(
       Effect.provide(CosmosZkgmClient.layerWithoutSigningClient),
       Effect.provide(walletClient),

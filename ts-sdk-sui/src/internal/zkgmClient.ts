@@ -210,22 +210,35 @@ export const fromWallet = (
           sendCtx,
         ],
       })
-      const MNEMONIC = "abstract table aisle ring put forward direct limb cost frog knee december";
       // sign & execute
+
+      console.log("wallet.signer:", wallet.signer);
+
       const submit = Effect.tryPromise({
-        try: async () =>
-          wallet.client.signAndExecuteTransaction({
-            signer: Ed25519Keypair.deriveKeypair(MNEMONIC),
-            transaction: tx,
-          }),
+        try: async () => {
+          if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
+            tx.setSender(wallet.signer.toSuiAddress());
+          }
+
+          const { signature, bytes } = await wallet.signer.signTransactionBlock({
+            transactionBlock: tx,
+          });
+
+          return wallet.client.executeTransactionBlock({
+            transactionBlock: bytes,
+            signature,
+            options: { showEffects: true, showEvents: true },
+          });
+        },
         catch: (cause) =>
           new ClientError.RequestError({
             reason: "Transport",
             request,
             cause,
-            description: "signAndExecuteTransaction",
+            description: "signTransactionBlock + executeTransactionBlock",
           }),
-      })
+      });
+
 
       const res = yield* submit
 

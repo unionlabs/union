@@ -46,6 +46,31 @@ function inferSuiChainTag(rpcUrl: string | URL | undefined) {
   if (/devnet|local/i.test(u)) return "sui:devnet"
   return "sui:mainnet"
 }
+function hexToBytes(hex: string): Uint8Array {
+  const s = hex.startsWith("0x") ? hex.slice(2) : hex
+  if (s.length % 2 !== 0) throw new Error("Invalid hex length")
+  const out = new Uint8Array(s.length / 2)
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+  return out
+}
+
+function normalizePubKey(pub: string | Uint8Array): Uint8Array {
+  let bytes: Uint8Array
+  if (pub instanceof Uint8Array) {
+    bytes = pub
+  } else if (/^0x/i.test(pub)) {
+    bytes = hexToBytes(pub)
+  } else {
+    bytes = fromB64(pub)
+  }
+  if (bytes.length === 33 && bytes[0] === 0x00) {
+    return bytes.slice(1)
+  }
+  if (bytes.length !== 32) {
+    throw new Error(`Invalid public key length: expected 32, got ${bytes.length}`)
+  }
+  return bytes
+}
 
 function makeWalletStandardSigner(
   wallet: WalletWithFeatures,
@@ -53,14 +78,31 @@ function makeWalletStandardSigner(
   rpcUrl?: string | URL,
 ) {
   const chainTag = inferSuiChainTag(rpcUrl)
-
+  const pk = () => new Ed25519PublicKey(normalizePubKey(account.publicKey))
+  
   return {
     getPublicKey() {
-      return new Ed25519PublicKey(fromB64(account.publicKey))
+      return pk()
+    },
+
+    toSuiAddress() {
+      return pk().toSuiAddress()
+    },
+
+    async signTransaction(input: { transaction: Uint8Array }) {
+      const signFeature = wallet.features["sui:signTransaction"]
+      if (!signFeature) throw new Error("Wallet does not support sui:signTransaction")
+      const { signature, bytes } = await signFeature.signTransaction({
+        account,
+        transaction: input.transaction,
+        chain: chainTag,
+      })
+      return { signature, bytes: bytes ?? input.transaction }
     },
 
     async signTransactionBlock(input: { transactionBlock: Transaction | Uint8Array }) {
       let bytes: Uint8Array
+      console.log("?input.transactionBlock:", rpcUrl)
 
       if (input.transactionBlock instanceof Transaction) {
         const tmpClient = new SuiClient({ url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? "") })
@@ -97,6 +139,8 @@ class SuiStore {
 
   constructor() {
     this.loadFromStorage()
+    this._rpcUrl = "https://fullnode.testnet.sui.io" // TODO: CHANGE IT LATER, its for test!
+
 
     if (this.connectedWallet && this.connectionStatus === "connected") {
       setTimeout(() => this.reconnect(this.connectedWallet!), 500)
@@ -153,7 +197,7 @@ class SuiStore {
       const connectFeature = wallet.features["standard:connect"]
       if (!connectFeature) throw new Error("Wallet does not support standard:connect")
 
-        await connectFeature.connect()
+      await connectFeature.connect()
       const account = wallet.accounts[0]
       if (!account) throw new Error("No Sui account returned by wallet")
 
