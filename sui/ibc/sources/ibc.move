@@ -114,131 +114,6 @@ module ibc::ibc {
     const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 1064;
     const E_COMMITMENT_NOT_FOUND: u64 = 1065;
 
-    // This event is only emitted during the `init` phase
-    // since the voyager event source module requires at least
-    // a single event to be emitted to be able to process the
-    // events
-    public struct Initiated has copy, drop, store {}
-
-    public struct CreateClient has copy, drop, store {
-        client_id: u32,
-        client_type: String,
-        counterparty_chain_id: String,
-    }
-
-    public struct CreateLensClient has copy, drop, store {
-        client_id: u32,
-        l2_chain_id: String,
-        l1_client_id: u32,
-        l2_client_id: u32
-    }
-
-    public struct UpdateClient has copy, drop, store {
-        client_id: u32,
-        height: u64
-    }
-
-    public struct ConnectionOpenInit has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32
-    }
-
-    public struct ConnectionOpenTry has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    }
-
-    public struct ConnectionOpenAck has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    }
-
-    public struct ConnectionOpenConfirm has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    }
-
-    public struct ChannelOpenInit has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        connection_id: u32,
-        version: String
-    }
-
-    public struct ChannelOpenTry has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        counterparty_channel_id: u32,
-        connection_id: u32,
-        counterparty_version: String
-    }
-
-    public struct ChannelOpenAck has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        counterparty_channel_id: u32,
-        connection_id: u32
-    }
-
-    public struct ChannelOpenConfirm has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        counterparty_channel_id: u32,
-        connection_id: u32
-    }
-
-    public struct PacketSend has drop, copy, store {
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        packet: Packet
-    }
-
-    public struct PacketRecv has drop, store, copy {
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        maker: address,
-        maker_msg: vector<u8>
-    }
-
-    public struct IntentPacketRecv has drop, store, copy {
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        maker: address,
-        maker_msg: vector<u8>
-    }
-
-    public struct TimeoutPacket has drop, store, copy {
-        packet_hash: vector<u8>
-    }
-
-    public struct WriteAck has drop, store, copy {
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        acknowledgement: vector<u8>
-    }
-
-    public struct PacketAck has drop, store, copy {
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        acknowledgement: vector<u8>,
-        maker: address,
-    }
-
-    public struct Misbehaviour has drop, store, copy {
-        client_id: u32
-    }
-
     public struct IBCStore has key {
         id: UID,
         version: u32,
@@ -252,7 +127,7 @@ module ibc::ibc {
     }
 
     fun init(ctx: &mut TxContext) {
-        event::emit(Initiated {});
+        events::emit_initiated();
         transfer::share_object(IBCStore {
             id: object::new(ctx),
             version: VERSION,
@@ -292,13 +167,11 @@ module ibc::ibc {
 
         if (lens_client_event.is_some()) {
             let lens_client_event = lens_client_event.extract();
-            event::emit(
-                CreateLensClient {
-                    client_id: lens_client_event.client_id(),
-                    l2_chain_id: lens_client_event.l2_chain_id(),
-                    l1_client_id: lens_client_event.l1_client_id(),
-                    l2_client_id: lens_client_event.l2_client_id()
-                }
+            events::emit_create_lens_client(
+                    lens_client_event.client_id(),
+                    lens_client_event.l2_chain_id(),
+                    lens_client_event.l1_client_id(),
+                    lens_client_event.l2_client_id()
             );
         };
 
@@ -317,12 +190,10 @@ module ibc::ibc {
             consensus_state_bytes
         );
 
-        event::emit(
-            CreateClient {
-                client_id,
-                client_type,
-                counterparty_chain_id
-            },
+        events::emit_create_client(
+            client_id,
+            client_type,
+            counterparty_chain_id
         )
     }
 
@@ -354,11 +225,9 @@ module ibc::ibc {
             keccak256(&consensus_state)
         );
 
-        event::emit(
-            UpdateClient {
-                client_id,
-                height
-            }
+        events::emit_update_client(
+            client_id,
+            height
         );
     }
 
@@ -378,10 +247,8 @@ module ibc::ibc {
 
         ibc_store.client_mgr.misbehaviour(client_id, misbehaviour, relayer);
 
-        event::emit(
-            Misbehaviour {
-                client_id,
-            }
+        events::emit_misbehaviour(
+            client_id,
         );
     }    
 
@@ -475,13 +342,11 @@ module ibc::ibc {
 
         ibc_store.connections.add(connection_id, connection);
 
-        event::emit(
-            ConnectionOpenTry {
-                connection_id,
-                client_id,
-                counterparty_client_id,
-                counterparty_connection_id,
-            }
+        events::emit_connection_open_try(
+            connection_id,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id,
         );
 
     }
@@ -533,13 +398,11 @@ module ibc::ibc {
         connection.set_state(CONN_STATE_OPEN);
         connection.set_counterparty_connection_id(counterparty_connection_id);
 
-        event::emit(
-            ConnectionOpenAck {
-                connection_id,
-                client_id: connection.client_id(),
-                counterparty_client_id: connection.counterparty_client_id(),
-                counterparty_connection_id: connection.counterparty_connection_id()
-            }
+        events::emit_connection_open_ack(
+            connection_id,
+            connection.client_id(),
+            connection.counterparty_client_id(),
+            connection.counterparty_connection_id()
         );
 
         // Commit the updated connection to storage
@@ -590,13 +453,11 @@ module ibc::ibc {
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
         // Emit an event for connection confirmation
-        event::emit(
-            ConnectionOpenConfirm {
-                connection_id,
-                client_id: connection.client_id(),
-                counterparty_client_id: connection.counterparty_client_id(),
-                counterparty_connection_id
-            }
+        events::emit_connection_open_confirm(
+            connection_id,
+            connection.client_id(),
+            connection.counterparty_client_id(),
+            counterparty_connection_id
         );
 
         // Commit the final state of the connection to storage
@@ -650,14 +511,12 @@ module ibc::ibc {
 
         ibc_store.channels.add(channel_id, channel);
 
-        event::emit(
-            ChannelOpenInit {
-                port_id,
-                channel_id,
-                counterparty_port_id,
-                connection_id,
-                version
-            }
+        events::emit_channel_open_init(
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            connection_id,
+            version
         );
 
     }
@@ -738,15 +597,13 @@ module ibc::ibc {
 
         ibc_store.channels.add(channel_id, channel);
 
-        event::emit(
-            ChannelOpenTry {
-                port_id,
-                channel_id,
-                counterparty_port_id,
-                counterparty_channel_id,
-                connection_id,
-                counterparty_version
-            }
+        events::emit_channel_open_try(
+            port_id,
+            channel_id,
+            counterparty_port_id,
+            counterparty_channel_id,
+            connection_id,
+            counterparty_version
         );
     }
 
@@ -824,14 +681,12 @@ module ibc::ibc {
         channel.set_version(counterparty_version);
 
         // Emit an event for the channel open acknowledgment
-        event::emit(
-            ChannelOpenAck {
-                port_id,
-                channel_id,
-                counterparty_port_id: *channel.counterparty_port_id(),
-                counterparty_channel_id,
-                connection_id
-            }
+        events::emit_channel_open_ack(
+            port_id,
+            channel_id,
+            *channel.counterparty_port_id(),
+            counterparty_channel_id,
+            connection_id
         );
 
         // Commit the updated channel to storage
@@ -900,14 +755,12 @@ module ibc::ibc {
 
         channel.set_state(CHAN_STATE_OPEN);
 
-        event::emit(
-            ChannelOpenConfirm {
-                port_id,
-                channel_id,
-                counterparty_port_id: *channel.counterparty_port_id(),
-                counterparty_channel_id: channel.counterparty_channel_id(),
-                connection_id: channel.connection_id()
-            }
+        events::emit_channel_open_confirm(
+            port_id,
+            channel_id,
+            *channel.counterparty_port_id(),
+            channel.counterparty_channel_id(),
+            channel.connection_id()
         );
 
         // Commit the final state of the channel to storage
@@ -972,12 +825,10 @@ module ibc::ibc {
         // They will later use this to get the full packet.
         state::add_commitment_to_digest(&mut ibc_store.id, packet_hash, *ctx.digest());
 
-        event::emit(
-            PacketSend {
-                channel_id: source_channel,
-                packet_hash,
-                packet
-            }
+        events::emit_packet_send(
+            source_channel,
+            packet_hash,
+            packet
         );
 
         packet
@@ -1272,32 +1123,28 @@ module ibc::ibc {
             } else {
                 let maker_msg = maker_msgs[i];
                 if (intent) {
-                    event::emit(IntentPacketRecv {
-                        channel_id: destination_channel,
+                    events::emit_intent_packet_recv(
+                        destination_channel,
                         packet_hash,
                         maker,
                         maker_msg
-                    });
+                    );
                 } else {
-                    event::emit(
-                        PacketRecv {
-                            channel_id: destination_channel,
-                            packet_hash,
-                            maker,
-                            maker_msg
-                        }
-                    )
+                    events::emit_packet_recv(
+                        destination_channel,
+                        packet_hash,
+                        maker,
+                        maker_msg
+                    );
                 };
 
                 let acknowledgement = acknowledgements[i];
                 if (!acknowledgement.is_empty()) {
                     inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
-                    event::emit(
-                        WriteAck {
-                            channel_id: destination_channel,
-                            packet_hash,
-                            acknowledgement
-                        }
+                    events::emit_write_ack(
+                        destination_channel,
+                        packet_hash,
+                        acknowledgement
                     );
                 };
             };
@@ -1334,12 +1181,10 @@ module ibc::ibc {
 
         inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
 
-        event::emit(
-            WriteAck{
-                channel_id: packet.destination_channel_id(),
-                packet_hash,
-                acknowledgement,
-            }
+        events::emit_write_ack(
+            packet.destination_channel_id(),
+            packet_hash,
+            acknowledgement,
         )
     }
 
@@ -1405,13 +1250,11 @@ module ibc::ibc {
                 );
             ibc_store.set_packet_acknowledged(commitment_key);
             
-            event::emit(
-                PacketAck {
-                    channel_id: source_channel,
-                    packet_hash,
-                    acknowledgement: acknowledgements[i],
-                    maker: relayer
-                }
+            events::emit_packet_ack(
+                source_channel,
+                packet_hash,
+                acknowledgements[i],
+                relayer
             );
 
             i = i + 1;
@@ -1606,7 +1449,7 @@ module ibc::ibc {
             )
         );
 
-        event::emit(TimeoutPacket { packet_hash });
+        events::emit_timeout_packet(packet_hash);
     }
 
     fun assert_version(ibc_store: &IBCStore) {
