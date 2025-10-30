@@ -18,10 +18,13 @@ crate-type = ["cdylib", "rlib"]
 cosmwasm-std = { workspace = true, features = [] }
 embed-commit = { workspace = true }
 frissitheto  = { workspace = true }
+schemars     = { workspace = true, optional = true }
 serde        = { workspace = true, features = ["derive"] }
 serde_json   = { workspace = true }
 thiserror    = { workspace = true }
 
 [features]
 default = []
-library = []
+
+library  = []
+schemars = ["dep:schemars"]

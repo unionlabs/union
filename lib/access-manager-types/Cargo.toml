@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
 cosmwasm-std         = { workspace = true }
+schemars             = { workspace = true, optional = true }
 serde                = { workspace = true, features = ["derive"] }
 serde-json-wasm      = { workspace = true }
 serde-utils          = { workspace = true }
@@ -26,3 +27,8 @@ unionlabs-primitives = { workspace = true, features = ["serde", "bincode"] }
 hex-literal        = { workspace = true }
 itertools          = { workspace = true }
 unionlabs-encoding = { workspace = true, features = ["bincode"] }
+
+[features]
+default = []
+
+schemars = ["dep:schemars", "unionlabs-primitives/schemars"]

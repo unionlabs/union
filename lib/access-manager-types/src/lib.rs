@@ -110,7 +110,12 @@ pub struct Schedule {
 #[derive(
     Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
 )]
-pub struct RoleId(#[serde(with = "::serde_utils::string")] u64);
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub struct RoleId(
+    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "schemars", schemars(with = "cosmwasm_std::Uint64"))]
+    u64,
+);
 
 impl fmt::Display for RoleId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -152,6 +157,7 @@ impl RoleId {
 }
 
 #[derive(Debug, PartialEq, bincode::Encode)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[repr(transparent)]
 pub struct Selector(str);
 

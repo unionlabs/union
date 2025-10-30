@@ -132,6 +132,7 @@ dependencies = [
  "cosmwasm-std",
  "hex-literal 0.4.1",
  "itertools 0.13.0",
+ "schemars",
  "serde",
  "serde-json-wasm",
  "serde-utils",
@@ -4184,6 +4185,7 @@ dependencies = [
 name = "cw-escrow-vault"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
  "bincode 2.0.1",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -4200,6 +4202,7 @@ dependencies = [
  "ucs03-zkgm",
  "unionlabs-encoding",
  "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]
@@ -4326,8 +4329,8 @@ dependencies = [
 name = "cw-unionversal-token"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
  "bincode 2.0.1",
- "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw20",
@@ -4346,6 +4349,7 @@ dependencies = [
  "ucs03-zkgm",
  "unionlabs-encoding",
  "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]
@@ -15699,6 +15703,7 @@ dependencies = [
  "cosmwasm-std",
  "embed-commit",
  "frissitheto",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror 2.0.12",

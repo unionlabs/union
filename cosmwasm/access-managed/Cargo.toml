@@ -30,12 +30,14 @@ thiserror            = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
 unionlabs-primitives = { workspace = true, features = ["bincode", "serde", "generic-array-compat"] }
 
-[features]
-default = []
-library = []
-
 [dev-dependencies]
 hex-literal = { workspace = true }
 itertools   = { workspace = true }
+
+[features]
+default = []
+
+library = []
+schemars = ["access-manager-types/schemars"]
 
 # TODO: Do something like this so the solidity codeblocks are highlighted correctly: https://users.rust-lang.org/t/how-did-slint-create-custom-syntax-highlight-link-and-preview-for-their-code-examples/85294/2

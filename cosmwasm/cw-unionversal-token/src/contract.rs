@@ -1,13 +1,13 @@
 use std::slice;
 
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, entry_point,
     to_json_binary,
 };
 use depolama::StorageExt;
-use frissitheto::UpgradeMsg;
+use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_spec::{ChannelId, path::commit_packets};
+use serde::{Deserialize, Serialize};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_solvable::Solvable;
@@ -24,6 +24,22 @@ use crate::{
     },
 };
 
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
+pub mod version {
+    use std::num::NonZeroU32;
+
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
+}
+
 #[entry_point]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
     panic!(
@@ -31,8 +47,10 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
     );
 }
 
-#[cw_serde]
-pub struct MigrateMsg {}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MigrateMsg {
+    pub access_managed_init_msg: access_managed::InitMsg,
+}
 
 #[entry_point]
 pub fn migrate(
@@ -42,7 +60,9 @@ pub fn migrate(
 ) -> Result<Response<TokenFactoryMsg>, Error> {
     msg.run(
         deps,
-        |deps, init_msg| {
+        |mut deps, init_msg| {
+            access_managed::init(deps.branch(), init_msg.access_managed_init_msg)?;
+
             let sender = env.contract.address.clone();
 
             deps.storage.write_item::<Admin>(&init_msg.admin);
@@ -73,7 +93,15 @@ pub fn migrate(
             }?;
             Ok((res, None))
         },
-        |_, _, _| Ok((Response::default(), None)),
+        |deps, msg, version| match version {
+            version::INIT => {
+                access_managed::init(deps, msg.access_managed_init_msg)?;
+
+                Ok((Response::default(), Some(version::MANAGED)))
+            }
+            version::MANAGED => Ok((Response::default(), None)),
+            _ => Err(UpgradeError::UnknownStateVersion(version).into()),
+        },
     )
 }
 
@@ -114,11 +142,11 @@ pub fn execute(
             }
         },
         ExecuteMsg::WhitelistIntents { hashes_whitelist } => {
-            ensure_admin(deps.as_ref(), &info)?;
             for (packet_hash, allowed) in hashes_whitelist {
                 deps.storage
                     .write::<IntentWhitelist>(&packet_hash, &allowed);
             }
+
             Ok(Response::new())
         }
         ExecuteMsg::SetFungibleCounterparty {
@@ -148,13 +176,18 @@ pub fn execute(
             ensure_zkgm(deps.as_ref(), &info)?;
 
             if intent {
+                let packet_hash = commit_packets(slice::from_ref(&packet));
+
                 let whitelisted = deps
                     .storage
-                    .read::<IntentWhitelist>(&commit_packets(slice::from_ref(&packet)))
+                    .read::<IntentWhitelist>(&packet_hash)
                     .unwrap_or(false);
+
                 if !whitelisted {
                     return Err(Error::IntentMustBeWhitelisted);
                 }
+
+                deps.storage.delete::<IntentWhitelist>(&packet_hash);
             }
 
             let fungible_lane = deps
@@ -245,6 +278,12 @@ pub fn execute(
                     ),
                 ))
         }
+        ExecuteMsg::AccessManaged(msg) => Ok(access_managed::execute(deps, env, info, msg)?
+            .change_custom()
+            .unwrap()),
+        ExecuteMsg::Upgradable(msg) => Ok(upgradable::execute(deps, env, info, msg)?
+            .change_custom()
+            .unwrap()),
     }
 }
 
@@ -301,6 +340,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             )
             .map_err(Into::into),
         },
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
     }
 }
 

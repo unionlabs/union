@@ -4,12 +4,15 @@ use serde::{Deserialize, Serialize};
 use crate::Selector;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
 pub struct InitMsg {
     pub initial_authority: Addr,
 }
 
 /// Interface mirroring the executable calls from [`IAccessManaged.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol).
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Transfers control to a new authority. The caller must be the current authority.
@@ -24,6 +27,7 @@ pub enum ExecuteMsg {
 
 /// Interface mirroring the queries from [`IAccessManaged.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol).
 #[derive(Debug, PartialEq, Serialize, Deserialize, strum::IntoStaticStr)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Returns the current authority.
@@ -54,4 +58,6 @@ impl QueryMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
 pub struct MigrateMsg {}

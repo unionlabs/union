@@ -11,12 +11,12 @@ use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
 use ibc_union_spec::path::commit_packets;
-use ucs03_solvable::Solvable;
+use ucs03_solvable::{Solvable, SolverQuery};
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
 use unionlabs_primitives::{Bytes, encoding::HexPrefixed};
 
 use crate::{
-    error::Error,
+    error::ContractError,
     msg::{ExecuteMsg, FungibleLaneConfig, InstantiateMsg, QueryMsg},
     state::{Admin, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
 };
@@ -36,7 +36,7 @@ pub fn migrate(
     deps: DepsMut,
     _: Env,
     msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     msg.run(
         deps,
         |deps, msg| {
@@ -48,18 +48,18 @@ pub fn migrate(
     )
 }
 
-fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
+fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     let admin = deps.storage.read_item::<Zkgm>()?;
     if info.sender != admin {
-        return Err(Error::OnlyZkgm);
+        return Err(ContractError::OnlyZkgm);
     }
     Ok(())
 }
 
-fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
+fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     let admin = deps.storage.read_item::<Admin>()?;
     if info.sender != admin {
-        return Err(Error::OnlyAdmin);
+        return Err(ContractError::OnlyAdmin);
     }
     Ok(())
 }
@@ -67,17 +67,17 @@ fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::WhitelistIntents { hashes_whitelist } => {
-            ensure_admin(deps.as_ref(), &info)?;
             for (packet_hash, allowed) in hashes_whitelist {
                 deps.storage
                     .write::<IntentWhitelist>(&packet_hash, &allowed);
             }
+
             Ok(Response::new())
         }
         ExecuteMsg::SetFungibleCounterparty {
@@ -88,10 +88,12 @@ pub fn execute(
             escrowed_denom,
         } => {
             ensure_admin(deps.as_ref(), &info)?;
+
             let is_cw20 = deps
                 .querier
                 .query_wasm_contract_info(escrowed_denom.clone())
                 .is_ok();
+
             deps.storage.write::<FungibleCounterparty>(
                 &(path, channel_id, base_token),
                 &FungibleLane {
@@ -100,6 +102,7 @@ pub fn execute(
                     is_cw20,
                 },
             );
+
             Ok(Response::new())
         }
         ExecuteMsg::Solvable(Solvable::DoSolve {
@@ -118,7 +121,7 @@ pub fn execute(
                     .read::<IntentWhitelist>(&commit_packets(slice::from_ref(&packet)))
                     .unwrap_or(false);
                 if !whitelisted {
-                    return Err(Error::IntentMustBeWhitelisted);
+                    return Err(ContractError::IntentMustBeWhitelisted);
                 }
             }
 
@@ -129,15 +132,15 @@ pub fn execute(
                     packet.destination_channel_id,
                     order.base_token,
                 ))?
-                .ok_or_else(|| Error::LaneIsNotFungible {
+                .ok_or_else(|| ContractError::LaneIsNotFungible {
                     channel_id: packet.destination_channel_id,
                 })?;
 
             let quote_token = String::from_utf8(Vec::from(order.quote_token))
-                .map_err(|_| Error::InvalidQuoteToken)?;
+                .map_err(|_| ContractError::InvalidQuoteToken)?;
 
             if quote_token != fungible_lane.escrowed_denom {
-                return Err(Error::InvalidFill {
+                return Err(ContractError::InvalidFill {
                     quote_token,
                     escrowed_denom: fungible_lane.escrowed_denom,
                 });
@@ -177,15 +180,16 @@ pub fn execute(
             let fee = order
                 .base_amount
                 .checked_sub(order.quote_amount)
-                .ok_or_else(|| Error::BaseAmountMustCoverQuoteAmount)?;
+                .ok_or_else(|| ContractError::BaseAmountMustCoverQuoteAmount)?;
             push_transfer(relayer.into(), fee.try_into().expect("impossible"))?;
 
             let receiver = deps
                 .api
                 .addr_validate(
-                    str::from_utf8(order.receiver.as_ref()).map_err(|_| Error::InvalidReceiver)?,
+                    str::from_utf8(order.receiver.as_ref())
+                        .map_err(|_| ContractError::InvalidReceiver)?,
                 )
-                .map_err(|_| Error::InvalidReceiver)?;
+                .map_err(|_| ContractError::InvalidReceiver)?;
             push_transfer(
                 receiver.into(),
                 order.quote_amount.try_into().expect("impossible"),
@@ -199,46 +203,55 @@ pub fn execute(
                 ),
             ))
         }
+        ExecuteMsg::AccessManaged(msg) => {
+            access_managed::execute(deps, env, info, msg).map_err(Into::into)
+        }
+        ExecuteMsg::Upgradable(msg) => {
+            upgradable::execute(deps, env, info, msg).map_err(Into::into)
+        }
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::IsSolver => to_json_binary(&()),
-        QueryMsg::AllowMarketMakers => to_json_binary(&true),
         QueryMsg::GetFungibleCounterparty {
             path,
             channel_id,
             base_token,
-        } => deps
-            .storage
-            .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))
-            .and_then(|data| to_json_binary(&data)),
-        QueryMsg::GetAllFungibleCounterparties => deps
-            .storage
-            .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
-            .map(|res| {
-                res.map(
-                    |(
-                        (path, channel_id, base_token),
-                        FungibleLane {
+        } => Ok(to_json_binary(
+            &deps
+                .storage
+                .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))?,
+        )?),
+        QueryMsg::GetAllFungibleCounterparties => Ok(to_json_binary(
+            &deps
+                .storage
+                .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
+                .map(|res| {
+                    res.map(
+                        |(
+                            (path, channel_id, base_token),
+                            FungibleLane {
+                                counterparty_beneficiary,
+                                escrowed_denom,
+                                is_cw20,
+                            },
+                        )| FungibleLaneConfig {
+                            path,
+                            channel_id,
+                            base_token,
                             counterparty_beneficiary,
                             escrowed_denom,
                             is_cw20,
                         },
-                    )| FungibleLaneConfig {
-                        path,
-                        channel_id,
-                        base_token,
-                        counterparty_beneficiary,
-                        escrowed_denom,
-                        is_cw20,
-                    },
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .and_then(|data| to_json_binary(&data)),
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        )?),
+        QueryMsg::Solvable(SolverQuery::IsSolver) => Ok(to_json_binary(&())?),
+        QueryMsg::Solvable(SolverQuery::AllowMarketMakers) => Ok(to_json_binary(&true)?),
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
     }
 }
 
@@ -308,7 +321,7 @@ mod tests {
         base_amount: u128,
         quote_amount: u128,
         intent: bool,
-    ) -> Result<Response, Error> {
+    ) -> Result<Response, ContractError> {
         execute(
             deps,
             mock_env(),
@@ -324,7 +337,7 @@ mod tests {
         init(deps.as_mut());
 
         assert_eq!(
-            Err(Error::LaneIsNotFungible {
+            Err(ContractError::LaneIsNotFungible {
                 channel_id: DESTINATION_CHANNEL_ID
             }),
             solve(deps.as_mut(), 150, 150, false)
@@ -393,7 +406,7 @@ mod tests {
         init(deps.as_mut());
 
         assert_eq!(
-            Err(Error::LaneIsNotFungible {
+            Err(ContractError::LaneIsNotFungible {
                 channel_id: DESTINATION_CHANNEL_ID
             }),
             solve(deps.as_mut(), 150, 150, false)
@@ -513,7 +526,7 @@ mod tests {
         init(deps.as_mut());
 
         assert_eq!(
-            Err(Error::IntentMustBeWhitelisted),
+            Err(ContractError::IntentMustBeWhitelisted),
             solve(deps.as_mut(), 150, 150, true)
         );
     }
@@ -525,7 +538,7 @@ mod tests {
         init(deps.as_mut());
 
         assert_eq!(
-            Err(Error::LaneIsNotFungible {
+            Err(ContractError::LaneIsNotFungible {
                 channel_id: DESTINATION_CHANNEL_ID
             }),
             solve(deps.as_mut(), 150, 150, false)
@@ -553,7 +566,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            Err(Error::InvalidFill {
+            Err(ContractError::InvalidFill {
                 quote_token: "muno".into(),
                 escrowed_denom: "not_muno".into()
             }),
@@ -582,7 +595,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            Err(Error::BaseAmountMustCoverQuoteAmount),
+            Err(ContractError::BaseAmountMustCoverQuoteAmount),
             solve(deps.as_mut(), 100, 150, false)
         );
     }
@@ -610,7 +623,7 @@ mod tests {
         let solve_msg = mock_solve(150, 150, false);
 
         assert_eq!(
-            Err(Error::OnlyZkgm),
+            Err(ContractError::OnlyZkgm),
             execute(
                 deps.as_mut(),
                 mock_env(),
@@ -627,7 +640,7 @@ mod tests {
         init(deps.as_mut());
 
         assert_eq!(
-            Err(Error::OnlyAdmin),
+            Err(ContractError::OnlyAdmin),
             execute(
                 deps.as_mut(),
                 mock_env(),
@@ -638,25 +651,6 @@ mod tests {
                     base_token: b"base_token".into(),
                     counterparty_beneficiary: (&[0; 32]).into(),
                     escrowed_denom: "muno".into(),
-                },
-            )
-        );
-    }
-
-    #[test]
-    fn whitelist_admin_fails_when_not_admin() {
-        let mut deps = mock_dependencies();
-
-        init(deps.as_mut());
-
-        assert_eq!(
-            Err(Error::OnlyAdmin),
-            execute(
-                deps.as_mut(),
-                mock_env(),
-                message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
-                ExecuteMsg::WhitelistIntents {
-                    hashes_whitelist: vec![(Default::default(), true)],
                 },
             )
         );

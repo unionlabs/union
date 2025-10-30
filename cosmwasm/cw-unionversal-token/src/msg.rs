@@ -19,9 +19,10 @@ pub struct InitMsg {
     pub admin: Addr,
     pub extra_minters: Vec<String>,
     pub cw20_init: Cw20InstantiateMsg,
+    pub access_managed_init_msg: access_managed::InitMsg,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[allow(clippy::large_enum_variant)]
 pub enum ExecuteMsg {
@@ -34,13 +35,18 @@ pub enum ExecuteMsg {
         base_token: Bytes,
         counterparty_beneficiary: Bytes,
     },
+    // NOTE: This must be configured as public in the manager (or only zkgm)
     #[serde(untagged)]
     Solvable(Solvable),
     #[serde(untagged)]
     Cw20(Value),
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+    #[serde(untagged)]
+    Upgradable(upgradable::msg::ExecuteMsg),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     AllMinters {},
@@ -54,6 +60,8 @@ pub enum QueryMsg {
     Minter {},
     #[serde(untagged)]
     Cw20(Value),
+    #[serde(untagged)]
+    AccessManaged(access_managed::QueryMsg),
 }
 
 #[cfg(test)]
