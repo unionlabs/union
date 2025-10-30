@@ -18,6 +18,24 @@ import * as Option from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
 import * as Sui from "../Sui.js"
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import { fromHex as viemFromHex } from "viem";
+
+type HexAddr = `0x${string}`
+
+const decodeAsciiHex = (hex: string) =>
+  viemFromHex((hex.startsWith("0x") ? hex : ("0x" + hex)) as HexAddr, "string") as string
+
+export function parseUcs03Port(raw: string): {
+  ucs03Address: HexAddr; module: string; relayStoreId: HexAddr
+} {
+  const decoded = decodeAsciiHex(raw.trim())
+  const [addr, mod, relay] = decoded.split("::")
+  if (!addr?.startsWith("0x") || !relay?.startsWith("0x")) {
+    throw new Error(`Invalid port: ${decoded}`)
+  }
+  return { ucs03Address: addr as HexAddr, module: mod || "zkgm", relayStoreId: relay as HexAddr }
+}
 
 export const fromWallet = (
   opts: { client: Sui.Sui.PublicClient; wallet: Sui.Sui.WalletClient },
@@ -108,13 +126,17 @@ export const fromWallet = (
         ),
       )
 
-      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { operand })
 
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
-      const module = "zkgm" // zkgm module name
 
+      const { ucs03Address: decodedUcs03, module: decodedModule, relayStoreId: relayFromPort } =
+  parseUcs03Port(request.ucs03Address as unknown as string)
+
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { decodedUcs03, decodedModule, relayFromPort });
+
+      const module = decodedModule // zkgm module name
       const suiParams = request.transport?.sui
       console.log("request.transport:", request.transport)
       if (!suiParams) {
@@ -128,14 +150,16 @@ export const fromWallet = (
         )
       }
 
-      const { relayStoreId, vaultId, ibcStoreId, coins } = suiParams
+      const { vaultId, ibcStoreId, coins } = suiParams
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", {
-        relayStoreId,
+        decodedUcs03,
         vaultId,
         ibcStoreId,
         coins,
       })
+
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient] request:", request)
 
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
@@ -148,7 +172,7 @@ export const fromWallet = (
 
       // 1) begin_send(channel_id: u32, salt: vector<u8>) -> SendCtx
       let sendCtx = tx.moveCall({
-        target: `${request.ucs03Address}::${module}::begin_send`,
+        target: `${decodedUcs03}::${module}::begin_send`,
         typeArguments: [],
         arguments: [
           tx.pure.u32(Number(request.channelId)),
@@ -159,10 +183,10 @@ export const fromWallet = (
       // 2) For each coin: send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
       for (const { typeArg, objectId } of coins) {
         sendCtx = tx.moveCall({
-          target: `${request.ucs03Address}::${module}::send_with_coin`,
+          target: `${decodedUcs03}::${module}::send_with_coin`,
           typeArguments: [typeArg],
           arguments: [
-            tx.object(relayStoreId),
+            tx.object(relayFromPort),
             tx.object(vaultId),
             tx.object(ibcStoreId),
             tx.object(objectId),
@@ -176,7 +200,7 @@ export const fromWallet = (
 
       // 3) end_send(ibc_store, clock, t_height: u64, timeout_ns: u64, ctx)
       tx.moveCall({
-        target: `${request.ucs03Address}::${module}::end_send`,
+        target: `${decodedUcs03}::${module}::end_send`,
         typeArguments: [],
         arguments: [
           tx.object(ibcStoreId),
@@ -186,12 +210,12 @@ export const fromWallet = (
           sendCtx,
         ],
       })
-
+      const MNEMONIC = "abstract table aisle ring put forward direct limb cost frog knee december";
       // sign & execute
       const submit = Effect.tryPromise({
         try: async () =>
           wallet.client.signAndExecuteTransaction({
-            signer: wallet.signer,
+            signer: Ed25519Keypair.deriveKeypair(MNEMONIC),
             transaction: tx,
           }),
         catch: (cause) =>
