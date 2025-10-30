@@ -97,6 +97,7 @@ pub enum ContractError {
     ForwardedPacketMissingInReply,
     #[error("could not deserialize sent packet on reply, data: {sent_packet_data}")]
     CouldNotDeserializeSentPacket {
+        #[source]
         error: serde_json_wasm::de::Error,
         sent_packet_data: Bytes,
     },

@@ -1,12 +1,12 @@
 use access_managed::Restricted;
-use access_manager_types::{RoleId, Selector};
+use access_manager_types::{CanCall, RoleId, Selector};
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 use cosmwasm_std::{
     Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Response,
     StdError, StdResult, Uint256,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
-    to_json_vec, wasm_execute,
+    to_json_binary, to_json_vec, wasm_execute,
 };
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor, SudoMsg};
 use cw_storage_plus::Map;
@@ -37,7 +37,7 @@ use crate::{
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitParams,
     },
-    state::{CHANNEL_BALANCE_V2, EXECUTING_PACKET, TOKEN_ORIGIN},
+    state::{CHANNEL_BALANCE_V2, CONFIG, TOKEN_ORIGIN},
 };
 
 const DEFAULT_IBC_HOST: &str = "blabla";
@@ -598,7 +598,8 @@ fn test_execute_internal_batch_only_self() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin);
 
-    st.app
+    let err = st
+        .app
         .execute(
             Addr::unchecked("sender"),
             wasm_execute(
@@ -610,6 +611,11 @@ fn test_execute_internal_batch_only_self() {
             .into(),
         )
         .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlySelf
+    );
 }
 
 #[test]
@@ -617,7 +623,8 @@ fn test_execute_internal_execute_only_self() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin);
 
-    st.app
+    let err = st
+        .app
         .execute(
             Addr::unchecked("sender"),
             wasm_execute(
@@ -641,6 +648,11 @@ fn test_execute_internal_execute_only_self() {
             .into(),
         )
         .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlySelf
+    );
 }
 
 #[test]
@@ -648,7 +660,8 @@ fn test_execute_internal_write_ack_only_self() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin);
 
-    st.app
+    let err = st
+        .app
         .execute(
             Addr::unchecked("sender"),
             wasm_execute(
@@ -662,6 +675,11 @@ fn test_execute_internal_write_ack_only_self() {
             .into(),
         )
         .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlySelf
+    );
 }
 
 fn init() -> (
@@ -688,115 +706,135 @@ fn init() -> (
 
 #[test]
 fn test_on_recv_packet_only_ibc() {
-    let (mut deps, env, mut info, _) = init();
-    info.sender = Addr::unchecked("not_ibc");
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
-            caller: "".into(),
-            packet: Packet {
-                source_channel_id: ChannelId!(1),
-                destination_channel_id: ChannelId!(10),
-                data: Default::default(),
-                timeout_height: MustBeZero,
-                timeout_timestamp: Default::default(),
-            },
-            relayer: "".into(),
-            relayer_msg: Default::default(),
-        })),
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
+
+    let err = st
+        .app
+        .execute(
+            Addr::unchecked("not_ibc"),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                    caller: "".into(),
+                    packet: Packet {
+                        source_channel_id: ChannelId!(1),
+                        destination_channel_id: ChannelId!(10),
+                        data: Default::default(),
+                        timeout_height: MustBeZero,
+                        timeout_timestamp: Default::default(),
+                    },
+                    relayer: "".into(),
+                    relayer_msg: Default::default(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlyIbcHost
     );
-    assert_eq!(result, Err(ContractError::OnlyIbcHost));
 }
 
 #[test]
 fn test_on_recv_packet_invalid_caller() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
-            caller: "".into(),
-            packet: Packet {
-                source_channel_id: ChannelId!(1),
-                destination_channel_id: ChannelId!(10),
-                data: Default::default(),
-                timeout_height: MustBeZero,
-                timeout_timestamp: Default::default(),
-            },
-            relayer: "".into(),
-            relayer_msg: Default::default(),
-        })),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
+
+    let err = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                    caller: "".into(),
+                    packet: Packet {
+                        source_channel_id: ChannelId!(1),
+                        destination_channel_id: ChannelId!(10),
+                        data: Default::default(),
+                        timeout_height: MustBeZero,
+                        timeout_timestamp: Default::default(),
+                    },
+                    relayer: "".into(),
+                    relayer_msg: Default::default(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
     assert_eq!(
-        result,
-        Err(ContractError::Std(StdError::generic_err(
-            "Error decoding bech32"
-        )))
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::Std(StdError::generic_err("Error decoding bech32"))
     );
 }
 
 #[test]
 fn test_on_recv_packet_invalid_relayer() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
-            caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
-            packet: Packet {
-                source_channel_id: ChannelId!(1),
-                destination_channel_id: ChannelId!(10),
-                data: Default::default(),
-                timeout_height: MustBeZero,
-                timeout_timestamp: Default::default(),
-            },
-            relayer: "".into(),
-            relayer_msg: Default::default(),
-        })),
-    );
-    assert_eq!(
-        result,
-        Err(ContractError::Std(StdError::generic_err(
-            "Error decoding bech32"
-        )))
-    );
-}
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-#[test]
-fn test_on_recv_packet_save_packet() {
-    let (mut deps, env, info, _) = init();
-    let packet = Packet {
-        source_channel_id: ChannelId!(1),
-        destination_channel_id: ChannelId!(10),
-        data: Default::default(),
-        timeout_height: MustBeZero,
-        timeout_timestamp: Default::default(),
-    };
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
-            caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
-            packet: packet.clone(),
-            relayer: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
-            relayer_msg: Default::default(),
-        })),
-    );
+    let err = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                    caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
+                    packet: Packet {
+                        source_channel_id: ChannelId!(1),
+                        destination_channel_id: ChannelId!(10),
+                        data: Default::default(),
+                        timeout_height: MustBeZero,
+                        timeout_timestamp: Default::default(),
+                    },
+                    relayer: "".into(),
+                    relayer_msg: Default::default(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
     assert_eq!(
-        packet,
-        EXECUTING_PACKET.load(deps.as_mut().storage).unwrap()
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::Std(StdError::generic_err("Error decoding bech32"))
     );
-    assert!(result.is_ok());
 }
 
 #[test]
 fn test_on_recv_packet_nonreentrant() {
-    let (mut deps, env, info, _) = init();
+    let (mut deps, env, info, config) = init();
+    CONFIG.save(&mut deps.storage, &config).unwrap();
+
+    access_managed::init(
+        deps.as_mut(),
+        access_managed::InitMsg {
+            initial_authority: Addr::unchecked("admin"),
+        },
+    )
+    .unwrap();
+
+    deps.querier.update_wasm(|_| {
+        cosmwasm_std::SystemResult::Ok(cosmwasm_std::ContractResult::Ok(
+            to_json_binary(&CanCall {
+                allowed: true,
+                delay: 0,
+            })
+            .unwrap(),
+        ))
+    });
+
     let msg = || {
         Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
             caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
@@ -811,10 +849,12 @@ fn test_on_recv_packet_nonreentrant() {
             relayer_msg: Default::default(),
         }))
     };
-    let result = execute(deps.as_mut(), env.clone(), info.clone(), msg());
-    assert!(result.is_ok());
-    let result = execute(deps.as_mut(), env, info, msg());
-    assert_eq!(result, Err(ContractError::AlreadyExecuting));
+
+    execute(deps.as_mut(), env.clone(), info.clone(), msg()).unwrap();
+
+    let result = execute(deps.as_mut(), env, info, msg()).unwrap_err();
+
+    assert_eq!(result, ContractError::AlreadyExecuting);
 }
 
 fn zkgm_contract() -> Box<dyn Contract<Empty>> {
@@ -898,8 +938,9 @@ fn ibc_host_execute(
                 &msg_write_acknowledgement.acknowledgement,
             )?;
         }
+        ibc_union_msg::msg::ExecuteMsg::PacketSend(_) => {}
         _ => {
-            panic!()
+            panic!("{msg:?}")
         }
     }
     Ok(Default::default())
@@ -1526,7 +1567,7 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_amount = 1000u128;
-    let quote_amount = 00u128;
+    let quote_amount = 100u128;
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
 
     let metadata = TokenMetadata {
@@ -3335,21 +3376,27 @@ fn test_recv_packet_native_v2_unwrap_no_outstanding_balance() {
 
 #[test]
 fn test_on_channel_open_init_ok() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
-            caller: "".into(),
-            connection_id: ConnectionId!(1),
-            channel_id: ChannelId!(1),
-            version: PROTOCOL_VERSION.to_string(),
-            relayer: "".to_string(),
-        })),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-    assert_eq!(result, Ok(Response::default()));
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+                    caller: "".into(),
+                    connection_id: ConnectionId!(1),
+                    channel_id: ChannelId!(1),
+                    version: PROTOCOL_VERSION.to_string(),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
 }
 
 #[test]
@@ -3357,7 +3404,8 @@ fn test_on_channel_open_init_invalid_version() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin);
 
-    st.app
+    let err = st
+        .app
         .execute(
             st.ibc_host.clone(),
             wasm_execute(
@@ -3375,6 +3423,13 @@ fn test_on_channel_open_init_invalid_version() {
             .into(),
         )
         .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::InvalidIbcVersion {
+            version: "im-invalid".to_owned()
+        }
+    );
 }
 
 #[test]
@@ -3382,7 +3437,8 @@ fn test_on_channel_open_init_only_ibc() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin);
 
-    st.app
+    let err = st
+        .app
         .execute(
             Addr::unchecked("not_ibc"),
             wasm_execute(
@@ -3400,6 +3456,11 @@ fn test_on_channel_open_init_only_ibc() {
             .into(),
         )
         .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlyIbcHost
+    );
 }
 
 #[test]
@@ -3407,7 +3468,101 @@ fn test_on_channel_open_try_ok() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
     let mut st = init_test_state(admin);
 
-    let result = st
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                    caller: "".into(),
+                    connection_id: ConnectionId!(1),
+                    channel_id: ChannelId!(1),
+                    version: PROTOCOL_VERSION.to_string(),
+                    counterparty_version: PROTOCOL_VERSION.to_string(),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
+}
+
+#[test]
+fn test_on_channel_open_try_invalid_version() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
+
+    let err = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                    caller: "".into(),
+                    connection_id: ConnectionId!(1),
+                    channel_id: ChannelId!(1),
+                    version: "im-invalid".to_string(),
+                    counterparty_version: PROTOCOL_VERSION.to_string(),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::InvalidIbcVersion {
+            version: "im-invalid".to_owned()
+        }
+    );
+}
+
+#[test]
+fn test_on_channel_open_try_invalid_counterparty_version() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
+
+    let err = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                    caller: "".into(),
+                    connection_id: ConnectionId!(1),
+                    channel_id: ChannelId!(1),
+                    version: PROTOCOL_VERSION.to_string(),
+                    counterparty_version: "im-invalid".to_string(),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::InvalidIbcVersion {
+            version: "im-invalid".to_owned()
+        }
+    );
+}
+
+#[test]
+fn test_on_channel_open_try_only_ibc() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
+
+    let err = st
         .app
         .execute(
             Addr::unchecked("not_ibc"),
@@ -3426,181 +3581,174 @@ fn test_on_channel_open_try_ok() {
             .unwrap()
             .into(),
         )
-        .unwrap();
+        .unwrap_err();
 
-    assert!(result.events.is_empty());
-    assert!(result.data.is_none());
-}
-
-#[test]
-fn test_on_channel_open_try_invalid_version() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
-            caller: "".into(),
-            connection_id: ConnectionId!(1),
-            channel_id: ChannelId!(1),
-            version: "im-invalid".to_string(),
-            counterparty_version: PROTOCOL_VERSION.to_string(),
-            relayer: "".to_string(),
-        })),
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlyIbcHost
     );
-
-    assert!(matches!(
-        result,
-        Err(ContractError::InvalidIbcVersion { .. })
-    ));
-}
-
-#[test]
-fn test_on_channel_open_try_invalid_counterparty_version() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
-            caller: "".into(),
-            connection_id: ConnectionId!(1),
-            channel_id: ChannelId!(1),
-            version: PROTOCOL_VERSION.to_string(),
-            counterparty_version: "im-invalid".to_string(),
-            relayer: "".to_string(),
-        })),
-    );
-
-    assert!(matches!(
-        result,
-        Err(ContractError::InvalidIbcVersion { .. })
-    ));
-}
-
-#[test]
-fn test_on_channel_open_try_only_ibc() {
-    let (mut deps, env, mut info, _) = init();
-    info.sender = Addr::unchecked("not_ibc");
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
-            caller: "".into(),
-            connection_id: ConnectionId!(1),
-            channel_id: ChannelId!(1),
-            version: PROTOCOL_VERSION.to_string(),
-            counterparty_version: PROTOCOL_VERSION.to_string(),
-            relayer: "".to_string(),
-        })),
-    );
-
-    assert_eq!(result, Err(ContractError::OnlyIbcHost));
 }
 
 #[test]
 fn test_on_channel_open_ack_and_confirm_noop() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
-            caller: "".into(),
-            channel_id: ChannelId!(1),
-            counterparty_version: PROTOCOL_VERSION.to_string(),
-            relayer: "".to_string(),
-            counterparty_channel_id: ChannelId!(2),
-        })),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-    assert_eq!(result, Ok(Response::default()));
+    let result = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
+                    caller: "".into(),
+                    channel_id: ChannelId!(1),
+                    counterparty_version: PROTOCOL_VERSION.to_string(),
+                    relayer: "".to_string(),
+                    counterparty_channel_id: ChannelId!(2),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
 
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
-            caller: "".into(),
-            channel_id: ChannelId!(1),
-            relayer: "".to_string(),
-        })),
-    );
+    assert!(result.data.is_none());
 
-    assert_eq!(result, Ok(Response::default()));
+    let result = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+                    caller: "".into(),
+                    channel_id: ChannelId!(1),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
+
+    assert!(result.data.is_none());
 }
 
 #[test]
 fn test_on_channel_close_init_impossible() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
-            caller: "".into(),
-            channel_id: ChannelId!(1),
-            relayer: "".to_string(),
-        })),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-    assert!(matches!(result, Err(ContractError::Std(..))));
+    let err = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+                    caller: "".into(),
+                    channel_id: ChannelId!(1),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::Std(StdError::generic_err("the show must go on"))
+    );
 }
 
 #[test]
 fn test_on_channel_close_init_only_ibc() {
-    let (mut deps, env, mut info, _) = init();
-    info.sender = Addr::unchecked("not_ibc");
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
-            caller: "".into(),
-            channel_id: ChannelId!(1),
-            relayer: "".to_string(),
-        })),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-    assert_eq!(result, Err(ContractError::OnlyIbcHost));
+    let err = st
+        .app
+        .execute(
+            Addr::unchecked("not_ibc"),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+                    caller: "".into(),
+                    channel_id: ChannelId!(1),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlyIbcHost
+    );
 }
 
 #[test]
 fn test_on_channel_close_confirm_impossible() {
-    let (mut deps, env, info, _) = init();
-    let result = execute(
-        deps.as_mut(),
-        env.clone(),
-        info.clone(),
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(
-            IbcUnionMsg::OnChannelCloseConfirm {
-                caller: "".into(),
-                channel_id: ChannelId!(1),
-                relayer: "".to_string(),
-            },
-        )),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-    assert!(matches!(result, Err(ContractError::Std(..))));
+    let err = st
+        .app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseConfirm {
+                    caller: "".into(),
+                    channel_id: ChannelId!(1),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::Std(StdError::generic_err("the show must go on"))
+    );
 }
 
 #[test]
 fn test_on_channel_close_confirm_only_ibc() {
-    let (mut deps, env, mut info, _) = init();
-    info.sender = Addr::unchecked("not_ibc");
-    let result = execute(
-        deps.as_mut(),
-        env,
-        info,
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(
-            IbcUnionMsg::OnChannelCloseConfirm {
-                caller: "".into(),
-                channel_id: ChannelId!(1),
-                relayer: "".to_string(),
-            },
-        )),
-    );
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
 
-    assert_eq!(result, Err(ContractError::OnlyIbcHost));
+    let err = st
+        .app
+        .execute(
+            Addr::unchecked("not_ibc"),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseConfirm {
+                    caller: "".into(),
+                    channel_id: ChannelId!(1),
+                    relayer: "".to_string(),
+                }),
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap_err();
+
+    assert_eq!(
+        err.downcast::<ContractError>().unwrap(),
+        ContractError::OnlyIbcHost
+    );
 }
