@@ -70,8 +70,8 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel}; 
     use ibc::light_client::{Self, LightClientManager};
     use ibc::commitment;
+    use ibc::events;
     use ibc::state;
-    use sui::event;
 
     const VERSION: u32 = 1;
 
@@ -413,13 +413,12 @@ module ibc::ibc {
 
         ibc_store.connections.add(connection_id, connection);
 
-        event::emit(
-            ConnectionOpenInit {
+        ibc::events::emit_connection_open_init(
                 connection_id,
                 client_id,
                 counterparty_client_id,
-            }
-        )
+            
+        );
     }
 
     /// Run the second step of the connection handshake. The next call is `connection_open_ack` on the counterparty to
