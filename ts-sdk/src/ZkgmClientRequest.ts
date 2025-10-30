@@ -20,7 +20,6 @@ export namespace Transport {
    * @since 2.0.0
    */
   export interface Sui {
-    readonly relayStoreId: string
     readonly vaultId: string
     readonly ibcStoreId: string
     /** One or more coins a user wants to spend. Keep array for multi-coin support. */
