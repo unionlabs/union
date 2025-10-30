@@ -15,6 +15,8 @@ import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
 import {
   EU_ERC20,
   EU_LST,
+  SUI_ADDR,
+
   EU_SOLVER_ON_ETH_METADATA,
   EU_SOLVER_ON_UNION_METADATA,
   U_BANK,
@@ -22,7 +24,9 @@ import {
   U_SUI,
   U_SOLVER_ON_ETH_METADATA,
   U_SOLVER_ON_UNION_METADATA,
-  U_SOLVER_ON_SUI_METADATA
+  U_SOLVER_ON_SUI_METADATA,
+  SUI_NATIVE_COIN,
+  SUI_SOLVER_ON_COSMOS_METADATA
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
@@ -110,6 +114,7 @@ export class TransferData {
           "0xba5ed44733953d79717f6269357c77718c8ba5ed", // U
           EU_ERC20.address.toLowerCase(), //
           toHex(EU_LST.address),
+          toHex(SUI_NATIVE_COIN.address),
           // TODO: add eU base
           // TODO: add eU quote
         ],
@@ -141,6 +146,10 @@ export class TransferData {
               Match.when(
                 ["0x6175", "sui", Str.startsWith("sui.")],
                 () => U_SUI,
+              ),
+              Match.when(
+                [toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
+                () => Token.Cw20.make({ address: SUI_ADDR.address }),
               ),
               Match.when(
                 [U_ERC20.address.toLowerCase(), "evm", Match.any],
@@ -266,10 +275,14 @@ export class TransferData {
             ["solve", U_ERC20.address.toLowerCase(), "evm", Match.any],
             () => Option.some(U_SOLVER_ON_ETH_METADATA),
           ),
-          Match.whenOr(
+          Match.when(
             ["solve", "0x6175", "sui", Str.startsWith("sui.")],
             () => Option.some(U_SOLVER_ON_SUI_METADATA),
           ),
+          Match.when(
+              ["solve", toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
+              () => Option.some(SUI_SOLVER_ON_COSMOS_METADATA),
+            ),
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
             () => Option.some(U_SOLVER_ON_UNION_METADATA),
