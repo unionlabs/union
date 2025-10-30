@@ -58,7 +58,6 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-#[allow(implicit_const_copy)]
 module ibc::ibc_client {
     use std::string::String;
 
@@ -75,15 +74,13 @@ module ibc::ibc_client {
     public fun create_client(
         ibc_uid: &mut UID,
         client_mgr: &mut LightClientManager,
-        next_client_sequence: &mut u32,
         client_type: String, 
         client_state_bytes: vector<u8>, 
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,        
     ) {
-        let client_id = *next_client_sequence;
-        *next_client_sequence = *next_client_sequence + 1;
-        
+        let client_id = client_mgr.client_count() + 1;
+
         let (client_state_bytes,
             consensus_state_bytes,
             counterparty_chain_id,

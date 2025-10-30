@@ -76,6 +76,10 @@ module ibc::light_client {
         test_mode: bool,
     }
 
+    public(package) fun client_count(store: &LightClientManager): u32 {
+        (store.client_id_to_type.length() as u32)
+    }
+
     public(package) fun new(ctx: &mut TxContext, test_mode: bool): LightClientManager {
         LightClientManager {
             clients: object_bag::new(ctx),
