@@ -792,21 +792,24 @@ fn valid_checksum_cosmos(tx_bytes: &[u8]) -> (bool, Option<Bech32<Bytes>>) {
         }
     };
 
-    let execute_msg = match serde_json::from_slice::<ucs03_zkgm::msg::ExecuteMsg>(&msg.msg) {
-        Ok(ok) => ok,
-        Err(err) => {
-            warn!(
-                err = %ErrorReporter(err),
-                msg = %msg.msg,
-                "unable to decode ExecuteMsg, crc will not be checked"
-            );
+    let execute_msg =
+        match serde_json::from_slice::<ucs03_zkgm::msg::RestrictedExecuteMsg>(&msg.msg) {
+            Ok(ok) => ok,
+            Err(err) => {
+                warn!(
+                    err = %ErrorReporter(err),
+                    msg = %msg.msg,
+                    "unable to decode ExecuteMsg, crc will not be checked"
+                );
 
-            return (true, None);
-        }
-    };
+                return (true, None);
+            }
+        };
 
     match execute_msg {
-        ucs03_zkgm::msg::ExecuteMsg::Send { salt, .. } => (valid_checksum(salt), Some(msg.sender)),
+        ucs03_zkgm::msg::RestrictedExecuteMsg::Send { salt, .. } => {
+            (valid_checksum(salt), Some(msg.sender))
+        }
         _ => panic!("????? {execute_msg:?}"),
     }
 }

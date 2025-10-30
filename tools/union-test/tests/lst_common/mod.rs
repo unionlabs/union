@@ -248,7 +248,7 @@ pub async fn eth_fund_u(
                 &t.ctx.src,
                 t.union_address.zkgm.clone(),
                 (
-                    ucs03_zkgm::msg::ExecuteMsg::Send {
+                    ucs03_zkgm::msg::RestrictedExecuteMsg::Send {
                         channel_id: src_channel_id.try_into().unwrap(),
                         timeout_height: 0u64.into(),
                         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(

@@ -499,6 +499,10 @@ async fn do_main() -> Result<()> {
 
             let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
+            let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
+                initial_authority: Addr::unchecked(manager.to_string()),
+            };
+
             let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
 
             let core_address = ctx
@@ -506,9 +510,7 @@ async fn do_main() -> Result<()> {
                     std::fs::read(contracts.core)?,
                     bytecode_base_code_id,
                     ibc_union_msg::msg::InitMsg {
-                        access_managed_init_msg: access_manager_types::managed::msg::InitMsg {
-                            initial_authority: Addr::unchecked(manager.to_string()),
-                        },
+                        access_managed_init_msg: access_managed_init_msg.clone(),
                     },
                     &CORE,
                 )
@@ -787,9 +789,7 @@ async fn do_main() -> Result<()> {
                                 cw_account_code_id: cw_account_code_id.get(),
                             },
                             minter_init_params,
-                            access_managed_init_msg: access_manager_types::managed::msg::InitMsg {
-                                initial_authority: Addr::unchecked(manager.to_string()),
-                            },
+                            access_managed_init_msg: access_managed_init_msg.clone(),
                         },
                         &salt,
                     )
@@ -803,7 +803,7 @@ async fn do_main() -> Result<()> {
                             bytecode_base_code_id,
                             cw_escrow_vault::msg::InstantiateMsg {
                                 zkgm: Addr::unchecked(ucs03_address.to_string()),
-                                admin: Addr::unchecked(ctx.wallet().address().to_string()),
+                                access_managed_init_msg: access_managed_init_msg.clone(),
                             },
                             &ESCROW_VAULT,
                         )
@@ -1200,7 +1200,7 @@ async fn do_main() -> Result<()> {
                             sender: ctx.wallet().address().map_data(Into::into),
                             contract: ucs03_address.clone(),
                             msg: serde_json::to_vec(
-                                &ucs03_zkgm::msg::ExecuteMsg::SetBucketConfig {
+                                &ucs03_zkgm::msg::RestrictedExecuteMsg::SetBucketConfig {
                                     denom: denom.clone(),
                                     capacity: Uint256::from_be_bytes(capacity.to_be_bytes()),
                                     refill_rate: Uint256::from_be_bytes(refill_rate.to_be_bytes()),

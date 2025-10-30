@@ -1,4 +1,3 @@
-use access_managed::Restricted;
 use access_manager_types::{CanCall, RoleId, Selector};
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
@@ -35,7 +34,8 @@ use crate::{
         verify_forward, verify_internal,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitParams,
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, RestrictedExecuteMsg,
+        TokenMinterInitParams,
     },
     state::{CHANNEL_BALANCE_V2, CONFIG, TOKEN_ORIGIN},
 };
@@ -836,7 +836,7 @@ fn test_on_recv_packet_nonreentrant() {
     });
 
     let msg = || {
-        Restricted::wrap(ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
             caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
             packet: Packet {
                 source_channel_id: ChannelId!(1),
@@ -847,7 +847,7 @@ fn test_on_recv_packet_nonreentrant() {
             },
             relayer: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
             relayer_msg: Default::default(),
-        }))
+        })
     };
 
     execute(deps.as_mut(), env.clone(), info.clone(), msg()).unwrap();
@@ -1422,7 +1422,7 @@ fn test_recv_packet_native_new_wrapped() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
                     capacity: order.quote_amount.into(),
                     refill_rate: 1u32.into(),
@@ -1536,7 +1536,7 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
                     capacity: order.quote_amount.into(),
                     refill_rate: 1u32.into(),
@@ -1621,7 +1621,7 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
                     capacity: order.quote_amount.into(),
                     refill_rate: 1u32.into(),
@@ -1710,7 +1710,7 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
                     capacity: order.quote_amount.into(),
                     refill_rate: 1u32.into(),
@@ -1932,7 +1932,7 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
     )
     .unwrap();
 
-    let msg = ExecuteMsg::SetBucketConfig {
+    let msg = RestrictedExecuteMsg::SetBucketConfig {
         denom: wrapped_token.to_string(),
         capacity: 0xCAFEBABEu128.into(),
         refill_rate: 1u128.into(),
@@ -2053,7 +2053,7 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         wrapped_token,
     );
 
-    let msg = ExecuteMsg::SetBucketConfig {
+    let msg = RestrictedExecuteMsg::SetBucketConfig {
         denom: wrapped_token.to_string(),
         capacity: 0xCAFEBABEu128.into(),
         refill_rate: 1u128.into(),
@@ -2469,7 +2469,7 @@ fn test_recv_packet_native_v2_wrap_ok() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: quote_token.clone(),
                     capacity: base_amount.into(),
                     refill_rate: 1u32.into(),
@@ -2595,7 +2595,7 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: wrapped_token.to_string(),
                     capacity: amount.into(),
                     refill_rate: 1u32.into(),
@@ -2722,7 +2722,7 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: wrapped_token.to_string(),
                     capacity: base_amount.into(),
                     refill_rate: 1u32.into(),
@@ -3047,7 +3047,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: quote_token.clone(),
                     capacity: Uint256::MAX,
                     refill_rate: 1u32.into(),
@@ -3203,7 +3203,7 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
             st.rate_limiter.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::SetBucketConfig {
+                &RestrictedExecuteMsg::SetBucketConfig {
                     denom: quote_token.clone(),
                     capacity: base_amount.into(),
                     refill_rate: 1u32.into(),

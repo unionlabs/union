@@ -49,6 +49,7 @@ dependencies = [
  "frissitheto",
  "hex-literal 0.4.1",
  "itertools 0.13.0",
+ "schemars",
  "serde",
  "serde-json-wasm",
  "serde-utils",
@@ -4186,6 +4187,7 @@ name = "cw-escrow-vault"
 version = "0.0.0"
 dependencies = [
  "access-managed",
+ "access-manager-types",
  "bincode 2.0.1",
  "cosmwasm-schema",
  "cosmwasm-std",

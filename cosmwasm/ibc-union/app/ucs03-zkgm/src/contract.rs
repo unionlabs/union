@@ -42,8 +42,8 @@ use crate::{
         TokenOrderV1, TokenOrderV2, ZkgmPacket,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, V1ToV2Migration,
-        V1ToV2WrappedMigration,
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, RestrictedExecuteMsg,
+        V1ToV2Migration, V1ToV2WrappedMigration,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT, CallProxySalt,
@@ -130,15 +130,8 @@ pub fn execute(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: Restricted<ExecuteMsg>,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
-        EnsureCanCallResult::Msg(msg) => msg,
-        EnsureCanCallResult::Scheduled(sub_msgs) => {
-            return Ok(Response::new().add_submessages(sub_msgs));
-        }
-    };
-
     match msg {
         ExecuteMsg::IbcUnionMsg(ibc_msg) => {
             if info.sender != CONFIG.load(deps.storage)?.ibc_host {
@@ -266,65 +259,76 @@ pub fn execute(
                 Ok(Response::new())
             }
         }
-        ExecuteMsg::Send {
-            channel_id,
-            timeout_timestamp,
-            timeout_height: _,
-            salt,
-            instruction,
-        } => send(
-            deps,
-            info,
-            channel_id,
-            timeout_timestamp,
-            salt,
-            Instruction::abi_decode_params_validate(&instruction)?,
-        ),
-        ExecuteMsg::SetBucketConfig {
-            denom,
-            capacity,
-            refill_rate,
-            reset,
-        } => {
-            let token_bucket = TOKEN_BUCKET.update(
-                deps.storage,
-                denom.clone(),
-                |entry| -> Result<_, ContractError> {
-                    match entry {
-                        Some(mut token_bucket) => {
-                            token_bucket.update(capacity, refill_rate, reset)?;
-                            Ok(token_bucket)
-                        }
-                        None => Ok(TokenBucket::new(
-                            capacity,
-                            refill_rate,
-                            env.block.time.seconds(),
-                        )?),
-                    }
-                },
-            )?;
-            Ok(Response::new().add_event(
-                Event::new("token_bucket_update")
-                    .add_attribute("denom", denom)
-                    .add_attribute("capacity", token_bucket.capacity)
-                    .add_attribute("refill_rate", token_bucket.refill_rate),
-            ))
-        }
-        ExecuteMsg::MigrateV1ToV2 {
-            balance_migrations,
-            wrapped_migrations,
-        } => {
-            let config = CONFIG.load(deps.storage)?;
-            if info.sender != config.admin {
-                return Err(ContractError::OnlyAdmin);
-            }
-            migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations)
-        }
         ExecuteMsg::AccessManaged(msg) => {
             access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }
-        ExecuteMsg::Upgradable(msg) => {
-            upgradable::execute(deps, env, info, msg).map_err(Into::into)
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new().add_submessages(sub_msgs));
+                }
+            };
+
+            match msg {
+                RestrictedExecuteMsg::Send {
+                    channel_id,
+                    timeout_timestamp,
+                    timeout_height: _,
+                    salt,
+                    instruction,
+                } => send(
+                    deps,
+                    info,
+                    channel_id,
+                    timeout_timestamp,
+                    salt,
+                    Instruction::abi_decode_params_validate(&instruction)?,
+                ),
+                RestrictedExecuteMsg::SetBucketConfig {
+                    denom,
+                    capacity,
+                    refill_rate,
+                    reset,
+                } => {
+                    let token_bucket = TOKEN_BUCKET.update(
+                        deps.storage,
+                        denom.clone(),
+                        |entry| -> Result<_, ContractError> {
+                            match entry {
+                                Some(mut token_bucket) => {
+                                    token_bucket.update(capacity, refill_rate, reset)?;
+                                    Ok(token_bucket)
+                                }
+                                None => Ok(TokenBucket::new(
+                                    capacity,
+                                    refill_rate,
+                                    env.block.time.seconds(),
+                                )?),
+                            }
+                        },
+                    )?;
+                    Ok(Response::new().add_event(
+                        Event::new("token_bucket_update")
+                            .add_attribute("denom", denom)
+                            .add_attribute("capacity", token_bucket.capacity)
+                            .add_attribute("refill_rate", token_bucket.refill_rate),
+                    ))
+                }
+                RestrictedExecuteMsg::MigrateV1ToV2 {
+                    balance_migrations,
+                    wrapped_migrations,
+                } => {
+                    let config = CONFIG.load(deps.storage)?;
+                    if info.sender != config.admin {
+                        return Err(ContractError::OnlyAdmin);
+                    }
+                    migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations)
+                }
+                RestrictedExecuteMsg::Upgradable(msg) => {
+                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                }
+            }
         }
     }
 }

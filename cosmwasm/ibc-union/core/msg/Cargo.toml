@@ -23,5 +23,13 @@ unionlabs-primitives = { workspace = true, features = ["serde"] }
 upgradable           = { workspace = true }
 
 [features]
+default = []
+
 cw-orch-interface = ["schemars", "dep:cw-orch", "dep:cosmwasm-std", "dep:cosmwasm-schema"]
-schemars          = ["dep:schemars", "unionlabs-primitives/schemars", "ibc-union-spec/schemars"]
+schemars = [
+  "dep:schemars",
+  "unionlabs-primitives/schemars",
+  "ibc-union-spec/schemars",
+  "access-managed/schemars",
+  "upgradable/schemars",
+]

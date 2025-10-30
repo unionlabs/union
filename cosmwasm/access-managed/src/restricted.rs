@@ -7,10 +7,20 @@ use crate::{error::ContractError, state::ConsumingSchedule};
 
 pub const ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID: u64 = u64::MAX;
 
-#[derive(Debug)]
-pub struct Restricted<T: DeserializeOwned + Serialize> {
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(transparent)]
+pub struct Restricted<T: Serialize + DeserializeOwned> {
+    #[serde(skip)]
     selector: &'static Selector,
     value: T,
+}
+
+impl<T: Serialize + DeserializeOwned + PartialEq> PartialEq for Restricted<T> {
+    fn eq(&self, other: &Self) -> bool {
+        // selector will be equal if .value is the same variant, no need to check it
+        self.value == other.value
+    }
 }
 
 impl<T: DeserializeOwned + Serialize> Restricted<T> {

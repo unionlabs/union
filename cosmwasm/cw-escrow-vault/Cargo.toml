@@ -34,7 +34,8 @@ unionlabs-primitives = { workspace = true, features = ["schemars", "bincode"] }
 upgradable           = { workspace = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+access-manager-types = { workspace = true }
+hex-literal          = { workspace = true }
 
 [features]
 default = []

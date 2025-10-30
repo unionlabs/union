@@ -36,3 +36,8 @@ ucs03-zkgm                = { workspace = true, features = ["library"] }
 unionlabs-encoding        = { workspace = true, features = ["bincode"] }
 unionlabs-primitives      = { workspace = true, features = ["schemars"] }
 upgradable                = { workspace = true }
+
+[features]
+default = []
+
+schemars = ["access-managed/schemars"]

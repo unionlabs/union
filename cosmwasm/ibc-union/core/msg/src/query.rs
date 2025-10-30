@@ -1,6 +1,8 @@
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId};
+use serde::{Deserialize, Serialize};
 use unionlabs_primitives::{Bytes, H256};
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -47,5 +49,7 @@ pub enum QueryMsg {
     #[cfg_attr(feature = "cw-orch-interface", returns(String))]
     GetRegisteredClientType { client_type: String },
     #[serde(untagged)]
+    // TODO: Figure out how to do nested QueryFns, #[query_responses(nested)] doesn't seem to work
+    #[cfg_attr(feature = "cw-orch-interface", returns(()))]
     AccessManaged(access_managed::QueryMsg),
 }

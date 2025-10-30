@@ -1,5 +1,6 @@
 use std::slice;
 
+use access_managed::{EnsureCanCallResult, state::Authority};
 use cosmwasm_std::{
     Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, entry_point,
     to_json_binary,
@@ -17,7 +18,7 @@ use unionlabs_primitives::{Bytes, U256, encoding::HexPrefixed};
 use crate::{
     CwUCtx,
     error::Error,
-    msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg},
+    msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg, RestrictedExecuteMsg},
     state::{
         Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist,
         Minters, Zkgm,
@@ -65,7 +66,6 @@ pub fn migrate(
 
             let sender = env.contract.address.clone();
 
-            deps.storage.write_item::<Admin>(&init_msg.admin);
             deps.storage.write_item::<Zkgm>(&init_msg.zkgm);
             deps.storage.write_item::<Minters>(&init_msg.extra_minters);
 
@@ -84,18 +84,20 @@ pub fn migrate(
                         )?;
                         Ok(res.change_custom().expect("impossible"))
                     }
-                    Cw20InstantiateMsg::Tokenfactory(cw20_init) => {
+                    Cw20InstantiateMsg::Tokenfactory(tf_init) => {
                         deps.storage
                             .write_item::<Cw20Type>(&Cw20ImplType::Tokenfactory);
-                        cw20_wrapped_tokenfactory::contract::init(deps, env, cw20_init)
+                        cw20_wrapped_tokenfactory::contract::init(deps, env, tf_init)
                     }
                 }
             }?;
             Ok((res, None))
         },
-        |deps, msg, version| match version {
+        |mut deps, msg, version| match version {
             version::INIT => {
-                access_managed::init(deps, msg.access_managed_init_msg)?;
+                access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+                deps.storage.delete_item::<Admin>();
 
                 Ok((Response::default(), Some(version::MANAGED)))
             }
@@ -141,29 +143,6 @@ pub fn execute(
                     .map_err(Into::into)
             }
         },
-        ExecuteMsg::WhitelistIntents { hashes_whitelist } => {
-            for (packet_hash, allowed) in hashes_whitelist {
-                deps.storage
-                    .write::<IntentWhitelist>(&packet_hash, &allowed);
-            }
-
-            Ok(Response::new())
-        }
-        ExecuteMsg::SetFungibleCounterparty {
-            path,
-            channel_id,
-            base_token,
-            counterparty_beneficiary,
-        } => {
-            ensure_admin(deps.as_ref(), &info)?;
-            deps.storage.write::<FungibleCounterparty>(
-                &(path, channel_id, base_token),
-                &FungibleLane {
-                    counterparty_beneficiary,
-                },
-            );
-            Ok(Response::new())
-        }
         ExecuteMsg::Solvable(Solvable::DoSolve {
             packet,
             order,
@@ -281,9 +260,48 @@ pub fn execute(
         ExecuteMsg::AccessManaged(msg) => Ok(access_managed::execute(deps, env, info, msg)?
             .change_custom()
             .unwrap()),
-        ExecuteMsg::Upgradable(msg) => Ok(upgradable::execute(deps, env, info, msg)?
-            .change_custom()
-            .unwrap()),
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new()
+                        .add_submessages(sub_msgs)
+                        .change_custom()
+                        .unwrap());
+                }
+            };
+
+            match msg {
+                RestrictedExecuteMsg::Upgradable(msg) => {
+                    Ok(upgradable::execute(deps, env, info, msg)?
+                        .change_custom()
+                        .unwrap())
+                }
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path,
+                    channel_id,
+                    base_token,
+                    counterparty_beneficiary,
+                } => {
+                    ensure_admin(deps.as_ref(), &info)?;
+                    deps.storage.write::<FungibleCounterparty>(
+                        &(path, channel_id, base_token),
+                        &FungibleLane {
+                            counterparty_beneficiary,
+                        },
+                    );
+                    Ok(Response::new())
+                }
+                RestrictedExecuteMsg::WhitelistIntents { hashes_whitelist } => {
+                    for (packet_hash, allowed) in hashes_whitelist {
+                        deps.storage
+                            .write::<IntentWhitelist>(&packet_hash, &allowed);
+                    }
+
+                    Ok(Response::new())
+                }
+            }
+        }
     }
 }
 

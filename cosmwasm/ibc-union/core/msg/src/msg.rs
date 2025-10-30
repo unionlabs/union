@@ -23,6 +23,7 @@ pub enum ExecuteMsg {
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
     ForceUpdateClient(MsgForceUpdateClient),
+
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
     ForceConnectionOpenTry(MsgConnectionOpenTry),
@@ -30,6 +31,7 @@ pub enum ExecuteMsg {
     ForceConnectionOpenAck(MsgConnectionOpenAck),
     ConnectionOpenConfirm(MsgConnectionOpenConfirm),
     ForceConnectionOpenConfirm(MsgConnectionOpenConfirm),
+
     ChannelOpenInit(MsgChannelOpenInit),
     ChannelOpenTry(MsgChannelOpenTry),
     ForceChannelOpenTry(MsgChannelOpenTry),
@@ -39,6 +41,7 @@ pub enum ExecuteMsg {
     ForceChannelOpenConfirm(MsgChannelOpenConfirm),
     ChannelCloseInit(MsgChannelCloseInit),
     ChannelCloseConfirm(MsgChannelCloseConfirm),
+
     PacketRecv(MsgPacketRecv),
     PacketAck(MsgPacketAcknowledgement),
     PacketTimeout(MsgPacketTimeout),
@@ -47,11 +50,15 @@ pub enum ExecuteMsg {
     BatchAcks(MsgBatchAcks),
     PacketSend(MsgSendPacket),
     WriteAcknowledgement(MsgWriteAcknowledgement),
+
     MigrateState(MsgMigrateState),
+
     CommitMembershipProof(MsgCommitMembershipProof),
     CommitNonMembershipProof(MsgCommitNonMembershipProof),
+
     #[serde(untagged)]
     AccessManaged(access_managed::ExecuteMsg),
+
     #[serde(untagged)]
     Upgradable(upgradable::msg::ExecuteMsg),
 }

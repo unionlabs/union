@@ -1,3 +1,4 @@
+use access_managed::Restricted;
 use cosmwasm_std::Addr;
 use ibc_union_spec::ChannelId;
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,6 @@ pub enum Cw20InstantiateMsg {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
     pub zkgm: Addr,
-    pub admin: Addr,
     pub extra_minters: Vec<String>,
     pub cw20_init: Cw20InstantiateMsg,
     pub access_managed_init_msg: access_managed::InitMsg,
@@ -26,6 +26,21 @@ pub struct InitMsg {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[allow(clippy::large_enum_variant)]
 pub enum ExecuteMsg {
+    #[serde(untagged)]
+    Solvable(Solvable),
+    #[serde(untagged)]
+    Cw20(Value),
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+    #[serde(untagged)]
+    Restricted(Restricted<RestrictedExecuteMsg>),
+}
+
+/// Subset of [`ExecuteMsg`] for entrypoints that are access managed.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum RestrictedExecuteMsg {
     WhitelistIntents {
         hashes_whitelist: Vec<(H256, bool)>,
     },
@@ -35,13 +50,6 @@ pub enum ExecuteMsg {
         base_token: Bytes,
         counterparty_beneficiary: Bytes,
     },
-    // NOTE: This must be configured as public in the manager (or only zkgm)
-    #[serde(untagged)]
-    Solvable(Solvable),
-    #[serde(untagged)]
-    Cw20(Value),
-    #[serde(untagged)]
-    AccessManaged(access_managed::ExecuteMsg),
     #[serde(untagged)]
     Upgradable(upgradable::msg::ExecuteMsg),
 }
