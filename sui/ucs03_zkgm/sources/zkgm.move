@@ -960,7 +960,7 @@ module zkgm::zkgm {
         
         let solver = metadata.solver_address();
 
-        match (solver) {
+        let (res, err) = match (solver) {
             OWNED_VAULT_OBJECT_KEY => vault.solve<T>(
                 zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
                 ibc_packet,
@@ -990,6 +990,15 @@ module zkgm::zkgm {
                 ctx
             ),
             _ => (vector::empty(), E_INVALID_SOLVER_ADDRESS)
+        };
+
+        if (err != 0) {
+            (vector::empty(), err)
+        } else {
+            (token_order_ack::new(
+                FILL_TYPE_MARKETMAKER,
+                res
+            ).encode(), 0)
         }
     }
 

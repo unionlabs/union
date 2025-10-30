@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -62,8 +62,8 @@ module ibc::state {
     use sui::bcs;
     use sui::dynamic_field as df;
 
-    const COMMITMENT: u8 = 0x1;    
-    const COMMITMENT_TO_DIGEST: u8 = 0x2;    
+    const COMMITMENT: u8 = 0x1;
+    const COMMITMENT_TO_DIGEST: u8 = 0x2;
 
     public struct PrefixedKey<T: drop> has drop {
         prefix: u8,
@@ -71,7 +71,9 @@ module ibc::state {
     }
 
     /// Commitments storage
-    public(package) fun commit(id: &mut UID, key: vector<u8>, value: vector<u8>) {
+    public(package) fun commit(
+        id: &mut UID, key: vector<u8>, value: vector<u8>
+    ) {
         df::add(id, prefixed_key(COMMITMENT, key), value);
     }
 
@@ -83,20 +85,24 @@ module ibc::state {
         df::borrow(id, prefixed_key(COMMITMENT, key))
     }
 
-    public(package) fun borrow_commitment_mut(id: &mut UID, key: vector<u8>): &mut vector<u8> {
+    public(package) fun borrow_commitment_mut(
+        id: &mut UID, key: vector<u8>
+    ): &mut vector<u8> {
         df::borrow_mut(id, prefixed_key(COMMITMENT, key))
     }
 
     /// Commitment-to-digest storage
-    public(package) fun add_commitment_to_digest(id: &mut UID, commitment: vector<u8>, digest: vector<u8>) {
-        df::add(id, prefixed_key(COMMITMENT_TO_DIGEST, commitment), digest);
+    public(package) fun add_commitment_to_digest(
+        id: &mut UID, commitment: vector<u8>, digest: vector<u8>
+    ) {
+        df::add(
+            id,
+            prefixed_key(COMMITMENT_TO_DIGEST, commitment),
+            digest
+        );
     }
 
     fun prefixed_key<K: drop>(prefix: u8, key: K): vector<u8> {
-        bcs::to_bytes(&PrefixedKey {
-            prefix,
-            key
-        })
+        bcs::to_bytes(&PrefixedKey { prefix, key })
     }
-
 }

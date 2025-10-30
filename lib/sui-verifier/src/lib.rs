@@ -81,6 +81,7 @@ pub fn verify_checkpoint<V: SignatureVerification>(
         .map_err(Into::into)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn verify_membership(
     commitments_object: ObjectID,
     commitment_prefix: u8,
