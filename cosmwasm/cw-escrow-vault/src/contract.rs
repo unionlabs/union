@@ -1,11 +1,11 @@
 use std::slice;
 
-use access_managed::{EnsureCanCallResult, state::Authority};
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
-    to_json_binary, wasm_execute,
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response,
+    StdResult, to_json_binary, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
@@ -288,6 +288,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
         QueryMsg::Solvable(SolverQuery::IsSolver) => Ok(to_json_binary(&())?),
         QueryMsg::Solvable(SolverQuery::AllowMarketMakers) => Ok(to_json_binary(&true)?),
         QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
     }
 }
 

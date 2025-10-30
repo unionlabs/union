@@ -82,7 +82,6 @@ pub enum ExecuteMsg {
     IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
     /// Execute an Zkgm packet.
     /// Can only be called by the contract itself during packet handling.
-    #[serde(rename = "$$internal_execute_packet")]
     InternalExecutePacket {
         caller: Addr,
         packet: Packet,
@@ -92,10 +91,12 @@ pub enum ExecuteMsg {
     },
     /// Write an acknowledgement for an Zkgm packet.
     /// Can only be called by the contract itself after packet execution.
-    #[serde(rename = "$$internal_write_ack")]
-    InternalWriteAck { ack: Bytes },
-    #[serde(rename = "$$internal_batch")]
-    InternalBatch { messages: Vec<CosmosMsg> },
+    InternalWriteAck {
+        ack: Bytes,
+    },
+    InternalBatch {
+        messages: Vec<CosmosMsg>,
+    },
     #[serde(untagged)]
     AccessManaged(access_managed::ExecuteMsg),
     #[serde(untagged)]

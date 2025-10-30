@@ -1,7 +1,7 @@
 use core::str;
 use std::{slice, str::FromStr};
 
-use access_managed::{EnsureCanCallResult, Restricted, state::Authority};
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
@@ -318,13 +318,7 @@ pub fn execute(
                 RestrictedExecuteMsg::MigrateV1ToV2 {
                     balance_migrations,
                     wrapped_migrations,
-                } => {
-                    let config = CONFIG.load(deps.storage)?;
-                    if info.sender != config.admin {
-                        return Err(ContractError::OnlyAdmin);
-                    }
-                    migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations)
-                }
+                } => migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations),
                 RestrictedExecuteMsg::Upgradable(msg) => {
                     upgradable::execute(deps, env, info, msg).map_err(Into::into)
                 }
@@ -2441,7 +2435,11 @@ fn protocol_fill_unescrow_v2(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
+pub fn reply(mut deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
+    let Some(reply) = handle_consume_scheduled_op_reply(deps.branch(), reply)? else {
+        return Ok(Response::new());
+    };
+
     match reply.id {
         // This reply is triggered after we execute a packet.
         // We need to handle this reply to process the acknowledgement that was generated during

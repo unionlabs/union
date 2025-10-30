@@ -1,13 +1,15 @@
 use core::slice;
 use std::{collections::BTreeSet, num::NonZeroU32};
 
-use access_managed::{EnsureCanCallResult, Restricted, state::Authority};
+use access_managed::{
+    EnsureCanCallResult, Restricted, handle_consume_scheduled_op_reply, state::Authority,
+};
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, OverflowError,
-    OverflowOperation, Response, StdError, StdResult, to_json_binary, wasm_execute,
+    OverflowOperation, Reply, Response, StdError, StdResult, to_json_binary, wasm_execute,
 };
 use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -2261,6 +2263,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             }
         }
         QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
     }
 }
 

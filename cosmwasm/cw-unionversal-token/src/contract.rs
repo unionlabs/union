@@ -1,9 +1,9 @@
 use std::slice;
 
-use access_managed::{EnsureCanCallResult, state::Authority};
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, entry_point,
-    to_json_binary,
+    Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, StdError, StdResult,
+    entry_point, to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -359,6 +359,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             .map_err(Into::into),
         },
         QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+    }
+}
+
+#[entry_point]
+pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
     }
 }
 
