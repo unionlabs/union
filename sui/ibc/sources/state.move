@@ -91,6 +91,14 @@ module ibc::state {
         df::borrow_mut(id, prefixed_key(COMMITMENT, key))
     }
 
+    public(package) fun add_or_update_commitment(id: &mut UID, key: vector<u8>, value: vector<u8>) {
+        if (has_commitment(id, key)) {
+            *borrow_commitment_mut(id, key) = value;
+        } else {
+            commit(id, key, value);
+        };
+    }
+
     /// Commitment-to-digest storage
     public(package) fun add_commitment_to_digest(
         id: &mut UID, commitment: vector<u8>, digest: vector<u8>

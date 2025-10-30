@@ -65,6 +65,7 @@ module ibc::ibc {
     use sui::hash::keccak256;
     use sui::clock;
     use sui::clock::Clock;
+    use ibc::ibc_client;
     use ibc::packet::{Self, Packet};
     use ibc::connection_end::{Self, ConnectionEnd};
     use ibc::channel::{Self, Channel}; 
@@ -155,46 +156,15 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let client_id = ibc_store.generate_client_identifier();
-        
-        let (client_state_bytes, consensus_state_bytes, counterparty_chain_id, mut lens_client_event) = ibc_store.client_mgr.create_client(
-            client_type,
-            client_id,
-            client_state_bytes,
+        ibc_client::create_client(
+            &mut ibc_store.id,
+            &mut ibc_store.client_mgr,
+            &mut ibc_store.next_client_sequence,
+            client_type, 
+            client_state_bytes, 
             consensus_state_bytes,
             ctx,
         );
-
-        if (lens_client_event.is_some()) {
-            let lens_client_event = lens_client_event.extract();
-            events::emit_create_lens_client(
-                    lens_client_event.client_id(),
-                    lens_client_event.l2_chain_id(),
-                    lens_client_event.l1_client_id(),
-                    lens_client_event.l2_client_id()
-            );
-        };
-
-        assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
-        state::commit(
-            &mut ibc_store.id,
-            commitment::client_state_commitment_key(client_id),
-            client_state_bytes
-        );
-
-        let latest_height = ibc_store.client_mgr.latest_height(client_id);
-        state::commit(
-            &mut ibc_store.id,
-            commitment::consensus_state_commitment_key(client_id, latest_height),
-            consensus_state_bytes
-        );
-
-        events::emit_create_client(
-            client_id,
-            client_type,
-            counterparty_chain_id
-        )
     }
 
     /// Update a client with the `client_message`
@@ -210,24 +180,13 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
-        // Update the client and consensus states using the client message
-        let (client_state, consensus_state, height) =
-            ibc_store.client_mgr.update_client(client_id, clock, client_message, relayer);
-
-        // Update the client state commitment
-        *state::borrow_commitment_mut(&mut ibc_store.id, commitment::client_state_commitment_key(client_id)) = client_state;
-
-        // Update the consensus state commitment
-        ibc_store.add_or_update_commitment(
-            commitment::consensus_state_commitment_key(client_id, height),
-            keccak256(&consensus_state)
-        );
-
-        events::emit_update_client(
+        ibc_client::update_client(
+            &mut ibc_store.id,
+            &mut ibc_store.client_mgr,
+            clock,
             client_id,
-            height
+            client_message,
+            relayer
         );
     }
 
@@ -243,13 +202,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        assert!(ibc_store.client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
-        ibc_store.client_mgr.misbehaviour(client_id, misbehaviour, relayer);
-
-        events::emit_misbehaviour(
-            client_id,
-        );
+        ibc_client::misbehaviour(&mut ibc_store.client_mgr, client_id, misbehaviour, relayer);
     }    
 
     /// Initiate the connection handshake using client at `client_id`. The next call is `connection_open_try`
@@ -892,13 +845,6 @@ module ibc::ibc {
         );
     }
 
-    // Function to generate a client identifier
-    fun generate_client_identifier(ibc_store: &mut IBCStore): u32 {
-        let seq = ibc_store.next_client_sequence;
-        ibc_store.next_client_sequence = ibc_store.next_client_sequence + 1;
-        seq
-    }
-
     fun generate_connection_identifier(ibc_store: &mut IBCStore): u32 {
         let seq = ibc_store.next_connection_sequence;
         ibc_store.next_connection_sequence = ibc_store.next_connection_sequence + 1;
@@ -909,14 +855,6 @@ module ibc::ibc {
         let seq = ibc_store.next_channel_sequence;
         ibc_store.next_channel_sequence = ibc_store.next_channel_sequence + 1;
         seq
-    }
-
-    fun add_or_update_commitment(ibc_store: &mut IBCStore, key: vector<u8>, value: vector<u8>) {
-        if (state::has_commitment(&ibc_store.id, key)) {
-            *state::borrow_commitment_mut(&mut ibc_store.id, key) = value;
-        } else {
-            state::commit(&mut ibc_store.id, key, value);
-        };
     }
 
     fun commit_connection(ibc_store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd) {
