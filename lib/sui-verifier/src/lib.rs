@@ -81,8 +81,10 @@ pub fn verify_checkpoint<V: SignatureVerification>(
         .map_err(Into::into)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn verify_membership(
     commitments_object: ObjectID,
+    commitment_prefix: u8,
     key: Bytes,
     value: Bytes,
     object: ObjectInner,
@@ -91,7 +93,8 @@ pub fn verify_membership(
     contents_digest: Digest,
 ) -> Result<(), Error> {
     // STEP 1: check if the given `object` has the correct object address
-    let commitment_object = calculate_dynamic_field_object_id(*commitments_object.get(), &key);
+    let commitment_object =
+        calculate_dynamic_field_object_id(*commitments_object.get(), commitment_prefix, &key);
 
     let Data::Move(ref object_data) = object.data;
     let (proven_object, proven_key, proven_value): (ObjectID, Bytes, Bytes) =
@@ -107,10 +110,13 @@ pub fn verify_membership(
     }
 
     // STEP 2: check if the given `key` and the `value` belongs to the `object`
-    if key != proven_key {
+    if commitment_prefix != proven_key[0]
+        && key.len() as u8 != proven_key[1]
+        && key != proven_key[2..]
+    {
         return Err(Error::KeyMismatch {
             given: key,
-            proven: proven_value,
+            proven: proven_key[2..].into(),
         });
     }
 
@@ -174,7 +180,11 @@ fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<D
 }
 
 /// Calculate the object_id of the dynamic field within the commitments mapping
-pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> ObjectID {
+pub fn calculate_dynamic_field_object_id(
+    parent: [u8; 32],
+    commitment_prefix: u8,
+    key_bytes: &[u8],
+) -> ObjectID {
     #[repr(u8)]
     enum HashingIntentScope {
         ChildObjectId = 0xf0,
@@ -185,12 +195,19 @@ pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> 
     hasher.update([HashingIntentScope::ChildObjectId as u8]);
     hasher.update(parent);
 
-    // +1 since `key_bytes` should be prefixed with its length (bcs encoding)
-    // NOTE(aeryz): casting to u64 is very important, otherwise usize will become u32 in wasm32 and this will result in incorrect hash
-    hasher.update(((key_bytes.len() + 1) as u64).to_le_bytes());
-    // instead of calling bcs::serialize, we just prefix the bytes with the its length
-    // since the table we are verifying uses `vector<u8>` keys
-    hasher.update([key_bytes.len() as u8]);
+    // The inner data that is a bcs serialized `Struct { prefix: u8, key: vector<u8> }`. So:
+    // +1 from prefix
+    // +1 from key's length prefix which comes from the bcs encoding
+    // +1 from the bcs serialization of the total bytes.
+    // WARN(aeryz): casting to u64 is very important, otherwise usize will become u32 in wasm32 and this will result in incorrect hash
+    hasher.update(((key_bytes.len() + 3) as u64).to_le_bytes());
+    hasher.update([
+        // the length prefix of `Struct { prefix: u8, key: vector<u8>}`
+        (key_bytes.len() + 2) as u8,
+        commitment_prefix,
+        // the length prefix of the key
+        key_bytes.len() as u8,
+    ]);
     hasher.update(key_bytes);
     hasher.update(
         bcs::to_bytes(&TypeTag::Vector(Box::new(TypeTag::U8))).expect("bcs serialization works"),

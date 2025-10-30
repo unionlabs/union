@@ -55,7 +55,9 @@ pub struct Module {
 
     pub sui_object_store_rpc_url: String,
 
-    pub ibc_commitments_object_id: ObjectID,
+    pub ibc_store: ObjectID,
+
+    pub ibc_contract: ObjectID,
 }
 
 impl ProofModule<IbcUnion> for Module {
@@ -71,7 +73,8 @@ impl ProofModule<IbcUnion> for Module {
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             sui_client,
-            ibc_commitments_object_id: config.ibc_commitments_object_id,
+            ibc_store: config.ibc_store,
+            ibc_contract: config.ibc_contract,
             sui_object_store_rpc_url: config.sui_object_store_rpc_url,
         })
     }
@@ -82,9 +85,11 @@ impl ProofModule<IbcUnion> for Module {
 pub struct Config {
     pub rpc_url: String,
 
-    pub ibc_commitments_object_id: ObjectID,
+    pub ibc_store: ObjectID,
 
     pub sui_object_store_rpc_url: String,
+
+    pub ibc_contract: ObjectID,
 }
 
 impl Module {
@@ -110,7 +115,8 @@ impl ProofModuleServer<IbcUnion> for Module {
         let key = path.key();
 
         let target_object_id = sui_verifier::calculate_dynamic_field_object_id(
-            *self.ibc_commitments_object_id.get(),
+            *self.ibc_store.get(),
+            0x1,
             key.get().as_slice(),
         );
 

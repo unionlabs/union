@@ -609,7 +609,7 @@ module ibc::ics23 {
 
         verify_existence(
             &proof,
-            tm_proof_spec(),
+            &tm_proof_spec(),
             x"c569a38a5775bbda2051c34ae00894186f837c39d11dca55495b9aed14f17ddf",
             x"303142424373615a55715146735259436c6a5767",
             x"76616c75655f666f725f303142424373615a55715146735259436c6a5767"

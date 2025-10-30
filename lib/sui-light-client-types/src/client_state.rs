@@ -18,7 +18,7 @@ pub struct ClientStateV1 {
     pub chain_id: String,
     pub latest_checkpoint: u64,
     pub frozen_height: u64,
-    pub ibc_commitments_object_id: ObjectID,
+    pub ibc_store: ObjectID,
     #[cfg_attr(
         feature = "serde",
         serde(default),

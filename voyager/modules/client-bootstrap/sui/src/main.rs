@@ -44,8 +44,6 @@ pub struct Module {
     pub sui_client: SuiClient,
 
     pub sui_object_store_rpc_url: String,
-
-    pub ibc_commitments_object_id: ObjectID,
 }
 
 impl ClientBootstrapModule for Module {
@@ -65,7 +63,6 @@ impl ClientBootstrapModule for Module {
             ibc_store: config.ibc_store,
             sui_object_store_rpc_url: config.sui_object_store_rpc_url,
             sui_client,
-            ibc_commitments_object_id: config.ibc_commitments_object_id,
         })
     }
 }
@@ -81,8 +78,6 @@ pub struct Config {
     pub rpc_url: String,
 
     pub sui_object_store_rpc_url: String,
-
-    pub ibc_commitments_object_id: ObjectID,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -122,9 +117,7 @@ impl ClientBootstrapModuleServer for Module {
             latest_checkpoint: height.height(),
             frozen_height: 0,
             initial_committee: Some(convert_committee(committee)),
-            ibc_commitments_object_id: sui_light_client_types::ObjectID::new(
-                self.ibc_commitments_object_id.into_bytes(),
-            ),
+            ibc_store: sui_light_client_types::ObjectID::new(self.ibc_store.into_bytes()),
         }))
         .expect("infallible"))
     }
