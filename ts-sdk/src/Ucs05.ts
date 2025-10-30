@@ -298,7 +298,7 @@ export const ZkgmFromAnyDisplay = S.transform(
         Match.tagsExhaustive({
           CosmosDisplay: ({ address }) => toHex(address),
           EvmDisplay: ({ address }) => identity<Hex>(address),
-          SuiDisplay: ({ address }) => identity<Hex>(normalizeSuiAddress(address) as Hex),
+          SuiDisplay: ({ address }) => identity<Hex>(address as Hex),
         }),
       ),
     encode: (_) => absurd<AnyDisplay>(void 0 as never),
@@ -313,7 +313,7 @@ export const anyDisplayToZkgm = Match.type<AnyDisplay>().pipe(
   Match.tagsExhaustive({
     CosmosDisplay: ({ address }) => S.decode(HexFromString)(address),
     EvmDisplay: ({ address }) => Effect.succeed<Hex>(address),
-    SuiDisplay: ({ address }) => S.decode(HexFromString)(normalizeSuiAddress(address)),
+    SuiDisplay: ({ address }) => Effect.succeed(address as Hex),
   }),
 )
 
@@ -332,8 +332,7 @@ export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
       console.log("bytes", { result })
     },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
-    SuiDisplay: ({ address }) => AddressCanonicalBytes.make(normalizeSuiAddress(address) as Hex),
-  }),
+    SuiDisplay: ({ address }) => identity<Hex>(address as Hex),  }),
 )
 /**
  * Union of possible valid address schemas.
