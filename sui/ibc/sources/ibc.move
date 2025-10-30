@@ -63,11 +63,11 @@ module ibc::ibc {
     use std::string::{String, utf8};
     use sui::table::{Self, Table};
     use sui::hash::keccak256;
-    use sui::clock;
-    use sui::clock::Clock;
+    use sui::clock::{Self, Clock};
     use ibc::ibc_connection;
     use ibc::ibc_channel;
     use ibc::ibc_client;
+    use ibc::ibc_packet;
     use ibc::packet::{Self, Packet};
     use ibc::connection_end::ConnectionEnd;
     use ibc::channel::{Self, Channel}; 
@@ -517,34 +517,36 @@ module ibc::ibc {
     // }
 
     /// Function to send a packet through an open channel
-    // public fun recv_packet<T: drop>(
-    //     ibc_store: &mut IBCStore,
-    //     clock: &clock::Clock,
-    //     packets: vector<Packet>,
-    //     maker: address,
-    //     maker_msgs: vector<vector<u8>>,
-    //     proof: vector<u8>,
-    //     proof_height: u64,
-    //     acknowledgements: vector<vector<u8>>,
-    //     witness: T,
-    // ) {
-    //     ibc_store.assert_version();
+    public fun recv_packet<T: drop>(
+        ibc_store: &mut IBCStore,
+        clock: &Clock,
+        packets: vector<Packet>,
+        maker: address,
+        maker_msgs: vector<vector<u8>>,
+        proof: vector<u8>,
+        proof_height: u64,
+        acknowledgements: vector<vector<u8>>,
+        witness: T,
+    ) {
+        ibc_store.assert_version();
 
-    //     let port_id = *ibc_store.channel_to_port.borrow(packets[0].destination_channel_id());
-    //     validate_port(port_id, witness);
+        let port_id = *state::borrow_channel_to_port(&ibc_store.id, packets[0].destination_channel_id());
+        validate_port(port_id, witness);
 
-    //     process_receive(
-    //         ibc_store,
-    //         clock,
-    //         packets,
-    //         maker,
-    //         maker_msgs,
-    //         proof_height,
-    //         proof,
-    //         false,
-    //         acknowledgements
-    //     );
-    // }
+        ibc_packet::recv_packet(
+            &mut ibc_store.id,
+            &ibc_store.client_mgr,
+            &ibc_store.connections,
+            &ibc_store.channels,
+            clock,
+            packets,
+            maker,
+            maker_msgs,
+            proof,
+            proof_height,
+            acknowledgements
+        );
+    }
 
     /// Function to send a packet through an open channel
     // public fun recv_intent_packet<T: drop>(
@@ -623,138 +625,6 @@ module ibc::ibc {
     ): u32 {
         let connection = ibc_store.connections.borrow(connection_id);
         connection.counterparty_connection_id()
-    }
-
-    fun set_packet_receive(ibc_store: &mut IBCStore, commitment_key: vector<u8>): bool {
-        if (state::has_commitment(&ibc_store.id, commitment_key)) {
-            true
-        } else {
-            state::commit(&mut ibc_store.id, commitment_key, COMMITMENT_MAGIC);
-            false
-        }
-    }
-
-    fun set_packet_acknowledged(ibc_store: &mut IBCStore, commitment_key: vector<u8>) {
-        assert!(state::has_commitment(&ibc_store.id, commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
-
-        let commitment = state::borrow_commitment_mut(&mut ibc_store.id, commitment_key);
-        assert!(commitment != COMMITMENT_MAGIC_ACK, E_PACKET_ALREADY_ACKNOWLEDGED);
-        assert!(commitment == COMMITMENT_MAGIC, E_PACKET_COMMITMENT_NOT_FOUND);
-
-        *commitment = COMMITMENT_MAGIC_ACK;
-    }
-
-    fun process_receive(
-        ibc_store: &mut IBCStore,
-        clock: &clock::Clock,
-        packets: vector<Packet>,
-        maker: address,
-        maker_msgs: vector<vector<u8>>,
-        proof_height: u64,
-        proof: vector<u8>,
-        intent: bool,
-        acknowledgements: vector<vector<u8>>
-    ) {
-        let l = vector::length(&packets);
-        assert!(l != 0, E_NOT_ENOUGH_PACKETS);
-
-        assert!(l == acknowledgements.length(), E_ACK_LEN_MISMATCH);
-        assert!(l == maker_msgs.length(), E_MAKER_MSG_LEN_MISMATCH);
-
-        let destination_channel = packet::destination_channel_id(&packets[0]);
-
-        if(!ibc_store.channels.contains(destination_channel)) {
-            abort E_CHANNEL_NOT_FOUND
-        };
-        let channel = ibc_store.channels.borrow(destination_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
-
-        let connection = ibc_store.connections.borrow(channel.connection_id()); 
-        assert!(connection.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
-
-        let client_id = connection.client_id();
-
-        if(!ibc_store.client_mgr.exists(client_id)) {
-            abort E_CLIENT_NOT_FOUND
-        };
-
-        if (!intent) {
-            let commitment_key = commitment::batch_packets_commitment_key(
-                commitment::commit_packets(&packets)
-            );
-
-            let err =
-                ibc_store.client_mgr.verify_membership(
-                    client_id,
-                    proof_height,
-                    proof,
-                    commitment_key,
-                    COMMITMENT_MAGIC
-                );
-
-            if (err != 0) {
-                abort err
-            };
-        };
-        let mut i = 0;
-        while (i < l) {
-            let packet = packets[i];
-
-            assert!(packet.destination_channel_id() == destination_channel, E_BATCH_SAME_CHANNEL_ONLY);
-
-            if (packet.timeout_height() != 0) {
-                abort E_TIMEOUT_HEIGHT_NOT_SUPPORTED
-            };
-
-
-            let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
-            assert!(
-                current_timestamp < packet.timeout_timestamp(),
-                E_TIMESTAMP_TIMEOUT
-            );
-
-            let packet_hash = commitment::commit_packet(&packet);
-            let commitment_key =
-                commitment::batch_receipts_commitment_key(
-                    packet_hash
-                );
-
-
-            if(set_packet_receive(ibc_store, commitment_key)) {
-                // Normally this is not an error and results in noop in the traditional impls where
-                // the app is called by the ibc. But since it is the other way here, we have to abort
-                // to prevent double processing in the app side. 
-                abort E_ALREADY_RECEIVED;
-            } else {
-                let maker_msg = maker_msgs[i];
-                if (intent) {
-                    events::emit_intent_packet_recv(
-                        destination_channel,
-                        packet_hash,
-                        maker,
-                        maker_msg
-                    );
-                } else {
-                    events::emit_packet_recv(
-                        destination_channel,
-                        packet_hash,
-                        maker,
-                        maker_msg
-                    );
-                };
-
-                let acknowledgement = acknowledgements[i];
-                if (!acknowledgement.is_empty()) {
-                    inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
-                    events::emit_write_ack(
-                        destination_channel,
-                        packet_hash,
-                        acknowledgement
-                    );
-                };
-            };
-            i = i + 1;
-        }
     }
 
     // public fun write_acknowledgement<T: drop>(
