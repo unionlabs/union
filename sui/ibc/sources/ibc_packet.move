@@ -69,7 +69,7 @@ module ibc::ibc_packet {
     use ibc::connection_end::ConnectionEnd;
     use ibc::events;
     use ibc::light_client::LightClientManager;
-    use ibc::packet::Packet;
+    use ibc::packet::{Self, Packet};
     use ibc::state;
 
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
@@ -94,8 +94,76 @@ module ibc::ibc_packet {
     const E_INVALID_CHANNEL_STATE: u64 = 15;
     const E_CHANNEL_NOT_FOUND: u64 = 16;
     const E_NOT_ENOUGH_PACKETS: u64 = 17;
+    const E_PACKET_ALREADY_SENT: u64 = 18;
+    const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 19;
+    const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 20;
+    const E_TIMEOUT_MUST_BE_SET: u64 = 21;
+    const E_LATEST_TIMESTAMP_NOT_FOUND: u64 = 22;
+    const E_CONNECTION_NOT_FOUND: u64 = 23;
+    const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 24;
 
-    public fun recv_packet(
+    public(package) fun send_packet(
+        ibc_uid: &mut UID,
+        client_mgr: &LightClientManager,
+        channels: &Table<u32, Channel>,
+        clock: &Clock,
+        source_channel: u32,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        data: vector<u8>,
+        ctx: &TxContext
+    ): packet::Packet {
+        // Check if the channel exists in the store
+        if(!channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
+
+        // Validate timeout values
+        assert!(
+            timeout_height == 0, E_TIMEOUT_HEIGHT_NOT_SUPPORTED
+        );
+
+        assert!(
+            timeout_timestamp > (clock.timestamp_ms() * 1_000_000),
+            E_TIMESTAMP_TIMEOUT
+        );
+
+        let channel = *channels.borrow(source_channel);
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        
+        // Prepare packet for commitment
+        let packet =
+            packet::new(
+                source_channel,
+                channel.counterparty_channel_id(),
+                data,
+                timeout_height,
+                timeout_timestamp
+            );
+        let packet_hash = commitment::commit_packet(&packet);
+        let commitment_key =
+            commitment::batch_packets_commitment_key(
+                packet_hash
+            );
+
+        assert!(!state::has_commitment(ibc_uid, commitment_key), E_PACKET_ALREADY_SENT);
+
+        state::commit(ibc_uid, commitment_key, COMMITMENT_MAGIC);
+
+        // This is very important for the relayers to be able to get the exact transaction from the `packet_hash`.
+        // They will later use this to get the full packet.
+        state::add_commitment_to_digest(ibc_uid, packet_hash, *ctx.digest());
+
+        events::emit_packet_send(
+            source_channel,
+            packet_hash,
+            packet
+        );
+
+        packet
+    }
+
+    public(package) fun recv_packet(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
         connections: &Table<u32, ConnectionEnd>,
@@ -121,6 +189,264 @@ module ibc::ibc_packet {
             proof,
             false,
             acknowledgements
+        );
+    }
+
+    public(package) fun recv_intent_packet(
+        ibc_uid: &mut UID,
+        client_mgr: &LightClientManager,
+        connections: &Table<u32, ConnectionEnd>,
+        channels: &Table<u32, Channel>,
+        clock: &clock::Clock,
+        packets: vector<Packet>,
+        maker: address,
+        maker_msgs: vector<vector<u8>>,
+        acknowledgements: vector<vector<u8>>,       
+    ) {
+        process_receive(
+            ibc_uid,
+            client_mgr,
+            connections,
+            channels,
+            clock,
+            packets,
+            maker,
+            maker_msgs,
+            0,
+            vector::empty(),
+            true,
+            acknowledgements
+        );
+    }
+
+    public(package) fun write_acknowledgement(
+        ibc_uid: &mut UID,
+        channels: &Table<u32, Channel>,
+        packet: packet::Packet,
+        acknowledgement: vector<u8>,
+    ) {
+        assert!(!acknowledgement.is_empty(), E_ACKNOWLEDGEMENT_IS_EMPTY);
+
+        if(!channels.contains(packet.destination_channel_id())) {
+            abort E_CHANNEL_NOT_FOUND
+        };
+
+        let channel = *channels.borrow(packet.destination_channel_id());
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let packet_hash = commitment::commit_packet(&packet);
+
+        let commitment_key =
+            commitment::batch_receipts_commitment_key(
+                packet_hash
+            );
+
+        inner_write_acknowledgement(ibc_uid, commitment_key, acknowledgement);
+
+        events::emit_write_ack(
+            packet.destination_channel_id(),
+            packet_hash,
+            acknowledgement,
+        )
+    }
+
+    public(package) fun acknowledge_packet(
+        ibc_uid: &mut UID,
+        client_mgr: &LightClientManager,
+        connections: &Table<u32, ConnectionEnd>,
+        channels: &Table<u32, Channel>,
+        packets: vector<packet::Packet>,
+        acknowledgements: vector<vector<u8>>,
+        proof: vector<u8>,
+        proof_height: u64,
+        relayer: address,
+    )  {
+        let l = packets.length();
+        assert!(l > 0, E_NOT_ENOUGH_PACKETS);
+
+        let source_channel = packets[0].source_channel_id();
+
+        if(!channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
+        let channel = channels.borrow(source_channel);
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let connection = connections.borrow(channel.connection_id());
+        assert!(connection.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+
+        let client_id = connection.client_id();
+
+        if (!client_mgr.exists(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
+
+        let commitment_key = commitment::batch_receipts_commitment_key(
+            commitment::commit_packets(&packets)
+        );
+
+        let err =
+            client_mgr.verify_membership(
+                client_id,
+                proof_height,
+                proof,
+                commitment_key,
+                commitment::commit_acks(acknowledgements)
+            );
+
+        assert!(err == 0, err);
+
+        let mut i = 0;
+        while (i < l) {
+            let packet = packets[i];
+
+            assert!(packet.source_channel_id() == source_channel, E_BATCH_SAME_CHANNEL_ONLY);
+
+            let packet_hash = commitment::commit_packet(&packet);
+            let commitment_key =
+                commitment::batch_packets_commitment_key(
+                    packet_hash
+                );
+            set_packet_acknowledged(ibc_uid, commitment_key);
+            
+            events::emit_packet_ack(
+                source_channel,
+                packet_hash,
+                acknowledgements[i],
+                relayer
+            );
+
+            i = i + 1;
+        }
+    }
+
+    public(package) fun timeout_packet(
+        ibc_uid: &mut UID,
+        client_mgr: &LightClientManager,
+        connections: &Table<u32, ConnectionEnd>,
+        channels: &Table<u32, Channel>,
+        packet: Packet,
+        proof: vector<u8>,
+        proof_height: u64,
+    ) {
+        let source_channel = packet.source_channel_id();
+
+        if(!channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
+        let channel = channels.borrow(source_channel);
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let connection_id = channel.connection_id();
+
+        if(!connections.contains(connection_id)) {
+            abort E_CONNECTION_NOT_FOUND
+        };
+        let connection = connections.borrow(connection_id);
+        assert!(
+            connection.state() == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+        let client_id = connection.client_id();
+
+        if(!client_mgr.exists(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
+        let proof_timestamp =
+            client_mgr.get_timestamp_at_height(client_id, proof_height);
+        assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
+
+        let packet_hash = commitment::commit_packet(&packet);
+        let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
+
+        let err = client_mgr.verify_non_membership(
+            client_id, proof_height, proof, commitment_key);
+
+        assert!(err == 0, err);
+
+        if (packet.timeout_timestamp() == 0) {
+            abort E_TIMEOUT_MUST_BE_SET
+        } else {
+            assert!(
+                packet.timeout_timestamp() < proof_timestamp,
+                E_TIMESTAMP_TIMEOUT_NOT_REACHED
+            );
+        };
+
+        set_packet_acknowledged(
+            ibc_uid,
+            commitment::batch_packets_commitment_key(
+                packet_hash
+            )
+        );
+
+        events::emit_timeout_packet(packet_hash);
+    }
+
+    public(package) fun commit_packet_timeout(
+        ibc_uid: &mut UID,
+        client_mgr: &LightClientManager,
+        connections: &Table<u32, ConnectionEnd>,
+        channels: &Table<u32, Channel>,
+        clock: &Clock,
+        packet: Packet,
+        proof: vector<u8>,
+        proof_height: u64,
+        ctx: &mut TxContext,
+    ) {
+        let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
+        assert!(
+            current_timestamp >= packet.timeout_timestamp(),
+            E_PACKET_HAVE_NOT_TIMED_OUT
+        );
+
+        let packet_hash = commitment::commit_packet(&packet);
+
+        assert!(
+            !state::has_commitment(ibc_uid, commitment::batch_receipts_commitment_key(packet_hash)),
+            E_PACKET_ALREADY_RECEIVED
+        );
+
+        let channel = channels.borrow(packet.destination_channel_id());
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let connection_id = channel.connection_id();
+
+        let connection = connections.borrow(connection_id);
+        assert!(
+            connection.state() == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+        let client_id = connection.client_id();
+
+        // make sure that the packet is sent
+        let err =
+            client_mgr.verify_membership(
+                client_id,
+                proof_height,
+                proof,
+                commitment::batch_packets_commitment_key(
+                    packet_hash
+                ),
+                COMMITMENT_MAGIC
+            );
+
+        if (err != 0) {
+            abort err
+        };
+
+        let commitment_key = commitment::packet_timeout_commitment_key(packet_hash);
+
+        state::add_commitment_to_digest(
+            ibc_uid,
+            commitment_key,
+            *ctx.digest()
+        );
+
+        state::commit(
+            ibc_uid,
+            commitment_key,
+            COMMITMENT_MAGIC
         );
     }
 

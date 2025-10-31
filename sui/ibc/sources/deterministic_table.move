@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,85 +58,40 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::state {
-    use sui::bcs;
+module ibc::deterministic_table {
+    use sui::derived_object;
     use sui::dynamic_field as df;
 
-    use std::string::String;
-
-    const COMMITMENT: u8 = 0x1;
-    const COMMITMENT_TO_DIGEST: u8 = 0x2;
-    const CHANNEL_TO_PORT: u8 = 0x3;
-
-    public struct PrefixedKey<T: drop> has drop {
-        prefix: u8,
-        key: T
+    public struct DeterministicTable<phantom K: copy + drop + store, phantom V: drop + store> has key {
+        id: UID,
+        length: u64
     }
 
-    /// Commitments storage
-    public(package) fun commit(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
-    ) {
-        df::add(id, prefixed_key(COMMITMENT, key), value);
+    public(package) fun new<K: copy + drop + store, V: drop + store>(parent_uid: &mut UID, prefix: vector<u8>): DeterministicTable<K ,V> {
+        DeterministicTable {
+            id: derived_object::claim(parent_uid, prefix),
+            length: 0
+        }
     }
 
-    public(package) fun has_commitment(id: &UID, key: vector<u8>): bool {
-        df::exists_(id, prefixed_key(COMMITMENT, key))
+    public(package) fun add<K: copy + drop + store, V: drop + store>(table: &mut DeterministicTable<K, V>, key: K, value: V) {
+        df::add(&mut table.id, key, value);
+        table.length = table.length + 1;
     }
 
-    public(package) fun borrow_commitment(id: &UID, key: vector<u8>): &vector<u8> {
-        df::borrow(id, prefixed_key(COMMITMENT, key))
+    public(package) fun borrow<K: copy + drop + store, V: drop + store>(table: &DeterministicTable<K, V>, key: K): &V {
+        df::borrow(&table.id, key)
     }
 
-    public(package) fun borrow_commitment_mut(
-        id: &mut UID, key: vector<u8>
-    ): &mut vector<u8> {
-        df::borrow_mut(id, prefixed_key(COMMITMENT, key))
+    public(package) fun borrow_mut<K: copy + drop + store, V: drop + store>(table: &mut DeterministicTable<K, V>, key: K): &mut V {
+        df::borrow_mut(&mut table.id, key)
     }
 
-    public(package) fun add_or_update_commitment(id: &mut UID, key: vector<u8>, value: vector<u8>) {
-        if (has_commitment(id, key)) {
-            *borrow_commitment_mut(id, key) = value;
-        } else {
-            commit(id, key, value);
-        };
+    public(package) fun contains<K: copy + drop + store, V: drop + store>(table: &DeterministicTable<K, V>, key: K): bool {
+        df::exists_(&table.id, key)
     }
 
-    /// Commitment-to-digest storage
-    public(package) fun add_commitment_to_digest(
-        id: &mut UID, commitment: vector<u8>, digest: vector<u8>
-    ) {
-        df::add(
-            id,
-            prefixed_key(COMMITMENT_TO_DIGEST, commitment),
-            digest
-        );
-    }
-
-    /// Channel-to-port storage
-    public(package) fun add_channel_to_port(
-        id: &mut UID, channel: u32, port: String,
-    ) {
-        df::add(
-            id,
-            prefixed_key(CHANNEL_TO_PORT, channel),
-            port
-        );
-    }
-
-    public(package) fun borrow_channel_to_port(
-        id: &UID, channel: u32
-    ): &String {
-        df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
-    }
-
-    public(package) fun has_channel_to_port(
-        id: &UID, channel: u32
-    ): bool {
-        df::exists_(id, prefixed_key(CHANNEL_TO_PORT, channel))
-    }
-
-    fun prefixed_key<K: drop>(prefix: u8, key: K): vector<u8> {
-        bcs::to_bytes(&PrefixedKey { prefix, key })
+    public(package) fun length<K: copy + drop + store, V: drop + store>(table: &DeterministicTable<K, V>): u64 {
+        table.length
     }
 }
