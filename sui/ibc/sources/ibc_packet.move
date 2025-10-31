@@ -58,14 +58,13 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+#[allow(implicit_const_copy)]
 module ibc::ibc_packet {
-    use std::string::String;
-
     use sui::table::Table;
     use sui::clock::{Self, Clock};
 
     use ibc::commitment;
-    use ibc::channel::{Self, Channel};
+    use ibc::channel::Channel;
     use ibc::connection_end::ConnectionEnd;
     use ibc::events;
     use ibc::light_client::LightClientManager;
@@ -104,7 +103,6 @@ module ibc::ibc_packet {
 
     public(package) fun send_packet(
         ibc_uid: &mut UID,
-        client_mgr: &LightClientManager,
         channels: &Table<u32, Channel>,
         clock: &Clock,
         source_channel: u32,
@@ -392,7 +390,7 @@ module ibc::ibc_packet {
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
-        ctx: &mut TxContext,
+        ctx: &TxContext,
     ) {
         let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
         assert!(

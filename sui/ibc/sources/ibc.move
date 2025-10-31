@@ -62,7 +62,6 @@
 module ibc::ibc {
     use std::string::{String, utf8};
     use sui::table::{Self, Table};
-    use sui::hash::keccak256;
     use sui::clock::{Self, Clock};
     use ibc::ibc_connection;
     use ibc::ibc_channel;
@@ -70,47 +69,18 @@ module ibc::ibc {
     use ibc::ibc_packet;
     use ibc::packet::{Self, Packet};
     use ibc::connection_end::ConnectionEnd;
-    use ibc::channel::{Self, Channel}; 
+    use ibc::channel::Channel; 
     use ibc::light_client::{Self, LightClientManager};
-    use ibc::commitment;
     use ibc::events;
     use ibc::state;
 
     const VERSION: u32 = 1;
 
-    const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
-    const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
-
-    const CHAN_STATE_INIT: u8 = 1;
-    const CHAN_STATE_TRYOPEN: u8 = 2;
-    const CHAN_STATE_OPEN: u8 = 3;
-
-    const CONN_STATE_OPEN: u8 = 3;
-
     const E_VERSION_MISMATCH: u64 = 1001;
     const E_CLIENT_NOT_FOUND: u64 = 1002;
-    const E_INVALID_CONNECTION_STATE: u64 = 1008;
-    const E_INVALID_CHANNEL_STATE: u64 = 1016;
-    const E_LATEST_TIMESTAMP_NOT_FOUND: u64 = 1019;
     const E_UNAUTHORIZED: u64 = 1020;
-    const E_TIMESTAMP_TIMEOUT: u64 = 1023;
-    const E_PACKET_ALREADY_RECEIVED: u64 = 1025;
-    const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 1028;
-    const E_PACKET_COMMITMENT_NOT_FOUND: u64 = 1032;
-    const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 1034;
-    const E_NOT_ENOUGH_PACKETS: u64 = 1040;
-    const E_PACKET_NOT_RECEIVED: u64 = 1041;
-    const E_ACK_ALREADY_EXIST: u64 = 1042;
-    const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
-    const E_ACK_LEN_MISMATCH: u64 = 1046;
     const E_CHANNEL_NOT_FOUND: u64 = 1047;
     const E_CONNECTION_NOT_FOUND: u64 = 1048;
-    const E_TIMEOUT_HEIGHT_NOT_SUPPORTED: u64 = 1049;
-    const E_BATCH_SAME_CHANNEL_ONLY: u64 = 1051;
-    const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 1061;
-    const E_MAKER_MSG_LEN_MISMATCH: u64 = 1062;
-    const E_ALREADY_RECEIVED: u64 = 1063;
-    const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 1064;
     const E_COMMITMENT_NOT_FOUND: u64 = 1065;
 
     public struct IBCStore has key {
@@ -467,7 +437,6 @@ module ibc::ibc {
 
         ibc_packet::send_packet(
             &mut ibc_store.id,
-            &ibc_store.client_mgr,
             &ibc_store.channels,
             clock,
             source_channel,
@@ -578,7 +547,7 @@ module ibc::ibc {
         addr_module.append(std::ascii::string(b"::IbcAppWitness"));
         
         // ensure the port info matches the caller
-        assert!(addr_module == std::type_name::get<T>().into_string(), 1)
+        assert!(addr_module == std::type_name::with_defining_ids<T>().into_string(), E_UNAUTHORIZED);
     }
 
     public fun get_counterparty_connection(
