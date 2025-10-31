@@ -161,7 +161,7 @@ class SuiStore {
 
   constructor() {
     this.loadFromStorage()
-    this._rpcUrl = "https://fullnode.testnet.sui.io" // TODO: CHANGE IT LATER, its for test!
+    this._rpcUrl = "https://fullnode.testnet.sui.io" // TODO(kaan): How to get this from hubble & save here?
 
     if (this.connectedWallet && this.connectionStatus === "connected") {
       setTimeout(() => this.reconnect(this.connectedWallet!), 500)
@@ -204,7 +204,7 @@ class SuiStore {
     }
   }
 
-  async connect(walletId: SuiWalletId = "slush", rpcUrl?: string) {
+  async connect(walletId: SuiWalletId = "slush") {
     this.connectionStatus = "connecting"
     this.saveToStorage()
 
@@ -231,8 +231,8 @@ class SuiStore {
       }
 
       this._account = account
-      this._rpcUrl = rpcUrl
-      this._signer = makeWalletStandardSigner(wallet, account, rpcUrl)
+  
+      this._signer = makeWalletStandardSigner(wallet, account, this._rpcUrl)
 
       this.address = account.address
       this.connectedWallet = "slush"
@@ -257,7 +257,7 @@ class SuiStore {
   }
 
   async reconnect(walletId: SuiWalletId = "slush") {
-    return this.connect(walletId, this._rpcUrl)
+    return this.connect(walletId)
   }
 
   disconnect = async () => {
