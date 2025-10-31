@@ -1,8 +1,8 @@
-import { Data, Effect, Option, Schema, Unify } from "effect"
 import { type FromHexError, fromHexString } from "$lib/utils/hex"
+import { Sui } from "@unionlabs/sdk-sui"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Sui } from "@unionlabs/sdk-sui"
+import { Data, Effect, Option, Schema, Unify } from "effect"
 import { getSuiPublicClient, NoSuiRpcError } from "./clients"
 
 export class ReadSuiCoinError extends Data.TaggedError("ReadSuiCoinError")<{ cause: unknown }> {}
@@ -25,14 +25,14 @@ export const fetchSuiBalance = ({
   walletAddress,
 }: {
   chain: Chain
-  tokenAddress: TokenRawDenom             
-  walletAddress: string                   
+  tokenAddress: TokenRawDenom
+  walletAddress: string
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const coinType = yield* fromHexString(tokenAddress)
 
     const publicClient = yield* getSuiPublicClient(chain)
-    
+
     const total = yield* Sui.readTotalCoinBalance(coinType, walletAddress).pipe(
       Effect.provideService(Sui.PublicClient, publicClient),
       Effect.mapError((cause) => new ReadSuiCoinError({ cause })),

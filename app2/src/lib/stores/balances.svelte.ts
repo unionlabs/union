@@ -151,7 +151,7 @@ export class BalancesStore {
           tokenAddress: denom,
           walletAddress: AddressEvmCanonical.make(address),
         })),
-        Match.when({ chain: { rpc_type: "sui" } }, ({ chain, address, denom }) =>
+      Match.when({ chain: { rpc_type: "sui" } }, ({ chain, address, denom }) =>
         fetchSuiBalance({
           chain,
           tokenAddress: denom,
