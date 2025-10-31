@@ -109,17 +109,21 @@ $effect(() => {
       </button>
       <button
         onclick={() => currentWalletType = "sui"}
-        class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors relative cursor-pointer
+        class="
+          flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors relative cursor-pointer
           {currentWalletType === 'sui'
-            ? 'text-zinc-900 dark:text-white'
-            : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}"
+          ? 'text-zinc-900 dark:text-white'
+          : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}
+        "
       >
         <div class="flex items-center justify-center gap-2">
           <span>Sui</span>
           <span
-            class="w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20 {suiConnected
+            class="
+              w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20 {suiConnected
               ? 'bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]'
-              : 'bg-white/10 dark:bg-white/5 backdrop-blur-sm ring-white/20'}"
+              : 'bg-white/10 dark:bg-white/5 backdrop-blur-sm ring-white/20'}
+            "
           >
           </span>
         </div>
@@ -161,38 +165,37 @@ $effect(() => {
         onDisconnectClick={suiStore.disconnect}
         showDivider={false}
       />
-
-   {:else if currentWalletType === "all"}
-  <Connection
-    chain="evm"
-    address={sepoliaStore.address}
-    chainWalletsInformation={evmWalletsInformation}
-    connectStatus={sepoliaStore.connectionStatus}
-    connectedWalletId={sepoliaStore.connectedWallet}
-    onConnectClick={sepoliaStore.connect}
-    onDisconnectClick={sepoliaStore.disconnect}
-    showDivider={true}
-  />
-  <Connection
-    chain="cosmos"
-    address={cosmosStore.address}
-    chainWalletsInformation={cosmosWalletsInformation}
-    connectStatus={cosmosStore.connectionStatus}
-    connectedWalletId={cosmosStore.connectedWallet}
-    onConnectClick={cosmosStore.connect}
-    onDisconnectClick={cosmosStore.disconnect}
-    showDivider={true}
-  />
-  <Connection
-    chain="sui"
-    address={suiStore.address}
-    chainWalletsInformation={suiWalletsInformation}
-    connectStatus={suiStore.connectionStatus}
-    connectedWalletId={suiStore.connectedWallet}
-    onConnectClick={(id: string) => suiStore.connect(id as any)}
-    onDisconnectClick={suiStore.disconnect}
-    showDivider={false}
-  />
+    {:else if currentWalletType === "all"}
+      <Connection
+        chain="evm"
+        address={sepoliaStore.address}
+        chainWalletsInformation={evmWalletsInformation}
+        connectStatus={sepoliaStore.connectionStatus}
+        connectedWalletId={sepoliaStore.connectedWallet}
+        onConnectClick={sepoliaStore.connect}
+        onDisconnectClick={sepoliaStore.disconnect}
+        showDivider={true}
+      />
+      <Connection
+        chain="cosmos"
+        address={cosmosStore.address}
+        chainWalletsInformation={cosmosWalletsInformation}
+        connectStatus={cosmosStore.connectionStatus}
+        connectedWalletId={cosmosStore.connectedWallet}
+        onConnectClick={cosmosStore.connect}
+        onDisconnectClick={cosmosStore.disconnect}
+        showDivider={true}
+      />
+      <Connection
+        chain="sui"
+        address={suiStore.address}
+        chainWalletsInformation={suiWalletsInformation}
+        connectStatus={suiStore.connectionStatus}
+        connectedWalletId={suiStore.connectedWallet}
+        onConnectClick={(id: string) => suiStore.connect(id as any)}
+        onDisconnectClick={suiStore.disconnect}
+        showDivider={false}
+      />
     {/if}
   </section>
 </Modal>

@@ -430,7 +430,6 @@ const createFeeStore = () => {
           R.get(GAS_DENOMS, x.universal_chain_id),
           O.map(g => (g as any).tickerSymbol ?? "SUI"),
         )),
-
       Match.orElseAbsurd,
     )
 
@@ -457,7 +456,6 @@ const createFeeStore = () => {
           R.get(GAS_DENOMS, x.universal_chain_id),
           O.map(g => (g as any).tickerSymbol ?? "SUI"),
         )),
-
       Match.orElseAbsurd,
     )
 

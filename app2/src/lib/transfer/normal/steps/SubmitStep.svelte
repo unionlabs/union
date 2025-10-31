@@ -31,10 +31,13 @@ import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { suiStore } from "$lib/wallet/sui/config.svelte"
+import { getFullnodeUrl } from "@mysten/sui/client"
 import { ZkgmClientError, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import { ZkgmClient } from "@unionlabs/sdk"
 import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
+import { Sui } from "@unionlabs/sdk-sui"
+import { SuiZkgmClient } from "@unionlabs/sdk-sui"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   CreateViemPublicClientError,
@@ -53,9 +56,6 @@ import type { NoSuchElementException } from "effect/Cause"
 import { pipe } from "effect/Function"
 import { onDestroy } from "svelte"
 import { custom } from "viem"
-import { Sui } from "@unionlabs/sdk-sui"
-import { SuiZkgmClient } from "@unionlabs/sdk-sui"
-import { getFullnodeUrl } from "@mysten/sui/client"
 
 type Props = {
   stepIndex: number
@@ -202,7 +202,7 @@ export const submit = Effect.gen(function*() {
       Effect.provide(walletClient),
     )
   })
-  const doSui = Effect.gen(function* () {
+  const doSui = Effect.gen(function*() {
     const chain = step.intent.sourceChain
 
     const url = yield* chain.getRpcUrl("rpc")
@@ -214,13 +214,11 @@ export const submit = Effect.gen(function*() {
       Effect.sync(() => suiStore.getSuiSigner()),
       Effect.flatMap(
         Option.match({
-          onNone: () =>
-            Effect.fail(new Error("Sui signer not available. Connect a Sui wallet.")),
+          onNone: () => Effect.fail(new Error("Sui signer not available. Connect a Sui wallet.")),
           onSome: (s) => Effect.succeed(s),
         }),
       ),
     )
-
 
     ctaCopy = "Switching Network..."
     yield* Effect.sleep("1.5 seconds")
@@ -240,7 +238,6 @@ export const submit = Effect.gen(function*() {
     ctaCopy = "Confirming Transaction..."
     return response.txHash
   })
-
 
   const doCosmos = Effect.gen(function*() {
     const chain = step.intent.sourceChain
