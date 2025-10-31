@@ -98,15 +98,17 @@ export type SuiTypeTag = typeof SuiTypeTag.Type
  * Decodes a Hex that encodes a Sui type tag (UTF-8) into the type tag string, and vice versa.
  */
 export const StringFromSuiHex = S.transformOrFail(
-  Hex,                     // encoded side (0x...)
-  SuiTypeTag,              // decoded side ("0x...::mod::Name")
+  Hex, // encoded side (0x...)
+  SuiTypeTag, // decoded side ("0x...::mod::Name")
   {
     // Hex -> "0x...::module::Name"
     decode: (hex, _opts, ast) => {
       const s = fromHex(hex, "string")
       return /^0x[0-9a-fA-F]+::[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/.test(s)
         ? Effect.succeed(s as typeof SuiTypeTag.Type)
-        : Effect.fail(new ParseResult.Type(ast, hex, `Expected hex-encoded Sui type tag, got "${s}"`))
+        : Effect.fail(
+          new ParseResult.Type(ast, hex, `Expected hex-encoded Sui type tag, got "${s}"`),
+        )
     },
     // "0x...::module::Name" -> Hex
     encode: (tag) => Effect.succeed(toHex(tag)),

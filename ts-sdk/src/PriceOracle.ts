@@ -675,7 +675,7 @@ const layerTopSecret = Layer.sync(
 )
 export const layerSuiMock = Layer.effect(
   PriceOracle,
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const of: PriceOracle.Service["of"] = (id) =>
       Match.value(id).pipe(
         Match.when(UniversalChainId.make("sui.4c78adac"), () =>
@@ -684,28 +684,30 @@ export const layerSuiMock = Layer.effect(
               price: BigDecimal.fromNumber(1.25), // mock price
               source: { url: new URL("data:mock,sui.4c78adac"), metadata: O.none() },
             }),
-          ),
-        ),
+          )),
         Match.orElse(() =>
           Effect.fail(
             new PriceError({
               message: `SuiMock: no mock for ${id}`,
               source: "SuiMock",
             }),
-          ),
+          )
         ),
       )
 
-    const ratio: PriceOracle.Service["ratio"] = Effect.fn(function* (a, b) {
+    const ratio: PriceOracle.Service["ratio"] = Effect.fn(function*(a, b) {
       const [pa, pb] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
       const r = yield* BigDecimal.divide(pa.price, pb.price)
       return { ratio: r, source: pa.source, destination: pb.source } as const
     })
 
-    return PriceOracle.of({ of, ratio, stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "SuiMock" })) })
+    return PriceOracle.of({
+      of,
+      ratio,
+      stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "SuiMock" })),
+    })
   }),
 )
-
 
 /**
  * @since 2.0.0

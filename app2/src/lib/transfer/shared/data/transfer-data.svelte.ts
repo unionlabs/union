@@ -15,18 +15,17 @@ import { Token, TokenOrder, Ucs05 } from "@unionlabs/sdk"
 import {
   EU_ERC20,
   EU_LST,
-  SUI_ADDR,
-
   EU_SOLVER_ON_ETH_METADATA,
   EU_SOLVER_ON_UNION_METADATA,
+  SUI_ADDR,
+  SUI_NATIVE_COIN,
+  SUI_SOLVER_ON_COSMOS_METADATA,
   U_BANK,
   U_ERC20,
-  U_SUI,
   U_SOLVER_ON_ETH_METADATA,
-  U_SOLVER_ON_UNION_METADATA,
   U_SOLVER_ON_SUI_METADATA,
-  SUI_NATIVE_COIN,
-  SUI_SOLVER_ON_COSMOS_METADATA
+  U_SOLVER_ON_UNION_METADATA,
+  U_SUI,
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
@@ -280,9 +279,9 @@ export class TransferData {
             () => Option.some(U_SOLVER_ON_SUI_METADATA),
           ),
           Match.when(
-              ["solve", toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
-              () => Option.some(SUI_SOLVER_ON_COSMOS_METADATA),
-            ),
+            ["solve", toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
+            () => Option.some(SUI_SOLVER_ON_COSMOS_METADATA),
+          ),
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
             () => Option.some(U_SOLVER_ON_UNION_METADATA),
@@ -307,7 +306,6 @@ export class TransferData {
             ["solve", Match.any, Match.any, Match.any],
             () => Option.none(),
           ),
-
           // Match.when(
           //   ["solve", "eU (tohex)", Match.any],
           //   () => EU_FROM_UNION_SOLVER_METADATA,

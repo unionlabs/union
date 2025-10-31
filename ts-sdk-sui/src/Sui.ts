@@ -366,7 +366,7 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
 /**
  * Resolve the signer address from WalletClient.
  */
-export const getSignerAddress = Effect.gen(function* () {
+export const getSignerAddress = Effect.gen(function*() {
   const { signer } = yield* WalletClient
   return signer.toSuiAddress()
 })
@@ -375,9 +375,9 @@ export const getSignerAddress = Effect.gen(function* () {
  * Incrementally fetch coin objects for `owner` and `coinType` until the running
  */
 export const getCoinsWithBalance = (coinType: string, min: bigint) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const { client } = yield* PublicClient
-    const resolvedOwner = yield* getSignerAddress;
+    const resolvedOwner = yield* getSignerAddress
 
     return yield* Effect.tryPromise({
       try: async () => {
@@ -394,7 +394,9 @@ export const getCoinsWithBalance = (coinType: string, min: bigint) =>
               return { coins: acc, total, hasEnough: true as const }
             }
           }
-          if (!page.hasNextPage) break
+          if (!page.hasNextPage) {
+            break
+          }
           cursor = page.nextCursor
         }
 
@@ -403,7 +405,6 @@ export const getCoinsWithBalance = (coinType: string, min: bigint) =>
       catch: (err) => new ReadCoinError({ cause: extractErrorDetails(err as Error) }),
     })
   })
-
 
 /**
  * Prepare a coin for spending inside the SAME PTB:
@@ -414,9 +415,12 @@ export const prepareCoinForAmount = (
   amount: bigint,
   owner: string,
 ): Effect.Effect<TransactionObjectArgument, ReadCoinError, PublicClient | WalletClient> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // SUI special case: split from gas
-    if (coinType === "0x2::sui::SUI" || coinType === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI") {
+    if (
+      coinType === "0x2::sui::SUI"
+      || coinType === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
+    ) {
       const [out] = tx.splitCoins(tx.gas, [tx.pure.u64(amount)])
       return out
     }
@@ -438,7 +442,6 @@ export const prepareCoinForAmount = (
     return out
   })
 
-  
 /**
  * Read and sum all coin object balances for a given `coinType` and owner.
  *

@@ -159,7 +159,7 @@ export const getFillingState = (
         version: transferData.version,
       })
 
-      console.log("✅ [getFillingState] derived filling state",)
+      console.log("✅ [getFillingState] derived filling state")
       return Option.match(unwrapped, {
         onNone: () => {
           console.warn("❌ [getFillingState] Option.all failed — shouldn't happen now")

@@ -1,7 +1,7 @@
-import { Effect, pipe } from "effect"
-import type { Chain } from "@unionlabs/sdk/schema"
-import { Sui } from "@unionlabs/sdk-sui"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import { Sui } from "@unionlabs/sdk-sui"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { Effect, pipe } from "effect"
 
 export class SuiSwitchChainError extends Error {
   constructor(readonly cause: unknown, readonly chainId?: string) {
@@ -9,7 +9,9 @@ export class SuiSwitchChainError extends Error {
   }
 }
 export class SuiWalletNotProvidedError extends Error {
-  constructor() { super("Sui signer (Ed25519Keypair) not provided") }
+  constructor() {
+    super("Sui signer (Ed25519Keypair) not provided")
+  }
 }
 
 type SwitchChainSuccess = {
@@ -20,15 +22,17 @@ type SwitchChainSuccess = {
 }
 
 export const SwitchChain = (chain: Chain, signer: Ed25519Keypair) =>
-  Effect.gen(function* () {
-    if (!signer) return yield* Effect.fail(new SuiWalletNotProvidedError())
+  Effect.gen(function*() {
+    if (!signer) {
+      return yield* Effect.fail(new SuiWalletNotProvidedError())
+    }
 
     const rpcUrl = yield* chain.getRpcUrl("rpc").pipe(
       Effect.mapError((cause) => new SuiSwitchChainError(cause, chain.universal_chain_id)),
     )
 
     const publicLayer = Sui.PublicClient.Live({ url: rpcUrl })
-    const walletLayer  = Sui.WalletClient.Live({ url: rpcUrl, signer: signer })
+    const walletLayer = Sui.WalletClient.Live({ url: rpcUrl, signer: signer })
 
     const { pub, wal } = yield* Effect.all({
       pub: Sui.PublicClient,
