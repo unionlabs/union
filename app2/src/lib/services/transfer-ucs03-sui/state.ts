@@ -37,14 +37,16 @@ type StateWithExit =
   | { _tag: "TransferReceipt"; state: TransferReceiptState }
 
 export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boolean {
-  if (state._tag === "Filling") return false
+  if (state._tag === "Filling") {
+    return false
+  }
   return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
 }
 
 export function isComplete(state: StateWithExit | { _tag: "Filling" }): boolean {
   return (
-    state._tag === "TransferReceipt" &&
-    state.state._tag === "Complete" &&
-    state.state.exit._tag === "Success"
+    state._tag === "TransferReceipt"
+    && state.state._tag === "Complete"
+    && state.state.exit._tag === "Success"
   )
 }

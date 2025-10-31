@@ -17,10 +17,12 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 3600) {
           whitelist: v2_tokens(args: {p_whitelist: true, p_universal_chain_id: $universal_chain_id}, order_by: {rank: asc_nulls_last}) {
             denom
+            native_denom
           }
           v2_tokens(args: {p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
             rank
             denom
+            native_denom
             bucket {
                   capacity
                   refill_rate

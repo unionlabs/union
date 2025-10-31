@@ -332,7 +332,8 @@ export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
       console.log("bytes", { result })
     },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
-    SuiDisplay: ({ address }) => identity<Hex>(address as Hex),  }),
+    SuiDisplay: ({ address }) => identity<Hex>(address as Hex),
+  }),
 )
 /**
  * Union of possible valid address schemas.

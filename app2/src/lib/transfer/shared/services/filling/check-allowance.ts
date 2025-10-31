@@ -139,7 +139,7 @@ const handleSuiAllowances = (
   ReadonlyArray<{ readonly token: Token.Any; readonly allowance: bigint }>,
   AllowanceCheckError
 > =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const rpc = yield* sourceChain.getRpcUrl("rpc").pipe(
       Effect.mapError(
         () =>
@@ -160,7 +160,7 @@ const handleSuiAllowances = (
             sender.address as unknown as string,
           ),
           Effect.map((total) => ({ token, allowance: total })),
-        ),
+        )
       ),
       Effect.allWith({ concurrency: 2 }),
       Effect.provide(suiPublicClientLayer),
@@ -170,7 +170,7 @@ const handleSuiAllowances = (
             message: "Sui allowance (balance) lookup failed",
             cause,
           }),
-        ),
+        )
       ),
     )
   })

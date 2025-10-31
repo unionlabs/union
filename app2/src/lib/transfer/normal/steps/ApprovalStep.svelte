@@ -109,7 +109,9 @@ const submitButtonText = $derived.by(() => {
   if (Option.isSome(error)) {
     return "Try Again"
   }
-  if (isSui) return "Continue"
+  if (isSui) {
+    return "Continue"
+  }
 
   if (!WriteEvm.is("Filling")(ets)) {
     return WriteEvm.toCtaText(actionButtonText)(ets)
@@ -211,11 +213,10 @@ const submit = Effect.gen(function*() {
     Match.when("evm", () => doEvm),
     Match.when("cosmos", () => doCosmos),
     Match.when("sui", () =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         // no approval on Sui — directly proceed to the next step
         yield* approve
-      })
-    ),
+      })),
     Match.orElse(() =>
       Effect.gen(function*() {
         yield* Effect.logFatal("Unsupported chain type")
@@ -391,11 +392,11 @@ function handleBackClick() {
 <div class="grow relative min-w-full flex flex-col justify-between h-full">
   <div class="grow flex flex-col gap-2 p-4">
     <h3 class="text-lg font-semibold">
-       {#if isSui}
-          No Approval Needed
-        {:else}
-          Approve
-        {/if}
+      {#if isSui}
+        No Approval Needed
+      {:else}
+        Approve
+      {/if}
       <TokenComponent
         chain={sourceChain}
         denom={massagedDenom}
@@ -405,9 +406,9 @@ function handleBackClick() {
     </h3>
 
     <p class="text-sm text-zinc-400">
-       {#if isSui}
-          Sui coins don’t use ERC-20 style approvals. We’ll continue to the next step.
-        {:else}
+      {#if isSui}
+        Sui coins don’t use ERC-20 style approvals. We’ll continue to the next step.
+      {:else}
         You need to approve Union to send
         <TokenComponent
           chain={sourceChain}
@@ -415,19 +416,18 @@ function handleBackClick() {
           showWrapping={false}
         />. This is a one-time approval for this token.
       {/if}
-
     </p>
     {#if !isSui}
-    <div class="mt-4">
-      <Label class="text-zinc-400 mb-2 block text-sm">Required Approval</Label>
-      <div class="flex items-center gap-2">
-        <TokenComponent
-          chain={sourceChain}
-          denom={massagedDenom}
-          amount={step.requiredAmount}
-        />
+      <div class="mt-4">
+        <Label class="text-zinc-400 mb-2 block text-sm">Required Approval</Label>
+        <div class="flex items-center gap-2">
+          <TokenComponent
+            chain={sourceChain}
+            denom={massagedDenom}
+            amount={step.requiredAmount}
+          />
+        </div>
       </div>
-    </div>
     {/if}
   </div>
 
@@ -443,88 +443,88 @@ function handleBackClick() {
           Approval amount selection isn’t required on Sui.
         </div>
       {:else}
-      <Label class="text-zinc-400 mb-3 block">Select Approval Amount</Label>
+        <Label class="text-zinc-400 mb-3 block">Select Approval Amount</Label>
 
-      {#if !showCustomInput}
-        <div class="flex justify-between">
-          <button
-            class="
-              flex-1 {selectedMultiplier === 1
-              ? 'bg-zinc-800'
-              : 'bg-zinc-900'} hover:bg-zinc-800 rounded-l-lg h-10 flex items-center justify-center cursor-pointer
-            "
-            onclick={() => handleMultiplierSelect(1)}
-            disabled={!isButtonEnabled}
-          >
-            <span
-              class={`uppercase text-xs font-semibold ${
-                selectedMultiplier === 1 ? "text-white" : "text-zinc-400"
-              }`}
-            >Exact</span>
-          </button>
-
-          <button
-            class="
-              flex-1 {selectedMultiplier === 'max'
-              ? 'bg-zinc-800'
-              : 'bg-zinc-900'} hover:bg-zinc-800 h-10 flex items-center justify-center cursor-pointer
-            "
-            onclick={() => handleMultiplierSelect("max")}
-            disabled={!isButtonEnabled}
-          >
-            <span
-              class={`uppercase text-xs font-semibold ${
-                selectedMultiplier === "max" ? "text-white" : "text-zinc-400"
-              }`}
-            >Max</span>
-          </button>
-
-          <button
-            class="
-              flex-1 {selectedMultiplier === null
-              ? 'bg-zinc-800'
-              : 'bg-zinc-900'} hover:bg-zinc-800 rounded-r-lg h-10 flex items-center justify-center cursor-pointer
-            "
-            onclick={handleCustomClick}
-            disabled={!isButtonEnabled}
-          >
-            <span
-              class={`uppercase text-xs font-semibold ${
-                selectedMultiplier === null ? "text-white" : "text-zinc-400"
-              }`}
-            >Custom</span>
-          </button>
-        </div>
-      {:else}
-        <div class="flex justify-between gap-4 align-end">
-          <button
-            class="bg-zinc-900 hover:bg-zinc-800 rounded-lg h-10 w-14 flex items-center justify-center cursor-pointer"
-            onclick={handleBackClick}
-            disabled={!isButtonEnabled}
-          >
-            <span class="text-zinc-400">←</span>
-          </button>
-          <div class="flex-1">
-            <Input
-              type="text"
-              required
+        {#if !showCustomInput}
+          <div class="flex justify-between">
+            <button
+              class="
+                flex-1 {selectedMultiplier === 1
+                ? 'bg-zinc-800'
+                : 'bg-zinc-900'} hover:bg-zinc-800 rounded-l-lg h-10 flex items-center justify-center cursor-pointer
+              "
+              onclick={() => handleMultiplierSelect(1)}
               disabled={!isButtonEnabled}
-              autocorrect="off"
-              label="Amount"
-              placeholder="Enter custom amount"
-              spellcheck="false"
-              autocomplete="off"
-              inputmode="decimal"
-              value={customAmount}
-              oninput={handleCustomInput}
-              onbeforeinput={handleBeforeInput}
-              class="h-10 text-center text-sm"
-              id="custom-amount"
-            />
+            >
+              <span
+                class={`uppercase text-xs font-semibold ${
+                  selectedMultiplier === 1 ? "text-white" : "text-zinc-400"
+                }`}
+              >Exact</span>
+            </button>
+
+            <button
+              class="
+                flex-1 {selectedMultiplier === 'max'
+                ? 'bg-zinc-800'
+                : 'bg-zinc-900'} hover:bg-zinc-800 h-10 flex items-center justify-center cursor-pointer
+              "
+              onclick={() => handleMultiplierSelect("max")}
+              disabled={!isButtonEnabled}
+            >
+              <span
+                class={`uppercase text-xs font-semibold ${
+                  selectedMultiplier === "max" ? "text-white" : "text-zinc-400"
+                }`}
+              >Max</span>
+            </button>
+
+            <button
+              class="
+                flex-1 {selectedMultiplier === null
+                ? 'bg-zinc-800'
+                : 'bg-zinc-900'} hover:bg-zinc-800 rounded-r-lg h-10 flex items-center justify-center cursor-pointer
+              "
+              onclick={handleCustomClick}
+              disabled={!isButtonEnabled}
+            >
+              <span
+                class={`uppercase text-xs font-semibold ${
+                  selectedMultiplier === null ? "text-white" : "text-zinc-400"
+                }`}
+              >Custom</span>
+            </button>
           </div>
-        </div>
+        {:else}
+          <div class="flex justify-between gap-4 align-end">
+            <button
+              class="bg-zinc-900 hover:bg-zinc-800 rounded-lg h-10 w-14 flex items-center justify-center cursor-pointer"
+              onclick={handleBackClick}
+              disabled={!isButtonEnabled}
+            >
+              <span class="text-zinc-400">←</span>
+            </button>
+            <div class="flex-1">
+              <Input
+                type="text"
+                required
+                disabled={!isButtonEnabled}
+                autocorrect="off"
+                label="Amount"
+                placeholder="Enter custom amount"
+                spellcheck="false"
+                autocomplete="off"
+                inputmode="decimal"
+                value={customAmount}
+                oninput={handleCustomInput}
+                onbeforeinput={handleBeforeInput}
+                class="h-10 text-center text-sm"
+                id="custom-amount"
+              />
+            </div>
+          </div>
+        {/if}
       {/if}
-    {/if}
     </section>
   </div>
 

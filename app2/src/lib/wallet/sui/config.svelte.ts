@@ -1,25 +1,22 @@
-import { wallets } from "$lib/stores/wallets.svelte"
 import { runSync } from "$lib/runtime"
+import { wallets } from "$lib/stores/wallets.svelte"
 import { Ucs05 } from "@unionlabs/sdk"
 import { Effect, Option } from "effect"
 import * as S from "effect/Schema"
 
-import {
-  getWallets,
-  type WalletWithFeatures,
-} from "@mysten/wallet-standard"
+import { getWallets, type WalletWithFeatures } from "@mysten/wallet-standard"
 
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519"
 
 import { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
-import { fromBase64, toBase64 } from "@mysten/sui/utils"   // 👈 add toB64
+import { fromBase64, toBase64 } from "@mysten/sui/utils" // 👈 add toB64
 
 export const suiWalletsInformation = [
   {
     id: "slush",
     name: "Slush Wallet",
-    icon: "/images/icons/slush.svg", 
+    icon: "/images/icons/slush.svg",
     deepLink: "https://slush.app",
     download: "https://slush.app",
   },
@@ -27,11 +24,10 @@ export const suiWalletsInformation = [
 
 export type SuiWalletId = (typeof suiWalletsInformation)[number]["id"]
 
-
 function pickSuiWallet(targetId: SuiWalletId | undefined) {
   const registry = getWallets().get()
 
-  const byId  = targetId
+  const byId = targetId
     ? registry.find((w) => w.id?.toLowerCase?.() === targetId.toLowerCase())
     : undefined
 
@@ -42,15 +38,23 @@ function pickSuiWallet(targetId: SuiWalletId | undefined) {
 
 function inferSuiChainTag(rpcUrl: string | URL | undefined) {
   const u = rpcUrl ? rpcUrl.toString() : ""
-  if (/testnet/i.test(u)) return "sui:testnet"
-  if (/devnet|local/i.test(u)) return "sui:devnet"
+  if (/testnet/i.test(u)) {
+    return "sui:testnet"
+  }
+  if (/devnet|local/i.test(u)) {
+    return "sui:devnet"
+  }
   return "sui:mainnet"
 }
 function hexToBytes(hex: string): Uint8Array {
   const s = hex.startsWith("0x") ? hex.slice(2) : hex
-  if (s.length % 2 !== 0) throw new Error("Invalid hex length")
+  if (s.length % 2 !== 0) {
+    throw new Error("Invalid hex length")
+  }
   const out = new Uint8Array(s.length / 2)
-  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+  for (let i = 0; i < out.length; i++) {
+    out[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+  }
   return out
 }
 
@@ -79,73 +83,73 @@ function makeWalletStandardSigner(
 ) {
   const chainTag = inferSuiChainTag(rpcUrl)
   const pk = () => new Ed25519PublicKey(normalizePubKey(account.publicKey))
-  
+
   return {
     getPublicKey() {
       return pk()
     },
 
     toSuiAddress() {
-      return account.address 
+      return account.address
     },
 
+    async signTransactionBlock(input: { transactionBlock: Transaction | Uint8Array | string }) {
+      let bytes: Uint8Array
 
+      if (input.transactionBlock instanceof Transaction) {
+        const tmpClient = new SuiClient({
+          url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? ""),
+        })
+        bytes = await input.transactionBlock.build({ client: tmpClient })
+      } else if (typeof input.transactionBlock === "string") {
+        try {
+          bytes = fromBase64(input.transactionBlock)
+        } catch {
+          throw new Error("transactionBlock string must be base64")
+        }
+      } else {
+        bytes = input.transactionBlock
+      }
 
-async signTransactionBlock(input: { transactionBlock: Transaction | Uint8Array | string }) {
-  let bytes: Uint8Array
+      const base64 = toBase64(bytes)
+      const txbLike = { serialize: () => base64 } as any
 
-  if (input.transactionBlock instanceof Transaction) {
-    const tmpClient = new SuiClient({
-      url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? "")
-    })
-    bytes = await input.transactionBlock.build({ client: tmpClient })
-  } else if (typeof input.transactionBlock === "string") {
+      // Prefer sign+execute
+      const signExec = wallet.features["sui:signAndExecuteTransactionBlock"]
+      if (signExec) {
+        const resp = await signExec.signAndExecuteTransactionBlock({
+          account,
+          transactionBlock: txbLike,
+          chain: chainTag,
+          options: { showEffects: true, showEvents: true },
+        })
+        return {
+          signature: resp.signature ?? "",
+          bytes,
+          executeResult: resp,
+        }
+      }
 
-    try { bytes = fromBase64(input.transactionBlock) } catch { throw new Error("transactionBlock string must be base64") }
-  } else {
-    bytes = input.transactionBlock
-  }
+      const signFeature = wallet.features["sui:signTransactionBlock"]
+      if (!signFeature) {
+        throw new Error(
+          "Wallet does not support sui:signTransactionBlock nor sui:signAndExecuteTransactionBlock",
+        )
+      }
 
-  const base64 = toBase64(bytes)
-  const txbLike = { serialize: () => base64 } as any
+      const { signature, bytes: signedBytes } = await signFeature.signTransactionBlock({
+        account,
+        transactionBlock: txbLike,
+        chain: chainTag,
+      })
 
-  // Prefer sign+execute
-  const signExec = wallet.features["sui:signAndExecuteTransactionBlock"]
-  if (signExec) {
-    const resp = await signExec.signAndExecuteTransactionBlock({
-      account,
-      transactionBlock: txbLike,  
-      chain: chainTag,
-      options: { showEffects: true, showEvents: true },
-    })
-    return {
-      signature: resp.signature ?? "",
-      bytes,                        
-      executeResult: resp,
-    }
-  }
-
-  const signFeature = wallet.features["sui:signTransactionBlock"]
-  if (!signFeature) {
-    throw new Error("Wallet does not support sui:signTransactionBlock nor sui:signAndExecuteTransactionBlock")
-  }
-
-  const { signature, bytes: signedBytes } = await signFeature.signTransactionBlock({
-    account,
-    transactionBlock: txbLike,      
-    chain: chainTag,
-  })
-
-  return {
-    signature,
-    bytes: typeof signedBytes === "string" ? fromBase64(signedBytes) : (signedBytes ?? bytes),
-  }
+      return {
+        signature,
+        bytes: typeof signedBytes === "string" ? fromBase64(signedBytes) : (signedBytes ?? bytes),
+      }
+    },
+  } as unknown
 }
-
-
-  } as unknown 
-}
-
 
 class SuiStore {
   address = $state<string | undefined>(undefined)
@@ -159,7 +163,6 @@ class SuiStore {
     this.loadFromStorage()
     this._rpcUrl = "https://fullnode.testnet.sui.io" // TODO: CHANGE IT LATER, its for test!
 
-
     if (this.connectedWallet && this.connectionStatus === "connected") {
       setTimeout(() => this.reconnect(this.connectedWallet!), 500)
     }
@@ -168,7 +171,9 @@ class SuiStore {
   loadFromStorage() {
     try {
       const raw = sessionStorage.getItem("sui-store")
-      if (!raw) return
+      if (!raw) {
+        return
+      }
       const parsed = JSON.parse(raw)
       this.address = parsed.address
       this.connectedWallet = parsed.connectedWallet
@@ -213,14 +218,17 @@ class SuiStore {
 
     try {
       const connectFeature = wallet.features["standard:connect"]
-      if (!connectFeature) throw new Error("Wallet does not support standard:connect")
+      if (!connectFeature) {
+        throw new Error("Wallet does not support standard:connect")
+      }
 
       const res = await connectFeature.connect({ silent: false } as any)
-      console.log("wallet.account: ",wallet.accounts)
+      console.log("wallet.account: ", wallet.accounts)
       const accounts = (res && (res as any).accounts) ? (res as any).accounts : wallet.accounts
       const account = accounts?.[0]
-      if (!account) throw new Error("No Sui account returned by wallet")
-
+      if (!account) {
+        throw new Error("No Sui account returned by wallet")
+      }
 
       this._account = account
       this._rpcUrl = rpcUrl
@@ -229,7 +237,6 @@ class SuiStore {
       this.address = account.address
       this.connectedWallet = "slush"
       this.connectionStatus = "connected"
-
 
       wallets.suiAddress = S.decodeOption(Ucs05.SuiDisplay)({
         _tag: "SuiDisplay",
@@ -253,34 +260,32 @@ class SuiStore {
     return this.connect(walletId, this._rpcUrl)
   }
 
+  disconnect = async () => {
+    try {
+      const w = this.connectedWallet ? pickSuiWallet(this.connectedWallet) : undefined
+      const off = (this as any)._offAccountsChanged as undefined | (() => void)
+      off?.()
 
-disconnect = async () => {
-  try {
-    const w = this.connectedWallet ? pickSuiWallet(this.connectedWallet) : undefined
-    const off = (this as any)._offAccountsChanged as undefined | (() => void)
-    off?.()
-
-    if (w?.features?.["standard:disconnect"]) {
-      try {
-        await (w.features["standard:disconnect"] as any).disconnect()
-      } catch (_) {
-        // swallow; some wallets throw if already disconnected
+      if (w?.features?.["standard:disconnect"]) {
+        try {
+          await (w.features["standard:disconnect"] as any).disconnect()
+        } catch (_) {
+          // swallow; some wallets throw if already disconnected
+        }
       }
+
+      this.connectedWallet = undefined
+      this.connectionStatus = "disconnected"
+      this.address = undefined
+      this._signer = undefined
+      this._account = undefined
+      wallets.suiAddress = Option.none()
+      sessionStorage.removeItem("sui-store")
+    } catch (e) {
+      console.error("Sui disconnect failed:", e)
     }
-
-    this.connectedWallet = undefined
-    this.connectionStatus = "disconnected"
-    this.address = undefined
-    this._signer = undefined
-    this._account = undefined
-    wallets.suiAddress = Option.none()
-    sessionStorage.removeItem("sui-store")
-  } catch (e) {
-    console.error("Sui disconnect failed:", e)
   }
-}
 
-  
   getSuiSigner() {
     if (!this._signer || !this.address) {
       return Option.none<typeof this._signer>()
