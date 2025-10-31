@@ -26,8 +26,9 @@ export namespace Transport {
     readonly coins: ReadonlyArray<{
       /** e.g. "0x2::sui::SUI" or a custom coin type */
       readonly typeArg: string
+      readonly baseAmount: bigint
       /** Concrete coin object id(s) for spending */
-      readonly objectId: string
+      readonly objectId?: string
     }>
   }
 

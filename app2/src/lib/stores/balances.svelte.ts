@@ -155,7 +155,7 @@ export class BalancesStore {
         fetchSuiBalance({
           chain,
           tokenAddress: denom,
-          walletAddress: AddressEvmCanonical.make(address),
+          walletAddress: address,
         })),
       Match.when(
         { chain: { rpc_type: "cosmos" } },
