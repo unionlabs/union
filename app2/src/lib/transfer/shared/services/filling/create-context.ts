@@ -151,8 +151,8 @@ export const createContext = Effect.fn((
         ibcStoreId:  "0x05cc9571c42ef6f7f9643bcda29e2f4a827c8e87ff488ddbdd9e75f68eee5c94",
         coins: [
           {
-            typeArg:  "0x2::sui::SUI",
-            objectId: "0xb7ce26fc816f1a1a4ce848019ea93e6f1814bcbb9bd7f0ccb87e476777a18758",
+            typeArg:  args.baseToken.address,
+            baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
           },
         ],
       },

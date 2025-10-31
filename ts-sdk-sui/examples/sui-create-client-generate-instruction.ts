@@ -73,6 +73,7 @@ const program = Effect.gen(function*() {
           {
             typeArg: "0x2::sui::SUI",
             objectId: "0x266d00c4b329111255339c041cc57a1b616cfeddafdae47df8f814002578e95b",
+            baseAmount: BigInt(3)
           },
         ],
       },
