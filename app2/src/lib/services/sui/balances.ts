@@ -32,7 +32,7 @@ export const fetchSuiBalance = ({
     const coinType = yield* fromHexString(tokenAddress)
 
     const publicClient = yield* getSuiPublicClient(chain)
-
+    
     const total = yield* Sui.readTotalCoinBalance(coinType, walletAddress).pipe(
       Effect.provideService(Sui.PublicClient, publicClient),
       Effect.mapError((cause) => new ReadSuiCoinError({ cause })),
