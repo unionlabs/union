@@ -20,8 +20,11 @@ import * as Stream from "effect/Stream"
 import * as Sui from "../Sui.js"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { fromHex as viemFromHex } from "viem";
+import { toHex } from "viem"
+import bs58 from "bs58"
 
 type HexAddr = `0x${string}`
+const base58ToHex = (s: string): Hex => toHex(bs58.decode(s)) as Hex
 
 const decodeAsciiHex = (hex: string) =>
   viemFromHex((hex.startsWith("0x") ? hex : ("0x" + hex)) as HexAddr, "string") as string
@@ -180,8 +183,16 @@ export const fromWallet = (
         ],
       })
 
+
       // 2) For each coin: send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
-      for (const { typeArg, objectId } of coins) {
+      for (const { typeArg, baseAmount, objectId } of coins) {
+          console.log("typeArg, baseAmount objectId: ", {typeArg, baseAmount, objectId})
+          const coinArg = yield* Sui.prepareCoinForAmount(
+            tx, 
+            typeArg,
+            baseAmount
+          )
+          console.log("coinArg: ", coinArg)
         sendCtx = tx.moveCall({
           target: `${decodedUcs03}::${module}::send_with_coin`,
           typeArguments: [typeArg],
@@ -189,7 +200,7 @@ export const fromWallet = (
             tx.object(relayFromPort),
             tx.object(vaultId),
             tx.object(ibcStoreId),
-            tx.object(objectId),
+            coinArg,
             tx.pure.u8(Number(request.instruction.version)),
             tx.pure.u8(Number(request.instruction.opcode)),
             tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
@@ -214,38 +225,44 @@ export const fromWallet = (
 
       console.log("wallet.signer:", wallet.signer);
 
-      const submit = Effect.tryPromise({
-        try: async () => {
-          if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
-            tx.setSender(wallet.signer.toSuiAddress());
-          }
+const submit = Effect.tryPromise({
+  try: async () => {
+    if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
+      tx.setSender(wallet.signer.toSuiAddress());
+    }
 
-          const { signature, bytes } = await wallet.signer.signTransactionBlock({
-            transactionBlock: tx,
-          });
+    // Our wrapper may already execute
+    const signed = await wallet.signer.signTransactionBlock({ transactionBlock: tx });
 
-          return wallet.client.executeTransactionBlock({
-            transactionBlock: bytes,
-            signature,
-            options: { showEffects: true, showEvents: true },
-          });
-        },
-        catch: (cause) =>
-          new ClientError.RequestError({
-            reason: "Transport",
-            request,
-            cause,
-            description: "signTransactionBlock + executeTransactionBlock",
-          }),
-      });
+    if ((signed as any).executeResult) {
+      // Wallet already executed (signAndExecute path)
+      return (signed as any).executeResult
+    }
+
+    // Old path: we only signed, so execute via client
+    const { signature, bytes } = signed as { signature: string; bytes: Uint8Array }
+    return wallet.client.executeTransactionBlock({
+      transactionBlock: bytes,
+      signature,
+      options: { showEffects: true, showEvents: true },
+    })
+  },
+  catch: (cause) =>
+    new ClientError.RequestError({
+      reason: "Transport",
+      request,
+      cause,
+      description: "signTransactionBlock + executeTransactionBlock",
+    }),
+})
 
 
       const res = yield* submit
 
-      console.log("Res.transaction:", res.transaction)
       const txHash = (res.digest ?? res.transaction?.txSignatures[0] ?? "") as Hex
+      const convertedHex = base58ToHex(txHash);
 
-      return new ClientResponseImpl(request, client, txHash)
+      return new ClientResponseImpl(request, client, convertedHex)
     })
   )
 
