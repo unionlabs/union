@@ -240,10 +240,9 @@ export const TokenFromString = S.transformOrFail(
 //     },
 //   )
 export const AnyFromEncoded = (rpcType: Chain.RpcType) => {
-  const From =
-    rpcType === "sui"
-      ? S.Union(Hex.Hex, S.String)
-      : Hex.Hex
+  const From = rpcType === "sui"
+    ? S.Union(Hex.Hex, S.String)
+    : Hex.Hex
 
   return S.transformOrFail(From, Any, {
     decode: (fromA, options, ast) => {
@@ -253,10 +252,10 @@ export const AnyFromEncoded = (rpcType: Chain.RpcType) => {
           pipe(
             fromA as typeof Hex.Hex.Type,
             S.decode(S.compose(Hex.StringFromHex, TokenFromString)),
-          )
-        ),
-        Match.when("aptos", () =>
-          Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported."))
+          )),
+        Match.when(
+          "aptos",
+          () => Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported.")),
         ),
         Match.when("sui", () => {
           const s = String(fromA)

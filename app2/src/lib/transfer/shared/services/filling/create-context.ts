@@ -55,7 +55,6 @@ export const createContext = Effect.fn((
   never
 > =>
   Effect.gen(function*() {
-
     console.log("[createContext] args:", args)
 
     const sendOrder = yield* TokenOrder.make({
@@ -141,17 +140,16 @@ export const createContext = Effect.fn((
 
     const batch = yield* produceBatch
 
-    
     // TODO: vaultId & ibcStoreId will be fetched from hubble probably
     // but objectId & typeArg should be provided by user
     // OR we need to find another way of doing this
     const SUI_HARDCODED_TRANSPORT = {
       sui: {
-        vaultId:     "0xbe65f53d47a4578c14b4d69d0594c1295d3761379319a185522cd6baad6473d4",
-        ibcStoreId:  "0x05cc9571c42ef6f7f9643bcda29e2f4a827c8e87ff488ddbdd9e75f68eee5c94",
+        vaultId: "0xbe65f53d47a4578c14b4d69d0594c1295d3761379319a185522cd6baad6473d4",
+        ibcStoreId: "0x05cc9571c42ef6f7f9643bcda29e2f4a827c8e87ff488ddbdd9e75f68eee5c94",
         coins: [
           {
-            typeArg:  args.baseToken.address,
+            typeArg: args.baseToken.address,
             baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
           },
         ],
@@ -162,8 +160,8 @@ export const createContext = Effect.fn((
     //   args.transport?.sui && args.sourceChain.rpc_type === "sui"
     //     ? { sui: args.transport.sui }
     //     : undefined
-    const maybeTransport = args.sourceChain.rpc_type === "sui" ? SUI_HARDCODED_TRANSPORT : undefined;
-        
+    const maybeTransport = args.sourceChain.rpc_type === "sui" ? SUI_HARDCODED_TRANSPORT : undefined
+
     const request = ZkgmClientRequest.make({
       channelId: args.sourceChannelId,
       destination: args.destinationChain,
@@ -263,7 +261,6 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
       }
       return shouldIncludeFees ? [intent, feeIntent] : [intent]
     }),
-
     Match.orElse(() => []),
   )
 }

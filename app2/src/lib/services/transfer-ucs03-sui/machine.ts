@@ -6,10 +6,10 @@ import { Effect, Option } from "effect"
 import type { SwitchChainErrorType } from "viem"
 import { SwitchChain } from "./chain"
 import {
+  SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
   TransferSubmitState,
-  SwitchChainState
 } from "./state"
 import { submitTransfer, waitForTransferReceipt } from "./transactions"
 
@@ -36,7 +36,6 @@ export async function nextState(
         },
       })
     },
-
 
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
