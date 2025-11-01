@@ -17,7 +17,7 @@ use unionlabs_primitives::{Bytes, U256, encoding::HexPrefixed};
 
 use crate::{
     CwUCtx,
-    error::Error,
+    error::ContractError,
     msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg, RestrictedExecuteMsg},
     state::{
         Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist,
@@ -58,7 +58,7 @@ pub fn migrate(
     deps: DepsMut,
     env: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
-) -> Result<Response<TokenFactoryMsg>, Error> {
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     msg.run(
         deps,
         |mut deps, init_msg| {
@@ -107,18 +107,18 @@ pub fn migrate(
     )
 }
 
-fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
+fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     let zkgm = deps.storage.read_item::<Zkgm>()?;
     if info.sender != zkgm {
-        return Err(Error::OnlyZkgm);
+        return Err(ContractError::OnlyZkgm);
     }
     Ok(())
 }
 
-fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
+fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     let admin = deps.storage.read_item::<Admin>()?;
     if info.sender != admin {
-        return Err(Error::OnlyAdmin);
+        return Err(ContractError::OnlyAdmin);
     }
     Ok(())
 }
@@ -129,7 +129,7 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response<TokenFactoryMsg>, Error> {
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match msg {
         ExecuteMsg::Cw20(raw_msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => {
@@ -163,7 +163,7 @@ pub fn execute(
                     .unwrap_or(false);
 
                 if !whitelisted {
-                    return Err(Error::IntentMustBeWhitelisted);
+                    return Err(ContractError::IntentMustBeWhitelisted);
                 }
 
                 deps.storage.delete::<IntentWhitelist>(&packet_hash);
@@ -176,15 +176,15 @@ pub fn execute(
                     packet.destination_channel_id,
                     order.base_token,
                 ))?
-                .ok_or_else(|| Error::LaneIsNotFungible {
+                .ok_or_else(|| ContractError::LaneIsNotFungible {
                     channel_id: packet.destination_channel_id,
                 })?;
 
             let quote_token = String::from_utf8(Vec::from(order.quote_token))
-                .map_err(|_| Error::InvalidQuoteToken)?;
+                .map_err(|_| ContractError::InvalidQuoteToken)?;
 
             if quote_token != env.contract.address.as_str() {
-                return Err(Error::InvalidFill { quote_token });
+                return Err(ContractError::InvalidFill { quote_token });
             }
 
             let cw20_type = deps.storage.read_item::<Cw20Type>()?;
@@ -193,7 +193,7 @@ pub fn execute(
                         env: Env,
                         recipient: String,
                         amount: u128|
-             -> Result<Response<TokenFactoryMsg>, Error> {
+             -> Result<Response<TokenFactoryMsg>, ContractError> {
                 if amount != 0 {
                     match cw20_type {
                         Cw20ImplType::Base => cw20_base::contract::unchecked_internal_mint(
@@ -202,7 +202,7 @@ pub fn execute(
                             amount.into(),
                         )
                         .map(|x| x.change_custom().unwrap())
-                        .map_err(Into::<Error>::into),
+                        .map_err(Into::<ContractError>::into),
                         Cw20ImplType::Tokenfactory => {
                             cw20_wrapped_tokenfactory::contract::unchecked_internal_mint(
                                 deps,
@@ -210,7 +210,7 @@ pub fn execute(
                                 recipient,
                                 amount.into(),
                             )
-                            .map_err(Into::<Error>::into)
+                            .map_err(Into::<ContractError>::into)
                         }
                     }
                 } else {
@@ -221,9 +221,10 @@ pub fn execute(
             let receiver = deps
                 .api
                 .addr_validate(
-                    str::from_utf8(order.receiver.as_ref()).map_err(|_| Error::InvalidReceiver)?,
+                    str::from_utf8(order.receiver.as_ref())
+                        .map_err(|_| ContractError::InvalidReceiver)?,
                 )
-                .map_err(|_| Error::InvalidReceiver)?;
+                .map_err(|_| ContractError::InvalidReceiver)?;
             let mint_quote_res = mint(
                 deps.branch(),
                 env.clone(),
@@ -234,7 +235,7 @@ pub fn execute(
             let fee = order
                 .base_amount
                 .checked_sub(order.quote_amount)
-                .ok_or_else(|| Error::BaseAmountMustCoverQuoteAmount)?;
+                .ok_or_else(|| ContractError::BaseAmountMustCoverQuoteAmount)?;
             let mint_fee_res = mint(
                 deps,
                 env,
@@ -306,7 +307,7 @@ pub fn execute(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::AllMinters {} => deps
             .storage
@@ -343,7 +344,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             .collect::<Result<Vec<_>, _>>()
             .and_then(|data| to_json_binary(&data))
             .map_err(Into::into),
-        QueryMsg::Minter {} => Err(Error::Unsupported),
+        QueryMsg::Minter {} => Err(ContractError::Unsupported),
         QueryMsg::Cw20(msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => cw20_base::contract::query(
                 deps,

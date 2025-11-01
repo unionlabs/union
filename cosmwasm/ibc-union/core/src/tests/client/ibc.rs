@@ -6,7 +6,7 @@ use cosmwasm_std::{
 use depolama::StorageExt;
 use ibc_union_msg::{
     lightclient::{QueryMsg as LightClientQueryMsg, UpdateStateResponse, VerifyCreationResponse},
-    msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
+    msg::{ExecuteMsg, InitMsg, MsgUpdateClient, RestrictedExecuteMsg},
 };
 
 use super::*;
@@ -223,17 +223,18 @@ fn update_client_ok() {
         .parse::<ClientId>()
         .expect("client type string is u32");
 
-    let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
-        client_id,
-        client_message: vec![3, 2, 1].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
     assert!(
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::UpdateClient(
+                MsgUpdateClient {
+                    client_id,
+                    client_message: vec![3, 2, 1].into(),
+                    relayer: mock_addr(RELAYER).into_string(),
+                }
+            )))
         )
         .is_ok()
     )
@@ -281,17 +282,18 @@ fn update_client_ko() {
         .parse::<ClientId>()
         .expect("client type string is u32");
 
-    let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
-        client_id,
-        client_message: vec![3, 2, 1].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
     assert!(
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::UpdateClient(
+                MsgUpdateClient {
+                    client_id,
+                    client_message: vec![3, 2, 1].into(),
+                    relayer: mock_addr(RELAYER).into_string(),
+                }
+            )))
         )
         .is_err()
     )
@@ -344,16 +346,17 @@ fn update_client_commitments_saved() {
         .parse::<ClientId>()
         .expect("client type string is u32");
 
-    let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
-        client_id,
-        client_message: vec![3, 2, 1].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
     execute(
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::UpdateClient(
+            MsgUpdateClient {
+                client_id,
+                client_message: vec![3, 2, 1].into(),
+                relayer: mock_addr(RELAYER).into_string(),
+            },
+        ))),
     )
     .expect("update client ok");
 

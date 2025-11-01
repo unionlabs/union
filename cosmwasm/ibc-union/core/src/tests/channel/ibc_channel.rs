@@ -5,6 +5,7 @@ use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
     msg::{
         InitMsg, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
+        RestrictedExecuteMsg,
     },
 };
 use ibc_union_spec::Channel;
@@ -63,7 +64,7 @@ fn channel_open_init_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
         )
         .is_ok()
     );
@@ -199,7 +200,7 @@ fn channel_open_try_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         )
         .is_ok()
     )
@@ -254,7 +255,7 @@ fn channel_open_try_invalid_state() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         )
         .is_err_and(|err| {
             matches!(
@@ -316,7 +317,7 @@ fn channel_open_try_channel_claimed() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -374,7 +375,7 @@ fn channel_open_try_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -431,7 +432,7 @@ fn channel_open_ack_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is ok");
 
@@ -449,7 +450,7 @@ fn channel_open_ack_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
         )
         .is_ok()
     )
@@ -499,7 +500,7 @@ fn channel_open_ack_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x6368616e6e656c7300 0x00000001 not present"
@@ -548,7 +549,7 @@ fn channel_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenInit(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is ok");
 
@@ -565,7 +566,7 @@ fn channel_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenAck(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -629,7 +630,7 @@ fn channel_open_confirm_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -644,7 +645,9 @@ fn channel_open_confirm_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenConfirm(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenConfirm(
+                msg
+            ))),
         )
         .is_ok()
     )
@@ -699,7 +702,7 @@ fn channel_open_try_invalid_counterparty() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         ),
         Err(ContractError::CounterpartyChannelIdInvalid)
     )
@@ -747,7 +750,9 @@ fn channel_open_confirm_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ChannelOpenConfirm(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenConfirm(
+                msg
+            ))),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x6368616e6e656c7300 0x00000001 not present"
@@ -803,7 +808,7 @@ fn channel_open_confirm_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenTry(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -817,7 +822,9 @@ fn channel_open_confirm_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ChannelOpenConfirm(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenConfirm(
+            msg,
+        ))),
     )
     .expect("channel open confirm is ok");
 

@@ -4,7 +4,7 @@ use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
     msg::{
         ExecuteMsg, InitMsg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry,
+        MsgConnectionOpenTry, RestrictedExecuteMsg,
     },
 };
 use ibc_union_spec::Connection;
@@ -47,7 +47,9 @@ fn connection_open_init_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ConnectionOpenInit(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ConnectionOpenInit(
+                msg
+            ))),
         )
         .is_ok()
     )
@@ -131,7 +133,9 @@ fn connection_open_try_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ConnectionOpenTry(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ConnectionOpenTry(
+                msg
+            ))),
         )
         .is_ok()
     );
@@ -176,7 +180,9 @@ fn connection_open_try_client_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ConnectionOpenTry(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ConnectionOpenTry(
+                msg
+            ))),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x636c69656e745f696d706c7300 0x00000001 not present"
@@ -228,7 +234,9 @@ fn connection_open_try_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ConnectionOpenTry(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ConnectionOpenTry(
+            msg,
+        ))),
     )
     .expect("connection open try is ok");
 
@@ -283,7 +291,9 @@ fn connection_open_ack_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ConnectionOpenAck(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ConnectionOpenAck(
+                msg
+            ))),
         )
         .is_ok()
     )
@@ -333,7 +343,9 @@ fn connection_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        Restricted::wrap(ExecuteMsg::ConnectionOpenAck(msg)),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ConnectionOpenAck(
+            msg,
+        ))),
     )
     .expect("connection open ack is ok");
 
@@ -387,7 +399,9 @@ fn connection_open_confirm_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            Restricted::wrap(ExecuteMsg::ConnectionOpenConfirm(msg)),
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::ConnectionOpenConfirm(msg)
+            )),
         )
         .is_ok()
     );

@@ -3,7 +3,7 @@ use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum ContractError {
     #[error(transparent)]
     StdError(#[from] StdError),
 

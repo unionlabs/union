@@ -5,7 +5,7 @@ use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, sta
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response,
-    StdResult, to_json_binary, wasm_execute,
+    StdError, StdResult, to_json_binary, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;

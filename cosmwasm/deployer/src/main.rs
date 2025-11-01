@@ -577,7 +577,7 @@ async fn do_main() -> Result<()> {
                             sender: ctx.wallet().address().map_data(Into::into),
                             contract: core_address.clone(),
                             msg: serde_json::to_vec(
-                                &ibc_union_msg::msg::ExecuteMsg::RegisterClient(
+                                &ibc_union_msg::msg::RestrictedExecuteMsg::RegisterClient(
                                     ibc_union_msg::msg::MsgRegisterClient {
                                         client_type: client_type.clone(),
                                         client_address: address.to_string(),

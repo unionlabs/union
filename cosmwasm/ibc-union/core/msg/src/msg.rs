@@ -1,3 +1,4 @@
+use access_managed::Restricted;
 use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
@@ -19,6 +20,22 @@ pub struct MsgRegisterClient {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
+    PacketSend(MsgSendPacket),
+    WriteAcknowledgement(MsgWriteAcknowledgement),
+
+    MigrateState(MsgMigrateState),
+
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+
+    #[serde(untagged)]
+    Restricted(Restricted<RestrictedExecuteMsg>),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
+pub enum RestrictedExecuteMsg {
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
@@ -48,16 +65,9 @@ pub enum ExecuteMsg {
     IntentPacketRecv(MsgIntentPacketRecv),
     BatchSend(MsgBatchSend),
     BatchAcks(MsgBatchAcks),
-    PacketSend(MsgSendPacket),
-    WriteAcknowledgement(MsgWriteAcknowledgement),
-
-    MigrateState(MsgMigrateState),
 
     CommitMembershipProof(MsgCommitMembershipProof),
     CommitNonMembershipProof(MsgCommitNonMembershipProof),
-
-    #[serde(untagged)]
-    AccessManaged(access_managed::ExecuteMsg),
 
     #[serde(untagged)]
     Upgradable(upgradable::msg::ExecuteMsg),
