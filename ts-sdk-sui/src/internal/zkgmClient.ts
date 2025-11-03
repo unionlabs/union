@@ -134,7 +134,6 @@ export const fromWallet = (
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
-
       const { ucs03Address: decodedUcs03, module: decodedModule, relayStoreId: relayFromPort } =
         parseUcs03Port(request.ucs03Address as unknown as string)
 
@@ -227,14 +226,14 @@ export const fromWallet = (
       })
       // sign & execute
 
-      console.log("wallet.signer:", wallet.signer)
-
+      // wallet.signer?.setRpcUrl(wallet.rpc);
+      // wallet.setRpcUrl(wallet.rpc);
       const submit = Effect.tryPromise({
         try: async () => {
           if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
             tx.setSender(wallet.signer.toSuiAddress())
           }
-
+          
           // Our wrapper may already execute
           const signed = await wallet.signer.signTransactionBlock({ transactionBlock: tx })
 
