@@ -18,7 +18,6 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
     rpc_types::SuiObjectDataOptions,
     types::{
-        Identifier,
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::SuiKeyPair,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
@@ -196,13 +195,13 @@ impl Module {
                 Datagram::ChannelOpenInit(data) => move_api::channel_open_init(
                     &mut ptb_builder,
                     self,
-                    try_parse_port(&self.graphql_url, &data.port_id).await?,
+                    self.module_info_from_port(&data.port_id).await?,
                     data,
                 )?,
                 Datagram::ChannelOpenTry(data) => move_api::channel_open_try(
                     &mut ptb_builder,
                     self,
-                    try_parse_port(&self.graphql_url, &data.port_id).await?,
+                    self.module_info_from_port(&data.port_id).await?,
                     data,
                 )?,
                 Datagram::ChannelOpenAck(data) => {
@@ -211,15 +210,14 @@ impl Module {
                     move_api::channel_open_ack(
                         &mut ptb_builder,
                         self,
-                        try_parse_port(&self.graphql_url, port_id.as_bytes()).await?,
+                        self.module_info_from_port(port_id.as_bytes()).await?,
                         data,
                     )?
                 }
                 Datagram::ChannelOpenConfirm(data) => move_api::channel_open_confirm_call(
                     &mut ptb_builder,
                     self,
-                    try_parse_port(
-                        &self.graphql_url,
+                    self.module_info_from_port(
                         move_api::get_port_id(self, data.channel_id)
                             .await?
                             .as_bytes(),
@@ -231,7 +229,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packets[0].destination_channel_id).await?;
 
-                    let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
+                    let module_info = self.module_info_from_port(port_id.as_bytes()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -269,7 +267,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packets[0].source_channel_id).await?;
 
-                    let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
+                    let module_info = self.module_info_from_port(port_id.as_bytes()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -306,7 +304,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packet.source_channel_id).await?;
 
-                    let module_info = try_parse_port(&self.graphql_url, port_id.as_bytes()).await?;
+                    let module_info = self.module_info_from_port(port_id.as_bytes()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -345,6 +343,99 @@ impl Module {
         merge_ptbs(&mut final_ptb, ptb);
 
         Ok(final_ptb)
+    }
+
+    // original_address::module_name::store_address
+    // TODO(aeryz): we can also choose to include store_name here
+    pub async fn module_info_from_port(&self, port_id: &[u8]) -> RpcResult<ModuleInfo> {
+        let port_id = String::from_utf8(port_id.to_vec()).map_err(|_| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "port parsing: port expected to be a string",
+                Some(json!({
+                    "port": port_id,
+                })),
+            )
+        })?;
+
+        let port_id = ObjectID::from_str(&port_id).map_err(|_| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "port parsing: port expected to be a object ID",
+                Some(json!({
+                    "port": port_id
+                })),
+            )
+        })?;
+
+        let bcs_port = self
+            .sui_client
+            .read_api()
+            .get_move_object_bcs(port_id)
+            .await
+            .map_err(|_| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "port parsing: the object id must exist on chain",
+                    Some(json!({
+                        "port": port_id
+                    })),
+                )
+            })?;
+
+        let port: Port = bcs::from_bytes(&bcs_port).map_err(|_| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "port parsing: the port object is not in the correct format",
+                Some(json!({
+                    "port": port_id
+                })),
+            )
+        })?;
+
+        let query = json!({
+            "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
+            "variables": { "address": port.module_address }
+        });
+
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(&self.graphql_url)
+            .header("Content-Type", "application/json")
+            .body(query.to_string())
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+        let latest_address = SuiAddress::from_str(
+            v["data"]["packageVersions"]["nodes"][0]["address"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+
+        let initial_seq = self
+            .sui_client
+            .read_api()
+            .get_object_with_options(port.store_address.into(), SuiObjectDataOptions::new())
+            .await
+            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+            .data
+            .expect("store must exist on chain")
+            .owner
+            .expect("owner will be present")
+            .start_version()
+            .expect("store is shared, hence it has a start version");
+
+        Ok(ModuleInfo {
+            original_address: port.module_address,
+            latest_address,
+            stores: vec![(port.store_address, initial_seq)],
+        })
     }
 }
 
@@ -423,85 +514,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 }
 
-// original_address::module_name::store_address
-// TODO(aeryz): we can also choose to include store_name here
-pub async fn try_parse_port(graphql_url: &str, port_id: &[u8]) -> RpcResult<ModuleInfo> {
-    let port_id = String::from_utf8(port_id.to_vec()).map_err(|_| {
-        ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            "port parsing: port expected to be a valid string",
-            Some(json!({
-                "port": port_id,
-            })),
-        )
-    })?;
-    let module_info = port_id.split("::").collect::<Vec<&str>>();
-    if module_info.len() < 3 {
-        panic!("invalid port id");
-    }
-
-    let original_address = module_info[0].parse().map_err(|_| {
-        ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            "port parsing: original address is expected to be a valid address",
-            Some(json!({
-                "module_name": module_info[0],
-            })),
-        )
-    })?;
-
-    let query = json!({
-        "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
-        "variables": { "address": original_address }
-    });
-
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(graphql_url)
-        .header("Content-Type", "application/json")
-        .body(query.to_string())
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
-
-    let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
-    let latest_address = SuiAddress::from_str(
-        v["data"]["packageVersions"]["nodes"][0]["address"]
-            .as_str()
-            .unwrap(),
-    )
-    .unwrap();
-
-    Ok(ModuleInfo {
-        original_address,
-        latest_address,
-        module_name: Identifier::from_str(module_info[1]).map_err(|_| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "port parsing: module name is expected to be a valid identifier",
-                Some(json!({
-                    "module_name": module_info[1],
-                })),
-            )
-        })?,
-        stores: module_info[2..]
-            .iter()
-            .map(|s| {
-                s.parse().map_err(|_| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "port parsing: store is expected to be a valid address",
-                        Some(json!({
-                            "store": s,
-                        })),
-                    )
-                })
-            })
-            .collect::<Result<_, ErrorObject>>()?,
-    })
+#[derive(Deserialize)]
+pub struct Port {
+    _id: ObjectID,
+    module_address: SuiAddress,
+    store_address: SuiAddress,
 }
 
 pub fn merge_ptbs(lhs: &mut ProgrammableTransaction, rhs: ProgrammableTransaction) {

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -62,7 +62,7 @@ module zkgm::ibc {
     use std::string::{Self, String};
 
     use ibc::ibc::{Self, IBCStore};
-    use zkgm::zkgm;
+    use zkgm::zkgm::RelayStore;
 
     const E_INVALID_IBC_VERSION: u64 = 2;
 
@@ -70,19 +70,18 @@ module zkgm::ibc {
 
     public fun channel_open_init(
         ibc_store: &mut IBCStore,
-        port_id: String,
+        zkgm: &mut RelayStore,
         counterparty_port_id: vector<u8>,
-        connection_id: u32, 
+        connection_id: u32,
         version: String,
-        ctx: &TxContext,
+        ctx: &TxContext
     ) {
         ibc::channel_open_init(
             ibc_store,
-            port_id,
             counterparty_port_id,
             connection_id,
             version,
-            zkgm::new_witness(),
+            zkgm.port(),
             ctx
         );
 
@@ -91,10 +90,9 @@ module zkgm::ibc {
         };
     }
 
-
     public fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
-        port_id: String,
+        zkgm: &mut RelayStore,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -102,7 +100,7 @@ module zkgm::ibc {
         counterparty_version: String,
         proof_init: vector<u8>,
         proof_height: u64,
-        ctx: &TxContext,
+        ctx: &TxContext
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_IBC_VERSION
@@ -114,7 +112,6 @@ module zkgm::ibc {
 
         ibc::channel_open_try(
             ibc_store,
-            port_id,
             connection_id,
             counterparty_channel_id,
             counterparty_port_id,
@@ -122,19 +119,20 @@ module zkgm::ibc {
             counterparty_version,
             proof_init,
             proof_height,
-            zkgm::new_witness(),
+            zkgm.port(),
             ctx
         );
     }
 
     public fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64,
-        ctx: &TxContext,
+        ctx: &TxContext
     ) {
         ibc::channel_open_ack(
             ibc_store,
@@ -143,7 +141,7 @@ module zkgm::ibc {
             counterparty_channel_id,
             proof_try,
             proof_height,
-            zkgm::new_witness(),
+            zkgm.port(),
             ctx
         );
         if (!is_valid_version(counterparty_version)) {
@@ -153,17 +151,18 @@ module zkgm::ibc {
 
     public fun channel_open_confirm(
         ibc_store: &mut ibc::IBCStore,
-        channel_id: u32, 
-        proof_ack: vector<u8>, 
+        zkgm: &mut RelayStore,
+        channel_id: u32,
+        proof_ack: vector<u8>,
         proof_height: u64,
-        ctx: &TxContext,
-    )  {
+        ctx: &TxContext
+    ) {
         ibc::channel_open_confirm(
             ibc_store,
             channel_id,
             proof_ack,
             proof_height,
-            zkgm::new_witness(),
+            zkgm.port(),
             ctx
         );
     }

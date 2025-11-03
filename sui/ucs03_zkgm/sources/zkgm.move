@@ -145,8 +145,6 @@ module zkgm::zkgm {
     const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
     const ESCROW_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-escrow-vault";
 
-    public struct IbcAppWitness has drop {}
-
     public struct RelayStore has key {
         id: UID,
         in_flight_packet: Table<vector<u8>, Packet>,
@@ -154,7 +152,7 @@ module zkgm::zkgm {
         token_origin: Table<vector<u8>, u256>,
         wrapped_denom_to_t: Table<vector<u8>, String>,
         object_store: ObjectBag,
-        test_mode: bool,
+        port: ibc::Port<address>,
     }
 
     public struct CreateWrappedToken has copy, drop, store {
@@ -221,6 +219,8 @@ module zkgm::zkgm {
     fun init(ctx: &mut TxContext) {
         let id = object::new(ctx);
 
+        let port = ibc::create_port(@zkgm, object::uid_to_address(&id), ctx);
+
         transfer::share_object(RelayStore {
             id: id,
             in_flight_packet: table::new(ctx),
@@ -228,7 +228,7 @@ module zkgm::zkgm {
             token_origin: table::new(ctx),
             object_store: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
-            test_mode: false,
+            port,
         });
     }
 
@@ -289,6 +289,7 @@ module zkgm::zkgm {
     }
 
     public fun end_send(
+        zkgm: &RelayStore,
         ibc_store: &mut ibc::IBCStore,
         clock: &Clock,
         timeout_height: u64,
@@ -313,7 +314,7 @@ module zkgm::zkgm {
             timeout_height,
             timeout_timestamp,
             zkgm_packet::encode(&zkgm_packet::new(salt, 0, instruction)),
-            IbcAppWitness {},
+            &zkgm.port,
             ctx
         );
     }
@@ -443,6 +444,7 @@ module zkgm::zkgm {
     }
 
     public fun end_recv(
+        zkgm: &RelayStore,
         ibc: &mut ibc::IBCStore,
         clock: &Clock,
         proof: vector<u8>,
@@ -484,7 +486,7 @@ module zkgm::zkgm {
             proof,
             proof_height,
             acks,
-            IbcAppWitness {},
+            &zkgm.port,
             ctx
         );
 
@@ -636,7 +638,7 @@ module zkgm::zkgm {
 
                 if (zkgm.in_flight_packet.contains(packet_hash)) {
                     let parent = zkgm.in_flight_packet.remove(packet_hash);
-                    ibc.write_acknowledgement(parent, raw_ack, IbcAppWitness {});
+                    ibc.write_acknowledgement(parent, raw_ack, &zkgm.port);
                     zkgm_packet.cursor = zkgm_packet.cursor + 1;
                     continue
                 };
@@ -674,6 +676,7 @@ module zkgm::zkgm {
     }
     
     public fun end_ack(
+        zkgm: &RelayStore,
         ibc: &mut ibc::IBCStore,
         proof: vector<u8>,
         proof_height: u64,
@@ -693,7 +696,7 @@ module zkgm::zkgm {
             proof,
             proof_height,
             relayer,
-            IbcAppWitness {},
+            &zkgm.port,
             ctx
         );
 
@@ -729,8 +732,8 @@ module zkgm::zkgm {
 
     public fun timeout_packet<T>(
         ibc: &mut ibc::IBCStore,
-        vault: &mut OwnedVault,
         zkgm: &mut RelayStore,
+        vault: &mut OwnedVault,
         relayer: address,
         mut timeout_ctx: TimeoutCtx,
         ctx: &mut TxContext
@@ -761,7 +764,7 @@ module zkgm::zkgm {
 
                 if (zkgm.in_flight_packet.contains(packet_hash)) {
                     let parent = zkgm.in_flight_packet.remove(packet_hash);
-                    ibc.write_acknowledgement(parent, ack::failure(ACK_EMPTY).encode(), IbcAppWitness {});
+                    ibc.write_acknowledgement(parent, ack::failure(ACK_EMPTY).encode(), &zkgm.port);
                     zkgm_packet.cursor = zkgm_packet.cursor + 1;
                     continue
                 };
@@ -784,6 +787,7 @@ module zkgm::zkgm {
     
     public fun end_timeout(
         ibc: &mut ibc::IBCStore,
+        zkgm: &RelayStore,
         proof: vector<u8>,
         proof_height: u64,
         timeout_ctx: TimeoutCtx,
@@ -796,7 +800,7 @@ module zkgm::zkgm {
             timeout_ctx.packet,
             proof,
             proof_height,
-            IbcAppWitness {},
+            &zkgm.port,
             ctx,
         );
 
@@ -1079,7 +1083,7 @@ module zkgm::zkgm {
                 ),
                 next_instruction
             ).encode(),
-            IbcAppWitness {},
+            &zkgm.port,
             ctx
         );
 
@@ -1754,8 +1758,8 @@ module zkgm::zkgm {
         }
     }
 
-    public(package) fun new_witness(): IbcAppWitness {
-        IbcAppWitness {}
+    public(package) fun port(zkgm: &RelayStore): &ibc::Port<address> {
+        &zkgm.port
     }
 
     #[test_only]
@@ -1769,7 +1773,6 @@ module zkgm::zkgm {
             token_origin: table::new(ctx),
             object_store: object_bag::new(ctx),
             wrapped_denom_to_t: table::new(ctx),
-            test_mode: true,
         });
     }
 

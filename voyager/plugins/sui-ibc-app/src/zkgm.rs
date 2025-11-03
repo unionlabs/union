@@ -73,7 +73,7 @@ pub fn begin_recv_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("begin_recv").into(),
         vec![],
         arguments,
@@ -127,7 +127,7 @@ pub fn recv_packet_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("recv_packet").into(),
         vec![coin_t],
         arguments,
@@ -161,7 +161,7 @@ pub fn end_recv_call(
 
     let _ = ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("end_recv").into(),
         vec![],
         arguments,
@@ -202,7 +202,7 @@ pub fn begin_ack_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("begin_ack").into(),
         vec![],
         arguments,
@@ -253,7 +253,7 @@ pub fn acknowledge_packet_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("acknowledge_packet").into(),
         vec![coin_t],
         arguments,
@@ -285,7 +285,7 @@ pub fn end_ack_call(
 
     let _ = ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("end_ack").into(),
         vec![],
         arguments,
@@ -311,7 +311,7 @@ pub fn begin_timeout_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("begin_timeout").into(),
         vec![],
         arguments,
@@ -353,7 +353,7 @@ pub fn timeout_packet_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("timeout_packet").into(),
         vec![coin_t],
         arguments,
@@ -383,7 +383,7 @@ pub fn end_timeout_call(
 
     let _ = ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("end_timeout").into(),
         vec![],
         arguments,

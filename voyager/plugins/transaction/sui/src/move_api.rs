@@ -3,8 +3,7 @@ use ibc_union_spec::{
     datagram::{
         MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
         MsgCommitPacketTimeout, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
-        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgPacketRecv,
-        MsgUpdateClient,
+        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgUpdateClient,
     },
 };
 use move_core_types::{ident_str, identifier::IdentStr};
@@ -12,13 +11,13 @@ use sui_sdk::{
     SuiClient,
     rpc_types::{SuiObjectDataOptions, SuiTypeTag},
     types::{
-        Identifier, TypeTag,
-        base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
+        Identifier,
+        base_types::{ObjectID, SequenceNumber, SuiAddress},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         transaction::{Argument, CallArg, Command, ObjectArg, TransactionKind},
     },
 };
-use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
+use unionlabs::primitives::{H256, encoding::HexPrefixed};
 use voyager_sdk::anyhow;
 
 use crate::{Module, ModuleInfo};
@@ -252,13 +251,18 @@ pub fn channel_open_init(
 ) -> anyhow::Result<()> {
     ptb.move_call(
         module_info.latest_address.into(),
-        module_info.module_name,
+        IBC_IDENT.into(),
         ident_str!("channel_open_init").into(),
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].0.into(),
+                initial_shared_version: module_info.stores[0].1,
                 mutable: true,
             }),
             (&data.port_id.into_vec()).into(),
@@ -277,7 +281,7 @@ pub fn channel_open_try(
 ) -> anyhow::Result<()> {
     ptb.move_call(
         module_info.latest_address.into(),
-        module_info.module_name,
+        IBC_IDENT.into(),
         ident_str!("channel_open_try").into(),
         vec![],
         vec![
@@ -286,7 +290,11 @@ pub fn channel_open_try(
                 initial_shared_version: module.ibc_store_initial_seq,
                 mutable: true,
             }),
-            (&data.port_id.into_vec()).into(),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].0.into(),
+                initial_shared_version: module_info.stores[0].1,
+                mutable: true,
+            }),
             data.channel.connection_id.raw().into(),
             data.channel.counterparty_channel_id.unwrap().raw().into(),
             (&data.channel.counterparty_port_id.into_vec()).into(),
@@ -306,13 +314,18 @@ pub fn channel_open_ack(
 ) -> anyhow::Result<()> {
     ptb.move_call(
         module_info.latest_address.into(),
-        module_info.module_name,
+        IBC_IDENT.into(),
         ident_str!("channel_open_ack").into(),
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].0.into(),
+                initial_shared_version: module_info.stores[0].1,
                 mutable: true,
             }),
             data.channel_id.raw().into(),
@@ -332,13 +345,18 @@ pub fn channel_open_confirm_call(
 ) -> anyhow::Result<()> {
     ptb.move_call(
         module_info.latest_address.into(),
-        module_info.module_name,
+        IBC_IDENT.into(),
         ident_str!("channel_open_confirm").into(),
         vec![],
         vec![
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
+                mutable: true,
+            }),
+            CallArg::Object(ObjectArg::SharedObject {
+                id: module_info.stores[0].0.into(),
+                initial_shared_version: module_info.stores[0].1,
                 mutable: true,
             }),
             data.channel_id.raw().into(),
@@ -369,279 +387,6 @@ pub fn packet_timeout_commitment_call(
             data.proof_height.into(),
         ],
     )
-}
-
-pub mod zkgm {
-    use ibc_union_spec::datagram::MsgPacketAcknowledgement;
-
-    use super::*;
-
-    pub fn begin_recv_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module_info: &ModuleInfo,
-        data: MsgPacketRecv,
-    ) -> Argument {
-        let (source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps) =
-            data.packets
-                .iter()
-                .map(|p| {
-                    (
-                        p.source_channel_id,
-                        p.destination_channel_id,
-                        p.data.clone(),
-                        0,
-                        p.timeout_timestamp,
-                    )
-                })
-                .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
-
-        let arguments = vec![
-            CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
-        ]
-        .into_iter()
-        .map(|a| ptb.input(a))
-        .collect::<Result<_, _>>()
-        .unwrap();
-
-        ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("begin_recv").into(),
-            vec![],
-            arguments,
-        ))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn recv_packet_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module: &Module,
-        module_info: &ModuleInfo,
-        store_initial_seq: SequenceNumber,
-        coin_t: TypeTag,
-        fee_recipient: SuiAddress,
-        relayer_msgs: Vec<Bytes>,
-        session: Argument,
-    ) -> Argument {
-        let arguments = vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module.ibc_store.into(),
-                initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
-            }),
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module_info.stores[0].into(),
-                initial_shared_version: store_initial_seq,
-                mutable: true,
-            }),
-            SUI_CALL_ARG_CLOCK,
-            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&relayer_msgs).unwrap()),
-        ]
-        .into_iter()
-        .map(|a| ptb.input(a).unwrap())
-        .chain(vec![session])
-        .collect();
-
-        ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("recv_packet").into(),
-            vec![coin_t],
-            arguments,
-        ))
-    }
-
-    pub fn end_recv_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module: &Module,
-        module_info: &ModuleInfo,
-        fee_recipient: SuiAddress,
-        session: Argument,
-        data: MsgPacketRecv,
-    ) -> anyhow::Result<()> {
-        let arguments = vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module.ibc_store.into(),
-                initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
-            }),
-            SUI_CALL_ARG_CLOCK,
-            (&data.proof.into_vec()).into(),
-            data.proof_height.into(),
-            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
-        ]
-        .into_iter()
-        .map(|a| ptb.input(a).unwrap())
-        .chain(vec![session])
-        .collect();
-
-        let _ = ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("end_recv").into(),
-            vec![],
-            arguments,
-        ));
-
-        Ok(())
-    }
-
-    pub fn begin_ack_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module_info: &ModuleInfo,
-        data: MsgPacketAcknowledgement,
-    ) -> Argument {
-        let (source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps) =
-            data.packets
-                .iter()
-                .map(|p| {
-                    (
-                        p.source_channel_id,
-                        p.destination_channel_id,
-                        p.data.clone(),
-                        0u64,
-                        p.timeout_timestamp,
-                    )
-                })
-                .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
-
-        let arguments = vec![
-            CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
-            CallArg::Pure(bcs::to_bytes(&data.acknowledgements).unwrap()),
-        ]
-        .into_iter()
-        .map(|a| ptb.input(a))
-        .collect::<Result<_, _>>()
-        .unwrap();
-
-        ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("begin_ack").into(),
-            vec![],
-            arguments,
-        ))
-    }
-
-    pub fn acknowledge_packet_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module: &Module,
-        module_info: &ModuleInfo,
-        store_initial_seq: SequenceNumber,
-        coin_t: TypeTag,
-        fee_recipient: SuiAddress,
-        session: Argument,
-    ) -> Argument {
-        let arguments = vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module.ibc_store.into(),
-                initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
-            }),
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module_info.stores[0].into(),
-                initial_shared_version: store_initial_seq,
-                mutable: true,
-            }),
-            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-        ]
-        .into_iter()
-        .map(|a| ptb.input(a).unwrap())
-        .chain(vec![session])
-        .collect();
-
-        ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("acknowledge_packet").into(),
-            vec![coin_t],
-            arguments,
-        ))
-    }
-
-    pub fn end_ack_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module: &Module,
-        module_info: &ModuleInfo,
-        fee_recipient: SuiAddress,
-        session: Argument,
-        data: MsgPacketAcknowledgement,
-    ) -> anyhow::Result<()> {
-        let arguments = vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: module.ibc_store.into(),
-                initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
-            }),
-            (&data.proof.into_vec()).into(),
-            data.proof_height.into(),
-            CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
-        ]
-        .into_iter()
-        .map(|a| ptb.input(a).unwrap())
-        .chain(vec![session])
-        .collect();
-
-        let _ = ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("end_ack").into(),
-            vec![],
-            arguments,
-        ));
-
-        Ok(())
-    }
-
-    pub fn register_capability_call(
-        ptb: &mut ProgrammableTransactionBuilder,
-        module_info: &ModuleInfo,
-        initial_seq: SequenceNumber,
-        treasury_ref: ObjectRef,
-        metadata_ref: ObjectRef,
-        coin_t: TypeTag,
-    ) -> anyhow::Result<()> {
-        let arguments = [
-            ptb.input(CallArg::Object(ObjectArg::SharedObject {
-                id: module_info.stores[0].into(),
-                initial_shared_version: initial_seq,
-                mutable: true,
-            }))
-            .unwrap(),
-            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-                .unwrap(),
-            ptb.input(CallArg::Object(ObjectArg::SharedObject {
-                id: metadata_ref.0,
-                initial_shared_version: metadata_ref.1,
-                mutable: true,
-            }))
-            .unwrap(),
-            // owner is 0x0
-            ptb.input(CallArg::Pure(
-                H256::<HexPrefixed>::default().into_bytes().to_vec(),
-            ))
-            .unwrap(),
-        ];
-        ptb.command(Command::move_call(
-            module_info.latest_address.into(),
-            module_info.module_name.clone(),
-            ident_str!("register_capability").into(),
-            vec![coin_t.clone()],
-            arguments.to_vec(),
-        ));
-
-        Ok(())
-    }
 }
 
 pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Result<String> {
