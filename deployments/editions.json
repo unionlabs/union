@@ -38,7 +38,7 @@
         "environment": "production"
       },
       "osmosis.osmosis-1": {
-        "environment": "staging"
+        "environment": "production"
       },
       "sei.1328": {
         "environment": "production"
