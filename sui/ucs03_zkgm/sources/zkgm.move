@@ -95,7 +95,6 @@ module zkgm::zkgm {
     
 
     // Constants
-    const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
 
     const INSTR_VERSION_0: u8 = 0x00;
@@ -119,8 +118,6 @@ module zkgm::zkgm {
 
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
-    const E_INVALID_IBC_VERSION: u64 = 3;
-    const E_INFINITE_GAME: u64 = 4;
     const E_UNSUPPORTED_VERSION: u64 = 5;
     const E_UNKNOWN_SYSCALL: u64 = 6;
     const E_INVALID_AMOUNT: u64 = 10;
@@ -247,105 +244,6 @@ module zkgm::zkgm {
         vault_cap: escrow_vault::ZkgmCap,
     ) {
         zkgm.object_store.add(ESCROW_VAULT_OBJECT_KEY, vault_cap);
-    }
-
-    public fun channel_open_init(
-        ibc_store: &mut ibc::IBCStore,
-        port_id: String,
-        counterparty_port_id: vector<u8>,
-        connection_id: u32, 
-        version: String,
-        ctx: &TxContext,
-    ) {
-        ibc::channel_open_init(
-            ibc_store,
-            port_id,
-            counterparty_port_id,
-            connection_id,
-            version,
-            IbcAppWitness {},
-            ctx
-        );
-
-        if (!is_valid_version(version)) {
-            abort E_INVALID_IBC_VERSION
-        };
-    }
-
-    public fun channel_open_try(
-        ibc_store: &mut ibc::IBCStore,
-        port_id: String,
-        connection_id: u32,
-        counterparty_channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        version: String,
-        counterparty_version: String,
-        proof_init: vector<u8>,
-        proof_height: u64,
-        ctx: &TxContext,
-    ) {
-        if (!is_valid_version(version)) {
-            abort E_INVALID_IBC_VERSION
-        };
-
-        if (!is_valid_version(counterparty_version)) {
-            abort E_INVALID_IBC_VERSION
-        };
-
-        ibc::channel_open_try(
-            ibc_store,
-            port_id,
-            connection_id,
-            counterparty_channel_id,
-            counterparty_port_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height,
-            IbcAppWitness {},
-            ctx
-        );
-    }
-
-    public fun channel_open_ack(
-        ibc_store: &mut ibc::IBCStore,
-        channel_id: u32,
-        counterparty_version: String,
-        counterparty_channel_id: u32,
-        proof_try: vector<u8>,
-        proof_height: u64,
-        ctx: &TxContext,
-    ) {
-        ibc::channel_open_ack(
-            ibc_store,
-            channel_id,
-            counterparty_version,
-            counterparty_channel_id,
-            proof_try,
-            proof_height,
-            IbcAppWitness {},
-            ctx
-        );
-        if (!is_valid_version(counterparty_version)) {
-            abort E_INVALID_IBC_VERSION
-        };
-    }
-
-    public fun channel_open_confirm(
-        ibc_store: &mut ibc::IBCStore,
-        channel_id: u32, 
-        proof_ack: vector<u8>, 
-        proof_height: u64,
-        ctx: &TxContext,
-    )  {
-        ibc::channel_open_confirm(
-            ibc_store,
-            channel_id,
-            proof_ack,
-            proof_height,
-            IbcAppWitness {},
-            ctx
-        );
     }
 
     public fun begin_send(
@@ -904,14 +802,6 @@ module zkgm::zkgm {
 
         // dropping the ctx by decontstructing it
         let TimeoutCtx { .. } = timeout_ctx;
-    }
-
-    public fun channel_close_init(_channel_id: u32) {
-        abort E_INFINITE_GAME
-    }
-
-    public fun channel_close_confirm(_channel_id: u32) {
-        abort E_INFINITE_GAME
     }
 
     fun market_maker_fill<T>(
@@ -1849,10 +1739,6 @@ module zkgm::zkgm {
         }
     }
 
-    fun is_valid_version(version_bytes: String): bool {
-        version_bytes == string::utf8(VERSION)
-    }
-
     fun save_token_origin(
         zkgm: &mut RelayStore,
         wrapped_token: vector<u8>,
@@ -1866,6 +1752,10 @@ module zkgm::zkgm {
         } else {
             true
         }
+    }
+
+    public(package) fun new_witness(): IbcAppWitness {
+        IbcAppWitness {}
     }
 
     #[test_only]
