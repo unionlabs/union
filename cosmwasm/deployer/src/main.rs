@@ -60,13 +60,13 @@ enum App {
         contracts: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long)]
+        manager_admin: Bech32<Bytes>,
         /// Marks this chain as permissioned.
         ///
         /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
         #[arg(long)]
         permissioned: bool,
-        #[arg(long)]
-        manager: Bech32<H256>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -395,6 +395,9 @@ static ESCROW_VAULT: LazyLock<Salt> = LazyLock::new(|| {
 static ON_ZKGM_CALL_PROXY: LazyLock<Salt> =
     LazyLock::new(|| Salt::Utf8("on-zkgm-call-proxy".to_owned()));
 static CORE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("ibc-is-based".to_owned()));
+static MANAGER: LazyLock<Salt> = LazyLock::new(|| {
+    Salt::Raw(hex!("7b1f7c3b93ff643023d63bbbe182a179922ad85a2aa0e03ef50170b591a7b752").into())
+});
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
 
@@ -406,6 +409,7 @@ static BYTECODE_BASE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("bytecode-bas
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct ContractPaths {
     core: PathBuf,
+    manager: PathBuf,
     // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
@@ -450,6 +454,8 @@ struct ContractAddresses {
     core: Bech32<H256>,
     lightclient: BTreeMap<String, Bech32<H256>>,
     app: AppAddresses,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    manager: Option<Bech32<H256>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     escrow_vault: Option<Bech32<H256>>,
     on_zkgm_call_proxy: Bech32<H256>,
@@ -503,9 +509,9 @@ async fn do_main() -> Result<()> {
             private_key,
             contracts,
             output,
+            manager_admin,
             permissioned,
             gas_config,
-            manager,
         } => {
             let contracts = serde_json::from_slice::<ContractPaths>(
                 &std::fs::read(contracts).context("reading contracts path")?,
@@ -513,11 +519,22 @@ async fn do_main() -> Result<()> {
 
             let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
+            let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
+
+            let manager = ctx
+                .deploy_and_initiate(
+                    std::fs::read(contracts.manager)?,
+                    bytecode_base_code_id,
+                    access_manager_types::manager::msg::InitMsg {
+                        initial_admin: Addr::unchecked(manager_admin.to_string()),
+                    },
+                    &MANAGER,
+                )
+                .await?;
+
             let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
                 initial_authority: Addr::unchecked(manager.to_string()),
             };
-
-            let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
 
             let core_address = ctx
                 .deploy_and_initiate(
@@ -543,6 +560,7 @@ async fn do_main() -> Result<()> {
                     ucs00: None,
                     ucs03: None,
                 },
+                manager: Some(manager.clone()),
                 escrow_vault: None,
                 on_zkgm_call_proxy: on_zkgm_call_proxy_address.clone(),
             };
@@ -1540,8 +1558,12 @@ fn calculate_contract_addresses(
         sha2(BYTECODE_BASE_BYTECODE),
         &ESCROW_VAULT,
     )?;
-    let on_zkgm_call_proxy =
-        instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), &ON_ZKGM_CALL_PROXY)?;
+
+    let on_zkgm_call_proxy = instantiate2_address(
+        deployer.clone(),
+        sha2(BYTECODE_BASE_BYTECODE),
+        &ON_ZKGM_CALL_PROXY,
+    )?;
 
     Ok(ContractAddresses {
         core,
@@ -1549,6 +1571,11 @@ fn calculate_contract_addresses(
         app,
         escrow_vault: Some(escrow_vault),
         on_zkgm_call_proxy,
+        manager: Some(instantiate2_address(
+            deployer,
+            sha2(BYTECODE_BASE_BYTECODE),
+            &MANAGER,
+        )?),
     })
 }
 

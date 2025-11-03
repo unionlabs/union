@@ -605,7 +605,7 @@ _: {
               --contracts ${chain-contracts-config-json args} \
               ${if permissioned then "--permissioned " else ""} \
               --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config}
+              ${mk-gas-args gas_config} "$@"
           '';
         };
 
@@ -719,6 +719,7 @@ _: {
             app = apps;
             escrow_vault = cw-escrow-vault.release;
             on_zkgm_call_proxy = on-zkgm-call-proxy.release;
+            manager = access-manager.release;
           }
         );
 

@@ -134,9 +134,11 @@ pub fn init(deps: DepsMut, env: &Env, msg: &InitMsg) -> Result<Response, Contrac
     };
 
     let mut ctx = ExecCtx::new(
-        deps, env, &info,
+        deps,
+        env,
+        &info,
         // this can technically be whatever, just needs to be passed through
-        &msg,
+        &(),
     );
 
     ctx.storage().write_item::<ExecutionIdStack>(&vec![]);

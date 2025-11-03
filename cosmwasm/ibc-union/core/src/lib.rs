@@ -24,13 +24,13 @@ pub enum ContractError {
     #[error("{kind} std error: {0}", kind = ContractErrorKind::from(self))]
     Std(#[from] StdError),
 
-    #[error("{} migration error", ContractErrorKind::from(self))]
+    #[error("{kind} migration error: {0}", kind = ContractErrorKind::from(self))]
     Migrate(#[from] UpgradeError),
 
-    #[error("{} access management error", ContractErrorKind::from(self))]
+    #[error("{kind} access management error: {0}", kind = ContractErrorKind::from(self))]
     AccessManaged(#[from] access_managed::error::ContractError),
 
-    #[error("{} upgradable error", ContractErrorKind::from(self))]
+    #[error("{kind} upgradable error: {0}", kind = ContractErrorKind::from(self))]
     Upgradable(#[from] upgradable::error::ContractError),
 
     #[error(
