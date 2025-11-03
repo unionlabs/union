@@ -108,7 +108,18 @@ pub struct Schedule {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    bincode::Encode,
+    bincode::Decode,
 )]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct RoleId(

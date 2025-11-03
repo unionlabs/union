@@ -100,7 +100,7 @@ use crate::{
     context::{ExecCtx, HasStorage, QueryCtx},
     contract::{
         _grant_role, can_call, cancel, consume_scheduled_op, expiration, get_access, get_nonce,
-        get_role_admin, get_role_grant_delay, get_role_guardian, get_schedule,
+        get_role_admin, get_role_grant_delay, get_role_guardian, get_role_labels, get_schedule,
         get_target_admin_delay, get_target_function_role, grant_role, has_role, hash_operation,
         is_target_closed, label_role, min_setback, renounce_role, revoke_role, schedule,
         set_grant_delay, set_role_admin, set_role_guardian, set_target_admin_delay,
@@ -172,7 +172,7 @@ pub fn execute(
 
     match &msg {
         ExecuteMsg::LabelRole { role_id, label } => {
-            label_role(&mut ctx, *role_id, label);
+            label_role(&mut ctx, *role_id, label)?;
         }
         ExecuteMsg::GrantRole {
             role_id,
@@ -294,6 +294,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             target,
             data,
         } => Ok(to_json_binary(&hash_operation(&caller, &target, &data))?),
+        QueryMsg::GetRoleLabels { role_ids } => {
+            Ok(to_json_binary(&get_role_labels(ctx, &role_ids)?)?)
+        }
     }
 }
 

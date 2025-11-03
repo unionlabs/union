@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, collections::BTreeMap};
 
 #[cfg(doc)]
 use access_manager_types::manager::{event::*, msg::QueryMsg};
@@ -24,7 +24,9 @@ use crate::{
     EXECUTE_REPLY_ID,
     context::{ExecCtx, HasStorage, IExecCtx, IQueryCtx, QueryCtx},
     error::ContractError,
-    state::{ExecutionIdStack, RoleMembers, Roles, Schedules, TargetAllowedRoles, Targets},
+    state::{
+        ExecutionIdStack, RoleLabels, RoleMembers, Roles, Schedules, TargetAllowedRoles, Targets,
+    },
 };
 
 /// Check that the caller is authorized to perform the operation.
@@ -43,10 +45,18 @@ fn only_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
 // ======================================= ROLE MANAGEMENT =======================================
 
 /// See [`ExecuteMsg::LabelRole`].
-pub(crate) fn label_role(ctx: &mut ExecCtx, role_id: RoleId, label: &str) {
-    // TODO: figure out how we want to label roles; events like the original solidity implementation
-    // or in storage?
+pub(crate) fn label_role(
+    ctx: &mut ExecCtx,
+    role_id: RoleId,
+    label: &String,
+) -> Result<(), ContractError> {
+    only_authorized(ctx)?;
+
+    ctx.storage().write::<RoleLabels>(&role_id, label);
+
     ctx.emit(RoleLabel { role_id, label });
+
+    Ok(())
 }
 
 /// See [`ExecuteMsg::GrantRole`].
@@ -1167,4 +1177,20 @@ pub(crate) fn has_role(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L737>
 pub(crate) fn _hash_execution_id(target: &Addr, selector: &Selector) -> H256 {
     sha2::Sha256::digest(format!("{target}:{selector}")).into()
+}
+
+/// Return all labels for the given role IDs.
+pub(crate) fn get_role_labels(
+    ctx: QueryCtx,
+    role_ids: &[RoleId],
+) -> Result<BTreeMap<RoleId, Option<String>>, ContractError> {
+    role_ids
+        .iter()
+        .map(|role_id| {
+            ctx.storage()
+                .maybe_read::<RoleLabels>(role_id)
+                .map(|maybe_label| (*role_id, maybe_label))
+                .map_err(Into::into)
+        })
+        .collect()
 }

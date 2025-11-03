@@ -154,8 +154,8 @@ impl ValueCodecViaEncoding for Schedules {
 }
 
 /// Used to identify operations that are currently being executed via
-/// [`ExecuteMsg::Execute`][access_manager_types::manager::msg::ExecuteMsg::Execute]. This should be transient storage when
-/// supported by `CosmWasm`.
+/// [`ExecuteMsg::Execute`][access_manager_types::manager::msg::ExecuteMsg::Execute]. This should be
+/// transient storage when supported by `CosmWasm`.
 ///
 /// ```solidity
 /// bytes32 private _executionId;
@@ -168,5 +168,29 @@ impl Store for ExecutionIdStack {
     type Value = Vec<H256>;
 }
 impl ValueCodecViaEncoding for ExecutionIdStack {
+    type Encoding = Bincode;
+}
+
+/// Role labels.
+///
+/// In the original EVM implementation, role labels are only emitted in events in order to save gas.
+/// Storage is significantly cheaper in CosmWasm, so the value is also written to storage so as to
+/// not need an indexer to view all role labels.
+pub enum RoleLabels {}
+impl Store for RoleLabels {
+    const PREFIX: Prefix = Prefix::new(b"role_labels");
+    type Key = RoleId;
+    type Value = String;
+}
+impl KeyCodec<RoleId> for RoleLabels {
+    fn encode_key(key: &RoleId) -> Bytes {
+        key.to_be_bytes().into()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<RoleId> {
+        RoleId::try_from_be_bytes(raw)
+    }
+}
+impl ValueCodecViaEncoding for RoleLabels {
     type Encoding = Bincode;
 }

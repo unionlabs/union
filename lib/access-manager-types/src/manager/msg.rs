@@ -222,6 +222,11 @@ pub enum QueryMsg {
         target: Addr,
         data: String,
     },
+
+    /// Return the labels of all of the provided roles.
+    ///
+    /// This will return `None` for a role label if the role is unlabeled.
+    GetRoleLabels { role_ids: Vec<RoleId> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
