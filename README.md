@@ -79,25 +79,21 @@ Check the `#developers` channel on [Union's discord](https://discord.union.build
 
 ## Supported Chains
 
-| Network       | Mainnets                    | Testnets                              |
-| ------------- | --------------------------- | ------------------------------------- |
-| **Aptos**     | `aptos.1`                   | `aptos.2`                             |
-| **Arbitrum**  | -                           | `arbitrum.421614`                     |
-| **Babylon**   | `babylon.bbn-1`             | `babylon.bbn-test-5`                  |
-| **Base**      | `base.8453`                 | `base.84532`                          |
-| **Berachain** | `berachain.80094`           | `berachain.80069`, `berachain.80084`  |
-| **Bob**       | `bob.60808`                 | `bob.808813`                          |
-| **BSC**       | `bsc.56`                    | `bsc.97`                              |
-| **Corn**      | `corn.21000000`             | `corn.21000001`                       |
-| **Ethereum**  | `ethereum.1`                | `ethereum.11155111`, `ethereum.17000` |
-| **Movement**  | -                           | `movement.250`                        |
-| **Osmosis**   | -                           | `osmosis.osmo-test-5`                 |
-| **Scroll**    | -                           | `scroll.534351`                       |
-| **Sei**       | `sei.pacific-1`, `sei.1329` | `sei.atlantic-2`, `sei.1328`          |
-| **Stargaze**  | -                           | `stargaze.elgafar-1`                  |
-| **Stride**    | -                           | `stride.stride-internal-1`            |
-| **Union**     | `union.union-1`             | `union.union-testnet-10`              |
-| **Xion**      | `xion.xion-mainnet-1`       | `xion.xion-testnet-2`                 |
+| Network       | Mainnets                    | Testnets                               |
+| ------------- | --------------------------- | -------------------------------------- |
+| **Arbitrum**  | `arbitrum.42161`            | `arbitrum.421614`                      |
+| **Babylon**   | `babylon.bbn-1`             | `babylon.bbn-test-6`                   |
+| **Base**      | `base.8453`                 | `base.84532`                           |
+| **Berachain** | `berachain.80094`           | `berachain.80069`                      |
+| **Bob**       | `bob.60808`                 | `bob.808813`                           |
+| **BSC**       | `bsc.56`                    | `bsc.97`                               |
+| **Corn**      | `corn.21000000`             | `corn.21000001`                        |
+| **Ethereum**  | `ethereum.1`                | `ethereum.11155111`, `ethereum.560048` |
+| **Osmosis**   | `osmosis.osmosis-1`         | `osmosis.osmo-test-5`                  |
+| **Sei**       | `sei.pacific-1`, `sei.1329` | `sei.atlantic-2`, `sei.1328`           |
+| **Sui**       | -                           | `sui.4c78adac`                         |
+| **Union**     | `union.union-1`             | `union.union-testnet-10`               |
+| **Xion**      | `xion.xion-mainnet-1`       | `xion.xion-testnet-2`                  |
 
 *For the full list see https://docs.union.build/ucs/04/*
 
