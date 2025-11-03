@@ -94,7 +94,9 @@ module ibc::state {
         df::borrow_mut(id, prefixed_key(COMMITMENT, key))
     }
 
-    public(package) fun add_or_update_commitment(id: &mut UID, key: vector<u8>, value: vector<u8>) {
+    public(package) fun add_or_update_commitment(
+        id: &mut UID, key: vector<u8>, value: vector<u8>
+    ) {
         if (has_commitment(id, key)) {
             *borrow_commitment_mut(id, key) = value;
         } else {
@@ -115,7 +117,7 @@ module ibc::state {
 
     /// Channel-to-port storage
     public(package) fun add_channel_to_port(
-        id: &mut UID, channel: u32, port: String,
+        id: &mut UID, channel: u32, port: String
     ) {
         df::add(
             id,
@@ -124,15 +126,11 @@ module ibc::state {
         );
     }
 
-    public(package) fun borrow_channel_to_port(
-        id: &UID, channel: u32
-    ): &String {
+    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): &String {
         df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
     }
 
-    public(package) fun has_channel_to_port(
-        id: &UID, channel: u32
-    ): bool {
+    public(package) fun has_channel_to_port(id: &UID, channel: u32): bool {
         df::exists_(id, prefixed_key(CHANNEL_TO_PORT, channel))
     }
 

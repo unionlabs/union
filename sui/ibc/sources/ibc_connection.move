@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -101,7 +101,7 @@ module ibc::ibc_connection {
         ibc::events::emit_connection_open_init(
             connection_id,
             client_id,
-            counterparty_client_id,
+            counterparty_client_id
         );
     }
 
@@ -119,20 +119,22 @@ module ibc::ibc_connection {
 
         let connection_id = (connections.length() as u32) + 1;
 
-        let connection = connection_end::new(
-            CONN_STATE_TRYOPEN,
-            client_id,
-            counterparty_client_id,
-            counterparty_connection_id
-        );
+        let connection =
+            connection_end::new(
+                CONN_STATE_TRYOPEN,
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id
+            );
 
         // Construct the expected connection state to verify against the proof
-        let expected_connection = connection_end::new(
-            CONN_STATE_INIT,
-            counterparty_client_id,
-            client_id,
-            0 // counterparty_connection_id
-        );
+        let expected_connection =
+            connection_end::new(
+                CONN_STATE_INIT,
+                counterparty_client_id,
+                client_id,
+                0 // counterparty_connection_id
+            );
 
         // Verify the connection state using the provided proof and expected state
         let res =
@@ -143,7 +145,7 @@ module ibc::ibc_connection {
                 proof_init,
                 counterparty_connection_id,
                 expected_connection
-        );
+            );
 
         assert!(res == 0, res);
 
@@ -155,7 +157,7 @@ module ibc::ibc_connection {
             connection_id,
             client_id,
             counterparty_client_id,
-            counterparty_connection_id,
+            counterparty_connection_id
         );
     }
 
@@ -177,22 +179,24 @@ module ibc::ibc_connection {
         );
 
         // Create the expected connection state to verify against the proof
-        let expected_connection = connection_end::new(
-            CONN_STATE_TRYOPEN,
-            connection.counterparty_client_id(),
-            connection.client_id(),
-            connection_id
-        );
+        let expected_connection =
+            connection_end::new(
+                CONN_STATE_TRYOPEN,
+                connection.counterparty_client_id(),
+                connection.client_id(),
+                connection_id
+            );
 
         // Verify the connection state using the provided proof and expected state
-        let res = verify_connection_state(
-            client_mgr,
-            connection.client_id(),
-            proof_height,
-            proof_try,
-            counterparty_connection_id,
-            expected_connection
-        );
+        let res =
+            verify_connection_state(
+                client_mgr,
+                connection.client_id(),
+                proof_height,
+                proof_try,
+                counterparty_connection_id,
+                expected_connection
+            );
         assert!(res == 0, res);
 
         // Update the connection state to TRYOPEN and set the counterparty connection ID
@@ -225,24 +229,26 @@ module ibc::ibc_connection {
         );
 
         // Create the expected connection state in the `OPEN` state to verify against the proof
-        let expected_connection = connection_end::new(
-            CONN_STATE_OPEN,
-            connection.counterparty_client_id(),
-            connection.client_id(),
-            connection_id
-        );
+        let expected_connection =
+            connection_end::new(
+                CONN_STATE_OPEN,
+                connection.counterparty_client_id(),
+                connection.client_id(),
+                connection_id
+            );
 
         let counterparty_connection_id = connection.counterparty_connection_id();
 
         // Verify the connection state using the provided proof and expected state
-        let res = verify_connection_state(
-            client_mgr,
-            connection.client_id(),
-            proof_height,
-            proof_ack,
-            counterparty_connection_id,
-            expected_connection
-        );
+        let res =
+            verify_connection_state(
+                client_mgr,
+                connection.client_id(),
+                proof_height,
+                proof_ack,
+                counterparty_connection_id,
+                expected_connection
+            );
         assert!(res == 0, res);
 
         // Update the connection state to OPEN
@@ -260,8 +266,10 @@ module ibc::ibc_connection {
         commit_connection(ibc_uid, connection_id, *connection);
     }
 
-    fun commit_connection(ibc_uid: &mut UID, connection_id: u32, connection: ConnectionEnd) {
-        state::commit(  
+    fun commit_connection(
+        ibc_uid: &mut UID, connection_id: u32, connection: ConnectionEnd
+    ) {
+        state::commit(
             ibc_uid,
             commitment::connection_commitment_key(connection_id),
             keccak256(&connection.encode())
@@ -284,5 +292,4 @@ module ibc::ibc_connection {
             keccak256(&counterparty_connection.encode())
         )
     }
-
 }

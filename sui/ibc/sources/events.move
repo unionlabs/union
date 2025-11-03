@@ -71,66 +71,63 @@ module ibc::events {
     public struct Initiated has copy, drop, store {}
 
     /* ─────────────── CLIENT EVENTS ─────────────── */
-
     public struct CreateClient has copy, drop, store {
         client_id: u32,
         client_type: String,
-        counterparty_chain_id: String,
+        counterparty_chain_id: String
     }
 
     public struct CreateLensClient has copy, drop, store {
         client_id: u32,
         l2_chain_id: String,
         l1_client_id: u32,
-        l2_client_id: u32,
+        l2_client_id: u32
     }
 
     public struct UpdateClient has copy, drop, store {
         client_id: u32,
-        height: u64,
+        height: u64
     }
 
     public struct Misbehaviour has drop, store, copy {
-        client_id: u32,
+        client_id: u32
     }
 
     /* ─────────────── CONNECTION EVENTS ─────────────── */
-
     public struct ConnectionOpenInit has copy, drop, store {
         connection_id: u32,
         client_id: u32,
-        counterparty_client_id: u32,
+        counterparty_client_id: u32
     }
 
     public struct ConnectionOpenTry has copy, drop, store {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     }
 
     public struct ConnectionOpenAck has copy, drop, store {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     }
 
     public struct ConnectionOpenConfirm has copy, drop, store {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     }
 
     /* ─────────────── CHANNEL EVENTS ─────────────── */
-
     public struct ChannelOpenInit has copy, drop, store {
         port_id: String,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
-        version: String,
+        version: String
     }
 
     public struct ChannelOpenTry has copy, drop, store {
@@ -139,7 +136,7 @@ module ibc::events {
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
         connection_id: u32,
-        counterparty_version: String,
+        counterparty_version: String
     }
 
     public struct ChannelOpenAck has copy, drop, store {
@@ -147,7 +144,7 @@ module ibc::events {
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
-        connection_id: u32,
+        connection_id: u32
     }
 
     public struct ChannelOpenConfirm has copy, drop, store {
@@ -155,50 +152,48 @@ module ibc::events {
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
-        connection_id: u32,
+        connection_id: u32
     }
 
     /* ─────────────── PACKET EVENTS ─────────────── */
-
     public struct PacketSend has drop, copy, store {
         channel_id: u32,
         packet_hash: vector<u8>,
-        packet: Packet,
+        packet: Packet
     }
 
     public struct PacketRecv has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
         maker: address,
-        maker_msg: vector<u8>,
+        maker_msg: vector<u8>
     }
 
     public struct IntentPacketRecv has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
         maker: address,
-        maker_msg: vector<u8>,
+        maker_msg: vector<u8>
     }
 
     public struct TimeoutPacket has drop, store, copy {
-        packet_hash: vector<u8>,
+        packet_hash: vector<u8>
     }
 
     public struct WriteAck has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
-        acknowledgement: vector<u8>,
+        acknowledgement: vector<u8>
     }
 
     public struct PacketAck has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
         acknowledgement: vector<u8>,
-        maker: address,
+        maker: address
     }
 
     /* ─────────────── EMITTER FUNCTIONS ─────────────── */
-
     public(package) fun emit_initiated() {
         event::emit(Initiated {})
     }
@@ -207,14 +202,10 @@ module ibc::events {
     public(package) fun emit_create_client(
         client_id: u32,
         client_type: String,
-        counterparty_chain_id: String,
+        counterparty_chain_id: String
     ) {
         event::emit(
-            CreateClient {
-                client_id,
-                client_type,
-                counterparty_chain_id,
-            }
+            CreateClient { client_id, client_type, counterparty_chain_id }
         )
     }
 
@@ -222,52 +213,29 @@ module ibc::events {
         client_id: u32,
         l2_chain_id: String,
         l1_client_id: u32,
-        l2_client_id: u32,
+        l2_client_id: u32
     ) {
         event::emit(
-            CreateLensClient {
-                client_id,
-                l2_chain_id,
-                l1_client_id,
-                l2_client_id,
-            }
+            CreateLensClient { client_id, l2_chain_id, l1_client_id, l2_client_id }
         )
     }
 
-    public(package) fun emit_update_client(
-        client_id: u32,
-        height: u64,
-    ) {
-        event::emit(
-            UpdateClient {
-                client_id,
-                height,
-            }
-        )
+    public(package) fun emit_update_client(client_id: u32, height: u64) {
+        event::emit(UpdateClient { client_id, height })
     }
 
-    public(package) fun emit_misbehaviour(
-        client_id: u32,
-    ) {
-        event::emit(
-            Misbehaviour {
-                client_id,
-            }
-        )
+    public(package) fun emit_misbehaviour(client_id: u32) {
+        event::emit(Misbehaviour { client_id })
     }
 
     /* Connection */
     public(package) fun emit_connection_open_init(
         connection_id: u32,
         client_id: u32,
-        counterparty_client_id: u32,
+        counterparty_client_id: u32
     ) {
         event::emit(
-            ConnectionOpenInit {
-                connection_id,
-                client_id,
-                counterparty_client_id,
-            }
+            ConnectionOpenInit { connection_id, client_id, counterparty_client_id }
         )
     }
 
@@ -275,14 +243,14 @@ module ibc::events {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     ) {
         event::emit(
             ConnectionOpenTry {
                 connection_id,
                 client_id,
                 counterparty_client_id,
-                counterparty_connection_id,
+                counterparty_connection_id
             }
         )
     }
@@ -291,14 +259,14 @@ module ibc::events {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     ) {
         event::emit(
             ConnectionOpenAck {
                 connection_id,
                 client_id,
                 counterparty_client_id,
-                counterparty_connection_id,
+                counterparty_connection_id
             }
         )
     }
@@ -307,14 +275,14 @@ module ibc::events {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32,
-        counterparty_connection_id: u32,
+        counterparty_connection_id: u32
     ) {
         event::emit(
             ConnectionOpenConfirm {
                 connection_id,
                 client_id,
                 counterparty_client_id,
-                counterparty_connection_id,
+                counterparty_connection_id
             }
         )
     }
@@ -325,7 +293,7 @@ module ibc::events {
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
-        version: String,
+        version: String
     ) {
         event::emit(
             ChannelOpenInit {
@@ -333,7 +301,7 @@ module ibc::events {
                 channel_id,
                 counterparty_port_id,
                 connection_id,
-                version,
+                version
             }
         )
     }
@@ -344,7 +312,7 @@ module ibc::events {
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
         connection_id: u32,
-        counterparty_version: String,
+        counterparty_version: String
     ) {
         event::emit(
             ChannelOpenTry {
@@ -353,7 +321,7 @@ module ibc::events {
                 counterparty_port_id,
                 counterparty_channel_id,
                 connection_id,
-                counterparty_version,
+                counterparty_version
             }
         )
     }
@@ -363,7 +331,7 @@ module ibc::events {
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
-        connection_id: u32,
+        connection_id: u32
     ) {
         event::emit(
             ChannelOpenAck {
@@ -371,7 +339,7 @@ module ibc::events {
                 channel_id,
                 counterparty_port_id,
                 counterparty_channel_id,
-                connection_id,
+                connection_id
             }
         )
     }
@@ -381,7 +349,7 @@ module ibc::events {
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
-        connection_id: u32,
+        connection_id: u32
     ) {
         event::emit(
             ChannelOpenConfirm {
@@ -389,7 +357,7 @@ module ibc::events {
                 channel_id,
                 counterparty_port_id,
                 counterparty_channel_id,
-                connection_id,
+                connection_id
             }
         )
     }
@@ -398,30 +366,19 @@ module ibc::events {
     public(package) fun emit_packet_send(
         channel_id: u32,
         packet_hash: vector<u8>,
-        packet: Packet,
+        packet: Packet
     ) {
-        event::emit(
-            PacketSend {
-                channel_id,
-                packet_hash,
-                packet,
-            }
-        )
+        event::emit(PacketSend { channel_id, packet_hash, packet })
     }
 
     public(package) fun emit_packet_recv(
         channel_id: u32,
         packet_hash: vector<u8>,
         maker: address,
-        maker_msg: vector<u8>,
+        maker_msg: vector<u8>
     ) {
         event::emit(
-            PacketRecv {
-                channel_id,
-                packet_hash,
-                maker,
-                maker_msg,
-            }
+            PacketRecv { channel_id, packet_hash, maker, maker_msg }
         )
     }
 
@@ -429,39 +386,24 @@ module ibc::events {
         channel_id: u32,
         packet_hash: vector<u8>,
         maker: address,
-        maker_msg: vector<u8>,
+        maker_msg: vector<u8>
     ) {
         event::emit(
-            IntentPacketRecv {
-                channel_id,
-                packet_hash,
-                maker,
-                maker_msg,
-            }
+            IntentPacketRecv { channel_id, packet_hash, maker, maker_msg }
         )
     }
 
-    public(package) fun emit_timeout_packet(
-        packet_hash: vector<u8>,
-    ) {
-        event::emit(
-            TimeoutPacket {
-                packet_hash,
-            }
-        )
+    public(package) fun emit_timeout_packet(packet_hash: vector<u8>) {
+        event::emit(TimeoutPacket { packet_hash })
     }
 
     public(package) fun emit_write_ack(
         channel_id: u32,
         packet_hash: vector<u8>,
-        acknowledgement: vector<u8>,
+        acknowledgement: vector<u8>
     ) {
         event::emit(
-            WriteAck {
-                channel_id,
-                packet_hash,
-                acknowledgement,
-            }
+            WriteAck { channel_id, packet_hash, acknowledgement }
         )
     }
 
@@ -469,16 +411,10 @@ module ibc::events {
         channel_id: u32,
         packet_hash: vector<u8>,
         acknowledgement: vector<u8>,
-        maker: address,
+        maker: address
     ) {
         event::emit(
-            PacketAck {
-                channel_id,
-                packet_hash,
-                acknowledgement,
-                maker,
-            }
+            PacketAck { channel_id, packet_hash, acknowledgement, maker }
         )
     }
 }
-

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -79,7 +79,7 @@ module ibc::ibc_channel {
 
     const E_INVALID_CONNECTION_STATE: u64 = 2;
     const E_INVALID_CHANNEL_STATE: u64 = 3;
-    
+
     public(package) fun channel_open_init(
         ibc_uid: &mut UID,
         connections: &Table<u32, ConnectionEnd>,
@@ -87,7 +87,7 @@ module ibc::ibc_channel {
         port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
-        version: String,
+        version: String
     ) {
         // Ensure the connection exists and is in the OPEN state
         let connection = connections.borrow(connection_id);
@@ -100,13 +100,14 @@ module ibc::ibc_channel {
         let channel_id = (channels.length() as u32) + 1;
 
         // Create a new channel and set its properties
-        let channel = channel::new(
-            CHAN_STATE_INIT,
-            connection_id,
-            0,
-            counterparty_port_id,
-            version
-        );
+        let channel =
+            channel::new(
+                CHAN_STATE_INIT,
+                connection_id,
+                0,
+                counterparty_port_id,
+                version
+            );
 
         state::add_channel_to_port(ibc_uid, channel_id, port_id);
 
@@ -135,7 +136,7 @@ module ibc::ibc_channel {
         version: String,
         counterparty_version: String,
         proof_init: vector<u8>,
-        proof_height: u64,
+        proof_height: u64
     ) {
         // Ensure the connection exists and is in the OPEN state
         let connection = connections.borrow(connection_id);
@@ -145,37 +146,40 @@ module ibc::ibc_channel {
         );
 
         // Construct the expected channel state to verify against the proof
-        let expected_channel = channel::new(
-            CHAN_STATE_INIT,
-            connection.counterparty_connection_id(),
-            0,
-            *port_id.as_bytes(),
-            counterparty_version
-        );
+        let expected_channel =
+            channel::new(
+                CHAN_STATE_INIT,
+                connection.counterparty_connection_id(),
+                0,
+                *port_id.as_bytes(),
+                counterparty_version
+            );
 
         // let light_client = ibc_store.clients.borrow(connection.client_id());
         // Verify the channel state using the provided proof and expected state
-        let res = verify_channel_state(
-            client_mgr,
-            connection.client_id(),
-            proof_height,
-            proof_init,
-            counterparty_channel_id,
-            expected_channel
-        );
+        let res =
+            verify_channel_state(
+                client_mgr,
+                connection.client_id(),
+                proof_height,
+                proof_init,
+                counterparty_channel_id,
+                expected_channel
+            );
         assert!(res == 0, res);
 
         // Generate a new channel ID
         let channel_id = (channels.length() as u32) + 1;
 
         // Create a new channel and set its properties
-        let channel = channel::new(
+        let channel =
+            channel::new(
                 CHAN_STATE_TRYOPEN,
                 connection_id,
                 counterparty_channel_id,
                 counterparty_port_id,
                 version
-        );
+            );
 
         // Commit the created channel to the storage
         state::add_channel_to_port(ibc_uid, channel_id, port_id);
@@ -204,7 +208,7 @@ module ibc::ibc_channel {
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
-        proof_height: u64,
+        proof_height: u64
     ) {
         // Ensure the channel exists and is in the INIT state
         let channel = channels.borrow_mut(channel_id);
@@ -227,14 +231,15 @@ module ibc::ibc_channel {
             );
 
         // Verify the channel state using the provided proof and expected state
-        let res = verify_channel_state(
-            client_mgr,
-            connection.client_id(),
-            proof_height,
-            proof_try,
-            counterparty_channel_id,
-            expected_channel
-        );
+        let res =
+            verify_channel_state(
+                client_mgr,
+                connection.client_id(),
+                proof_height,
+                proof_try,
+                counterparty_channel_id,
+                expected_channel
+            );
         assert!(res == 0, res);
 
         // Update the channel state to OPEN and set the counterparty channel ID
@@ -263,7 +268,7 @@ module ibc::ibc_channel {
         port_id: String,
         channel_id: u32,
         proof_ack: vector<u8>,
-        proof_height: u64,
+        proof_height: u64
     ) {
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = channels.borrow_mut(channel_id);
@@ -286,14 +291,15 @@ module ibc::ibc_channel {
             );
 
         // Verify the channel state using the provided proof and expected state
-        let res = verify_channel_state(
-            client_mgr,
-            connection.client_id(),
-            proof_height,
-            proof_ack,
-            channel.counterparty_channel_id(),
-            expected_channel
-        );
+        let res =
+            verify_channel_state(
+                client_mgr,
+                connection.client_id(),
+                proof_height,
+                proof_ack,
+                channel.counterparty_channel_id(),
+                expected_channel
+            );
         assert!(res == 0, res);
 
         channel.set_state(CHAN_STATE_OPEN);
@@ -310,8 +316,10 @@ module ibc::ibc_channel {
         commit_channel(ibc_uid, channel_id, *channel);
     }
 
-    fun commit_channel(ibc_uid: &mut UID, channel_id: u32, channel: Channel) {
-        state::commit(  
+    fun commit_channel(
+        ibc_uid: &mut UID, channel_id: u32, channel: Channel
+    ) {
+        state::commit(
             ibc_uid,
             commitment::channel_commitment_key(channel_id),
             keccak256(&channel.encode())
