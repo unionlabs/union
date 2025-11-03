@@ -254,7 +254,8 @@ module zkgm::zkgm {
         port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32, 
-        version: String
+        version: String,
+        ctx: &TxContext,
     ) {
         ibc::channel_open_init(
             ibc_store,
@@ -262,7 +263,8 @@ module zkgm::zkgm {
             counterparty_port_id,
             connection_id,
             version,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
 
         if (!is_valid_version(version)) {
@@ -279,7 +281,8 @@ module zkgm::zkgm {
         version: String,
         counterparty_version: String,
         proof_init: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        ctx: &TxContext,
     ) {
         if (!is_valid_version(version)) {
             abort E_INVALID_IBC_VERSION
@@ -299,7 +302,8 @@ module zkgm::zkgm {
             counterparty_version,
             proof_init,
             proof_height,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
     }
 
@@ -309,7 +313,8 @@ module zkgm::zkgm {
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        ctx: &TxContext,
     ) {
         ibc::channel_open_ack(
             ibc_store,
@@ -318,7 +323,8 @@ module zkgm::zkgm {
             counterparty_channel_id,
             proof_try,
             proof_height,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_IBC_VERSION
@@ -329,14 +335,16 @@ module zkgm::zkgm {
         ibc_store: &mut ibc::IBCStore,
         channel_id: u32, 
         proof_ack: vector<u8>, 
-        proof_height: u64
+        proof_height: u64,
+        ctx: &TxContext,
     )  {
         ibc::channel_open_confirm(
             ibc_store,
             channel_id,
             proof_ack,
             proof_height,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
     }
 
@@ -544,6 +552,7 @@ module zkgm::zkgm {
         relayer: address,
         relayer_msg: vector<u8>,
         exec_ctx: RecvCtx,
+        ctx: &TxContext,
     ) {
         // make sure all packets are run
         assert!(exec_ctx.cursor == exec_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
@@ -577,7 +586,8 @@ module zkgm::zkgm {
             proof,
             proof_height,
             acks,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
 
         // dropping the execution ctx by decontstructing it
@@ -771,6 +781,7 @@ module zkgm::zkgm {
         proof_height: u64,
         relayer: address,
         ack_ctx: AckCtx,
+        ctx: &TxContext,
     ) {
         // make sure all packets are run
         assert!(ack_ctx.cursor == ack_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
@@ -784,7 +795,8 @@ module zkgm::zkgm {
             proof,
             proof_height,
             relayer,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
 
         // dropping the ctx by decontstructing it
@@ -877,6 +889,7 @@ module zkgm::zkgm {
         proof: vector<u8>,
         proof_height: u64,
         timeout_ctx: TimeoutCtx,
+        ctx: &TxContext,
     ) {
         // make sure all instructions in the packet are run
         assert!(timeout_ctx.packet_ctx.cursor == timeout_ctx.packet_ctx.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
@@ -885,7 +898,8 @@ module zkgm::zkgm {
             timeout_ctx.packet,
             proof,
             proof_height,
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx,
         );
 
         // dropping the ctx by decontstructing it

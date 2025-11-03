@@ -200,13 +200,9 @@ module ibc::events {
 
     /* Client */
     public(package) fun emit_create_client(
-        client_id: u32,
-        client_type: String,
-        counterparty_chain_id: String
+        client_id: u32, client_type: String, counterparty_chain_id: String
     ) {
-        event::emit(
-            CreateClient { client_id, client_type, counterparty_chain_id }
-        )
+        event::emit(CreateClient { client_id, client_type, counterparty_chain_id })
     }
 
     public(package) fun emit_create_lens_client(
@@ -230,9 +226,7 @@ module ibc::events {
 
     /* Connection */
     public(package) fun emit_connection_open_init(
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32
+        connection_id: u32, client_id: u32, counterparty_client_id: u32
     ) {
         event::emit(
             ConnectionOpenInit { connection_id, client_id, counterparty_client_id }
@@ -364,9 +358,7 @@ module ibc::events {
 
     /* Packet */
     public(package) fun emit_packet_send(
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        packet: Packet
+        channel_id: u32, packet_hash: vector<u8>, packet: Packet
     ) {
         event::emit(PacketSend { channel_id, packet_hash, packet })
     }
@@ -398,13 +390,9 @@ module ibc::events {
     }
 
     public(package) fun emit_write_ack(
-        channel_id: u32,
-        packet_hash: vector<u8>,
-        acknowledgement: vector<u8>
+        channel_id: u32, packet_hash: vector<u8>, acknowledgement: vector<u8>
     ) {
-        event::emit(
-            WriteAck { channel_id, packet_hash, acknowledgement }
-        )
+        event::emit(WriteAck { channel_id, packet_hash, acknowledgement })
     }
 
     public(package) fun emit_packet_ack(

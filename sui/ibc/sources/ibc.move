@@ -135,7 +135,8 @@ module ibc::ibc {
         clock: &clock::Clock,
         client_id: u32,
         client_message: vector<u8>,
-        relayer: address
+        relayer: address,
+        _: &TxContext,
     ) {
         ibc_store.assert_version();
 
@@ -157,7 +158,8 @@ module ibc::ibc {
         ibc_store: &mut IBCStore,
         client_id: u32,
         misbehaviour: vector<u8>,
-        relayer: address
+        relayer: address,
+        _: &TxContext,
     ) {
         ibc_store.assert_version();
 
@@ -172,7 +174,8 @@ module ibc::ibc {
     public fun connection_open_init(
         ibc_store: &mut IBCStore,
         client_id: u32,
-        counterparty_client_id: u32
+        counterparty_client_id: u32,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -200,6 +203,7 @@ module ibc::ibc {
         client_id: u32,
         proof_init: vector<u8>,
         proof_height: u64,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -227,7 +231,8 @@ module ibc::ibc {
         connection_id: u32,
         counterparty_connection_id: u32,
         proof_try: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -251,7 +256,8 @@ module ibc::ibc {
         ibc_store: &mut IBCStore,
         connection_id: u32,
         proof_ack: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -282,6 +288,7 @@ module ibc::ibc {
         connection_id: u32,
         version: String,
         witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -323,6 +330,7 @@ module ibc::ibc {
         proof_init: vector<u8>,
         proof_height: u64,
         witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -364,6 +372,7 @@ module ibc::ibc {
         proof_try: vector<u8>,
         proof_height: u64,
         witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -399,7 +408,8 @@ module ibc::ibc {
         channel_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64,
-        witness: T
+        witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -458,6 +468,7 @@ module ibc::ibc {
         proof_height: u64,
         acknowledgements: vector<vector<u8>>,
         witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -488,6 +499,7 @@ module ibc::ibc {
         maker_msgs: vector<vector<u8>>,
         acknowledgements: vector<vector<u8>>,
         witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
@@ -584,7 +596,8 @@ module ibc::ibc {
         proof: vector<u8>,
         proof_height: u64,
         relayer: address,
-        witness: T
+        witness: T,
+        _: &TxContext
     )  {
         ibc_store.assert_version();
 
@@ -610,6 +623,7 @@ module ibc::ibc {
         proof: vector<u8>,
         proof_height: u64,
         witness: T,
+        _: &TxContext
     ) {
         ibc_store.assert_version();
 
