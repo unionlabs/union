@@ -223,8 +223,8 @@ export const submit = Effect.gen(function*() {
     ctaCopy = "Switching Network..."
     yield* Effect.sleep("1.5 seconds")
 
-    const publicClient = Sui.PublicClient.Live({ url: getFullnodeUrl("testnet") }) // TODO(kaan): use original url coming from hubble when its right.
-    const walletClient = Sui.WalletClient.Live({ url: getFullnodeUrl("testnet"), signer })
+    const publicClient = Sui.PublicClient.Live({ url: url }) 
+    const walletClient = Sui.WalletClient.Live({ url: url, signer: signer, rpc: url })
 
     // 5) Execute ZKGM request
     ctaCopy = "Executing..."
