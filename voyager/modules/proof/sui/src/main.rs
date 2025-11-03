@@ -47,6 +47,8 @@ pub enum Cmd {
     FetchAbi,
 }
 
+const COMMITMENTS_PREFIX: u8 = 0x1;
+
 #[derive(Clone)]
 pub struct Module {
     pub chain_id: ChainId,
@@ -116,7 +118,7 @@ impl ProofModuleServer<IbcUnion> for Module {
 
         let target_object_id = sui_verifier::calculate_dynamic_field_object_id(
             *self.ibc_store.get(),
-            0x1,
+            COMMITMENTS_PREFIX,
             key.get().as_slice(),
         );
 

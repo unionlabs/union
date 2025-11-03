@@ -62,8 +62,11 @@ module ibc::state {
     use sui::bcs;
     use sui::dynamic_field as df;
 
+    use std::string::String;
+
     const COMMITMENT: u8 = 0x1;
     const COMMITMENT_TO_DIGEST: u8 = 0x2;
+    const CHANNEL_TO_PORT: u8 = 0x3;
 
     public struct PrefixedKey<T: drop> has drop {
         prefix: u8,
@@ -91,6 +94,16 @@ module ibc::state {
         df::borrow_mut(id, prefixed_key(COMMITMENT, key))
     }
 
+    public(package) fun add_or_update_commitment(
+        id: &mut UID, key: vector<u8>, value: vector<u8>
+    ) {
+        if (has_commitment(id, key)) {
+            *borrow_commitment_mut(id, key) = value;
+        } else {
+            commit(id, key, value);
+        };
+    }
+
     /// Commitment-to-digest storage
     public(package) fun add_commitment_to_digest(
         id: &mut UID, commitment: vector<u8>, digest: vector<u8>
@@ -100,6 +113,25 @@ module ibc::state {
             prefixed_key(COMMITMENT_TO_DIGEST, commitment),
             digest
         );
+    }
+
+    /// Channel-to-port storage
+    public(package) fun add_channel_to_port(
+        id: &mut UID, channel: u32, port: String
+    ) {
+        df::add(
+            id,
+            prefixed_key(CHANNEL_TO_PORT, channel),
+            port
+        );
+    }
+
+    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): &String {
+        df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
+    }
+
+    public(package) fun has_channel_to_port(id: &UID, channel: u32): bool {
+        df::exists_(id, prefixed_key(CHANNEL_TO_PORT, channel))
     }
 
     fun prefixed_key<K: drop>(prefix: u8, key: K): vector<u8> {
