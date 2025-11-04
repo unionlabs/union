@@ -11,6 +11,16 @@ import { Context, Data, Effect, flow, Layer } from "effect"
 import { type Address } from "viem"
 import * as internal from "./internal/sui.js"
 
+// Minimal shape your zkgm client expects
+type WalletStandardSigner = {
+  toSuiAddress(): string
+  signTransaction(input: { transactionBlock: Transaction | Uint8Array | string }): Promise<{
+    signature: string
+    bytes: Uint8Array
+    executeResult?: unknown
+  }>
+}
+
 /**
  * @category models
  * @since 0.0.0
@@ -30,7 +40,7 @@ export namespace Sui {
    */
   export interface WalletClient {
     readonly client: SuiClient
-    readonly signer: Ed25519Keypair
+    readonly signer: WalletStandardSigner | Ed25519Keypair
     readonly rpc: string
   }
 
@@ -419,8 +429,7 @@ export const prepareCoinForAmount = (
   tx: Transaction,
   coinType: string,
   amount: bigint,
-  owner: string,
-): Effect.Effect<TransactionObjectArgument, ReadCoinError, PublicClient | WalletClient> =>
+) =>
   Effect.gen(function*() {
     // SUI special case: split from gas
     if (
