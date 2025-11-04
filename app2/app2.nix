@@ -37,7 +37,7 @@ _: {
             ../ts-sdk-cosmos
             ../ts-sdk-sui
           ];
-          hash = "sha256-VkzzXZr7WNTSE8pBOcLLd9vZThjFqsSJaEKwb7bi4PY=";
+          hash = "sha256-xgb38ENz2cq3qOpdFJGjxXW89GryVlhLCCGSjhnYCmk=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
