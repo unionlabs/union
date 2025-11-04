@@ -20,9 +20,9 @@ import {
   SUI_ADDR,
   SUI_NATIVE_COIN,
   SUI_NATIVE_COIN_WITHOUT_0x,
-  SUI_U_COIN,
   SUI_SOLVER_ON_COSMOS_METADATA,
   SUI_SOLVER_ON_SUI_METADATA,
+  SUI_U_COIN,
   U_BANK,
   U_ERC20,
   U_SOLVER_ON_ETH_METADATA,
@@ -137,11 +137,11 @@ export class TransferData {
     ]).pipe(
       Option.flatMap(
         ([baseToken, sourceChain, destinationChain, quoteTokens]) => {
-          console.log("isSolve: ", this.isSolve);
-          console.log("baseToken: ", this.baseToken);
-          console.log("quoteTokens: ", this.quoteTokens);
-          console.log("destinationChain: ", this.destinationChain);
-          console.log("sourceChain: ", this.baseToken);
+          console.log("isSolve: ", this.isSolve)
+          console.log("baseToken: ", this.baseToken)
+          console.log("quoteTokens: ", this.quoteTokens)
+          console.log("destinationChain: ", this.destinationChain)
+          console.log("sourceChain: ", this.baseToken)
           if (this.isSolve) {
             return Match.value([
               Brand.unbranded(baseToken.denom).toLowerCase(),
@@ -162,11 +162,11 @@ export class TransferData {
               ),
               Match.when(
                 [toHex(SUI_U_COIN.address), "cosmos", Str.startsWith("union.")],
-                () => U_BANK
+                () => U_BANK,
               ),
               Match.when(
                 [toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
-                () => SUI_NATIVE_COIN_WITHOUT_0x
+                () => SUI_NATIVE_COIN_WITHOUT_0x,
               ),
               Match.when(
                 [U_ERC20.address.toLowerCase(), "evm", Match.any],
@@ -300,7 +300,7 @@ export class TransferData {
             ["solve", toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
             () => Option.some(SUI_SOLVER_ON_COSMOS_METADATA),
           ),
-            Match.when(
+          Match.when(
             ["solve", toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
             () => Option.some(SUI_SOLVER_ON_SUI_METADATA),
           ),

@@ -233,7 +233,7 @@ export const fromWallet = (
           if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
             tx.setSender(wallet.signer.toSuiAddress())
           }
-          
+
           // Our wrapper may already execute
           const signed = await wallet.signer.signTransactionBlock({ transactionBlock: tx })
 

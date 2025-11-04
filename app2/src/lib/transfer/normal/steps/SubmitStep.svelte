@@ -223,7 +223,7 @@ export const submit = Effect.gen(function*() {
     ctaCopy = "Switching Network..."
     yield* Effect.sleep("1.5 seconds")
 
-    const publicClient = Sui.PublicClient.Live({ url: url }) 
+    const publicClient = Sui.PublicClient.Live({ url: url })
     const walletClient = Sui.WalletClient.Live({ url: url, signer: signer, rpc: url })
 
     // 5) Execute ZKGM request
