@@ -317,6 +317,8 @@ export const anyDisplayToZkgm = Match.type<AnyDisplay>().pipe(
   }),
 )
 
+const asCanonical = (hex: Hex) => AddressCanonicalBytes.make(hex)
+
 /**
  * @category transformations
  * @since 2.0.0
@@ -329,10 +331,9 @@ export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
       const { bytes } = bech32.decodeToBytes(address)
       const result = AddressCanonicalBytes.make(toHex(bytes))
       return result
-      console.log("bytes", { result })
     },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
-    SuiDisplay: ({ address }) => identity<Hex>(address as Hex),
+    SuiDisplay: ({ address }) => asCanonical(address as Hex), // brand the 0x… Sui address
   }),
 )
 /**
