@@ -231,7 +231,7 @@ class SuiStore {
       }
 
       this._account = account
-  
+
       this._signer = makeWalletStandardSigner(wallet, account, this._rpcUrl)
 
       this.address = account.address
