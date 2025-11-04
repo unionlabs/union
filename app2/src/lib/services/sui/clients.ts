@@ -1,5 +1,5 @@
 import { getFullnodeUrl } from "@mysten/sui/client"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Sui } from "@unionlabs/sdk-sui"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Data, Effect, Option } from "effect"

@@ -1,7 +1,7 @@
 import { Decimal } from "@cosmjs/math"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { getFullnodeUrl } from "@mysten/sui/client"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { AddressCosmosZkgm } from "@unionlabs/sdk/schema/address"
 import { Instruction } from "@unionlabs/sdk/ucs03"
