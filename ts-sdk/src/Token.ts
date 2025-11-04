@@ -237,7 +237,6 @@ export const TokenFromString = S.transformOrFail(
 //     },
 //   )
 
-
 /**
  * @since 2.0.0
  */

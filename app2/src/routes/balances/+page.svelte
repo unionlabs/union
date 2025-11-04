@@ -13,6 +13,7 @@ import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Ucs05 } from "@unionlabs/sdk"
 import { Option } from "effect"
+import { as } from "effect/Option"
 
 function fetchAllBalances() {
   const chainsData = Option.getOrNull(chains.data)
@@ -110,7 +111,7 @@ $effect(() => {
                         chain={chain}
                         denom={token.denom}
                       />
-                      <ErrorComponent error={error.value} />
+                      <ErrorComponent error={error.value as any} />
                     {/if}
                   </div>
                 {/each}

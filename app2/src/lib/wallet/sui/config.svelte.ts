@@ -4,7 +4,14 @@ import { Ucs05 } from "@unionlabs/sdk"
 import { Effect, Option } from "effect"
 import * as S from "effect/Schema"
 
-import { getWallets, type WalletWithFeatures } from "@mysten/wallet-standard"
+import { getWallets } from "@mysten/wallet-standard"
+
+import type {
+  SuiWalletFeatures,
+  WalletAccount,
+  WalletWithFeatures,
+  // ConnectFeature,
+} from "@mysten/wallet-standard"
 
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519"
 
@@ -21,6 +28,8 @@ export const suiWalletsInformation = [
     download: "https://slush.app",
   },
 ] as const
+
+type AnyWallet = WalletWithFeatures<SuiWalletFeatures & Record<string, unknown>>
 
 export type SuiWalletId = (typeof suiWalletsInformation)[number]["id"]
 
@@ -77,12 +86,63 @@ function normalizePubKey(pub: string | Uint8Array): Uint8Array {
 }
 
 function makeWalletStandardSigner(
-  wallet: WalletWithFeatures,
+  wallet: AnyWallet,
   account: (typeof wallet)["accounts"][number],
   rpcUrl?: string | URL,
 ) {
   const chainTag = inferSuiChainTag(rpcUrl)
-  const pk = () => new Ed25519PublicKey(normalizePubKey(account.publicKey))
+  const pk = () => new Ed25519PublicKey(new Uint8Array(account.publicKey))
+  async function signTransactionImpl(
+    input: { transactionBlock: Transaction | Uint8Array | string },
+  ) {
+    let bytes: Uint8Array
+    if (input.transactionBlock instanceof Transaction) {
+      const tmpClient = new SuiClient({
+        url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? ""),
+      })
+      bytes = await input.transactionBlock.build({ client: tmpClient })
+    } else if (typeof input.transactionBlock === "string") {
+      try {
+        bytes = fromBase64(input.transactionBlock)
+      } catch {
+        throw new Error("transactionBlock string must be base64")
+      }
+    } else {
+      bytes = input.transactionBlock
+    }
+
+    const base64 = toBase64(bytes)
+    const txbLike = { serialize: () => base64 } as any
+
+    // Prefer sign+execute
+    const signExec = wallet.features["sui:signAndExecuteTransactionBlock"]
+    if (signExec) {
+      const resp = await signExec.signAndExecuteTransactionBlock({
+        account,
+        transactionBlock: txbLike,
+        chain: chainTag,
+        options: { showEffects: true, showEvents: true },
+      })
+      return { signature: resp.signature ?? "", bytes, executeResult: resp }
+    }
+
+    const signFeature = wallet.features["sui:signTransactionBlock"]
+    if (!signFeature) {
+      throw new Error(
+        "Wallet does not support sui:signTransactionBlock nor sui:signAndExecuteTransactionBlock",
+      )
+    }
+
+    const { signature, bytes: signedBytes } = await signFeature.signTransactionBlock({
+      account,
+      transactionBlock: txbLike,
+      chain: chainTag,
+    })
+    return {
+      signature,
+      bytes: typeof signedBytes === "string" ? fromBase64(signedBytes) : (signedBytes ?? bytes),
+    }
+  }
 
   return {
     getPublicKey() {
@@ -92,62 +152,63 @@ function makeWalletStandardSigner(
     toSuiAddress() {
       return account.address
     },
+    signTransactionBlock: signTransactionImpl,
+    signTransaction: signTransactionImpl,
+    // async signTransactionBlock(input: { transactionBlock: Transaction | Uint8Array | string }) {
+    //   let bytes: Uint8Array
 
-    async signTransactionBlock(input: { transactionBlock: Transaction | Uint8Array | string }) {
-      let bytes: Uint8Array
+    //   if (input.transactionBlock instanceof Transaction) {
+    //     const tmpClient = new SuiClient({
+    //       url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? ""),
+    //     })
+    //     bytes = await input.transactionBlock.build({ client: tmpClient })
+    //   } else if (typeof input.transactionBlock === "string") {
+    //     try {
+    //       bytes = fromBase64(input.transactionBlock)
+    //     } catch {
+    //       throw new Error("transactionBlock string must be base64")
+    //     }
+    //   } else {
+    //     bytes = input.transactionBlock
+    //   }
 
-      if (input.transactionBlock instanceof Transaction) {
-        const tmpClient = new SuiClient({
-          url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? ""),
-        })
-        bytes = await input.transactionBlock.build({ client: tmpClient })
-      } else if (typeof input.transactionBlock === "string") {
-        try {
-          bytes = fromBase64(input.transactionBlock)
-        } catch {
-          throw new Error("transactionBlock string must be base64")
-        }
-      } else {
-        bytes = input.transactionBlock
-      }
+    //   const base64 = toBase64(bytes)
+    //   const txbLike = { serialize: () => base64 } as any
 
-      const base64 = toBase64(bytes)
-      const txbLike = { serialize: () => base64 } as any
+    //   // Prefer sign+execute
+    //   const signExec = wallet.features["sui:signAndExecuteTransactionBlock"]
+    //   if (signExec) {
+    //     const resp = await signExec.signAndExecuteTransactionBlock({
+    //       account,
+    //       transactionBlock: txbLike,
+    //       chain: chainTag,
+    //       options: { showEffects: true, showEvents: true },
+    //     })
+    //     return {
+    //       signature: resp.signature ?? "",
+    //       bytes,
+    //       executeResult: resp,
+    //     }
+    //   }
 
-      // Prefer sign+execute
-      const signExec = wallet.features["sui:signAndExecuteTransactionBlock"]
-      if (signExec) {
-        const resp = await signExec.signAndExecuteTransactionBlock({
-          account,
-          transactionBlock: txbLike,
-          chain: chainTag,
-          options: { showEffects: true, showEvents: true },
-        })
-        return {
-          signature: resp.signature ?? "",
-          bytes,
-          executeResult: resp,
-        }
-      }
+    //   const signFeature = wallet.features["sui:signTransactionBlock"]
+    //   if (!signFeature) {
+    //     throw new Error(
+    //       "Wallet does not support sui:signTransactionBlock nor sui:signAndExecuteTransactionBlock",
+    //     )
+    //   }
 
-      const signFeature = wallet.features["sui:signTransactionBlock"]
-      if (!signFeature) {
-        throw new Error(
-          "Wallet does not support sui:signTransactionBlock nor sui:signAndExecuteTransactionBlock",
-        )
-      }
+    //   const { signature, bytes: signedBytes } = await signFeature.signTransactionBlock({
+    //     account,
+    //     transactionBlock: txbLike,
+    //     chain: chainTag,
+    //   })
 
-      const { signature, bytes: signedBytes } = await signFeature.signTransactionBlock({
-        account,
-        transactionBlock: txbLike,
-        chain: chainTag,
-      })
-
-      return {
-        signature,
-        bytes: typeof signedBytes === "string" ? fromBase64(signedBytes) : (signedBytes ?? bytes),
-      }
-    },
+    //   return {
+    //     signature,
+    //     bytes: typeof signedBytes === "string" ? fromBase64(signedBytes) : (signedBytes ?? bytes),
+    //   }
+    // },
   } as unknown
 }
 
@@ -217,7 +278,12 @@ class SuiStore {
     }
 
     try {
-      const connectFeature = wallet.features["standard:connect"]
+      type ConnectFeature = {
+        version: string
+        connect(input?: { silent?: boolean }): Promise<{ accounts: WalletAccount[] }>
+      }
+
+      const connectFeature = wallet.features["standard:connect"] as ConnectFeature
       if (!connectFeature) {
         throw new Error("Wallet does not support standard:connect")
       }
