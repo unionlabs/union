@@ -244,7 +244,7 @@ export const fromWallet = (
           }
 
           // Our wrapper may already execute
-          const signed = await wallet.signer.signTransactionBlock({ transactionBlock: tx })
+          const signed = await (wallet.signer as any).signTransaction({ transactionBlock: tx })
 
           if ((signed as any).executeResult) {
             // Wallet already executed (signAndExecute path)
@@ -275,10 +275,10 @@ export const fromWallet = (
 
       return new ClientResponseImpl(request, client, convertedHex)
     })
-    .pipe(
-      Effect.provideService(Sui.PublicClient, opts.client),
-      Effect.provideService(Sui.WalletClient, opts.wallet),
-    )
+      .pipe(
+        Effect.provideService(Sui.PublicClient, opts.client),
+        Effect.provideService(Sui.WalletClient, opts.wallet),
+      )
   )
 
 /** @internal */

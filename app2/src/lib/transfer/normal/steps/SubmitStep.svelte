@@ -32,6 +32,7 @@ import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { suiStore } from "$lib/wallet/sui/config.svelte"
 import { getFullnodeUrl } from "@mysten/sui/client"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { ZkgmClientError, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import { ZkgmClient } from "@unionlabs/sdk"
 import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
@@ -224,7 +225,11 @@ export const submit = Effect.gen(function*() {
     yield* Effect.sleep("1.5 seconds")
 
     const publicClient = Sui.PublicClient.Live({ url: url })
-    const walletClient = Sui.WalletClient.Live({ url: url, signer: signer, rpc: url })
+    const walletClient = Sui.WalletClient.Live({
+      url: url,
+      signer: signer as Ed25519Keypair,
+      rpc: url,
+    })
 
     // 5) Execute ZKGM request
     ctaCopy = "Executing..."
@@ -300,13 +305,7 @@ const handleSubmit = () => {
       onFailure: cause => {
         const err = Cause.originalError(cause)
         ctaCopy = "Retry"
-        error = pipe(
-          err,
-          Cause.failures,
-          xs => Array.from(xs),
-          Arr.head,
-        )
-        isSubmitting = false
+        error = pipe(cause, Cause.failureOption, Option.map(e => e as any)), isSubmitting = false
       },
       onSuccess: (hash) => {
         startPolling(hash as TransactionHash)
@@ -358,7 +357,7 @@ const handleSubmit = () => {
         onOpen={() => {
           showError = true
         }}
-        error={error.value}
+        error={error.value as any}
       />
     {/if}
   {:else}

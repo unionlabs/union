@@ -1,5 +1,5 @@
 import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Context, Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
