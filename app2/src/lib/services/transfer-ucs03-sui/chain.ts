@@ -32,7 +32,7 @@ export const SwitchChain = (chain: Chain, signer: Ed25519Keypair) =>
     )
 
     const publicLayer = Sui.PublicClient.Live({ url: rpcUrl })
-    const walletLayer = Sui.WalletClient.Live({ url: rpcUrl, signer: signer })
+    const walletLayer = Sui.WalletClient.Live({ url: rpcUrl, signer: signer as any })
 
     const { pub, wal } = yield* Effect.all({
       pub: Sui.PublicClient,

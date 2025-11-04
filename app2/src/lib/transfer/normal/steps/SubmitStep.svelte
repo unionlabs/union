@@ -227,8 +227,7 @@ export const submit = Effect.gen(function*() {
     const publicClient = Sui.PublicClient.Live({ url: url })
     const walletClient = Sui.WalletClient.Live({
       url: url,
-      signer: signer as Ed25519Keypair,
-      rpc: url,
+      signer: signer as any,
     })
 
     // 5) Execute ZKGM request

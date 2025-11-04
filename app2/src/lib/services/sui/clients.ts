@@ -14,7 +14,7 @@ export const getSuiPublicClient = (chain: Chain) =>
     }
     const url = maybeRpc.value.toString()
 
-    const layer = Sui.PublicClient.Live({ url: getFullnodeUrl("testnet") }) // TODO: use url here later
+    const layer = Sui.PublicClient.Live({ url: url })
     const client = yield* Sui.PublicClient.pipe(Effect.provide(layer))
     return client
   })
@@ -27,7 +27,7 @@ export const getSuiWalletClient = (chain: Chain, signer: Ed25519Keypair) =>
     }
     const url = maybeRpc.value.toString()
 
-    const layer = Sui.WalletClient.Live({ url: getFullnodeUrl("testnet"), signer }) // TODO: use url here later
+    const layer = Sui.WalletClient.Live({ url: url, signer: signer as any })
     const wallet = yield* Sui.WalletClient.pipe(Effect.provide(layer))
     return wallet
   })
