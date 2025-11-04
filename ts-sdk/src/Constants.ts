@@ -5,10 +5,10 @@
  */
 import { Match, Schedule } from "effect"
 import { UniversalChainId } from "./schema/chain.js"
+import { SuiTypeTag } from "./schema/hex.js"
 import { TokenRawDenom } from "./schema/token.js"
 import * as Token from "./Token.js"
 import * as Ucs05 from "./Ucs05.js"
-import { SuiTypeTag } from "./schema/hex.js"
 
 /**
  * @category models
@@ -279,6 +279,10 @@ export const EU_LST = Ucs05.CosmosDisplay.make({
   address: "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f",
 })
 
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const SUI_ADDR = Ucs05.CosmosDisplay.make({
   address: "union1fufatgkyd23qmqlzt4avwj36kfhvjuur20pqjf8xewnx2mnhsses6dspmf",
 })
