@@ -3,7 +3,7 @@
  *
  * @since 2.0.0
  */
-import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
+import { isValidSuiAddress } from "@mysten/sui/utils"
 import { bech32, bytes } from "@scure/base"
 import {
   absurd,
