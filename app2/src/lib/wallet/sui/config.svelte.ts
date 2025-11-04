@@ -123,7 +123,7 @@ function makeWalletStandardSigner(
         chain: chainTag,
         options: { showEffects: true, showEvents: true },
       })
-      return { signature: resp.signature ?? "", bytes, executeResult: resp }
+      return { kind: "executed" as const, executeResult: resp }
     }
 
     const signFeature = wallet.features["sui:signTransactionBlock"]
@@ -133,15 +133,12 @@ function makeWalletStandardSigner(
       )
     }
 
-    const { signature, bytes: signedBytes } = await signFeature.signTransactionBlock({
+    const { signature, transactionBlockBytes } = await signFeature.signTransactionBlock({
       account,
       transactionBlock: txbLike,
       chain: chainTag,
     })
-    return {
-      signature,
-      bytes: typeof signedBytes === "string" ? fromBase64(signedBytes) : (signedBytes ?? bytes),
-    }
+    return { kind: "signed" as const, signature, bytes: transactionBlockBytes }
   }
 
   return {
@@ -282,8 +279,12 @@ class SuiStore {
         version: string
         connect(input?: { silent?: boolean }): Promise<{ accounts: WalletAccount[] }>
       }
+      const suiWallet = wallet as WalletWithFeatures<SuiWalletFeatures>
 
-      const connectFeature = wallet.features["standard:connect"] as ConnectFeature
+      const connectFeature = suiWallet.features["standard:connect"] as {
+        version: string
+        connect: (input?: { silent?: boolean }) => Promise<{ accounts: readonly unknown[] }>
+      }
       if (!connectFeature) {
         throw new Error("Wallet does not support standard:connect")
       }
@@ -298,7 +299,7 @@ class SuiStore {
 
       this._account = account
 
-      this._signer = makeWalletStandardSigner(wallet, account, this._rpcUrl)
+      this._signer = makeWalletStandardSigner(suiWallet, account, this._rpcUrl)
 
       this.address = account.address
       this.connectedWallet = "slush"
