@@ -19,7 +19,9 @@ import {
   EU_SOLVER_ON_UNION_METADATA,
   SUI_ADDR,
   SUI_NATIVE_COIN,
+  SUI_U_COIN,
   SUI_SOLVER_ON_COSMOS_METADATA,
+  SUI_SOLVER_ON_SUI_METADATA,
   U_BANK,
   U_ERC20,
   U_SOLVER_ON_ETH_METADATA,
@@ -114,6 +116,8 @@ export class TransferData {
           EU_ERC20.address.toLowerCase(), //
           toHex(EU_LST.address),
           toHex(SUI_NATIVE_COIN.address),
+          toHex(SUI_U_COIN.address),
+          toHex(SUI_ADDR.address),
           // TODO: add eU base
           // TODO: add eU quote
         ],
@@ -132,6 +136,11 @@ export class TransferData {
     ]).pipe(
       Option.flatMap(
         ([baseToken, sourceChain, destinationChain, quoteTokens]) => {
+          console.log("isSolve: ", this.isSolve);
+          console.log("baseToken: ", this.baseToken);
+          console.log("quoteTokens: ", this.quoteTokens);
+          console.log("destinationChain: ", this.destinationChain);
+          console.log("sourceChain: ", this.baseToken);
           if (this.isSolve) {
             return Match.value([
               Brand.unbranded(baseToken.denom).toLowerCase(),
@@ -149,6 +158,14 @@ export class TransferData {
               Match.when(
                 [toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
                 () => Token.Cw20.make({ address: SUI_ADDR.address }),
+              ),
+              Match.when(
+                [toHex(SUI_U_COIN.address), "cosmos", Str.startsWith("union.")],
+                () => U_BANK
+              ),
+              Match.when(
+                [toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
+                () => SUI_NATIVE_COIN
               ),
               Match.when(
                 [U_ERC20.address.toLowerCase(), "evm", Match.any],
@@ -282,8 +299,16 @@ export class TransferData {
             ["solve", toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
             () => Option.some(SUI_SOLVER_ON_COSMOS_METADATA),
           ),
+            Match.when(
+            ["solve", toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
+            () => Option.some(SUI_SOLVER_ON_SUI_METADATA),
+          ),
           Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
+            () => Option.some(U_SOLVER_ON_UNION_METADATA),
+          ),
+          Match.when(
+            ["solve", toHex(SUI_U_COIN.address), "cosmos", Str.startsWith("union.")],
             () => Option.some(U_SOLVER_ON_UNION_METADATA),
           ),
           Match.when(
