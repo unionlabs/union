@@ -129,74 +129,6 @@
       }
     }
   },
-  "babylon.bbn-test-5": {
-    "ibc_interface": "ibc-cosmwasm",
-    "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
-    "core": {
-      "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
-      "height": 714672,
-      "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-      "code_id": 878
-    },
-    "lightclient": {
-      "cometbls": {
-        "address": "bbn1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqhe2fyg",
-        "height": 714707,
-        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
-        "code_id": 879
-      },
-      "state-lens/ics23/ics23": {
-        "address": "bbn1ndv9vcehelnetc8dqfkp77um6e3vxamv25k5lxlgs70kfq4n89pqk53pws",
-        "height": 1269725,
-        "commit": "7fd98b4dfff42963cf9437de604b35743bc2f597",
-        "code_id": 932
-      },
-      "state-lens/ics23/mpt": {
-        "address": "bbn1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs2sd9j4",
-        "height": 714714,
-        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
-        "code_id": 537
-      },
-      "tendermint": {
-        "address": "bbn1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzq7lmw0u",
-        "height": 714721,
-        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
-        "code_id": 538
-      },
-      "trusted/evm/mpt": {
-        "address": "bbn16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sjuq73q",
-        "height": 714727,
-        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
-        "code_id": 539
-      }
-    },
-    "app": {
-      "ucs03": {
-        "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
-        "height": 714737,
-        "commit": "32e56a638efce0b48f71ba3f096bf0100036bbcf",
-        "code_id": 1096,
-        "minter": {
-          "type": "cw20",
-          "address": "bbn1sakazthycqgzer50nqgr5ta4vy3gwz8wxla3s8rd8pql4ctmz5qssg39sf",
-          "commit": "3ba126b285cc21173d3b352591eb72b1627d4166",
-          "code_id": 753
-        }
-      }
-    },
-    "u": {
-      "address": "bbn1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqnrn5rr",
-      "height": 2086743,
-      "commit": "dirty",
-      "code_id": 1101
-    },
-    "eu": {
-      "address": "bbn1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hqscechf",
-      "height": 2087077,
-      "commit": "dirty",
-      "code_id": 1102
-    }
-  },
   "base.8453": {
     "ibc_interface": "ibc-solidity",
     "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
@@ -620,56 +552,6 @@
       "address": "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1",
       "height": 0,
       "commit": "c6926eefe9c4b85c81d5428d3a4829ea3d70f728"
-    }
-  },
-  "ethereum.17000": {
-    "ibc_interface": "ibc-solidity",
-    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
-    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
-    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
-    "multicall": {
-      "address": "0x70276995f225df69936eaec02ddece998a9e3662",
-      "height": 3652159,
-      "commit": "unknown"
-    },
-    "core": {
-      "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-      "height": 3646604,
-      "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
-    },
-    "lightclient": {
-      "cometbls": {
-        "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
-        "height": 3646605,
-        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
-      },
-      "state-lens/ics23/ics23": {
-        "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
-        "height": 3646605,
-        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
-      },
-      "state-lens/ics23/mpt": {
-        "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
-        "height": 3646605,
-        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
-      }
-    },
-    "app": {
-      "ucs03": {
-        "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-        "height": 3646606,
-        "commit": "7fd98b4dfff42963cf9437de604b35743bc2f597"
-      }
-    },
-    "u": {
-      "address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
-      "height": 0,
-      "commit": "1e67026e83bc299d8766625a921f86d422ee427d"
-    },
-    "eu": {
-      "address": "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1",
-      "height": 0,
-      "commit": "eb165175bf870fd682a402dce0ec37a5cff9a3cc"
     }
   },
   "osmosis.osmo-test-5": {

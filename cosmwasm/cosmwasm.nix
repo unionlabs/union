@@ -278,8 +278,8 @@ _: {
           ];
         }
         {
-          chain-id = "bbn-test-5";
-          ucs04-chain-id = "babylon.bbn-test-5";
+          chain-id = "bbn-test-6";
+          ucs04-chain-id = "babylon.bbn-test-6";
           name = "babylon-testnet";
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
