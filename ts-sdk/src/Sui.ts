@@ -9,7 +9,7 @@
  */
 import { bcs } from "@mysten/sui/bcs"
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { Context, Data, Effect, flow, Layer } from "effect"
 import type { Address } from "viem"

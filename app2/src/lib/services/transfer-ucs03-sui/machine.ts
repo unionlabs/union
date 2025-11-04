@@ -25,7 +25,7 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const exit = await runPromiseExit(SwitchChain(params.sourceChain))
+          const exit = await runPromiseExit(SwitchChain(params.sourceChain, {}))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {
@@ -61,8 +61,8 @@ export async function nextState(
 
     TransferReceipt: ({ state }) => {
       return TransferReceiptState.$match(state, {
-        InProgress: async ({ hash }) => {
-          const exit = await runPromiseExit(waitForTransferReceipt(params.sourceChain, hash))
+        InProgress: async ({ digest }) => {
+          const exit = await runPromiseExit(waitForTransferReceipt(params.sourceChain, digest))
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.Complete({ exit }),
           })
