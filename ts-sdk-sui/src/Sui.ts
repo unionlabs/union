@@ -31,6 +31,7 @@ export namespace Sui {
   export interface WalletClient {
     readonly client: SuiClient
     readonly signer: Ed25519Keypair
+    readonly rpc: string
   }
 
   /**
@@ -386,7 +387,7 @@ export const getCoinsWithBalance = (coinType: string, min: bigint) =>
         let total = 0n
 
         while (true) {
-          const page = await client.getCoins({ owner: resolvedOwner, coinType, cursor, limit: 50 })
+          const page = await client.getCoins({ owner: resolvedOwner, coinType: coinType })
           for (const c of page.data) {
             acc.push({ coinObjectId: c.coinObjectId, balance: c.balance })
             total += BigInt(c.balance)
@@ -424,7 +425,7 @@ export const prepareCoinForAmount = (
       const [out] = tx.splitCoins(tx.gas, [tx.pure.u64(amount)])
       return out
     }
-    const { coins, hasEnough } = yield* getCoinsWithBalance(coinType, amount, owner)
+    const { coins, hasEnough } = yield* getCoinsWithBalance(coinType, amount)
     if (!hasEnough || coins.length === 0) {
       return yield* Effect.fail(
         new ReadCoinError({ cause: `Insufficient ${coinType} balance for split ${amount}` }),

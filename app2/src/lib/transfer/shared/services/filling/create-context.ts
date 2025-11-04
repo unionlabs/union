@@ -141,8 +141,6 @@ export const createContext = Effect.fn((
     const batch = yield* produceBatch
 
     // TODO: vaultId & ibcStoreId will be fetched from hubble probably
-    // but objectId & typeArg should be provided by user
-    // OR we need to find another way of doing this
     const SUI_HARDCODED_TRANSPORT = {
       sui: {
         vaultId: "0xbe65f53d47a4578c14b4d69d0594c1295d3761379319a185522cd6baad6473d4",
