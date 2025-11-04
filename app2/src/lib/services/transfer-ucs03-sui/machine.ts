@@ -1,6 +1,7 @@
 import { runPromiseExit } from "$lib/runtime"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
 import { EvmSwitchChainError } from "$lib/services/transfer-ucs03-evm/errors"
+import { suiStore } from "$lib/wallet/sui/config.svelte"
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
 import type { SwitchChainErrorType } from "viem"
@@ -25,7 +26,12 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const exit = await runPromiseExit(SwitchChain(params.sourceChain, {}))
+          const suiSigner = suiStore.getSuiSigner()
+          if (!suiSigner) {
+            throw new Error("Sui signer not available. Connect a Sui wallet.")
+          }
+
+          const exit = await runPromiseExit(SwitchChain(params.sourceChain, suiSigner as any))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {
