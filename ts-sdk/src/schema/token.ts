@@ -10,7 +10,6 @@ export const SuiTypeTag = Schema.String.pipe(
   Schema.pattern(/^0x[0-9a-fA-F]+::[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/),
   Schema.brand("SuiTypeTag"),
 )
-export type SuiTypeTag = typeof SuiTypeTag.Type
 
 export const TokenRawDenom = Hex.pipe(
   Schema.lowercased(),
