@@ -19,6 +19,7 @@ import {
   EU_SOLVER_ON_UNION_METADATA,
   SUI_ADDR,
   SUI_NATIVE_COIN,
+  SUI_NATIVE_COIN_WITHOUT_0x,
   SUI_U_COIN,
   SUI_SOLVER_ON_COSMOS_METADATA,
   SUI_SOLVER_ON_SUI_METADATA,
@@ -165,7 +166,7 @@ export class TransferData {
               ),
               Match.when(
                 [toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
-                () => SUI_NATIVE_COIN
+                () => SUI_NATIVE_COIN_WITHOUT_0x
               ),
               Match.when(
                 [U_ERC20.address.toLowerCase(), "evm", Match.any],

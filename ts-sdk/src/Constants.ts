@@ -252,6 +252,22 @@ export const U_SUI = Token.SuiCoin.make({
  * @category constants
  * @since 2.0.0
  */
+export const SUI_NATIVE_COIN_WITHOUT_0x = Token.SuiCoin.make({
+  address: "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const SUI_NATIVE_COIN = Token.SuiCoin.make({
+  address: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const EU_ERC20 = Token.Erc20.make({ address: "0xe5Cf13C84c0fEa3236C101Bd7d743d30366E5CF1" })
 
 /**
@@ -265,13 +281,7 @@ export const EU_LST = Ucs05.CosmosDisplay.make({
 export const SUI_ADDR = Ucs05.CosmosDisplay.make({
   address: "union1fufatgkyd23qmqlzt4avwj36kfhvjuur20pqjf8xewnx2mnhsses6dspmf",
 })
-/**
- * @category constants
- * @since 2.0.0
- */
-export const SUI_NATIVE_COIN = Token.SuiCoin.make({
-  address: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
-})
+
 
 /**
  * @category constants
