@@ -1,4 +1,3 @@
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
@@ -194,6 +193,16 @@ export const fromWallet = (
           tx,
           typeArg,
           baseAmount,
+        ).pipe(
+          Effect.provideService(Sui.PublicClient, client),
+          Effect.mapError((cause) =>
+            new ClientError.RequestError({
+              reason: "Transport",
+              request,
+              cause,
+              description: "prepareCoinForAmount",
+            })
+          ),
         )
         console.log("coinArg: ", coinArg)
         sendCtx = tx.moveCall({
@@ -266,6 +275,10 @@ export const fromWallet = (
 
       return new ClientResponseImpl(request, client, convertedHex)
     })
+    .pipe(
+      Effect.provideService(Sui.PublicClient, opts.client),
+      Effect.provideService(Sui.WalletClient, opts.wallet),
+    )
   )
 
 /** @internal */
