@@ -387,7 +387,12 @@ export const getCoinsWithBalance = (coinType: string, min: bigint) =>
         let total = 0n
 
         while (true) {
-          const page = await client.getCoins({ owner: resolvedOwner, coinType: coinType, cursor, limit: 50 })
+          const page = await client.getCoins({
+            owner: resolvedOwner,
+            coinType: coinType,
+            cursor,
+            limit: 50,
+          })
           for (const c of page.data) {
             acc.push({ coinObjectId: c.coinObjectId, balance: c.balance })
             total += BigInt(c.balance)
