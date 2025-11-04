@@ -76,6 +76,10 @@ export class Bucket extends Schema.Class<Bucket>("Bucket")({
 export class Token extends Schema.Class<Token>("Token")({
   rank: Schema.OptionFromNullOr(Schema.Int),
   denom: TokenRawDenom,
+  native_denom: Schema.optionalWith(Schema.NonEmptyString, {
+    as: "Option",
+    nullable: true,
+  }),
   representations: Schema.Array(TokenRepresentation),
   wrapping: Schema.Array(TokenWrapping),
   bucket: Schema.OptionFromNullOr(Bucket),
