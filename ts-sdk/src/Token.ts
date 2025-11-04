@@ -237,9 +237,10 @@ export const TokenFromString = S.transformOrFail(
 //     },
 //   )
 
-// /**
-//  * @since 2.0.0
-//  */
+
+/**
+ * @since 2.0.0
+ */
 export const AnyFromEncoded = (rpcType: Chain.RpcType) => {
   const From = rpcType === "sui"
     ? S.Union(Hex.Hex, S.String)
