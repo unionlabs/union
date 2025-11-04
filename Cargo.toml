@@ -293,6 +293,7 @@ members = [
   "lib/aptos-types",
   "lib/cosmos-signer",
   "cosmwasm/upgradable",
+  "cosmwasm/pausable",
 ]
 
 [workspace.package]
@@ -394,6 +395,7 @@ osmosis-tokenfactory-token-minter         = { path = "cosmwasm/osmosis-tokenfact
 parlia-light-client-types                 = { path = "lib/parlia-light-client-types", default-features = false }
 parlia-types                              = { path = "lib/parlia-types", default-features = false }
 parlia-verifier                           = { path = "lib/parlia-verifier", default-features = false }
+pausable                                  = { path = "cosmwasm/pausable", default-features = false }
 pg-queue                                  = { path = "lib/pg-queue", default-features = false }
 protos                                    = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }

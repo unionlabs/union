@@ -27,14 +27,14 @@ pub struct OperationScheduled<'a> {
 }
 
 impl From<OperationScheduled<'_>> for Event {
-    fn from(val: OperationScheduled<'_>) -> Self {
+    fn from(event: OperationScheduled<'_>) -> Self {
         Event::new("operation_schedule")
-            .add_attribute("operation_id", val.operation_id.to_string())
-            .add_attribute("nonce", val.nonce.to_string())
-            .add_attribute("schedule", val.schedule.to_string())
-            .add_attribute("caller", val.caller)
-            .add_attribute("target", val.target)
-            .add_attribute("data", val.data)
+            .add_attribute("operation_id", event.operation_id.to_string())
+            .add_attribute("nonce", event.nonce.to_string())
+            .add_attribute("schedule", event.schedule.to_string())
+            .add_attribute("caller", event.caller)
+            .add_attribute("target", event.target)
+            .add_attribute("data", event.data)
     }
 }
 
@@ -51,10 +51,10 @@ pub struct OperationExecuted {
 }
 
 impl From<OperationExecuted> for Event {
-    fn from(val: OperationExecuted) -> Self {
+    fn from(event: OperationExecuted) -> Self {
         Event::new("operation_executed")
-            .add_attribute("operation_id", val.operation_id.to_string())
-            .add_attribute("nonce", val.nonce.to_string())
+            .add_attribute("operation_id", event.operation_id.to_string())
+            .add_attribute("nonce", event.nonce.to_string())
     }
 }
 
@@ -71,10 +71,10 @@ pub struct OperationCanceled {
 }
 
 impl From<OperationCanceled> for Event {
-    fn from(val: OperationCanceled) -> Self {
+    fn from(event: OperationCanceled) -> Self {
         Event::new("operation_canceled")
-            .add_attribute("operation_id", val.operation_id.to_string())
-            .add_attribute("nonce", val.nonce.to_string())
+            .add_attribute("operation_id", event.operation_id.to_string())
+            .add_attribute("nonce", event.nonce.to_string())
     }
 }
 
@@ -91,10 +91,10 @@ pub struct RoleLabel<'a> {
 }
 
 impl From<RoleLabel<'_>> for Event {
-    fn from(val: RoleLabel<'_>) -> Self {
+    fn from(event: RoleLabel<'_>) -> Self {
         Event::new("role_label")
-            .add_attribute("role_id", val.role_id.to_string())
-            .add_attribute("label", val.label)
+            .add_attribute("role_id", event.role_id.to_string())
+            .add_attribute("label", event.label)
     }
 }
 
@@ -118,13 +118,13 @@ pub struct RoleGranted<'a> {
 }
 
 impl From<RoleGranted<'_>> for Event {
-    fn from(val: RoleGranted<'_>) -> Self {
+    fn from(event: RoleGranted<'_>) -> Self {
         Event::new("role_granted")
-            .add_attribute("role_id", val.role_id.to_string())
-            .add_attribute("account", val.account)
-            .add_attribute("delay", val.delay.to_string())
-            .add_attribute("since", val.since.to_string())
-            .add_attribute("new_member", val.new_member.to_string())
+            .add_attribute("role_id", event.role_id.to_string())
+            .add_attribute("account", event.account)
+            .add_attribute("delay", event.delay.to_string())
+            .add_attribute("since", event.since.to_string())
+            .add_attribute("new_member", event.new_member.to_string())
     }
 }
 
@@ -142,10 +142,10 @@ pub struct RoleRevoked<'a> {
 }
 
 impl From<RoleRevoked<'_>> for Event {
-    fn from(val: RoleRevoked<'_>) -> Self {
+    fn from(event: RoleRevoked<'_>) -> Self {
         Event::new("role_revoked")
-            .add_attribute("role_id", val.role_id.to_string())
-            .add_attribute("account", val.account)
+            .add_attribute("role_id", event.role_id.to_string())
+            .add_attribute("account", event.account)
     }
 }
 
@@ -162,10 +162,10 @@ pub struct RoleAdminChanged {
 }
 
 impl From<RoleAdminChanged> for Event {
-    fn from(val: RoleAdminChanged) -> Self {
+    fn from(event: RoleAdminChanged) -> Self {
         Event::new("role_admin_changed")
-            .add_attribute("role_id", val.role_id.to_string())
-            .add_attribute("admin", val.admin.to_string())
+            .add_attribute("role_id", event.role_id.to_string())
+            .add_attribute("admin", event.admin.to_string())
     }
 }
 
@@ -182,10 +182,10 @@ pub struct RoleGuardianChanged {
 }
 
 impl From<RoleGuardianChanged> for Event {
-    fn from(val: RoleGuardianChanged) -> Self {
+    fn from(event: RoleGuardianChanged) -> Self {
         Event::new("role_guardian_changed")
-            .add_attribute("role_id", val.role_id.to_string())
-            .add_attribute("guardian", val.guardian.to_string())
+            .add_attribute("role_id", event.role_id.to_string())
+            .add_attribute("guardian", event.guardian.to_string())
     }
 }
 
@@ -203,11 +203,11 @@ pub struct RoleGrantDelayChanged {
 }
 
 impl From<RoleGrantDelayChanged> for Event {
-    fn from(val: RoleGrantDelayChanged) -> Self {
+    fn from(event: RoleGrantDelayChanged) -> Self {
         Event::new("role_grant_delay_changed")
-            .add_attribute("role_id", val.role_id.to_string())
-            .add_attribute("delay", val.delay.to_string())
-            .add_attribute("since", val.since.to_string())
+            .add_attribute("role_id", event.role_id.to_string())
+            .add_attribute("delay", event.delay.to_string())
+            .add_attribute("since", event.since.to_string())
     }
 }
 
@@ -224,10 +224,10 @@ pub struct TargetClosed<'a> {
 }
 
 impl From<TargetClosed<'_>> for Event {
-    fn from(val: TargetClosed<'_>) -> Self {
+    fn from(event: TargetClosed<'_>) -> Self {
         Event::new("target_closed")
-            .add_attribute("target", val.target)
-            .add_attribute("closed", val.closed.to_string())
+            .add_attribute("target", event.target)
+            .add_attribute("closed", event.closed.to_string())
     }
 }
 
@@ -245,11 +245,11 @@ pub struct TargetFunctionRoleUpdated<'a> {
 }
 
 impl From<TargetFunctionRoleUpdated<'_>> for Event {
-    fn from(val: TargetFunctionRoleUpdated<'_>) -> Self {
+    fn from(event: TargetFunctionRoleUpdated<'_>) -> Self {
         Event::new("target_function_role_updated")
-            .add_attribute("target", val.target)
-            .add_attribute("selector", val.selector.to_string())
-            .add_attribute("role_id", val.role_id.to_string())
+            .add_attribute("target", event.target)
+            .add_attribute("selector", event.selector.to_string())
+            .add_attribute("role_id", event.role_id.to_string())
     }
 }
 
@@ -267,10 +267,10 @@ pub struct TargetAdminDelayUpdated<'a> {
 }
 
 impl From<TargetAdminDelayUpdated<'_>> for Event {
-    fn from(val: TargetAdminDelayUpdated<'_>) -> Self {
+    fn from(event: TargetAdminDelayUpdated<'_>) -> Self {
         Event::new("target_admin_delay_updated")
-            .add_attribute("target", val.target)
-            .add_attribute("delay", val.delay.to_string())
-            .add_attribute("since", val.since.to_string())
+            .add_attribute("target", event.target)
+            .add_attribute("delay", event.delay.to_string())
+            .add_attribute("since", event.since.to_string())
     }
 }
