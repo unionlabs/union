@@ -4,7 +4,7 @@ import * as O from "effect/Option"
 import { AddressEvmCanonical } from "./address.js"
 import { UniversalChainId } from "./chain.js"
 import { ChannelId } from "./channel.js"
-import { Hex, SuiTypeTag } from "./hex.js"
+import { Hex } from "./hex.js"
 
 export const TokenRawDenom = Hex.pipe(
   Schema.lowercased(),

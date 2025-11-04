@@ -5,9 +5,10 @@
  */
 import { Match, Schedule } from "effect"
 import { UniversalChainId } from "./schema/chain.js"
-import { SuiTypeTag, TokenRawDenom } from "./schema/token.js"
+import { TokenRawDenom } from "./schema/token.js"
 import * as Token from "./Token.js"
 import * as Ucs05 from "./Ucs05.js"
+import { SuiTypeTag } from "./schema/hex.js"
 
 /**
  * @category models
