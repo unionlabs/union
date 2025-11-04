@@ -4,12 +4,7 @@ import * as O from "effect/Option"
 import { AddressEvmCanonical } from "./address.js"
 import { UniversalChainId } from "./chain.js"
 import { ChannelId } from "./channel.js"
-import { Hex } from "./hex.js"
-
-export const SuiTypeTag = Schema.String.pipe(
-  Schema.pattern(/^0x[0-9a-fA-F]+::[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/),
-  Schema.brand("SuiTypeTag"),
-)
+import { Hex, SuiTypeTag } from "./hex.js"
 
 export const TokenRawDenom = Hex.pipe(
   Schema.lowercased(),
