@@ -141,6 +141,7 @@ module zkgm::zkgm {
     const E_INVALID_SOLVER_ADDRESS: u64 = 45;
     const E_INVALID_QUOTE_TOKEN: u64 = 46;
     const E_EXECUTION_ALREADY_COMPLETE: u64 = 47;
+    const E_INVALID_RECEIVER: u64 = 48;
     // const E_ONLY_MAKER: u64 = 0xdeadc0de;
 
     const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
@@ -183,6 +184,7 @@ module zkgm::zkgm {
         acks: vector<vector<u8>>,
         path: u256,
         salt: vector<u8>,
+        failure: bool,
     }
 
     public struct RecvCtx {
@@ -348,13 +350,15 @@ module zkgm::zkgm {
                 packet_timeout_timestamps[i]
             );
             let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+            let (instruction_set, err) = extract_batch(zkgm_packet.instruction());
             packet_ctxs.push_back(
                 ZkgmPacketCtx {
-                    instruction_set: extract_batch(zkgm_packet.instruction()),
+                    instruction_set,
                     cursor: 0,
                     acks: vector::empty(),
                     path: zkgm_packet.path(),
                     salt: zkgm_packet.salt(),
+                    failure: err != 0
                 }
             );
             packets.push_back(ibc_packet);
@@ -368,10 +372,10 @@ module zkgm::zkgm {
         }
     }
 
-    fun extract_batch(instruction: Instruction): vector<Instruction> {
+    fun extract_batch(instruction: Instruction): (vector<Instruction>, u64) {
         if (instruction.opcode() == OP_BATCH) {
             if (instruction.version() != INSTR_VERSION_0) {
-                abort E_UNSUPPORTED_VERSION
+                return (vector::empty(), E_UNSUPPORTED_VERSION)
             };
 
             let instructions = batch::decode(instruction.operand()).instructions();
@@ -379,14 +383,14 @@ module zkgm::zkgm {
             let mut i = 0;
             while (i < instr_len) {
                 if (!helper::is_allowed_batch_instruction(instructions.borrow(i).opcode())) {
-                    abort E_INVALID_BATCH_INSTRUCTION
+                    return (vector::empty(), E_INVALID_BATCH_INSTRUCTION)
                 };
                 i = i + 1;  
             };
 
-            *instructions
+            (*instructions, 0)
         } else {
-            vector[instruction]
+            (vector[instruction], 0)
         }
     }
 
@@ -407,38 +411,40 @@ module zkgm::zkgm {
         let zkgm_packet = exec_ctx.packet_ctxs.borrow_mut(packet_cursor);
 
         let instr_len = zkgm_packet.instruction_set.length();
-        let mut type_is_exhausted = false;
+        let mut type_is_used = false;
         while (zkgm_packet.cursor < instr_len) {
             let instruction = zkgm_packet.instruction_set[zkgm_packet.cursor];
 
             // if we previously run an instruction where type type `T` is used, we should
             // return exec_ctx and expect to be called with the appropriate type again.
             if (instruction.opcode() == OP_TOKEN_ORDER) {
-                if (type_is_exhausted) {
+                if (type_is_used) {
                     return exec_ctx
                 } else {
-                    type_is_exhausted = true;
+                    type_is_used = true;
                 };
             };
-            
-            let (ack, err) = zkgm.execute_internal<T>(
-                vault,
-                escrow_vault,
-                ibc,
-                packet,
-                zkgm_packet,
-                instruction,
-                clock,
-                relayer,
-                relayer_msg,
-                false,
-                ctx
-            );
-            // TODO(aeryz): should we abort here?
-            if (err != 0) {
-                abort err
+
+            if (!zkgm_packet.failure) {
+                let (ack, err) = zkgm.execute_internal<T>(
+                    vault,
+                    escrow_vault,
+                    ibc,
+                    packet,
+                    zkgm_packet,
+                    instruction,
+                    clock,
+                    relayer,
+                    relayer_msg,
+                    false,
+                    ctx
+                );
+                if (err != 0) {
+                    zkgm_packet.failure = true;
+                } else {
+                    zkgm_packet.acks.push_back(ack);
+                };
             };
-            zkgm_packet.acks.push_back(ack);
 
             zkgm_packet.cursor = zkgm_packet.cursor + 1;
         };
@@ -473,15 +479,19 @@ module zkgm::zkgm {
 
         while (i < packets_len) {
             let packet_ctx = exec_ctx.packet_ctxs.borrow(i);
-            let ack = if (packet_ctx.instruction_set.length() == 1) {
+
+            // if the packet is failed to be received, return a fail ack
+            let ack = if (packet_ctx.failure) {
+                ack::failure(b"").encode()
+            } else if (packet_ctx.instruction_set.length() == 1) {
+                // if the `instruction_set` has a single instruction, it means this is not a batch
+                // so return the ack directly
                 assert!(packet_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
 
-                if (!packet_ctx.acks[0].is_empty()) {
-                    ack::success(packet_ctx.acks[0]).encode()
-                } else {
-                    ack::failure(b"").encode()
-                }
+                ack::success(packet_ctx.acks[0]).encode()
             } else {
+                // if the `instruction_set` has multiple instructions, then it's a batch,
+                // so wrap it with a batch ack
                 ack::success(batch_ack::new(packet_ctx.acks).encode()).encode()
             };
             acks.push_back(ack);
@@ -584,9 +594,11 @@ module zkgm::zkgm {
                 packet_timeout_timestamps[i]
             );
             let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+            let (instruction_set, err) = extract_batch(zkgm_packet.instruction());
+            assert!(err == 0, err);
             packet_ctxs.push_back(
                 ZkgmPacketAckCtx {
-                    instruction_set: extract_batch(zkgm_packet.instruction()),
+                    instruction_set,
                     cursor: 0,
                     path: zkgm_packet.path(),
                     salt: zkgm_packet.salt(),
@@ -724,9 +736,11 @@ module zkgm::zkgm {
         packet_timeout_timestamp: u64,
     ): TimeoutCtx {
         let zkgm_packet = zkgm_packet::decode(&packet_data);
+        let (instruction_set, err) = extract_batch(zkgm_packet.instruction());
+        assert!(err == 0, err);
         TimeoutCtx {
             packet_ctx: ZkgmPacketAckCtx {
-                instruction_set: extract_batch(zkgm_packet.instruction()),
+                instruction_set,
                 cursor: 0,
                 path: zkgm_packet.path(),
                 salt: zkgm_packet.salt(),
@@ -848,7 +862,10 @@ module zkgm::zkgm {
             if (quote_amount > 0){
                 // TODO(aeryz): handle NATIVE_TOKEN_ERC_7528_ADDRESS case            
                 // TODO(aeryz): make sure that distribute here is correct
-                zkgm.distribute_coin<T>(receiver, quote_amount, ctx);
+                let err = zkgm.distribute_coin<T>(receiver, quote_amount, ctx);
+                if (err != 0) {
+                    return (vector::empty(), err)
+                };
             };
         };
 
@@ -925,15 +942,15 @@ module zkgm::zkgm {
         relay_store: &mut RelayStore,
         amount: u64,
         ctx: &mut TxContext
-    ): Coin<T> {
+    ): Option<Coin<T>> {
         let typename_t = type_name::with_defining_ids<T>();
         let key = typename_t.into_string();
         if(!relay_store.object_store.contains(string::from_ascii(key))) {
-            abort E_NO_COIN_IN_BAG
+            return option::none()
         };
         let coin = relay_store.object_store.borrow_mut<String, Coin<T>>(string::from_ascii(key));
 
-        coin.split<T>(amount, ctx)
+        option::some(coin.split<T>(amount, ctx))
     }
 
     fun distribute_coin<T>(
@@ -941,9 +958,15 @@ module zkgm::zkgm {
         receiver: address,
         amount: u64,
         ctx: &mut TxContext
-    ) {
+    ): u64 {
         let transferred_coin = relay_store.split_coin<T>(amount, ctx);
-        transfer::public_transfer(transferred_coin, receiver);
+        if (transferred_coin.is_none()) {
+            transferred_coin.destroy_none();
+            return E_NO_COIN_IN_BAG
+        };
+        transfer::public_transfer(transferred_coin.destroy_some(), receiver);
+
+        0
     }
 
     fun protocol_fill_mint<T>(
@@ -1017,11 +1040,17 @@ module zkgm::zkgm {
 
         // Here we just need to split our coins to the receiver and the relayer
         if(quote_amount > 0) {
-            zkgm.distribute_coin<T>(receiver, quote_amount, ctx)
+            let err = zkgm.distribute_coin<T>(receiver, quote_amount, ctx);
+            if (err != 0) {
+                return (vector::empty(), err)
+            };
         };
 
         if(fee > 0){
-            zkgm.distribute_coin<T>(relayer, fee, ctx)
+            let err = zkgm.distribute_coin<T>(relayer, fee, ctx);
+            if (err != 0) {
+                return (vector::empty(), err)
+            };
         };
 
         (token_order_ack::new(
@@ -1120,6 +1149,10 @@ module zkgm::zkgm {
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
         let quote_token = *order.quote_token();
+
+        if (order.receiver().length() != address::length()) {
+            return (vector::empty(), E_INVALID_RECEIVER)
+        };
         let receiver = bcs::new(*order.receiver()).peel_address();
 
         // For intent packets, the protocol is not allowed to provide any fund
@@ -1546,12 +1579,16 @@ module zkgm::zkgm {
                         );
                     } else if (bcs::to_bytes(&market_maker) == ESCROW_VAULT_OBJECT_KEY_ADDR) {
                         let coin = zkgm.split_coin<T>(order.base_amount() as u64, ctx);
+                        if (coin.is_none()) {
+                            abort E_NO_COIN_IN_BAG
+                        };
                         escrow_vault.escrow<T>(
                             zkgm.object_store.borrow(ESCROW_VAULT_OBJECT_KEY),
-                            coin
+                            coin.destroy_some()
                         );
                     } else {
-                        zkgm.distribute_coin<T>(market_maker, order.base_amount() as u64, ctx);
+                        let err = zkgm.distribute_coin<T>(market_maker, order.base_amount() as u64, ctx);
+                        assert!(err == 0, err);
                     };
                 }
             } else {
