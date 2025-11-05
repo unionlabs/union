@@ -203,7 +203,6 @@ module ibc::ibc {
 
         ibc_connection::connection_open_init(
             &mut ibc_store.id,
-            &ibc_store.client_mgr,
             &mut ibc_store.connections,
             client_id,
             counterparty_client_id

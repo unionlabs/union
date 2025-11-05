@@ -68,7 +68,6 @@ module ibc::ibc_connection {
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const E_CLIENT_NOT_ACTIVE: u64 = 2;
     const E_INVALID_CONNECTION_STATE: u64 = 3;
 
     const CONN_STATE_INIT: u8 = 1;
@@ -77,13 +76,10 @@ module ibc::ibc_connection {
 
     public(package) fun connection_open_init(
         ibc_uid: &mut UID,
-        client_mgr: &LightClientManager,
         connections: &mut Table<u32, ConnectionEnd>,
         client_id: u32,
         counterparty_client_id: u32
     ) {
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
         let connection_id = (connections.length() as u32) + 1;
 
         let connection =
@@ -115,8 +111,6 @@ module ibc::ibc_connection {
         proof_init: vector<u8>,
         proof_height: u64
     ) {
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
         let connection_id = (connections.length() as u32) + 1;
 
         let connection =

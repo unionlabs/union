@@ -61,7 +61,7 @@
 module ibc::cometbls_light_client {
     use std::string::{Self, String};
     use sui::table::{Self, Table};
-    use sui::clock;
+    use sui::clock::Clock;
     use sui::bcs::{Self, BCS};
     use ibc::ethabi;
     use ibc::height::{Self, Height};
@@ -79,8 +79,10 @@ module ibc::cometbls_light_client {
     const E_INVALID_ZKP: u64 = 35107;
     const E_FROZEN_CLIENT: u64 = 35108;
     // const E_INVALID_MISBEHAVIOUR: u64 = 35109;
-
     const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
+
+    const STATUS_ACTIVE: u64 = 1;
+    const STATUS_EXPIRED: u64 = 2;
 
     public struct Client has key, store {
         id: UID,
@@ -156,9 +158,20 @@ module ibc::cometbls_light_client {
     }
 
     public(package) fun status(
-        _client: &Client,
+        client: &Client,
+        clock: &Clock,
     ): u64 {
-        0
+        let consensus_state = client.consensus_states.borrow(client.client_state.latest_height.get_revision_height());
+
+        if (is_client_expired(
+            consensus_state.timestamp,
+            client.client_state.trusting_period,
+            clock,
+        )) {
+            return STATUS_EXPIRED
+        };
+
+        STATUS_ACTIVE
     }
 
     public(package) fun check_for_misbehaviour(_client: &Client, _header: vector<u8>): bool {
@@ -238,12 +251,12 @@ module ibc::cometbls_light_client {
     }
 
     public(package) fun verify_header(
-        client: &Client, clock: &clock::Clock, header: &Header, consensus_state: &ConsensusState
+        client: &Client, clock: &Clock, header: &Header, consensus_state: &ConsensusState
     ) {
         assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
 
         let untrusted_height_number = header.signed_header.height;
-        let trusted_height_number = height::get_revision_height(&header.trusted_height);
+        let trusted_height_number = header.trusted_height.get_revision_height();
 
         assert!(
             untrusted_height_number > trusted_height_number,
@@ -259,12 +272,12 @@ module ibc::cometbls_light_client {
             E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
         );
 
-        let current_time = clock::timestamp_ms(clock) * 1_000_000;
         assert!(
-            untrusted_timestamp < current_time + client.client_state.trusting_period,
+            !is_client_expired(trusted_timestamp, client.client_state.trusting_period, clock),
             E_HEADER_EXCEEDED_TRUSTING_PERIOD
         );
 
+        let current_time = clock.timestamp_ms() * 1_000_000;
         assert!(
             untrusted_timestamp < current_time + client.client_state.max_clock_drift,
             E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
@@ -291,7 +304,7 @@ module ibc::cometbls_light_client {
 
 
     public(package) fun update_client(
-        client: &mut Client, clock: &clock::Clock, client_msg: vector<u8>, _relayer: address
+        client: &mut Client, clock: &Clock, client_msg: vector<u8>, _relayer: address
     ): (vector<u8>, vector<u8>, u64) {
         // TODO(aeryz): handle consensus state exist case
         let header = decode_header(client_msg);
@@ -342,10 +355,6 @@ module ibc::cometbls_light_client {
         key: vector<u8>,
         value: vector<u8>
     ): u64 {
-        if (client.status() != 0) {
-            abort E_FROZEN_CLIENT
-        };
-
         let consensus_state = client.consensus_states.borrow(height);
 
         let mut path = vector<u8>[0x03];
@@ -371,10 +380,6 @@ module ibc::cometbls_light_client {
         proof: vector<u8>,
         key: vector<u8>
     ): u64 {
-        if (client.status() != 0) {
-            abort E_FROZEN_CLIENT
-        };
-
         let consensus_state = client.consensus_states.borrow(height);
 
         let mut path = vector<u8>[0x03];
@@ -407,6 +412,14 @@ module ibc::cometbls_light_client {
         };
         let consensus_state = client.consensus_states.borrow(height);
         encode_consensus_state(consensus_state)
+    }
+
+    fun is_client_expired(
+        consensus_state_timestamp: u64,
+        trusting_period: u64,
+        clock: &Clock
+    ): bool {
+        (consensus_state_timestamp + trusting_period) < (clock.timestamp_ms() * 1_000_000)
     }
 
     fun decode_header(buf: vector<u8>): Header {

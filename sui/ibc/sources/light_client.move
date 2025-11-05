@@ -123,7 +123,8 @@ module ibc::light_client {
 
     public(package) fun status(
         store: &LightClientManager,
-        client_id: u32
+        client_id: u32,
+        clock: &Clock,
     ): u64 {
         if (store.test_mode) {
             return 0
@@ -131,7 +132,7 @@ module ibc::light_client {
 
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.as_bytes() == b"cometbls") {
-            store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status()
+            store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status(clock)
         } else {
             abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
