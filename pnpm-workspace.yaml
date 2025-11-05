@@ -3,6 +3,7 @@ packages:
   - ceremony
   - docs
   - sentinel2
+  - effect-svelte
   - site
   - ts-sdk
   - ts-sdk-cosmos
@@ -45,7 +46,7 @@ catalog:
   typescript: ~5.9.3
   viem: ^2.33.3
   vite: ^6.1.1
-  vitest: ^3.2.4
+  vitest: 3.2.4
 
 catalogMode: strict
 

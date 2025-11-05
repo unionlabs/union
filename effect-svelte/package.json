@@ -1,0 +1,48 @@
+{
+  "private": true,
+  "name": "@unionlabs/effect-svelte",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build && pnpm run prepack",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "prepack": "svelte-kit sync && svelte-package && publint",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test": "vitest"
+  },
+  "files": ["dist", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
+  "sideEffects": ["**/*.css"],
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js"
+    },
+    "./*": "./src/lib/*"
+  },
+  "peerDependencies": {
+    "effect": "^3.0.0",
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.9",
+    "@sveltejs/kit": "^2.39.1",
+    "@sveltejs/package": "^2.5.1",
+    "@sveltejs/vite-plugin-svelte": "^6.2.0",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/svelte": "^5.2.8",
+    "@vitest/coverage-v8": "^3.2.4",
+    "effect": "catalog:",
+    "happy-dom": "^18.0.1",
+    "publint": "^0.3.2",
+    "svelte": "catalog:svelte",
+    "svelte-check": "catalog:svelte",
+    "typescript": "catalog:",
+    "vite": "^6.3.5",
+    "vitest": "catalog:"
+  }
+}

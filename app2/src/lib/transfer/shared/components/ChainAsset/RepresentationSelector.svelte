@@ -1,7 +1,7 @@
 <script lang="ts">
 import Truncate from "$lib/components/ui/Truncate.svelte"
-import { mapOption } from "$lib/utils/snippets.svelte"
-import { TokenWrapping } from "@unionlabs/sdk/schema"
+import { Snippets } from "@unionlabs/effect-svelte"
+import { TokenWrapping } from "@unionlabs/sdk/schema/token"
 import { Option } from "effect"
 import { transferData } from "../../data/transfer-data.svelte"
 
@@ -46,6 +46,6 @@ const onSelect = (wrapping: TokenWrapping) => {
     contract address of the asset you want to receive.
   </div>
   <div class="flex flex-col">
-    {@render mapOption(transferData.representations, renderWrappings)}
+    {@render Snippets.mapOption(transferData.representations, renderWrappings)}
   </div>
 </div>

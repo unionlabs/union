@@ -1,12 +1,11 @@
 _: {
   perSystem =
     {
-      pkgs,
       buildPnpmPackage,
       ...
     }:
     let
-      hash = "sha256-oGq9J3PUuoYl2i1WZjyHXzfa7/SJKNA5apKVKNWV2qc=";
+      hash = "sha256-UhM8NNsV+ebTggusyrjk41iKtidkpAigQAwBabhzu5U=";
     in
     {
       packages = {

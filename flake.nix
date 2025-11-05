@@ -198,6 +198,7 @@
         ./ts-sdk-evm/ts-sdk-evm.nix
         ./ts-sdk-cosmos/ts-sdk-cosmos.nix
         ./ts-sdk-sui/ts-sdk-sui.nix
+        ./effect-svelte/effect-svelte.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix

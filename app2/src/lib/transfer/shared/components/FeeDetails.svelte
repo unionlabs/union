@@ -9,7 +9,7 @@ import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { FeeStore } from "$lib/stores/fee.svelte"
 import { cn } from "$lib/utils"
-import { getOptionOrNull, mapOption } from "$lib/utils/snippets.svelte"
+import { Snippets } from "@unionlabs/effect-svelte"
 import { PriceSource } from "@unionlabs/sdk/PriceOracle"
 import { Array as A, BigDecimal as BD, Boolean as B, Option as O, Record as R } from "effect"
 import { onDestroy } from "svelte"
@@ -87,7 +87,7 @@ const calculating = false
 {/snippet}
 
 {#snippet gasTokenSymbol()}
-  {@render getOptionOrNull(FeeStore.symbol)}
+  {@render Snippets.getOptionOrNull(FeeStore.symbol)}
 {/snippet}
 
 <!-- NOTE: presently only **BOB -> BABYLON** and **BABYLON -> BOB** -->
@@ -118,7 +118,7 @@ const calculating = false
         <Skeleton class="h-3 w-26" />
         <Skeleton class="h-3 w-12" />
       {:else}
-        {@render mapOption(
+        {@render Snippets.mapOption(
           O.all({
             value: FeeStore.feeDisplay,
             symbol: FeeStore.symbol,

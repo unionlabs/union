@@ -45,6 +45,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/svelte": "catalog:svelte",
     "@types/node": "24.6.1",
+    "@unionlabs/effect-svelte": "workspace:*",
     "@unionlabs/sdk": "workspace:*",
     "@unionlabs/sdk-cosmos": "workspace:*",
     "@unionlabs/sdk-evm": "workspace:*",

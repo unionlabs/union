@@ -1,4 +1,4 @@
-import { runForkWithRuntime, runPromiseExitWithRuntime } from "$lib/utils/effect.svelte.js"
+import { Runtime } from "@unionlabs/effect-svelte"
 import type { PriceOracle } from "@unionlabs/sdk/PriceOracle"
 import { Layer, ManagedRuntime, Match, pipe } from "effect"
 import { isNotUndefined } from "effect/Predicate"
@@ -32,8 +32,8 @@ const make = async () => {
 
   const runtime = await _runtime()
 
-  const runFork$ = runForkWithRuntime(runtime)
-  const runPromiseExit$ = runPromiseExitWithRuntime(runtime)
+  const runFork$ = Runtime.runForkWithRuntime(runtime)
+  const runPromiseExit$ = Runtime.runPromiseExitWithRuntime(runtime)
 
   return {
     runFork$,
