@@ -144,6 +144,7 @@ module zkgm::zkgm {
 
     const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
     const ESCROW_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-escrow-vault";
+    const ESCROW_VAULT_OBJECT_KEY_ADDR: vector<u8> = b"ucs03-zkgm-escrow-vault\0\0\0\0\0\0\0\0\0";
 
     public struct RelayStore has key {
         id: UID,
@@ -470,8 +471,13 @@ module zkgm::zkgm {
                 assert!(packet_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
 
                 packet_ctx.acks[0]
+                if (!packet_ctx.acks[0].is_empty()) {
+                    ack::success(packet_ctx.acks[0]).encode()
+                } else {
+                    ack::failure(b"").encode()
+                }
             } else {
-                batch_ack::new(packet_ctx.acks).encode()
+                ack::success(batch_ack::new(packet_ctx.acks).encode()).encode()
             };
             acks.push_back(ack);
 
@@ -1533,7 +1539,7 @@ module zkgm::zkgm {
                             zkgm.object_store.borrow(OWNED_VAULT_OBJECT_KEY),
                             coin
                         );
-                    } else if (bcs::to_bytes(&market_maker) == ESCROW_VAULT_OBJECT_KEY) {
+                    } else if (bcs::to_bytes(&market_maker) == ESCROW_VAULT_OBJECT_KEY_ADDR) {
                         let coin = zkgm.split_coin<T>(order.base_amount() as u64, ctx);
                         escrow_vault.escrow<T>(
                             zkgm.object_store.borrow(ESCROW_VAULT_OBJECT_KEY),
