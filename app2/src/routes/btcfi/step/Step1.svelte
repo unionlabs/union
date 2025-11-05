@@ -24,7 +24,7 @@ let hasAutoFilled = $state(false)
 let isConnected = $derived(cosmosStore.connectionStatus === "connected")
 
 // Convert Cosmos address to bbn1 format
-let cosmosAddressBbn1 = $derived(
+let cosmosAddressBbn = $derived(
   pipe(
     wallets.cosmosAddress,
     Option.map(cosmosDisplay =>
@@ -40,8 +40,8 @@ let cosmosAddressBbn1 = $derived(
 
 // Auto-populate input only once when wallet connects
 $effect(() => {
-  if (isConnected && Option.isSome(cosmosAddressBbn1) && !hasAutoFilled) {
-    walletAddress = Option.getOrThrow(cosmosAddressBbn1)
+  if (isConnected && Option.isSome(cosmosAddressBbn) && !hasAutoFilled) {
+    walletAddress = Option.getOrThrow(cosmosAddressBbn)
     hasAutoFilled = true
   }
   // Reset auto-fill flag if wallet disconnects
@@ -149,19 +149,19 @@ const handleCheck = () => {
               <div class="flex-1">
                 <div class="text-sm font-medium text-accent">Wallet Connected</div>
                 <div class="text-xs text-zinc-400 font-mono">
-                  {#if Option.isSome(cosmosAddressBbn1)}
-                    {Option.getOrThrow(cosmosAddressBbn1)?.slice(0, 12)}...{
-                      Option.getOrThrow(cosmosAddressBbn1)?.slice(-6)
+                  {#if Option.isSome(cosmosAddressBbn)}
+                    {Option.getOrThrow(cosmosAddressBbn)?.slice(0, 12)}...{
+                      Option.getOrThrow(cosmosAddressBbn)?.slice(-6)
                     }
                   {/if}
                 </div>
               </div>
-              {#if walletAddress !== Option.getOrUndefined(cosmosAddressBbn1)}
+              {#if walletAddress !== Option.getOrUndefined(cosmosAddressBbn)}
                 <button
                   type="button"
                   onclick={() => {
-                    if (Option.isSome(cosmosAddressBbn1)) {
-                      walletAddress = Option.getOrThrow(cosmosAddressBbn1)
+                    if (Option.isSome(cosmosAddressBbn)) {
+                      walletAddress = Option.getOrThrow(cosmosAddressBbn)
                     }
                   }}
                   class="p-1.5 hover:bg-accent/20 rounded transition-colors"
