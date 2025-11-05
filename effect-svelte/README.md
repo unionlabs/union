@@ -11,7 +11,7 @@
 
 ## Getting Started
 
-In lieu of a known alterative, it is suggested to initialize the runtime as a module singleton and to trigger construction in a client hook.
+In lieu of a known alternative, it is suggested to initialize the runtime as a module singleton and to trigger construction in a client hook.
 
 ### Runtime Definition
 
@@ -100,7 +100,7 @@ export const __init = async () => {
 
 ### Runtime Initialization
 
-This client hook guarantees that the Effect runtime is initalized as early as possbile.
+This client hook guarantees that the Effect runtime is initialized as early as possible.
 
 `src/hooks.client.ts`:
 

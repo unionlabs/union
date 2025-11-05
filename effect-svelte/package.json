@@ -35,7 +35,6 @@
     "@sveltejs/vite-plugin-svelte": "^6.2.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/svelte": "^5.2.8",
-    "@vitest/browser": "^3.2.3",
     "@vitest/coverage-v8": "^3.2.4",
     "effect": "catalog:",
     "happy-dom": "^18.0.1",

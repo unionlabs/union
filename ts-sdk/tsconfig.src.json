@@ -4,7 +4,6 @@
   "compilerOptions": {
     "outDir": "build/src",
     "tsBuildInfoFile": ".tsbuildinfo/src.tsbuildinfo",
-    "rootDir": "src",
-    "types": ["svelte"]
+    "rootDir": "src"
   }
 }
