@@ -389,7 +389,7 @@ pub fn packet_timeout_commitment_call(
     )
 }
 
-pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Result<String> {
+pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Result<SuiAddress> {
     let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
 
     let res = query
@@ -402,7 +402,7 @@ pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Resu
         panic!("expected a single encoded connection end")
     }
 
-    let port_id = bcs::from_bytes::<String>(&res[0].0)?;
+    let port_id = bcs::from_bytes::<SuiAddress>(&res[0].0)?;
 
     Ok(port_id)
 }

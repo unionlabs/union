@@ -62,6 +62,7 @@ module zkgm::zkgm {
     use std::string::{Self, String};
     use std::type_name;
 
+    use sui::address;
     use sui::bcs;
     use sui::clock::Clock; 
     use sui::coin::{Self, Coin};
@@ -145,6 +146,7 @@ module zkgm::zkgm {
     const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
     const ESCROW_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-escrow-vault";
     const ESCROW_VAULT_OBJECT_KEY_ADDR: vector<u8> = b"ucs03-zkgm-escrow-vault\0\0\0\0\0\0\0\0\0";
+    const PORT_OBJECT_KEY: vector<u8> = b"port";
 
     public struct RelayStore has key {
         id: UID,
@@ -153,7 +155,6 @@ module zkgm::zkgm {
         token_origin: Table<vector<u8>, u256>,
         wrapped_denom_to_t: Table<vector<u8>, String>,
         object_store: ObjectBag,
-        port: ibc::Port<address>,
     }
 
     public struct CreateWrappedToken has copy, drop, store {
@@ -220,16 +221,21 @@ module zkgm::zkgm {
     fun init(ctx: &mut TxContext) {
         let id = object::new(ctx);
 
-        let port = ibc::create_port(@zkgm, object::uid_to_address(&id), ctx);
+        let self_address = address::from_ascii_bytes(type_name::with_defining_ids<RelayStore>().address_string().as_bytes());
+
+        let port = ibc::create_port(self_address, object::uid_to_address(&id), ctx);
+
+        let mut object_store = object_bag::new(ctx);
+
+        object_store.add(PORT_OBJECT_KEY, port);
 
         transfer::share_object(RelayStore {
-            id: id,
+            id,
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
-            object_store: object_bag::new(ctx),
-            wrapped_denom_to_t: table::new(ctx),
-            port,
+            object_store,
+            wrapped_denom_to_t: table::new(ctx)
         });
     }
 
@@ -290,8 +296,8 @@ module zkgm::zkgm {
     }
 
     public fun end_send(
-        zkgm: &RelayStore,
         ibc_store: &mut ibc::IBCStore,
+        zkgm: &RelayStore,
         clock: &Clock,
         timeout_height: u64,
         timeout_timestamp: u64,
@@ -315,7 +321,7 @@ module zkgm::zkgm {
             timeout_height,
             timeout_timestamp,
             zkgm_packet::encode(&zkgm_packet::new(salt, 0, instruction)),
-            &zkgm.port,
+            zkgm.port(),
             ctx
         );
     }
@@ -445,8 +451,8 @@ module zkgm::zkgm {
     }
 
     public fun end_recv(
-        zkgm: &RelayStore,
         ibc: &mut ibc::IBCStore,
+        zkgm: &RelayStore,
         clock: &Clock,
         proof: vector<u8>,
         proof_height: u64,
@@ -470,7 +476,6 @@ module zkgm::zkgm {
             let ack = if (packet_ctx.instruction_set.length() == 1) {
                 assert!(packet_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
 
-                packet_ctx.acks[0]
                 if (!packet_ctx.acks[0].is_empty()) {
                     ack::success(packet_ctx.acks[0]).encode()
                 } else {
@@ -492,7 +497,7 @@ module zkgm::zkgm {
             proof,
             proof_height,
             acks,
-            &zkgm.port,
+            zkgm.port(),
             ctx
         );
 
@@ -644,7 +649,7 @@ module zkgm::zkgm {
 
                 if (zkgm.in_flight_packet.contains(packet_hash)) {
                     let parent = zkgm.in_flight_packet.remove(packet_hash);
-                    ibc.write_acknowledgement(parent, raw_ack, &zkgm.port);
+                    ibc.write_acknowledgement(parent, raw_ack, zkgm.port());
                     zkgm_packet.cursor = zkgm_packet.cursor + 1;
                     continue
                 };
@@ -682,8 +687,8 @@ module zkgm::zkgm {
     }
     
     public fun end_ack(
-        zkgm: &RelayStore,
         ibc: &mut ibc::IBCStore,
+        zkgm: &RelayStore,
         proof: vector<u8>,
         proof_height: u64,
         relayer: address,
@@ -702,7 +707,7 @@ module zkgm::zkgm {
             proof,
             proof_height,
             relayer,
-            &zkgm.port,
+            zkgm.port(),
             ctx
         );
 
@@ -770,7 +775,7 @@ module zkgm::zkgm {
 
                 if (zkgm.in_flight_packet.contains(packet_hash)) {
                     let parent = zkgm.in_flight_packet.remove(packet_hash);
-                    ibc.write_acknowledgement(parent, ack::failure(ACK_EMPTY).encode(), &zkgm.port);
+                    ibc.write_acknowledgement(parent, ack::failure(ACK_EMPTY).encode(), zkgm.port());
                     zkgm_packet.cursor = zkgm_packet.cursor + 1;
                     continue
                 };
@@ -806,7 +811,7 @@ module zkgm::zkgm {
             timeout_ctx.packet,
             proof,
             proof_height,
-            &zkgm.port,
+            zkgm.port(),
             ctx,
         );
 
@@ -1089,7 +1094,7 @@ module zkgm::zkgm {
                 ),
                 next_instruction
             ).encode(),
-            &zkgm.port,
+            zkgm.port(),
             ctx
         );
 
@@ -1765,7 +1770,7 @@ module zkgm::zkgm {
     }
 
     public(package) fun port(zkgm: &RelayStore): &ibc::Port<address> {
-        &zkgm.port
+        zkgm.object_store.borrow(PORT_OBJECT_KEY)
     }
 
     #[test_only]

@@ -269,7 +269,7 @@ module ibc::ibc_connection {
     fun commit_connection(
         ibc_uid: &mut UID, connection_id: u32, connection: ConnectionEnd
     ) {
-        state::commit(
+        state::add_or_update_commitment(
             ibc_uid,
             commitment::connection_commitment_key(connection_id),
             keccak256(&connection.encode())

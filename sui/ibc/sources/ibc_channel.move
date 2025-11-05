@@ -84,7 +84,7 @@ module ibc::ibc_channel {
         ibc_uid: &mut UID,
         connections: &Table<u32, ConnectionEnd>,
         channels: &mut Table<u32, Channel>,
-        port_id: String,
+        port_id: address,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
         version: String
@@ -129,7 +129,7 @@ module ibc::ibc_channel {
         client_mgr: &LightClientManager,
         connections: &Table<u32, ConnectionEnd>,
         channels: &mut Table<u32, Channel>,
-        port_id: String,
+        port_id: address,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -151,7 +151,7 @@ module ibc::ibc_channel {
                 CHAN_STATE_INIT,
                 connection.counterparty_connection_id(),
                 0,
-                *port_id.as_bytes(),
+                port_id.to_bytes(),
                 counterparty_version
             );
 
@@ -203,7 +203,7 @@ module ibc::ibc_channel {
         client_mgr: &LightClientManager,
         connections: &Table<u32, ConnectionEnd>,
         channels: &mut Table<u32, Channel>,
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -226,7 +226,7 @@ module ibc::ibc_channel {
                 CHAN_STATE_TRYOPEN,
                 connection.counterparty_connection_id(),
                 channel_id,
-                *port_id.as_bytes(),
+                port_id.to_bytes(),
                 counterparty_version
             );
 
@@ -265,7 +265,7 @@ module ibc::ibc_channel {
         client_mgr: &LightClientManager,
         connections: &Table<u32, ConnectionEnd>,
         channels: &mut Table<u32, Channel>,
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64
@@ -286,7 +286,7 @@ module ibc::ibc_channel {
                 CHAN_STATE_OPEN,
                 connection.counterparty_connection_id(),
                 channel_id,
-                *port_id.as_bytes(),
+                port_id.to_bytes(),
                 *channel.version()
             );
 
@@ -319,7 +319,7 @@ module ibc::ibc_channel {
     fun commit_channel(
         ibc_uid: &mut UID, channel_id: u32, channel: Channel
     ) {
-        state::commit(
+        state::add_or_update_commitment(
             ibc_uid,
             commitment::channel_commitment_key(channel_id),
             keccak256(&channel.encode())

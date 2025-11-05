@@ -123,7 +123,7 @@ module ibc::events {
 
     /* ─────────────── CHANNEL EVENTS ─────────────── */
     public struct ChannelOpenInit has copy, drop, store {
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
@@ -131,7 +131,7 @@ module ibc::events {
     }
 
     public struct ChannelOpenTry has copy, drop, store {
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
@@ -140,7 +140,7 @@ module ibc::events {
     }
 
     public struct ChannelOpenAck has copy, drop, store {
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
@@ -148,7 +148,7 @@ module ibc::events {
     }
 
     public struct ChannelOpenConfirm has copy, drop, store {
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
@@ -283,7 +283,7 @@ module ibc::events {
 
     /* Channel */
     public(package) fun emit_channel_open_init(
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
@@ -301,7 +301,7 @@ module ibc::events {
     }
 
     public(package) fun emit_channel_open_try(
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
@@ -321,7 +321,7 @@ module ibc::events {
     }
 
     public(package) fun emit_channel_open_ack(
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,
@@ -339,7 +339,7 @@ module ibc::events {
     }
 
     public(package) fun emit_channel_open_confirm(
-        port_id: String,
+        port_id: address,
         channel_id: u32,
         counterparty_port_id: vector<u8>,
         counterparty_channel_id: u32,

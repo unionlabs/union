@@ -62,8 +62,6 @@ module ibc::state {
     use sui::bcs;
     use sui::dynamic_field as df;
 
-    use std::string::String;
-
     const COMMITMENT: u8 = 0x1;
     const COMMITMENT_TO_DIGEST: u8 = 0x2;
     const CHANNEL_TO_PORT: u8 = 0x3;
@@ -117,7 +115,7 @@ module ibc::state {
 
     /// Channel-to-port storage
     public(package) fun add_channel_to_port(
-        id: &mut UID, channel: u32, port: String
+        id: &mut UID, channel: u32, port: address
     ) {
         df::add(
             id,
@@ -126,8 +124,8 @@ module ibc::state {
         );
     }
 
-    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): &String {
-        df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
+    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): address {
+        *df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
     }
 
     public(package) fun has_channel_to_port(id: &UID, channel: u32): bool {

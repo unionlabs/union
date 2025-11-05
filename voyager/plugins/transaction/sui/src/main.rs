@@ -204,23 +204,20 @@ impl Module {
                     self.module_info_from_port(&data.port_id).await?,
                     data,
                 )?,
-                Datagram::ChannelOpenAck(data) => {
-                    let port_id = move_api::get_port_id(self, data.channel_id).await?;
-
-                    move_api::channel_open_ack(
-                        &mut ptb_builder,
-                        self,
-                        self.module_info_from_port(port_id.as_bytes()).await?,
-                        data,
-                    )?
-                }
+                Datagram::ChannelOpenAck(data) => move_api::channel_open_ack(
+                    &mut ptb_builder,
+                    self,
+                    self.module_info_from_port(
+                        move_api::get_port_id(self, data.channel_id).await?.as_ref(),
+                    )
+                    .await?,
+                    data,
+                )?,
                 Datagram::ChannelOpenConfirm(data) => move_api::channel_open_confirm_call(
                     &mut ptb_builder,
                     self,
                     self.module_info_from_port(
-                        move_api::get_port_id(self, data.channel_id)
-                            .await?
-                            .as_bytes(),
+                        move_api::get_port_id(self, data.channel_id).await?.as_ref(),
                     )
                     .await?,
                     data,
@@ -229,7 +226,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packets[0].destination_channel_id).await?;
 
-                    let module_info = self.module_info_from_port(port_id.as_bytes()).await?;
+                    let module_info = self.module_info_from_port(port_id.as_ref()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -267,7 +264,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packets[0].source_channel_id).await?;
 
-                    let module_info = self.module_info_from_port(port_id.as_bytes()).await?;
+                    let module_info = self.module_info_from_port(port_id.as_ref()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -304,7 +301,7 @@ impl Module {
                     let port_id =
                         move_api::get_port_id(self, data.packet.source_channel_id).await?;
 
-                    let module_info = self.module_info_from_port(port_id.as_bytes()).await?;
+                    let module_info = self.module_info_from_port(port_id.as_ref()).await?;
 
                     let channel_version = voyager_client
                         .query_ibc_state(
@@ -348,17 +345,7 @@ impl Module {
     // original_address::module_name::store_address
     // TODO(aeryz): we can also choose to include store_name here
     pub async fn module_info_from_port(&self, port_id: &[u8]) -> RpcResult<ModuleInfo> {
-        let port_id = String::from_utf8(port_id.to_vec()).map_err(|_| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "port parsing: port expected to be a string",
-                Some(json!({
-                    "port": port_id,
-                })),
-            )
-        })?;
-
-        let port_id = ObjectID::from_str(&port_id).map_err(|_| {
+        let port_id = ObjectID::try_from(port_id).map_err(|_| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 "port parsing: port expected to be a object ID",
@@ -421,7 +408,10 @@ impl Module {
         let initial_seq = self
             .sui_client
             .read_api()
-            .get_object_with_options(port.store_address.into(), SuiObjectDataOptions::new())
+            .get_object_with_options(
+                port.store_address.into(),
+                SuiObjectDataOptions::new().with_owner(),
+            )
             .await
             .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
             .data

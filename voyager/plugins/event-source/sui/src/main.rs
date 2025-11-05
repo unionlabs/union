@@ -481,7 +481,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .query_events(
                         EventFilter::MoveEventModule {
                             package: self.ibc_contract.into(),
-                            module: "ibc".parse().unwrap(),
+                            module: "events".parse().unwrap(),
                         },
                         cursor,
                         Some(1),

@@ -85,7 +85,7 @@ module ibc::ibc {
 
     public struct Port<T: drop> has key, store {
         id: UID,
-        module_address: address,
+        _module_address: address,
         data: T,
     }
 
@@ -115,7 +115,7 @@ module ibc::ibc {
     ): Port<T> {
         Port {
             id: object::new(ctx),
-            module_address: address,
+            _module_address: module_address,
             data,
         }
     }
@@ -317,7 +317,7 @@ module ibc::ibc {
             &mut ibc_store.id,
             &ibc_store.connections,
             &mut ibc_store.channels,
-            port.to_port_string(),
+            object::uid_to_address(&port.id),
             counterparty_port_id,
             connection_id,
             version,
@@ -356,7 +356,7 @@ module ibc::ibc {
             &ibc_store.client_mgr,
             &ibc_store.connections,
             &mut ibc_store.channels,
-            port.to_port_string(),
+            object::uid_to_address(&port.id),
             connection_id,
             counterparty_channel_id,
             counterparty_port_id,
@@ -391,7 +391,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, channel_id);
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, channel_id);
         validate_port(port_id, port);
 
         ibc_channel::channel_open_ack(
@@ -428,7 +428,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, channel_id);
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, channel_id);
         validate_port(port_id, port);
 
         ibc_channel::channel_open_confirm(
@@ -457,7 +457,7 @@ module ibc::ibc {
     ): packet::Packet {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, source_channel);
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, source_channel);
         validate_port(port_id, port);
 
         ibc_packet::send_packet(
@@ -501,7 +501,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, packets[0].destination_channel_id());
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, packets[0].destination_channel_id());
         validate_port(port_id, port);
 
         ibc_packet::recv_packet(
@@ -533,7 +533,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, packets[0].destination_channel_id());
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, packets[0].destination_channel_id());
         validate_port(port_id, port);
 
         ibc_packet::recv_intent_packet(
@@ -561,7 +561,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, packet.destination_channel_id());
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, packet.destination_channel_id());
         validate_port(port_id, port);
 
         ibc_packet::write_acknowledgement(
@@ -594,7 +594,7 @@ module ibc::ibc {
     )  {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, packets[0].source_channel_id());
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, packets[0].source_channel_id());
         validate_port(port_id, port);
 
         ibc_packet::acknowledge_packet(
@@ -628,7 +628,7 @@ module ibc::ibc {
     ) {
         ibc_store.assert_version();
 
-        let port_id = *state::borrow_channel_to_port(&ibc_store.id, packet.source_channel_id());
+        let port_id = state::borrow_channel_to_port(&ibc_store.id, packet.source_channel_id());
         validate_port(port_id, port);
 
         ibc_packet::timeout_packet(
@@ -672,10 +672,10 @@ module ibc::ibc {
     }
 
     fun validate_port<T: drop>(
-        port_id: String,
+        port_id: address,
         port: &Port<T>,
-    ) {       
-        assert!(sui::bcs::new(port_id.into_bytes()).peel_address() == object::uid_to_address(&port.id), E_UNAUTHORIZED);
+    ) {
+        assert!(port_id == object::uid_to_address(&port.id), E_UNAUTHORIZED);
     }
 
     public fun get_counterparty_connection(
@@ -694,11 +694,11 @@ module ibc::ibc {
         ibc_store.client_mgr.get_client_state(client_id)
     }
 
-    public fun get_port_id(ibc_store: &IBCStore, channel_id: u32): String {
+    public fun get_port_id(ibc_store: &IBCStore, channel_id: u32): address {
         if (!state::has_channel_to_port(&ibc_store.id, channel_id)) {
             abort E_CHANNEL_NOT_FOUND
         };
-        *state::borrow_channel_to_port(&ibc_store.id, channel_id)
+        state::borrow_channel_to_port(&ibc_store.id, channel_id)
     }
 
     public fun get_consensus_state(ibc_store: &IBCStore, client_id: u32, height: u64): vector<u8> {
@@ -728,10 +728,6 @@ module ibc::ibc {
             abort E_COMMITMENT_NOT_FOUND
         };
         *state::borrow_commitment(&ibc_store.id, commitment_key)
-    }
-
-    fun to_port_string<T: drop>(port: &Port<T>): String {
-        std::string::utf8(sui::hex::encode(object::uid_to_bytes(&port.id)))
     }
 
     fun assert_version(ibc_store: &IBCStore) {
