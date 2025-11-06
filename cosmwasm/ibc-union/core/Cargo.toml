@@ -32,6 +32,7 @@ frissitheto      = { workspace = true }
 hex              = { workspace = true }
 ibc-union-msg    = { workspace = true }
 ibc-union-spec   = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+pausable         = { workspace = true }
 serde            = { workspace = true, features = ["derive"] }
 serde-json-wasm  = { workspace = true }
 strum            = { workspace = true, features = ["derive"] }

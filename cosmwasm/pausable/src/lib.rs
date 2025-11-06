@@ -174,6 +174,10 @@ impl<T> WhenNotPaused<T> {
     pub fn ensure_not_paused(self, deps: Deps) -> Result<T, ContractError> {
         require_not_paused(deps).map(|()| self.0)
     }
+
+    pub fn wrap(t: T) -> Self {
+        Self(t)
+    }
 }
 
 /// Wrapper to make an entrypoint callable only when the contract is paused.
@@ -242,5 +246,9 @@ pub struct WhenPaused<T>(T);
 impl<T> WhenPaused<T> {
     pub fn ensure_paused(self, deps: Deps) -> Result<T, ContractError> {
         require_paused(deps).map(|()| self.0)
+    }
+
+    pub fn wrap(t: T) -> Self {
+        Self(t)
     }
 }

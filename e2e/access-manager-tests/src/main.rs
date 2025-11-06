@@ -27,6 +27,7 @@ use unionlabs::{
     google::protobuf::any::Any,
     primitives::{Bech32, H256},
 };
+use upgradable::msg::Upgradable;
 
 use crate::gas::{GasFillerArgs, any_gas_filler_from_args};
 
@@ -1027,7 +1028,7 @@ async fn setup_contracts(
     execute(
         alice_client,
         &managed_address,
-        &[upgradable::msg::ExecuteMsg::Upgrade {
+        &[Upgradable::Upgrade {
             new_code_id: code_id.get(),
             msg: serde_json::to_value(&access_managed_example::msg::MigrateMsg {}).unwrap(),
         }],

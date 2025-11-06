@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use ucs03_solvable::Solvable;
 use unionlabs_primitives::{Bytes, H256, U256};
+use upgradable::msg::Upgradable;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -51,7 +52,7 @@ pub enum RestrictedExecuteMsg {
         counterparty_beneficiary: Bytes,
     },
     #[serde(untagged)]
-    Upgradable(upgradable::msg::ExecuteMsg),
+    Upgradable(Upgradable),
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

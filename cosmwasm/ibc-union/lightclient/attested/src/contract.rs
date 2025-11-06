@@ -148,12 +148,7 @@ pub fn migrate(
 
             deps.storage.write_item::<Quorum>(&init_msg.quorum);
 
-            let res = ibc_union_light_client::init(
-                deps,
-                ibc_union_light_client::msg::InitMsg {
-                    ibc_host: init_msg.ibc_host,
-                },
-            )?;
+            let res = ibc_union_light_client::init(deps, init_msg.ibc_union_light_client_init_msg)?;
 
             Ok((res, None))
         },

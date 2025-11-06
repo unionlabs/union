@@ -1,5 +1,6 @@
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
+use upgradable::msg::Upgradable;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -31,7 +32,7 @@ pub enum ExecuteMsg {
     #[serde(untagged)]
     AccessManaged(access_manager_types::managed::msg::ExecuteMsg),
     #[serde(untagged)]
-    Upgradable(upgradable::msg::ExecuteMsg),
+    Upgradable(Upgradable),
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

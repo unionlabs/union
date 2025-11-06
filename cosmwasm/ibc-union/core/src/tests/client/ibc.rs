@@ -5,7 +5,10 @@ use cosmwasm_std::{
 };
 use depolama::StorageExt;
 use ibc_union_msg::{
-    lightclient::{QueryMsg as LightClientQueryMsg, UpdateStateResponse, VerifyCreationResponse},
+    lightclient::{
+        QueryMsg as LightClientQueryMsg, UpdateStateQuery, UpdateStateResponse,
+        VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse,
+    },
     msg::{ExecuteMsg, InitMsg, MsgUpdateClient, RestrictedExecuteMsg},
 };
 
@@ -102,12 +105,19 @@ fn create_client_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -131,12 +141,19 @@ fn create_client_commitments_saved() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -191,18 +208,27 @@ fn update_client_ok() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
-                height: 2,
-                consensus_state_bytes: vec![3, 2, 1].into(),
-                client_state_bytes: Some(vec![3, 2, 1].into()),
-                storage_writes: Default::default(),
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    VerificationQueryMsg::UpdateState(UpdateStateQuery { .. }) => {
+                        to_json_binary(&UpdateStateResponse {
+                            height: 2,
+                            consensus_state_bytes: vec![3, 2, 1].into(),
+                            client_state_bytes: Some(vec![3, 2, 1].into()),
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -255,14 +281,21 @@ fn update_client_ko() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    VerificationQueryMsg::UpdateState { .. } => to_json_binary(&0),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
-            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&0),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -314,18 +347,27 @@ fn update_client_commitments_saved() {
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
-                height: 2,
-                consensus_state_bytes: vec![3, 2, 1].into(),
-                client_state_bytes: Some(vec![3, 2, 1].into()),
-                storage_writes: Default::default(),
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    VerificationQueryMsg::UpdateState(UpdateStateQuery { .. }) => {
+                        to_json_binary(&UpdateStateResponse {
+                            height: 2,
+                            consensus_state_bytes: vec![3, 2, 1].into(),
+                            client_state_bytes: Some(vec![3, 2, 1].into()),
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),

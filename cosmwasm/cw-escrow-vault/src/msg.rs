@@ -4,6 +4,7 @@ use ibc_union_spec::ChannelId;
 use serde::{Deserialize, Serialize};
 use ucs03_solvable::{Solvable, SolverQuery};
 use unionlabs_primitives::{Bytes, H256, U256};
+use upgradable::msg::Upgradable;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -42,7 +43,7 @@ pub enum RestrictedExecuteMsg {
         escrowed_denom: String,
     },
     #[serde(untagged)]
-    Upgradable(upgradable::msg::ExecuteMsg),
+    Upgradable(Upgradable),
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

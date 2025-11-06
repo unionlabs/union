@@ -7074,6 +7074,7 @@ dependencies = [
  "hex-literal 0.4.1",
  "ibc-union-msg",
  "ibc-union-spec",
+ "pausable",
  "serde",
  "serde-json-wasm",
  "strum 0.27.2",
@@ -7086,7 +7087,7 @@ dependencies = [
 name = "ibc-union-light-client"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema",
+ "access-managed",
  "cosmwasm-std",
  "depolama",
  "frissitheto",
@@ -7094,11 +7095,13 @@ dependencies = [
  "ibc-union-msg",
  "ibc-union-spec",
  "macros",
+ "pausable",
  "schemars",
  "serde",
  "serde-utils",
  "thiserror 2.0.12",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]
@@ -7109,7 +7112,9 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
+ "enumorph",
  "ibc-union-spec",
+ "pausable",
  "schemars",
  "serde",
  "unionlabs-primitives",

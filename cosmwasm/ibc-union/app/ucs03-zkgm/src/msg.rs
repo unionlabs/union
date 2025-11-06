@@ -4,6 +4,7 @@ use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
 use unionlabs::primitives::{Bytes, H256};
+use upgradable::msg::Upgradable;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -135,7 +136,7 @@ pub enum RestrictedExecuteMsg {
         instruction: Bytes,
     },
     #[serde(untagged)]
-    Upgradable(upgradable::msg::ExecuteMsg),
+    Upgradable(Upgradable),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

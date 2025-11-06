@@ -2,8 +2,8 @@ use access_managed::Restricted;
 use access_manager_types::CanCall;
 use contract::execute;
 use cosmwasm_std::{
-    Addr, Binary, DepsMut, QuerierResult, Response, StdResult, WasmQuery, from_json,
-    testing::{MockApi, message_info, mock_env},
+    Addr, Binary, Deps, DepsMut, QuerierResult, Response, StdResult, WasmQuery, from_json,
+    testing::{MockApi, message_info, mock_dependencies, mock_env},
     to_json_binary,
 };
 use ibc_union_msg::{
@@ -179,6 +179,10 @@ fn channel_open_ack(deps: DepsMut) -> Result<Response, ContractError> {
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
+}
+
+fn unpaused_deps() -> Deps<'static> {
+    Box::leak(Box::new(mock_dependencies())).as_ref()
 }
 
 #[test]

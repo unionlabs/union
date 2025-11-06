@@ -16,7 +16,9 @@ access-managed       = { workspace = true }
 cosmwasm-schema      = { workspace = true, optional = true }
 cosmwasm-std         = { workspace = true, optional = true }
 cw-orch              = { workspace = true, optional = true }
+enumorph             = { workspace = true }
 ibc-union-spec       = { workspace = true, features = ["serde"] }
+pausable             = { workspace = true }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true, features = ["derive"] }
 unionlabs-primitives = { workspace = true, features = ["serde"] }
@@ -32,4 +34,5 @@ schemars = [
   "ibc-union-spec/schemars",
   "access-managed/schemars",
   "upgradable/schemars",
+  "pausable/schemars",
 ]

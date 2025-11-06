@@ -13,8 +13,9 @@ use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, UpdateStateResponse, VerifyCreationResponse,
-        VerifyCreationResponseEvent,
+        QueryMsg as LightClientQuery, UpdateStateQuery, UpdateStateResponse, VerifyCreationQuery,
+        VerifyCreationResponse, VerifyCreationResponseEvent, VerifyMembershipQuery,
+        VerifyNonMembershipQuery,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
     msg::{
@@ -801,7 +802,7 @@ fn timeout_packet(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyNonMembership {
+        VerifyNonMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -859,7 +860,7 @@ fn acknowledge_packet(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyMembership {
+        VerifyMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -1013,7 +1014,7 @@ fn init_client(
     let verify_creation_response = query_light_client::<VerifyCreationResponse>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyCreation {
+        VerifyCreationQuery {
             caller: info.sender.into(),
             client_id,
             relayer: relayer.into(),
@@ -1076,7 +1077,7 @@ fn update_client(
         let update = query_light_client::<UpdateStateResponse>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::UpdateState {
+            UpdateStateQuery {
                 caller: info.sender.into(),
                 client_id,
                 relayer: relayer.into(),
@@ -1185,7 +1186,7 @@ fn connection_open_try(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id,
                 height: proof_height,
                 proof: proof_init.into(),
@@ -1245,7 +1246,7 @@ fn connection_open_ack(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_try.into(),
@@ -1312,7 +1313,7 @@ fn connection_open_confirm(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_ack.into(),
@@ -1444,7 +1445,7 @@ fn channel_open_try(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_init.into(),
@@ -1537,7 +1538,7 @@ fn channel_open_ack(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_try.into(),
@@ -1617,7 +1618,7 @@ fn channel_open_confirm(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_ack.into(),
@@ -1740,7 +1741,7 @@ fn channel_close_confirm(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyMembership {
+        VerifyMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
@@ -1807,7 +1808,7 @@ fn process_receive(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof.to_vec().into(),
@@ -2298,8 +2299,9 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
 fn query_light_client<T: DeserializeOwned>(
     deps: Deps,
     client_impl: Addr,
-    query: LightClientQuery,
+    query: impl Into<LightClientQuery>,
 ) -> Result<T, ContractError> {
+    let query = query.into();
     deps.querier
         .query_wasm_smart::<T>(&client_impl, &query)
         .map_err(|error| ContractError::CannotQueryLightClient {
@@ -2337,7 +2339,7 @@ fn commit_membership_proof(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyMembership {
+        VerifyMembershipQuery {
             client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -2378,7 +2380,7 @@ fn commit_non_membership_proof(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyNonMembership {
+        VerifyNonMembershipQuery {
             client_id,
             height: proof_height,
             proof: proof.to_vec().into(),

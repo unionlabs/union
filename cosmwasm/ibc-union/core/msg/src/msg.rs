@@ -2,6 +2,7 @@ use access_managed::Restricted;
 use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
+use upgradable::msg::Upgradable;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -70,7 +71,7 @@ pub enum RestrictedExecuteMsg {
     CommitNonMembershipProof(MsgCommitNonMembershipProof),
 
     #[serde(untagged)]
-    Upgradable(upgradable::msg::ExecuteMsg),
+    Upgradable(Upgradable),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
