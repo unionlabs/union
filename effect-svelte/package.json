@@ -1,7 +1,6 @@
 {
-  "private": true,
   "name": "@unionlabs/effect-svelte",
-  "version": "0.0.0",
+  "version": "0.0.0-beta.1",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && pnpm run prepack",
