@@ -60,6 +60,9 @@
 
 #[allow(implicit_const_copy)]
 module ibc::ibc {
+
+    // === Imports ===
+
     use std::string::String;
     use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
@@ -74,7 +77,7 @@ module ibc::ibc {
     use ibc::events;
     use ibc::state;
 
-    const VERSION: u32 = 1;
+    // === Errors ===
 
     const EVersionMismatch: u64 = 1001;
     const EClientNotFound: u64 = 1002;
@@ -83,9 +86,27 @@ module ibc::ibc {
     const EConnectionNotFound: u64 = 1048;
     const ECommitmentNotFound: u64 = 1065;
 
+    // === Constants ===
+
+    const VERSION: u32 = 1;
+
+    // === Structs ===
+
+    /// Acts as a capability for creating and owning a channel.
+    /// Call `[create_port]` function to get an instance and do not
+    /// return a public reference to it since it will be the app's
+    /// authentication capability to do IBC operations.
     public struct Port<T: drop> has key, store {
         id: UID,
+        /// This is important for `Voyager` to be able to parse which
+        /// address to use when sending a transaction. Use the original
+        /// app address for this (`Voyager` will derive the latest address
+        /// automatically).
         _module_address: address,
+        /// Client-defined data. `Voyager` assumes this just contains the object
+        /// address of the primary store that app uses. So, it assumes this to be
+        /// in `address` type. But one can make it custom if they also want to
+        /// create a custom `Voyager` plugin.
         data: T,
     }
 
@@ -108,6 +129,8 @@ module ibc::ibc {
         });
     }
 
+    // === Public Functions ===
+
     /// Get a port cap to do a channel handshake.
     ///
     /// See `[Port]` for the extensive docs.
@@ -123,6 +146,7 @@ module ibc::ibc {
         }
     }
 
+    /// Get the `data` field of the `port`.
     public fun port_data<T: drop>(port: &Port<T>): &T {
         &port.data
     }
@@ -153,8 +177,10 @@ module ibc::ibc {
 
     /// Update a client with the `client_message`
     ///
-    /// `client_id`: the id of the client to be updated
-    /// `client_message`: the client-defined update message
+    /// `client_id`: The id of the client to be updated
+    /// `client_message`: The client-defined update message
+    /// `relayer`: The address who's willing to get the fees if any. This doesn't necessarily
+    /// have to be the address who executes this transaction.
     public fun update_client(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
@@ -179,6 +205,8 @@ module ibc::ibc {
     ///
     /// `client_id`: the id of the client
     /// `misbehaviour`: client-defined misbehaviour
+    /// `relayer`: The address who's willing to get the fees if any. This doesn't necessarily
+    /// have to be the address who executes this transaction.
     public fun misbehaviour(
         ibc_store: &mut IBCStore,
         client_id: u32,
@@ -298,13 +326,10 @@ module ibc::ibc {
 
     /// Initiate a channel opening between two apps on the previously connected chains.
     ///
-    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
-    /// address as the `witness` struct.
     /// `counterparty_port_id`: The port id of the app running on the counterparty chain.
     /// `connection_id`: The id of the connection where this channel will be based on.
     /// `version`: The app-defined version.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which will own this channel.
     public fun channel_open_init<T: drop>(
         ibc_store: &mut IBCStore,
         counterparty_port_id: vector<u8>,
@@ -328,8 +353,6 @@ module ibc::ibc {
 
     /// Run the second step of a channel handshake to open a channel between two apps on the previously connected chains.
     ///
-    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
-    /// address as the `witness` struct.
     /// `connection_id`: The id of the connection where this channel will be based on.
     /// `counterparty_channel_id`: The id of the channel initiated on the counterparty chain.
     /// `counterparty_port_id`: The port id of the app running on the counterparty chain.
@@ -337,8 +360,7 @@ module ibc::ibc {
     /// `counterparty_version`: The app-defined version that is used in the counterparty chain.
     /// `proof_init`: The proof of the channel end on the counterparty chain.
     /// `proof_height`: The height at where this proof is verifiable.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which will own this channel.
     public fun channel_open_try<T: drop>(
         ibc_store: &mut IBCStore,
         connection_id: u32,
@@ -373,14 +395,11 @@ module ibc::ibc {
     /// This runs after the `channel_open_init`, and `channel_open_confirm` should be run on the counterparty for the channel
     /// to be fully open.
     ///
-    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
-    /// address as the `witness` struct.
     /// `channel_id`: The id of the channel that is created on the `try` phase.
     /// `counterparty_version`: The app-defined version that is used in the counterparty chain.
     /// `proof_try`: The proof of the channel end on the counterparty chain.
     /// `proof_height`: The height at where this proof is verifiable.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which owns this channel.
     public fun channel_open_ack<T: drop>(
         ibc_store: &mut IBCStore,
         channel_id: u32,
@@ -413,13 +432,10 @@ module ibc::ibc {
     /// Run the final step of a channel handshake to open a channel between two apps on the previously connected chains.
     /// The channel will be open in both ends after this call.
     ///
-    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
-    /// address as the `witness` struct.
     /// `channel_id`: The id of the channel that is created on the `try` phase.
     /// `proof_ack`: The proof of the channel end on the counterparty chain.
     /// `proof_height`: The height at where this proof is verifiable.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which owns this channel.
     public fun channel_open_confirm<T: drop>(
         ibc_store: &mut IBCStore,
         channel_id: u32,
@@ -446,7 +462,15 @@ module ibc::ibc {
     }
 
 
-    /// Function to send a packet through an open channel
+    /// Function to send a packet through an open channel.
+    ///
+    /// `source_channel`: The channel on this end to send the packet on.
+    /// `timeout_height`: Must be zero.
+    /// `timeout_timestamp`: The timestamp of when this packet can be timed-out and won't be able
+    /// to be received anymore. It's advised to careful not to set this too big otherwise the funds
+    /// could stay locked (if they can't be received for some reason).
+    /// `data`: App-defined data which is going to be sent to the counterparty chain as is.
+    /// `port`: The port instance which owns the `source_channel`.
     public fun send_packet<T: drop>(
         ibc_store: &mut IBCStore,
         clock: &Clock,
@@ -487,8 +511,7 @@ module ibc::ibc {
     /// `acknowledgements`: The acknowledgements per packet generated by the app. Use empty vectors(per packet) for
     /// deferring an acknowledgement. The empty data for a packet won't result in an acknowledge event and it won't
     /// be committed.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which owns the `packets[*].destination_channel`.
     public fun recv_packet<T: drop>(
         ibc_store: &mut IBCStore,
         clock: &Clock,
@@ -522,7 +545,7 @@ module ibc::ibc {
     }
 
     /// Receive an IBC packet, except with intent functionality this time.
-    /// See `recv_packet` for more.
+    /// See `[recv_packet]` for more.
     public fun recv_intent_packet<T: drop>(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
@@ -554,7 +577,11 @@ module ibc::ibc {
     /// Write the acknowledgement of a `packet`. The apps don't need to call this to write an ack for a packet
     /// if they do not want a deferred ack behaviour where the ack is deferred until a certain thing happens.
     /// For example, the app might forward a packet by initiating a `send` on `recv`. And then it can choose to
-    /// write the ack when the forwarded packet is acknowledged.
+    /// write the ack when the forwarded packet is acknowledged instead of writing the ack on `recv`.
+    ///
+    /// `packet`: The packet to be acked.
+    /// `acknowledgement`: The acknowledgement.
+    /// `port`: The port instance which owns the `packet.destination_channel`.
     public fun write_acknowledgement<T: drop>(
         ibc_store: &mut IBCStore,
         packet: packet::Packet,
@@ -574,16 +601,14 @@ module ibc::ibc {
         );
     }
 
-    /// Acknowledge a packet that is received on the counuterparty chain. This must be called by the apps.
+    /// Acknowledge a packet that is received on the counterparty chain. This must be called by the apps.
     ///
     /// `packets`: Packet's to be received. This needs to match the exact batch order.
     /// `acknowledgements`: The acknowledgements per packet generated by the app in the counterparty chain.
     /// `proof`: The client-defined proof of the ack(s) commitment.
     /// `proof_height`: The height of the proof generation on the counterparty chain.
     /// `relayer`: Relayer-defined address that might be used by the app or the light client.
-    /// be committed.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which owns the `packets[*].source_channel`.
     public fun acknowledge_packet<T: drop>(
         ibc_store: &mut IBCStore,
         packets: vector<packet::Packet>,
@@ -618,8 +643,7 @@ module ibc::ibc {
     /// `packet`: Packet to be timed-out.
     /// `proof`: The client-defined proof of the non-existence of the packet at the counterparty chain.
     /// `proof_height`: The height of the proof generation on the counterparty chain.
-    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
-    /// The name MUST be `IbcAppWitness`.
+    /// `port`: The port instance which owns the `packet.source_channel`.
     public fun timeout_packet<T: drop>(
         ibc_store: &mut IBCStore,
         packet: Packet,
@@ -646,6 +670,9 @@ module ibc::ibc {
 
     /// Commit a packet timeout commitment when a packet times out. This is meant to be called by offchain tools
     /// or the users.
+    /// 
+    /// NOTE: This entrypoint exists on the chains where non-existence of a packet cannot be proven due
+    /// to how the chain is implemented. It is used to
     ///
     /// `packet`: An unreceived and timed-out packet.
     /// `proof`: The client-defined proof of the existence of a packet at the counterparty chain.
@@ -673,12 +700,7 @@ module ibc::ibc {
         );
     }
 
-    fun validate_port<T: drop>(
-        port_id: address,
-        port: &Port<T>,
-    ) {
-        assert!(port_id == object::uid_to_address(&port.id), EUnauthorized);
-    }
+    // === View functions ===
 
     public fun get_counterparty_connection(
         ibc_store: &mut IBCStore,
@@ -732,25 +754,33 @@ module ibc::ibc {
         *state::borrow_commitment(&ibc_store.id, commitment_key)
     }
 
+    // === Private Functions ===
+
+    fun validate_port<T: drop>(
+        port_id: address,
+        port: &Port<T>,
+    ) {
+        assert!(port_id == object::uid_to_address(&port.id), EUnauthorized);
+    }
+
     fun assert_version(ibc_store: &IBCStore) {
         assert!(ibc_store.version == VERSION, EVersionMismatch);
     }
 
+    // === Test Functions ===
+
     #[test_only]
     const TEST_LATEST_HEIGHT: u64 = 10_000;
-
     #[test_only]
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
     #[test_only]
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
-
     #[test_only]
     const CHAN_STATE_INIT: u8 = 1;
     #[test_only]
     const CHAN_STATE_TRYOPEN: u8 = 2;
     #[test_only]
     const CHAN_STATE_OPEN: u8 = 3;
-
     #[test_only]
     const CONN_STATE_INIT: u8 = 1;
     #[test_only]
@@ -760,10 +790,8 @@ module ibc::ibc {
 
     #[test_only]
     use sui::test_scenario;
-
     #[test_only]
     use ibc::commitment;
-
     #[test_only]
     use std::string;
 
