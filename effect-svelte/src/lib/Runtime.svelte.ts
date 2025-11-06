@@ -144,6 +144,9 @@ export type RunForkResult<A, E> = {
   readonly fiber: Fiber.RuntimeFiber<A, E>
   readonly interrupt: () => void
 }
+type RunForkWithRuntimeOptions = {
+  variant?: "post" | "root" | "pre" | undefined
+} & Runtime.RunForkOptions
 /**
  * {@link Effect.runFork} with automatic {@link Fiber} cleanup.
  */
@@ -152,26 +155,39 @@ export const runForkWithRuntime: {
     runtime: Runtime.Runtime<R>,
   ): <A, E>(
     effect: () => Effect.Effect<A, E, R>,
-    options?: Runtime.RunForkOptions | undefined,
+    options?: RunForkWithRuntimeOptions | undefined,
   ) => Simplify<RunForkResult<A, E>>
   <R, A, E>(
     runtime: Runtime.Runtime<R>,
     effect: () => Effect.Effect<A, E, R>,
-    options?: Runtime.RunForkOptions | undefined,
+    options?: RunForkWithRuntimeOptions | undefined,
   ): Simplify<RunForkResult<A, E>>
 } = makeDual(
   <R, A, E>(
     runtime: Runtime.Runtime<R>,
     self: () => Effect.Effect<A, E, R>,
-    options?: Runtime.RunForkOptions,
+    options?: RunForkWithRuntimeOptions,
   ): Simplify<RunForkResult<A, E>> => {
+    const variant: NonNullable<RunPromiseExitOptions["variant"]> = options?.variant ?? "post"
     const runFork = Runtime.runFork(runtime)
     let state = $state<Fiber.RuntimeFiber<A, E> | null>(null)
 
-    $effect(() => {
+    const effect: () => void | VoidFunction = () => {
       state = runFork(self(), { immediate: true, ...options })
       return () => state?.unsafeInterruptAsFork(FiberId.none)
-    })
+    }
+
+    switch (variant) {
+      case "post":
+        $effect(effect)
+        break
+      case "root":
+        $effect.root(effect)
+        break
+      case "pre":
+        $effect.pre(effect)
+        break
+    }
 
     return {
       get fiber() {
