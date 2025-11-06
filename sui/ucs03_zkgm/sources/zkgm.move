@@ -119,28 +119,30 @@ module zkgm::zkgm {
 
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
-    const EUnsupportedVersion: u64 = 5;
-    const EUnknownSyscall: u64 = 6;
-    const EInvalidAmount: u64 = 10;
-    const EInvalidFillType: u64 = 12;
-    const ENoCallOperation: u64 = 17;
-    const EInvalidForwardInstruction: u64 = 18;
-    const ENoCoinInBag: u64 = 23;
-    const EChannelBalancePairNotFound: u64 = 25;
-    const EAnotherTokenIsRegistered: u64 = 26;
-    const EInvalidBatchInstruction: u64 = 27;
-    const EInvalidForwardDestinationChannelId: u64 = 30;
-    const EInvalidTokenOrderKind: u64 = 31;
-    const EUnwrapBaseAmountSmallerThanQuoteAmount: u64 = 32;
-    const EUnwrapMetadataInvalid: u64 = 33;
-    const EInvalidMetadata: u64 = 35;
-    const EInvalidUnescrow: u64 = 38;
-    const EAckSizeMismatching: u64 = 42;
-    const EExecutionNotComplete: u64 = 43;
-    const EInvalidSolverAddress: u64 = 45;
-    const EInvalidQuoteToken: u64 = 46;
-    const EExecutionAlreadyComplete: u64 = 47;
-    const EInvalidReceiver: u64 = 48;
+
+    const EBase: u64 = 35000;
+    const EUnsupportedVersion: u64 = EBase + 1;
+    const EUnknownSyscall: u64 = EBase + 2;
+    const EInvalidAmount: u64 = EBase + 3;
+    const EInvalidFillType: u64 = EBase + 4;
+    const ENoCallOperation: u64 = EBase + 5;
+    const EInvalidForwardInstruction: u64 = EBase + 6;
+    const ENoCoinInBag: u64 = EBase + 7;
+    const EChannelBalancePairNotFound: u64 = EBase + 8;
+    const EAnotherTokenIsRegistered: u64 = EBase + 9;
+    const EInvalidBatchInstruction: u64 = EBase + 10;
+    const EInvalidForwardDestinationChannelId: u64 = EBase + 11;
+    const EInvalidTokenOrderKind: u64 = EBase + 12;
+    const EUnwrapBaseAmountSmallerThanQuoteAmount: u64 = EBase + 13;
+    const EUnwrapMetadataInvalid: u64 = EBase + 14;
+    const EInvalidMetadata: u64 = EBase + 15;
+    const EInvalidUnescrow: u64 = EBase + 16;
+    const EAckSizeMismatching: u64 = EBase + 17;
+    const EExecutionNotComplete: u64 = EBase + 18;
+    const EInvalidSolverAddress: u64 = EBase + 19;
+    const EInvalidQuoteToken: u64 = EBase + 20;
+    const EExecutionAlreadyComplete: u64 = EBase + 21;
+    const EInvalidReceiver: u64 = EBase + 22;
 
     const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
     const ESCROW_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-escrow-vault";
@@ -183,6 +185,7 @@ module zkgm::zkgm {
         path: u256,
         salt: vector<u8>,
         failure: bool,
+        is_batch: bool,
     }
 
     public struct RecvCtx {
@@ -348,7 +351,7 @@ module zkgm::zkgm {
                 packet_timeout_timestamps[i]
             );
             let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
-            let (instruction_set, err) = extract_batch(zkgm_packet.instruction());
+            let (instruction_set, is_batch, err) = extract_batch(zkgm_packet.instruction());
             packet_ctxs.push_back(
                 ZkgmPacketCtx {
                     instruction_set,
@@ -356,7 +359,8 @@ module zkgm::zkgm {
                     acks: vector::empty(),
                     path: zkgm_packet.path(),
                     salt: zkgm_packet.salt(),
-                    failure: err != 0
+                    failure: err != 0,
+                    is_batch
                 }
             );
             packets.push_back(ibc_packet);
@@ -370,10 +374,10 @@ module zkgm::zkgm {
         }
     }
 
-    fun extract_batch(instruction: Instruction): (vector<Instruction>, u64) {
+    fun extract_batch(instruction: Instruction): (vector<Instruction>, bool, u64) {
         if (instruction.opcode() == OP_BATCH) {
             if (instruction.version() != INSTR_VERSION_0) {
-                return (vector::empty(), EUnsupportedVersion)
+                return (vector::empty(), false, EUnsupportedVersion)
             };
 
             let instructions = batch::decode(instruction.operand()).instructions();
@@ -381,14 +385,14 @@ module zkgm::zkgm {
             let mut i = 0;
             while (i < instr_len) {
                 if (!helper::is_allowed_batch_instruction(instructions.borrow(i).opcode())) {
-                    return (vector::empty(), EInvalidBatchInstruction)
+                    return (vector::empty(), false, EInvalidBatchInstruction)
                 };
                 i = i + 1;  
             };
 
-            (*instructions, 0)
+            (*instructions, true, 0)
         } else {
-            (vector[instruction], 0)
+            (vector[instruction], false, 0)
         }
     }
 
@@ -481,16 +485,12 @@ module zkgm::zkgm {
             // if the packet is failed to be received, return a fail ack
             let ack = if (packet_ctx.failure) {
                 ack::failure(b"").encode()
-            } else if (packet_ctx.instruction_set.length() == 1) {
-                // if the `instruction_set` has a single instruction, it means this is not a batch
-                // so return the ack directly
+            } else if (packet_ctx.is_batch) {
+                ack::success(batch_ack::new(packet_ctx.acks).encode()).encode()
+            } else {
                 assert!(packet_ctx.acks.length() == 1, EAckSizeMismatching);
 
                 ack::success(packet_ctx.acks[0]).encode()
-            } else {
-                // if the `instruction_set` has multiple instructions, then it's a batch,
-                // so wrap it with a batch ack
-                ack::success(batch_ack::new(packet_ctx.acks).encode()).encode()
             };
             acks.push_back(ack);
 
@@ -592,7 +592,7 @@ module zkgm::zkgm {
                 packet_timeout_timestamps[i]
             );
             let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
-            let (instruction_set, err) = extract_batch(zkgm_packet.instruction());
+            let (instruction_set, _, err) = extract_batch(zkgm_packet.instruction());
             assert!(err == 0, err);
             packet_ctxs.push_back(
                 ZkgmPacketAckCtx {
@@ -734,7 +734,7 @@ module zkgm::zkgm {
         packet_timeout_timestamp: u64,
     ): TimeoutCtx {
         let zkgm_packet = zkgm_packet::decode(&packet_data);
-        let (instruction_set, err) = extract_batch(zkgm_packet.instruction());
+        let (instruction_set, _, err) = extract_batch(zkgm_packet.instruction());
         assert!(err == 0, err);
         TimeoutCtx {
             packet_ctx: ZkgmPacketAckCtx {

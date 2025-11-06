@@ -63,7 +63,8 @@ module zkgm::helper {
     use sui::bcs;
     use sui::hash;
 
-    const EInvalidHops: u64 = 2;
+    const EBase: u64 = 35200;
+    const EInvalidHops: u64 = EBase + 1;
 
     const OP_FORWARD: u8 = 0x00;
     const OP_CALL: u8 = 0x01;

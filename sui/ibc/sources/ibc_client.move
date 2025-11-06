@@ -69,7 +69,8 @@ module ibc::ibc_client {
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const EClientNotActive: u64 = 2;
+    const EBase: u64 = 10100;
+    const EClientNotActive: u64 = EBase + 1;
 
     public fun create_client(
         ibc_uid: &mut UID,

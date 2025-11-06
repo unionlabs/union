@@ -64,7 +64,8 @@ module zkgm::ibc {
     use ibc::ibc::{Self, IBCStore};
     use zkgm::zkgm::RelayStore;
 
-    const EInvalidIbcVersion: u64 = 2;
+    const EBase: u64 = 35100;
+    const EInvalidIbcVersion: u64 = EBase + 1;
 
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
 

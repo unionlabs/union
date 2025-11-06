@@ -62,6 +62,9 @@ module ibc::packet {
     use sui::address;
     use sui::bcs;
 
+    const EBase: u64 = 10600;
+    const EInvalidMaxLen: u64 = EBase + 1;
+
     public struct Packet has copy, store, drop {
         source_channel_id: u32,
         destination_channel_id: u32,
@@ -164,7 +167,7 @@ module ibc::packet {
                 } else if (data_len > 0x0F_FF_FF_FF && data_len <= 0xFF_FF_FF_FF) {
                     x"0000000000000000000000000000000000000000000000000000"
                 } else {
-                    abort 1
+                    abort EInvalidMaxLen
                 }
             },
             data: {

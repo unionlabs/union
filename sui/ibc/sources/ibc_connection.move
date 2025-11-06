@@ -68,7 +68,8 @@ module ibc::ibc_connection {
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const EInvalidConnectionState: u64 = 3;
+    const EBase: u64 = 10200;
+    const EInvalidConnectionState: u64 = EBase + 1;
 
     const CONN_STATE_INIT: u8 = 1;
     const CONN_STATE_TRYOPEN: u8 = 2;

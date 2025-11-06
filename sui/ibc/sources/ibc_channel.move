@@ -77,8 +77,9 @@ module ibc::ibc_channel {
 
     const CONN_STATE_OPEN: u8 = 3;
 
-    const EInvalidConnectionState: u64 = 2;
-    const EInvalidChannelState: u64 = 3;
+    const EBase: u64 = 10300;
+    const EInvalidConnectionState: u64 = EBase + 1;
+    const EInvalidChannelState: u64 = EBase + 2;
 
     public(package) fun channel_open_init(
         ibc_uid: &mut UID,

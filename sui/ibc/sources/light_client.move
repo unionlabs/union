@@ -68,7 +68,8 @@ module ibc::light_client {
     use ibc::create_lens_client_event::CreateLensClientEvent;
     use ibc::cometbls_light_client;
 
-    const EClientTypeNotSupported: u64 = 1;
+    const EBase: u64 = 20000;
+    const EClientTypeNotSupported: u64 = EBase + 1;
 
     public struct LightClientManager has store {
         clients: ObjectBag,

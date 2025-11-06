@@ -77,29 +77,30 @@ module ibc::ibc_packet {
     const CHAN_STATE_OPEN: u8 = 3;
     const CONN_STATE_OPEN: u8 = 3;
 
-    const EAckLenMismatch: u64 = 2;
-    const EMakerMsgLenMismatch: u64 = 3;
-    const EPacketCommitmentNotFound: u64 = 4;
-    const EPacketAlreadyAcknowledged: u64 = 5;
-    const EAckAlreadyExist: u64 = 6;
-    const EPacketNotReceived: u64 = 7;
-    const EPacketAlreadyReceived: u64 = 8;
-    const EAlreadyReceived: u64 = 9;
-    const ETimestampTimeout: u64 = 10;
-    const ETimeoutHeightNotSupported: u64 = 11;
-    const EBatchSameChannelOnly: u64 = 12;
-    const EClientNotFound: u64 = 13;
-    const EInvalidConnectionState: u64 = 14;
-    const EInvalidChannelState: u64 = 15;
-    const EChannelNotFound: u64 = 16;
-    const ENotEnoughPackets: u64 = 17;
-    const EPacketAlreadySent: u64 = 18;
-    const EAcknowledgementIsEmpty: u64 = 19;
-    const ETimestampTimeoutNotReached: u64 = 20;
-    const ETimeoutMustBeSet: u64 = 21;
-    const ELatestTimestampNotFound: u64 = 22;
-    const EConnectionNotFound: u64 = 23;
-    const EPacketHaveNotTimedOut: u64 = 24;
+    const EBase: u64 = 10400;
+    const EAckLenMismatch: u64 = EBase + 1;
+    const EMakerMsgLenMismatch: u64 = EBase + 2;
+    const EPacketCommitmentNotFound: u64 = EBase + 3;
+    const EPacketAlreadyAcknowledged: u64 = EBase + 4;
+    const EAckAlreadyExist: u64 = EBase + 5;
+    const EPacketNotReceived: u64 = EBase + 6;
+    const EPacketAlreadyReceived: u64 = EBase + 7;
+    const EAlreadyReceived: u64 = EBase + 8;
+    const ETimestampTimeout: u64 = EBase + 9;
+    const ETimeoutHeightNotSupported: u64 = EBase + 10;
+    const EBatchSameChannelOnly: u64 = EBase + 11;
+    const EClientNotFound: u64 = EBase + 12;
+    const EInvalidConnectionState: u64 = EBase + 13;
+    const EInvalidChannelState: u64 = EBase + 14;
+    const EChannelNotFound: u64 = EBase + 15;
+    const ENotEnoughPackets: u64 = EBase + 16;
+    const EPacketAlreadySent: u64 = EBase + 17;
+    const EAcknowledgementIsEmpty: u64 = EBase + 18;
+    const ETimestampTimeoutNotReached: u64 = EBase + 19;
+    const ETimeoutMustBeSet: u64 = EBase + 20;
+    const ELatestTimestampNotFound: u64 = EBase + 21;
+    const EConnectionNotFound: u64 = EBase + 22;
+    const EPacketHaveNotTimedOut: u64 = EBase + 23;
 
     public(package) fun send_packet(
         ibc_uid: &mut UID,

@@ -69,17 +69,16 @@ module ibc::cometbls_light_client {
     use ibc::ics23;
     use ibc::groth16_verifier::{Self, ZKP};
 
-    // const EInvalidClientState: u64 = 35100;
-    const EConsensusStateTimestampZero: u64 = 35101;
-    const ESignedHeaderHeightNotMoreRecent: u64 = 35102;
-    const ESignedHeaderTimestampNotMoreRecent: u64 = 35103;
-    const EHeaderExceededTrustingPeriod: u64 = 35104;
-    const EHeaderExceededMaxClockDrift: u64 = 35105;
-    const EValidatorsHashMismatch: u64 = 35106;
-    const EInvalidZkp: u64 = 35107;
-    const EFrozenClient: u64 = 35108;
-    // const EInvalidMisbehaviour: u64 = 35109;
-    const EHeightNotFoundOnConsensusState: u64 = 0x99999;
+    const EBase: u64 = 20100;
+    const EConsensusStateTimestampZero: u64 = EBase + 1;
+    const ESignedHeaderHeightNotMoreRecent: u64 = EBase + 2;
+    const ESignedHeaderTimestampNotMoreRecent: u64 = EBase + 3;
+    const EHeaderExceededTrustingPeriod: u64 = EBase + 4;
+    const EHeaderExceededMaxClockDrift: u64 = EBase + 5;
+    const EValidatorsHashMismatch: u64 = EBase + 6;
+    const EInvalidZkp: u64 = EBase + 7;
+    const EFrozenClient: u64 = EBase + 8;
+    const EConsensusStateNotFound: u64 = EBase + 9;
 
     const STATUS_ACTIVE: u64 = 1;
     const STATUS_EXPIRED: u64 = 2;
@@ -408,7 +407,7 @@ module ibc::cometbls_light_client {
         height: u64,
     ): vector<u8> {
         if (!client.consensus_states.contains(height)) {
-            abort EHeightNotFoundOnConsensusState
+            abort EConsensusStateNotFound
         };
         let consensus_state = client.consensus_states.borrow(height);
         encode_consensus_state(consensus_state)

@@ -62,7 +62,8 @@ module ibc::channel {
     use std::string::{Self, String};
     use ibc::ethabi;
 
-    const EPacketVersionLengthExceedsMax: u64 = 1;
+    const EBase: u64 = 10500;
+    const EPacketVersionLengthExceedsMax: u64 = EBase + 1;
 
     public struct Channel has copy, store, drop {
         state: u8,

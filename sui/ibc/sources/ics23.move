@@ -63,24 +63,25 @@ module ibc::ics23 {
 
     use sui::bcs::{Self, BCS};
 
-    const EEmptyLeafPrefix: u64 = 35200;
-    const EEmptyInnerKey: u64 = 35202;
-    const EEmptyChild: u64 = 35203;
-    const EProofKeyMismatch: u64 = 35204;
-    const EProofValueMismatch: u64 = 35205;
-    const ECommitmentRootMismatch: u64 = 35206;
-    const EInvalidLeafPrefix: u64 = 35207;
-    const EInvalidInnerPrefix: u64 = 35208;
-    const EEmptyInnerValue: u64 = 35209;
-    const EEmptyProof: u64 = 35210;
-    const ELeftAndRightKeyEmpty: u64 = 35211;
-    const ERightKeyRange: u64 = 35212;
-    const ELeftKeyRange: u64 = 35213;
-    const ERightProofLeftMost: u64 = 35214;
-    const ELeftProofRightMost: u64 = 35215;
-    const EIsLeftNeighbor: u64 = 35216;
-    const EOrderPaddingNotFound: u64 = 35217;
-    const ERootMismatch: u64 = 35218;
+    const EBase: u64 = 20200;
+    const EEmptyLeafPrefix: u64 = EBase + 1;
+    const EEmptyInnerKey: u64 = EBase + 2;
+    const EEmptyChild: u64 = EBase + 3;
+    const EProofKeyMismatch: u64 = EBase + 4;
+    const EProofValueMismatch: u64 = EBase + 5;
+    const ECommitmentRootMismatch: u64 = EBase + 6;
+    const EInvalidLeafPrefix: u64 = EBase + 7;
+    const EInvalidInnerPrefix: u64 = EBase + 8;
+    const EEmptyInnerValue: u64 = EBase + 9;
+    const EEmptyProof: u64 = EBase + 10;
+    const ELeftAndRightKeyEmpty: u64 = EBase + 11;
+    const ERightKeyRange: u64 = EBase + 12;
+    const ELeftKeyRange: u64 = EBase + 13;
+    const ERightProofLeftMost: u64 = EBase + 14;
+    const ELeftProofRightMost: u64 = EBase + 15;
+    const EIsLeftNeighbor: u64 = EBase + 16;
+    const EOrderPaddingNotFound: u64 = EBase + 17;
+    const ERootMismatch: u64 = EBase + 18;
 
     public struct MembershipProof has drop {
         sub_proof: ExistenceProof,
