@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 use core::fmt::Debug;
-use std::error::Error;
+use std::{error::Error, num::NonZero};
 
 use cosmwasm_std::{Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError, to_json_binary};
 use depolama::{QuerierExt, StorageExt, Store};
@@ -28,6 +28,99 @@ pub use ibc_union_msg::lightclient as msg;
 pub use ibc_union_spec as spec;
 pub use pausable;
 pub use upgradable;
+
+#[macro_export]
+macro_rules! default_query {
+    ($LightClient:ty) => {
+        default_query!(
+            $LightClient;
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    ($LightClient:ty; library) => {
+        default_query!(
+            $LightClient;
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    ($LightClient:ty; #[$meta:meta]) => {
+        #[$meta]
+        pub fn query(
+            deps: ::cosmwasm_std::Deps,
+            env: ::cosmwasm_std::Env,
+            msg: $crate::msg::QueryMsg,
+        ) -> ::cosmwasm_std::StdResult<::cosmwasm_std::Binary> {
+            $crate::query::<$LightClient>(deps, env, msg).map_err(Into::into)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! default_migrate {
+    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr) => {
+        default_migrate!(
+            $LightClient; $MigrateMsg; $migrate_fn;
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr, library) => {
+        default_migrate!(
+            $LightClient; $MigrateMsg; $migrate_fn;
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr; #[$meta:meta]) => {
+        #[$meta]
+        pub fn migrate(
+            deps: ::cosmwasm_std::DepsMut,
+            env: ::cosmwasm_std::Env,
+            msg: ::frissitheto::UpgradeMsg<$crate::msg::InitMsg, $MigrateMsg>,
+        ) -> Result<::cosmwasm_std::Response, $crate::IbcClientError<$LightClient>> {
+            msg.run(
+                deps,
+                |deps, init_msg| {
+                    let res = $crate::init(deps, init_msg)?;
+
+                    Ok((res, None))
+                },
+                |deps, migrate_msg, current_version| ($migrate_fn)(deps, env, migrate_msg, current_version),
+            )
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! default_reply {
+    () => {
+        default_reply!(
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    (library) => {
+        default_reply!(
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    (#[$meta:meta]) => {
+        #[$meta]
+        pub fn reply(
+            deps: ::cosmwasm_std::DepsMut,
+            _: ::cosmwasm_std::Env,
+            reply: ::cosmwasm_std::Reply,
+        ) -> Result<::cosmwasm_std::Response, $crate::access_managed::error::ContractError> {
+            if let Some(reply) =
+                $crate::access_managed::handle_consume_scheduled_op_reply(deps, reply)?
+            {
+                Err(
+                    ::cosmwasm_std::StdError::generic_err(format!("unknown reply: {reply:?}"))
+                        .into(),
+                )
+            } else {
+                Ok(::cosmwasm_std::Response::new())
+            }
+        }
+    };
+}
 
 #[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
@@ -559,4 +652,13 @@ pub fn read_consensus_state<T: IbcClient>(
             error: e,
         })
     })
+}
+
+pub fn noop_migration<T, L: IbcClient>(
+    _deps: DepsMut,
+    _env: Env,
+    _migrate_msg: T,
+    _current_version: NonZero<u32>,
+) -> Result<(Response, Option<NonZero<u32>>), IbcClientError<L>> {
+    Ok((Response::default(), None))
 }

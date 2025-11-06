@@ -15,9 +15,9 @@ use unionlabs::{
 
 use crate::errors::Error;
 
-pub enum MptTrustedLightClient {}
+pub enum TrustedMptLightClient {}
 
-impl IbcClient for MptTrustedLightClient {
+impl IbcClient for TrustedMptLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -128,7 +128,7 @@ impl IbcClient for MptTrustedLightClient {
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
         _relayer: Addr,
-    ) -> Result<ClientCreationResult<Self>, IbcClientError<MptTrustedLightClient>> {
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<TrustedMptLightClient>> {
         Ok(ClientCreationResult::new())
     }
 
