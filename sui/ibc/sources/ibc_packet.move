@@ -65,6 +65,7 @@ module ibc::ibc_packet {
 
     use ibc::commitment;
     use ibc::channel::Channel;
+    use ibc::channel_state;
     use ibc::connection::Connection;
     use ibc::events;
     use ibc::light_client::LightClientManager;
@@ -74,7 +75,6 @@ module ibc::ibc_packet {
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
 
-    const CHAN_STATE_OPEN: u8 = 3;
     const CONN_STATE_OPEN: u8 = 3;
 
     const EBase: u64 = 10400;
@@ -128,7 +128,7 @@ module ibc::ibc_packet {
         );
 
         let channel = *channels.borrow(source_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
+        assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
         
         // Prepare packet for commitment
         let packet =
@@ -231,7 +231,7 @@ module ibc::ibc_packet {
         };
 
         let channel = *channels.borrow(packet.destination_channel_id());
-        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
+        assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let packet_hash = commitment::commit_packet(&packet);
 
@@ -269,7 +269,7 @@ module ibc::ibc_packet {
             abort EChannelNotFound
         };
         let channel = channels.borrow(source_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
+        assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let connection = connections.borrow(channel.connection_id());
         assert!(connection.state() == CONN_STATE_OPEN, EInvalidConnectionState);
@@ -334,7 +334,7 @@ module ibc::ibc_packet {
             abort EChannelNotFound
         };
         let channel = channels.borrow(source_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
+        assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let connection_id = channel.connection_id();
 
@@ -407,7 +407,7 @@ module ibc::ibc_packet {
         );
 
         let channel = channels.borrow(packet.destination_channel_id());
-        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
+        assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let connection_id = channel.connection_id();
 
@@ -476,7 +476,7 @@ module ibc::ibc_packet {
             abort EChannelNotFound
         };
         let channel = channels.borrow(destination_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
+        assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let connection = connections.borrow(channel.connection_id()); 
         assert!(connection.state() == CONN_STATE_OPEN, EInvalidConnectionState);

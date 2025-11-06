@@ -60,13 +60,15 @@
 
 module ibc::channel {
     use std::string::{Self, String};
+
     use ibc::ethabi;
+    use ibc::channel_state::{Self, ChannelState};
 
     const EBase: u64 = 10500;
     const EPacketVersionLengthExceedsMax: u64 = EBase + 1;
 
     public struct Channel has copy, store, drop {
-        state: u8,
+        state: ChannelState,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -74,7 +76,7 @@ module ibc::channel {
     }
 
     public fun new(
-        state: u8,
+        state: ChannelState,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -92,10 +94,10 @@ module ibc::channel {
     }
 
     public fun default(): Channel {
-        new(0, 0, 0, vector::empty(), string::utf8(b""))
+        new(channel_state::new_uninitialized(), 0, 0, vector::empty(), string::utf8(b""))
     }
 
-    public fun state(channel: &Channel): u8 {
+    public fun state(channel: &Channel): ChannelState {
         channel.state
     }
 
@@ -116,7 +118,7 @@ module ibc::channel {
     }
 
     // Setters
-    public fun set_state(channel: &mut Channel, new_state: u8) {
+    public fun set_state(channel: &mut Channel, new_state: ChannelState) {
         channel.state = new_state;
     }
 
@@ -145,7 +147,7 @@ module ibc::channel {
         let mut buf = vector::empty<u8>();
 
         ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, channel.state);
+        ethabi::encode_uint<u8>(&mut buf, channel.state.to_u8());
         ethabi::encode_uint<u32>(&mut buf, channel.connection_id);
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
         ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
@@ -173,7 +175,7 @@ module ibc::channel {
         let buf =
             x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000044141414100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b75637330312d72656c6179000000000000000000000000000000000000000000";
 
-        let channel = new(2, 1, 2, b"AAAA", string::utf8(b"ucs01-relay"));
+        let channel = new(channel_state::init(), 1, 2, b"AAAA", string::utf8(b"ucs01-relay"));
 
         let encoded = encode(&channel);
 
