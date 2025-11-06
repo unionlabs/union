@@ -260,7 +260,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 .storage
                 .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))?,
         )?),
-        QueryMsg::GetAllFungibleCounterparties => Ok(to_json_binary(
+        QueryMsg::GetAllFungibleCounterparties {} => Ok(to_json_binary(
             &deps
                 .storage
                 .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)

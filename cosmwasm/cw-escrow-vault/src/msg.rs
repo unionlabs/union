@@ -55,7 +55,7 @@ pub enum QueryMsg {
         channel_id: ChannelId,
         base_token: Bytes,
     },
-    GetAllFungibleCounterparties,
+    GetAllFungibleCounterparties {},
     #[serde(untagged)]
     Solvable(SolverQuery),
     #[serde(untagged)]

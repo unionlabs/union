@@ -115,14 +115,6 @@ fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     Ok(())
 }
 
-fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
-    let admin = deps.storage.read_item::<Admin>()?;
-    if info.sender != admin {
-        return Err(ContractError::OnlyAdmin);
-    }
-    Ok(())
-}
-
 #[entry_point]
 pub fn execute(
     mut deps: DepsMut,
@@ -284,13 +276,13 @@ pub fn execute(
                     base_token,
                     counterparty_beneficiary,
                 } => {
-                    ensure_admin(deps.as_ref(), &info)?;
                     deps.storage.write::<FungibleCounterparty>(
                         &(path, channel_id, base_token),
                         &FungibleLane {
                             counterparty_beneficiary,
                         },
                     );
+
                     Ok(Response::new())
                 }
                 RestrictedExecuteMsg::WhitelistIntents { hashes_whitelist } => {
