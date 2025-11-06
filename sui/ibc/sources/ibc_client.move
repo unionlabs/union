@@ -72,7 +72,7 @@ module ibc::ibc_client {
     const EBase: u64 = 10100;
     const EClientNotActive: u64 = EBase + 1;
 
-    public fun create_client(
+    public(package) fun create_client(
         ibc_uid: &mut UID,
         client_mgr: &mut LightClientManager,
         client_type: String, 

@@ -244,7 +244,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public(package) fun test_encode_decode_string() {
+    fun test_encode_decode_string() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
         let some_str = string::utf8(b"encode string encode string");
 
@@ -256,7 +256,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public(package) fun test_encode_decode_address() {
+    fun test_encode_decode_address() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let addr1 = @0x1111111111111111111111111111111111111111;
@@ -274,7 +274,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public(package) fun test_encode_decode_uint() {
+    fun test_encode_decode_uint() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let data: u8 = 4;
@@ -296,7 +296,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public(package) fun test_encode_decode_vector() {
+    fun test_encode_decode_vector() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let vector_test_variable: vector<u8> = vector[0x41, 0x51, 0x61];

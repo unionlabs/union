@@ -121,7 +121,7 @@ module ibc::ibc_channel {
         );
     }
 
-    public fun channel_open_try(
+    public(package) fun channel_open_try(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
         connections: &Table<u32, Connection>,
@@ -195,7 +195,7 @@ module ibc::ibc_channel {
         );
     }
 
-    public fun channel_open_ack(
+    public(package) fun channel_open_ack(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
         connections: &Table<u32, Connection>,
@@ -257,7 +257,7 @@ module ibc::ibc_channel {
         commit_channel(ibc_uid, channel_id, *channel);
     }
 
-    public fun channel_open_confirm(
+    public(package) fun channel_open_confirm(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
         connections: &Table<u32, Connection>,

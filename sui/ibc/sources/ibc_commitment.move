@@ -83,7 +83,7 @@ module ibc::commitment {
     }
 
     // Generate the path for client state
-    public fun client_state_path(client_id: u32): vector<u8> {
+    public(package) fun client_state_path(client_id: u32): vector<u8> {
         bcs::to_bytes(&ClientStateCommitmentBcs {
             prefix: CLIENT_STATE,
             client_id: address::from_u256(
@@ -99,7 +99,7 @@ module ibc::commitment {
     }
 
     // Updated function: consensus_state_path
-    public fun consensus_state_path(client_id: u32, height: u64): vector<u8> {
+    public(package) fun consensus_state_path(client_id: u32, height: u64): vector<u8> {
         bcs::to_bytes(&ConsensusStateCommitmentBcs {
             prefix: CONSENSUS_STATE,
             client_id: address::from_u256(client_id as u256),
@@ -113,7 +113,7 @@ module ibc::commitment {
     }
 
     // Generate the path for connection
-    public fun connection_path(connection_id: u32): vector<u8> {
+    public(package) fun connection_path(connection_id: u32): vector<u8> {
         bcs::to_bytes(&ConnectionCommitmentBcs {
             prefix: CONNECTIONS,
             connection_id: address::from_u256(connection_id as u256)
@@ -126,7 +126,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun channel_path(channel_id: u32): vector<u8> {
+    public(package) fun channel_path(channel_id: u32): vector<u8> {
         bcs::to_bytes(&ChannelCommitmentBcs {
             prefix: CHANNELS,
             channel_id: address::from_u256(channel_id as u256)
@@ -139,7 +139,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun batch_packets_commitment_path(
+    public(package) fun batch_packets_commitment_path(
         batch_hash: vector<u8>
     ): vector<u8> {
         bcs::to_bytes(&BatchPacketsCommitmentBcs {
@@ -154,7 +154,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun batch_receipts_commitment_path(
+    public(package) fun batch_receipts_commitment_path(
         batch_hash: vector<u8>
     ): vector<u8> {
         bcs::to_bytes(&BatchReceiptsCommitmentBcs {
@@ -169,7 +169,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun packet_timeout_commitment_path(
+    public(package) fun packet_timeout_commitment_path(
         batch_hash: vector<u8>
     ): vector<u8> {
         bcs::to_bytes(&PacketTimeoutCommitmentBcs {
@@ -178,37 +178,37 @@ module ibc::commitment {
         })
     }
 
-    public fun client_state_commitment_key(channel_id: u32): vector<u8> {
+    public(package) fun client_state_commitment_key(channel_id: u32): vector<u8> {
         client_state_path(channel_id)
     }
 
-    public fun consensus_state_commitment_key(
+    public(package) fun consensus_state_commitment_key(
         channel_id: u32, height: u64
     ): vector<u8> {
         consensus_state_path(channel_id, height)
     }
 
-    public fun connection_commitment_key(connection_id: u32): vector<u8> {
+    public(package) fun connection_commitment_key(connection_id: u32): vector<u8> {
         keccak256(&connection_path(connection_id))
     }
 
-    public fun channel_commitment_key(channel_id: u32): vector<u8> {
+    public(package) fun channel_commitment_key(channel_id: u32): vector<u8> {
         keccak256(&channel_path(channel_id))
     }
 
-    public fun batch_packets_commitment_key(
+    public(package) fun batch_packets_commitment_key(
         batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(&batch_packets_commitment_path(batch_hash))
     }
 
-    public fun batch_receipts_commitment_key(
+    public(package) fun batch_receipts_commitment_key(
         batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(&batch_receipts_commitment_path(batch_hash))
     }
 
-    public fun packet_timeout_commitment_key(
+    public(package) fun packet_timeout_commitment_key(
         batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(&packet_timeout_commitment_path(batch_hash))
@@ -222,7 +222,7 @@ module ibc::commitment {
     }
 
     // not calling `commit_packets` here because this function is optimized for a single packet
-    public fun commit_packet(packet: &Packet): vector<u8> {
+    public(package) fun commit_packet(packet: &Packet): vector<u8> {
         let mut encoded = bcs::to_bytes(&SinglePacketCommitmentBcs {
             offset_0x20_1: address::from_u256(0x20),
             len_1: address::from_u256(1),
@@ -242,7 +242,7 @@ module ibc::commitment {
         packets: vector<PacketBcs>
     }
 
-    public fun commit_packets(packets: &vector<Packet>): vector<u8> {
+    public(package) fun commit_packets(packets: &vector<Packet>): vector<u8> {
         // slightly optimizes the gas cost
         if (packets.length() == 1) {
             return commit_packet(&packets[0])
@@ -303,7 +303,7 @@ module ibc::commitment {
         encoded
     }
 
-    public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
+    public(package) fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
         let mut buf = vector::empty();
         encode_dyn_array!(
             &mut buf,
@@ -321,7 +321,7 @@ module ibc::commitment {
         ack
     }
 
-    public fun commit_ack(ack: vector<u8>): vector<u8> {
+    public(package) fun commit_ack(ack: vector<u8>): vector<u8> {
         commit_acks(vector[ack])
     }
 }

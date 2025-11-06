@@ -140,7 +140,7 @@ module zkgm::solver_metadata {
     }
 
     #[test]
-    public fun test_solver_metadata_roundtrip() {
+    fun test_solver_metadata_roundtrip() {
         use sui::bcs;
 
         let m = new(
@@ -157,7 +157,7 @@ module zkgm::solver_metadata {
     }
 
     #[test]
-    public fun test_solver_metadata_empty_metadata() {
+    fun test_solver_metadata_empty_metadata() {
         use sui::bcs;
 
         let m = new(
