@@ -1,6 +1,14 @@
 {
   "name": "@unionlabs/effect-svelte",
   "version": "0.0.0-beta.1",
+  "author": "@unionlabs",
+  "homepage": "https://docs.union.build",
+  "description": "Svelte Runes for Effect",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "effect-svelte"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && pnpm run prepack",
