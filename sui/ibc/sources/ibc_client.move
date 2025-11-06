@@ -69,7 +69,7 @@ module ibc::ibc_client {
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const E_CLIENT_NOT_ACTIVE: u64 = 2;
+    const EClientNotActive: u64 = 2;
 
     public fun create_client(
         ibc_uid: &mut UID,
@@ -131,7 +131,7 @@ module ibc::ibc_client {
         client_message: vector<u8>,
         relayer: address
     ) {
-        assert!(client_mgr.status(client_id, clock) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(client_mgr.status(client_id, clock) == 0, EClientNotActive);
 
         // Update the client and consensus states using the client message
         let (client_state, consensus_state, height) =

@@ -323,13 +323,13 @@ module ibc::ethabi {
         );
 
         // Now, let's decode the vectors and verify correctness
-        let mut idx: u64 = 4; // Start index (skip the first 4 bytes of garbage)
+        let idx: &mut u64 = &mut 4; // Start index (skip the first 4 bytes of garbage)
 
         // Decode the u8 vector
         let decoded_u8_vector =
             decode_vector!<u8>(
                 &some_variable,
-                &mut idx,
+                idx,
                 |buf, index| {decode_uint(buf, index) as u8}
             );
 
@@ -337,7 +337,7 @@ module ibc::ethabi {
         let decoded_address_vector =
             decode_vector!<address>(
                 &some_variable,
-                &mut idx,
+                idx,
                 |buf, index| {decode_address(buf, index)}
             );
 

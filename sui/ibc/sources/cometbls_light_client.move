@@ -69,17 +69,17 @@ module ibc::cometbls_light_client {
     use ibc::ics23;
     use ibc::groth16_verifier::{Self, ZKP};
 
-    // const E_INVALID_CLIENT_STATE: u64 = 35100;
-    const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
-    const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
-    const E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT: u64 = 35103;
-    const E_HEADER_EXCEEDED_TRUSTING_PERIOD: u64 = 35104;
-    const E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT: u64 = 35105;
-    const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
-    const E_INVALID_ZKP: u64 = 35107;
-    const E_FROZEN_CLIENT: u64 = 35108;
-    // const E_INVALID_MISBEHAVIOUR: u64 = 35109;
-    const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
+    // const EInvalidClientState: u64 = 35100;
+    const EConsensusStateTimestampZero: u64 = 35101;
+    const ESignedHeaderHeightNotMoreRecent: u64 = 35102;
+    const ESignedHeaderTimestampNotMoreRecent: u64 = 35103;
+    const EHeaderExceededTrustingPeriod: u64 = 35104;
+    const EHeaderExceededMaxClockDrift: u64 = 35105;
+    const EValidatorsHashMismatch: u64 = 35106;
+    const EInvalidZkp: u64 = 35107;
+    const EFrozenClient: u64 = 35108;
+    // const EInvalidMisbehaviour: u64 = 35109;
+    const EHeightNotFoundOnConsensusState: u64 = 0x99999;
 
     const STATUS_ACTIVE: u64 = 1;
     const STATUS_EXPIRED: u64 = 2;
@@ -253,14 +253,14 @@ module ibc::cometbls_light_client {
     public(package) fun verify_header(
         client: &Client, clock: &Clock, header: &Header, consensus_state: &ConsensusState
     ) {
-        assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
+        assert!(consensus_state.timestamp != 0, EConsensusStateTimestampZero);
 
         let untrusted_height_number = header.signed_header.height;
         let trusted_height_number = header.trusted_height.get_revision_height();
 
         assert!(
             untrusted_height_number > trusted_height_number,
-            E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
+            ESignedHeaderHeightNotMoreRecent
         );
 
         let trusted_timestamp = consensus_state.timestamp;
@@ -269,25 +269,25 @@ module ibc::cometbls_light_client {
                 + (header.signed_header.time.nanos as u64);
         assert!(
             untrusted_timestamp > trusted_timestamp,
-            E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
+            ESignedHeaderTimestampNotMoreRecent
         );
 
         assert!(
             !is_client_expired(trusted_timestamp, client.client_state.trusting_period, clock),
-            E_HEADER_EXCEEDED_TRUSTING_PERIOD
+            EHeaderExceededTrustingPeriod
         );
 
         let current_time = clock.timestamp_ms() * 1_000_000;
         assert!(
             untrusted_timestamp < current_time + client.client_state.max_clock_drift,
-            E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
+            EHeaderExceededMaxClockDrift
         );
 
         if (untrusted_height_number == trusted_height_number + 1) {
             assert!(
                 header.signed_header.validators_hash
                     == consensus_state.next_validators_hash,
-                E_VALIDATORS_HASH_MISMATCH
+                EValidatorsHashMismatch
             );
         };
 
@@ -298,7 +298,7 @@ module ibc::cometbls_light_client {
                 light_header_as_input_hash(&header.signed_header),
                 &header.zero_knowledge_proof
             ),
-            E_INVALID_ZKP
+            EInvalidZkp
         );
     }
 
@@ -309,7 +309,7 @@ module ibc::cometbls_light_client {
         // TODO(aeryz): handle consensus state exist case
         let header = decode_header(client_msg);
 
-        assert!(client.client_state.frozen_height.is_zero(), E_FROZEN_CLIENT);
+        assert!(client.client_state.frozen_height.is_zero(), EFrozenClient);
 
         let consensus_state = client.consensus_states.borrow(height::get_revision_height(&header.trusted_height));
 
@@ -408,7 +408,7 @@ module ibc::cometbls_light_client {
         height: u64,
     ): vector<u8> {
         if (!client.consensus_states.contains(height)) {
-            abort E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE
+            abort EHeightNotFoundOnConsensusState
         };
         let consensus_state = client.consensus_states.borrow(height);
         encode_consensus_state(consensus_state)
@@ -476,7 +476,7 @@ module ibc::cometbls_light_client {
     fun test_decode_consensus() {
         let buf =
             x"0000000000000000000000000000000000000000000000001810cfdefbacb17df5631a5398a5443f5c858e3f8d4ffb2ddd5fa325d9f825572e1a0d302f7c9c092f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
-        let consensus = decode_consensus_state(buf);
+        decode_consensus_state(buf);
     }
 
     #[test]

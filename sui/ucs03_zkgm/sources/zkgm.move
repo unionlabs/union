@@ -119,30 +119,28 @@ module zkgm::zkgm {
 
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
-    const E_UNSUPPORTED_VERSION: u64 = 5;
-    const E_UNKNOWN_SYSCALL: u64 = 6;
-    const E_INVALID_AMOUNT: u64 = 10;
-    const E_INVALID_FILL_TYPE: u64 = 12;
-    const E_NO_CALL_OPERATION: u64 = 17;
-    const E_INVALID_FORWARD_INSTRUCTION: u64 = 18;
-    const E_NO_COIN_IN_BAG: u64 = 23;
-    const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
-    const E_ANOTHER_TOKEN_IS_REGISTERED: u64 = 26;
-    const E_INVALID_BATCH_INSTRUCTION: u64 = 27;
-    const E_INVALID_FORWARD_DESTINATION_CHANNEL_ID: u64 = 30;
-    const E_INVALID_TOKEN_ORDER_KIND: u64 = 31;
-    const E_UNWRAP_BASE_AMOUNT_SMALLER_THAN_QUOTE_AMOUNT: u64 = 32;
-    const E_UNWRAP_METADATA_INVALID: u64 = 33;
-    // const E_UNAUTHORIZED: u64 = 34;
-    const E_INVALID_METADATA: u64 = 35;
-    const E_INVALID_UNESCROW: u64 = 38;
-    const E_ACK_SIZE_MISMATCHING: u64 = 42;
-    const E_EXECUTION_NOT_COMPLETE: u64 = 43;
-    const E_INVALID_SOLVER_ADDRESS: u64 = 45;
-    const E_INVALID_QUOTE_TOKEN: u64 = 46;
-    const E_EXECUTION_ALREADY_COMPLETE: u64 = 47;
-    const E_INVALID_RECEIVER: u64 = 48;
-    // const E_ONLY_MAKER: u64 = 0xdeadc0de;
+    const EUnsupportedVersion: u64 = 5;
+    const EUnknownSyscall: u64 = 6;
+    const EInvalidAmount: u64 = 10;
+    const EInvalidFillType: u64 = 12;
+    const ENoCallOperation: u64 = 17;
+    const EInvalidForwardInstruction: u64 = 18;
+    const ENoCoinInBag: u64 = 23;
+    const EChannelBalancePairNotFound: u64 = 25;
+    const EAnotherTokenIsRegistered: u64 = 26;
+    const EInvalidBatchInstruction: u64 = 27;
+    const EInvalidForwardDestinationChannelId: u64 = 30;
+    const EInvalidTokenOrderKind: u64 = 31;
+    const EUnwrapBaseAmountSmallerThanQuoteAmount: u64 = 32;
+    const EUnwrapMetadataInvalid: u64 = 33;
+    const EInvalidMetadata: u64 = 35;
+    const EInvalidUnescrow: u64 = 38;
+    const EAckSizeMismatching: u64 = 42;
+    const EExecutionNotComplete: u64 = 43;
+    const EInvalidSolverAddress: u64 = 45;
+    const EInvalidQuoteToken: u64 = 46;
+    const EExecutionAlreadyComplete: u64 = 47;
+    const EInvalidReceiver: u64 = 48;
 
     const OWNED_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-owned-vault";
     const ESCROW_VAULT_OBJECT_KEY: vector<u8> = b"ucs03-zkgm-escrow-vault";
@@ -310,7 +308,7 @@ module zkgm::zkgm {
 
         let instruction = if (instructions.length() > 1) {
             instructions.do_ref!(|instr| {
-                assert!(helper::is_allowed_batch_instruction(instr.opcode()), E_INVALID_BATCH_INSTRUCTION);
+                assert!(helper::is_allowed_batch_instruction(instr.opcode()), EInvalidBatchInstruction);
             });
             instruction::new(INSTR_VERSION_0, OP_BATCH, batch::new(instructions).encode())
         } else {
@@ -375,7 +373,7 @@ module zkgm::zkgm {
     fun extract_batch(instruction: Instruction): (vector<Instruction>, u64) {
         if (instruction.opcode() == OP_BATCH) {
             if (instruction.version() != INSTR_VERSION_0) {
-                return (vector::empty(), E_UNSUPPORTED_VERSION)
+                return (vector::empty(), EUnsupportedVersion)
             };
 
             let instructions = batch::decode(instruction.operand()).instructions();
@@ -383,7 +381,7 @@ module zkgm::zkgm {
             let mut i = 0;
             while (i < instr_len) {
                 if (!helper::is_allowed_batch_instruction(instructions.borrow(i).opcode())) {
-                    return (vector::empty(), E_INVALID_BATCH_INSTRUCTION)
+                    return (vector::empty(), EInvalidBatchInstruction)
                 };
                 i = i + 1;  
             };
@@ -468,10 +466,10 @@ module zkgm::zkgm {
         ctx: &TxContext,
     ) {
         // make sure all packets are run
-        assert!(exec_ctx.cursor == exec_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
+        assert!(exec_ctx.cursor == exec_ctx.packet_ctxs.length() , EExecutionNotComplete);
         // make sure all instructions in the final packet are run
         let final_packet = exec_ctx.packet_ctxs.borrow(exec_ctx.packet_ctxs.length() - 1);
-        assert!(final_packet.cursor == final_packet.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+        assert!(final_packet.cursor == final_packet.instruction_set.length(), EExecutionNotComplete);
 
         let mut i = 0;
         let mut acks = vector::empty();
@@ -486,7 +484,7 @@ module zkgm::zkgm {
             } else if (packet_ctx.instruction_set.length() == 1) {
                 // if the `instruction_set` has a single instruction, it means this is not a batch
                 // so return the ack directly
-                assert!(packet_ctx.acks.length() == 1, E_ACK_SIZE_MISMATCHING);
+                assert!(packet_ctx.acks.length() == 1, EAckSizeMismatching);
 
                 ack::success(packet_ctx.acks[0]).encode()
             } else {
@@ -534,7 +532,7 @@ module zkgm::zkgm {
         match (instruction.opcode()) {
             OP_TOKEN_ORDER => {
                 if (version != INSTR_VERSION_2) {
-                    return (vector::empty(), E_UNSUPPORTED_VERSION)  
+                    return (vector::empty(), EUnsupportedVersion)  
                 };
                 zkgm.execute_token_order<T>(
                     vault,
@@ -550,7 +548,7 @@ module zkgm::zkgm {
             },
             OP_FORWARD => {
                 if (version != INSTR_VERSION_0) {
-                    return (vector::empty(), E_UNSUPPORTED_VERSION)  
+                    return (vector::empty(), EUnsupportedVersion)  
                 };
 
                 zkgm.execute_forward(
@@ -567,8 +565,8 @@ module zkgm::zkgm {
                     ctx,
                 )
             },
-            OP_CALL => (vector::empty(), E_NO_CALL_OPERATION),
-            _ => (vector::empty(), E_UNKNOWN_SYSCALL)
+            OP_CALL => (vector::empty(), ENoCallOperation),
+            _ => (vector::empty(), EUnknownSyscall)
         }
     }
 
@@ -708,10 +706,10 @@ module zkgm::zkgm {
         ctx: &TxContext,
     ) {
         // make sure all packets are run
-        assert!(ack_ctx.cursor == ack_ctx.packet_ctxs.length() , E_EXECUTION_NOT_COMPLETE);
+        assert!(ack_ctx.cursor == ack_ctx.packet_ctxs.length() , EExecutionNotComplete);
         // make sure all instructions in the final packet are run
         let final_packet = ack_ctx.packet_ctxs.borrow(ack_ctx.packet_ctxs.length() - 1);
-        assert!(final_packet.cursor == final_packet.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+        assert!(final_packet.cursor == final_packet.instruction_set.length(), EExecutionNotComplete);
 
         ibc.acknowledge_packet(
             ack_ctx.packets,
@@ -767,7 +765,7 @@ module zkgm::zkgm {
         let zkgm_packet = &mut timeout_ctx.packet_ctx;
         let instr_len = zkgm_packet.instruction_set.length();
 
-        assert!(zkgm_packet.cursor < instr_len, E_EXECUTION_ALREADY_COMPLETE);
+        assert!(zkgm_packet.cursor < instr_len, EExecutionAlreadyComplete);
 
         let mut type_is_exhausted = false;
 
@@ -819,7 +817,7 @@ module zkgm::zkgm {
         ctx: &TxContext,
     ) {
         // make sure all instructions in the packet are run
-        assert!(timeout_ctx.packet_ctx.cursor == timeout_ctx.packet_ctx.instruction_set.length(), E_EXECUTION_NOT_COMPLETE);
+        assert!(timeout_ctx.packet_ctx.cursor == timeout_ctx.packet_ctx.instruction_set.length(), EExecutionNotComplete);
 
         ibc.timeout_packet(
             timeout_ctx.packet,
@@ -860,7 +858,7 @@ module zkgm::zkgm {
         } else {
             let quote_amount = order.quote_amount() as u64;
             if (quote_amount > 0){
-                // TODO(aeryz): handle NATIVE_TOKEN_ERC_7528_ADDRESS case            
+                // TODO(aeryz): handle NATIVETokenErc7528Address case            
                 // TODO(aeryz): make sure that distribute here is correct
                 let err = zkgm.distribute_coin<T>(receiver, quote_amount, ctx);
                 if (err != 0) {
@@ -891,7 +889,7 @@ module zkgm::zkgm {
         let quote_token = *order.quote_token();
 
         if (type_name::with_defining_ids<T>().into_string().into_bytes() != quote_token) {
-            return (vector::empty(), E_INVALID_QUOTE_TOKEN)
+            return (vector::empty(), EInvalidQuoteToken)
         };
         
         let solver = metadata.solver_address();
@@ -925,7 +923,7 @@ module zkgm::zkgm {
                 intent,
                 ctx
             ),
-            _ => (vector::empty(), E_INVALID_SOLVER_ADDRESS)
+            _ => (vector::empty(), EInvalidSolverAddress)
         };
 
         if (err != 0) {
@@ -962,7 +960,7 @@ module zkgm::zkgm {
         let transferred_coin = relay_store.split_coin<T>(amount, ctx);
         if (transferred_coin.is_none()) {
             transferred_coin.destroy_none();
-            return E_NO_COIN_IN_BAG
+            return ENoCoinInBag
         };
         transfer::public_transfer(transferred_coin.destroy_some(), receiver);
 
@@ -986,7 +984,7 @@ module zkgm::zkgm {
         let fee = (order.base_amount() - order.quote_amount()) as u64;
         // if this token is minted for the first time, then we need to ensure that its always minting the same T
         if (!zkgm.claim_wrapped_denom<T>(vault, wrapped_token, metadata)) {
-            return (vector::empty(), E_ANOTHER_TOKEN_IS_REGISTERED)
+            return (vector::empty(), EAnotherTokenIsRegistered)
         };
         if (quote_amount > 0) {
             vault.mint<T>(
@@ -1036,7 +1034,7 @@ module zkgm::zkgm {
             return (vector::empty(), 0)
         };
 
-        // TODO(aeryz): handle quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS for gas station
+        // TODO(aeryz): handle quote_token == NATIVETokenErc7528Address for gas station
 
         // Here we just need to split our coins to the receiver and the relayer
         if(quote_amount > 0) {
@@ -1074,7 +1072,7 @@ module zkgm::zkgm {
         ctx: &TxContext
     ): (vector<u8>, u64) {
         if (!helper::is_allowed_forward(forward.instruction().opcode())) {
-            return (vector::empty(), E_INVALID_FORWARD_INSTRUCTION)
+            return (vector::empty(), EInvalidForwardInstruction)
         };
 
         // We cannot allow market makers to fill packets containing forward
@@ -1090,7 +1088,7 @@ module zkgm::zkgm {
         let (tail_path, previous_destination_channel_id) = helper::dequeue_channel_from_path(forward.path());
         let (continuation_path, next_source_channel_id) = helper::dequeue_channel_from_path(tail_path);
         if (ibc_packet.destination_channel_id() != previous_destination_channel_id) {
-            return (vector::empty(), E_INVALID_FORWARD_DESTINATION_CHANNEL_ID)
+            return (vector::empty(), EInvalidForwardDestinationChannelId)
         };
 
         let next_instruction = if (continuation_path == 0) {
@@ -1151,7 +1149,7 @@ module zkgm::zkgm {
         let quote_token = *order.quote_token();
 
         if (order.receiver().length() != address::length()) {
-            return (vector::empty(), E_INVALID_RECEIVER)
+            return (vector::empty(), EInvalidReceiver)
         };
         let receiver = bcs::new(*order.receiver()).peel_address();
 
@@ -1180,7 +1178,7 @@ module zkgm::zkgm {
         let (wrapped_token, metadata) = match (order.kind()) {
             TOKEN_ORDER_KIND_UNESCROW => {
                 if (!base_amount_covers_quote_amount) {
-                    return (vector::empty(), E_UNWRAP_BASE_AMOUNT_SMALLER_THAN_QUOTE_AMOUNT)   
+                    return (vector::empty(), EUnwrapBaseAmountSmallerThanQuoteAmount)   
                 };
 
                 // TODO: add rate limit here later
@@ -1199,7 +1197,7 @@ module zkgm::zkgm {
             TOKEN_ORDER_KIND_ESCROW => {
                 // we expect the metadata to be a 32-byte hash
                 if (order.metadata().length() != 32) {
-                    return (vector::empty(), E_UNWRAP_METADATA_INVALID)
+                    return (vector::empty(), EUnwrapMetadataInvalid)
                 };
                 let wrapped_token = helper::compute_salt_from_metadata_image(
                     path,
@@ -1220,7 +1218,7 @@ module zkgm::zkgm {
                 (wrapped_token, option::some(metadata))
                 
             },
-            _ => return (vector::empty(), E_INVALID_TOKEN_ORDER_KIND)
+            _ => return (vector::empty(), EInvalidTokenOrderKind)
         };
 
         if (quote_token == wrapped_token && base_amount_covers_quote_amount) {
@@ -1292,11 +1290,11 @@ module zkgm::zkgm {
             metadata_image,    
         };
         if(!relay_store.channel_balance.contains(pair)) {
-            return E_CHANNEL_BALANCE_PAIR_NOT_FOUND
+            return EChannelBalancePairNotFound
         };
         let channel_balance = *relay_store.channel_balance.borrow(pair);
         if (channel_balance < amount) {
-            return E_INVALID_AMOUNT
+            return EInvalidAmount
         };
         let new_balance = channel_balance - amount;
         add_or_update_table<ChannelBalancePair, u256>(
@@ -1361,11 +1359,11 @@ module zkgm::zkgm {
                     );
                     option::none<Coin<T>>()
                 } else {
-                    abort E_UNSUPPORTED_VERSION
+                    abort EUnsupportedVersion
                 }
             },
             OP_FORWARD => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                assert!(version == INSTR_VERSION_0, EUnsupportedVersion);
                 zkgm.verify_forward<T>(
                     vault,
                     ibc_store,
@@ -1376,8 +1374,8 @@ module zkgm::zkgm {
                     ctx,
                 )
             },
-            OP_CALL => abort E_NO_CALL_OPERATION,
-            _ => abort E_UNKNOWN_SYSCALL,
+            OP_CALL => abort ENoCallOperation,
+            _ => abort EUnknownSyscall,
         }
     }
 
@@ -1403,7 +1401,7 @@ module zkgm::zkgm {
             let is_inverse_intermediate_path = path == helper::reverse_channel_path(intermediate_channel_path);
             let is_sending_back_to_same_channel = destination_channel_id == channel_id;
 
-            assert!(order.metadata().length() == 32, E_INVALID_METADATA);
+            assert!(order.metadata().length() == 32, EInvalidMetadata);
             let wrapped_token = helper::compute_salt_from_metadata_image(
                 intermediate_channel_path,
                 channel_id,
@@ -1419,7 +1417,7 @@ module zkgm::zkgm {
                         && is_sending_back_to_same_channel
                 )
             ) {
-                abort E_INVALID_UNESCROW
+                abort EInvalidUnescrow
             };
             
             // We don't have to verify that metadataImage matches the stored one
@@ -1457,7 +1455,7 @@ module zkgm::zkgm {
         let instruction = forward_packet.instruction();
 
         if(!helper::is_allowed_forward(instruction.opcode())) {
-            abort E_INVALID_FORWARD_INSTRUCTION
+            abort EInvalidForwardInstruction
         };
         zkgm.verify_internal<T>(
             vault,
@@ -1504,11 +1502,11 @@ module zkgm::zkgm {
                         ctx
                     );
                 } else {
-                    abort E_UNSUPPORTED_VERSION
+                    abort EUnsupportedVersion
                 };
             },
             OP_FORWARD => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                assert!(version == INSTR_VERSION_0, EUnsupportedVersion);
                 zkgm.acknowledge_forward<T>(
                     vault,
                     escrow_vault,
@@ -1522,9 +1520,9 @@ module zkgm::zkgm {
                 );
             },
             OP_CALL => {
-                abort E_NO_CALL_OPERATION
+                abort ENoCallOperation
             },            
-            _ => abort E_UNKNOWN_SYSCALL
+            _ => abort EUnknownSyscall
         };
     }
 
@@ -1580,7 +1578,7 @@ module zkgm::zkgm {
                     } else if (bcs::to_bytes(&market_maker) == ESCROW_VAULT_OBJECT_KEY_ADDR) {
                         let coin = zkgm.split_coin<T>(order.base_amount() as u64, ctx);
                         if (coin.is_none()) {
-                            abort E_NO_COIN_IN_BAG
+                            abort ENoCoinInBag
                         };
                         escrow_vault.escrow<T>(
                             zkgm.object_store.borrow(ESCROW_VAULT_OBJECT_KEY),
@@ -1592,7 +1590,7 @@ module zkgm::zkgm {
                     };
                 }
             } else {
-                abort E_INVALID_FILL_TYPE
+                abort EInvalidFillType
             };
         } else {
             zkgm.refund<T>(
@@ -1654,12 +1652,12 @@ module zkgm::zkgm {
                         ctx
                     );
                 } else {
-                    abort E_UNSUPPORTED_VERSION
+                    abort EUnsupportedVersion
                 };
                       
             },
             OP_FORWARD => {
-                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                assert!(version == INSTR_VERSION_0, EUnsupportedVersion);
                 zkgm.timeout_forward<T>(
                     vault,
                     ibc_packet,
@@ -1670,9 +1668,9 @@ module zkgm::zkgm {
                 );
             },
             OP_CALL => {
-                abort E_NO_CALL_OPERATION
+                abort ENoCallOperation
             },
-            _ => abort E_UNKNOWN_SYSCALL
+            _ => abort EUnknownSyscall
         };
     }
 
@@ -1857,7 +1855,7 @@ module zkgm::zkgm {
             b"B",
             1
         );
-        assert!(rc == E_CHANNEL_BALANCE_PAIR_NOT_FOUND, rc);
+        assert!(rc == EChannelBalancePairNotFound, rc);
 
         test_scenario::return_shared(store);
         t.end();

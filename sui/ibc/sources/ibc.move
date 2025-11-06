@@ -76,12 +76,12 @@ module ibc::ibc {
 
     const VERSION: u32 = 1;
 
-    const E_VERSION_MISMATCH: u64 = 1001;
-    const E_CLIENT_NOT_FOUND: u64 = 1002;
-    const E_UNAUTHORIZED: u64 = 1020;
-    const E_CHANNEL_NOT_FOUND: u64 = 1047;
-    const E_CONNECTION_NOT_FOUND: u64 = 1048;
-    const E_COMMITMENT_NOT_FOUND: u64 = 1065;
+    const EVersionMismatch: u64 = 1001;
+    const EClientNotFound: u64 = 1002;
+    const EUnauthorized: u64 = 1020;
+    const EChannelNotFound: u64 = 1047;
+    const EConnectionNotFound: u64 = 1048;
+    const ECommitmentNotFound: u64 = 1065;
 
     public struct Port<T: drop> has key, store {
         id: UID,
@@ -677,7 +677,7 @@ module ibc::ibc {
         port_id: address,
         port: &Port<T>,
     ) {
-        assert!(port_id == object::uid_to_address(&port.id), E_UNAUTHORIZED);
+        assert!(port_id == object::uid_to_address(&port.id), EUnauthorized);
     }
 
     public fun get_counterparty_connection(
@@ -690,7 +690,7 @@ module ibc::ibc {
 
     public fun get_client_state(ibc_store: &IBCStore, client_id: u32): vector<u8> {
         if (!ibc_store.client_mgr.exists(client_id)) {
-            abort E_CLIENT_NOT_FOUND
+            abort EClientNotFound
         };
 
         ibc_store.client_mgr.get_client_state(client_id)
@@ -698,14 +698,14 @@ module ibc::ibc {
 
     public fun get_port_id(ibc_store: &IBCStore, channel_id: u32): address {
         if (!state::has_channel_to_port(&ibc_store.id, channel_id)) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
         state::borrow_channel_to_port(&ibc_store.id, channel_id)
     }
 
     public fun get_consensus_state(ibc_store: &IBCStore, client_id: u32, height: u64): vector<u8> {
         if (!ibc_store.client_mgr.exists(client_id)) {
-            abort E_CLIENT_NOT_FOUND
+            abort EClientNotFound
         };
 
         ibc_store.client_mgr.get_consensus_state(client_id, height)
@@ -713,27 +713,27 @@ module ibc::ibc {
 
     public fun get_connection(ibc_store: &IBCStore, connection_id: u32): ConnectionEnd {
         if (!ibc_store.connections.contains(connection_id)) {
-            abort E_CONNECTION_NOT_FOUND
+            abort EConnectionNotFound
         };
         *ibc_store.connections.borrow(connection_id)
     }
 
     public fun get_channel(ibc_store: &IBCStore, channel_id: u32): Channel {
         if (!ibc_store.channels.contains(channel_id)) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
         *ibc_store.channels.borrow(channel_id)
     }
 
     public fun get_commitment(ibc_store: &IBCStore, commitment_key: vector<u8>): vector<u8> {
         if (!state::has_commitment(&ibc_store.id, commitment_key)) {
-            abort E_COMMITMENT_NOT_FOUND
+            abort ECommitmentNotFound
         };
         *state::borrow_commitment(&ibc_store.id, commitment_key)
     }
 
     fun assert_version(ibc_store: &IBCStore) {
-        assert!(ibc_store.version == VERSION, E_VERSION_MISMATCH);
+        assert!(ibc_store.version == VERSION, EVersionMismatch);
     }
 
     #[test_only]
@@ -1302,7 +1302,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_connection::E_INVALID_CONNECTION_STATE)]
+    #[expected_failure(abort_code = ibc_connection::EInvalidConnectionState)]
     fun test_connection_open_ack_wrong_state_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1322,7 +1322,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_connection::E_INVALID_CONNECTION_STATE)]
+    #[expected_failure(abort_code = ibc_connection::EInvalidConnectionState)]
     fun test_connection_open_confirm_wrong_state_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1342,7 +1342,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_channel::E_INVALID_CONNECTION_STATE)]
+    #[expected_failure(abort_code = ibc_channel::EInvalidConnectionState)]
     fun test_channel_open_init_connection_not_open_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1365,7 +1365,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_channel::E_INVALID_CONNECTION_STATE)]
+    #[expected_failure(abort_code = ibc_channel::EInvalidConnectionState)]
     fun test_channel_open_try_connection_not_open_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1398,7 +1398,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_channel::E_INVALID_CHANNEL_STATE)]
+    #[expected_failure(abort_code = ibc_channel::EInvalidChannelState)]
     fun test_channel_open_ack_wrong_state_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1445,7 +1445,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_channel::E_INVALID_CHANNEL_STATE)]
+    #[expected_failure(abort_code = ibc_channel::EInvalidChannelState)]
     fun test_channel_open_confirm_wrong_state_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1476,7 +1476,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_TIMEOUT_HEIGHT_NOT_SUPPORTED)]
+    #[expected_failure(abort_code = ibc_packet::ETimeoutHeightNotSupported)]
     fun test_send_packet_timeout_height_unsupported_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1503,7 +1503,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_TIMESTAMP_TIMEOUT)]
+    #[expected_failure(abort_code = ibc_packet::ETimestampTimeout)]
     fun test_send_packet_timestamp_in_past_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1530,7 +1530,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_TIMESTAMP_TIMEOUT)]
+    #[expected_failure(abort_code = ibc_packet::ETimestampTimeout)]
     fun test_recv_packet_timestamp_timeout_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1558,7 +1558,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_ALREADY_RECEIVED)]
+    #[expected_failure(abort_code = ibc_packet::EAlreadyReceived)]
     fun test_recv_packet_already_received_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1587,7 +1587,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_ACK_LEN_MISMATCH)]
+    #[expected_failure(abort_code = ibc_packet::EAckLenMismatch)]
     fun test_recv_packet_ack_len_mismatch_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1615,7 +1615,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_MAKER_MSG_LEN_MISMATCH)]
+    #[expected_failure(abort_code = ibc_packet::EMakerMsgLenMismatch)]
     fun test_recv_packet_maker_msg_len_mismatch_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1643,7 +1643,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_PACKET_COMMITMENT_NOT_FOUND)]
+    #[expected_failure(abort_code = ibc_packet::EPacketCommitmentNotFound)]
     fun test_acknowledge_packet_no_commitment_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1703,7 +1703,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_PACKET_HAVE_NOT_TIMED_OUT)]
+    #[expected_failure(abort_code = ibc_packet::EPacketHaveNotTimedOut)]
     fun test_commit_packet_timeout_early_fail() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());
@@ -1939,7 +1939,7 @@ object::delete(id);
     }
 
     #[test]
-    #[expected_failure(abort_code = ibc_packet::E_ACKNOWLEDGEMENT_IS_EMPTY)]
+    #[expected_failure(abort_code = ibc_packet::EAcknowledgementIsEmpty)]
     fun test_write_acknowledgement_empty_fails() {
         let mut t = test_scenario::begin(@0x0);
         init_for_tests(t.ctx());

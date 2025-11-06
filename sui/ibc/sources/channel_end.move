@@ -62,7 +62,7 @@ module ibc::channel {
     use std::string::{Self, String};
     use ibc::ethabi;
 
-    const E_PACKET_VERSION_LENGTH_EXCEEDS_MAX: u64 = 1;
+    const EPacketVersionLengthExceedsMax: u64 = 1;
 
     public struct Channel has copy, store, drop {
         state: u8,
@@ -154,7 +154,7 @@ module ibc::channel {
         counterparty_port_id: vector<u8>,
         version: String
     ): Channel {
-        assert!(string::length(&version) <= 32, E_PACKET_VERSION_LENGTH_EXCEEDS_MAX);
+        assert!(string::length(&version) <= 32, EPacketVersionLengthExceedsMax);
 
         Channel {
             state,

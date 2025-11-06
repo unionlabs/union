@@ -68,7 +68,7 @@ module ibc::light_client {
     use ibc::create_lens_client_event::CreateLensClientEvent;
     use ibc::cometbls_light_client;
 
-    const E_CLIENT_TYPE_NOT_SUPPORTED: u64 = 1;
+    const EClientTypeNotSupported: u64 = 1;
 
     public struct LightClientManager has store {
         clients: ObjectBag,
@@ -114,7 +114,7 @@ module ibc::light_client {
             store.clients.add(client_id, client);
             (csb, consb, c_cid, l_event)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         };
 
 
@@ -134,7 +134,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status(clock)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -152,7 +152,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).misbehaviour(misbehaviour, relayer);
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -165,7 +165,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_timestamp_at_height(height)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -184,7 +184,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_non_membership(height, proof, path)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -203,7 +203,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).update_client(clock, client_msg, relayer)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -219,7 +219,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).latest_height()
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -239,7 +239,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_membership(height, proof, key, value)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -251,7 +251,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_client_state()
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -264,7 +264,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_consensus_state(height)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 }

@@ -77,8 +77,8 @@ module ibc::ibc_channel {
 
     const CONN_STATE_OPEN: u8 = 3;
 
-    const E_INVALID_CONNECTION_STATE: u64 = 2;
-    const E_INVALID_CHANNEL_STATE: u64 = 3;
+    const EInvalidConnectionState: u64 = 2;
+    const EInvalidChannelState: u64 = 3;
 
     public(package) fun channel_open_init(
         ibc_uid: &mut UID,
@@ -93,7 +93,7 @@ module ibc::ibc_channel {
         let connection = connections.borrow(connection_id);
         assert!(
             connection.state() == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
+            EInvalidConnectionState
         );
 
         // Generate a new channel ID
@@ -142,7 +142,7 @@ module ibc::ibc_channel {
         let connection = connections.borrow(connection_id);
         assert!(
             connection.state() == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
+            EInvalidConnectionState
         );
 
         // Construct the expected channel state to verify against the proof
@@ -214,7 +214,7 @@ module ibc::ibc_channel {
         let channel = channels.borrow_mut(channel_id);
         assert!(
             channel.state() == CHAN_STATE_INIT,
-            E_INVALID_CHANNEL_STATE
+            EInvalidChannelState
         );
 
         let connection_id = channel.connection_id();
@@ -274,7 +274,7 @@ module ibc::ibc_channel {
         let channel = channels.borrow_mut(channel_id);
         assert!(
             channel.state() == CHAN_STATE_TRYOPEN,
-            E_INVALID_CHANNEL_STATE
+            EInvalidChannelState
         );
 
         let connection_id = channel.connection_id();

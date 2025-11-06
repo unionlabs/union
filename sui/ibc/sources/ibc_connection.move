@@ -68,7 +68,7 @@ module ibc::ibc_connection {
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const E_INVALID_CONNECTION_STATE: u64 = 3;
+    const EInvalidConnectionState: u64 = 3;
 
     const CONN_STATE_INIT: u8 = 1;
     const CONN_STATE_TRYOPEN: u8 = 2;
@@ -169,7 +169,7 @@ module ibc::ibc_connection {
         // assert that this connection is at the `INIT` phase
         assert!(
             connection.state() == CONN_STATE_INIT,
-            E_INVALID_CONNECTION_STATE
+            EInvalidConnectionState
         );
 
         // Create the expected connection state to verify against the proof
@@ -219,7 +219,7 @@ module ibc::ibc_connection {
         let connection = connections.borrow_mut(connection_id);
         assert!(
             connection.state() == CONN_STATE_TRYOPEN,
-            E_INVALID_CONNECTION_STATE
+            EInvalidConnectionState
         );
 
         // Create the expected connection state in the `OPEN` state to verify against the proof

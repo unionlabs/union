@@ -77,29 +77,29 @@ module ibc::ibc_packet {
     const CHAN_STATE_OPEN: u8 = 3;
     const CONN_STATE_OPEN: u8 = 3;
 
-    const E_ACK_LEN_MISMATCH: u64 = 2;
-    const E_MAKER_MSG_LEN_MISMATCH: u64 = 3;
-    const E_PACKET_COMMITMENT_NOT_FOUND: u64 = 4;
-    const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 5;
-    const E_ACK_ALREADY_EXIST: u64 = 6;
-    const E_PACKET_NOT_RECEIVED: u64 = 7;
-    const E_PACKET_ALREADY_RECEIVED: u64 = 8;
-    const E_ALREADY_RECEIVED: u64 = 9;
-    const E_TIMESTAMP_TIMEOUT: u64 = 10;
-    const E_TIMEOUT_HEIGHT_NOT_SUPPORTED: u64 = 11;
-    const E_BATCH_SAME_CHANNEL_ONLY: u64 = 12;
-    const E_CLIENT_NOT_FOUND: u64 = 13;
-    const E_INVALID_CONNECTION_STATE: u64 = 14;
-    const E_INVALID_CHANNEL_STATE: u64 = 15;
-    const E_CHANNEL_NOT_FOUND: u64 = 16;
-    const E_NOT_ENOUGH_PACKETS: u64 = 17;
-    const E_PACKET_ALREADY_SENT: u64 = 18;
-    const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 19;
-    const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 20;
-    const E_TIMEOUT_MUST_BE_SET: u64 = 21;
-    const E_LATEST_TIMESTAMP_NOT_FOUND: u64 = 22;
-    const E_CONNECTION_NOT_FOUND: u64 = 23;
-    const E_PACKET_HAVE_NOT_TIMED_OUT: u64 = 24;
+    const EAckLenMismatch: u64 = 2;
+    const EMakerMsgLenMismatch: u64 = 3;
+    const EPacketCommitmentNotFound: u64 = 4;
+    const EPacketAlreadyAcknowledged: u64 = 5;
+    const EAckAlreadyExist: u64 = 6;
+    const EPacketNotReceived: u64 = 7;
+    const EPacketAlreadyReceived: u64 = 8;
+    const EAlreadyReceived: u64 = 9;
+    const ETimestampTimeout: u64 = 10;
+    const ETimeoutHeightNotSupported: u64 = 11;
+    const EBatchSameChannelOnly: u64 = 12;
+    const EClientNotFound: u64 = 13;
+    const EInvalidConnectionState: u64 = 14;
+    const EInvalidChannelState: u64 = 15;
+    const EChannelNotFound: u64 = 16;
+    const ENotEnoughPackets: u64 = 17;
+    const EPacketAlreadySent: u64 = 18;
+    const EAcknowledgementIsEmpty: u64 = 19;
+    const ETimestampTimeoutNotReached: u64 = 20;
+    const ETimeoutMustBeSet: u64 = 21;
+    const ELatestTimestampNotFound: u64 = 22;
+    const EConnectionNotFound: u64 = 23;
+    const EPacketHaveNotTimedOut: u64 = 24;
 
     public(package) fun send_packet(
         ibc_uid: &mut UID,
@@ -113,21 +113,21 @@ module ibc::ibc_packet {
     ): packet::Packet {
         // Check if the channel exists in the store
         if(!channels.contains(source_channel)) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
 
         // Validate timeout values
         assert!(
-            timeout_height == 0, E_TIMEOUT_HEIGHT_NOT_SUPPORTED
+            timeout_height == 0, ETimeoutHeightNotSupported
         );
 
         assert!(
             timeout_timestamp > (clock.timestamp_ms() * 1_000_000),
-            E_TIMESTAMP_TIMEOUT
+            ETimestampTimeout
         );
 
         let channel = *channels.borrow(source_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
         
         // Prepare packet for commitment
         let packet =
@@ -144,7 +144,7 @@ module ibc::ibc_packet {
                 packet_hash
             );
 
-        assert!(!state::has_commitment(ibc_uid, commitment_key), E_PACKET_ALREADY_SENT);
+        assert!(!state::has_commitment(ibc_uid, commitment_key), EPacketAlreadySent);
 
         state::commit(ibc_uid, commitment_key, COMMITMENT_MAGIC);
 
@@ -223,14 +223,14 @@ module ibc::ibc_packet {
         packet: packet::Packet,
         acknowledgement: vector<u8>,
     ) {
-        assert!(!acknowledgement.is_empty(), E_ACKNOWLEDGEMENT_IS_EMPTY);
+        assert!(!acknowledgement.is_empty(), EAcknowledgementIsEmpty);
 
         if(!channels.contains(packet.destination_channel_id())) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
 
         let channel = *channels.borrow(packet.destination_channel_id());
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
 
         let packet_hash = commitment::commit_packet(&packet);
 
@@ -260,23 +260,23 @@ module ibc::ibc_packet {
         relayer: address,
     )  {
         let l = packets.length();
-        assert!(l > 0, E_NOT_ENOUGH_PACKETS);
+        assert!(l > 0, ENotEnoughPackets);
 
         let source_channel = packets[0].source_channel_id();
 
         if(!channels.contains(source_channel)) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
         let channel = channels.borrow(source_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
 
         let connection = connections.borrow(channel.connection_id());
-        assert!(connection.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(connection.state() == CONN_STATE_OPEN, EInvalidConnectionState);
 
         let client_id = connection.client_id();
 
         if (!client_mgr.exists(client_id)) {
-            abort E_CLIENT_NOT_FOUND
+            abort EClientNotFound
         };
 
         let commitment_key = commitment::batch_receipts_commitment_key(
@@ -298,7 +298,7 @@ module ibc::ibc_packet {
         while (i < l) {
             let packet = packets[i];
 
-            assert!(packet.source_channel_id() == source_channel, E_BATCH_SAME_CHANNEL_ONLY);
+            assert!(packet.source_channel_id() == source_channel, EBatchSameChannelOnly);
 
             let packet_hash = commitment::commit_packet(&packet);
             let commitment_key =
@@ -330,29 +330,29 @@ module ibc::ibc_packet {
         let source_channel = packet.source_channel_id();
 
         if(!channels.contains(source_channel)) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
         let channel = channels.borrow(source_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
 
         let connection_id = channel.connection_id();
 
         if(!connections.contains(connection_id)) {
-            abort E_CONNECTION_NOT_FOUND
+            abort EConnectionNotFound
         };
         let connection = connections.borrow(connection_id);
         assert!(
             connection.state() == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
+            EInvalidConnectionState
         );
         let client_id = connection.client_id();
 
         if(!client_mgr.exists(client_id)) {
-            abort E_CLIENT_NOT_FOUND
+            abort EClientNotFound
         };
         let proof_timestamp =
             client_mgr.get_timestamp_at_height(client_id, proof_height);
-        assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
+        assert!(proof_timestamp != 0, ELatestTimestampNotFound);
 
         let packet_hash = commitment::commit_packet(&packet);
         let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
@@ -363,11 +363,11 @@ module ibc::ibc_packet {
         assert!(err == 0, err);
 
         if (packet.timeout_timestamp() == 0) {
-            abort E_TIMEOUT_MUST_BE_SET
+            abort ETimeoutMustBeSet
         } else {
             assert!(
                 packet.timeout_timestamp() < proof_timestamp,
-                E_TIMESTAMP_TIMEOUT_NOT_REACHED
+                ETimestampTimeoutNotReached
             );
         };
 
@@ -395,25 +395,25 @@ module ibc::ibc_packet {
         let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
         assert!(
             current_timestamp >= packet.timeout_timestamp(),
-            E_PACKET_HAVE_NOT_TIMED_OUT
+            EPacketHaveNotTimedOut
         );
 
         let packet_hash = commitment::commit_packet(&packet);
 
         assert!(
             !state::has_commitment(ibc_uid, commitment::batch_receipts_commitment_key(packet_hash)),
-            E_PACKET_ALREADY_RECEIVED
+            EPacketAlreadyReceived
         );
 
         let channel = channels.borrow(packet.destination_channel_id());
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
 
         let connection_id = channel.connection_id();
 
         let connection = connections.borrow(connection_id);
         assert!(
             connection.state() == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
+            EInvalidConnectionState
         );
         let client_id = connection.client_id();
 
@@ -464,26 +464,26 @@ module ibc::ibc_packet {
         acknowledgements: vector<vector<u8>>
     ) {
         let l = packets.length();
-        assert!(l != 0, E_NOT_ENOUGH_PACKETS);
+        assert!(l != 0, ENotEnoughPackets);
 
-        assert!(l == acknowledgements.length(), E_ACK_LEN_MISMATCH);
-        assert!(l == maker_msgs.length(), E_MAKER_MSG_LEN_MISMATCH);
+        assert!(l == acknowledgements.length(), EAckLenMismatch);
+        assert!(l == maker_msgs.length(), EMakerMsgLenMismatch);
 
         let destination_channel = packets[0].destination_channel_id();
 
         if(!channels.contains(destination_channel)) {
-            abort E_CHANNEL_NOT_FOUND
+            abort EChannelNotFound
         };
         let channel = channels.borrow(destination_channel);
-        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+        assert!(channel.state() == CHAN_STATE_OPEN, EInvalidChannelState);
 
         let connection = connections.borrow(channel.connection_id()); 
-        assert!(connection.state() == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(connection.state() == CONN_STATE_OPEN, EInvalidConnectionState);
 
         let client_id = connection.client_id();
 
         if(!client_mgr.exists(client_id)) {
-            abort E_CLIENT_NOT_FOUND
+            abort EClientNotFound
         };
 
         if (!intent) {
@@ -508,17 +508,17 @@ module ibc::ibc_packet {
         while (i < l) {
             let packet = packets[i];
 
-            assert!(packet.destination_channel_id() == destination_channel, E_BATCH_SAME_CHANNEL_ONLY);
+            assert!(packet.destination_channel_id() == destination_channel, EBatchSameChannelOnly);
 
             if (packet.timeout_height() != 0) {
-                abort E_TIMEOUT_HEIGHT_NOT_SUPPORTED
+                abort ETimeoutHeightNotSupported
             };
 
 
             let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
             assert!(
                 current_timestamp < packet.timeout_timestamp(),
-                E_TIMESTAMP_TIMEOUT
+                ETimestampTimeout
             );
 
             let packet_hash = commitment::commit_packet(&packet);
@@ -532,7 +532,7 @@ module ibc::ibc_packet {
                 // Normally this is not an error and results in noop in the traditional impls where
                 // the app is called by the ibc. But since it is the other way here, we have to abort
                 // to prevent double processing in the app side. 
-                abort E_ALREADY_RECEIVED;
+                abort EAlreadyReceived;
             } else {
                 let maker_msg = maker_msgs[i];
                 if (intent) {
@@ -570,12 +570,12 @@ module ibc::ibc_packet {
         commitment_key: vector<u8>, acknowledgement: vector<u8>
     ) {
         if (!state::has_commitment(ibc_uid, commitment_key)) {
-            abort E_PACKET_NOT_RECEIVED
+            abort EPacketNotReceived
         };
         let commitment = state::borrow_commitment_mut(ibc_uid, commitment_key);
         assert!(
             *commitment == COMMITMENT_MAGIC,
-            E_ACK_ALREADY_EXIST
+            EAckAlreadyExist
         );
 
         *commitment = commitment::commit_ack(acknowledgement);
@@ -591,11 +591,11 @@ module ibc::ibc_packet {
     }
 
     fun set_packet_acknowledged(ibc_uid: &mut UID, commitment_key: vector<u8>) {
-        assert!(state::has_commitment(ibc_uid, commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
+        assert!(state::has_commitment(ibc_uid, commitment_key), EPacketCommitmentNotFound);
 
         let commitment = state::borrow_commitment_mut(ibc_uid, commitment_key);
-        assert!(commitment != COMMITMENT_MAGIC_ACK, E_PACKET_ALREADY_ACKNOWLEDGED);
-        assert!(commitment == COMMITMENT_MAGIC, E_PACKET_COMMITMENT_NOT_FOUND);
+        assert!(commitment != COMMITMENT_MAGIC_ACK, EPacketAlreadyAcknowledged);
+        assert!(commitment == COMMITMENT_MAGIC, EPacketCommitmentNotFound);
 
         *commitment = COMMITMENT_MAGIC_ACK;
     }

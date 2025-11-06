@@ -64,7 +64,7 @@ module zkgm::ibc {
     use ibc::ibc::{Self, IBCStore};
     use zkgm::zkgm::RelayStore;
 
-    const E_INVALID_IBC_VERSION: u64 = 2;
+    const EInvalidIbcVersion: u64 = 2;
 
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
 
@@ -81,7 +81,7 @@ module zkgm::ibc {
         );
 
         if (!is_valid_version(version)) {
-            abort E_INVALID_IBC_VERSION
+            abort EInvalidIbcVersion
         };
     }
 
@@ -98,11 +98,11 @@ module zkgm::ibc {
         ctx: &TxContext
     ) {
         if (!is_valid_version(version)) {
-            abort E_INVALID_IBC_VERSION
+            abort EInvalidIbcVersion
         };
 
         if (!is_valid_version(counterparty_version)) {
-            abort E_INVALID_IBC_VERSION
+            abort EInvalidIbcVersion
         };
 
         ibc_store.channel_open_try(
@@ -138,7 +138,7 @@ module zkgm::ibc {
             ctx
         );
         if (!is_valid_version(counterparty_version)) {
-            abort E_INVALID_IBC_VERSION
+            abort EInvalidIbcVersion
         };
     }
 

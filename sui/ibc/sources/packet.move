@@ -70,7 +70,6 @@ module ibc::packet {
         timeout_timestamp: u64
     }
 
-
     public fun source_channel_id(packet: &Packet): u32 {
         packet.source_channel_id
     }
