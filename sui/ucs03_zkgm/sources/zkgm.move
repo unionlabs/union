@@ -1812,26 +1812,7 @@ module zkgm::zkgm {
 
     #[test_only]
     public fun init_for_tests(ctx: &mut TxContext) {
-        let id = object::new(ctx);
-
-        transfer::share_object(RelayStore {
-            id: id,
-            in_flight_packet: table::new(ctx),
-            channel_balance: table::new(ctx),
-            token_origin: table::new(ctx),
-            object_store: object_bag::new(ctx),
-            wrapped_denom_to_t: table::new(ctx),
-        });
-    }
-
-    #[test]
-    fun test_is_valid_version_true() {
-        assert!(is_valid_version(string::utf8(b"ucs03-zkgm-0")), 1)
-    }
-
-    #[test]
-    fun test_is_valid_version_false() {
-        assert!(!is_valid_version(string::utf8(b"ucs03-zkgm-1")), 1)
+        init(ctx);
     }
 
     #[test]
@@ -1884,14 +1865,7 @@ module zkgm::zkgm {
 
     #[test]
     fun test_send_flow_escrow_sui_single_tx() {
-        use std::string;
-        use std::ascii;
-        use std::type_name;
-        use sui::test_scenario;
         use sui::clock;
-        use sui::clock::Clock;
-        use sui::coin;
-        use sui::bcs;
 
         let mut t = test_scenario::begin(@0x0);
         let (mut ibc, mut zkgm, mut owned_vault, escrow_vault) = prepare_test_ctx(&mut t);
@@ -1905,13 +1879,6 @@ module zkgm::zkgm {
         let receiver = t.sender();
         let base_token = b"BASE";
         let quote_token = std::type_name::with_defining_ids<sui::sui::SUI>().into_string().into_bytes();
-        let md = vector[
-            0u8,0,0,0,0,0,0,0,
-            0,0,0,0,0,0,0,1,
-            2,3,4,5,6,7,8,9,
-            10,11,12,13,14,15,16,17
-        ];
-
         let order = zkgm::token_order::new(
             sui::bcs::to_bytes(&sender),
             sui::bcs::to_bytes(&receiver),
@@ -1923,12 +1890,6 @@ module zkgm::zkgm {
             x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040756e696f6e31793035653070326a6376686a7a66376b63717372717839336434673375393368633268796b6171386872766b717270356c7472737361677a7964"
         );
         
-        let instr = zkgm::instruction::new(
-            INSTR_VERSION_2,
-            OP_TOKEN_ORDER,
-            order.encode()
-        );
-
         let salt = b"SALT";
         let mut send_ctx = begin_send(1, salt);
         send_ctx = send_with_coin<sui::sui::SUI>(
@@ -1947,8 +1908,9 @@ module zkgm::zkgm {
         let clk_ref = t.take_shared<Clock>();
         let now_ns = clock::timestamp_ms(&clk_ref) * 1_000_000;
         let timeout_ns = now_ns + 1_000_000_000;
-        zkgm::zkgm::end_send(
+        end_send(
             &mut ibc,
+            &zkgm,
             &clk_ref,
             0,
             timeout_ns,
@@ -1985,7 +1947,6 @@ module zkgm::zkgm {
 
     #[test]
     fun test_recv_flow_solve_sui_single_tx() {
-        use sui::test_scenario;
         use sui::clock;
 
         let mut t = test_scenario::begin(@0x0);
@@ -2075,12 +2036,14 @@ module zkgm::zkgm {
 
         end_recv(
             &mut ibc,
+            &zkgm,
             &clk_ref,
             b"proof",
             1,           
             relayer,
             relayer_msg,
-            rctx
+            rctx,
+            t.ctx()
         );
 
         end_test(
@@ -2095,8 +2058,6 @@ module zkgm::zkgm {
 
     #[test_only]
     fun prepare_test_ctx(t: &mut test_scenario::Scenario): (ibc::IBCStore, RelayStore, OwnedVault, EscrowVault) {
-        use std::ascii;
-        use sui::test_scenario;
         use sui::clock;
 
         init_for_tests(t.ctx());
@@ -2111,9 +2072,9 @@ module zkgm::zkgm {
 
         t.next_tx(@0x0);
         let mut ibc = t.take_shared<ibc::IBCStore>();
-        let mut zkgm = t.take_shared<zkgm::zkgm::RelayStore>();
-        let mut owned_vault = t.take_shared<owned_vault::OwnedVault>();
-        let mut escrow_vault = t.take_shared<escrow_vault::EscrowVault>();
+        let zkgm = t.take_shared<zkgm::zkgm::RelayStore>();
+        let owned_vault = t.take_shared<owned_vault::OwnedVault>();
+        let escrow_vault = t.take_shared<escrow_vault::EscrowVault>();
 
         // Open client/connection/channel like in send test
         let mut clk = clock::create_for_testing(t.ctx());
@@ -2126,17 +2087,15 @@ module zkgm::zkgm {
             b"cons",
             t.ctx()
         );
-        ibc.connection_open_init(1, 2);
-        ibc.connection_open_ack(1, 9, b"p", 1);
+        ibc.connection_open_init(1, 2, t.ctx());
+        ibc.connection_open_ack(1, 9, b"p", 1, t.ctx());
 
-        let mut port = type_name::with_defining_ids<zkgm::zkgm::IbcAppWitness>().into_string();
-        port.append(ascii::string(b"::any"));
         ibc.channel_open_init(
-            port.to_string(),
             b"cp-port",
             1,
             string::utf8(b"ucs03-zkgm-0"),
-            zkgm::zkgm::IbcAppWitness {}
+            zkgm.port(),
+            t.ctx(),
         );
         ibc.channel_open_ack(
             1,
@@ -2144,7 +2103,8 @@ module zkgm::zkgm {
             1,
             b"p",
             1,
-            zkgm::zkgm::IbcAppWitness {}
+            zkgm.port(),
+            t.ctx(),
         );
 
         (ibc, zkgm, owned_vault, escrow_vault) 

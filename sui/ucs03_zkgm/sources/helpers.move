@@ -279,7 +279,7 @@ module zkgm::helper {
     }
 
 
-    #[test, expected_failure(abort_code = 2)]
+    #[test, expected_failure(abort_code = E_INVALID_HOPS)]
     fun test_update_channel_path_hop_limit_aborts_on_9th() {
 
         let mut path: u256 = 0;

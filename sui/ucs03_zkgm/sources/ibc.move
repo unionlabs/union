@@ -76,8 +76,7 @@ module zkgm::ibc {
         version: String,
         ctx: &TxContext
     ) {
-        ibc::channel_open_init(
-            ibc_store,
+        ibc_store.channel_open_init(
             counterparty_port_id,
             connection_id,
             version,
@@ -110,8 +109,7 @@ module zkgm::ibc {
             abort E_INVALID_IBC_VERSION
         };
 
-        ibc::channel_open_try(
-            ibc_store,
+        ibc_store.channel_open_try(
             connection_id,
             counterparty_channel_id,
             counterparty_port_id,
@@ -134,8 +132,7 @@ module zkgm::ibc {
         proof_height: u64,
         ctx: &TxContext
     ) {
-        ibc::channel_open_ack(
-            ibc_store,
+        ibc_store.channel_open_ack(
             channel_id,
             counterparty_version,
             counterparty_channel_id,
@@ -169,5 +166,15 @@ module zkgm::ibc {
 
     fun is_valid_version(version_bytes: String): bool {
         version_bytes == string::utf8(VERSION)
+    }
+
+    #[test]
+    fun test_is_valid_version_true() {
+        assert!(is_valid_version(string::utf8(b"ucs03-zkgm-0")), 1)
+    }
+
+    #[test]
+    fun test_is_valid_version_false() {
+        assert!(!is_valid_version(string::utf8(b"ucs03-zkgm-1")), 1)
     }
 }
