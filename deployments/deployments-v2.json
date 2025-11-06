@@ -1,0 +1,1026 @@
+{
+  "arbitrum.42161": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "commit": "c2c6c2c8e11910ccd5ca6bc3db1055364a21af8a"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+      }
+    }
+  },
+  "arbitrum.421614": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 207581448,
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 207581440,
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 207581489,
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 207581432,
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 207581410,
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1"
+      }
+    }
+  },
+  "babylon.bbn-1": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
+    "contracts": {
+      "bbn1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs2sd9j4": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 28986,
+        "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5",
+        "code_id": 16
+      },
+      "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 29000,
+        "commit": "bcebe1298cf6eaea0e9085493c31d495357dc554",
+        "code_id": 127
+      },
+      "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 28972,
+        "commit": "40b70388e03982df273fb6a2a009bbfb6c4aeeba",
+        "code_id": 108
+      },
+      "bbn1c723xf74f0r9g4uyn0cv2t7pkgcq7x0gaw5h773j78rk35w0j0usslxen6": {
+        "name": "protocols/ucs03/cw20-token-minter",
+        "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+        "code_id": 75
+      },
+      "bbn1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzq7lmw0u": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 28990,
+        "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5",
+        "code_id": 17
+      },
+      "bbn1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqhe2fyg": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 28982,
+        "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5",
+        "code_id": 15
+      },
+      "bbn16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sjuq73q": {
+        "name": "lightclients/trusted/evm/mpt",
+        "salt": "0x6c69676874636c69656e74732f747275737465642f65766d2f6d7074",
+        "height": 28994,
+        "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5",
+        "code_id": 18
+      }
+    }
+  },
+  "base.8453": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 35397312,
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 35397312,
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 35397312,
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 35397312,
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
+      },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "height": 35397374,
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 35397312,
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
+      }
+    }
+  },
+  "base.84532": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 27934712,
+        "commit": "3a9775dabf4b91d81fcd206e13d6481219c5e28f"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 27934712,
+        "commit": "3a9775dabf4b91d81fcd206e13d6481219c5e28f"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 27935624,
+        "commit": "eb165175bf870fd682a402dce0ec37a5cff9a3cc"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 27934712,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 27934712,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      }
+    }
+  },
+  "bob.60808": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 15699439,
+        "commit": "c2c6c2c8e11910ccd5ca6bc3db1055364a21af8a"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 15699439,
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 15699440,
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 15699439,
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 15699438,
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+      }
+    }
+  },
+  "bob.808813": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 10951500,
+        "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 10951500,
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 10951500,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 10951499,
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 10951499,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+      }
+    }
+  },
+  "bsc.56": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 56059848,
+        "commit": "294377c7b5fe1f2140b73756800c5f2533f28372"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 56057236,
+        "commit": "294377c7b5fe1f2140b73756800c5f2533f28372"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 56059692,
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 56057233,
+        "commit": "294377c7b5fe1f2140b73756800c5f2533f28372"
+      },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "commit": "de20a1abc78dd0c04118d869599adb485036c779"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 56057229,
+        "commit": "294377c7b5fe1f2140b73756800c5f2533f28372"
+      }
+    }
+  },
+  "bsc.97": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 55472262,
+        "commit": "b99caf39a4d83cb157af091365350371ef4d6ed1"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 55472262,
+        "commit": "b99caf39a4d83cb157af091365350371ef4d6ed1"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 55472262,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 55472262,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 55472262,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      }
+    }
+  },
+  "corn.21000000": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 392724,
+        "commit": "c2c6c2c8e11910ccd5ca6bc3db1055364a21af8a"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 392724,
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 392727,
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 392724,
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 392723,
+        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+      }
+    }
+  },
+  "corn.21000001": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 181415,
+        "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 181413,
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 181417,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 181413,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 181413,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      }
+    }
+  },
+  "ethereum.1": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 22236429,
+        "commit": "c2c6c2c8e11910ccd5ca6bc3db1055364a21af8a"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 22236429,
+        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 22236430,
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 22236429,
+        "commit": "7113f2661025803021f819add09995fce2f58abf"
+      },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "commit": "de20a1abc78dd0c04118d869599adb485036c779"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 22236429,
+        "commit": "7113f2661025803021f819add09995fce2f58abf"
+      }
+    }
+  },
+  "ethereum.11155111": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 8088108,
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 8088108,
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 8088109,
+        "commit": "3580ffa2d0c9e315abb7f595caa96ba2bde8049e"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 8088108,
+        "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
+      },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "commit": "7fd98b4dfff42963cf9437de604b35743bc2f597"
+      },
+      "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1": {
+        "name": "eu",
+        "salt": "0x0dec0db7b56214f189bc3d33052145c6d7558c6a7ee0da79e34bdd8a29d569c2",
+        "commit": "c6926eefe9c4b85c81d5428d3a4829ea3d70f728"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 8088108,
+        "commit": "7fd98b4dfff42963cf9437de604b35743bc2f597"
+      }
+    }
+  },
+  "osmosis.osmo-test-5": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "osmo10c4yqddv6w7sphruvhxs5v0es8r9fcj5ed3yx7",
+    "contracts": {
+      "osmo1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufsyy5f76": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 27869886,
+        "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6",
+        "code_id": 12401
+      },
+      "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 27869895,
+        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
+        "code_id": 12881
+      },
+      "osmo13ulc6pqhm60qnx58ss7s3cft8cqfycexq3uy3dd2v0l8qsnkvk4sj22sn6": {
+        "name": "protocols/ucs03/osmosis-tokenfactory-token-minter",
+        "commit": "9904d3134f3497a5bac8ce67ff1b2dd18a0e91d4",
+        "code_id": 12408
+      },
+      "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 27869833,
+        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
+        "code_id": 12882
+      },
+      "osmo1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqstzzrn": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 27869890,
+        "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6",
+        "code_id": 12402
+      },
+      "osmo1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqedn9g8": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 27869882,
+        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
+        "code_id": 12883
+      }
+    }
+  },
+  "osmosis.osmosis-1": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "osmo10c4yqddv6w7sphruvhxs5v0es8r9fcj5ed3yx7",
+    "contracts": {
+      "osmo12r3yc76u9lxe33yemstatnw8602culdjzrtr8lmnpycmd3z7d4jsxx60kc": {
+        "name": "protocols/ucs03/osmosis-tokenfactory-token-minter",
+        "code_id": 0
+      },
+      "osmo1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufsyy5f76": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 39452949,
+        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+        "code_id": 1714
+      },
+      "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 39452974,
+        "commit": "2a03eb41a66a06f863663e450e7e648f816c978d",
+        "code_id": 1848
+      },
+      "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 39452782,
+        "commit": "2a03eb41a66a06f863663e450e7e648f816c978d",
+        "code_id": 1849
+      },
+      "osmo1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqstzzrn": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 39452958,
+        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+        "code_id": 1715
+      },
+      "osmo1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqedn9g8": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 39452789,
+        "commit": "cd4759ddf0dbc5b42aad19aaf26839d3dfd021f7",
+        "code_id": 1720
+      }
+    }
+  },
+  "sei.1328": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 169277356,
+        "commit": "1bdf09ddeaeaa0acc12bf9a36bbb41a1ce616f12"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 169277356,
+        "commit": "1af1bd5410e874fc02bcd1aea6602a7c1a998f06"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 169277356,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 169277356,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 169277356,
+        "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
+      }
+    }
+  },
+  "sei.1329": {
+    "ibc_interface": "ibc-solidity",
+    "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+    "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+    "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+    "multicall": "0x70276995f225df69936eaec02ddece998a9e3662",
+    "contracts": {
+      "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 167472749,
+        "commit": "d97bf8a9148482e104c87feb1606c842059c836e"
+      },
+      "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 167472749,
+        "commit": "d97bf8a9148482e104c87feb1606c842059c836e"
+      },
+      "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 167472753,
+        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+      },
+      "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 167472748,
+        "commit": "d97bf8a9148482e104c87feb1606c842059c836e"
+      },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "height": 167472800,
+        "commit": "d97bf8a9148482e104c87feb1606c842059c836e"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 167472746,
+        "commit": "d97bf8a9148482e104c87feb1606c842059c836e"
+      }
+    }
+  },
+  "sui.4c78adac": {
+    "ibc_interface": "ibc-move/sui",
+    "contracts": {
+      "0x20ce81524276132a2aaee23a8dad22d26b80adfef5dcf765c68567b44ed4dfb7::ibc": {
+        "name": "core",
+        "height": 255095344,
+        "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+      },
+      "0xb9e0f478ab1bb759694368de62ced7cb04057f489d56f2b0a6a7d5ebc1407079::zkgm": {
+        "name": "protocols/ucs03",
+        "height": 255095344,
+        "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+      }
+    }
+  },
+  "union.union-1": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
+    "contracts": {
+      "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh": {
+        "name": "lightclients/arbitrum",
+        "salt": "0x6c69676874636c69656e74732f617262697472756d",
+        "height": 461749,
+        "commit": "f44f814da96fac08dfcbb6a1afc558f46ad35b2f",
+        "code_id": 70
+      },
+      "union1xll86ajefrwsjn0msw89xhnmyd85fyzc6203j8p5uc6t7kyuvusqkutpsu": {
+        "name": "lightclients/base",
+        "salt": "0x6c69676874636c69656e74732f62617365",
+        "height": 2869093,
+        "commit": "a685dd3ef28affaef37071e75c1db385a469de97",
+        "code_id": 56
+      },
+      "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh": {
+        "name": "lightclients/ethermint",
+        "salt": "0x6c69676874636c69656e74732f65746865726d696e74",
+        "height": 461766,
+        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04",
+        "code_id": 8
+      },
+      "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7": {
+        "name": "lightclients/berachain",
+        "salt": "0x6c69676874636c69656e74732f62657261636861696e",
+        "height": 461753,
+        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04",
+        "code_id": 4
+      },
+      "union1d2r4ecsuap4pujrlf3nz09vz8eha8y0z25knq0lfxz4yzn83v6kq0jxsmk": {
+        "name": "lst-hub",
+        "salt": "0x6c73742f6575",
+        "height": 2930850,
+        "commit": "1f47b869af7af0465be5de0214f2368904487257",
+        "code_id": 68
+      },
+      "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 461799,
+        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04",
+        "code_id": 10
+      },
+      "union132rvexpxlvwqhdepjxz5ct9kzg3xtuzcfzad978pjv079mtzgyzqczckj6": {
+        "name": "lightclients/parlia",
+        "salt": "0x6c69676874636c69656e74732f7061726c6961",
+        "height": 2226664,
+        "commit": "7fa8815a5ceab4195414a71f6731b497c659c476",
+        "code_id": 52
+      },
+      "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 461829,
+        "commit": "4a964edc21e6c42b2a9fcd1f62897691a57f5cd9",
+        "code_id": 64
+      },
+      "union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy": {
+        "name": "protocols/ucs03/cw20-token-minter",
+        "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+        "code_id": 40
+      },
+      "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 461578,
+        "commit": "f89eac6d13cff2a27c72a6397ef1daaf913cc171",
+        "code_id": 69
+      },
+      "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 461807,
+        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04",
+        "code_id": 12
+      },
+      "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f": {
+        "name": "eu",
+        "salt": "0x6a9b711ce5d3749ece29463110b6164dbb28dda28902586bf66e86699d60bd4c",
+        "height": 2930458,
+        "commit": "32815f2f58ca6bc506dced9d16a7d288fe55438a",
+        "code_id": 65
+      },
+      "union16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sdml7vq": {
+        "name": "lightclients/trusted/evm/mpt",
+        "salt": "0x6c69676874636c69656e74732f747275737465642f65766d2f6d7074",
+        "height": 461812,
+        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04",
+        "code_id": 13
+      },
+      "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r": {
+        "name": "u",
+        "salt": "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965",
+        "height": 2433460,
+        "commit": "76577fbb239c66ded13828a2b1bb6e40a7c60650",
+        "code_id": 50
+      },
+      "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw": {
+        "name": "lightclients/ethereum",
+        "salt": "0x6c69676874636c69656e74732f657468657265756d",
+        "height": 461762,
+        "commit": "5687a759ad46c90648f4b2906a93c24561eb8bb6",
+        "code_id": 43
+      },
+      "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s": {
+        "name": "lightclients/bob",
+        "salt": "0x6c69676874636c69656e74732f626f62",
+        "height": 461757,
+        "commit": "76eab12ff6f91a3db9757c92ac5e863bfede519f",
+        "code_id": 44
+      }
+    }
+  },
+  "union.union-testnet-10": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
+    "contracts": {
+      "union1zvlmhucarsrul3jv0tf7hfzcrgdlqgdkzyyzcvf84fsvxvjrnyhq90s2wt": {
+        "name": "lightclients/sui",
+        "salt": "0x6c69676874636c69656e74732f737569",
+        "height": 3397571,
+        "commit": "9ed4d0b9c5d3c93e2875c282fd756ed3688e8f17",
+        "code_id": 266
+      },
+      "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh": {
+        "name": "lightclients/arbitrum",
+        "salt": "0x6c69676874636c69656e74732f617262697472756d",
+        "height": 354878,
+        "commit": "d9161585f3c97fab20f87ae29ba3549e487430c1",
+        "code_id": 269
+      },
+      "union1xll86ajefrwsjn0msw89xhnmyd85fyzc6203j8p5uc6t7kyuvusqkutpsu": {
+        "name": "lightclients/base",
+        "salt": "0x6c69676874636c69656e74732f62617365",
+        "height": 1798364,
+        "commit": "232bb198857a4a9923f65317a104713b1fc17ab3",
+        "code_id": 133
+      },
+      "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh": {
+        "name": "lightclients/ethermint",
+        "salt": "0x6c69676874636c69656e74732f65746865726d696e74",
+        "height": 354894,
+        "commit": "dd96526681f00b0c5df52f5db74db04043f0e64b",
+        "code_id": 102
+      },
+      "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7": {
+        "name": "lightclients/berachain",
+        "salt": "0x6c69676874636c69656e74732f62657261636861696e",
+        "height": 354882,
+        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
+        "code_id": 56
+      },
+      "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0": {
+        "name": "protocols/ucs03/cw20-token-minter",
+        "commit": "3ba126b285cc21173d3b352591eb72b1627d4166",
+        "code_id": 117
+      },
+      "union1d2r4ecsuap4pujrlf3nz09vz8eha8y0z25knq0lfxz4yzn83v6kq0jxsmk": {
+        "name": "lst-hub",
+        "salt": "0x6c73742f6575",
+        "height": 2758268,
+        "commit": "f02628ba3adffd8a3249876e817f2134ae07a18c",
+        "code_id": 259
+      },
+      "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 354902,
+        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
+        "code_id": 61
+      },
+      "union132rvexpxlvwqhdepjxz5ct9kzg3xtuzcfzad978pjv079mtzgyzqczckj6": {
+        "name": "lightclients/parlia",
+        "salt": "0x6c69676874636c69656e74732f7061726c6961",
+        "height": 1594712,
+        "commit": "c7718fc95f89a64d3b8b6566d58b5cb75387edd5",
+        "code_id": 195
+      },
+      "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 354920,
+        "commit": "1d0e46ee34270ad993ba01b59d531f8b70517278",
+        "code_id": 250
+      },
+      "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 354875,
+        "commit": "f89eac6d13cff2a27c72a6397ef1daaf913cc171",
+        "code_id": 268
+      },
+      "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 354910,
+        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
+        "code_id": 63
+      },
+      "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f": {
+        "name": "eu",
+        "salt": "0x6a9b711ce5d3749ece29463110b6164dbb28dda28902586bf66e86699d60bd4c",
+        "height": 2756976,
+        "commit": "32815f2f58ca6bc506dced9d16a7d288fe55438a",
+        "code_id": 251
+      },
+      "union16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sdml7vq": {
+        "name": "lightclients/trusted/evm/mpt",
+        "salt": "0x6c69676874636c69656e74732f747275737465642f65766d2f6d7074",
+        "height": 354914,
+        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
+        "code_id": 64
+      },
+      "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r": {
+        "name": "u",
+        "salt": "0x50bbead29d10abe51a7c32bbc02a9b00ff4a7db57c050b7a0ff61d6173c33965",
+        "height": 2417976,
+        "commit": "af98d4c1e659408f71e9e591d997554746edbd2b",
+        "code_id": 139
+      },
+      "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw": {
+        "name": "lightclients/ethereum",
+        "salt": "0x6c69676874636c69656e74732f657468657265756d",
+        "height": 354890,
+        "commit": "d716d8c2a5f47f30d63c65b408677b1682ab040b",
+        "code_id": 265
+      },
+      "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s": {
+        "name": "lightclients/bob",
+        "salt": "0x6c69676874636c69656e74732f626f62",
+        "height": 354886,
+        "commit": "e58ff878698ecffc279cc8fd767113a7219a7801",
+        "code_id": 132
+      }
+    }
+  },
+  "xion.xion-testnet-2": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "xion10c4yqddv6w7sphruvhxs5v0es8r9fcj5nlckx8",
+    "contracts": {
+      "xion1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufstvlas8": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 2864414,
+        "commit": "88b294bf58128e60324735bec76e3b90a264a858",
+        "code_id": 954
+      },
+      "xion1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qlzhdk9": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 2864437,
+        "commit": "d8bbb667422485b5ddccdecfc7eb3148fa28310e",
+        "code_id": 1737
+      },
+      "xion1ndv9vcehelnetc8dqfkp77um6e3vxamv25k5lxlgs70kfq4n89pqhgrevz": {
+        "name": "lightclients/state-lens/ics23/ics23",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
+        "height": 3797628,
+        "commit": "f38b91437c5c738c678bcd7adb0c0c73ba56229c",
+        "code_id": 1187
+      },
+      "xion1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqjrkp8m": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 2864397,
+        "commit": "d8bbb667422485b5ddccdecfc7eb3148fa28310e",
+        "code_id": 1738
+      },
+      "xion1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqlrfkdw": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 2864423,
+        "commit": "88b294bf58128e60324735bec76e3b90a264a858",
+        "code_id": 955
+      },
+      "xion1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqk9c3x6": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 2864405,
+        "commit": "397772b4bf7fb54e7b1e34da7dd6cade775f5424",
+        "code_id": 1472
+      },
+      "xion1ak8muzgf2nv5ukzeg2wpf2vls74247et33cfhmg87uvpey73xdeqexkzgc": {
+        "name": "protocols/ucs03/cw20-token-minter",
+        "commit": "88b294bf58128e60324735bec76e3b90a264a858",
+        "code_id": 956
+      }
+    }
+  }
+}

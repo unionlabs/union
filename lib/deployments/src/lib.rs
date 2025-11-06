@@ -1,15 +1,11 @@
 #![warn(clippy::pedantic)]
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fmt::Display,
-    sync::LazyLock,
-};
+use std::{collections::BTreeMap, fmt::Display, sync::LazyLock};
 
 use embed_commit::Rev;
 use serde::{Deserialize, Serialize};
 use ucs04::UniversalChainId;
-use unionlabs_primitives::{Bech32, Bytes, H160, H256, encoding::HexUnprefixed};
+use unionlabs_primitives::{Bech32, Bytes, H160, H256};
 use voyager_primitives::ClientType;
 
 pub type Deployments<'a> = BTreeMap<UniversalChainId<'a>, Deployment>;
@@ -68,7 +64,7 @@ pub enum DeploymentV2 {
     IbcCosmwasm {
         /// The address used to create the deterministic addresses.
         deployer: Bech32<H160>,
-        contracts: BTreeSet<DeployedContractV2<Bech32<H256>, IbcCosmwasmDeployedContractExtra>>,
+        contracts: BTreeMap<Bech32<H256>, DeployedContractV2<IbcCosmwasmDeployedContractExtra>>,
     },
     #[serde(rename = "ibc-solidity")]
     IbcSolidity {
@@ -80,13 +76,16 @@ pub enum DeploymentV2 {
         manager: H160,
         /// The `Multicall.sol` deployment on this chain.
         multicall: H160,
-        contracts: BTreeSet<DeployedContractV2<H160, ()>>,
+        contracts: BTreeMap<H160, DeployedContractV2>,
+    },
+    #[serde(rename = "ibc-move/sui")]
+    IbcMoveSui {
+        contracts: BTreeMap<String, DeployedContractV2>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct DeployedContractV2<A, E> {
-    pub address: A,
+pub struct DeployedContractV2<E = ()> {
     pub name: String,
     /// If this contract was init'd with the bytecode-base bytecode via `frissitheto`, this is the salt used in the initial instantiate2 call.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -272,25 +271,41 @@ fn deployments_json_valid() {
                                 .collect(),
                         }
                     }
+                    Deployment::IbcMoveSui { core, app } => {
+                        DeploymentV2::IbcMoveSui {
+                             contracts: [convert::<_, _, [u8; 0]>(core, "core", None)]
+                                 .into_iter()
+                                 .chain(app.ucs03.map(|ucs03| convert::<_, _, [u8; 0]>(ucs03, "protocols/ucs03", None)))
+                                 .collect()
+                         }
+                    }
                 },
             )
         })
         .collect::<BTreeMap<_, _>>();
 
     println!("{}", serde_json::to_string_pretty(&v2).unwrap());
+
+    std::fs::write(
+        "../../deployments/deployments-v2.json",
+        serde_json::to_string_pretty(&v2).unwrap(),
+    )
+    .unwrap();
 }
 
-fn convert<A, E, B: Into<Bytes>>(
+fn convert<E, A, B: Into<Bytes>>(
     d: DeployedContract<A, E>,
     name: impl Display,
     salt: impl Into<Option<B>>,
-) -> DeployedContractV2<A, E> {
-    DeployedContractV2 {
-        address: d.address,
-        height: d.height,
-        commit: d.commit,
-        name: name.to_string(),
-        salt: Into::<Option<_>>::into(salt).map(Into::into),
-        extra: d.extra,
-    }
+) -> (A, DeployedContractV2<E>) {
+    (
+        d.address,
+        DeployedContractV2 {
+            height: d.height,
+            commit: d.commit,
+            name: name.to_string(),
+            salt: Into::<Option<_>>::into(salt).map(Into::into),
+            extra: d.extra,
+        },
+    )
 }
