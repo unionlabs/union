@@ -129,8 +129,6 @@ module zkgm::sui_token_metadata {
     }
     #[test]
     fun test_decode_with_icon_some() {
-        use std::option;
-
         let name = string::utf8(b"Token");
         let symbol = string::utf8(b"TKN");
         let decimals: u8 = 9;
@@ -160,8 +158,6 @@ module zkgm::sui_token_metadata {
 
     #[test]
     fun test_decode_with_icon_none() {
-        use std::option;
-
         let name = string::utf8(b"N");
         let symbol = string::utf8(b"S");
         let decimals: u8 = 6;
@@ -187,8 +183,6 @@ module zkgm::sui_token_metadata {
 
     #[test]
     fun test_new_and_getters() {
-        use std::option;
-
         let m = new(
             string::utf8(b"Alpha"),
             string::utf8(b"ALP"),

@@ -7,8 +7,7 @@ use sui_sdk::{
     SuiClient,
     rpc_types::{SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions},
     types::{
-        Identifier,
-        base_types::SuiAddress,
+        base_types::{SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         signature::GenericSignature,
         transaction::{ProgrammableTransaction, Transaction, TransactionData},
@@ -21,8 +20,7 @@ use unionlabs::ErrorReporter;
 pub struct ModuleInfo {
     pub original_address: SuiAddress,
     pub latest_address: SuiAddress,
-    pub module_name: Identifier,
-    pub stores: Vec<SuiAddress>,
+    pub stores: Vec<(SuiAddress, SequenceNumber)>,
 }
 
 #[rpc(client, server)]

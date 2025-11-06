@@ -58,81 +58,120 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::state {
-    use sui::bcs;
-    use sui::dynamic_field as df;
+module zkgm::ibc {
+    use std::string::{Self, String};
 
-    const COMMITMENT: u8 = 0x1;
-    const COMMITMENT_TO_DIGEST: u8 = 0x2;
-    const CHANNEL_TO_PORT: u8 = 0x3;
+    use ibc::ibc::{Self, IBCStore};
+    use zkgm::zkgm::RelayStore;
 
-    public struct PrefixedKey<T: drop> has drop {
-        prefix: u8,
-        key: T
-    }
+    const EBase: u64 = 35100;
+    const EInvalidIbcVersion: u64 = EBase + 1;
 
-    /// Commitments storage
-    public(package) fun commit(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
+    const VERSION: vector<u8> = b"ucs03-zkgm-0";
+
+    public fun channel_open_init(
+        ibc_store: &mut IBCStore,
+        zkgm: &mut RelayStore,
+        counterparty_port_id: vector<u8>,
+        connection_id: u32,
+        version: String,
+        ctx: &TxContext
     ) {
-        df::add(id, prefixed_key(COMMITMENT, key), value);
-    }
+        ibc_store.channel_open_init(
+            counterparty_port_id, connection_id, version, zkgm.port(), ctx
+        );
 
-    public(package) fun has_commitment(id: &UID, key: vector<u8>): bool {
-        df::exists_(id, prefixed_key(COMMITMENT, key))
-    }
-
-    public(package) fun borrow_commitment(id: &UID, key: vector<u8>): &vector<u8> {
-        df::borrow(id, prefixed_key(COMMITMENT, key))
-    }
-
-    public(package) fun borrow_commitment_mut(
-        id: &mut UID, key: vector<u8>
-    ): &mut vector<u8> {
-        df::borrow_mut(id, prefixed_key(COMMITMENT, key))
-    }
-
-    public(package) fun add_or_update_commitment(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
-    ) {
-        if (has_commitment(id, key)) {
-            *borrow_commitment_mut(id, key) = value;
-        } else {
-            commit(id, key, value);
+        if (!is_valid_version(version)) {
+            abort EInvalidIbcVersion
         };
     }
 
-    /// Commitment-to-digest storage
-    public(package) fun add_commitment_to_digest(
-        id: &mut UID, commitment: vector<u8>, digest: vector<u8>
+    public fun channel_open_try(
+        ibc_store: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
+        connection_id: u32,
+        counterparty_channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        version: String,
+        counterparty_version: String,
+        proof_init: vector<u8>,
+        proof_height: u64,
+        ctx: &TxContext
     ) {
-        df::add(
-            id,
-            prefixed_key(COMMITMENT_TO_DIGEST, commitment),
-            digest
+        if (!is_valid_version(version)) {
+            abort EInvalidIbcVersion
+        };
+
+        if (!is_valid_version(counterparty_version)) {
+            abort EInvalidIbcVersion
+        };
+
+        ibc_store.channel_open_try(
+            connection_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            version,
+            counterparty_version,
+            proof_init,
+            proof_height,
+            zkgm.port(),
+            ctx
         );
     }
 
-    /// Channel-to-port storage
-    public(package) fun add_channel_to_port(
-        id: &mut UID, channel: u32, port: address
+    public fun channel_open_ack(
+        ibc_store: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
+        channel_id: u32,
+        counterparty_version: String,
+        counterparty_channel_id: u32,
+        proof_try: vector<u8>,
+        proof_height: u64,
+        ctx: &TxContext
     ) {
-        df::add(
-            id,
-            prefixed_key(CHANNEL_TO_PORT, channel),
-            port
+        ibc_store.channel_open_ack(
+            channel_id,
+            counterparty_version,
+            counterparty_channel_id,
+            proof_try,
+            proof_height,
+            zkgm.port(),
+            ctx
+        );
+        if (!is_valid_version(counterparty_version)) {
+            abort EInvalidIbcVersion
+        };
+    }
+
+    public fun channel_open_confirm(
+        ibc_store: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
+        channel_id: u32,
+        proof_ack: vector<u8>,
+        proof_height: u64,
+        ctx: &TxContext
+    ) {
+        ibc::channel_open_confirm(
+            ibc_store,
+            channel_id,
+            proof_ack,
+            proof_height,
+            zkgm.port(),
+            ctx
         );
     }
 
-    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): address {
-        *df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
+    fun is_valid_version(version_bytes: String): bool {
+        version_bytes == string::utf8(VERSION)
     }
 
-    public(package) fun has_channel_to_port(id: &UID, channel: u32): bool {
-        df::exists_(id, prefixed_key(CHANNEL_TO_PORT, channel))
+    #[test]
+    fun test_is_valid_version_true() {
+        assert!(is_valid_version(string::utf8(b"ucs03-zkgm-0")), 1)
     }
 
-    fun prefixed_key<K: drop>(prefix: u8, key: K): vector<u8> {
-        bcs::to_bytes(&PrefixedKey { prefix, key })
+    #[test]
+    fun test_is_valid_version_false() {
+        assert!(!is_valid_version(string::utf8(b"ucs03-zkgm-1")), 1)
     }
 }

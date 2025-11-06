@@ -69,9 +69,10 @@ module ibc::ibc_client {
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const E_CLIENT_NOT_ACTIVE: u64 = 2;
+    const EBase: u64 = 10100;
+    const EClientNotActive: u64 = EBase + 1;
 
-    public fun create_client(
+    public(package) fun create_client(
         ibc_uid: &mut UID,
         client_mgr: &mut LightClientManager,
         client_type: String, 
@@ -96,14 +97,12 @@ module ibc::ibc_client {
         if (lens_client_event.is_some()) {
             let lens_client_event = lens_client_event.extract();
             events::emit_create_lens_client(
-                    lens_client_event.client_id(),
-                    lens_client_event.l2_chain_id(),
-                    lens_client_event.l1_client_id(),
-                    lens_client_event.l2_client_id()
+                lens_client_event.client_id(),
+                lens_client_event.l2_chain_id(),
+                lens_client_event.l1_client_id(),
+                lens_client_event.l2_client_id()
             );
         };
-
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         state::commit(
             ibc_uid,
@@ -133,7 +132,7 @@ module ibc::ibc_client {
         client_message: vector<u8>,
         relayer: address
     ) {
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(client_mgr.status(client_id, clock) == 0, EClientNotActive);
 
         // Update the client and consensus states using the client message
         let (client_state, consensus_state, height) =
@@ -161,8 +160,6 @@ module ibc::ibc_client {
         misbehaviour: vector<u8>,
         relayer: address
     ) {
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
         client_mgr.misbehaviour(client_id, misbehaviour, relayer);
 
         events::emit_misbehaviour(

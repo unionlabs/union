@@ -68,7 +68,8 @@ module ibc::light_client {
     use ibc::create_lens_client_event::CreateLensClientEvent;
     use ibc::cometbls_light_client;
 
-    const E_CLIENT_TYPE_NOT_SUPPORTED: u64 = 1;
+    const EBase: u64 = 20000;
+    const EClientTypeNotSupported: u64 = EBase + 1;
 
     public struct LightClientManager has store {
         clients: ObjectBag,
@@ -114,7 +115,7 @@ module ibc::light_client {
             store.clients.add(client_id, client);
             (csb, consb, c_cid, l_event)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         };
 
 
@@ -123,7 +124,8 @@ module ibc::light_client {
 
     public(package) fun status(
         store: &LightClientManager,
-        client_id: u32
+        client_id: u32,
+        clock: &Clock,
     ): u64 {
         if (store.test_mode) {
             return 0
@@ -131,9 +133,9 @@ module ibc::light_client {
 
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.as_bytes() == b"cometbls") {
-            store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status()
+            store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status(clock)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -151,7 +153,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).misbehaviour(misbehaviour, relayer);
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -164,7 +166,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_timestamp_at_height(height)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -183,7 +185,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_non_membership(height, proof, path)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -202,7 +204,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).update_client(clock, client_msg, relayer)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -218,7 +220,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).latest_height()
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -238,7 +240,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_membership(height, proof, key, value)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -250,7 +252,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_client_state()
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 
@@ -263,7 +265,7 @@ module ibc::light_client {
         if (client_type.as_bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_consensus_state(height)
         } else {
-            abort E_CLIENT_TYPE_NOT_SUPPORTED
+            abort EClientTypeNotSupported
         }
     }
 }

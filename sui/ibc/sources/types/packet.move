@@ -62,6 +62,9 @@ module ibc::packet {
     use sui::address;
     use sui::bcs;
 
+    const EBase: u64 = 10600;
+    const EInvalidMaxLen: u64 = EBase + 1;
+
     public struct Packet has copy, store, drop {
         source_channel_id: u32,
         destination_channel_id: u32,
@@ -69,7 +72,6 @@ module ibc::packet {
         timeout_height: u64,
         timeout_timestamp: u64
     }
-
 
     public fun source_channel_id(packet: &Packet): u32 {
         packet.source_channel_id
@@ -126,7 +128,7 @@ module ibc::packet {
     /// This is a big hack to efficiently encode in ethabi. The struct here is formed in a way that the encoding will
     /// have the same alignment and the length as the ethabi encoding. But it still requires some modifications, so
     /// make sure to call `apply_post_encoding_adjustments` after encoding this.
-    public fun to_bcs_repr(packet: &Packet): PacketBcs {
+    public(package) fun to_bcs_repr(packet: &Packet): PacketBcs {
         let data_len = packet.data.length();
         let mod = data_len % 32;
         PacketBcs {
@@ -165,7 +167,7 @@ module ibc::packet {
                 } else if (data_len > 0x0F_FF_FF_FF && data_len <= 0xFF_FF_FF_FF) {
                     x"0000000000000000000000000000000000000000000000000000"
                 } else {
-                    abort 1
+                    abort EInvalidMaxLen
                 }
             },
             data: {
@@ -201,7 +203,7 @@ module ibc::packet {
     /// - `encoded`: bcs encoded data that contains or is `PacketBcs`
     /// - `data_len`: length of the packet data
     /// - `offset`: offset in the encoded data where this packet encoding starts (check `PacketCommitmentBcs`)
-    public fun apply_post_encoding_adjustments(encoded: &mut vector<u8>, data_len: u64, offset: u64) {
+    public(package) fun apply_post_encoding_adjustments(encoded: &mut vector<u8>, data_len: u64, offset: u64) {
         // `vec_size_offset` is a vector, hence the encoding prefixes its length. We get rid of that since we need all zeroes
         // before the actual data length prefix.
         *encoded.borrow_mut(offset + 0x20 * 5) = 0;     
@@ -251,13 +253,12 @@ module ibc::packet {
         };
     }
 
-    public fun encoded_length(packet: &PacketBcs): u64 {
+    public(package) fun encoded_length(packet: &PacketBcs): u64 {
         let mut len = 0x20 * 6 + packet.data.length();
         let rem = len % 32;
         if (rem != 0) {
             len = len + (32 - rem);
         };
-        std::debug::print(&(len % 32));
         len
     }
 

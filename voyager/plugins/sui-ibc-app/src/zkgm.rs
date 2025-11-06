@@ -73,7 +73,7 @@ pub fn begin_recv_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("begin_recv").into(),
         vec![],
         arguments,
@@ -85,7 +85,6 @@ pub fn recv_packet_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: &ModuleInfo,
-    zkgm_store_initial_seq: SequenceNumber,
     owned_vault_object_id: ObjectID,
     owned_vault_store_initial_seq: SequenceNumber,
     escrow_vault_object_id: ObjectID,
@@ -102,8 +101,8 @@ pub fn recv_packet_call(
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: zkgm_store_initial_seq,
+            id: module_info.stores[0].0.into(),
+            initial_shared_version: module_info.stores[0].1,
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
@@ -127,7 +126,7 @@ pub fn recv_packet_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("recv_packet").into(),
         vec![coin_t],
         arguments,
@@ -148,6 +147,11 @@ pub fn end_recv_call(
             initial_shared_version: module.ibc_store_initial_seq,
             mutable: true,
         }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].0.into(),
+            initial_shared_version: module_info.stores[0].1,
+            mutable: false,
+        }),
         SUI_CALL_ARG_CLOCK,
         (&data.proof.into_vec()).into(),
         data.proof_height.into(),
@@ -161,7 +165,7 @@ pub fn end_recv_call(
 
     let _ = ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("end_recv").into(),
         vec![],
         arguments,
@@ -202,7 +206,7 @@ pub fn begin_ack_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("begin_ack").into(),
         vec![],
         arguments,
@@ -214,7 +218,6 @@ pub fn acknowledge_packet_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: &ModuleInfo,
-    zkgm_store_initial_seq: SequenceNumber,
     owned_vault_object_id: ObjectID,
     owned_vault_store_initial_seq: SequenceNumber,
     escrow_vault_object_id: ObjectID,
@@ -230,8 +233,8 @@ pub fn acknowledge_packet_call(
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: zkgm_store_initial_seq,
+            id: module_info.stores[0].0.into(),
+            initial_shared_version: module_info.stores[0].1,
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
@@ -253,7 +256,7 @@ pub fn acknowledge_packet_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("acknowledge_packet").into(),
         vec![coin_t],
         arguments,
@@ -274,6 +277,11 @@ pub fn end_ack_call(
             initial_shared_version: module.ibc_store_initial_seq,
             mutable: true,
         }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].0.into(),
+            initial_shared_version: module_info.stores[0].1,
+            mutable: false,
+        }),
         (&data.proof.into_vec()).into(),
         data.proof_height.into(),
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
@@ -285,7 +293,7 @@ pub fn end_ack_call(
 
     let _ = ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("end_ack").into(),
         vec![],
         arguments,
@@ -311,7 +319,7 @@ pub fn begin_timeout_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("begin_timeout").into(),
         vec![],
         arguments,
@@ -323,7 +331,6 @@ pub fn timeout_packet_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: &ModuleInfo,
-    zkgm_store_initial_seq: SequenceNumber,
     vault_object_id: ObjectID,
     vault_store_initial_seq: SequenceNumber,
     coin_t: TypeTag,
@@ -336,13 +343,13 @@ pub fn timeout_packet_call(
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
-            id: vault_object_id,
-            initial_shared_version: vault_store_initial_seq,
+            id: module_info.stores[0].0.into(),
+            initial_shared_version: module_info.stores[0].1,
             mutable: true,
         }),
         CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: zkgm_store_initial_seq,
+            id: vault_object_id,
+            initial_shared_version: vault_store_initial_seq,
             mutable: true,
         }),
     ]
@@ -353,7 +360,7 @@ pub fn timeout_packet_call(
 
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("timeout_packet").into(),
         vec![coin_t],
         arguments,
@@ -373,6 +380,11 @@ pub fn end_timeout_call(
             initial_shared_version: module.ibc_store_initial_seq,
             mutable: true,
         }),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].0.into(),
+            initial_shared_version: module_info.stores[0].1,
+            mutable: false,
+        }),
         (&data.proof.into_vec()).into(),
         data.proof_height.into(),
     ]
@@ -383,7 +395,7 @@ pub fn end_timeout_call(
 
     let _ = ptb.command(Command::move_call(
         module_info.latest_address.into(),
-        module_info.module_name.clone(),
+        ident_str!("zkgm").into(),
         ident_str!("end_timeout").into(),
         vec![],
         arguments,

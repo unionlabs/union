@@ -63,32 +63,26 @@ module ibc::ibc_connection {
     use sui::table::Table;
 
     use ibc::commitment;
-    use ibc::connection_end::{Self, ConnectionEnd};
+    use ibc::connection::{Self, Connection};
+    use ibc::connection_state;
     use ibc::events;
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
-    const E_CLIENT_NOT_ACTIVE: u64 = 2;
-    const E_INVALID_CONNECTION_STATE: u64 = 3;
-
-    const CONN_STATE_INIT: u8 = 1;
-    const CONN_STATE_TRYOPEN: u8 = 2;
-    const CONN_STATE_OPEN: u8 = 3;
+    const EBase: u64 = 10200;
+    const EInvalidConnectionState: u64 = EBase + 1;
 
     public(package) fun connection_open_init(
         ibc_uid: &mut UID,
-        client_mgr: &LightClientManager,
-        connections: &mut Table<u32, ConnectionEnd>,
+        connections: &mut Table<u32, Connection>,
         client_id: u32,
         counterparty_client_id: u32
     ) {
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
         let connection_id = (connections.length() as u32) + 1;
 
         let connection =
-            connection_end::new(
-                CONN_STATE_INIT,
+            connection::new(
+                connection_state::new_init(),
                 client_id,
                 counterparty_client_id,
                 0
@@ -108,20 +102,18 @@ module ibc::ibc_connection {
     public(package) fun connection_open_try(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &mut Table<u32, ConnectionEnd>,
+        connections: &mut Table<u32, Connection>,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
         client_id: u32,
         proof_init: vector<u8>,
         proof_height: u64
     ) {
-        assert!(client_mgr.status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
         let connection_id = (connections.length() as u32) + 1;
 
         let connection =
-            connection_end::new(
-                CONN_STATE_TRYOPEN,
+            connection::new(
+                connection_state::new_try_open(),
                 client_id,
                 counterparty_client_id,
                 counterparty_connection_id
@@ -129,8 +121,8 @@ module ibc::ibc_connection {
 
         // Construct the expected connection state to verify against the proof
         let expected_connection =
-            connection_end::new(
-                CONN_STATE_INIT,
+            connection::new(
+                connection_state::new_init(),
                 counterparty_client_id,
                 client_id,
                 0 // counterparty_connection_id
@@ -164,7 +156,7 @@ module ibc::ibc_connection {
     public(package) fun connection_open_ack(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &mut Table<u32, ConnectionEnd>,
+        connections: &mut Table<u32, Connection>,
         connection_id: u32,
         counterparty_connection_id: u32,
         proof_try: vector<u8>,
@@ -174,14 +166,14 @@ module ibc::ibc_connection {
 
         // assert that this connection is at the `INIT` phase
         assert!(
-            connection.state() == CONN_STATE_INIT,
-            E_INVALID_CONNECTION_STATE
+            connection.state() == connection_state::new_init(),
+            EInvalidConnectionState
         );
 
         // Create the expected connection state to verify against the proof
         let expected_connection =
-            connection_end::new(
-                CONN_STATE_TRYOPEN,
+            connection::new(
+                connection_state::new_try_open(),
                 connection.counterparty_client_id(),
                 connection.client_id(),
                 connection_id
@@ -199,8 +191,8 @@ module ibc::ibc_connection {
             );
         assert!(res == 0, res);
 
-        // Update the connection state to TRYOPEN and set the counterparty connection ID
-        connection.set_state(CONN_STATE_OPEN);
+        // Update the connection state to OPEN and set the counterparty connection ID
+        connection.set_state(connection_state::new_open());
         connection.set_counterparty_connection_id(counterparty_connection_id);
 
         events::emit_connection_open_ack(
@@ -217,21 +209,21 @@ module ibc::ibc_connection {
     public(package) fun connection_open_confirm(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &mut Table<u32, ConnectionEnd>,
+        connections: &mut Table<u32, Connection>,
         connection_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64
     ) {
         let connection = connections.borrow_mut(connection_id);
         assert!(
-            connection.state() == CONN_STATE_TRYOPEN,
-            E_INVALID_CONNECTION_STATE
+            connection.state() == connection_state::new_try_open(),
+            EInvalidConnectionState
         );
 
         // Create the expected connection state in the `OPEN` state to verify against the proof
         let expected_connection =
-            connection_end::new(
-                CONN_STATE_OPEN,
+            connection::new(
+                connection_state::new_open(),
                 connection.counterparty_client_id(),
                 connection.client_id(),
                 connection_id
@@ -252,7 +244,7 @@ module ibc::ibc_connection {
         assert!(res == 0, res);
 
         // Update the connection state to OPEN
-        connection.set_state(CONN_STATE_OPEN);
+        connection.set_state(connection_state::new_open());
 
         // Emit an event for connection confirmation
         events::emit_connection_open_confirm(
@@ -267,9 +259,9 @@ module ibc::ibc_connection {
     }
 
     fun commit_connection(
-        ibc_uid: &mut UID, connection_id: u32, connection: ConnectionEnd
+        ibc_uid: &mut UID, connection_id: u32, connection: Connection
     ) {
-        state::commit(
+        state::add_or_update_commitment(
             ibc_uid,
             commitment::connection_commitment_key(connection_id),
             keccak256(&connection.encode())
@@ -282,7 +274,7 @@ module ibc::ibc_connection {
         height: u64,
         proof: vector<u8>,
         connection_id: u32,
-        counterparty_connection: ConnectionEnd
+        counterparty_connection: Connection
     ): u64 {
         client_mgr.verify_membership(
             client_id,

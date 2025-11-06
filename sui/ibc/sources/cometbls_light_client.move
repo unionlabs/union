@@ -61,7 +61,7 @@
 module ibc::cometbls_light_client {
     use std::string::{Self, String};
     use sui::table::{Self, Table};
-    use sui::clock;
+    use sui::clock::Clock;
     use sui::bcs::{Self, BCS};
     use ibc::ethabi;
     use ibc::height::{Self, Height};
@@ -69,18 +69,19 @@ module ibc::cometbls_light_client {
     use ibc::ics23;
     use ibc::groth16_verifier::{Self, ZKP};
 
-    // const E_INVALID_CLIENT_STATE: u64 = 35100;
-    const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
-    const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
-    const E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT: u64 = 35103;
-    const E_HEADER_EXCEEDED_TRUSTING_PERIOD: u64 = 35104;
-    const E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT: u64 = 35105;
-    const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
-    const E_INVALID_ZKP: u64 = 35107;
-    const E_FROZEN_CLIENT: u64 = 35108;
-    // const E_INVALID_MISBEHAVIOUR: u64 = 35109;
+    const EBase: u64 = 20100;
+    const EConsensusStateTimestampZero: u64 = EBase + 1;
+    const ESignedHeaderHeightNotMoreRecent: u64 = EBase + 2;
+    const ESignedHeaderTimestampNotMoreRecent: u64 = EBase + 3;
+    const EHeaderExceededTrustingPeriod: u64 = EBase + 4;
+    const EHeaderExceededMaxClockDrift: u64 = EBase + 5;
+    const EValidatorsHashMismatch: u64 = EBase + 6;
+    const EInvalidZkp: u64 = EBase + 7;
+    const EFrozenClient: u64 = EBase + 8;
+    const EConsensusStateNotFound: u64 = EBase + 9;
 
-    const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
+    const STATUS_ACTIVE: u64 = 1;
+    const STATUS_EXPIRED: u64 = 2;
 
     public struct Client has key, store {
         id: UID,
@@ -156,9 +157,20 @@ module ibc::cometbls_light_client {
     }
 
     public(package) fun status(
-        _client: &Client,
+        client: &Client,
+        clock: &Clock,
     ): u64 {
-        0
+        let consensus_state = client.consensus_states.borrow(client.client_state.latest_height.get_revision_height());
+
+        if (is_client_expired(
+            consensus_state.timestamp,
+            client.client_state.trusting_period,
+            clock,
+        )) {
+            return STATUS_EXPIRED
+        };
+
+        STATUS_ACTIVE
     }
 
     public(package) fun check_for_misbehaviour(_client: &Client, _header: vector<u8>): bool {
@@ -238,16 +250,16 @@ module ibc::cometbls_light_client {
     }
 
     public(package) fun verify_header(
-        client: &Client, clock: &clock::Clock, header: &Header, consensus_state: &ConsensusState
+        client: &Client, clock: &Clock, header: &Header, consensus_state: &ConsensusState
     ) {
-        assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
+        assert!(consensus_state.timestamp != 0, EConsensusStateTimestampZero);
 
         let untrusted_height_number = header.signed_header.height;
-        let trusted_height_number = height::get_revision_height(&header.trusted_height);
+        let trusted_height_number = header.trusted_height.get_revision_height();
 
         assert!(
             untrusted_height_number > trusted_height_number,
-            E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
+            ESignedHeaderHeightNotMoreRecent
         );
 
         let trusted_timestamp = consensus_state.timestamp;
@@ -256,25 +268,25 @@ module ibc::cometbls_light_client {
                 + (header.signed_header.time.nanos as u64);
         assert!(
             untrusted_timestamp > trusted_timestamp,
-            E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
+            ESignedHeaderTimestampNotMoreRecent
         );
 
-        let current_time = clock::timestamp_ms(clock) * 1_000_000;
         assert!(
-            untrusted_timestamp < current_time + client.client_state.trusting_period,
-            E_HEADER_EXCEEDED_TRUSTING_PERIOD
+            !is_client_expired(trusted_timestamp, client.client_state.trusting_period, clock),
+            EHeaderExceededTrustingPeriod
         );
 
+        let current_time = clock.timestamp_ms() * 1_000_000;
         assert!(
             untrusted_timestamp < current_time + client.client_state.max_clock_drift,
-            E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
+            EHeaderExceededMaxClockDrift
         );
 
         if (untrusted_height_number == trusted_height_number + 1) {
             assert!(
                 header.signed_header.validators_hash
                     == consensus_state.next_validators_hash,
-                E_VALIDATORS_HASH_MISMATCH
+                EValidatorsHashMismatch
             );
         };
 
@@ -285,18 +297,18 @@ module ibc::cometbls_light_client {
                 light_header_as_input_hash(&header.signed_header),
                 &header.zero_knowledge_proof
             ),
-            E_INVALID_ZKP
+            EInvalidZkp
         );
     }
 
 
     public(package) fun update_client(
-        client: &mut Client, clock: &clock::Clock, client_msg: vector<u8>, _relayer: address
+        client: &mut Client, clock: &Clock, client_msg: vector<u8>, _relayer: address
     ): (vector<u8>, vector<u8>, u64) {
         // TODO(aeryz): handle consensus state exist case
         let header = decode_header(client_msg);
 
-        assert!(client.client_state.frozen_height.is_zero(), E_FROZEN_CLIENT);
+        assert!(client.client_state.frozen_height.is_zero(), EFrozenClient);
 
         let consensus_state = client.consensus_states.borrow(height::get_revision_height(&header.trusted_height));
 
@@ -342,10 +354,6 @@ module ibc::cometbls_light_client {
         key: vector<u8>,
         value: vector<u8>
     ): u64 {
-        if (client.status() != 0) {
-            abort E_FROZEN_CLIENT
-        };
-
         let consensus_state = client.consensus_states.borrow(height);
 
         let mut path = vector<u8>[0x03];
@@ -371,10 +379,6 @@ module ibc::cometbls_light_client {
         proof: vector<u8>,
         key: vector<u8>
     ): u64 {
-        if (client.status() != 0) {
-            abort E_FROZEN_CLIENT
-        };
-
         let consensus_state = client.consensus_states.borrow(height);
 
         let mut path = vector<u8>[0x03];
@@ -403,10 +407,18 @@ module ibc::cometbls_light_client {
         height: u64,
     ): vector<u8> {
         if (!client.consensus_states.contains(height)) {
-            abort E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE
+            abort EConsensusStateNotFound
         };
         let consensus_state = client.consensus_states.borrow(height);
         encode_consensus_state(consensus_state)
+    }
+
+    fun is_client_expired(
+        consensus_state_timestamp: u64,
+        trusting_period: u64,
+        clock: &Clock
+    ): bool {
+        (consensus_state_timestamp + trusting_period) < (clock.timestamp_ms() * 1_000_000)
     }
 
     fun decode_header(buf: vector<u8>): Header {
@@ -463,7 +475,7 @@ module ibc::cometbls_light_client {
     fun test_decode_consensus() {
         let buf =
             x"0000000000000000000000000000000000000000000000001810cfdefbacb17df5631a5398a5443f5c858e3f8d4ffb2ddd5fa325d9f825572e1a0d302f7c9c092f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
-        let consensus = decode_consensus_state(buf);
+        decode_consensus_state(buf);
     }
 
     #[test]

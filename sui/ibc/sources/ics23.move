@@ -63,25 +63,25 @@ module ibc::ics23 {
 
     use sui::bcs::{Self, BCS};
 
-    const E_EMPTY_LEAF_PREFIX: u64 = 35200;
-    // const E_EMPTY_LEAF_KEY: u64 = 35201;
-    const E_EMPTY_INNER_KEY: u64 = 35202;
-    const E_EMPTY_CHILD: u64 = 35203;
-    const E_PROOF_KEY_MISMATCH: u64 = 35204;
-    const E_PROOF_VALUE_MISMATCH: u64 = 35205;
-    const E_COMMITMENT_ROOT_MISMATCH: u64 = 35206;
-    const E_INVALID_LEAF_PREFIX: u64 = 35207;
-    const E_INVALID_INNER_PREFIX: u64 = 35208;
-    const E_EMPTY_INNER_VALUE: u64 = 35209;
-    const E_EMPTY_PROOF: u64 = 35210;
-    const E_LEFT_AND_RIGHT_KEY_EMPTY: u64 = 35211;
-    const E_RIGHT_KEY_RANGE: u64 = 35212;
-    const E_LEFT_KEY_RANGE: u64 = 35213;
-    const E_RIGHT_PROOF_LEFT_MOST: u64 = 35214;
-    const E_LEFT_PROOF_RIGHT_MOST: u64 = 35215;
-    const E_IS_LEFT_NEIGHBOR: u64 = 35216;
-    const E_ORDER_PADDING_NOT_FOUND: u64 = 35217;
-    const E_ROOT_MISMATCH: u64 = 35218;
+    const EBase: u64 = 20200;
+    const EEmptyLeafPrefix: u64 = EBase + 1;
+    const EEmptyInnerKey: u64 = EBase + 2;
+    const EEmptyChild: u64 = EBase + 3;
+    const EProofKeyMismatch: u64 = EBase + 4;
+    const EProofValueMismatch: u64 = EBase + 5;
+    const ECommitmentRootMismatch: u64 = EBase + 6;
+    const EInvalidLeafPrefix: u64 = EBase + 7;
+    const EInvalidInnerPrefix: u64 = EBase + 8;
+    const EEmptyInnerValue: u64 = EBase + 9;
+    const EEmptyProof: u64 = EBase + 10;
+    const ELeftAndRightKeyEmpty: u64 = EBase + 11;
+    const ERightKeyRange: u64 = EBase + 12;
+    const ELeftKeyRange: u64 = EBase + 13;
+    const ERightProofLeftMost: u64 = EBase + 14;
+    const ELeftProofRightMost: u64 = EBase + 15;
+    const EIsLeftNeighbor: u64 = EBase + 16;
+    const EOrderPaddingNotFound: u64 = EBase + 17;
+    const ERootMismatch: u64 = EBase + 18;
 
     public struct MembershipProof has drop {
         sub_proof: ExistenceProof,
@@ -170,7 +170,7 @@ module ibc::ics23 {
         let subroot2 = calculate_existence_root(&proof.existence_proof);
 
         if (root != subroot2) {
-            abort E_ROOT_MISMATCH
+            abort ERootMismatch
         };
     }
 
@@ -181,15 +181,15 @@ module ibc::ics23 {
         key: vector<u8>,
         value: vector<u8>
     ) {
-        assert!(key == proof.key, E_PROOF_KEY_MISMATCH);
+        assert!(key == proof.key, EProofKeyMismatch);
 
-        assert!(value == proof.value, E_PROOF_VALUE_MISMATCH);
+        assert!(value == proof.value, EProofValueMismatch);
 
         check_against_spec(proof, proof_spec);
 
         let root = calculate_existence_root(proof);
 
-        assert!(root == commitment_root, E_COMMITMENT_ROOT_MISMATCH);
+        assert!(root == commitment_root, ECommitmentRootMismatch);
     }
 
     fun verify_no_root_check(
@@ -198,9 +198,9 @@ module ibc::ics23 {
         key: vector<u8>,
         value: vector<u8>
     ) {
-        assert!(key == proof.key, E_PROOF_KEY_MISMATCH);
+        assert!(key == proof.key, EProofKeyMismatch);
 
-        assert!(value == proof.value, E_PROOF_VALUE_MISMATCH);
+        assert!(value == proof.value, EProofValueMismatch);
 
         check_against_spec(proof, proof_spec);
     }
@@ -236,38 +236,38 @@ module ibc::ics23 {
         };
 
         if (proof.left.is_none() && proof.right.is_none()) {
-            abort E_LEFT_AND_RIGHT_KEY_EMPTY
+            abort ELeftAndRightKeyEmpty
         };
 
         if (proof.right.is_some() && compare(&key, &proof.right.borrow().key) >= 1) {
-            abort E_RIGHT_KEY_RANGE
+            abort ERightKeyRange
         };
 
         if (proof.left.is_some() && compare(&key, &proof.left.borrow().key) <= 1) {
-            abort E_LEFT_KEY_RANGE
+            abort ELeftKeyRange
         };
 
         if (proof.left.is_none()) {
             let proof_right = proof.right.borrow();
             if (!is_left_most(proof_spec, &proof_right.path, proof_right.path.length())) {
-                abort E_RIGHT_PROOF_LEFT_MOST
+                abort ERightProofLeftMost
             };
         } else if (proof.right.is_none()) {
             let proof_left = proof.left.borrow();
             if (!is_right_most(proof_spec, &proof_left.path, proof_left.path.length())) {
-                abort E_LEFT_PROOF_RIGHT_MOST
+                abort ELeftProofRightMost
             };
         } else {
             if (!is_left_neighbor(proof_spec, &proof.left.borrow().path, &proof.right.borrow().path)) {
-                abort E_IS_LEFT_NEIGHBOR
+                abort EIsLeftNeighbor
             };
         };
     }
 
     fun check_against_spec(proof: &ExistenceProof, proof_spec: &ProofSpec) {
-        assert!(!vector::is_empty(&proof.leaf_prefix), E_EMPTY_LEAF_PREFIX);
+        assert!(!vector::is_empty(&proof.leaf_prefix), EEmptyLeafPrefix);
 
-        assert!(*vector::borrow(&proof.leaf_prefix, 0) == 0, E_INVALID_LEAF_PREFIX);
+        assert!(*vector::borrow(&proof.leaf_prefix, 0) == 0, EInvalidLeafPrefix);
 
         let max = proof_spec.max_prefix_length + proof_spec.child_size;
         let mut i = 0;
@@ -277,7 +277,7 @@ module ibc::ics23 {
                 vector::length(&inner_op.prefix) >= proof_spec.min_prefix_length
                     && *vector::borrow(&inner_op.prefix, 0) != 0
                     || vector::length(&inner_op.prefix) <= max,
-                E_INVALID_INNER_PREFIX
+                EInvalidInnerPrefix
             );
 
             i = i + 1;
@@ -285,7 +285,7 @@ module ibc::ics23 {
     }
 
     fun calculate_existence_root(proof: &ExistenceProof): vector<u8> {
-        assert!(!vector::is_empty(&proof.leaf_prefix), E_EMPTY_LEAF_PREFIX);
+        assert!(!vector::is_empty(&proof.leaf_prefix), EEmptyLeafPrefix);
 
         let mut root = apply_leaf_op(&proof.leaf_prefix, &proof.key, &proof.value);
 
@@ -307,15 +307,15 @@ module ibc::ics23 {
             return calculate_existence_root(proof.right.borrow())
         };
         
-        abort E_EMPTY_PROOF
+        abort EEmptyProof
     }
 
     fun apply_leaf_op(
         prefix: &vector<u8>, key: &vector<u8>, value: &vector<u8>
     ): vector<u8> {
-        assert!(!vector::is_empty(key), E_EMPTY_INNER_KEY);
+        assert!(!vector::is_empty(key), EEmptyInnerKey);
 
-        assert!(!vector::is_empty(value), E_EMPTY_INNER_VALUE);
+        assert!(!vector::is_empty(value), EEmptyInnerValue);
 
         let encoded_key = encode_varint(vector::length(key));
 
@@ -333,7 +333,7 @@ module ibc::ics23 {
     }
 
     fun apply_inner_op(inner_op: InnerOp, child: vector<u8>): vector<u8> {
-        assert!(!vector::is_empty(&child), E_EMPTY_CHILD);
+        assert!(!vector::is_empty(&child), EEmptyChild);
 
         let mut pre_image = inner_op.prefix;
         vector::append(&mut pre_image, child);
@@ -487,7 +487,7 @@ module ibc::ics23 {
             branch = branch + 1;
         };
 
-        abort E_ORDER_PADDING_NOT_FOUND
+        abort EOrderPaddingNotFound
     }
 
     fun get_padding(

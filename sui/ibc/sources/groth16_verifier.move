@@ -104,7 +104,7 @@ module ibc::groth16_verifier {
         inner_commitment: vector<u8>
     }
 
-    public fun verify_zkp(
+    public(package) fun verify_zkp(
         chain_id: &String,
         trusted_validators_hash: &vector<u8>,
         light_header_hash: vector<u8>,

@@ -1,14 +1,15 @@
+
 // License text copyright (c) 2020 MariaDB Corporation Ab, All Rights Reserved.
 // "Business Source License" is a trademark of MariaDB Corporation Ab.
 
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,81 +59,50 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::state {
-    use sui::bcs;
-    use sui::dynamic_field as df;
+module ibc::connection_state {
 
-    const COMMITMENT: u8 = 0x1;
-    const COMMITMENT_TO_DIGEST: u8 = 0x2;
-    const CHANNEL_TO_PORT: u8 = 0x3;
+    const EBase: u64 = 10800;
+    const EInvalidConnectionState: u64 = EBase + 1;
 
-    public struct PrefixedKey<T: drop> has drop {
-        prefix: u8,
-        key: T
+    public enum ConnectionState has copy, drop, store {
+        Unspecified,
+        Init,
+        TryOpen,
+        Open,
     }
 
-    /// Commitments storage
-    public(package) fun commit(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
-    ) {
-        df::add(id, prefixed_key(COMMITMENT, key), value);
+    public fun new_unspecified(): ConnectionState {
+        ConnectionState::Unspecified
     }
 
-    public(package) fun has_commitment(id: &UID, key: vector<u8>): bool {
-        df::exists_(id, prefixed_key(COMMITMENT, key))
+    public fun new_init(): ConnectionState {
+        ConnectionState::Init
     }
 
-    public(package) fun borrow_commitment(id: &UID, key: vector<u8>): &vector<u8> {
-        df::borrow(id, prefixed_key(COMMITMENT, key))
+    public fun new_try_open(): ConnectionState {
+        ConnectionState::TryOpen
     }
 
-    public(package) fun borrow_commitment_mut(
-        id: &mut UID, key: vector<u8>
-    ): &mut vector<u8> {
-        df::borrow_mut(id, prefixed_key(COMMITMENT, key))
+    public fun new_open(): ConnectionState {
+        ConnectionState::Open
     }
 
-    public(package) fun add_or_update_commitment(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
-    ) {
-        if (has_commitment(id, key)) {
-            *borrow_commitment_mut(id, key) = value;
-        } else {
-            commit(id, key, value);
-        };
+    public fun to_u8(state: &ConnectionState): u8 {
+        match (state) {
+            ConnectionState::Unspecified => 0,
+            ConnectionState::Init => 1,
+            ConnectionState::TryOpen => 2,
+            ConnectionState::Open => 3,
+        }
     }
 
-    /// Commitment-to-digest storage
-    public(package) fun add_commitment_to_digest(
-        id: &mut UID, commitment: vector<u8>, digest: vector<u8>
-    ) {
-        df::add(
-            id,
-            prefixed_key(COMMITMENT_TO_DIGEST, commitment),
-            digest
-        );
-    }
-
-    /// Channel-to-port storage
-    public(package) fun add_channel_to_port(
-        id: &mut UID, channel: u32, port: address
-    ) {
-        df::add(
-            id,
-            prefixed_key(CHANNEL_TO_PORT, channel),
-            port
-        );
-    }
-
-    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): address {
-        *df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
-    }
-
-    public(package) fun has_channel_to_port(id: &UID, channel: u32): bool {
-        df::exists_(id, prefixed_key(CHANNEL_TO_PORT, channel))
-    }
-
-    fun prefixed_key<K: drop>(prefix: u8, key: K): vector<u8> {
-        bcs::to_bytes(&PrefixedKey { prefix, key })
+    public fun from_u8(state: u8): ConnectionState {
+        match (state) {
+            0 => ConnectionState::Unspecified,
+            1 => ConnectionState::Init,
+            2 => ConnectionState::TryOpen,
+            3 => ConnectionState::Open,
+            _ => abort EInvalidConnectionState,
+        }
     }
 }

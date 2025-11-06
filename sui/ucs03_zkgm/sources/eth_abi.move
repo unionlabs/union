@@ -62,11 +62,11 @@ module zkgm::zkgm_ethabi {
     use sui::bcs;
     use std::string::{Self, String};
 
-    public fun encode_string(buf: &mut vector<u8>, str: &String) {
+    public(package) fun encode_string(buf: &mut vector<u8>, str: &String) {
         encode_bytes(buf, std::string::as_bytes(str))
     }
 
-    public fun encode_bytes(buf: &mut vector<u8>, bytes: &vector<u8>) {
+    public(package) fun encode_bytes(buf: &mut vector<u8>, bytes: &vector<u8>) {
         let len = vector::length(bytes);
         let mut len_bytes = bcs::to_bytes(&(len as u256));
         vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
@@ -86,7 +86,7 @@ module zkgm::zkgm_ethabi {
         vector::append(buf, padding);
     }
 
-    public fun encode_bytes32(buf: &mut vector<u8>, bytes: &vector<u8>) {
+    public(package) fun encode_bytes32(buf: &mut vector<u8>, bytes: &vector<u8>) {
         let len = vector::length(bytes);
         vector::append(buf, *bytes);
 
@@ -102,7 +102,7 @@ module zkgm::zkgm_ethabi {
         vector::append(buf, padding);
     }
 
-    public fun decode_bytes32(buf: &vector<u8>, index: &mut u64): vector<u8> {
+    public(package) fun decode_bytes32(buf: &vector<u8>, index: &mut u64): vector<u8> {
         // Decode the length of the bytes array
         let len: u64 = 32;
         // Decode the actual bytes
@@ -116,14 +116,14 @@ module zkgm::zkgm_ethabi {
         byte_data // Return the decoded bytes
     }
 
-    public fun decode_bytes_from_offset(buf: &vector<u8>, index: &mut u64): vector<u8> {
+    public(package) fun decode_bytes_from_offset(buf: &vector<u8>, index: &mut u64): vector<u8> {
         let mut i = *index;
         let mut offset = (decode_uint(buf, &mut i) as u64);
         *index = *index + 32;
         decode_bytes(buf, &mut offset)
     }
 
-    public fun decode_string_from_offset(
+    public(package) fun decode_string_from_offset(
         buf: &vector<u8>, index: &mut u64
     ): String {
         let mut i = *index;
@@ -132,7 +132,7 @@ module zkgm::zkgm_ethabi {
         decode_string(buf, &mut offset)
     }
 
-    public fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
+    public(package) fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
         // Decode the length of the bytes array
         let mut len_bytes = vector_slice(buf, *index, *index + 32); // Extract the next 32 bytes for length
         vector::reverse(&mut len_bytes); // Convert to big-endian format
@@ -149,13 +149,13 @@ module zkgm::zkgm_ethabi {
         byte_data // Return the decoded bytes
     }
 
-    public fun encode_address(buf: &mut vector<u8>, addr: address) {
+    public(package) fun encode_address(buf: &mut vector<u8>, addr: address) {
         let sender_bytes = bcs::to_bytes(&addr);
         vector::append(buf, sender_bytes);
     }
 
 
-    public fun vector_slice(buf: &vector<u8>, start: u64, end: u64): vector<u8> {
+    public(package) fun vector_slice(buf: &vector<u8>, start: u64, end: u64): vector<u8> {
         let mut sliced = vector::empty<u8>();
         let mut i = start;
         while (i < end) {
@@ -165,7 +165,7 @@ module zkgm::zkgm_ethabi {
         sliced
     }
 
-    public fun encode_uint<T: copy + store + drop>(
+    public(package) fun encode_uint<T: copy + store + drop>(
         buf: &mut vector<u8>, data: T
     ) {
         // Create a 32-byte vector filled with zeros (u256 is 32 bytes)
@@ -192,7 +192,7 @@ module zkgm::zkgm_ethabi {
         vector::append(buf, padded_bytes);
     }
 
-    public fun decode_uint(buf: &vector<u8>, index: &mut u64): u256 {
+    public(package) fun decode_uint(buf: &vector<u8>, index: &mut u64): u256 {
         // Extract the 32 bytes starting from the current index
         let padded_bytes = vector_slice(buf, *index, *index + 32);
 
@@ -321,12 +321,12 @@ module zkgm::zkgm_ethabi {
         vector::append($buf, rest_buf);
     }
 
-    public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
+    public(package) fun decode_string(buf: &vector<u8>, index: &mut u64): String {
         string::utf8(decode_bytes(buf, index))
     }
 
     // Decoding an Ethereum address (20 bytes)
-    public fun decode_address(buf: &vector<u8>, index: &mut u64): address {
+    public(package) fun decode_address(buf: &vector<u8>, index: &mut u64): address {
         // Read the 20 bytes representing the address
         let addr_bytes = vector_slice(buf, *index, *index + 32);
         *index = *index + 32; // Move the index forward
@@ -336,7 +336,7 @@ module zkgm::zkgm_ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_string() {
+    public(package) fun test_encode_decode_string() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
         let some_str = string::utf8(b"encode string encode string");
 
@@ -348,7 +348,7 @@ module zkgm::zkgm_ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_address() {
+    public(package) fun test_encode_decode_address() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let addr1 = @0x1111111111111111111111111111111111111111;
@@ -366,7 +366,7 @@ module zkgm::zkgm_ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_uint() {
+    public(package) fun test_encode_decode_uint() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let data: u8 = 4;
@@ -388,7 +388,7 @@ module zkgm::zkgm_ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_vector() {
+    public(package) fun test_encode_decode_vector() {
         let mut some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let vector_test_variable: vector<u8> = vector[0x41, 0x51, 0x61];

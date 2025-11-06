@@ -145,7 +145,7 @@ module owned_vault::owned_vault {
             abort 0
         };
 
-        vault.token_type_to_treasury.add(type_name::get<T>().into_string().into_bytes(), TreasuryCapWithMetadata {
+        vault.token_type_to_treasury.add(type_name::with_defining_ids<T>(), TreasuryCapWithMetadata {
             id: object::new(ctx),
             cap: capability,
             metadata: metadata::new(
@@ -167,14 +167,14 @@ module owned_vault::owned_vault {
         beneficiary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let token =  type_name::get<T>().into_string().into_bytes();
+        let token =  type_name::with_defining_ids<T>();
         let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
 
         assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
 
         vault.fungible_counterparties.add(
             FungibleLane {
-                token,
+                token: token.into_string().into_bytes(),
                 path,
                 channel,
                 base_token
@@ -191,7 +191,7 @@ module owned_vault::owned_vault {
         whitelist: bool,
         ctx: &mut TxContext,
     ) {
-        let token = type_name::get<T>().into_string();
+        let token = type_name::with_defining_ids<T>();
         let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(token);
 
         assert!(cap.metadata.owner() == ctx.sender(), E_UNAUTHORIZED);
@@ -200,7 +200,7 @@ module owned_vault::owned_vault {
             assert!(hash.length() == 32, E_INVALID_PACKET_HASH);
 
             let whitelist_key = IntentWhitelistKey {
-                token: token.into_bytes(),
+                token: token.into_string().into_bytes(),
                 packet_hash: hash
             };
 
@@ -229,7 +229,7 @@ module owned_vault::owned_vault {
         intent: bool,
         ctx: &mut TxContext,
     ): (vector<u8>, u64) {
-        if (type_name::get<T>().into_string().into_bytes() != quote_token) {
+        if (type_name::with_defining_ids<T>().into_string().into_bytes() != quote_token) {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
 
@@ -283,7 +283,7 @@ module owned_vault::owned_vault {
     // We could just return a mutable ref to the `TreasuryCap<T>` but it's not allowed in the MoveVM to return a mutable reference
     // from a PTB command.
     public fun release_treasury_cap<T>(vault: &mut OwnedVault, ctx: &TxContext): (TreasuryCap<T>, TreasuryCapReleaseCtx<T>) {
-        let token =  type_name::get<T>().into_string().into_bytes();
+        let token =  type_name::with_defining_ids<T>();
         let cap: TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.remove(token);
 
         assert!(ctx.sender() == cap.metadata.owner(), E_UNAUTHORIZED);
@@ -305,7 +305,7 @@ module owned_vault::owned_vault {
     public fun give_back_treasury_cap<T>(vault: &mut OwnedVault, cap: TreasuryCap<T>, handle: TreasuryCapReleaseCtx<T>, ctx: &mut TxContext) {
         assert!(ctx.sender() == handle.metadata.owner(), E_UNAUTHORIZED);
 
-        let token =  type_name::get<T>().into_string().into_bytes();
+        let token =  type_name::with_defining_ids<T>();
         let TreasuryCapReleaseCtx {
             metadata
         } = handle;
@@ -337,7 +337,7 @@ module owned_vault::owned_vault {
     public fun get_metadata<T>(
         vault: &OwnedVault,
     ): &Metadata {
-        let typename_t = type_name::get<T>().into_string().into_bytes();
+        let typename_t = type_name::with_defining_ids<T>();
         let cap: &TreasuryCapWithMetadata<T> = vault.token_type_to_treasury.borrow(typename_t);
 
         &cap.metadata
@@ -346,7 +346,7 @@ module owned_vault::owned_vault {
     fun borrow_mut_treasury_cap<T>(
         vault: &mut OwnedVault
     ): &mut TreasuryCap<T> {
-        let key = type_name::get<T>().into_string().into_bytes();
+        let key = type_name::with_defining_ids<T>();
         if (!vault.token_type_to_treasury.contains(key)) {
             abort E_NO_TREASURY_CAPABILITY             
         };

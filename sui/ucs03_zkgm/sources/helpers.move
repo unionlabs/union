@@ -63,7 +63,8 @@ module zkgm::helper {
     use sui::bcs;
     use sui::hash;
 
-    const E_INVALID_HOPS: u64 = 2;
+    const EBase: u64 = 35200;
+    const EInvalidHops: u64 = EBase + 1;
 
     const OP_FORWARD: u8 = 0x00;
     const OP_CALL: u8 = 0x01;
@@ -134,7 +135,7 @@ module zkgm::helper {
         };
         let next_hop_index = ((fls(path) / 32) as u8) + 1;
         if (next_hop_index > 7) {
-            abort E_INVALID_HOPS
+            abort EInvalidHops
         };
 
         let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256)
@@ -279,7 +280,7 @@ module zkgm::helper {
     }
 
 
-    #[test, expected_failure(abort_code = 2)]
+    #[test, expected_failure(abort_code = EInvalidHops)]
     fun test_update_channel_path_hop_limit_aborts_on_9th() {
 
         let mut path: u256 = 0;

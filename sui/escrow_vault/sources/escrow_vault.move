@@ -128,7 +128,7 @@ module escrow_vault::escrow_vault {
     
         vault.fungible_counterparties.add(
             FungibleLane {
-                token: type_name::get<T>().into_string().into_bytes(),
+                token: type_name::with_defining_ids<T>().into_string().into_bytes(),
                 path,
                 channel,
                 base_token
@@ -151,7 +151,7 @@ module escrow_vault::escrow_vault {
             assert!(hash.length() == 32, E_INVALID_PACKET_HASH);
 
             let whitelist_key = IntentWhitelistKey {
-                token: type_name::get<T>().into_string().into_bytes(),
+                token: type_name::with_defining_ids<T>().into_string().into_bytes(),
                 packet_hash: hash
             };
 
@@ -180,7 +180,7 @@ module escrow_vault::escrow_vault {
         intent: bool,
         ctx: &mut TxContext,
     ): (vector<u8>, u64) {
-        if (type_name::get<T>().into_string().into_bytes() != quote_token) {
+        if (type_name::with_defining_ids<T>().into_string().into_bytes() != quote_token) {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
 
@@ -232,7 +232,7 @@ module escrow_vault::escrow_vault {
         recipient: address,
         ctx: &mut TxContext
     ) {        
-        let coin: &mut Coin<T> = vault.coin_bag.borrow_mut(type_name::get<T>());
+        let coin: &mut Coin<T> = vault.coin_bag.borrow_mut(type_name::with_defining_ids<T>());
         let coin = coin.split<T>(amount, ctx);
         transfer::public_transfer(coin, recipient);
     }
@@ -242,7 +242,7 @@ module escrow_vault::escrow_vault {
         _: &ZkgmCap,
         coin: Coin<T>,
     ) {        
-        let key = type_name::get<T>();
+        let key = type_name::with_defining_ids<T>();
         if (vault.coin_bag.contains(key)) {
             let self_coin: &mut Coin<T> = vault.coin_bag.borrow_mut(key);
             coin::join(self_coin, coin)

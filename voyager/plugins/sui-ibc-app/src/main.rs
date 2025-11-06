@@ -109,7 +109,6 @@ impl TransactionPluginServer for Module {
     ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
         let owned_vault_store_initial_seq = self
             .get_initial_seq(self.zkgm_config.owned_vault_object_id)
             .await;
@@ -143,7 +142,6 @@ impl TransactionPluginServer for Module {
                 &mut ptb,
                 self,
                 &module_info,
-                store_initial_seq,
                 self.zkgm_config.owned_vault_object_id,
                 owned_vault_store_initial_seq,
                 self.zkgm_config.escrow_vault_object_id,
@@ -172,7 +170,6 @@ impl TransactionPluginServer for Module {
     ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
         let owned_vault_store_initial_seq = self
             .get_initial_seq(self.zkgm_config.owned_vault_object_id)
             .await;
@@ -194,7 +191,6 @@ impl TransactionPluginServer for Module {
                 &mut ptb,
                 self,
                 &module_info,
-                store_initial_seq,
                 self.zkgm_config.owned_vault_object_id,
                 owned_vault_store_initial_seq,
                 self.zkgm_config.escrow_vault_object_id,
@@ -218,7 +214,6 @@ impl TransactionPluginServer for Module {
     ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let store_initial_seq = self.get_initial_seq(module_info.stores[0].into()).await;
         let vault_store_initial_seq = self
             .get_initial_seq(self.zkgm_config.owned_vault_object_id)
             .await;
@@ -236,7 +231,6 @@ impl TransactionPluginServer for Module {
                 &mut ptb,
                 self,
                 &module_info,
-                store_initial_seq,
                 self.zkgm_config.owned_vault_object_id,
                 vault_store_initial_seq,
                 coin_t,

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,81 +58,57 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::state {
-    use sui::bcs;
-    use sui::dynamic_field as df;
+module ibc::channel_state {
 
-    const COMMITMENT: u8 = 0x1;
-    const COMMITMENT_TO_DIGEST: u8 = 0x2;
-    const CHANNEL_TO_PORT: u8 = 0x3;
+    const EBase: u64 = 10700;
+    const EInvalidChannelState: u64 = EBase + 1;
 
-    public struct PrefixedKey<T: drop> has drop {
-        prefix: u8,
-        key: T
+    public enum ChannelState has copy, drop, store {
+        Uninitialized,
+        Init,
+        TryOpen,
+        Open,
+        Closed,
     }
 
-    /// Commitments storage
-    public(package) fun commit(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
-    ) {
-        df::add(id, prefixed_key(COMMITMENT, key), value);
+    public fun new_uninitialized(): ChannelState {
+        ChannelState::Uninitialized
     }
 
-    public(package) fun has_commitment(id: &UID, key: vector<u8>): bool {
-        df::exists_(id, prefixed_key(COMMITMENT, key))
+    public fun new_init(): ChannelState {
+        ChannelState::Init
     }
 
-    public(package) fun borrow_commitment(id: &UID, key: vector<u8>): &vector<u8> {
-        df::borrow(id, prefixed_key(COMMITMENT, key))
+    public fun new_try_open(): ChannelState {
+        ChannelState::TryOpen
     }
 
-    public(package) fun borrow_commitment_mut(
-        id: &mut UID, key: vector<u8>
-    ): &mut vector<u8> {
-        df::borrow_mut(id, prefixed_key(COMMITMENT, key))
+    public fun new_open(): ChannelState {
+        ChannelState::Open
     }
 
-    public(package) fun add_or_update_commitment(
-        id: &mut UID, key: vector<u8>, value: vector<u8>
-    ) {
-        if (has_commitment(id, key)) {
-            *borrow_commitment_mut(id, key) = value;
-        } else {
-            commit(id, key, value);
-        };
+    public fun new_closed(): ChannelState {
+        ChannelState::Closed
     }
 
-    /// Commitment-to-digest storage
-    public(package) fun add_commitment_to_digest(
-        id: &mut UID, commitment: vector<u8>, digest: vector<u8>
-    ) {
-        df::add(
-            id,
-            prefixed_key(COMMITMENT_TO_DIGEST, commitment),
-            digest
-        );
+    public fun to_u8(state: &ChannelState): u8 {
+        match (state) {
+            ChannelState::Uninitialized => 0,
+            ChannelState::Init => 1,
+            ChannelState::TryOpen => 2,
+            ChannelState::Open => 3,
+            ChannelState::Closed => 4,
+        }
     }
 
-    /// Channel-to-port storage
-    public(package) fun add_channel_to_port(
-        id: &mut UID, channel: u32, port: address
-    ) {
-        df::add(
-            id,
-            prefixed_key(CHANNEL_TO_PORT, channel),
-            port
-        );
-    }
-
-    public(package) fun borrow_channel_to_port(id: &UID, channel: u32): address {
-        *df::borrow(id, prefixed_key(CHANNEL_TO_PORT, channel))
-    }
-
-    public(package) fun has_channel_to_port(id: &UID, channel: u32): bool {
-        df::exists_(id, prefixed_key(CHANNEL_TO_PORT, channel))
-    }
-
-    fun prefixed_key<K: drop>(prefix: u8, key: K): vector<u8> {
-        bcs::to_bytes(&PrefixedKey { prefix, key })
+    public fun from_u8(state: u8): ChannelState {
+        match (state) {
+            0 => ChannelState::Uninitialized,
+            1 => ChannelState::Init,
+            2 => ChannelState::TryOpen,
+            3 => ChannelState::Open,
+            4 => ChannelState::Closed,
+            _ => abort EInvalidChannelState,
+        }
     }
 }
