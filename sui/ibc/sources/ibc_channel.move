@@ -68,11 +68,10 @@ module ibc::ibc_channel {
     use ibc::channel::{Self, Channel};
     use ibc::channel_state;
     use ibc::connection::Connection;
+    use ibc::connection_state;
     use ibc::events;
     use ibc::light_client::LightClientManager;
     use ibc::state;
-
-    const CONN_STATE_OPEN: u8 = 3;
 
     const EBase: u64 = 10300;
     const EInvalidConnectionState: u64 = EBase + 1;
@@ -90,7 +89,7 @@ module ibc::ibc_channel {
         // Ensure the connection exists and is in the OPEN state
         let connection = connections.borrow(connection_id);
         assert!(
-            connection.state() == CONN_STATE_OPEN,
+            connection.state() == connection_state::new_open(),
             EInvalidConnectionState
         );
 
@@ -139,7 +138,7 @@ module ibc::ibc_channel {
         // Ensure the connection exists and is in the OPEN state
         let connection = connections.borrow(connection_id);
         assert!(
-            connection.state() == CONN_STATE_OPEN,
+            connection.state() == connection_state::new_open(),
             EInvalidConnectionState
         );
 
@@ -241,7 +240,7 @@ module ibc::ibc_channel {
         assert!(res == 0, res);
 
         // Update the channel state to OPEN and set the counterparty channel ID
-        channel.set_state(channel_state::new_try_open());
+        channel.set_state(channel_state::new_open());
         channel.set_counterparty_channel_id(counterparty_channel_id);
         channel.set_version(counterparty_version);
 

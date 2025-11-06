@@ -62,15 +62,37 @@ module ibc::connection {
     use sui::bcs;
     use sui::address;
 
+    use ibc::connection_state::{Self, ConnectionState};
+
     public struct Connection has copy, store, drop {
-        state: u8,
+        state: ConnectionState,
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
 
+    // Constructor
+    public fun new(
+        state: ConnectionState,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
+    ): Connection {
+        Connection {
+            state,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id
+        }
+    }
+
+    // Default function
+    public fun default(): Connection {
+        new(connection_state::new_unspecified(), 0, 0, 0)
+    }
+
     // Getters
-    public fun state(connection: &Connection): u8 {
+    public fun state(connection: &Connection): ConnectionState {
         connection.state
     }
 
@@ -87,7 +109,9 @@ module ibc::connection {
     }
 
     // Setters
-    public fun set_state(connection: &mut Connection, new_state: u8) {
+    public fun set_state(
+        connection: &mut Connection, new_state: ConnectionState
+    ) {
         connection.state = new_state;
     }
 
@@ -119,7 +143,7 @@ module ibc::connection {
     public fun encode(connection: &Connection): vector<u8> {
         bcs::to_bytes(
             &ConnectionBcs {
-                state: address::from_u256(connection.state as u256),
+                state: address::from_u256(connection.state.to_u8() as u256),
                 client_id: address::from_u256(connection.client_id as u256),
                 counterparty_client_id: address::from_u256(
                     connection.counterparty_client_id as u256
@@ -131,32 +155,12 @@ module ibc::connection {
         )
     }
 
-    // Constructor
-    public fun new(
-        state: u8,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    ): Connection {
-        Connection {
-            state,
-            client_id,
-            counterparty_client_id,
-            counterparty_connection_id
-        }
-    }
-
-    // Default function
-    public fun default(): Connection {
-        new(0, 0, 0, 0)
-    }
-
     #[test]
     fun test_encode_decode_connection() {
         let buf =
             x"0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014";
         let connection = Connection {
-            state: 2,
+            state: connection_state::new_try_open(),
             client_id: 100,
             counterparty_client_id: 0,
             counterparty_connection_id: 20

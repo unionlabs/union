@@ -67,6 +67,7 @@ module ibc::ibc_packet {
     use ibc::channel::Channel;
     use ibc::channel_state;
     use ibc::connection::Connection;
+    use ibc::connection_state;
     use ibc::events;
     use ibc::light_client::LightClientManager;
     use ibc::packet::{Self, Packet};
@@ -74,8 +75,6 @@ module ibc::ibc_packet {
 
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
-
-    const CONN_STATE_OPEN: u8 = 3;
 
     const EBase: u64 = 10400;
     const EAckLenMismatch: u64 = EBase + 1;
@@ -272,7 +271,7 @@ module ibc::ibc_packet {
         assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let connection = connections.borrow(channel.connection_id());
-        assert!(connection.state() == CONN_STATE_OPEN, EInvalidConnectionState);
+        assert!(connection.state() == connection_state::new_open(), EInvalidConnectionState);
 
         let client_id = connection.client_id();
 
@@ -343,7 +342,7 @@ module ibc::ibc_packet {
         };
         let connection = connections.borrow(connection_id);
         assert!(
-            connection.state() == CONN_STATE_OPEN,
+            connection.state() == connection_state::new_open(),
             EInvalidConnectionState
         );
         let client_id = connection.client_id();
@@ -413,7 +412,7 @@ module ibc::ibc_packet {
 
         let connection = connections.borrow(connection_id);
         assert!(
-            connection.state() == CONN_STATE_OPEN,
+            connection.state() == connection_state::new_open(),
             EInvalidConnectionState
         );
         let client_id = connection.client_id();
@@ -479,7 +478,7 @@ module ibc::ibc_packet {
         assert!(channel.state() == channel_state::new_open(), EInvalidChannelState);
 
         let connection = connections.borrow(channel.connection_id()); 
-        assert!(connection.state() == CONN_STATE_OPEN, EInvalidConnectionState);
+        assert!(connection.state() == connection_state::new_open(), EInvalidConnectionState);
 
         let client_id = connection.client_id();
 

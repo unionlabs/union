@@ -64,16 +64,13 @@ module ibc::ibc_connection {
 
     use ibc::commitment;
     use ibc::connection::{Self, Connection};
+    use ibc::connection_state;
     use ibc::events;
     use ibc::light_client::LightClientManager;
     use ibc::state;
 
     const EBase: u64 = 10200;
     const EInvalidConnectionState: u64 = EBase + 1;
-
-    const CONN_STATE_INIT: u8 = 1;
-    const CONN_STATE_TRYOPEN: u8 = 2;
-    const CONN_STATE_OPEN: u8 = 3;
 
     public(package) fun connection_open_init(
         ibc_uid: &mut UID,
@@ -85,7 +82,7 @@ module ibc::ibc_connection {
 
         let connection =
             connection::new(
-                CONN_STATE_INIT,
+                connection_state::new_init(),
                 client_id,
                 counterparty_client_id,
                 0
@@ -116,7 +113,7 @@ module ibc::ibc_connection {
 
         let connection =
             connection::new(
-                CONN_STATE_TRYOPEN,
+                connection_state::new_try_open(),
                 client_id,
                 counterparty_client_id,
                 counterparty_connection_id
@@ -125,7 +122,7 @@ module ibc::ibc_connection {
         // Construct the expected connection state to verify against the proof
         let expected_connection =
             connection::new(
-                CONN_STATE_INIT,
+                connection_state::new_init(),
                 counterparty_client_id,
                 client_id,
                 0 // counterparty_connection_id
@@ -169,14 +166,14 @@ module ibc::ibc_connection {
 
         // assert that this connection is at the `INIT` phase
         assert!(
-            connection.state() == CONN_STATE_INIT,
+            connection.state() == connection_state::new_init(),
             EInvalidConnectionState
         );
 
         // Create the expected connection state to verify against the proof
         let expected_connection =
             connection::new(
-                CONN_STATE_TRYOPEN,
+                connection_state::new_try_open(),
                 connection.counterparty_client_id(),
                 connection.client_id(),
                 connection_id
@@ -194,8 +191,8 @@ module ibc::ibc_connection {
             );
         assert!(res == 0, res);
 
-        // Update the connection state to TRYOPEN and set the counterparty connection ID
-        connection.set_state(CONN_STATE_OPEN);
+        // Update the connection state to OPEN and set the counterparty connection ID
+        connection.set_state(connection_state::new_open());
         connection.set_counterparty_connection_id(counterparty_connection_id);
 
         events::emit_connection_open_ack(
@@ -219,14 +216,14 @@ module ibc::ibc_connection {
     ) {
         let connection = connections.borrow_mut(connection_id);
         assert!(
-            connection.state() == CONN_STATE_TRYOPEN,
+            connection.state() == connection_state::new_try_open(),
             EInvalidConnectionState
         );
 
         // Create the expected connection state in the `OPEN` state to verify against the proof
         let expected_connection =
             connection::new(
-                CONN_STATE_OPEN,
+                connection_state::new_open(),
                 connection.counterparty_client_id(),
                 connection.client_id(),
                 connection_id
@@ -247,7 +244,7 @@ module ibc::ibc_connection {
         assert!(res == 0, res);
 
         // Update the connection state to OPEN
-        connection.set_state(CONN_STATE_OPEN);
+        connection.set_state(connection_state::new_open());
 
         // Emit an event for connection confirmation
         events::emit_connection_open_confirm(

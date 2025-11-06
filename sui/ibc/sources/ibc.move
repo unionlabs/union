@@ -776,18 +776,6 @@ module ibc::ibc {
     const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
     #[test_only]
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
-    #[test_only]
-    const CHAN_STATE_INIT: u8 = 1;
-    #[test_only]
-    const CHAN_STATE_TRYOPEN: u8 = 2;
-    #[test_only]
-    const CHAN_STATE_OPEN: u8 = 3;
-    #[test_only]
-    const CONN_STATE_INIT: u8 = 1;
-    #[test_only]
-    const CONN_STATE_TRYOPEN: u8 = 2;
-    #[test_only]
-    const CONN_STATE_OPEN: u8 = 3;
 
     #[test_only]
     use sui::test_scenario;
@@ -795,6 +783,10 @@ module ibc::ibc {
     use ibc::commitment;
     #[test_only]
     use std::string;
+    #[test_only]
+    use ibc::channel_state;
+    #[test_only]
+    use ibc::connection_state;
 
     #[test_only]
     public fun init_for_tests(ctx: &mut TxContext) {
@@ -904,7 +896,7 @@ module ibc::ibc {
 
         let connection_id = 1;
         let connection = ibc_store.connections.borrow(connection_id);
-        assert!(connection.state() == CONN_STATE_INIT, 1);
+        assert!(connection.state() == connection_state::new_init(), 1);
         assert!(connection.client_id() == client_id, 1);
         assert!(connection.counterparty_client_id() == counterparty_client_id, 1);
 
@@ -938,8 +930,8 @@ module ibc::ibc {
 
         let c1 = ibc_store.connections.borrow(1);
         let c2 = ibc_store.connections.borrow(2);
-        assert!(c1.state() == CONN_STATE_INIT, 1);
-        assert!(c2.state() == CONN_STATE_INIT, 1);
+        assert!(c1.state() == connection_state::new_init(), 1);
+        assert!(c2.state() == connection_state::new_init(), 1);
         assert!(c1.counterparty_client_id() == 42, 1);
         assert!(c2.counterparty_client_id() == 43, 1);
 
@@ -970,7 +962,7 @@ module ibc::ibc {
 
         let connection_id = 1;
         let c = ibc_store.connections.borrow(connection_id);
-        assert!(c.state() == CONN_STATE_TRYOPEN, 1);
+        assert!(c.state() == connection_state::new_try_open(), 1);
         assert!(c.client_id() == 1, 1);
         assert!(c.counterparty_client_id() == 2, 1);
         assert!(c.counterparty_connection_id() == 11, 1);
@@ -1003,7 +995,7 @@ module ibc::ibc {
         ibc_store.connection_open_ack(1, 9, b"p", 1, t.ctx());
 
         let c = ibc_store.connections.borrow(1);
-        assert!(c.state() == CONN_STATE_OPEN, 1);
+        assert!(c.state() == connection_state::new_open(), 1);
         assert!(c.counterparty_connection_id() == 9, 1);
 
         let key = commitment::connection_commitment_key(1);
@@ -1034,7 +1026,7 @@ module ibc::ibc {
         ibc_store.connection_open_confirm(1, b"p", 1, t.ctx());
 
         let c = ibc_store.connections.borrow(1);
-        assert!(c.state() == CONN_STATE_OPEN, 1);
+        assert!(c.state() == connection_state::new_open(), 1);
 
         let key = commitment::connection_commitment_key(1);
         assert!(state::has_commitment(&ibc_store.id, key), 1);
@@ -1071,7 +1063,7 @@ module ibc::ibc {
 
         let ch_id = 1;
         let ch = ibc_store.channels.borrow(ch_id);
-        assert!(ch.state() == CHAN_STATE_INIT, 1);
+        assert!(ch.state() == channel_state::new_init(), 1);
         assert!(state::borrow_channel_to_port(&ibc_store.id, ch_id) == object::uid_to_address(&port.id), 1);
         let key = commitment::channel_commitment_key(ch_id);
         assert!(state::has_commitment(&ibc_store.id, key), 1);
@@ -1113,7 +1105,7 @@ module ibc::ibc {
 
         let ch_id = 1;
         let ch = ibc_store.channels.borrow(ch_id);
-        assert!(ch.state() == CHAN_STATE_TRYOPEN, 1);
+        assert!(ch.state() == channel_state::new_try_open(), 1);
         assert!(ch.connection_id() == 1, 1);
         assert!(ch.counterparty_channel_id() == 7, 1);
         let key = commitment::channel_commitment_key(ch_id);
@@ -1162,7 +1154,7 @@ module ibc::ibc {
         );
 
         let ch = ibc_store.channels.borrow(1);
-        assert!(ch.state() == CHAN_STATE_OPEN, 1);
+        assert!(ch.state() == channel_state::new_open(), 1);
         assert!(ch.counterparty_channel_id() == 22, 1);
         let key = commitment::channel_commitment_key(1);
         assert!(state::has_commitment(&ibc_store.id, key), 1);
@@ -1206,7 +1198,7 @@ module ibc::ibc {
         ibc_store.channel_open_confirm(1, b"p", 1, &port, t.ctx());
 
         let ch = ibc_store.channels.borrow(1);
-        assert!(ch.state() == CHAN_STATE_OPEN, 1);
+        assert!(ch.state() == channel_state::new_open(), 1);
         let key = commitment::channel_commitment_key(1);
         assert!(state::has_commitment(&ibc_store.id, key), 1);
 

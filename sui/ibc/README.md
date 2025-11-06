@@ -129,3 +129,30 @@ Other than that, we will continue to host this circuit in another entrypoint. Li
 previously.
 
 # SUI Implementation details
+
+## Base error codes
+
+Define your errors incrementally, and if a new error base needed, add the base here and continue following the convention.
+
+### IBC
+
+- core:
+  - ibc: 10000
+  - ibc_client: 10100
+  - ibc_connection: 10200
+  - ibc_channel: 10300
+  - ibc_packet: 10400
+  - channel: 10500
+  - packet: 10600
+  - channel_state: 10700
+  - connection_state: 10800;
+- clients:
+  - light_client: 20000
+  - cometbls_light_client: 20100
+  - ics23: 20200
+
+### ZKGM
+
+- zkgm: 35000
+- ibc: 35100
+- helper: 35200
