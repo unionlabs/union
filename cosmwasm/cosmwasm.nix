@@ -1018,9 +1018,15 @@ _: {
 
       cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
 
-      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" { };
+      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" {
+        # doesn't use bls precompiles, so the miscompilation is not an issue
+        buildWithOz = true;
+      };
 
-      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" { };
+      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" {
+        # doesn't use bls precompiles, so the miscompilation is not an issue
+        buildWithOz = true;
+      };
 
       lst = crane.buildWasmContract "cosmwasm/lst" { };
       lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };

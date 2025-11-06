@@ -43,7 +43,7 @@ pub fn query(deps: Deps, msg: &PausableQuery) -> Result<Binary, ContractError> {
     }
 }
 
-/// See [`ExecuteMsg::Pause`];
+/// See [`Pausable::Pause`];
 #[expect(
     clippy::needless_pass_by_value,
     reason = "DepsMut should be passed by value"
@@ -58,6 +58,7 @@ pub fn pause(deps: DepsMut, info: &MessageInfo) -> Result<Response, ContractErro
     }))
 }
 
+/// See [`Pausable::Unpause`];
 #[expect(
     clippy::needless_pass_by_value,
     reason = "DepsMut should be passed by value"
@@ -72,7 +73,7 @@ pub fn unpause(deps: DepsMut, info: &MessageInfo) -> Result<Response, ContractEr
     }))
 }
 
-/// See [`QueryMsg::Paused`].
+/// See [`PausableQuery::Paused`].
 pub fn is_paused(deps: Deps) -> Result<bool, ContractError> {
     Ok(deps.storage.maybe_read_item::<IsPaused>()?.is_some())
 }
@@ -166,6 +167,7 @@ pub fn require_paused(deps: Deps) -> Result<(), ContractError> {
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/Pausable.sol#L47>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 #[must_use = "consume this type with WhenNotPaused::ensure_not_paused to enforce execution invariants"]
 pub struct WhenNotPaused<T>(T);
@@ -239,6 +241,7 @@ impl<T> WhenNotPaused<T> {
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/Pausable.sol#L59>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 #[must_use = "consume this type with WhenPaused::ensure_paused to enforce execution invariants"]
 pub struct WhenPaused<T>(T);
