@@ -108,6 +108,9 @@ module ibc::ibc {
         });
     }
 
+    /// Get a port cap to do a channel handshake.
+    ///
+    /// See `[Port]` for the extensive docs.
     public fun create_port<T: drop>(
         module_address: address,
         data: T,
@@ -741,12 +744,18 @@ module ibc::ibc {
     #[test_only]
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
 
+    #[test_only]
     const CHAN_STATE_INIT: u8 = 1;
+    #[test_only]
     const CHAN_STATE_TRYOPEN: u8 = 2;
+    #[test_only]
     const CHAN_STATE_OPEN: u8 = 3;
 
+    #[test_only]
     const CONN_STATE_INIT: u8 = 1;
+    #[test_only]
     const CONN_STATE_TRYOPEN: u8 = 2;
+    #[test_only]
     const CONN_STATE_OPEN: u8 = 3;
 
     #[test_only]

@@ -77,11 +77,7 @@ module zkgm::ibc {
         ctx: &TxContext
     ) {
         ibc_store.channel_open_init(
-            counterparty_port_id,
-            connection_id,
-            version,
-            zkgm.port(),
-            ctx
+            counterparty_port_id, connection_id, version, zkgm.port(), ctx
         );
 
         if (!is_valid_version(version)) {
