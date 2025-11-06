@@ -31,6 +31,31 @@ pub use upgradable;
 
 #[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
+pub enum IbcClientError<T: IbcClient> {
+    #[error(transparent)]
+    Std(#[from] StdError),
+    #[error(transparent)]
+    Migrate(#[from] UpgradeError),
+    #[error("decode error ({0:?})")]
+    Decode(#[from] DecodeError<T>),
+    #[error("unexpected call from the host module ({0})")]
+    UnexpectedCallDataFromHostModule(String),
+    #[error("client state not found")]
+    ClientStateNotFound,
+    #[error("`ClientMessage` cannot be decoded ({0})")]
+    InvalidClientMessage(Bytes),
+    #[error(transparent)]
+    ClientSpecific(T::Error),
+    #[error(transparent)]
+    AccessManaged(#[from] access_managed::error::ContractError),
+    #[error(transparent)]
+    Pausable(#[from] pausable::error::ContractError),
+    #[error(transparent)]
+    Upgradable(#[from] upgradable::error::ContractError),
+}
+
+#[derive(macros::Debug, thiserror::Error)]
+#[debug(bound())]
 pub enum DecodeError<T: IbcClient> {
     #[error("unable to decode header")]
     Header(#[source] DecodeErrorOf<T::Encoding, T::Header>),
@@ -50,32 +75,7 @@ pub enum DecodeError<T: IbcClient> {
     RawStorage(Bytes),
 }
 
-#[derive(macros::Debug, thiserror::Error)]
-#[debug(bound())]
-pub enum IbcClientError<T: IbcClient> {
-    #[error(transparent)]
-    Std(#[from] StdError),
-    #[error(transparent)]
-    Migrate(#[from] UpgradeError),
-    #[error("decode error ({0:?})")]
-    Decode(#[from] DecodeError<T>),
-    #[error("unexpected call from the host module ({0})")]
-    UnexpectedCallDataFromHostModule(String),
-    #[error("client state not found")]
-    ClientStateNotFound,
-    #[error(transparent)]
-    ClientSpecific(T::Error),
-    #[error(transparent)]
-    AccessManaged(#[from] access_managed::error::ContractError),
-    #[error(transparent)]
-    Pausable(#[from] pausable::error::ContractError),
-    #[error(transparent)]
-    Upgradable(#[from] upgradable::error::ContractError),
-    #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
-    InvalidClientMessage(Vec<u8>),
-}
-
-impl<T: IbcClient + 'static> From<IbcClientError<T>> for StdError {
+impl<T: IbcClient> From<IbcClientError<T>> for StdError {
     fn from(value: IbcClientError<T>) -> Self {
         Self::generic_err(ErrorReporter(value).to_string())
     }
