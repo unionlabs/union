@@ -71,7 +71,7 @@ module ibc::ibc {
     use ibc::ibc_client;
     use ibc::ibc_packet;
     use ibc::packet::{Self, Packet};
-    use ibc::connection_end::ConnectionEnd;
+    use ibc::connection::Connection;
     use ibc::channel::Channel; 
     use ibc::light_client::{Self, LightClientManager};
     use ibc::events;
@@ -114,7 +114,7 @@ module ibc::ibc {
         id: UID,
         version: u32,
         client_mgr: LightClientManager,
-        connections: Table<u32, ConnectionEnd>,
+        connections: Table<u32, Connection>,
         channels: Table<u32, Channel>,
     }
 
@@ -733,7 +733,7 @@ module ibc::ibc {
         ibc_store.client_mgr.get_consensus_state(client_id, height)
     }
 
-    public fun get_connection(ibc_store: &IBCStore, connection_id: u32): ConnectionEnd {
+    public fun get_connection(ibc_store: &IBCStore, connection_id: u32): Connection {
         if (!ibc_store.connections.contains(connection_id)) {
             abort EConnectionNotFound
         };

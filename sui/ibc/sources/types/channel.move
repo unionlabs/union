@@ -72,7 +72,28 @@ module ibc::channel {
         version: String
     }
 
-    // Getters
+    public fun new(
+        state: u8,
+        connection_id: u32,
+        counterparty_channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        version: String
+    ): Channel {
+        assert!(string::length(&version) <= 32, EPacketVersionLengthExceedsMax);
+
+        Channel {
+            state,
+            connection_id,
+            counterparty_channel_id,
+            counterparty_port_id,
+            version
+        }
+    }
+
+    public fun default(): Channel {
+        new(0, 0, 0, vector::empty(), string::utf8(b""))
+    }
+
     public fun state(channel: &Channel): u8 {
         channel.state
     }
@@ -120,7 +141,6 @@ module ibc::channel {
 
     // Encode and decode functions
     public fun encode(channel: &Channel): vector<u8> {
-        // TODO: test this
         let mut buf = vector::empty<u8>();
 
         ethabi::encode_uint<u8>(&mut buf, 0x20);
@@ -145,28 +165,6 @@ module ibc::channel {
         };
 
         buf
-    }
-
-    public fun new(
-        state: u8,
-        connection_id: u32,
-        counterparty_channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        version: String
-    ): Channel {
-        assert!(string::length(&version) <= 32, EPacketVersionLengthExceedsMax);
-
-        Channel {
-            state,
-            connection_id,
-            counterparty_channel_id,
-            counterparty_port_id,
-            version
-        }
-    }
-
-    public fun default(): Channel {
-        new(0, 0, 0, vector::empty(), string::utf8(b""))
     }
 
     #[test]

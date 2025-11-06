@@ -66,7 +66,7 @@ module ibc::ibc_channel {
 
     use ibc::commitment;
     use ibc::channel::{Self, Channel};
-    use ibc::connection_end::ConnectionEnd;
+    use ibc::connection::Connection;
     use ibc::events;
     use ibc::light_client::LightClientManager;
     use ibc::state;
@@ -82,7 +82,7 @@ module ibc::ibc_channel {
 
     public(package) fun channel_open_init(
         ibc_uid: &mut UID,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &mut Table<u32, Channel>,
         port_id: address,
         counterparty_port_id: vector<u8>,
@@ -127,7 +127,7 @@ module ibc::ibc_channel {
     public fun channel_open_try(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &mut Table<u32, Channel>,
         port_id: address,
         connection_id: u32,
@@ -201,7 +201,7 @@ module ibc::ibc_channel {
     public fun channel_open_ack(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &mut Table<u32, Channel>,
         port_id: address,
         channel_id: u32,
@@ -263,7 +263,7 @@ module ibc::ibc_channel {
     public fun channel_open_confirm(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &mut Table<u32, Channel>,
         port_id: address,
         channel_id: u32,

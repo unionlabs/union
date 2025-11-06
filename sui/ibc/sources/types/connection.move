@@ -58,11 +58,11 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::connection_end {
+module ibc::connection {
     use sui::bcs;
     use sui::address;
 
-    public struct ConnectionEnd has copy, store, drop {
+    public struct Connection has copy, store, drop {
         state: u8,
         client_id: u32,
         counterparty_client_id: u32,
@@ -70,55 +70,55 @@ module ibc::connection_end {
     }
 
     // Getters
-    public fun state(connection: &ConnectionEnd): u8 {
+    public fun state(connection: &Connection): u8 {
         connection.state
     }
 
-    public fun client_id(connection: &ConnectionEnd): u32 {
+    public fun client_id(connection: &Connection): u32 {
         connection.client_id
     }
 
-    public fun counterparty_client_id(connection: &ConnectionEnd): u32 {
+    public fun counterparty_client_id(connection: &Connection): u32 {
         connection.counterparty_client_id
     }
 
-    public fun counterparty_connection_id(connection: &ConnectionEnd): u32 {
+    public fun counterparty_connection_id(connection: &Connection): u32 {
         connection.counterparty_connection_id
     }
 
     // Setters
-    public fun set_state(connection: &mut ConnectionEnd, new_state: u8) {
+    public fun set_state(connection: &mut Connection, new_state: u8) {
         connection.state = new_state;
     }
 
     public fun set_client_id(
-        connection: &mut ConnectionEnd, new_client_id: u32
+        connection: &mut Connection, new_client_id: u32
     ) {
         connection.client_id = new_client_id;
     }
 
     public fun set_counterparty_client_id(
-        connection: &mut ConnectionEnd, new_id: u32
+        connection: &mut Connection, new_id: u32
     ) {
         connection.counterparty_client_id = new_id;
     }
 
     public fun set_counterparty_connection_id(
-        connection: &mut ConnectionEnd, new_id: u32
+        connection: &mut Connection, new_id: u32
     ) {
         connection.counterparty_connection_id = new_id;
     }
 
-    public struct ConnectionEndBcs has drop {
+    public struct ConnectionBcs has drop {
         state: address,
         client_id: address,
         counterparty_client_id: address,
         counterparty_connection_id: address
     }
 
-    public fun encode(connection: &ConnectionEnd): vector<u8> {
+    public fun encode(connection: &Connection): vector<u8> {
         bcs::to_bytes(
-            &ConnectionEndBcs {
+            &ConnectionBcs {
                 state: address::from_u256(connection.state as u256),
                 client_id: address::from_u256(connection.client_id as u256),
                 counterparty_client_id: address::from_u256(
@@ -137,8 +137,8 @@ module ibc::connection_end {
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
-    ): ConnectionEnd {
-        ConnectionEnd {
+    ): Connection {
+        Connection {
             state,
             client_id,
             counterparty_client_id,
@@ -147,7 +147,7 @@ module ibc::connection_end {
     }
 
     // Default function
-    public fun default(): ConnectionEnd {
+    public fun default(): Connection {
         new(0, 0, 0, 0)
     }
 
@@ -155,7 +155,7 @@ module ibc::connection_end {
     fun test_encode_decode_connection() {
         let buf =
             x"0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014";
-        let connection = ConnectionEnd {
+        let connection = Connection {
             state: 2,
             client_id: 100,
             counterparty_client_id: 0,

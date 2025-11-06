@@ -65,7 +65,7 @@ module ibc::ibc_packet {
 
     use ibc::commitment;
     use ibc::channel::Channel;
-    use ibc::connection_end::ConnectionEnd;
+    use ibc::connection::Connection;
     use ibc::events;
     use ibc::light_client::LightClientManager;
     use ibc::packet::{Self, Packet};
@@ -164,7 +164,7 @@ module ibc::ibc_packet {
     public(package) fun recv_packet(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &Table<u32, Channel>,
         clock: &clock::Clock,
         packets: vector<Packet>,
@@ -193,7 +193,7 @@ module ibc::ibc_packet {
     public(package) fun recv_intent_packet(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &Table<u32, Channel>,
         clock: &clock::Clock,
         packets: vector<Packet>,
@@ -251,7 +251,7 @@ module ibc::ibc_packet {
     public(package) fun acknowledge_packet(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &Table<u32, Channel>,
         packets: vector<packet::Packet>,
         acknowledgements: vector<vector<u8>>,
@@ -321,7 +321,7 @@ module ibc::ibc_packet {
     public(package) fun timeout_packet(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &Table<u32, Channel>,
         packet: Packet,
         proof: vector<u8>,
@@ -384,7 +384,7 @@ module ibc::ibc_packet {
     public(package) fun commit_packet_timeout(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &Table<u32, Channel>,
         clock: &Clock,
         packet: Packet,
@@ -452,7 +452,7 @@ module ibc::ibc_packet {
     fun process_receive(
         ibc_uid: &mut UID,
         client_mgr: &LightClientManager,
-        connections: &Table<u32, ConnectionEnd>,
+        connections: &Table<u32, Connection>,
         channels: &Table<u32, Channel>,
         clock: &Clock,
         packets: vector<Packet>,
