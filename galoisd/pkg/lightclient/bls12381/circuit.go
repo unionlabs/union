@@ -3,7 +3,6 @@ package bls12381
 import (
 	"fmt"
 
-	// "github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
@@ -17,7 +16,7 @@ import (
 
 type Circuit struct {
 	Proof        groth16.Proof[sw_bn254.G1Affine, sw_bn254.G2Affine]
-	InnerWitness groth16.Witness[sw_bn254.ScalarField]
+	InnerWitness groth16.Witness[sw_bn254.ScalarField] `gnark:",public"`
 	// we are using an embedded constant verifying key since it's easier and doesn't require a vkhash
 	verifyingKey    groth16.VerifyingKey[sw_bn254.G1Affine, sw_bn254.G2Affine, sw_bn254.GTEl] `gnark:"-"`
 	CommitmentHash  frontend.Variable                                                         `gnark:",public"`
