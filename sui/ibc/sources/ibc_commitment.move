@@ -196,7 +196,7 @@ module ibc::commitment {
         keccak256(&channel_path(channel_id))
     }
 
-    public(package) fun batch_packets_commitment_key(
+    public fun batch_packets_commitment_key(
         batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(&batch_packets_commitment_path(batch_hash))
@@ -222,7 +222,7 @@ module ibc::commitment {
     }
 
     // not calling `commit_packets` here because this function is optimized for a single packet
-    public(package) fun commit_packet(packet: &Packet): vector<u8> {
+    public fun commit_packet(packet: &Packet): vector<u8> {
         let mut encoded = bcs::to_bytes(&SinglePacketCommitmentBcs {
             offset_0x20_1: address::from_u256(0x20),
             len_1: address::from_u256(1),

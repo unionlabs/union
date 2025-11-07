@@ -66,7 +66,6 @@ module zkgm::zkgm {
     use sui::bcs;
     use sui::clock::Clock; 
     use sui::coin::{Self, Coin};
-    use sui::event;
     use sui::object_bag::{Self, ObjectBag};
     use sui::table::{Self, Table};
 
@@ -81,6 +80,7 @@ module zkgm::zkgm {
     use zkgm::ack::{Self, Ack};
     use zkgm::batch;
     use zkgm::batch_ack;
+    use zkgm::events;
     use zkgm::forward::{Self, Forward};
     use zkgm::token_metadata::{Self, TokenMetadata};
     use zkgm::token_order::{Self, TokenOrderV2};
@@ -158,24 +158,12 @@ module zkgm::zkgm {
         object_store: ObjectBag,
     }
 
-    public struct CreateWrappedToken has copy, drop, store {
-        path: u256,
-        channel_id: u32,
-        base_token: vector<u8>,
-        quote_token: vector<u8>,
-        native_token: vector<u8>,
-        metadata: vector<u8>,
-        kind: u8
-    }
-
     public struct ChannelBalancePair has copy, drop, store {
         channel: u32,
         path: u256,
         token: vector<u8>,
         metadata_image: vector<u8>,
     }
-
-    public struct Session {}
 
     public struct ZkgmPacketCtx has drop {
         instruction_set: vector<Instruction>,
@@ -1224,15 +1212,15 @@ module zkgm::zkgm {
         if (quote_token == wrapped_token && base_amount_covers_quote_amount) {
             // TODO: rate limit
             if (!zkgm.save_token_origin(wrapped_token, path, ibc_packet.destination_channel_id())) {
-                event::emit(CreateWrappedToken {
+                events::emit_create_wrapped_token(
                     path,
-                    channel_id: ibc_packet.destination_channel_id(), 
-                    base_token: *order.base_token(),
+                    ibc_packet.destination_channel_id(), 
+                    *order.base_token(),
                     quote_token,
-                    native_token: type_name::with_defining_ids<T>().into_string().into_bytes(),
-                    metadata: *order.metadata(),
-                    kind: order.kind()
-                });
+                    type_name::with_defining_ids<T>().into_string().into_bytes(),
+                    *order.metadata(),
+                    order.kind()
+                );
             };
             
             // We expect the token to be deployed already here and the treasury cap is registered previously with type T
