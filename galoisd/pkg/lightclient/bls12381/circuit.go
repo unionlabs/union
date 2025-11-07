@@ -3,8 +3,10 @@ package bls12381
 import (
 	"fmt"
 
-	// "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/consensys/gnark-crypto/ecc"
+	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/frontend/cs/r1cs"
 	"github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
 
 	"github.com/consensys/gnark/std/algebra/emulated/sw_emulated"
@@ -13,15 +15,30 @@ import (
 )
 
 type Circuit struct {
-	Proof           groth16.Proof[sw_bn254.G1Affine, sw_bn254.G2Affine]
-	VerifyingKey    groth16.VerifyingKey[sw_bn254.G1Affine, sw_bn254.G2Affine, sw_bn254.GTEl]
-	InnerWitness    groth16.Witness[sw_bn254.ScalarField]
-	CommitmentHash  frontend.Variable `gnark:",public"`
-	CommitmentX     frontend.Variable `gnark:",public"`
-	CommitmentY     frontend.Variable `gnark:",public"`
-	InnerInputsHash frontend.Variable `gnark:",public"`
-	// VkHash          frontend.Variable `gnark:",public"`
-	// OptimizedInnerWitness frontend.Variable `gnark:",public"`
+	Proof        groth16.Proof[sw_bn254.G1Affine, sw_bn254.G2Affine]
+	InnerWitness groth16.Witness[sw_bn254.ScalarField] `gnark:",public"`
+	// we are using an embedded constant verifying key since it's easier and doesn't require a vkhash
+	verifyingKey    groth16.VerifyingKey[sw_bn254.G1Affine, sw_bn254.G2Affine, sw_bn254.GTEl] `gnark:"-"`
+	CommitmentHash  frontend.Variable                                                         `gnark:",public"`
+	CommitmentX     frontend.Variable                                                         `gnark:",public"`
+	CommitmentY     frontend.Variable                                                         `gnark:",public"`
+	InnerInputsHash frontend.Variable                                                         `gnark:",public"`
+}
+
+func Compile(
+	proof groth16.Proof[sw_bn254.G1Affine, sw_bn254.G2Affine],
+	innerWitness groth16.Witness[sw_bn254.ScalarField],
+	verifyingKey groth16.VerifyingKey[sw_bn254.G1Affine, sw_bn254.G2Affine, sw_bn254.GTEl],
+) (constraint.ConstraintSystem, error) {
+
+	r1csInstance, err := frontend.Compile(ecc.BLS12_381.ScalarField(), r1cs.NewBuilder, &Circuit{
+		Proof:        proof,
+		verifyingKey: verifyingKey,
+		InnerWitness: innerWitness,
+	}, frontend.WithCompressThreshold(300))
+
+	return r1csInstance, err
+
 }
 
 func (c *Circuit) Define(api frontend.API) error {
@@ -29,8 +46,6 @@ func (c *Circuit) Define(api frontend.API) error {
 	if err != nil {
 		return fmt.Errorf("new verifier: %w", err)
 	}
-
-	// AssertEq(mimcHash(verifyikgkey.G1.X.Limbs..., verifyingKey.G1.Y.Limbs...), VkHash)
 
 	xLimbs := Unpack(api, c.CommitmentX, 256, 64)
 	yLimbs := Unpack(api, c.CommitmentY, 256, 64)
@@ -48,7 +63,7 @@ func (c *Circuit) Define(api frontend.API) error {
 	innerInputsHash := scalarApi.FromBits(api.ToBinary(c.InnerInputsHash)...)
 	scalarApi.AssertIsEqual(&c.InnerWitness.Public[0], innerInputsHash)
 
-	return verifier.AssertProof(c.VerifyingKey, c.Proof, c.InnerWitness, groth16.WithCommitmentHash(c.CommitmentHash))
+	return verifier.AssertProof(c.verifyingKey, c.Proof, c.InnerWitness, groth16.WithCommitmentHash(c.CommitmentHash))
 }
 
 func Unpack(api frontend.API, packed frontend.Variable, sizeOfInput int, sizeOfElem int) []frontend.Variable {
