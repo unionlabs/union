@@ -227,6 +227,8 @@ members = [
   "voyager/plugins/sui-ibc-app",
   "voyager/plugins/sui-packet-timeout",
 
+  "voyager/plugins/attestor/evm",
+
   "drip",
 
   # "lib/aptos-verifier",
