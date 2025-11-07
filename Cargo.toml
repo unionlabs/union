@@ -143,6 +143,7 @@ members = [
   # "voyager/modules/state/movement",
   "voyager/modules/state/sui",
 
+  "voyager/modules/proof/attested",
   "voyager/modules/proof/cosmwasm",
   "voyager/modules/proof/ethermint",
   "voyager/modules/proof/evm-mpt",
@@ -163,6 +164,7 @@ members = [
   "voyager/modules/client/state-lens/ics23-smt",
   "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
+  "voyager/modules/client/attested",
 
   "voyager/modules/client-bootstrap/base",
   "voyager/modules/client-bootstrap/bob",
@@ -178,6 +180,7 @@ members = [
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
   "voyager/modules/client-bootstrap/sui",
+  "voyager/modules/client-bootstrap/attested",
 
   "voyager/modules/finality/base",
   "voyager/modules/finality/bob",
@@ -190,6 +193,7 @@ members = [
   "voyager/modules/finality/tendermint",
   "voyager/modules/finality/trusted-evm",
   "voyager/modules/finality/sui",
+  "voyager/modules/finality/attested-evm",
 
   "voyager/plugins/client-update/base",
   "voyager/plugins/client-update/bob",
@@ -204,6 +208,7 @@ members = [
   "voyager/plugins/client-update/state-lens",
   "voyager/plugins/client-update/sui",
   "voyager/plugins/client-update/trusted-mpt",
+  "voyager/plugins/client-update/attested",
 
   "voyager/plugins/periodic-client-update",
 
@@ -226,6 +231,8 @@ members = [
   "voyager/plugins/zkgm-filter",
   "voyager/plugins/sui-ibc-app",
   "voyager/plugins/sui-packet-timeout",
+
+  "voyager/plugins/attestor/evm",
 
   "drip",
 
@@ -352,6 +359,7 @@ arbitrum-client                           = { path = "lib/arbitrum-client", defa
 arbitrum-light-client-types               = { path = "lib/arbitrum-light-client-types", default-features = false }
 arbitrum-types                            = { path = "lib/arbitrum-types", default-features = false }
 arbitrum-verifier                         = { path = "lib/arbitrum-verifier", default-features = false }
+attested-light-client                     = { path = "cosmwasm/lightclient/attested", default-features = false }
 attested-light-client-types               = { path = "lib/attested-light-client-types", default-features = false }
 base-client                               = { path = "lib/base-client", default-features = false }
 base-light-client-types                   = { path = "lib/base-light-client-types", default-features = false }

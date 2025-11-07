@@ -1,9 +1,14 @@
 use std::ops::Bound;
 
-use cosmwasm_std::{Order, testing::MockStorage};
+use cosmwasm_std::{
+    Order,
+    testing::{MockStorage, mock_dependencies},
+};
+use num_traits::ToBytes;
 use unionlabs::primitives::ByteArrayExt;
 
 use super::*;
+use crate::value::{ValueCodecViaEncoding, ValueUnitEncoding};
 
 enum TestStore {}
 
@@ -71,10 +76,10 @@ mod iterator {
     use super::*;
 
     #[allow(clippy::type_complexity)]
-    fn init() -> (MockStorage, [(u64, (u64, u64)); 3]) {
+    fn init() -> (MockStorage, [(u64, (u64, u64)); 4]) {
         let mut storage = MockStorage::new();
 
-        let kvs = [(1, (1, 1)), (2, (1, 2)), (3, (1, 3))];
+        let kvs = [(1, (1, 1)), (2, (1, 2)), (3, (1, 3)), (u64::MAX, (0, 0))];
 
         // write additional values to storage to ensure only the prefixed store is iterated
 
@@ -119,7 +124,7 @@ mod iterator {
         let (storage, kvs) = init();
 
         let res = storage
-            .iter_range::<TestStore>(Order::Ascending, 1..=3)
+            .iter_range::<TestStore>(Order::Ascending, 0..=u64::MAX)
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
 
@@ -155,7 +160,7 @@ mod iterator {
         let (storage, kvs) = init();
 
         let res = storage
-            .iter_range::<TestStore>(Order::Ascending, ..=3)
+            .iter_range::<TestStore>(Order::Ascending, ..=u64::MAX)
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
 
@@ -183,7 +188,7 @@ mod iterator {
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
 
-        assert_eq!(res, [(2, (1, 2)), (3, (1, 3))]);
+        assert_eq!(res, [(2, (1, 2)), (3, (1, 3)), (u64::MAX, (0, 0))]);
     }
 
     #[test]
@@ -191,11 +196,14 @@ mod iterator {
         let (storage, _kvs) = init();
 
         let res = storage
-            .iter_range::<TestStore>(Order::Ascending, (Bound::Excluded(1), Bound::Included(3)))
+            .iter_range::<TestStore>(
+                Order::Ascending,
+                (Bound::Excluded(1), Bound::Included(u64::MAX)),
+            )
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
 
-        assert_eq!(res, [(2, (1, 2)), (3, (1, 3))]);
+        assert_eq!(res, [(2, (1, 2)), (3, (1, 3)), (u64::MAX, (0, 0))]);
     }
 
     #[test]
@@ -203,12 +211,59 @@ mod iterator {
         let (storage, _kvs) = init();
 
         let res = storage
-            .iter_range::<TestStore>(Order::Ascending, (Bound::Excluded(1), Bound::Excluded(3)))
+            .iter_range::<TestStore>(
+                Order::Ascending,
+                (Bound::Excluded(1), Bound::Excluded(u64::MAX)),
+            )
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
 
-        assert_eq!(res, [(2, (1, 2))]);
+        assert_eq!(res, [(2, (1, 2)), (3, (1, 3))]);
     }
+}
+
+#[test]
+fn compound_key_iter_range() {
+    enum A {}
+    impl Store for A {
+        const PREFIX: Prefix = Prefix::new(&[1]);
+        type Key = (Bytes, u32);
+        type Value = ();
+    }
+    impl KeyCodec<(Bytes, u32)> for A {
+        fn encode_key((bz, n): &(Bytes, u32)) -> Bytes {
+            bz.iter().copied().chain(n.to_be_bytes()).collect()
+        }
+
+        fn decode_key(raw: &Bytes) -> StdResult<(Bytes, u32)> {
+            let (bz, n) = raw.split_at(raw.len() - 4);
+            Ok((
+                bz.into(),
+                u32::from_be_bytes(n.try_into().expect("is 4 bytes; qed;")),
+            ))
+        }
+    }
+    impl ValueCodecViaEncoding for A {
+        type Encoding = ValueUnitEncoding;
+    }
+
+    let mut deps = mock_dependencies();
+
+    deps.storage.write::<A>(&([0x00].into(), u32::MAX), &());
+    deps.storage.write::<A>(&([0x01].into(), 0), &());
+
+    let range = deps
+        .storage
+        .iter_range::<A>(
+            Order::Ascending,
+            ([0x00].into(), 0)..=([0x00].into(), u32::MAX),
+        )
+        .map(|r| r.map(|(k, ())| k))
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+
+    // this does NOT include ([0x01], 0)
+    assert_eq!(range, [([0x00].into(), u32::MAX)]);
 }
 
 #[test]

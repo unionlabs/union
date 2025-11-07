@@ -1,0 +1,81 @@
+{
+  "modules": {
+    "state": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-state-module-ethereum",
+        "info": {
+          "chain_id": "...",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
+          "rpc_url": "http://localhost:8545"
+        }
+      }
+    ],
+    "proof": [],
+    "consensus": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-finality-module-trusted-evm",
+        "info": {
+          "chain_id": "32382",
+          "consensus_type": "trusted/evm"
+        },
+        "config": {
+          "rpc_url": "http://localhost:8545",
+          "finality_lag": 10
+        }
+      }
+    ],
+    "client": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-attested",
+        "info": {
+          "client_type": "trusted/evm/mpt",
+          "consensus_type": "trusted/evm",
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_spec_id": "ibc-union"
+        }
+      }
+    ],
+    "client_bootstrap": []
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-ethereum",
+      "config": {
+        "chain_id": "32382",
+        "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
+        "rpc_url": "http://localhost:8545"
+      }
+    }
+  ],
+  "voyager": {
+    "cache": {
+      "state": {
+        "capacity": 10000,
+        "time_to_idle": 60,
+        "time_to_live": 60
+      }
+    },
+    "ipc_client_request_timeout": {
+      "nanos": 0,
+      "secs": 60
+    },
+    "num_workers": 20,
+    "queue": {
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
+      "idle_timeout": null,
+      "max_connections": 60,
+      "max_lifetime": null,
+      "min_connections": 50,
+      "optimize_batch_limit": 20,
+      "type": "pg-queue"
+    },
+    "optimizer_delay_milliseconds": 100
+  }
+}

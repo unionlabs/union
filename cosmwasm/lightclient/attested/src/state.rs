@@ -21,6 +21,7 @@ impl Store for PendingAttestations {
     type Key = Attestation;
     type Value = BTreeMap<H256, H512>;
 }
+// not intended to be iterable in any meaningful way, so bincode is fine
 impl KeyCodecViaEncoding for PendingAttestations {
     type Encoding = Bincode;
 }
@@ -35,6 +36,7 @@ impl Store for Attestations {
     type Key = AttestationKey;
     type Value = AttestationValue;
 }
+// not intended to be iterable in any meaningful way, so bincode is fine
 impl KeyCodecViaEncoding for Attestations {
     type Encoding = Bincode;
 }
@@ -42,13 +44,16 @@ impl ValueCodecViaEncoding for Attestations {
     type Encoding = Bincode;
 }
 
-/// `Set<AttestorPk>`
+/// `Map<ChainId, Set<AttestorPk>>`
 pub enum Attestors {}
 impl Store for Attestors {
     const PREFIX: Prefix = Prefix::new(b"attestors");
-    type Key = H256;
+    type Key = (String, H256);
     type Value = ();
 }
+// not intended to be iterable in any meaningful way, so bincode is fine
+// note that this storage *is* iterated, but only ever all attestors under
+// a specific chain id
 impl KeyCodecViaEncoding for Attestors {
     type Encoding = Bincode;
 }
@@ -63,6 +68,7 @@ impl Store for AttestationAttestors {
     type Key = Attestation;
     type Value = BTreeMap<H256, H512>;
 }
+// not intended to be iterable in any meaningful way, so bincode is fine
 impl KeyCodecViaEncoding for AttestationAttestors {
     type Encoding = Bincode;
 }
@@ -70,26 +76,42 @@ impl ValueCodecViaEncoding for AttestationAttestors {
     type Encoding = Bincode;
 }
 
-/// `Map<Height, Timestamp>`
+/// `Map<(ChainId, Height), Timestamp>`
 pub enum HeightTimestamps {}
 impl Store for HeightTimestamps {
     const PREFIX: Prefix = Prefix::new(b"height_timestamps");
-    type Key = u64;
+    type Key = (String, u64);
     type Value = Timestamp;
 }
 // implement manually since bincode uses LE but we need BE for iteration
-impl KeyCodec<u64> for HeightTimestamps {
-    fn encode_key(key: &u64) -> Bytes {
-        key.to_be_bytes().into()
+impl KeyCodec<(String, u64)> for HeightTimestamps {
+    fn encode_key((chain_id, height): &(String, u64)) -> Bytes {
+        chain_id
+            .as_bytes()
+            .iter()
+            .copied()
+            .chain(height.to_be_bytes())
+            .collect()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<u64> {
-        raw.try_into().map(u64::from_be_bytes).map_err(|_| {
-            StdError::generic_err(format!(
-                "invalid key: expected 8 bytes, found {} (raw: {raw})",
+    fn decode_key(raw: &Bytes) -> StdResult<(String, u64)> {
+        if raw.len() < 8 {
+            Err(StdError::generic_err(format!(
+                "invalid key: expected at least 8 bytes, found {} (raw: {raw})",
                 raw.len()
-            ))
-        })
+            )))
+        } else {
+            let height = raw[raw.len() - 8..]
+                .try_into()
+                .map(u64::from_be_bytes)
+                .expect("8 bytes; qed;");
+
+            let chain_id = str::from_utf8(&raw[..raw.len() - 8])
+                .map_err(|e| StdError::generic_err(format!("invalid chain id: {e}",)))?
+                .to_owned();
+
+            Ok((chain_id, height))
+        }
     }
 }
 impl ValueCodecViaEncoding for HeightTimestamps {
@@ -100,8 +122,11 @@ impl ValueCodecViaEncoding for HeightTimestamps {
 pub enum Quorum {}
 impl Store for Quorum {
     const PREFIX: Prefix = Prefix::new(b"quorum");
-    type Key = ();
+    type Key = String;
     type Value = NonZero<u8>;
+}
+impl KeyCodecViaEncoding for Quorum {
+    type Encoding = Bincode;
 }
 impl ValueCodecViaEncoding for Quorum {
     type Encoding = Bincode;
