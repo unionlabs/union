@@ -320,7 +320,7 @@ _: {
             max_gas = 10000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20 cw20-base;
+            ucs03 = ucs03-configs.cw20 cw20-wrapped-tokenfactory;
           };
           bech32_prefix = "bbn";
           lightclients = [

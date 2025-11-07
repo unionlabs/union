@@ -3685,6 +3685,8 @@ dependencies = [
  "cosmos-signer",
  "cosmwasm-std",
  "cw-escrow-vault",
+ "cw20",
+ "cw20-base",
  "embed-commit",
  "frissitheto",
  "futures",

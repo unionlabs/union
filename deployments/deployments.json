@@ -118,8 +118,8 @@
       "ucs03": {
         "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
         "height": 29000,
-        "commit": "bcebe1298cf6eaea0e9085493c31d495357dc554",
-        "code_id": 127,
+        "commit": "096b7ddd4ee7d8fc9cfe4bd15f66f67ee0351555",
+        "code_id": 138,
         "minter": {
           "type": "cw20",
           "address": "bbn1c723xf74f0r9g4uyn0cv2t7pkgcq7x0gaw5h773j78rk35w0j0usslxen6",
@@ -727,6 +727,21 @@
       "commit": "d97bf8a9148482e104c87feb1606c842059c836e"
     }
   },
+  "sui.4c78adac": {
+    "ibc_interface": "ibc-move/sui",
+    "core": {
+      "address": "0x20ce81524276132a2aaee23a8dad22d26b80adfef5dcf765c68567b44ed4dfb7::ibc",
+      "height": 255095344,
+      "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+    },
+    "app": {
+      "ucs03": {
+        "address": "0xb9e0f478ab1bb759694368de62ced7cb04057f489d56f2b0a6a7d5ebc1407079::zkgm",
+        "height": 255095344,
+        "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+      }
+    }
+  },
   "union.union-1": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
@@ -994,21 +1009,6 @@
           "commit": "88b294bf58128e60324735bec76e3b90a264a858",
           "code_id": 956
         }
-      }
-    }
-  },
-  "sui.4c78adac": {
-    "ibc_interface": "ibc-move/sui",
-    "core": {
-      "address": "0x20ce81524276132a2aaee23a8dad22d26b80adfef5dcf765c68567b44ed4dfb7::ibc",
-      "height": 255095344,
-      "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
-    },
-    "app": {
-      "ucs03": {
-        "address": "0xb9e0f478ab1bb759694368de62ced7cb04057f489d56f2b0a6a7d5ebc1407079::zkgm",
-        "height": 255095344,
-        "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
       }
     }
   }
