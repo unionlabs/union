@@ -240,7 +240,8 @@ impl Module {
                     .ibc_handler()
                     .connections(event.connection_id.raw())
                     .call()
-                    .await?;
+                    .await
+                    .map_err(|e| ErrorObject::owned(-1))?;
             }
             FullEvent::ConnectionOpenTry(event) => todo!(),
             FullEvent::ConnectionOpenAck(event) => todo!(),
