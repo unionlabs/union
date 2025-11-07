@@ -80,15 +80,16 @@ module zkgm::events {
         metadata: vector<u8>,
         kind: u8
     ) {
-        event::emit(CreateWrappedToken {
-            path,
-            channel_id,
-            base_token,
-            quote_token,
-            native_token,
-            metadata,
-            kind,
-        })
+        event::emit(
+            CreateWrappedToken {
+                path,
+                channel_id,
+                base_token,
+                quote_token,
+                native_token,
+                metadata,
+                kind
+            }
+        )
     }
 }
-
