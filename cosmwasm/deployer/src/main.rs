@@ -15,7 +15,7 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
 };
 use cosmos_signer::CosmosSigner;
-use cosmwasm_std::{Addr, Uint256};
+use cosmwasm_std::{Addr, Decimal, Uint256};
 use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
@@ -23,7 +23,7 @@ use rand_chacha::{
     ChaChaCore,
     rand_core::{SeedableRng, block::BlockRng},
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use sha2::Digest;
 use tracing::{info, instrument};
@@ -256,6 +256,16 @@ enum TxCmd {
         path: PathBuf,
         #[arg(long)]
         amount: u128,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
+    MigrateCw20Balances {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        private_key: H256,
+        #[arg(long)]
+        contract: Bech32<H256>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -1343,6 +1353,64 @@ async fn do_main() -> Result<()> {
                     signers.into_iter().map(|s| s.address()).collect::<Vec<_>>(),
                 )?;
             }
+            TxCmd::MigrateCw20Balances {
+                rpc_url,
+                private_key,
+                contract,
+                gas_config,
+            } => {
+                let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+
+                let token_info = ctx
+                    .query_smart::<cw20::TokenInfoResponse>(
+                        &contract,
+                        &cw20::Cw20QueryMsg::TokenInfo {},
+                    )
+                    .await?;
+
+                info!(
+                    "migrating balances for {} ({}/{}/{}; {})",
+                    contract,
+                    token_info.name,
+                    token_info.symbol,
+                    token_info.decimals,
+                    Decimal::from_atomics(token_info.total_supply, token_info.decimals.into())
+                        .unwrap()
+                );
+
+                loop {
+                    let (tx_hash, _) = ctx
+                        .tx(
+                            MsgExecuteContract {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                contract: contract.clone(),
+                                msg: br#"{"migrate_balances":{"count":100}}"#.into(),
+                                funds: vec![],
+                            },
+                            "",
+                            gas_config.simulate,
+                        )
+                        .await?;
+
+                    let total_migrated = ctx
+                        .rpc()
+                        .client()
+                        .tx(tx_hash.into_encoding(), false)
+                        .await?
+                        .tx_result
+                        .events
+                        .into_iter()
+                        .filter(|e| e.ty == "tf_mint")
+                        .count();
+
+                    if total_migrated == 0 {
+                        info!("done migrating balances");
+                        return Ok(());
+                    } else {
+                        info!(%tx_hash, "migrated {total_migrated} balances");
+                    }
+                }
+            }
         },
     }
 
@@ -1810,6 +1878,28 @@ impl Deployer {
         info!("bytecode-base code_id is {bytecode_base_code_id}");
 
         Ok(bytecode_base_code_id)
+    }
+
+    async fn query_smart<R: DeserializeOwned>(
+        &self,
+        contract: &Bech32<H256>,
+        msg: &impl Serialize,
+    ) -> Result<R> {
+        self.rpc()
+            .client()
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &QuerySmartContractStateRequest {
+                    address: contract.to_string(),
+                    query_data: serde_json::to_string(msg).unwrap().into_bytes(),
+                },
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .context("no response?")
+            .and_then(|res| serde_json::from_slice(&res.data).map_err(Into::into))
     }
 }
 
