@@ -364,8 +364,7 @@ async fn query_delegation(t: &LstContext, validator: &str) -> anyhow::Result<Uin
                 validator_addr: validator.to_string(),
             },
         )
-        .await
-        .unwrap()
+        .await?
         .delegation_response
         .unwrap()
         .balance
@@ -449,13 +448,12 @@ async fn test_redelegation() {
 
         let delegation_1 = query_delegation(&t, VALIDATORS[0]).await.unwrap();
         let delegation_2 = query_delegation(&t, VALIDATORS[1]).await.unwrap();
-        let delegation_3 = query_delegation(&t, VALIDATORS[2]).await.unwrap();
-        let delegation_4 = query_delegation(&t, VALIDATORS[3]).await.unwrap();
+        // following two errors since there are no delegations anymore
+        assert!(query_delegation(&t, VALIDATORS[2]).await.is_err());
+        assert!(query_delegation(&t, VALIDATORS[3]).await.is_err());
 
         assert_eq!(delegation_1.u128(), 600 + (reward_amount * 2 / 3));
         assert_eq!(delegation_2.u128(), 300 + (reward_amount / 3));
-        assert_eq!(delegation_3.u128(), 0);
-        assert_eq!(delegation_4.u128(), 0);
 
         shared_data
     })
