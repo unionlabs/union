@@ -768,14 +768,14 @@
   "sui.4c78adac": {
     "ibc_interface": "ibc-move/sui",
     "core": {
-      "address": "0x2931df05284a3cfc5c38fb5d67273285855bf03e6926e3a6e1f68f9757a3d7d7::events",
-      "height": 261353292,
+      "address": "0x8c7414ef89a6cb00a43c60027316ae450b642eca67a5a9d14fe34135e2edea05::events",
+      "height": 261471591,
       "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
     },
     "app": {
       "ucs03": {
-        "address": "0x03221a973ba42cb9c76755f7500b3f45acd6c0d01a7994ba8d0b9c54ccac2c7f::events",
-        "height": 261354924,
+        "address": "0xa1cfaf8c85635bef3615e59f4b653810835be05647baaed6cad8afc2bb25969b::events",
+        "height": 261472394,
         "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
       }
     }
