@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::H256;
@@ -190,7 +192,7 @@ pub enum QueryMsg {
     HasRole { role_id: RoleId, account: Addr },
 
     /// Return the timepoint at which a scheduled operation will be ready for execution. This
-    /// returns 0 if the operation is not yet scheduled, has expired, was executed, or was
+    /// returns [`None`] if the operation is not yet scheduled, has expired, was executed, or was
     /// canceled.
     ///
     /// ```solidity
@@ -460,7 +462,7 @@ pub enum ExecuteMsg {
     Schedule {
         target: Addr,
         data: String,
-        when: u64,
+        when: NonZero<u64>,
     },
 
     /// Cancel a scheduled (delayed) operation. Returns the nonce that identifies the previously

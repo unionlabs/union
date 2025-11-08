@@ -391,11 +391,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -460,11 +456,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 WasmQuery::ContractInfo { contract_addr } if contract_addr == "muno" => {
@@ -534,11 +526,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -593,11 +581,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -646,11 +630,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -674,11 +654,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -704,11 +680,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -751,11 +723,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: true,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -804,11 +772,7 @@ mod tests {
                     .unwrap(),
                 )),
                 WasmQuery::Smart { .. } => SystemResult::Ok(ContractResult::Ok(
-                    to_json_binary(&CanCall {
-                        allowed: true,
-                        delay: 0,
-                    })
-                    .unwrap(),
+                    to_json_binary(&CanCall::Immediate {}).unwrap(),
                 )),
                 msg => todo!("{msg:?}"),
             }
@@ -853,11 +817,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: false,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Unauthorized {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler
@@ -900,11 +860,7 @@ mod tests {
             match q {
                 WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
                     SystemResult::Ok(ContractResult::Ok(
-                        to_json_binary(&CanCall {
-                            allowed: false,
-                            delay: 0,
-                        })
-                        .unwrap(),
+                        to_json_binary(&CanCall::Unauthorized {}).unwrap(),
                     ))
                 }
                 // delegate the rest to the default handler

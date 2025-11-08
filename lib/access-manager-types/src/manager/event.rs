@@ -1,7 +1,9 @@
+use std::num::NonZero;
+
 use cosmwasm_std::{Addr, Event};
 use unionlabs_primitives::H256;
 
-use crate::{RoleId, Selector};
+use crate::{Nonce, RoleId, Selector};
 
 /// A delayed operation was scheduled.
 ///
@@ -19,8 +21,8 @@ use crate::{RoleId, Selector};
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L17>
 pub struct OperationScheduled<'a> {
     pub operation_id: H256,
-    pub nonce: u32,
-    pub schedule: u64,
+    pub nonce: Nonce,
+    pub schedule: NonZero<u64>,
     pub caller: &'a Addr,
     pub target: &'a Addr,
     pub data: &'a str,
@@ -47,7 +49,7 @@ impl From<OperationScheduled<'_>> for Event {
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L22>
 pub struct OperationExecuted {
     pub operation_id: H256,
-    pub nonce: u32,
+    pub nonce: Nonce,
 }
 
 impl From<OperationExecuted> for Event {
@@ -67,7 +69,7 @@ impl From<OperationExecuted> for Event {
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManager.sol#L27>
 pub struct OperationCanceled {
     pub operation_id: H256,
-    pub nonce: u32,
+    pub nonce: Nonce,
 }
 
 impl From<OperationCanceled> for Event {

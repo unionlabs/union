@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::PathBuf};
+use std::{fmt::Display, num::NonZero, path::PathBuf};
 
 use access_manager_types::{
     RoleId, Selector,
@@ -367,7 +367,7 @@ async fn schedule_increment(
         &manager::msg::ExecuteMsg::Schedule {
             target: Addr::unchecked(managed.to_string()),
             data: data.clone(),
-            when: now() + 5,
+            when: NonZero::new(now() + 5).unwrap(),
         },
         AccessManagerError::AccessManagerUnauthorizedCall {
             caller: Addr::unchecked(bob_client.wallet().address().to_string()),
@@ -378,7 +378,7 @@ async fn schedule_increment(
     .await?;
 
     info!("schedule increment call with correct delay");
-    let when = now() + 25;
+    let when = NonZero::new(now() + 25).unwrap();
     execute(
         bob_client,
         manager,
@@ -412,7 +412,7 @@ async fn schedule_increment(
     .await?;
 
     wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
-        block.block.header.time.seconds.inner() as u64 > when
+        block.block.header.time.seconds.inner() as u64 > when.get()
     })
     .await?;
 
@@ -473,7 +473,7 @@ async fn schedule_decrement_in_sub_msg(
         &manager::msg::ExecuteMsg::Schedule {
             target: Addr::unchecked(managed.to_string()),
             data: data.clone(),
-            when: now() + 5,
+            when: NonZero::new(now() + 5).unwrap(),
         },
         AccessManagerError::AccessManagerUnauthorizedCall {
             caller: Addr::unchecked(bob_client.wallet().address().to_string()),
@@ -484,7 +484,7 @@ async fn schedule_decrement_in_sub_msg(
     .await?;
 
     info!("schedule decrement call with correct delay");
-    let when = now() + 25;
+    let when = NonZero::new(now() + 25).unwrap();
     execute(
         bob_client,
         manager,
@@ -518,7 +518,7 @@ async fn schedule_decrement_in_sub_msg(
     .await?;
 
     wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
-        block.block.header.time.seconds.inner() as u64 > when
+        block.block.header.time.seconds.inner() as u64 > when.get()
     })
     .await?;
 
@@ -576,7 +576,7 @@ async fn schedule_increment_in_reply(
         &manager::msg::ExecuteMsg::Schedule {
             target: Addr::unchecked(managed.to_string()),
             data: data.clone(),
-            when: now() + 5,
+            when: NonZero::new(now() + 5).unwrap(),
         },
         AccessManagerError::AccessManagerUnauthorizedCall {
             caller: Addr::unchecked(bob_client.wallet().address().to_string()),
@@ -587,7 +587,7 @@ async fn schedule_increment_in_reply(
     .await?;
 
     info!("schedule increment_in_reply call with correct delay");
-    let when = now() + 25;
+    let when = NonZero::new(now() + 25).unwrap();
     execute(
         bob_client,
         manager,
@@ -621,7 +621,7 @@ async fn schedule_increment_in_reply(
     .await?;
 
     wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
-        block.block.header.time.seconds.inner() as u64 > when
+        block.block.header.time.seconds.inner() as u64 > when.get()
     })
     .await?;
 
@@ -710,7 +710,7 @@ async fn schedule_reentrant(
         &manager::msg::ExecuteMsg::Schedule {
             target: Addr::unchecked(manager.to_string()),
             data: data.clone(),
-            when: now() + 5,
+            when: NonZero::new(now() + 5).unwrap(),
         },
         AccessManagerError::AccessManagerUnauthorizedCall {
             caller: Addr::unchecked(charlie_client.wallet().address().to_string()),
@@ -721,7 +721,7 @@ async fn schedule_reentrant(
     .await?;
 
     info!("schedule grant_role call with correct delay");
-    let when = now() + 25;
+    let when = NonZero::new(now() + 25).unwrap();
     execute(
         charlie_client,
         manager,
@@ -755,7 +755,7 @@ async fn schedule_reentrant(
     .await?;
 
     wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
-        block.block.header.time.seconds.inner() as u64 > when
+        block.block.header.time.seconds.inner() as u64 > when.get()
     })
     .await?;
 
@@ -854,7 +854,7 @@ async fn execute_reentrant(
         &access_managed_example::msg::ExecuteMsg::DelegateSchedule {
             target: Addr::unchecked(manager.to_string()),
             data: grant_role_data.clone(),
-            when: now() + 5,
+            when: NonZero::new(now() + 5).unwrap(),
         },
         AccessManagerError::AccessManagerUnauthorizedCall {
             caller: Addr::unchecked(managed.to_string()),
@@ -865,7 +865,7 @@ async fn execute_reentrant(
     .await?;
 
     info!("schedule grant_role call with correct delay");
-    let grant_role_schedule_when = now() + 25;
+    let grant_role_schedule_when = NonZero::new(now() + 25).unwrap();
     execute(
         charlie_client,
         managed,
@@ -878,7 +878,7 @@ async fn execute_reentrant(
     .await?;
 
     info!("schedule execute call");
-    let execute_schedule_when = now() + 25;
+    let execute_schedule_when = NonZero::new(now() + 25).unwrap();
     execute(
         charlie_client,
         manager,
@@ -900,8 +900,8 @@ async fn execute_reentrant(
     .await?;
 
     wait_for_finalized_block_with(alice_client.rpc().client(), |block| {
-        block.block.header.time.seconds.inner() as u64 > grant_role_schedule_when
-            && block.block.header.time.seconds.inner() as u64 > execute_schedule_when
+        block.block.header.time.seconds.inner() as u64 > grant_role_schedule_when.get()
+            && block.block.header.time.seconds.inner() as u64 > execute_schedule_when.get()
     })
     .await?;
 

@@ -827,11 +827,7 @@ fn test_on_recv_packet_nonreentrant() {
 
     deps.querier.update_wasm(|_| {
         cosmwasm_std::SystemResult::Ok(cosmwasm_std::ContractResult::Ok(
-            to_json_binary(&CanCall {
-                allowed: true,
-                delay: 0,
-            })
-            .unwrap(),
+            to_json_binary(&CanCall::Immediate {}).unwrap(),
         ))
     });
 

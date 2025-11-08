@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 use upgradable::msg::Upgradable;
@@ -27,7 +29,7 @@ pub enum ExecuteMsg {
     DelegateSchedule {
         target: Addr,
         data: String,
-        when: u64,
+        when: NonZero<u64>,
     },
     #[serde(untagged)]
     AccessManaged(access_manager_types::managed::msg::ExecuteMsg),

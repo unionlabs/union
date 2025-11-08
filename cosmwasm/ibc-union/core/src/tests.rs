@@ -47,11 +47,7 @@ fn wasm_query_handler<F: Fn(LightClientQueryMsg) -> StdResult<Binary> + 'static>
                 match msg {
                     access_manager_types::manager::msg::QueryMsg::CanCall { .. } => {
                         QuerierResult::Ok(cosmwasm_std::ContractResult::Ok(
-                            to_json_binary(&CanCall {
-                                allowed: true,
-                                delay: 0,
-                            })
-                            .unwrap(),
+                            to_json_binary(&CanCall::Immediate {}).unwrap(),
                         ))
                     }
                     _ => unimplemented!(),

@@ -1,4 +1,4 @@
-use access_manager_types::{CanCall, Selector, managed::error::AccessManagedError};
+use access_manager_types::{CanCall, Selector, managed::error::AccessManagedError, manager};
 use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, SubMsg, WasmMsg, to_json_binary};
 use depolama::{StorageExt, Store};
 use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
@@ -49,51 +49,46 @@ impl<T: DeserializeOwned + Serialize> Restricted<T> {
     ) -> Result<EnsureCanCallResult<T>, ContractError> {
         let authority = deps.storage.read_item::<S>()?;
 
-        let CanCall {
-            allowed: immediate,
-            delay,
-        } = deps.querier.query_wasm_smart::<CanCall>(
+        let can_call = deps.querier.query_wasm_smart::<CanCall>(
             &authority,
-            &access_manager_types::manager::msg::QueryMsg::CanCall {
+            &manager::msg::QueryMsg::CanCall {
                 selector: self.selector.to_owned(),
                 target: env.contract.address.clone(),
                 caller: info.sender.clone(),
             },
         )?;
 
-        if immediate {
-            Ok(EnsureCanCallResult::Msg(self.value))
-        } else if delay > 0 {
-            deps.storage.write_item::<ConsumingSchedule>(&true);
-
-            Ok(EnsureCanCallResult::Scheduled(
-                [
-                    SubMsg::reply_never(WasmMsg::Execute {
-                        contract_addr: authority.into(),
-                        msg: to_json_binary(
-                            &access_manager_types::manager::msg::ExecuteMsg::ConsumeScheduledOp {
-                                caller: info.sender.clone(),
-                                data: serde_json_wasm::to_string(&self.value).expect("infallible"),
-                            },
-                        )?,
-                        funds: vec![],
-                    }),
-                    SubMsg::reply_on_success(
-                        WasmMsg::Execute {
-                            contract_addr: env.contract.address.to_string(),
-                            msg: to_json_binary(&self.value).expect("infallible"),
-                            funds: vec![],
-                        },
-                        ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
-                    ),
-                ]
-                .to_vec(),
-            ))
-        } else {
-            Err(AccessManagedError::AccessManagedUnauthorized {
+        match can_call {
+            CanCall::Immediate {} => Ok(EnsureCanCallResult::Msg(self.value)),
+            CanCall::Unauthorized {} => Err(AccessManagedError::AccessManagedUnauthorized {
                 caller: info.sender.clone(),
             }
-            .into())
+            .into()),
+            CanCall::WithDelay { delay: _ } => {
+                deps.storage.write_item::<ConsumingSchedule>(&true);
+
+                Ok(EnsureCanCallResult::Scheduled(
+                    [
+                        SubMsg::reply_never(WasmMsg::Execute {
+                            contract_addr: authority.into(),
+                            msg: to_json_binary(&manager::msg::ExecuteMsg::ConsumeScheduledOp {
+                                caller: info.sender.clone(),
+                                data: serde_json_wasm::to_string(&self.value).expect("infallible"),
+                            })?,
+                            funds: vec![],
+                        }),
+                        SubMsg::reply_on_success(
+                            WasmMsg::Execute {
+                                contract_addr: env.contract.address.to_string(),
+                                msg: to_json_binary(&self.value).expect("infallible"),
+                                funds: vec![],
+                            },
+                            ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
+                        ),
+                    ]
+                    .to_vec(),
+                ))
+            }
         }
     }
 }

@@ -9,8 +9,8 @@
 //!
 //! The restriction rules for such functions are defined in terms of "roles" identified by a
 //! [`RoleId`] and scoped by target ([`Addr`][cosmwasm_std::Addr]) and function selectors
-//! ([`Selector`][access_manager_types::Selector]). These roles are stored in this contract and can be
-//! configured by admins ([`RoleId::ADMIN_ROLE`] members) after a delay (see
+//! ([`Selector`][access_manager_types::Selector]). These roles are stored in this contract and can
+//! be configured by admins ([`RoleId::ADMIN_ROLE`] members) after a delay (see
 //! [`QueryMsg::GetTargetAdminDelay`]).
 //!
 //! For each target contract, admins can configure the following without any delay:
@@ -58,7 +58,8 @@
 //! - Storage in CosmWasm functions quite differently than in the EVM. In Solidity, it is possible
 //!   to embed a mapping directly in a struct that is stored in storage, which allows for
 //!   multi-level deferred storage access. To emulate this behaviour in CosmWasm, a separate storage
-//!   item is used explicitly in these cases. See [`state`] and [`access_manager_types`] for examples.
+//!   item is used explicitly in these cases. See [`state`] and [`access_manager_types`] for
+//!   examples.
 //! - CosmWasm does not allow for synchronous cross-contract calls, and instead uses a
 //!   submessage/reply pattern. As such, nested executions can not be run inline. In the original
 //!   Solidity implementation, `_executionId` is used to track the currently executing call, which
@@ -68,6 +69,10 @@
 //! - CosmWasm does not support modifiers, so modifiers are instead implemented as standalone
 //!   functions that are called manually within functions they are applied to in the original
 //!   Solidity implementation.
+//! - Due to the limitations of Solidity, tuples are often used to emulate enums; this however
+//!   results in invalid states being representable. In order to reduce the chance of bugs, and to
+//!   make the code more idiomatic and easier to understand, these tuples have been replaced with
+//!   enums wherever possible.
 //!
 //! [oz]: https://www.openzeppelin.com
 //! [am]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol

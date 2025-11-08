@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{borrow::Cow, ptr};
+use std::{borrow::Cow, collections::BTreeMap, num::NonZero, ptr, str::FromStr};
 
 use cosmwasm_std::{StdError, StdResult};
 use serde::{
@@ -102,12 +102,10 @@ pub struct Role {
 pub struct Schedule {
     /// Moment at which the operation can be executed.
     ///
-    /// If this is 0, the operation can not be executed.
-    // TODO: Option<NonZero<u64>>
-    pub timepoint: u64,
+    /// If this is [`None`], the operation can not be executed.
+    pub timepoint: Option<Timepoint>,
     /// Operation nonce to allow third-party contracts to identify the operation.
-    // TODO: Newtype
-    pub nonce: u32,
+    pub nonce: Nonce,
 }
 
 #[derive(
@@ -134,6 +132,14 @@ pub struct RoleId(
 impl fmt::Display for RoleId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl FromStr for RoleId {
+    type Err = std::num::ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse().map(Self)
     }
 }
 
@@ -539,19 +545,40 @@ impl fmt::Display for Selector {
     }
 }
 
+/// Whether or not an account has permissions to call a selector on a target.
+///
+/// This is a more type-safe representation of the `(bool immediate, delay uint32)` tuple used throughout the original solidity implementation; `immediate && delay != 0` is invalid and has no meaning, so this enum cannot represent that state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CanCall {
-    // whether or not the caller can call the target *right now*, i.e. without any delay
-    pub allowed: bool,
-    pub delay: u32,
+pub enum CanCall {
+    /// The caller is unauthorized to execute this call.
+    ///
+    /// This is equivalent to `!immediate && delay == 0`.
+    Unauthorized {},
+    /// The caller is authorized to execute this call, with no execution delay.
+    ///
+    /// This is equivalent to `immediate && delay == 0`.
+    Immediate {},
+    /// The caller is authorized to execute this call, with the specified execution delay (the call must be scheduled).
+    ///
+    /// This is equivalent to `!immediate && delay != 0`.
+    WithDelay { delay: NonZero<u32> },
 }
 
-// TODO: Make this an enum, execution_delay is only ever meaningful when is_member is true
-// (i think)
+/// Whether or not an account has a role.
+///
+/// This is a more type-safe representation of the `(bool is_member, delay uint32)` tuple used throughout the original solidity implementation; `!is_member && delay != 0` is invalid and has no meaning, so this enum cannot represent that state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct HasRole {
-    pub is_member: bool,
-    pub execution_delay: u32,
+pub enum HasRole {
+    /// The account does not have the specified role.
+    ///
+    /// This is equivalent to `!is_member`.
+    No {},
+    /// The account does have the specified role, potentially with an execution delay.
+    ///
+    /// This is equivalent to `is_member`, with `execution_delay` being `Some` if it is non-zero.
+    Yes {
+        execution_delay: Option<NonZero<u32>>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -565,6 +592,70 @@ pub struct FullAccess {
     /// Timestamp at which the pending execution delay will become active. 0 means no delay update
     /// is scheduled.
     pub effect: u64,
+}
+
+/// Response type for the [`QueryMsg::GetRoleLabels`] query.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RoleLabelsResponse(
+    #[serde(with = "serde_utils::map_numeric_keys_as_string")] pub BTreeMap<RoleId, Option<String>>,
+);
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    bincode::Encode,
+    bincode::Decode,
+)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub struct Nonce(u32);
+
+impl Nonce {
+    pub fn new(raw: u32) -> Self {
+        Self(raw)
+    }
+
+    pub fn increment(self) -> Self {
+        Self(self.0 + 1)
+    }
+}
+
+impl fmt::Display for Nonce {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    bincode::Encode,
+    bincode::Decode,
+)]
+pub struct Timepoint(NonZero<u64>);
+
+impl Timepoint {
+    pub fn new(raw: NonZero<u64>) -> Self {
+        Self(raw)
+    }
+
+    pub fn get(self) -> u64 {
+        self.0.get()
+    }
 }
 
 #[cfg(test)]
@@ -694,5 +785,19 @@ mod tests {
             Selector::extract_from_data(&json(&Msg::Untagged(InnerMsg::InnerTuple(1, 2)))).unwrap(),
             Selector::new("inner_tuple")
         );
+    }
+
+    #[test]
+    fn role_labels_response_serde() {
+        let json = r#"{"1":null}"#;
+
+        let value = serde_json_wasm::from_str::<RoleLabelsResponse>(json).unwrap();
+
+        assert_eq!(
+            value,
+            RoleLabelsResponse([(RoleId::new(1), None)].into_iter().collect())
+        );
+
+        assert_eq!(json, serde_json_wasm::to_string(&value).unwrap());
     }
 }
