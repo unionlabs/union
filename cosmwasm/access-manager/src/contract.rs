@@ -422,14 +422,10 @@ fn _set_target_admin_delay(
         .upsert::<Targets, ContractError>(target, |maybe_target_config| {
             let mut target_config = maybe_target_config.unwrap_or_default();
 
-            let delay;
-
-            (delay, effect) =
+            (target_config.admin_delay, effect) =
                 target_config
                     .admin_delay
                     .with_update(timestamp, new_delay, min_setback());
-
-            target_config.admin_delay = delay;
 
             Ok(target_config)
         })?;
@@ -525,6 +521,7 @@ pub(crate) fn schedule(
         Err(AccessManagerError::AccessManagerUnauthorizedCall {
             caller: caller.clone(),
             target: target.clone(),
+            // NOTE: This call can technically never fail, since _check_selector is also called within _can_call_extended
             selector: _check_selector(data)?.to_owned(),
         }
         .into())
@@ -967,7 +964,7 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
 
     let (admin_restricted, role_id, operation_delay) = _get_admin_restrictions(ctx, data)?;
 
-    // isTargetClosed apply to non-admin-restricted function
+    // is_target_closed only applies to non-admin-restricted functions
     if !admin_restricted && is_target_closed(ctx.query_ctx(), ctx.address_this())? {
         return Ok(CanCall::Unauthorized {});
     }

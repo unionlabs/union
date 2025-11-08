@@ -6,12 +6,12 @@ use access_manager_types::{
         error::AccessManagerError,
         event::{
             OperationScheduled, RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged, RoleLabel,
-            RoleRevoked, TargetClosed, TargetFunctionRoleUpdated,
+            RoleRevoked, TargetAdminDelayUpdated, TargetClosed, TargetFunctionRoleUpdated,
         },
         msg::{ExecuteMsg, QueryMsg},
     },
 };
-use cosmwasm_std::{Addr, Response, testing::message_info};
+use cosmwasm_std::{Addr, Response, StdError, testing::message_info};
 use hex_literal::hex;
 use unionlabs_primitives::H256;
 
@@ -193,6 +193,23 @@ fn renounce_role_works() {
     let info = message_info(&ADMIN, &[]);
 
     let grantee = Addr::unchecked("grantee");
+
+    // can't renounce public role
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&grantee, &[]),
+            ExecuteMsg::RenounceRole {
+                role_id: RoleId::PUBLIC_ROLE,
+                caller_confirmation: grantee.clone(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        )),
+    );
 
     assert_eq!(
         execute(
@@ -1510,6 +1527,69 @@ fn schedule_works() {
 }
 
 #[test]
+fn schedule_invalid_data_fails() {
+    let (mut deps, env) = setup();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: r"this ain't json bro".to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "error extracting selector: expected ident at line 1 column 2"
+        )),
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: r#"{"too":"many","keys":"man"}"#.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "error extracting selector: multiple keys found at line 1 column 20"
+        )),
+    );
+}
+
+#[test]
 fn schedule_reentrant_works() {
     const GRANT_ROLE: RoleId = RoleId::new(6);
 
@@ -1824,7 +1904,7 @@ fn cancel_works() {
 }
 
 #[test]
-fn label_works() {
+fn role_label_works() {
     let (mut deps, env) = setup();
 
     assert_eq!(
@@ -1859,4 +1939,117 @@ fn label_works() {
             .collect(),
         ),
     );
+}
+
+#[test]
+fn target_admin_delay_works() {
+    let (mut deps, mut env) = setup();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetAdminDelay {
+                target: TARGET_1.clone(),
+                new_delay: 100
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetAdminDelayUpdated {
+            target: &TARGET_1,
+            delay: 100,
+            since: env.block.time.seconds() + u64::from(min_setback()),
+        }),
+    );
+
+    env.block.time = env.block.time.plus_seconds(3);
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetAdminDelay {
+                target: TARGET_1.clone(),
+                new_delay: min_setback() * 10
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetAdminDelayUpdated {
+            target: &TARGET_1,
+            delay: min_setback() * 10,
+            since: env.block.time.seconds() + u64::from(min_setback()),
+        }),
+    );
+
+    env.block.time = env.block.time.plus_seconds(min_setback().into());
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetAdminDelay {
+                target: TARGET_1.clone(),
+                new_delay: 100
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetAdminDelayUpdated {
+            target: &TARGET_1,
+            delay: 100,
+            since: env.block.time.seconds() + u64::from(min_setback() * 10) - 100,
+        }),
+    );
+}
+
+#[test]
+fn admin_operations_check_admin() {
+    for msg in [
+        ExecuteMsg::SetRoleGuardian {
+            role_id: RoleId::new(1),
+            guardian: RoleId::new(2),
+        },
+        ExecuteMsg::SetRoleAdmin {
+            role_id: RoleId::new(1),
+            admin: RoleId::new(2),
+        },
+        ExecuteMsg::SetGrantDelay {
+            role_id: RoleId::new(1),
+            grant_delay: 0,
+        },
+        ExecuteMsg::SetTargetFunctionRole {
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+            role_id: RoleId::new(1),
+        },
+        ExecuteMsg::SetTargetAdminDelay {
+            target: TARGET_1.clone(),
+            new_delay: 0,
+        },
+        ExecuteMsg::SetTargetClosed {
+            target: TARGET_1.clone(),
+            closed: true,
+        },
+        ExecuteMsg::LabelRole {
+            role_id: RoleId::new(1),
+            label: "role".to_owned(),
+        },
+    ] {
+        let (mut deps, env) = setup();
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                env.clone(),
+                message_info(&ACCOUNT_1, &[]),
+                msg,
+            )
+            .unwrap_err(),
+            ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
+                msg_sender: ACCOUNT_1.clone(),
+                required_role_id: RoleId::ADMIN_ROLE,
+            }),
+        );
+    }
 }
