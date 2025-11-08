@@ -27,6 +27,9 @@ pub enum ContractError {
     #[error(transparent)]
     Upgradable(#[from] upgradable::error::ContractError),
 
+    #[error(transparent)]
+    Pausable(#[from] pausable::error::ContractError),
+
     #[error("invalid ibc version, got {version}")]
     InvalidIbcVersion { version: String },
     #[error("invalid operation, sender must be ibc host")]

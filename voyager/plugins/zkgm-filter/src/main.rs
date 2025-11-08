@@ -28,7 +28,10 @@ use sqlx::{
     prelude::FromRow,
 };
 use tracing::{Instrument, debug, info, info_span, instrument, trace, warn};
-use ucs03_zkgm::com::{Ack, BatchAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS, TokenOrderAck};
+use ucs03_zkgm::{
+    com::{Ack, BatchAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS, TokenOrderAck},
+    msg::SendMsg,
+};
 use ucs03_zkgm_packet::{
     batch::{BatchInstructionV0Shape, BatchShape},
     root::RootShape,
@@ -792,25 +795,17 @@ fn valid_checksum_cosmos(tx_bytes: &[u8]) -> (bool, Option<Bech32<Bytes>>) {
         }
     };
 
-    let execute_msg =
-        match serde_json::from_slice::<ucs03_zkgm::msg::RestrictedExecuteMsg>(&msg.msg) {
-            Ok(ok) => ok,
-            Err(err) => {
-                warn!(
-                    err = %ErrorReporter(err),
-                    msg = %msg.msg,
-                    "unable to decode ExecuteMsg, crc will not be checked"
-                );
+    match serde_json::from_slice(&msg.msg) {
+        Ok(SendMsg::Send { salt, .. }) => (valid_checksum(salt), Some(msg.sender)),
+        Err(err) => {
+            warn!(
+                err = %ErrorReporter(err),
+                msg = %msg.msg,
+                "unable to decode ExecuteMsg, crc will not be checked"
+            );
 
-                return (true, None);
-            }
-        };
-
-    match execute_msg {
-        ucs03_zkgm::msg::RestrictedExecuteMsg::Send { salt, .. } => {
-            (valid_checksum(salt), Some(msg.sender))
+            (true, None)
         }
-        _ => panic!("????? {execute_msg:?}"),
     }
 }
 

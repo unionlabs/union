@@ -26,6 +26,7 @@ embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-msg               = { workspace = true }
 ibc-union-spec              = { workspace = true, features = ["serde", "ethabi"] }
+pausable                    = { workspace = true }
 schemars                    = { workspace = true, features = ["derive"], optional = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde-json-wasm             = { workspace = true }

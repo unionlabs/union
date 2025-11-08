@@ -101,6 +101,9 @@ pub struct Role {
 )]
 pub struct Schedule {
     /// Moment at which the operation can be executed.
+    ///
+    /// If this is 0, the operation can not be executed.
+    // TODO: Option<NonZero<u64>>
     pub timepoint: u64,
     /// Operation nonce to allow third-party contracts to identify the operation.
     // TODO: Newtype

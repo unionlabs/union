@@ -43,7 +43,7 @@ use crate::{
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, RestrictedExecuteMsg,
-        V1ToV2Migration, V1ToV2WrappedMigration,
+        SendMsg, V1ToV2Migration, V1ToV2WrappedMigration,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT, CallProxySalt,
@@ -271,20 +271,24 @@ pub fn execute(
             };
 
             match msg {
-                RestrictedExecuteMsg::Send {
-                    channel_id,
-                    timeout_timestamp,
-                    timeout_height: _,
-                    salt,
-                    instruction,
-                } => send(
-                    deps,
-                    info,
-                    channel_id,
-                    timeout_timestamp,
-                    salt,
-                    Instruction::abi_decode_params_validate(&instruction)?,
-                ),
+                RestrictedExecuteMsg::Send(msg) => {
+                    let SendMsg::Send {
+                        channel_id,
+                        timeout_timestamp,
+                        timeout_height: _,
+                        salt,
+                        instruction,
+                    } = msg.ensure_not_paused(deps.as_ref())?;
+
+                    send(
+                        deps,
+                        info,
+                        channel_id,
+                        timeout_timestamp,
+                        salt,
+                        Instruction::abi_decode_params_validate(&instruction)?,
+                    )
+                }
                 RestrictedExecuteMsg::SetBucketConfig {
                     denom,
                     capacity,
@@ -321,6 +325,9 @@ pub fn execute(
                 } => migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations),
                 RestrictedExecuteMsg::Upgradable(msg) => {
                     upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                }
+                RestrictedExecuteMsg::Pausable(msg) => {
+                    pausable::execute(deps, &info, &msg).map_err(Into::into)
                 }
             }
         }
@@ -3177,6 +3184,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
         }
         QueryMsg::GetBurnAddress {} => Ok(to_json_binary(&get_burn_address(deps)?)?),
         QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+        QueryMsg::Pausable(msg) => pausable::query(deps, &msg).map_err(Into::into),
     }
 }
 

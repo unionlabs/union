@@ -1,8 +1,4 @@
-use cosmwasm_std::{DepsMut, Env, Response};
-use frissitheto::UpgradeMsg;
-use ibc_union_light_client::{
-    IbcClientError, default_migrate, default_query, default_reply, msg::InitMsg, noop_migration,
-};
+use ibc_union_light_client::{default_migrate, default_query, default_reply, noop_migration};
 use serde::{Deserialize, Serialize};
 
 use crate::client::BaseLightClient;
