@@ -19,7 +19,6 @@ serde                = { workspace = true, features = ["derive"] }
 serde-json-wasm      = { workspace = true }
 serde-utils          = { workspace = true }
 serde_json           = { workspace = true, features = ["raw_value"] }
-strum                = { workspace = true, features = ["derive"] }
 thiserror            = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["serde", "bincode"] }
 

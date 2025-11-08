@@ -721,7 +721,9 @@ pub(crate) fn consume_scheduled_op(
         target,
         &managed::msg::QueryMsg::IsConsumingScheduledOp {},
     )?;
-    if (&*selector != managed::msg::QueryMsg::IsConsumingScheduledOp {}.selector()) {
+    if &*selector
+        != Selector::extract_from_serialize(&managed::msg::QueryMsg::IsConsumingScheduledOp {})
+    {
         return Err(AccessManagerError::AccessManagerUnauthorizedConsume {
             target: target.clone(),
         }

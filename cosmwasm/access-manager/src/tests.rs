@@ -1312,6 +1312,13 @@ fn schedule_works() {
 
     let data = r#"{"a":{}}"#;
 
+    // operation has never been scheduled, nonce and timepoint are default values
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(0),
+    );
     assert_query_result(
         deps.as_ref(),
         &env,
@@ -1417,6 +1424,13 @@ fn schedule_works() {
         }),
     );
 
+    // operation has been scheduled, nonce is now 1 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
     assert_query_result(
         deps.as_ref(),
         &env,
@@ -1444,7 +1458,13 @@ fn schedule_works() {
 
     env.block.time = env.block.time.plus_seconds(u64::from(expiration()) + 10);
 
-    // scheduled operation expires correctly
+    // scheduled operation expires correctly; nonce does not increase on expiry
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
     assert_query_result(
         deps.as_ref(),
         &env,
@@ -1452,7 +1472,7 @@ fn schedule_works() {
         &None::<()>,
     );
 
-    // scheduling again increases the nonce
+    // scheduling again increases the nonce and sets the timepoint
     assert_eq!(
         execute(
             deps.as_mut(),
@@ -1473,6 +1493,19 @@ fn schedule_works() {
             target: &TARGET_1,
             data,
         }),
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(2),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
     );
 }
 

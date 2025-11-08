@@ -168,7 +168,7 @@ impl RoleId {
         raw.try_into()
             .map_err(|_| {
                 StdError::generic_err(format!(
-                    "invalid key: expected 8 bytes, found {}: {raw}",
+                    "invalid role id: expected 8 bytes, found {}: {raw}",
                     raw.len(),
                 ))
             })

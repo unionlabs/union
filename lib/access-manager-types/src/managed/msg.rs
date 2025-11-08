@@ -1,8 +1,6 @@
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 
-use crate::Selector;
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
@@ -26,7 +24,7 @@ pub enum ExecuteMsg {
 }
 
 /// Interface mirroring the queries from [`IAccessManaged.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol).
-#[derive(Debug, PartialEq, Serialize, Deserialize, strum::IntoStaticStr)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -49,12 +47,6 @@ pub enum QueryMsg {
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol#L31>
     IsConsumingScheduledOp {},
-}
-
-impl QueryMsg {
-    pub fn selector(&self) -> &'static Selector {
-        Selector::new(<&'static str>::from(self))
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
