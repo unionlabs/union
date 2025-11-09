@@ -12,20 +12,25 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy          = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
-clap           = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
-embed-commit   = { workspace = true }
-enumorph       = { workspace = true }
-ibc-solidity   = { workspace = true, features = ["rpc"] }
-ibc-union-spec = { workspace = true, features = ["serde", "ethabi"] }
-jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }
-macros         = { workspace = true }
-rage = "0.11.1"
-serde          = { workspace = true, features = ["derive"] }
-serde-utils    = { workspace = true }
-serde_json     = { workspace = true }
-thiserror      = { workspace = true }
-tokio          = { workspace = true }
-tracing        = { workspace = true }
-unionlabs      = { workspace = true }
-voyager-sdk    = { workspace = true }
+alloy                 = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
+attested-light-client = { workspace = true }
+clap                  = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
+cometbft-rpc          = { workspace = true }
+concurrent-keyring    = { workspace = true }
+cosmos-client         = { workspace = true }
+ed25519-dalek         = { version = "2.2.0", features = ["pkcs8", "pem"] }
+embed-commit          = { workspace = true }
+enumorph              = { workspace = true }
+ibc-solidity          = { workspace = true, features = ["rpc"] }
+ibc-union-spec        = { workspace = true, features = ["serde", "ethabi"] }
+jsonrpsee             = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                = { workspace = true }
+protos                = { workspace = true }
+serde                 = { workspace = true, features = ["derive"] }
+serde-utils           = { workspace = true }
+serde_json            = { workspace = true }
+thiserror             = { workspace = true }
+tokio                 = { workspace = true }
+tracing               = { workspace = true }
+unionlabs             = { workspace = true }
+voyager-sdk           = { workspace = true }
