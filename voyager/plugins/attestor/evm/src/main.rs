@@ -92,8 +92,6 @@ pub struct ModuleInner {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
-    #[serde(default)]
-    pub additional_chain_ids: Vec<ChainId>,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,

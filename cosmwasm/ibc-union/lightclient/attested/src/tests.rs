@@ -2,7 +2,7 @@ use std::{num::NonZero, sync::LazyLock};
 
 use attested_light_client_types::{ClientState, ClientStateV1, ConsensusState, Header};
 use cosmwasm_std::{
-    Addr, Api, OwnedDeps,
+    Addr, Api, Event, OwnedDeps, Response,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
 };
 use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
@@ -10,6 +10,7 @@ use frissitheto::UpgradeMsg;
 use hex_literal::hex;
 use ibc_union_light_client::{
     access_managed,
+    msg::InitMsg,
     spec::{Duration, Timestamp},
 };
 use unionlabs::{
@@ -21,7 +22,7 @@ use crate::{
     client::{verify_attestation, verify_header},
     contract::{execute, migrate},
     errors::Error,
-    msg::{ExecuteMsg, InitMsg},
+    msg::{ExecuteMsg, RestrictedExecuteMsg},
     types::{Attestation, AttestationValue},
 };
 
@@ -72,19 +73,45 @@ fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier> {
 
     migrate(
         deps.as_mut(),
-        env,
+        env.clone(),
         UpgradeMsg::Init(InitMsg {
-            ibc_union_light_client_init_msg: ibc_union_light_client::msg::InitMsg {
-                ibc_host: ibc_host.into_string(),
-                access_managed_init_msg: access_managed::InitMsg {
-                    initial_authority: Addr::unchecked("manager"),
-                },
+            ibc_host: ibc_host.into_string(),
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: Addr::unchecked("manager"),
             },
-            attestors: attestors().map(vk).collect(),
-            quorum: const { <NonZero<u8>>::new(2).unwrap() },
         }),
     )
     .unwrap();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked(""), &[]),
+            ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+                new_quorum: const { NonZero::new(2).unwrap() },
+            }),
+        )
+        .unwrap(),
+        Response::new().add_event(Event::new("quorum_updated").add_attribute("quorum", "2"))
+    );
+
+    for attestor in attestors() {
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                env.clone(),
+                message_info(&Addr::unchecked(""), &[]),
+                ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                    new_attestor: vk(attestor)
+                }),
+            )
+            .unwrap(),
+            Response::new().add_event(
+                Event::new("attestor_added").add_attribute("attestor", vk(attestor).to_string())
+            )
+        );
+    }
 
     deps
 }
