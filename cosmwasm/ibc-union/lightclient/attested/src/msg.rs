@@ -1,25 +1,61 @@
-use std::{collections::BTreeSet, num::NonZero};
+use std::num::NonZero;
 
-use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
-use unionlabs::primitives::{H256, H512};
+use unionlabs::primitives::{Bytes, H256, H512};
 
 use crate::types::Attestation;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct InitMsg {
-    pub ibc_host: Addr,
-    pub attestors: BTreeSet<H256>,
-    pub quorum: NonZero<u8>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    /// Attest to a key/value state.
+    ///
+    /// `attestor` must be a valid attestor and must have signed the `attestation` payload.
     Attest {
         attestation: Attestation,
         attestor: H256,
         signature: H512,
     },
+    /// Confirm an attestation.
+    ///
+    /// Attestations are typically confirmed in [`ExecuteMsg::Attest`] upon receiving the attestation that pushes the total attestations over the quorum. However, if the quorum is decreased while there are still pending attestations, then this can called to confirm those attestations if they have already hit the new quorum without requiring another attestation to be submitted (which may not be possible if there are not enough attestors in the set).
+    ConfirmAttestation { attestation: Attestation },
+    // TODO: Restricted<> once https://github.com/unionlabs/union/pull/5285 is merged
+    #[serde(untagged)]
+    Restricted(RestrictedExecuteMsg),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum RestrictedExecuteMsg {
+    /// Set a new quorum for the attestations to be considered valid.
+    ///
+    /// If the new quorum is larger than the currently configuured quorum, any existing attestations that have already hit the quorum will still be considered valid, but any current pending attestations will need to reach the new quorum in order to be confirmed.
+    SetQuorum { new_quorum: NonZero<u8> },
+    /// Add a new attestor to the attestation set.
+    AddAttestor { new_attestor: H256 },
+    /// Add an existing attestor from the attestation set.
+    RemoveAttestor { old_attestor: H256 },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum QueryMsg {
+    /// Returns the currently configured quorum.
+    Quorum {},
+    /// Returns the current attestation set.
+    Attestors {},
+    /// Returns the value attested to under `key` at `height`.
+    AttestedValue {
+        // #[serde(with = "serde_utils::string")]
+        height: u64,
+        key: Bytes,
+    },
+    /// Returns the timestamp attested to at `height`.
+    TimestampAtHeight {
+        // #[serde(with = "serde_utils::string")]
+        height: u64,
+    },
+    #[serde(untagged)]
+    LightClient(ibc_union_light_client::msg::QueryMsg),
 }

@@ -12,12 +12,6 @@ pub enum Error {
     #[error("no misbehaviour in an attested client")]
     NoMisbehaviourInAttestedClient,
 
-    #[error("unauthorized call")]
-    Unauthorized,
-
-    #[error("key {key} has not been attested to at height {height}")]
-    KeyNotAttested { height: u64, key: Bytes },
-
     #[error(
         "key {key} was attested to at height {height} with value {value} but \
         attempted to verify against value {value}"
@@ -71,6 +65,15 @@ pub enum Error {
 
     #[error("no attestation found for height {height}, key {key}")]
     AttestationNotFound { height: u64, key: Bytes },
+
+    #[error("attestor {attestor} is already in the attestation set")]
+    AttestorAlreadyExists { attestor: H256 },
+
+    #[error("the quorum has not yet been set")]
+    QuorumNotSet,
+
+    #[error("the quorum has not been reached for this attestation")]
+    QuorumNotReached,
 }
 
 impl From<Error> for IbcClientError<AttestedLightClient> {

@@ -36,3 +36,38 @@ impl fmt::Display for AttestationValue {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use unionlabs::{
+        encoding::{Bincode, EncodeAs, Json},
+        test_utils::assert_codec_iso_bytes,
+    };
+
+    use super::*;
+
+    #[test]
+    fn attestation_value_json() {
+        assert_codec_iso_bytes::<_, Json>(&AttestationValue::NonExistence, br#""non_existence""#);
+
+        assert_codec_iso_bytes::<_, Json>(
+            &AttestationValue::Existence([0x00].into()),
+            br#"{"existence":"0x00"}"#,
+        );
+    }
+
+    #[test]
+    fn attestation_value_bincode() {
+        assert_codec_iso_bytes::<_, Bincode>(&AttestationValue::NonExistence, &hex!("00000000"));
+
+        assert_codec_iso_bytes::<_, Bincode>(
+            &AttestationValue::Existence([0x00].into()),
+            &hex!(
+                "01000000"         // variant
+                "0100000000000000" // byte length
+                "00"               // bytes
+            ),
+        );
+    }
+}
