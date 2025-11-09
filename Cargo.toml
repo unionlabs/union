@@ -348,6 +348,7 @@ arbitrum-client                           = { path = "lib/arbitrum-client", defa
 arbitrum-light-client-types               = { path = "lib/arbitrum-light-client-types", default-features = false }
 arbitrum-types                            = { path = "lib/arbitrum-types", default-features = false }
 arbitrum-verifier                         = { path = "lib/arbitrum-verifier", default-features = false }
+attested-light-client                     = { path = "cosmwasm/ibc-union/lightclient/attested", default-features = false }
 attested-light-client-types               = { path = "lib/attested-light-client-types", default-features = false }
 base-client                               = { path = "lib/base-client", default-features = false }
 base-light-client-types                   = { path = "lib/base-light-client-types", default-features = false }

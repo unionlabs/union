@@ -2,14 +2,26 @@ use std::{collections::VecDeque, ops::Deref, panic::AssertUnwindSafe, path::Path
 
 use alloy::{
     network::AnyNetwork,
+    primitives::U256,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
+use attested_light_client::types::{Attestation, AttestationValue};
 use clap::Subcommand;
-use ibc_solidity::Ibc::{self, IbcInstance};
+use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
+use cosmos_client::{
+    BroadcastTxCommitError, TxClient, TxError,
+    gas::{any, feemarket, fixed, osmosis_eip1559_feemarket},
+    rpc::{Rpc, RpcT},
+    wallet::{LocalSigner, WalletT},
+};
+use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut, pkcs8::DecodePrivateKey};
 use ibc_union_spec::{
-    IbcUnion,
-    event::FullEvent,
-    path::{ConnectionPath, StorePath},
+    IbcUnion, Timestamp,
+    event::{
+        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, FullEvent,
+    },
+    path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath},
 };
 use jsonrpsee::{
     Extensions,
@@ -18,20 +30,22 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::instrument;
+use tracing::{error, info, info_span, instrument, warn};
 use unionlabs::{
     ErrorReporter,
+    cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
+    encoding::{Bincode, EncodeAs},
     never::Never,
-    primitives::{H160, H256},
+    primitives::{Bech32, H160, H256},
 };
 use voyager_sdk::{
     anyhow::{self, bail},
-    hook::{SubmitTxHook, simple_take_filter},
+    hook::simple_take_filter,
     message::{PluginMessage, VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::{ChainId, IbcSpec},
     rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
-    vm::{Op, Visit, call, defer, now, pass::PassResult, seq},
+    vm::{Op, call, noop, pass::PassResult},
 };
 
 use crate::call::{ModuleCall, SubmitAttestation};
@@ -63,7 +77,15 @@ pub struct ModuleInner {
 
     pub provider: DynProvider<AnyNetwork>,
 
-    pub attestation_key: (),
+    pub attestation_key: SigningKey,
+
+    pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
+
+    pub cosmos_client: cosmos_client::rpc::Rpc,
+
+    pub gas_config: any::GasFiller,
+
+    pub attestation_client_address: Bech32<H256>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,10 +98,78 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    /// The RPC endpoint for the execution chain.
-    pub rpc_url: String,
+    /// The RPC endpoint for the EVM chain being attested to.
+    pub eth_rpc_url: String,
 
+    /// The RPC endpoint for the cosmos chain to submit the attestations to.
+    pub cosmos_rpc_url: String,
+
+    pub gas_config: GasFillerConfig,
+
+    pub attestation_client_address: Bech32<H256>,
+
+    /// The path to the PKCS#8 encoded private key to sign the attestations with.
     pub attestation_key_path: PathBuf,
+
+    pub keyring: KeyringConfig,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "config")]
+pub enum GasFillerConfig {
+    // fixed gas filler is it's own config
+    Fixed(fixed::GasFiller),
+    Feemarket(FeemarketConfig),
+    OsmosisEip1559Feemarket(OsmosisEip1559FeemarketConfig),
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct FeemarketConfig {
+    pub max_gas: u64,
+    #[serde(with = "::serde_utils::string_opt")]
+    pub gas_multiplier: Option<f64>,
+    pub denom: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct OsmosisEip1559FeemarketConfig {
+    pub max_gas: u64,
+    #[serde(with = "::serde_utils::string_opt")]
+    pub gas_multiplier: Option<f64>,
+    #[serde(with = "::serde_utils::string_opt")]
+    pub base_fee_multiplier: Option<f64>,
+    pub denom: Option<String>,
+}
+
+impl GasFillerConfig {
+    async fn into_gas_filler(self, rpc_url: String) -> anyhow::Result<any::GasFiller> {
+        Ok(match self {
+            GasFillerConfig::Fixed(config) => any::GasFiller::Fixed(config),
+            GasFillerConfig::Feemarket(config) => any::GasFiller::Feemarket(
+                feemarket::GasFiller::new(feemarket::Config {
+                    rpc_url,
+                    max_gas: config.max_gas,
+                    gas_multiplier: config.gas_multiplier,
+                    denom: config.denom,
+                })
+                .await?,
+            ),
+            GasFillerConfig::OsmosisEip1559Feemarket(config) => {
+                any::GasFiller::OsmosisEip1559Feemarket(
+                    osmosis_eip1559_feemarket::GasFiller::new(osmosis_eip1559_feemarket::Config {
+                        rpc_url,
+                        max_gas: config.max_gas,
+                        gas_multiplier: config.gas_multiplier,
+                        base_fee_multiplier: config.base_fee_multiplier,
+                        denom: config.denom,
+                    })
+                    .await?,
+                )
+            }
+        })
+    }
 }
 
 #[derive(Subcommand)]
@@ -93,10 +183,12 @@ impl Plugin for Module {
     type Cmd = Cmd;
 
     async fn new(config: Self::Config) -> anyhow::Result<Self> {
+        let rpc = Rpc::new(config.cosmos_rpc_url.clone()).await?;
+
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
-                .connect(&config.rpc_url)
+                .connect(&config.eth_rpc_url)
                 .await?,
         );
 
@@ -111,11 +203,44 @@ impl Plugin for Module {
             );
         }
 
+        let attestation_key = SigningKey::read_pkcs8_pem_file(config.attestation_key_path)?;
+
+        let bech32_prefix = rpc
+            .client()
+            .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+                &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .bech32_prefix;
+
         Ok(Self(Arc::new(ModuleInner {
             chain_id,
             ibc_handler_address: config.ibc_handler_address,
             provider,
-            attestation_key: (),
+            attestation_key,
+            keyring: ConcurrentKeyring::new(
+                config.keyring.name,
+                config.keyring.keys.into_iter().map(|entry| {
+                    let signer =
+                        LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
+
+                    KeyringEntry {
+                        address: signer.address(),
+                        signer,
+                    }
+                }),
+            ),
+            cosmos_client: rpc,
+            attestation_client_address: config.attestation_client_address,
+            gas_config: config
+                .gas_config
+                .into_gas_filler(config.cosmos_rpc_url)
+                .await?,
         })))
     }
 
@@ -140,9 +265,7 @@ end
         }
     }
 
-    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
-        let plugin = Self::new(config).await.unwrap();
-
+    async fn cmd(_: Self::Config, cmd: Self::Cmd) {
         match cmd {}
     }
 }
@@ -171,7 +294,7 @@ impl PluginServer<ModuleCall, Never> for Module {
             ready: msgs
                 .into_iter()
                 .enumerate()
-                .map(|(idx, mut op)| {
+                .map(|(idx, op)| {
                     let op = match op.into_data().unwrap() {
                         Data::IbcEvent(chain_event) => call(PluginMessage::new(
                             plugin_name(&self.chain_id),
@@ -217,49 +340,56 @@ impl PluginServer<ModuleCall, Never> for Module {
 }
 
 impl Module {
-    fn ibc_handler(&self) -> IbcInstance<DynProvider<AnyNetwork>, AnyNetwork> {
-        Ibc::new::<_, AnyNetwork>(self.ibc_handler_address.get().into(), self.provider.clone())
-    }
-
     async fn submit_attestation(
         &self,
         event: FullEvent,
         tx_hash: H256,
         height: u64,
-    ) -> RpcResult<()> {
-        let (k, v) = match event {
-            FullEvent::CreateClient(event) => return Ok(()),
-            FullEvent::UpdateClient(event) => return Ok(()),
-            FullEvent::ConnectionOpenInit(event) => {
-                // ConnectionPath {
-                //     connection_id: event.connection_id,
-                // }
-                // .key()
-
-                let connection = self
-                    .ibc_handler()
-                    .connections(event.connection_id.raw())
-                    .call()
-                    .await
-                    .map_err(|e| ErrorObject::owned(-1))?;
+    ) -> RpcResult<Op<VoyagerMessage>> {
+        let key = match &event {
+            FullEvent::ConnectionOpenInit(ConnectionOpenInit { connection_id, .. })
+            | FullEvent::ConnectionOpenTry(ConnectionOpenTry { connection_id, .. })
+            | FullEvent::ConnectionOpenAck(ConnectionOpenAck { connection_id, .. })
+            | FullEvent::ConnectionOpenConfirm(ConnectionOpenConfirm { connection_id, .. }) => {
+                ConnectionPath {
+                    connection_id: *connection_id,
+                }
+                .key()
             }
-            FullEvent::ConnectionOpenTry(event) => todo!(),
-            FullEvent::ConnectionOpenAck(event) => todo!(),
-            FullEvent::ConnectionOpenConfirm(event) => todo!(),
-            FullEvent::ChannelOpenInit(event) => todo!(),
-            FullEvent::ChannelOpenTry(event) => todo!(),
-            FullEvent::ChannelOpenAck(event) => todo!(),
-            FullEvent::ChannelOpenConfirm(event) => todo!(),
-            FullEvent::ChannelCloseInit(event) => todo!(),
-            FullEvent::ChannelCloseConfirm(event) => todo!(),
-            FullEvent::PacketSend(event) => todo!(),
-            FullEvent::BatchSend(event) => todo!(),
-            FullEvent::PacketRecv(event) => todo!(),
-            FullEvent::IntentPacketRecv(event) => todo!(),
-            FullEvent::WriteAck(event) => todo!(),
-            FullEvent::PacketAck(event) => todo!(),
-            FullEvent::PacketTimeout(event) => todo!(),
+            FullEvent::ChannelOpenInit(ChannelOpenInit { channel_id, .. })
+            | FullEvent::ChannelOpenTry(ChannelOpenTry { channel_id, .. })
+            | FullEvent::ChannelOpenAck(ChannelOpenAck { channel_id, .. })
+            | FullEvent::ChannelOpenConfirm(ChannelOpenConfirm { channel_id, .. }) => ChannelPath {
+                channel_id: *channel_id,
+            }
+            .key(),
+            FullEvent::PacketSend(event) => BatchPacketsPath::from_packets(&[event.packet()]).key(),
+            FullEvent::BatchSend(event) => BatchPacketsPath {
+                batch_hash: event.batch_hash,
+            }
+            .key(),
+            FullEvent::WriteAck(event) => BatchReceiptsPath::from_packets(&[event.packet()]).key(),
+            _ => {
+                info!(event = %event.name(), "nothing to attest for event");
+                return Ok(noop());
+            }
         };
+
+        let value = self
+            .provider
+            .get_storage_at(
+                self.ibc_handler_address.get().into(),
+                U256::from_be_bytes(*key.get()),
+            )
+            .block_id(height.into())
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching storage"),
+                    None::<()>,
+                )
+            })?;
 
         let tx = self
             .provider
@@ -287,6 +417,94 @@ impl Module {
             ));
         }
 
-        Ok(())
+        let timestamp = self
+            .provider
+            .get_block_by_number(height.into())
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching block"),
+                    Some(json!({ "height": height })),
+                )
+            })?
+            .ok_or_else(|| ErrorObject::owned(-1, format!("block {height} not found"), None::<()>))?
+            .header
+            .timestamp;
+
+        info_span!("attesting to state", %key, %value, %height, %timestamp)
+            .in_scope(|| {
+                self.keyring.with(|signer| {
+                    let tx_client = TxClient::new(signer, &self.cosmos_client, &self.gas_config);
+
+                    let attestation = Attestation {
+                        height,
+                        timestamp: Timestamp::from_secs(timestamp),
+                        key: key.into(),
+                        value: AttestationValue::Existence(value.to_be_bytes::<32>().into()),
+                    };
+
+                    let signature = self
+                        .attestation_key.clone()
+                        .sign(&(&attestation).encode_as::<Bincode>());
+
+                    AssertUnwindSafe(async move {
+                        let res = tx_client
+                            .tx(
+                                MsgExecuteContract {
+                                    sender: tx_client.wallet().address().map_data(Into::into),
+                                    contract: self.attestation_client_address.clone(),
+                                    msg: serde_json::to_vec(
+                                        &attested_light_client::msg::ExecuteMsg::Attest {
+                                            attestation: attestation.clone(),
+                                            attestor: self
+                                                .attestation_key
+                                                .verifying_key()
+                                                .to_bytes()
+                                                .into(),
+                                            signature: signature.to_bytes().into(),
+                                        },
+                                    )
+                                    .unwrap()
+                                    .into(),
+                                    funds: vec![],
+                                },
+                                "",
+                                true,
+                            )
+                            .await;
+
+                        match res {
+                            Ok((tx_hash, _)) => {
+                                info!(%tx_hash, "submitted attestation");
+                                Ok(noop())
+                            }
+                            Err(TxError::BroadcastTxCommit(BroadcastTxCommitError::TxFailed {
+                                codespace,
+                                error_code,
+                                log,
+                            })) => {
+                                error!(%codespace, %error_code, %log, "tx failed");
+                                Ok(noop())
+                            }
+                            Err(err) => {
+                                warn!(err = %ErrorReporter(&err), "error when submitting tx, will be retried");
+                                Err(ErrorObject::owned(
+                                    -1,
+                                    ErrorReporter(err).with_message("error when submitting attestation"),
+                                    Some(json!(attestation)),
+                                ))
+                            }
+                        }
+                    })
+                })
+            })
+            .await
+            .unwrap_or_else(|| {
+                Ok(call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::SubmitAttestation(SubmitAttestation { event, tx_hash, height }),
+                )))
+            })
     }
 }

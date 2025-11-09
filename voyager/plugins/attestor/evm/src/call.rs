@@ -3,7 +3,6 @@ use unionlabs::primitives::H256;
 
 #[model]
 pub enum ModuleCall {
-    VerifyState(VerifyState),
     SubmitAttestation(SubmitAttestation),
 }
 
