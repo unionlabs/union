@@ -61,6 +61,7 @@ type Query {
   v2_channels(args: v2_channels_args! = {p_comparison: lt, p_destination_channel_id: null, p_destination_client_id: null, p_destination_connection_id: null, p_destination_port_id: null, p_destination_universal_chain_id: null, p_limit: null, p_recommended: null, p_sort_order: null, p_source_channel_id: null, p_source_client_id: null, p_source_connection_id: null, p_source_port_id: null, p_source_universal_chain_id: null, p_tags: null, p_version: null}): [v2_channel_type!]!
   v2_clients(args: v2_clients_args! = {p_client_id: null, p_comparison: lt, p_counterparty_universal_chain_id: null, p_limit: null, p_sort_order: null, p_universal_chain_id: null}): [v2_client_type!]!
   v2_connections(args: v2_connections_args! = {p_comparison: lt, p_destination_client_id: null, p_destination_connection_id: null, p_destination_universal_chain_id: null, p_limit: null, p_sort_order: null, p_source_client_id: null, p_source_connection_id: null, p_source_universal_chain_id: null}): [v2_connection_type!]!
+  v2_dust_withdraws(args: v2_dust_withdraws_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_dust_withdraw_type!]!
   v2_errors: [v2_error_type!]!
   v2_health_check: [v2_health_check_type!]!
   v2_instructions(args: v2_instructions_args! = {p_block_hash: null, p_comparison: lt, p_limit: null, p_multiplex_contract_address: null, p_multiplex_sender: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_transaction_hash: null}): [v2_instruction_type!]!
@@ -70,6 +71,7 @@ type Query {
   v2_unbonds(args: v2_unbonds_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_unbond_type!]!
   v2_util_get_transfer_request_details(args: v2_util_get_transfer_request_details_args! = {p_source_universal_chain_id: null, p_destination_universal_chain_id: null, p_base_token: null}): [v2_util_get_transfer_request_details_type!]!
   v2_util_get_address_types_for_display_address(args: v2_util_get_address_types_for_display_address_args! = {p_display_address: null, p_chain_type: null}): [v2_util_get_address_types_for_display_address_type!]!
+  v2_withdraws(args: v2_withdraws_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_withdraw_type!]!
   v2_stats_count: [v2_stats_type!]!
   v2_stats_latency(args: v2_stats_latency_args! = {p_destination_universal_chain_id: null, p_phase: null, p_source_universal_chain_id: null}): [v2_stats_latency_type!]!
   v2_stats_packets_chain(args: v2_stats_packets_chain_args! = {p_days_back: null, p_destination_universal_chain_id: null, p_source_universal_chain_id: null}): [v2_stats_packets_chain_type!]!
@@ -146,6 +148,9 @@ type v2_bond_type {
   sender_canonical: String
   sender_display: String
   sender_zkgm: String
+  staker_canonical: String
+  staker_display: String
+  staker_zkgm: String
   receiver_canonical: String
   receiver_display: String
   receiver_zkgm: String
@@ -234,6 +239,7 @@ type v2_chain_type {
   explorers: [v2_explorers!]!
   features(where: v2_chain_features_bool_exp! = {environment: null}): [v2_chain_features!]!
   rpcs: [v2_rpcs!]!
+  family: v2_family_type!
 }
 
 input v2_chains_args {
@@ -338,6 +344,59 @@ input v2_connections_args {
   p_source_universal_chain_id: String
 }
 
+type v2_dust_withdraw_type {
+  packet_hash: String
+  dust_withdraw_success: Boolean
+  delivery_success: Boolean
+  packet_shape: String
+  source_universal_chain_id: String
+  remote_universal_chain_id: String
+  destination_universal_chain_id: String
+  staker_canonical: String
+  staker_display: String
+  staker_zkgm: String
+  receiver_canonical: String
+  receiver_display: String
+  receiver_zkgm: String
+  quote_token: String
+  quote_amount: String
+  remote_base_token: String
+  remote_base_amount: String
+  dust_withdraw_send_timestamp: DateTime
+  dust_withdraw_send_transaction_hash: String
+  dust_withdraw_recv_timestamp: DateTime
+  dust_withdraw_recv_transaction_hash: String
+  dust_withdraw_timeout_timestamp: DateTime
+  dust_withdraw_timeout_transaction_hash: String
+  delivery_packet_hash: String
+  delivery_send_timestamp: DateTime
+  delivery_send_transaction_hash: String
+  delivery_recv_timestamp: DateTime
+  delivery_recv_transaction_hash: String
+  delivery_timeout_timestamp: DateTime
+  delivery_timeout_transaction_hash: String
+  sort_order: String
+  source_chain: v2_chain_type!
+  destination_chain: v2_chain_type!
+  dust_withdraw_traces: [v2_traces_type!]!
+  delivery_traces: [v2_traces_type!]!
+  quote_token_meta: v2_token_meta
+  remote_base_token_meta: v2_token_meta
+}
+
+input v2_dust_withdraws_args {
+  p_addresses_canonical: jsonb
+  p_block_hash: String
+  p_comparison: ComparisonOp! = lt
+  p_destination_universal_chain_id: String
+  p_limit: Int
+  p_network: String
+  p_packet_hash: String
+  p_sort_order: String
+  p_source_universal_chain_id: String
+  p_transaction_hash: String
+}
+
 type v2_error_type {
   union_error_code: String
   message: String
@@ -354,6 +413,11 @@ type v2_explorers {
   address_url: String
   home_url: String
   logo_uri: String
+}
+
+type v2_family_type {
+  name: String
+  ibc_interface: String
 }
 
 type v2_health_check_type {
@@ -572,6 +636,7 @@ type v2_stats_type {
 
 type v2_token_meta {
   denom: String
+  native_denom: String
   rank: Int
   universal_chain_id: String
   chain: v2_chain_type!
@@ -711,6 +776,9 @@ type v2_unbond_type {
   sender_canonical: String
   sender_display: String
   sender_zkgm: String
+  staker_canonical: String
+  staker_display: String
+  staker_zkgm: String
   base_token: String
   base_amount: String
   batch: String
@@ -720,6 +788,7 @@ type v2_unbond_type {
   unbond_recv_transaction_hash: String
   unbond_timeout_timestamp: DateTime
   unbond_timeout_transaction_hash: String
+  withdraw_packet_hash: String
   sort_order: String
   source_chain: v2_chain_type!
   destination_chain: v2_chain_type!
@@ -763,4 +832,58 @@ type v2_util_get_transfer_request_details_type {
   destination_channel_id: Int
   already_exists: Boolean
   wrap_direction: String
+}
+
+type v2_withdraw_type {
+  packet_hash: String
+  withdraw_success: Boolean
+  delivery_success: Boolean
+  packet_shape: String
+  source_universal_chain_id: String
+  remote_universal_chain_id: String
+  destination_universal_chain_id: String
+  staker_canonical: String
+  staker_display: String
+  staker_zkgm: String
+  receiver_canonical: String
+  receiver_display: String
+  receiver_zkgm: String
+  quote_token: String
+  quote_amount: String
+  remote_base_token: String
+  remote_base_amount: String
+  withdraw_send_timestamp: DateTime
+  withdraw_send_transaction_hash: String
+  withdraw_recv_timestamp: DateTime
+  withdraw_recv_transaction_hash: String
+  withdraw_timeout_timestamp: DateTime
+  withdraw_timeout_transaction_hash: String
+  delivery_packet_hash: String
+  delivery_send_timestamp: DateTime
+  delivery_send_transaction_hash: String
+  delivery_recv_timestamp: DateTime
+  delivery_recv_transaction_hash: String
+  delivery_timeout_timestamp: DateTime
+  delivery_timeout_transaction_hash: String
+  batches: JSON
+  sort_order: String
+  source_chain: v2_chain_type!
+  destination_chain: v2_chain_type!
+  withdraw_traces: [v2_traces_type!]!
+  delivery_traces: [v2_traces_type!]!
+  quote_token_meta: v2_token_meta
+  remote_base_token_meta: v2_token_meta
+}
+
+input v2_withdraws_args {
+  p_addresses_canonical: jsonb
+  p_block_hash: String
+  p_comparison: ComparisonOp! = lt
+  p_destination_universal_chain_id: String
+  p_limit: Int
+  p_network: String
+  p_packet_hash: String
+  p_sort_order: String
+  p_source_universal_chain_id: String
+  p_transaction_hash: String
 }

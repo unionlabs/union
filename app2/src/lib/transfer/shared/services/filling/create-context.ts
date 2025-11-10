@@ -55,7 +55,7 @@ export const createContext = Effect.fn((
   never
 > =>
   Effect.gen(function*() {
-    console.debug("[createContext] args:", args)
+    console.log("[createContext] args:", args)
 
     const sendOrder = yield* TokenOrder.make({
       baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
@@ -140,12 +140,33 @@ export const createContext = Effect.fn((
 
     const batch = yield* produceBatch
 
+    // TODO: vaultId & ibcStoreId will be fetched from hubble probably
+    const SUI_HARDCODED_TRANSPORT = {
+      sui: {
+        vaultId: "0xbe65f53d47a4578c14b4d69d0594c1295d3761379319a185522cd6baad6473d4",
+        ibcStoreId: "0x05cc9571c42ef6f7f9643bcda29e2f4a827c8e87ff488ddbdd9e75f68eee5c94",
+        coins: [
+          {
+            typeArg: args.baseToken.address,
+            baseAmount: Option.getOrThrow(parseBaseAmount(args.baseAmount)),
+          },
+        ],
+      },
+    }
+
+    // const maybeTransport =
+    //   args.transport?.sui && args.sourceChain.rpc_type === "sui"
+    //     ? { sui: args.transport.sui }
+    //     : undefined
+    const maybeTransport = args.sourceChain.rpc_type === "sui" ? SUI_HARDCODED_TRANSPORT : undefined
+
     const request = ZkgmClientRequest.make({
       channelId: args.sourceChannelId,
       destination: args.destinationChain,
       source: args.sourceChain,
       instruction: batch,
       ucs03Address: args.ucs03address,
+      ...(maybeTransport ? { transport: maybeTransport } : {}),
     }).pipe(
       Option.some,
     )
@@ -217,6 +238,25 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
         quoteToken: args.quoteToken,
       }
 
+      return shouldIncludeFees ? [intent, feeIntent] : [intent]
+    }),
+    Match.when("sui", () => {
+      const intent: Intent = {
+        ...baseIntent,
+        baseToken: args.baseToken,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
+      }
+
+      const feeIntent: Intent = {
+        ...baseIntent,
+        baseToken: args.fee.baseToken,
+        baseAmount: args.fee.baseAmount,
+        quoteAmount: args.fee.quoteAmount,
+        decimals: args.fee.decimals,
+        kind: args.kind,
+        quoteToken: args.quoteToken,
+      }
       return shouldIncludeFees ? [intent, feeIntent] : [intent]
     }),
     Match.orElse(() => []),
