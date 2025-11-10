@@ -504,6 +504,7 @@ impl StorageExt for dyn Storage + '_ {
             'block: {
                 for byte in raw_key.iter_mut().rev() {
                     if *byte == u8::MAX {
+                        *byte = 0;
                         continue;
                     }
 

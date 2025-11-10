@@ -33,11 +33,18 @@ pub fn execute(
         } => attest(deps, attestation, attestor, signature),
         ExecuteMsg::ConfirmAttestation { attestation } => confirm_attestation(deps, attestation),
         ExecuteMsg::Restricted(msg) => match msg {
-            RestrictedExecuteMsg::SetQuorum { new_quorum } => set_quorum(deps, new_quorum),
-            RestrictedExecuteMsg::AddAttestor { new_attestor } => add_attestor(deps, new_attestor),
-            RestrictedExecuteMsg::RemoveAttestor { old_attestor } => {
-                remove_attestor(deps, old_attestor)
-            }
+            RestrictedExecuteMsg::SetQuorum {
+                chain_id,
+                new_quorum,
+            } => set_quorum(deps, chain_id, new_quorum),
+            RestrictedExecuteMsg::AddAttestor {
+                chain_id,
+                new_attestor,
+            } => add_attestor(deps, chain_id, new_attestor),
+            RestrictedExecuteMsg::RemoveAttestor {
+                chain_id,
+                old_attestor,
+            } => remove_attestor(deps, chain_id, old_attestor),
         },
     }
 }
@@ -45,14 +52,18 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
-        QueryMsg::Quorum {} => Ok(to_json_binary(&quorum(deps)?)?),
-        QueryMsg::Attestors {} => Ok(to_json_binary(&attestors(deps)?)?),
-        QueryMsg::AttestedValue { height, key } => {
-            Ok(to_json_binary(&attested_value(deps, height, key)?)?)
-        }
-        QueryMsg::TimestampAtHeight { height } => {
-            Ok(to_json_binary(&timestamp_at_height(deps, height)?)?)
-        }
+        QueryMsg::Quorum { chain_id } => Ok(to_json_binary(&quorum(deps, chain_id)?)?),
+        QueryMsg::Attestors { chain_id } => Ok(to_json_binary(&attestors(deps, chain_id)?)?),
+        QueryMsg::AttestedValue {
+            chain_id,
+            height,
+            key,
+        } => Ok(to_json_binary(&attested_value(
+            deps, chain_id, height, key,
+        )?)?),
+        QueryMsg::TimestampAtHeight { chain_id, height } => Ok(to_json_binary(
+            &timestamp_at_height(deps, chain_id, height)?,
+        )?),
         QueryMsg::LightClient(msg) => {
             ibc_union_light_client::query::<AttestedLightClient>(deps, env, msg)
                 .map_err(StdError::from)

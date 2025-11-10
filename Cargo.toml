@@ -143,6 +143,7 @@ members = [
   # "voyager/modules/state/movement",
   "voyager/modules/state/sui",
 
+  "voyager/modules/proof/attested",
   "voyager/modules/proof/cosmos-sdk",
   "voyager/modules/proof/cosmos-sdk-union",
   "voyager/modules/proof/ethermint",

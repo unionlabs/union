@@ -31,28 +31,39 @@ pub enum RestrictedExecuteMsg {
     /// Set a new quorum for the attestations to be considered valid.
     ///
     /// If the new quorum is larger than the currently configuured quorum, any existing attestations that have already hit the quorum will still be considered valid, but any current pending attestations will need to reach the new quorum in order to be confirmed.
-    SetQuorum { new_quorum: NonZero<u8> },
+    SetQuorum {
+        chain_id: String,
+        new_quorum: NonZero<u8>,
+    },
     /// Add a new attestor to the attestation set.
-    AddAttestor { new_attestor: H256 },
+    AddAttestor {
+        chain_id: String,
+        new_attestor: H256,
+    },
     /// Add an existing attestor from the attestation set.
-    RemoveAttestor { old_attestor: H256 },
+    RemoveAttestor {
+        chain_id: String,
+        old_attestor: H256,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Returns the currently configured quorum.
-    Quorum {},
-    /// Returns the current attestation set.
-    Attestors {},
-    /// Returns the value attested to under `key` at `height`.
+    /// Returns the currently configured quorum for `chain_id`.
+    Quorum { chain_id: String },
+    /// Returns the current attestation set for `chain_id`.
+    Attestors { chain_id: String },
+    /// Returns the value attested to under `key` at `height` on `chain_id`.
     AttestedValue {
+        chain_id: String,
         // #[serde(with = "serde_utils::string")]
         height: u64,
         key: Bytes,
     },
-    /// Returns the timestamp attested to at `height`.
+    /// Returns the timestamp attested to at `height` on `chain_id`.
     TimestampAtHeight {
+        chain_id: String,
         // #[serde(with = "serde_utils::string")]
         height: u64,
     },
