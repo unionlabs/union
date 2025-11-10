@@ -17,4 +17,14 @@ jobs:
             trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         run: |
+          sudo mkdir "/run/containers/30002"
+          sudo mkdir "/run/containers/30003"
+          sudo mkdir "/run/containers/30004"
+          sudo mkdir "/run/containers/30005"
+          sudo chmod 777 "/run/containers"
+          sudo chmod 777 "/run/containers/30002"
+          sudo chmod 777 "/run/containers/30003"
+          sudo chmod 777 "/run/containers/30004"
+          sudo chmod 777 "/run/containers/30005"
+          ls -la /run/containers
           nix build .#checks.x86_64-linux.e2e-lst -L --option sandbox false

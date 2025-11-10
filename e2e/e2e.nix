@@ -4,11 +4,8 @@
     {
       pkgs,
       nixpkgs,
-      system,
       networks,
-      inputs',
       mkVoyagerImg,
-      galois-arion-project,
       self',
       ...
     }:
@@ -46,7 +43,7 @@
               memorySize = 8 * 1024;
               arion = {
                 backend = "docker";
-                projects.devnet-eth.settings = networks.modules.devnet-eth;
+                projects.devnet-eth.settings = networks.modules.devnet-eth-minimal;
               };
               vlans = [ 1 ];
             };
@@ -86,7 +83,7 @@
 
       unionTestnetGenesisNode = {
         node =
-          { pkgs, ... }:
+          { ... }:
           {
             imports = [
               inputs.arion.nixosModules.arion

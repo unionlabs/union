@@ -254,6 +254,23 @@
 
         union-v1 = union-v1.services;
 
+        devnet-eth-minimal =
+          {
+            geth = import ./services/geth.nix {
+              inherit pkgs;
+              config = self'.packages.devnet-eth-config;
+            };
+            forge = import ./services/forge.nix {
+              inherit pkgs;
+              inherit (self'.packages) forge evm-sources evm-contracts;
+            };
+            lodestar = import ./services/lodestar.nix {
+              inherit pkgs;
+              config = self'.packages.devnet-eth-config;
+              inherit (devnetConfig.ethereum.beacon) validatorCount;
+            };
+          };
+
         devnet-eth =
           {
             geth = import ./services/geth.nix {
@@ -311,7 +328,8 @@
               }
             else
               { }
-          );
+          )
+          ;
 
         postgres = {
           postgres = import ./services/postgres.nix { inherit lib pkgs; };
@@ -334,6 +352,7 @@
         }
         // mkNamedModule "postgres"
         // mkNamedModule "devnet-eth"
+        // mkNamedModule "devnet-eth-minimal"
         // mkNamedModule "devnet-stargaze"
         // mkNamedModule "devnet-osmosis"
         // mkNamedModule "devnet-simd"
@@ -354,6 +373,7 @@
         }
         // mkNamedSpec "full-dev-setup"
         // mkNamedSpec "devnet-eth"
+        // mkNamedSpec "devnet-eth-minimal"
         // mkNamedSpec "devnet-stargaze"
         // mkNamedSpec "devnet-osmosis"
         // mkNamedSpec "devnet-simd"
@@ -368,6 +388,7 @@
         mkNamedBuild "full-dev-setup"
         // mkNamedBuild "voyager-queue"
         // mkNamedBuild "devnet-eth"
+        // mkNamedBuild "devnet-eth-minimal"
         // mkNamedBuild "devnet-stargaze"
         // mkNamedBuild "devnet-osmosis"
         // mkNamedBuild "devnet-simd"
@@ -452,6 +473,7 @@
         // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-eth-minimal" (system == "x86_64-linux"))
         // (mkArionBuild "union-v1" (system == "x86_64-linux"))
         // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
 
