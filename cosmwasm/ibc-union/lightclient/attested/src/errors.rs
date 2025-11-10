@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use cosmwasm_std::StdError;
 use ibc_union_light_client::{IbcClientError, spec::Timestamp};
 use unionlabs::primitives::{Bytes, H256};
@@ -72,8 +74,8 @@ pub enum Error {
     #[error("the quorum has not yet been set")]
     QuorumNotSet,
 
-    #[error("the quorum has not been reached for this attestation")]
-    QuorumNotReached,
+    #[error("the quorum has not been reached for this attestation ({current}/{quorum})")]
+    QuorumNotReached { quorum: NonZero<u8>, current: u8 },
 }
 
 impl From<Error> for IbcClientError<AttestedLightClient> {
