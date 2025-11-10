@@ -84,7 +84,7 @@ impl TokenMinterInitParams {
 pub enum ExecuteMsg {
     /// Handle IBC module messages from the IBC host.
     /// Used by the IBC host to notify the contract of IBC events.
-    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
+    IbcUnionMsg(WhenNotPaused<ibc_union_msg::module::IbcUnionMsg>),
     /// Execute a zkgm packet.
     /// Can only be called by the contract itself during packet handling.
     InternalExecutePacket {

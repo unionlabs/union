@@ -138,7 +138,7 @@ pub fn execute(
                 return Err(ContractError::OnlyIbcHost);
             }
 
-            match ibc_msg {
+            match ibc_msg.ensure_not_paused(deps.as_ref())? {
                 IbcUnionMsg::OnChannelOpenInit { version, .. } => {
                     enforce_version(&version, None)?;
                     Ok(Response::default())

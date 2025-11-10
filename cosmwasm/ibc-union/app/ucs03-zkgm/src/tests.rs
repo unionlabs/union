@@ -13,6 +13,7 @@ use cw20::{Cw20Coin, Cw20QueryMsg, TokenInfoResponse};
 use cw20_token_minter::contract::{Cw20TokenMinterImplementation, save_native_token};
 use ibc_union_msg::module::IbcUnionMsg;
 use ibc_union_spec::{ChannelId, ConnectionId, MustBeZero, Packet, path::commit_packets};
+use pausable::WhenNotPaused;
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -715,7 +716,7 @@ fn test_on_recv_packet_only_ibc() {
             Addr::unchecked("not_ibc"),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
                     caller: "".into(),
                     packet: Packet {
                         source_channel_id: ChannelId!(1),
@@ -726,7 +727,7 @@ fn test_on_recv_packet_only_ibc() {
                     },
                     relayer: "".into(),
                     relayer_msg: Default::default(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -751,7 +752,7 @@ fn test_on_recv_packet_invalid_caller() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
                     caller: "".into(),
                     packet: Packet {
                         source_channel_id: ChannelId!(1),
@@ -762,7 +763,7 @@ fn test_on_recv_packet_invalid_caller() {
                     },
                     relayer: "".into(),
                     relayer_msg: Default::default(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -787,7 +788,7 @@ fn test_on_recv_packet_invalid_relayer() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
                     caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
                     packet: Packet {
                         source_channel_id: ChannelId!(1),
@@ -798,7 +799,7 @@ fn test_on_recv_packet_invalid_relayer() {
                     },
                     relayer: "".into(),
                     relayer_msg: Default::default(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -832,7 +833,7 @@ fn test_on_recv_packet_nonreentrant() {
     });
 
     let msg = || {
-        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+        ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
             caller: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
             packet: Packet {
                 source_channel_id: ChannelId!(1),
@@ -843,7 +844,7 @@ fn test_on_recv_packet_nonreentrant() {
             },
             relayer: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".into(),
             relayer_msg: Default::default(),
-        })
+        }))
     };
 
     execute(deps.as_mut(), env.clone(), info.clone(), msg()).unwrap();
@@ -1152,12 +1153,12 @@ fn test_recv_packet_invalid_failure_ack() {
         timeout_timestamp: Default::default(),
     };
     let caller = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua".to_string();
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: caller.clone(),
         packet: packet.clone(),
         relayer: caller,
         relayer_msg: Default::default(),
-    });
+    }));
     st.app
         .execute(
             st.ibc_host.clone(),
@@ -1346,12 +1347,12 @@ impl IncomingOrderBuilder {
             timeout_height: MustBeZero,
             timeout_timestamp: Default::default(),
         };
-        let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+        let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
             caller: self.caller.clone().into(),
             packet: packet.clone(),
             relayer: self.relayer.clone().into(),
             relayer_msg: Default::default(),
-        });
+        }));
         (self, msg, packet)
     }
 }
@@ -2351,12 +2352,12 @@ fn test_recv_packet_native_v2_unwrap_base_amount_less_than_quote_amount_market_m
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     // For market maker fill, provide the quote token as funds
     let quote_coin = cosmwasm_std::Coin::new(quote_amount, wrapped_token.clone());
@@ -2507,12 +2508,12 @@ fn test_recv_packet_native_v2_wrap_ok() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     st.app
         .execute(
@@ -2633,12 +2634,12 @@ fn test_recv_packet_native_v2_unwrap_equal_amounts_ok() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     st.app
         .execute(
@@ -2760,12 +2761,12 @@ fn test_recv_packet_native_v2_unwrap_greater_base_amount_ok() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     st.app
         .execute(
@@ -2834,12 +2835,12 @@ fn test_recv_packet_native_v2_custom_metadata_ok() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     let err = st
         .app
@@ -2897,12 +2898,12 @@ fn test_recv_packet_native_v2_market_maker_fill() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     // For market maker fill, provide the quote token as funds
     let quote_coin = cosmwasm_std::Coin::new(quote_amount, quote_token);
@@ -3056,12 +3057,12 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
         )
         .unwrap();
 
-    let preimage_msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let preimage_msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: preimage_packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     // Execute the preimage creation
     st.app
@@ -3103,12 +3104,12 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
         timeout_timestamp: Default::default(),
     };
 
-    let image_msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let image_msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: image_packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     st.app
         .execute(
@@ -3241,12 +3242,12 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     st.app
         .execute(
@@ -3339,12 +3340,12 @@ fn test_recv_packet_native_v2_unwrap_no_outstanding_balance() {
         timeout_timestamp: Default::default(),
     };
 
-    let msg = ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+    let msg = ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnRecvPacket {
         caller: admin.to_string(),
         packet: packet.clone(),
         relayer: admin.to_string(),
         relayer_msg: Default::default(),
-    });
+    }));
 
     st.app
         .execute(
@@ -3380,13 +3381,13 @@ fn test_on_channel_open_init_ok() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenInit {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: PROTOCOL_VERSION.to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3406,13 +3407,13 @@ fn test_on_channel_open_init_invalid_version() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenInit {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: "im-invalid".to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3439,13 +3440,13 @@ fn test_on_channel_open_init_only_ibc() {
             Addr::unchecked("not_ibc"),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenInit {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: PROTOCOL_VERSION.to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3469,14 +3470,14 @@ fn test_on_channel_open_try_ok() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenTry {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: PROTOCOL_VERSION.to_string(),
                     counterparty_version: PROTOCOL_VERSION.to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3496,14 +3497,14 @@ fn test_on_channel_open_try_invalid_version() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenTry {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: "im-invalid".to_string(),
                     counterparty_version: PROTOCOL_VERSION.to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3530,14 +3531,14 @@ fn test_on_channel_open_try_invalid_counterparty_version() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenTry {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: PROTOCOL_VERSION.to_string(),
                     counterparty_version: "im-invalid".to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3564,14 +3565,14 @@ fn test_on_channel_open_try_only_ibc() {
             Addr::unchecked("not_ibc"),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenTry {
                     caller: "".into(),
                     connection_id: ConnectionId!(1),
                     channel_id: ChannelId!(1),
                     version: PROTOCOL_VERSION.to_string(),
                     counterparty_version: PROTOCOL_VERSION.to_string(),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3596,13 +3597,13 @@ fn test_on_channel_open_ack_and_confirm_noop() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenAck {
                     caller: "".into(),
                     channel_id: ChannelId!(1),
                     counterparty_version: PROTOCOL_VERSION.to_string(),
                     relayer: "".to_string(),
                     counterparty_channel_id: ChannelId!(2),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3618,11 +3619,11 @@ fn test_on_channel_open_ack_and_confirm_noop() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelOpenConfirm {
                     caller: "".into(),
                     channel_id: ChannelId!(1),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3644,11 +3645,11 @@ fn test_on_channel_close_init_impossible() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelCloseInit {
                     caller: "".into(),
                     channel_id: ChannelId!(1),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3673,11 +3674,11 @@ fn test_on_channel_close_init_only_ibc() {
             Addr::unchecked("not_ibc"),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelCloseInit {
                     caller: "".into(),
                     channel_id: ChannelId!(1),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3702,11 +3703,11 @@ fn test_on_channel_close_confirm_impossible() {
             st.ibc_host.clone(),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseConfirm {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelCloseConfirm {
                     caller: "".into(),
                     channel_id: ChannelId!(1),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
@@ -3731,11 +3732,11 @@ fn test_on_channel_close_confirm_only_ibc() {
             Addr::unchecked("not_ibc"),
             wasm_execute(
                 st.zkgm.clone(),
-                &ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseConfirm {
+                &ExecuteMsg::IbcUnionMsg(WhenNotPaused::wrap(IbcUnionMsg::OnChannelCloseConfirm {
                     caller: "".into(),
                     channel_id: ChannelId!(1),
                     relayer: "".to_string(),
-                }),
+                })),
                 vec![],
             )
             .unwrap()
