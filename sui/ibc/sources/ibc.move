@@ -651,6 +651,7 @@ module ibc::ibc {
         proof: vector<u8>,
         proof_height: u64,
         port: &Port<T>,
+        relayer: address,
         _: &TxContext
     ) {
         ibc_store.assert_version();
@@ -666,6 +667,7 @@ module ibc::ibc {
             packet,
             proof,
             proof_height,
+            relayer
         );
     }
 
@@ -1950,7 +1952,7 @@ object::delete(id);
         state::commit(&mut ibc.id, pk, COMMITMENT_MAGIC);
 
         t.next_tx(@0x0);
-        ibc.timeout_packet(pkt, b"p", 1, &port, t.ctx());
+        ibc.timeout_packet(pkt, b"p", 1, &port, @0x0, t.ctx());
         assert!(state::borrow_commitment(&ibc.id, pk) == &COMMITMENT_MAGIC_ACK, 1);
 
         test_scenario::return_shared(ibc);

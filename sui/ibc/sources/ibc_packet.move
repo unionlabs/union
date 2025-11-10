@@ -326,6 +326,7 @@ module ibc::ibc_packet {
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
+        relayer: address,
     ) {
         let source_channel = packet.source_channel_id();
 
@@ -378,7 +379,7 @@ module ibc::ibc_packet {
             )
         );
 
-        events::emit_timeout_packet(packet_hash);
+        events::emit_packet_timeout(source_channel, packet_hash, relayer);
     }
 
     public(package) fun commit_packet_timeout(
