@@ -259,6 +259,24 @@ pub fn execute(
                 Ok(Response::new())
             }
         }
+        ExecuteMsg::Send(msg) => {
+            let SendMsg::Send {
+                channel_id,
+                timeout_timestamp,
+                timeout_height: _,
+                salt,
+                instruction,
+            } = msg.ensure_not_paused(deps.as_ref())?;
+
+            send(
+                deps,
+                info,
+                channel_id,
+                timeout_timestamp,
+                salt,
+                Instruction::abi_decode_params_validate(&instruction)?,
+            )
+        }
         ExecuteMsg::AccessManaged(msg) => {
             access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }
@@ -271,24 +289,6 @@ pub fn execute(
             };
 
             match msg {
-                RestrictedExecuteMsg::Send(msg) => {
-                    let SendMsg::Send {
-                        channel_id,
-                        timeout_timestamp,
-                        timeout_height: _,
-                        salt,
-                        instruction,
-                    } = msg.ensure_not_paused(deps.as_ref())?;
-
-                    send(
-                        deps,
-                        info,
-                        channel_id,
-                        timeout_timestamp,
-                        salt,
-                        Instruction::abi_decode_params_validate(&instruction)?,
-                    )
-                }
                 RestrictedExecuteMsg::SetBucketConfig {
                     denom,
                     capacity,
