@@ -730,15 +730,15 @@
   "sui.4c78adac": {
     "ibc_interface": "ibc-move/sui",
     "core": {
-      "address": "0x20ce81524276132a2aaee23a8dad22d26b80adfef5dcf765c68567b44ed4dfb7::ibc",
-      "height": 255095344,
-      "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+      "address": "0x8c7414ef89a6cb00a43c60027316ae450b642eca67a5a9d14fe34135e2edea05::events",
+      "height": 261471591,
+      "commit": "e296afb2c192f4ff74744fc8f98e11566a91b44f"
     },
     "app": {
       "ucs03": {
-        "address": "0xb9e0f478ab1bb759694368de62ced7cb04057f489d56f2b0a6a7d5ebc1407079::zkgm",
-        "height": 255095344,
-        "commit": "17b40689f11a32ee2b793297034b6ac733c3520f"
+        "address": "0xa1cfaf8c85635bef3615e59f4b653810835be05647baaed6cad8afc2bb25969b::events",
+        "height": 261472394,
+        "commit": "e296afb2c192f4ff74744fc8f98e11566a91b44f"
       }
     }
   },
