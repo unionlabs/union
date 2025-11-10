@@ -17259,6 +17259,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-proof-module-attested"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "cometbft-rpc",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-proof-module-cosmos-sdk"
 version = "0.0.0"
 dependencies = [

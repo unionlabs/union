@@ -52,6 +52,8 @@ static ATTESTOR_4: LazyLock<SigningKey> = LazyLock::new(|| {
     ))
 });
 
+const CHAIN_ID: &str = "999";
+
 fn attestors() -> impl Iterator<Item = &'static SigningKey> {
     [&ATTESTOR_1, &ATTESTOR_2, &ATTESTOR_3]
         .into_iter()
@@ -107,14 +109,26 @@ fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
             env.clone(),
             message_info(&Addr::unchecked(""), &[]),
             ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+                chain_id: CHAIN_ID.to_owned(),
                 new_quorum: const { NonZero::new(2).unwrap() },
             }),
         )
         .unwrap(),
-        Response::new().add_event(Event::new("quorum_updated").add_attribute("quorum", "2"))
+        Response::new().add_event(
+            Event::new("quorum_updated")
+                .add_attribute("chain_id", CHAIN_ID)
+                .add_attribute("quorum", "2")
+        )
     );
 
-    assert_query_result(deps.as_ref(), &env, QueryMsg::Quorum {}, &2);
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::Quorum {
+            chain_id: CHAIN_ID.to_owned(),
+        },
+        &2,
+    );
 
     for attestor in attestors() {
         assert_eq!(
@@ -123,12 +137,15 @@ fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
                 env.clone(),
                 message_info(&Addr::unchecked(""), &[]),
                 ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                    chain_id: CHAIN_ID.to_owned(),
                     new_attestor: vk(attestor)
                 }),
             )
             .unwrap(),
             Response::new().add_event(
-                Event::new("attestor_added").add_attribute("attestor", vk(attestor).to_string())
+                Event::new("attestor_added")
+                    .add_attribute("chain_id", CHAIN_ID)
+                    .add_attribute("attestor", vk(attestor).to_string())
             )
         );
     }
@@ -136,7 +153,9 @@ fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
     assert_query_result(
         deps.as_ref(),
         &env,
-        QueryMsg::Attestors {},
+        QueryMsg::Attestors {
+            chain_id: CHAIN_ID.to_owned(),
+        },
         &attestors().map(vk).collect::<BTreeSet<_>>(),
     );
 
@@ -152,15 +171,28 @@ fn reach_quorum<'a>(
     assert_eq!(
         verify_attestation(
             deps.as_ref(),
+            attestation.chain_id.clone(),
             attestation.height,
             attestation.key.clone(),
             attestation.value.clone(),
         )
         .unwrap_err(),
         Error::AttestationNotFound {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
             key: attestation.key.clone(),
         },
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        env,
+        QueryMsg::AttestedValue {
+            chain_id: attestation.chain_id.clone(),
+            height: attestation.height,
+            key: attestation.key.clone(),
+        },
+        &None::<AttestationValue>,
     );
 
     let mut res = Response::new();
@@ -186,6 +218,7 @@ fn reach_quorum<'a>(
         deps.as_ref(),
         env,
         QueryMsg::AttestedValue {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
             key: attestation.key.clone(),
         },
@@ -196,6 +229,7 @@ fn reach_quorum<'a>(
         deps.as_ref(),
         env,
         QueryMsg::TimestampAtHeight {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
         },
         &attestation.timestamp,
@@ -204,6 +238,7 @@ fn reach_quorum<'a>(
     // quorum reached, attestation should verify
     verify_attestation(
         deps.as_ref(),
+        attestation.chain_id.clone(),
         attestation.height,
         attestation.key.clone(),
         attestation.value.clone(),
@@ -224,6 +259,7 @@ fn reach_quorum<'a>(
         )
         .unwrap_err(),
         Error::AlreadyAttested {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
             timestamp: attestation.timestamp,
             key: attestation.key,
@@ -237,6 +273,7 @@ fn attest() {
     let (mut deps, _) = setup();
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_nanos(100),
         key: b"key-1".into(),
@@ -268,7 +305,9 @@ fn attest() {
             },
         )
         .unwrap_err(),
-        Error::AttestationAlreadyReceived,
+        Error::AttestationAlreadyReceived {
+            chain_id: CHAIN_ID.to_owned()
+        },
     );
 }
 
@@ -277,6 +316,7 @@ fn verify_header_works() {
     let (mut deps, env) = setup();
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 2,
         timestamp: Timestamp::from_nanos(100),
         key: b"key-1".into(),
@@ -288,7 +328,7 @@ fn verify_header_works() {
         verify_header(
             deps.as_ref(),
             ClientState::V1(ClientStateV1 {
-                chain_id: "999".to_owned(),
+                chain_id: CHAIN_ID.to_owned(),
                 latest_height: 1,
             }),
             Header {
@@ -311,7 +351,7 @@ fn verify_header_works() {
         verify_header(
             deps.as_ref(),
             ClientState::V1(ClientStateV1 {
-                chain_id: "999".to_owned(),
+                chain_id: CHAIN_ID.to_owned(),
                 latest_height: 1,
             }),
             Header {
@@ -322,6 +362,7 @@ fn verify_header_works() {
         .err()
         .unwrap(),
         Error::InvalidTimestamp {
+            chain_id: CHAIN_ID.to_owned(),
             height: 2,
             attested_timestamp: Timestamp::from_nanos(100),
             timestamp: Timestamp::from_nanos(101)
@@ -336,7 +377,7 @@ fn verify_header_works() {
     } = verify_header(
         deps.as_ref(),
         ClientState::V1(ClientStateV1 {
-            chain_id: "999".to_owned(),
+            chain_id: CHAIN_ID.to_owned(),
             latest_height: 1,
         }),
         Header {
@@ -350,7 +391,7 @@ fn verify_header_works() {
     assert_eq!(
         client_state,
         Some(ClientState::V1(ClientStateV1 {
-            chain_id: "999".to_owned(),
+            chain_id: CHAIN_ID.to_owned(),
             latest_height: 2,
         })),
     );
@@ -368,6 +409,7 @@ fn quorum() {
     let (mut deps, env) = setup();
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_nanos(100),
         key: b"key-1".into(),
@@ -385,12 +427,14 @@ fn quorum() {
     assert_eq!(
         verify_attestation(
             deps.as_ref(),
+            attestation.chain_id.clone(),
             attestation.height,
             attestation.key.clone(),
             AttestationValue::NonExistence,
         )
         .unwrap_err(),
         Error::InvalidAttestedValue {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
             key: attestation.key.clone(),
             value: AttestationValue::NonExistence,
@@ -402,12 +446,14 @@ fn quorum() {
     assert_eq!(
         verify_attestation(
             deps.as_ref(),
+            attestation.chain_id.clone(),
             attestation.height,
             attestation.key.clone(),
             AttestationValue::Existence(b"invalid value".into()),
         )
         .unwrap_err(),
         Error::InvalidAttestedValue {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
             key: attestation.key.clone(),
             value: AttestationValue::Existence(b"invalid value".into()),
@@ -417,6 +463,7 @@ fn quorum() {
 
     verify_attestation(
         deps.as_ref(),
+        attestation.chain_id.clone(),
         attestation.height,
         attestation.key.clone(),
         AttestationValue::Existence(b"value-1".into()),
@@ -424,6 +471,7 @@ fn quorum() {
     .unwrap();
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 2,
         timestamp: Timestamp::from_nanos(100),
         key: b"key-1".into(),
@@ -441,12 +489,14 @@ fn quorum() {
     assert_eq!(
         verify_attestation(
             deps.as_ref(),
+            attestation.chain_id.clone(),
             attestation.height,
             attestation.key.clone(),
             AttestationValue::Existence(b"unexpected existence".into()),
         )
         .unwrap_err(),
         Error::InvalidAttestedValue {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
             key: attestation.key.clone(),
             value: AttestationValue::Existence(b"unexpected existence".into()),
@@ -456,6 +506,7 @@ fn quorum() {
 
     verify_attestation(
         deps.as_ref(),
+        attestation.chain_id.clone(),
         attestation.height,
         attestation.key.clone(),
         AttestationValue::NonExistence,
@@ -468,6 +519,7 @@ fn invalid_signature() {
     let (mut deps, _) = setup();
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_nanos(100),
         key: b"key-1".into(),
@@ -496,6 +548,7 @@ fn inconsistent_timestamp() {
     let (mut deps, env) = setup();
 
     let mut attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_nanos(100),
         key: b"key-1".into(),
@@ -507,6 +560,7 @@ fn inconsistent_timestamp() {
         deps.as_ref(),
         &env,
         QueryMsg::TimestampAtHeight {
+            chain_id: CHAIN_ID.to_owned(),
             height: attestation.height,
         },
         &None::<Timestamp>,
@@ -539,6 +593,7 @@ fn inconsistent_timestamp() {
         )
         .unwrap_err(),
         Error::InconsistentTimestamp {
+            chain_id: CHAIN_ID.to_owned(),
             height: 1,
             timestamp: Timestamp::from_nanos(101),
             previously_attested_timestamp: Timestamp::from_nanos(100),
@@ -557,11 +612,13 @@ fn add_attestor() {
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
             ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                chain_id: CHAIN_ID.to_owned(),
                 new_attestor: vk(&ATTESTOR_3)
             }),
         )
         .unwrap_err(),
         Error::AttestorAlreadyExists {
+            chain_id: CHAIN_ID.to_owned(),
             attestor: vk(&ATTESTOR_3)
         }
     );
@@ -572,12 +629,15 @@ fn add_attestor() {
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
             ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                chain_id: CHAIN_ID.to_owned(),
                 new_attestor: vk(&ATTESTOR_4)
             }),
         )
         .unwrap(),
         Response::new().add_event(
-            Event::new("attestor_added").add_attribute("attestor", vk(&ATTESTOR_4).to_string())
+            Event::new("attestor_added")
+                .add_attribute("chain_id", CHAIN_ID)
+                .add_attribute("attestor", vk(&ATTESTOR_4).to_string())
         ),
     );
 
@@ -586,6 +646,7 @@ fn add_attestor() {
         &mut deps,
         &env,
         Attestation {
+            chain_id: CHAIN_ID.to_owned(),
             height: 1,
             timestamp: Timestamp::from_secs(1),
             key: b"key".into(),
@@ -606,16 +667,19 @@ fn remove_attestor() {
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
             ExecuteMsg::Restricted(RestrictedExecuteMsg::RemoveAttestor {
+                chain_id: CHAIN_ID.to_owned(),
                 old_attestor: vk(&ATTESTOR_4)
             }),
         )
         .unwrap_err(),
         Error::InvalidAttestor {
+            chain_id: CHAIN_ID.to_owned(),
             attestor: vk(&ATTESTOR_4)
         }
     );
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_secs(1),
         key: b"key".into(),
@@ -642,12 +706,15 @@ fn remove_attestor() {
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
             ExecuteMsg::Restricted(RestrictedExecuteMsg::RemoveAttestor {
+                chain_id: CHAIN_ID.to_owned(),
                 old_attestor: vk(&ATTESTOR_1)
             }),
         )
         .unwrap(),
         Response::new().add_event(
-            Event::new("attestor_removed").add_attribute("attestor", vk(&ATTESTOR_1).to_string())
+            Event::new("attestor_removed")
+                .add_attribute("chain_id", CHAIN_ID)
+                .add_attribute("attestor", vk(&ATTESTOR_1).to_string())
         ),
     );
 
@@ -655,6 +722,7 @@ fn remove_attestor() {
     reach_quorum(&mut deps, &env, attestation, [&*ATTESTOR_2, &*ATTESTOR_3]);
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_secs(1),
         key: b"key2".into(),
@@ -675,6 +743,7 @@ fn remove_attestor() {
         )
         .unwrap_err(),
         Error::InvalidAttestor {
+            chain_id: CHAIN_ID.to_owned(),
             attestor: vk(&ATTESTOR_1)
         }
     );
@@ -685,6 +754,7 @@ fn confirm_attestation() {
     let (mut deps, _) = setup();
 
     let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
         height: 1,
         timestamp: Timestamp::from_secs(1),
         key: b"key2".into(),
@@ -703,6 +773,7 @@ fn confirm_attestation() {
         )
         .unwrap_err(),
         Error::QuorumNotReached {
+            chain_id: CHAIN_ID.to_owned(),
             quorum: const { NonZero::new(2).unwrap() },
             current: 0,
         }
@@ -732,6 +803,7 @@ fn confirm_attestation() {
         )
         .unwrap_err(),
         Error::QuorumNotReached {
+            chain_id: CHAIN_ID.to_owned(),
             quorum: const { NonZero::new(2).unwrap() },
             current: 1,
         }
@@ -744,11 +816,16 @@ fn confirm_attestation() {
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
             ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+                chain_id: CHAIN_ID.to_owned(),
                 new_quorum: const { NonZero::new(1).unwrap() }
             }),
         )
         .unwrap(),
-        Response::new().add_event(Event::new("quorum_updated").add_attribute("quorum", "1"))
+        Response::new().add_event(
+            Event::new("quorum_updated")
+                .add_attribute("chain_id", CHAIN_ID)
+                .add_attribute("quorum", "1")
+        )
     );
 
     // the attestation has hit the new quorum, so it can be confirmed
@@ -765,5 +842,159 @@ fn confirm_attestation() {
         .events[0]
             .ty,
         "quorum_reached",
+    );
+}
+
+#[test]
+fn attestations_unique_per_chain() {
+    let (mut deps, env) = setup();
+
+    let attestation = Attestation {
+        chain_id: CHAIN_ID.to_owned(),
+        height: 1,
+        timestamp: Timestamp::from_nanos(100),
+        key: b"key-1".into(),
+        value: AttestationValue::Existence(b"value-1".into()),
+    };
+
+    reach_quorum(
+        &mut deps,
+        &env,
+        attestation.clone(),
+        [&*ATTESTOR_1, &*ATTESTOR_2],
+    );
+
+    // quorum reached, attestation should verify
+    verify_attestation(
+        deps.as_ref(),
+        attestation.chain_id.clone(),
+        attestation.height,
+        attestation.key.clone(),
+        attestation.value.clone(),
+    )
+    .unwrap();
+
+    // attestation should not verify for a different chain id
+    assert_eq!(
+        verify_attestation(
+            deps.as_ref(),
+            "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG".to_owned(),
+            attestation.height,
+            attestation.key.clone(),
+            attestation.value.clone(),
+        )
+        .unwrap_err(),
+        Error::AttestationNotFound {
+            chain_id: "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG".to_owned(),
+            height: attestation.height,
+            key: attestation.key.clone(),
+        },
+    );
+}
+
+#[test]
+fn quorum_unique_per_chain() {
+    let (mut deps, env) = setup();
+
+    assert_eq!(
+        query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::Quorum {
+                chain_id: "998".to_owned(),
+            },
+        )
+        .unwrap_err(),
+        Error::QuorumNotSet {
+            chain_id: "998".to_owned()
+        }
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked(""), &[]),
+            ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+                chain_id: "998".to_owned(),
+                new_quorum: const { NonZero::new(3).unwrap() },
+            }),
+        )
+        .unwrap(),
+        Response::new().add_event(
+            Event::new("quorum_updated")
+                .add_attribute("chain_id", "998")
+                .add_attribute("quorum", "3")
+        )
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::Quorum {
+            chain_id: "998".to_owned(),
+        },
+        &3,
+    );
+}
+
+#[test]
+fn attestors_unique_per_chain() {
+    let (mut deps, env) = setup();
+
+    assert_query_result::<BTreeSet<H256>>(
+        deps.as_ref(),
+        &env,
+        QueryMsg::Attestors {
+            chain_id: "998".to_owned(),
+        },
+        &BTreeSet::default(),
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked(""), &[]),
+            ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                chain_id: "998".to_owned(),
+                new_attestor: H256::MIN,
+            }),
+        )
+        .unwrap(),
+        Response::new().add_event(
+            Event::new("attestor_added")
+                .add_attribute("chain_id", "998")
+                .add_attribute("attestor", <H256>::MIN.to_string())
+        )
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked(""), &[]),
+            ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                chain_id: "998".to_owned(),
+                new_attestor: H256::MAX,
+            }),
+        )
+        .unwrap(),
+        Response::new().add_event(
+            Event::new("attestor_added")
+                .add_attribute("chain_id", "998")
+                .add_attribute("attestor", <H256>::MAX.to_string())
+        )
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::Attestors {
+            chain_id: "998".to_owned(),
+        },
+        &[<H256>::MIN, <H256>::MAX]
+            .into_iter()
+            .collect::<BTreeSet<_>>(),
     );
 }

@@ -39,8 +39,11 @@ impl IbcClient for AttestedLightClient {
         StorageProof {}: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
         verify_attestation(
             ctx.deps,
+            client_state.chain_id,
             height,
             key.into(),
             AttestationValue::Existence(value.into()),
@@ -54,8 +57,16 @@ impl IbcClient for AttestedLightClient {
         key: Vec<u8>,
         StorageProof {}: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
-        verify_attestation(ctx.deps, height, key.into(), AttestationValue::NonExistence)
-            .map_err(Into::into)
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
+        verify_attestation(
+            ctx.deps,
+            client_state.chain_id,
+            height,
+            key.into(),
+            AttestationValue::NonExistence,
+        )
+        .map_err(Into::into)
     }
 
     fn verify_header(
@@ -115,11 +126,14 @@ pub fn verify_header(
 
     let Header { height, timestamp } = header;
 
-    let attested_timestamp = deps.storage.read::<HeightTimestamps>(&height)?;
+    let attested_timestamp = deps
+        .storage
+        .read::<HeightTimestamps>(&(client_state.chain_id.clone(), height))?;
 
     ensure!(
         attested_timestamp == timestamp,
         Error::InvalidTimestamp {
+            chain_id: client_state.chain_id,
             height,
             attested_timestamp,
             timestamp
@@ -138,6 +152,7 @@ pub fn verify_header(
 
 pub fn verify_attestation(
     deps: Deps,
+    chain_id: String,
     height: u64,
     key: Bytes,
     value: AttestationValue,
@@ -147,10 +162,12 @@ pub fn verify_attestation(
     let attested = deps
         .storage
         .maybe_read::<Attestations>(&AttestationKey {
+            chain_id: chain_id.clone(),
             height,
             key: key.clone(),
         })?
         .ok_or_else(|| Error::AttestationNotFound {
+            chain_id: chain_id.clone(),
             height,
             key: key.clone(),
         })?;
@@ -161,6 +178,7 @@ pub fn verify_attestation(
             ensure!(
                 value == attested,
                 Error::InvalidAttestedValue {
+                    chain_id,
                     height,
                     key,
                     attested: Existence(attested),
@@ -177,6 +195,7 @@ pub fn verify_attestation(
         // invalid
         (attested @ Existence(_), value @ NonExistence)
         | (attested @ NonExistence, value @ Existence(_)) => Err(Error::InvalidAttestedValue {
+            chain_id,
             height,
             key,
             attested,
