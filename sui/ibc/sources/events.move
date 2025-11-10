@@ -387,7 +387,9 @@ module ibc::events {
         )
     }
 
-    public(package) fun emit_packet_timeout(channel_id: u32, packet_hash: vector<u8>, maker: address) {
+    public(package) fun emit_packet_timeout(
+        channel_id: u32, packet_hash: vector<u8>, maker: address
+    ) {
         event::emit(PacketTimeout { channel_id, packet_hash, maker })
     }
 
