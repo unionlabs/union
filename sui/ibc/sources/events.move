@@ -176,8 +176,10 @@ module ibc::events {
         maker_msg: vector<u8>
     }
 
-    public struct TimeoutPacket has drop, store, copy {
-        packet_hash: vector<u8>
+    public struct PacketTimeout has drop, store, copy {
+        channel_id: u32,
+        packet_hash: vector<u8>,
+        maker: address
     }
 
     public struct WriteAck has drop, store, copy {
@@ -385,8 +387,10 @@ module ibc::events {
         )
     }
 
-    public(package) fun emit_timeout_packet(packet_hash: vector<u8>) {
-        event::emit(TimeoutPacket { packet_hash })
+    public(package) fun emit_packet_timeout(
+        channel_id: u32, packet_hash: vector<u8>, maker: address
+    ) {
+        event::emit(PacketTimeout { channel_id, packet_hash, maker })
     }
 
     public(package) fun emit_write_ack(
