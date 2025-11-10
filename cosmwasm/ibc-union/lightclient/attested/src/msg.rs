@@ -30,7 +30,7 @@ pub enum ExecuteMsg {
 pub enum RestrictedExecuteMsg {
     /// Set a new quorum for the attestations to be considered valid.
     ///
-    /// If the new quorum is larger than the currently configuured quorum, any existing attestations that have already hit the quorum will still be considered valid, but any current pending attestations will need to reach the new quorum in order to be confirmed.
+    /// If the new quorum is larger than the currently configured quorum, any existing attestations that have already hit the quorum will still be considered valid, but any current pending attestations will need to reach the new quorum in order to be confirmed.
     SetQuorum {
         chain_id: String,
         new_quorum: NonZero<u8>,
@@ -57,14 +57,14 @@ pub enum QueryMsg {
     /// Returns the value attested to under `key` at `height` on `chain_id`.
     AttestedValue {
         chain_id: String,
-        // #[serde(with = "serde_utils::string")]
+        #[serde(with = "serde_utils::string")]
         height: u64,
         key: Bytes,
     },
     /// Returns the timestamp attested to at `height` on `chain_id`.
     TimestampAtHeight {
         chain_id: String,
-        // #[serde(with = "serde_utils::string")]
+        #[serde(with = "serde_utils::string")]
         height: u64,
     },
     #[serde(untagged)]
