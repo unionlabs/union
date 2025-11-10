@@ -14,6 +14,7 @@ include = ["../../deployments/deployments.json"]
 workspace = true
 
 [dependencies]
+embed-commit         = { workspace = true, features = ["serde"] }
 serde                = { workspace = true, features = ["derive"] }
 serde_json           = { workspace = true }
 ucs04                = { workspace = true, features = ["serde"] }

@@ -4667,6 +4667,7 @@ dependencies = [
 name = "deployments"
 version = "0.0.0"
 dependencies = [
+ "embed-commit",
  "serde",
  "serde_json",
  "ucs04",
@@ -5330,6 +5331,7 @@ version = "0.0.0"
 dependencies = [
  "bytemuck",
  "const-hex",
+ "serde",
 ]
 
 [[package]]
