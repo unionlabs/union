@@ -1892,6 +1892,7 @@ dependencies = [
  "ibc-union-light-client",
  "ibc-union-msg",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
  "unionlabs",

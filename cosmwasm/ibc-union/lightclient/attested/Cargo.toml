@@ -24,6 +24,7 @@ frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
