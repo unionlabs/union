@@ -192,6 +192,7 @@ members = [
   "voyager/modules/finality/tendermint",
   "voyager/modules/finality/trusted-evm",
   "voyager/modules/finality/sui",
+  "voyager/modules/finality/attested-evm",
 
   "voyager/plugins/client-update/base",
   "voyager/plugins/client-update/bob",

@@ -436,6 +436,7 @@ impl Module {
                     let tx_client = TxClient::new(signer, &self.cosmos_client, &self.gas_config);
 
                     let attestation = Attestation {
+                        chain_id: self.chain_id.clone().to_string(),
                         height,
                         timestamp: Timestamp::from_secs(timestamp),
                         key: key.into(),

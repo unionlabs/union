@@ -16828,6 +16828,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-finality-module-attested-evm"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "attested-light-client",
+ "attested-light-client-types",
+ "clap",
+ "cometbft-rpc",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-finality-module-base"
 version = "0.0.0"
 dependencies = [
@@ -17263,7 +17286,8 @@ dependencies = [
 name = "voyager-proof-module-attested"
 version = "0.0.0"
 dependencies = [
- "clap",
+ "attested-light-client",
+ "attested-light-client-types",
  "cometbft-rpc",
  "embed-commit",
  "ibc-union-spec",
