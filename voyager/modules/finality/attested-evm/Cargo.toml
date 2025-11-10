@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-proof-module-attested"
+name    = "voyager-finality-module-attested-evm"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,8 +12,10 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
 attested-light-client       = { workspace = true }
 attested-light-client-types = { workspace = true, features = ["serde"] }
+clap                        = { workspace = true, features = ["derive"] }
 cometbft-rpc                = { workspace = true }
 embed-commit                = { workspace = true }
 ibc-union-spec              = { workspace = true, features = ["serde"] }

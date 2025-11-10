@@ -1,31 +1,25 @@
-#![warn(clippy::unwrap_used)]
-
-use std::num::ParseIntError;
-
-use ibc_union_spec::{
-    IbcUnion,
-    path::{IBC_UNION_COSMWASM_COMMITMENT_PREFIX, StorePath},
-};
+use attested_light_client::types::AttestationValue;
+use attested_light_client_types::StorageProof;
+use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{
     Extensions,
     core::{RpcResult, async_trait},
     types::ErrorObject,
 };
+use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use tracing::{error, instrument, warn};
+use tracing::instrument;
 use unionlabs::{
     ErrorReporter,
-    bounded::BoundedI64,
-    cosmos::ics23::commitment_proof::CommitmentProof,
-    ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    ibc::core::client::height::Height,
     primitives::{Bech32, H256},
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{FATAL_JSONRPC_ERROR_CODE, ProofModuleServer, rpc_error, types::ProofModuleInfo},
+    rpc::{ProofModuleServer, types::ProofModuleInfo},
     types::ProofType,
 };
 
@@ -34,74 +28,33 @@ async fn main() {
     <Module as ProofModule<IbcUnion>>::run().await;
 }
 
-#[derive(clap::Subcommand)]
-pub enum Cmd {
-    ChainId,
-    LatestHeight,
-}
-
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub chain_revision: u64,
-
-    pub cometbft_client: cometbft_rpc::Client,
-
     pub attestation_client_address: Bech32<H256>,
+    pub cometbft_client: cometbft_rpc::Client,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub rpc_url: String,
+    pub chain_id: ChainId,
     pub attestation_client_address: Bech32<H256>,
+    pub rpc_url: String,
 }
 
 impl ProofModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ProofModuleInfo) -> anyhow::Result<Self> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
-
-        let chain_id = tm_client.status().await?.node_info.network;
-
-        info.ensure_chain_id(&chain_id)?;
-
-        let chain_revision = chain_id
-            .split('-')
-            .next_back()
-            .ok_or_else(|| ChainIdParseError {
-                found: chain_id.clone(),
-                source: None,
-            })?
-            .parse()
-            .map_err(|err| ChainIdParseError {
-                found: chain_id.clone(),
-                source: Some(err),
-            })?;
+        info.ensure_chain_id(config.chain_id.as_str())?;
 
         Ok(Self {
-            cometbft_client: tm_client,
-            chain_id: ChainId::new(chain_id),
-            chain_revision,
+            chain_id: config.chain_id,
             attestation_client_address: config.attestation_client_address,
+            cometbft_client: cometbft_rpc::Client::new(config.rpc_url).await?,
         })
     }
-}
-
-impl Module {
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height::new_with_revision(self.chain_revision, height)
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
-pub struct ChainIdParseError {
-    found: String,
-    #[source]
-    source: Option<ParseIntError>,
 }
 
 #[async_trait]
@@ -113,77 +66,60 @@ impl ProofModuleServer<IbcUnion> for Module {
         at: Height,
         path: StorePath,
     ) -> RpcResult<Option<(Value, ProofType)>> {
-        // TODO: Extract this into a function somewhere, reuse in lightclients
-        let data = [0x03]
-            .into_iter()
-            .chain(*self.ibc_host_contract_address.data())
-            .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
-            .chain(path.key())
-            .collect::<Vec<_>>();
+        let req = QuerySmartContractStateRequest {
+            address: self.attestation_client_address.to_string(),
+            query_data: serde_json::to_vec(&attested_light_client::msg::QueryMsg::AttestedValue {
+                chain_id: self.chain_id.to_string(),
+                height: at.height(),
+                key: path.key().into(),
+            })
+            .unwrap(),
+        };
 
-        let query_result = self
+        let raw = self
             .cometbft_client
-            .abci_query(
-                "store/wasm/key",
-                data,
-                // THIS -1 IS VERY IMPORTANT!!!
-                //
-                // a proof at height H is provable at height H + 1
-                // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
-                Some(BoundedI64::new(at.height() - 1).map_err(|e| {
-                    let message = format!("invalid height value: {}", ErrorReporter(e));
-                    error!(%message);
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        message,
-                        Some(json!({ "height": at })),
-                    )
-                })?),
-                true,
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &req,
+                None,
+                false,
             )
             .await
-            .map_err(rpc_error("error querying ibc proof", None))?;
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching attested value"),
+                    Some(json!({
+                        "chain_id": self.chain_id.to_string(),
+                        "height": at.height(),
+                        "key": path.key()
+                    })),
+                )
+            })?
+            .into_result()
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching attested value"),
+                    Some(json!({
+                        "chain_id": self.chain_id.to_string(),
+                        "height": at.height(),
+                        "key": path.key()
+                    })),
+                )
+            })?
+            .unwrap()
+            .data;
 
-        // if this field is none, the proof is not available at this height
-        let Some(proofs) = query_result.response.proof_ops else {
-            return Ok(None);
-        };
-
-        let proofs = proofs
-            .ops
-            .into_iter()
-            .map(|op| {
-                <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(&*op.data)
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("invalid height value: {}", ErrorReporter(e)),
-                            Some(json!({ "height": at })),
-                        )
-                    })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let proof =
-            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof { proofs })
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("invalid merkle proof value: {}", ErrorReporter(e)),
-                        Some(json!({ "height": at })),
-                    )
-                })?;
-
-        let proof_type = if proof
-            .proofs
-            .iter()
-            .any(|p| matches!(&p, CommitmentProof::Nonexist(_)))
-        {
-            ProofType::NonMembership
-        } else {
-            ProofType::Membership
-        };
-
-        Ok(Some((into_value(proof), proof_type)))
+        Ok(
+            match serde_json::from_slice::<AttestationValue>(&raw).unwrap() {
+                AttestationValue::NonExistence => {
+                    Some((into_value(StorageProof {}), ProofType::Membership))
+                }
+                AttestationValue::Existence(_) => {
+                    Some((into_value(StorageProof {}), ProofType::NonMembership))
+                }
+            },
+        )
     }
 }

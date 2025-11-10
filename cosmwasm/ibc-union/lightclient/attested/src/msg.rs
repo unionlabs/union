@@ -67,6 +67,8 @@ pub enum QueryMsg {
         #[serde(with = "serde_utils::string")]
         height: u64,
     },
+    /// Returns the latest height and timestamp attested to for `chain_id`.
+    LatestHeight { chain_id: String },
     #[serde(untagged)]
     LightClient(ibc_union_light_client::msg::QueryMsg),
 }

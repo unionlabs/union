@@ -9,7 +9,7 @@ use crate::{
     client::AttestedLightClient,
     contract::{
         execute::{add_attestor, attest, confirm_attestation, remove_attestor, set_quorum},
-        query::{attested_value, attestors, quorum, timestamp_at_height},
+        query::{attested_value, attestors, latest_height, quorum, timestamp_at_height},
     },
     errors::Error,
     msg::{ExecuteMsg, QueryMsg, RestrictedExecuteMsg},
@@ -64,6 +64,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
         QueryMsg::TimestampAtHeight { chain_id, height } => Ok(to_json_binary(
             &timestamp_at_height(deps, chain_id, height)?,
         )?),
+        QueryMsg::LatestHeight { chain_id } => Ok(to_json_binary(&latest_height(deps, chain_id)?)?),
         QueryMsg::LightClient(msg) => {
             ibc_union_light_client::query::<AttestedLightClient>(deps, env, msg)
                 .map_err(StdError::from)

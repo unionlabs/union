@@ -21,7 +21,7 @@ use unionlabs::{
 
 use crate::{
     client::{verify_attestation, verify_header},
-    contract::{execute, migrate, query},
+    contract::{execute, migrate, query, query::LatestHeight},
     errors::Error,
     msg::{ExecuteMsg, QueryMsg, RestrictedExecuteMsg},
     types::{Attestation, AttestationValue},
@@ -991,5 +991,95 @@ fn attestors_unique_per_chain() {
         &[<H256>::MIN, <H256>::MAX]
             .into_iter()
             .collect::<BTreeSet<_>>(),
+    );
+}
+
+#[test]
+fn latest_height() {
+    let (mut deps, env) = setup();
+
+    reach_quorum(
+        &mut deps,
+        &env,
+        Attestation {
+            chain_id: CHAIN_ID.to_owned(),
+            height: 1,
+            timestamp: Timestamp::from_secs(1),
+            key: b"key".into(),
+            value: AttestationValue::NonExistence,
+        },
+        [&*ATTESTOR_1, &*ATTESTOR_2],
+    );
+
+    // no heights attested to for this chain
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::LatestHeight {
+            chain_id: "998".to_owned(),
+        },
+        &None::<LatestHeight>,
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::LatestHeight {
+            chain_id: CHAIN_ID.to_owned(),
+        },
+        &Some(LatestHeight {
+            height: 1,
+            timestamp: Timestamp::from_secs(1),
+        }),
+    );
+
+    reach_quorum(
+        &mut deps,
+        &env,
+        Attestation {
+            chain_id: CHAIN_ID.to_owned(),
+            height: 2,
+            timestamp: Timestamp::from_secs(1),
+            key: b"key".into(),
+            value: AttestationValue::NonExistence,
+        },
+        [&*ATTESTOR_1, &*ATTESTOR_2],
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::LatestHeight {
+            chain_id: CHAIN_ID.to_owned(),
+        },
+        &Some(LatestHeight {
+            height: 2,
+            timestamp: Timestamp::from_secs(1),
+        }),
+    );
+
+    reach_quorum(
+        &mut deps,
+        &env,
+        Attestation {
+            chain_id: CHAIN_ID.to_owned(),
+            height: u64::MAX,
+            timestamp: Timestamp::from_secs(1),
+            key: b"key".into(),
+            value: AttestationValue::NonExistence,
+        },
+        [&*ATTESTOR_1, &*ATTESTOR_2],
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::LatestHeight {
+            chain_id: CHAIN_ID.to_owned(),
+        },
+        &Some(LatestHeight {
+            height: u64::MAX,
+            timestamp: Timestamp::from_secs(1),
+        }),
     );
 }

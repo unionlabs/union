@@ -3,6 +3,7 @@ use std::{collections::BTreeSet, num::NonZero};
 use cosmwasm_std::{Deps, Order};
 use depolama::{Bytes, StorageExt};
 use ibc_union_light_client::spec::Timestamp;
+use serde::{Deserialize, Serialize};
 use unionlabs::primitives::H256;
 
 use crate::{
@@ -51,4 +52,23 @@ pub fn timestamp_at_height(
     deps.storage
         .maybe_read::<HeightTimestamps>(&(chain_id, height))
         .map_err(Into::into)
+}
+
+pub fn latest_height(deps: Deps, chain_id: String) -> Result<Option<LatestHeight>, Error> {
+    deps.storage
+        .iter_range::<HeightTimestamps>(
+            Order::Descending,
+            (chain_id.clone(), 0)..=(chain_id.clone(), u64::MAX),
+        )
+        .next()
+        .map(|r| r.map(|((_, height), timestamp)| LatestHeight { height, timestamp }))
+        .transpose()
+        .map_err(Into::into)
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct LatestHeight {
+    pub height: u64,
+    pub timestamp: Timestamp,
 }
