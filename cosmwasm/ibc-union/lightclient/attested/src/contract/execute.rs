@@ -83,7 +83,7 @@ pub fn attest(
                 .add_attribute("signature", signature.to_string()),
         );
 
-        if let Some(event) = check_quorum(deps.branch(), &signatures, &attestation)? {
+        if let Ok(event) = check_quorum(deps.branch(), &signatures, &attestation)? {
             res = res.add_event(event);
         } else {
             deps.storage
@@ -100,7 +100,8 @@ pub fn confirm_attestation(deps: DepsMut, attestation: Attestation) -> Result<Re
         .maybe_read::<PendingAttestations>(&attestation)?
         .unwrap_or_default();
 
-    let event = check_quorum(deps, &signatures, &attestation)?.ok_or(Error::QuorumNotReached)?;
+    let event = check_quorum(deps, &signatures, &attestation)?
+        .map_err(|(quorum, current)| Error::QuorumNotReached { quorum, current })?;
 
     Ok(Response::new().add_event(event))
 }
@@ -109,7 +110,7 @@ fn check_quorum(
     deps: DepsMut,
     signatures: &BTreeMap<H256, H512>,
     attestation: &Attestation,
-) -> Result<Option<Event>, Error> {
+) -> Result<Result<Event, (NonZero<u8>, u8)>, Error> {
     let quorum = deps.storage.read_item::<Quorum>()?;
 
     let total_valid_signatures = signatures.iter().try_fold(0, |total, (attestor, _)| {
@@ -136,16 +137,14 @@ fn check_quorum(
                 Ok(maybe_timestamp.unwrap_or(attestation.timestamp))
             })?;
 
-        Ok(Some(
-            Event::new("quorum_reached")
-                .add_attribute("height", attestation.height.to_string())
-                .add_attribute("timestamp", attestation.timestamp.to_string())
-                .add_attribute("key", attestation.key.to_string())
-                .add_attribute("value", attestation.value.to_string())
-                .add_attribute("quorum", quorum.to_string()),
-        ))
+        Ok(Ok(Event::new("quorum_reached")
+            .add_attribute("height", attestation.height.to_string())
+            .add_attribute("timestamp", attestation.timestamp.to_string())
+            .add_attribute("key", attestation.key.to_string())
+            .add_attribute("value", attestation.value.to_string())
+            .add_attribute("quorum", quorum.to_string())))
     } else {
-        Ok(None)
+        Ok(Err((quorum, total_valid_signatures as u8)))
     }
 }
 
