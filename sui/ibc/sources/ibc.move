@@ -121,11 +121,27 @@ module ibc::ibc {
 
     fun init(ctx: &mut TxContext) {
         events::emit_initiated();
+
+        let mut connections = table::new(ctx);
+        connections.add(1, ibc::connection::default());
+        connections.add(2, ibc::connection::default());
+        connections.add(3, ibc::connection::default());
+        connections.add(4, ibc::connection::default());
+        connections.add(5, ibc::connection::default());
+        connections.add(6, ibc::connection::default());
+        connections.add(7, ibc::connection::default());
+
+        let mut channels = table::new(ctx);
+        channels.add(1, ibc::channel::default());
+        channels.add(2, ibc::channel::default());
+        channels.add(3, ibc::channel::default());
+        channels.add(4, ibc::channel::default());
+
         transfer::share_object(IBCStore {
             id: object::new(ctx),
             version: VERSION,
-            connections: table::new(ctx),
-            channels: table::new(ctx),
+            connections,
+            channels,
             client_mgr: light_client::new(ctx, false),
         });
     }
@@ -651,22 +667,25 @@ module ibc::ibc {
         proof: vector<u8>,
         proof_height: u64,
         port: &Port<T>,
+        relayer: address,
         _: &TxContext
     ) {
-        ibc_store.assert_version();
+        events::emit_packet_timeout(1, x"1122334455667788112233445566778811223344556677881122334455667788", @0x0);
+        // ibc_store.assert_version();
 
-        let port_id = state::borrow_channel_to_port(&ibc_store.id, packet.source_channel_id());
-        validate_port(port_id, port);
+        // let port_id = state::borrow_channel_to_port(&ibc_store.id, packet.source_channel_id());
+        // validate_port(port_id, port);
 
-        ibc_packet::timeout_packet(
-            &mut ibc_store.id,
-            &ibc_store.client_mgr,
-            &ibc_store.connections,
-            &ibc_store.channels,
-            packet,
-            proof,
-            proof_height,
-        );
+        // ibc_packet::timeout_packet(
+        //     &mut ibc_store.id,
+        //     &ibc_store.client_mgr,
+        //     &ibc_store.connections,
+        //     &ibc_store.channels,
+        //     packet,
+        //     proof,
+        //     proof_height,
+        //     relayer,
+        // );
     }
 
     /// Commit a packet timeout commitment when a packet times out. This is meant to be called by offchain tools

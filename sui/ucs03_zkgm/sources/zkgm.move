@@ -801,6 +801,7 @@ module zkgm::zkgm {
         zkgm: &RelayStore,
         proof: vector<u8>,
         proof_height: u64,
+        relayer: address,
         timeout_ctx: TimeoutCtx,
         ctx: &TxContext,
     ) {
@@ -812,6 +813,7 @@ module zkgm::zkgm {
             proof,
             proof_height,
             zkgm.port(),
+            relayer,
             ctx,
         );
 

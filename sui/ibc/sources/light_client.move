@@ -82,9 +82,15 @@ module ibc::light_client {
     }
 
     public(package) fun new(ctx: &mut TxContext, test_mode: bool): LightClientManager {
+        let mut client_id_to_type = table::new(ctx);
+        client_id_to_type.add(1, string::utf8(b"invalid"));
+        client_id_to_type.add(2, string::utf8(b"invalid"));
+        client_id_to_type.add(3, string::utf8(b"invalid"));
+        client_id_to_type.add(4, string::utf8(b"invalid"));
+
         LightClientManager {
             clients: object_bag::new(ctx),
-            client_id_to_type: table::new(ctx),
+            client_id_to_type,
             test_mode
         }
     }

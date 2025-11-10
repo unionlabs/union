@@ -8,13 +8,15 @@ ibc          = { local = "../ibc" }
 owned_vault  = { local = "../owned_vault" }
 
 [addresses]
-escrow_vault = "_"
-ibc          = "_"
-owned_vault  = "_"
-zkgm         = "_"
+escrow_vault = "0x6839f01eaf11628868cd846cda3ee6e2a2a02472b2a1ebf863ce7a7243ebe871"
+ibc          = "0x8c7414ef89a6cb00a43c60027316ae450b642eca67a5a9d14fe34135e2edea05"
+owned_vault  = "0x94e4d7c320bfb9140b071a9bab3dcada8d9a6e003ba96c50963e93c0a6574441"
+zkgm         = "0x0"
 
 [dev-addresses]
 escrow_vault = "0x4444"
 ibc          = "0x1111"
 owned_vault  = "0x3333"
 zkgm         = "0x2222"
+
+# 0xc5ac226eb55116e8c91553f87e53b9a18ae736e65196bc9fa068d41f71ece34c

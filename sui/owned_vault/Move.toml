@@ -6,8 +6,8 @@ name    = "owned_vault"
 ibc = { local = "../ibc" }
 
 [addresses]
-ibc         = "_"
-owned_vault = "_"
+ibc         = "0x8c7414ef89a6cb00a43c60027316ae450b642eca67a5a9d14fe34135e2edea05"
+owned_vault = "0x0"
 
 [dev-addresses]
 ibc         = "0x1111"
