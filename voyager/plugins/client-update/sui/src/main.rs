@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, str::FromStr};
 
 use call::FetchUpdate;
 use jsonrpsee::{
@@ -50,7 +50,6 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    /// The address of the IBC smart contract.
     pub ibc_contract: ObjectID,
 
     pub sui_object_store_rpc_url: String,
@@ -80,9 +79,34 @@ impl Plugin for Module {
             .into());
         }
 
+        let query = json!({
+            "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
+            "variables": { "address": config.ibc_contract }
+        });
+
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(&config.graphql_url)
+            .header("Content-Type", "application/json")
+            .body(query.to_string())
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+        let ibc_contract = ObjectID::from_str(
+            v["data"]["packageVersions"]["nodes"][0]["address"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+
         Ok(Self {
             chain_id: config.chain_id,
-            ibc_contract: config.ibc_contract,
+            ibc_contract,
             sui_object_store_rpc_url: config.sui_object_store_rpc_url,
             graphql_url: config.graphql_url,
             sui_client,

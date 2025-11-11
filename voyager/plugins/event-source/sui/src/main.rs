@@ -71,7 +71,7 @@ pub struct Module {
     pub sui_client: sui_sdk::SuiClient,
 
     /// the original package address where the IBC event's are defined
-    pub ibc_event_package: SuiAddress,
+    pub ibc_contract: SuiAddress,
 }
 
 impl Plugin for Module {
@@ -89,7 +89,7 @@ impl Plugin for Module {
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             sui_client,
-            ibc_event_package: config.ibc_event_package,
+            ibc_contract: config.ibc_contract,
         })
     }
 
@@ -113,7 +113,7 @@ impl Plugin for Module {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
-    pub ibc_event_package: SuiAddress,
+    pub ibc_contract: SuiAddress,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -481,7 +481,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .event_api()
                     .query_events(
                         EventFilter::MoveEventModule {
-                            package: self.ibc_event_package.into(),
+                            package: self.ibc_contract.into(),
                             module: "events".parse().unwrap(),
                         },
                         cursor,
@@ -594,7 +594,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map(move |events| (events, tx.digest))
                     })
                     .filter_map(|(e, hash)| {
-                        (e.type_.address == self.ibc_event_package.into()).then_some((e, hash))
+                        (e.type_.address == self.ibc_contract.into()).then_some((e, hash))
                     })
                     .map(|(e, hash)| {
                         println!("event: {e:?}");

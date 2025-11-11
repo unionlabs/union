@@ -38,12 +38,9 @@ pub struct Module {
 
     pub ibc_store: ObjectID,
 
-    /// The address of the IBC smart contract.
-    pub ibc_contract: ObjectID,
-
     pub sui_client: SuiClient,
 
-    pub sui_object_store_rpc_url: String,
+    pub object_store_rpc_url: String,
 }
 
 impl ClientBootstrapModule for Module {
@@ -59,9 +56,8 @@ impl ClientBootstrapModule for Module {
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
-            ibc_contract: config.ibc_contract,
             ibc_store: config.ibc_store,
-            sui_object_store_rpc_url: config.sui_object_store_rpc_url,
+            object_store_rpc_url: config.object_store_rpc_url,
             sui_client,
         })
     }
@@ -70,14 +66,13 @@ impl ClientBootstrapModule for Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    /// The address of the `IBCHandler` smart contract.
-    pub ibc_contract: ObjectID,
-
     pub ibc_store: ObjectID,
 
     pub rpc_url: String,
 
-    pub sui_object_store_rpc_url: String,
+    pub object_store_rpc_url: String,
+
+    pub graphql_url: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -134,7 +129,7 @@ impl ClientBootstrapModuleServer for Module {
 
         // TODO(aeryz): imma fix it bro chill
         let client = reqwest::Client::new();
-        let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, height.height());
+        let req = format!("{}/{}.chk", self.object_store_rpc_url, height.height());
         let res = client
             .get(req)
             .send()
