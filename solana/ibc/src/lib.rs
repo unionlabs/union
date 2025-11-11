@@ -1,15 +1,14 @@
-use instructions::connection_open_init::ConnectionOpenInit;
 use pinocchio::{
     ProgramResult, account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey,
 };
+
+use crate::{create_client::CreateClient, instructions::connection_open_init::ConnectionOpenInit};
 
 pub mod helper;
 pub mod instructions;
 pub mod state;
 pub use instructions::*;
 pub use state::*;
-
-use crate::create_client::CreateClient;
 
 // TODO(aeryz): change this to the correct id
 pinocchio_pubkey::declare_id!("4ibrEMW5F6hKnkW4jVedswYv6H6VtwPN6ar6dvXDN1nT");

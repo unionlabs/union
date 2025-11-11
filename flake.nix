@@ -268,7 +268,6 @@
           };
 
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
-          pkgsGoUnstable = import inputs.nixpkgs-go-unstable { inherit system; };
           pnpm = pkgsUnstable.pnpm_10;
           nodejs = pkgsUnstable.nodejs-slim_24;
           pkgsUnstableSolana = import inputs.nixpkgs-unstable-solana { inherit system; };

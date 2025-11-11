@@ -17,7 +17,7 @@ pinocchio-associated-token-account = "0.2.0"
 pinocchio-pubkey                   = "0.3.0"
 pinocchio-system                   = "0.3.0"
 pinocchio-token                    = "0.4.0"
-solana-account-info                = "2.2.0"
+solana-account-info                = "3.0.0"
 unionlabs-primitives               = { workspace = true }
 
 [dev-dependencies]

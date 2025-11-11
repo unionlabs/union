@@ -10,7 +10,7 @@ _: {
       ...
     }:
     let
-      platformToolsVersion = "1.51";
+      platformToolsVersion = "1.52";
 
       platform-tools = dbg (
         pkgs.stdenv.mkDerivation {
@@ -30,7 +30,7 @@ _: {
           ];
 
           postFixup = ''
-            patchelf --replace-needed libedit.so.2 libedit.so $out/llvm/lib/liblldb.so.19.1.7-rust-dev
+            patchelf --replace-needed libedit.so.2 libedit.so $out/llvm/lib/liblldb.so.20.1.7-rust-dev
           '';
 
           installPhase = ''
@@ -43,14 +43,22 @@ _: {
       );
 
       platform-tools-versions = {
-        "x86_64-linux" = pkgs.fetchurl {
-          url = "https://github.com/anza-xyz/platform-tools/releases/download/v1.51/platform-tools-linux-x86_64.tar.bz2";
-          sha256 = "sha256-CTPgXdlkgm6OLbXFjDSuJV47rwzhcRVoVS3KgbVAems=";
+        "x86_64-linux" = pkgs.fetchTarball {
+          url = "https://github.com/anza-xyz/platform-tools/releases/download/v${platformToolsVersion}/platform-tools-linux-x86_64.tar.bz2";
+          sha256 = "";
+          curlOptsList = [
+            "-L"
+            "-H"
+            "Accept:application/octet-stream"
+          ];
         };
-        "aarch64-linux" = pkgs.fetchurl {
-          url = "https://github.com/anza-xyz/platform-tools/releases/download/v1.51/platform-tools-linux-aarch64.tar.bz2";
-          sha256 = "sha256-4oHGs4Mg5Y726Cf2ymucSRSCX47eKc/C89qjhYW3YLs=";
-        };
+        "aarch64-linux" = dbg (
+          builtins.fetchurl {
+            name = "platform-tools-v${platformToolsVersion}";
+            url = "https://github.com/anza-xyz/platform-tools/releases/download/v${platformToolsVersion}/platform-tools-linux-aarch64.tar.bz2";
+            sha256 = "sha256:160z6d5nkga8zg6phl8m0fajd5bayi5m3qw3cq7xbxkyqhp5py5i";
+          }
+        );
       };
 
       platform-tools-stripped = pkgs.runCommand "platform-tools-stripped" { } ''
@@ -82,7 +90,6 @@ _: {
 
       solana-ibc =
         (crane.buildWorkspaceMember "solana/ibc" {
-          cargoTomlHook = cargoToml: { cargo-features = [ "edition2024" ]; } // cargoToml;
           cargoBuildRustToolchain = dbg "${platform-tools}/rust";
           extraBuildInputs = [ cargo-solana ];
           # NOTE: Only used for build-std
@@ -96,7 +103,7 @@ _: {
             if
               pkgs.lib.any (
                 p:
-                (pkgs.lib.hasInfix "https://github.com/anza-xyz/compiler-builtins?tag=solana-tools-v1.51" p.source)
+                (pkgs.lib.hasInfix "https://github.com/anza-xyz/compiler-builtins?tag=solana-tools-v${platformToolsVersion}" p.source)
               ) ps
             then
               drv.overrideAttrs (

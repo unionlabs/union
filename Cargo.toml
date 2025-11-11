@@ -297,7 +297,7 @@ members = [
   "lib/aptos-types",
   "lib/cosmos-signer",
   "cosmwasm/upgradable",
-  "solana/ibc"
+  "solana/ibc",
 ]
 
 [workspace.package]
