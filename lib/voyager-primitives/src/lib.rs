@@ -178,6 +178,9 @@ impl ClientType {
     /// [L2 settlement]: https://github.com/ethereum-optimism/optimism/tree/develop/packages/contracts-bedrock
     pub const OPTIMISM: &'static str = "optimism";
 
+    /// An attested client.
+    pub const ATTESTED: &'static str = "attested";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 

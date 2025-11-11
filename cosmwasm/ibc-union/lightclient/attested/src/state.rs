@@ -96,10 +96,10 @@ impl KeyCodec<(String, u64)> for HeightTimestamps {
 
     fn decode_key(raw: &Bytes) -> StdResult<(String, u64)> {
         if raw.len() < 8 {
-            return Err(StdError::generic_err(format!(
+            Err(StdError::generic_err(format!(
                 "invalid key: expected at least 8 bytes, found {} (raw: {raw})",
                 raw.len()
-            )));
+            )))
         } else {
             let height = raw[raw.len() - 8..]
                 .try_into()
