@@ -58,7 +58,7 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub ibc_handler_address: SuiAddress,
+    pub ibc_contract: SuiAddress,
 
     pub ibc_store: SuiAddress,
 
@@ -100,9 +100,34 @@ impl Plugin for Module {
             .start_version()
             .expect("ibc store is shared, hence it has a start version");
 
+        let query = json!({
+            "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
+            "variables": { "address": config.ibc_contract }
+        });
+
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(&config.graphql_url)
+            .header("Content-Type", "application/json")
+            .body(query.to_string())
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+        let ibc_contract = SuiAddress::from_str(
+            v["data"]["packageVersions"]["nodes"][0]["address"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
-            ibc_handler_address: config.ibc_contract,
+            ibc_contract,
             sui_client,
             graphql_url: config.graphql_url,
             ibc_store_initial_seq,

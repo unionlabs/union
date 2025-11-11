@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, str::FromStr};
 
 use ibc_union_spec::{
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionState, IbcUnion, MustBeZero,
@@ -39,6 +39,7 @@ use voyager_sdk::{
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, types::StateModuleInfo},
+    serde_json::json,
 };
 
 const COMMITMENT_TO_DIGEST: u8 = 0x2;
@@ -67,8 +68,6 @@ pub struct Module {
     pub ibc_store: ObjectID,
 
     pub ibc_contract: ObjectID,
-
-    pub ibc_event_address: ObjectID,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -187,7 +186,7 @@ impl Module {
             .expect("there must be some events exist")
             .into_iter()
             .find_map(|e| {
-                if e.type_.address == self.ibc_event_address.into()
+                if e.type_.address == self.ibc_contract.into()
                     && e.type_.module.as_str() == "ibc"
                     && e.type_.name.as_str() == "PacketSend"
                 {
@@ -228,13 +227,37 @@ impl StateModule<IbcUnion> for Module {
 
         info.ensure_chain_id(&chain_id)?;
 
+        let query = json!({
+            "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
+            "variables": { "address": config.ibc_contract }
+        });
+
+        let client = reqwest::Client::new();
+        let resp = client
+            .post(&config.graphql_url)
+            .header("Content-Type", "application/json")
+            .body(query.to_string())
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+        let ibc_contract = ObjectID::from_str(
+            v["data"]["packageVersions"]["nodes"][0]["address"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             sui_client,
             rpc_url: config.rpc_url,
             ibc_store: config.ibc_store,
-            ibc_contract: config.ibc_contract,
-            ibc_event_address: config.ibc_event_address,
+            ibc_contract,
         })
     }
 }
@@ -245,7 +268,7 @@ pub struct Config {
     pub rpc_url: String,
     pub ibc_store: ObjectID,
     pub ibc_contract: ObjectID,
-    pub ibc_event_address: ObjectID,
+    pub graphql_url: String,
 }
 
 #[async_trait]

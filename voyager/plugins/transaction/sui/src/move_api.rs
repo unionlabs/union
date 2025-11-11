@@ -108,7 +108,7 @@ pub fn create_client(
     data: MsgCreateClient,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("create_client").into(),
         vec![],
@@ -131,7 +131,7 @@ pub fn update_client(
     data: MsgUpdateClient,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("update_client").into(),
         vec![],
@@ -155,7 +155,7 @@ pub fn connection_open_init(
     data: MsgConnectionOpenInit,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("connection_open_init").into(),
         vec![],
@@ -177,7 +177,7 @@ pub fn connection_open_try(
     data: MsgConnectionOpenTry,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("connection_open_try").into(),
         vec![],
@@ -202,7 +202,7 @@ pub fn connection_open_ack(
     data: MsgConnectionOpenAck,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("connection_open_ack").into(),
         vec![],
@@ -226,7 +226,7 @@ pub fn connection_open_confirm(
     data: MsgConnectionOpenConfirm,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("connection_open_confirm").into(),
         vec![],
@@ -372,7 +372,7 @@ pub fn packet_timeout_commitment_call(
     data: MsgCommitPacketTimeout,
 ) -> anyhow::Result<()> {
     ptb.move_call(
-        module.ibc_handler_address.into(),
+        module.ibc_contract.into(),
         IBC_IDENT.into(),
         ident_str!("commit_packet_timeout").into(),
         vec![],
@@ -394,7 +394,7 @@ pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Resu
 
     let res = query
         .add_param(channel_id.raw())
-        .call(module.ibc_handler_address.into(), "get_port_id")
+        .call(module.ibc_contract.into(), "get_port_id")
         .await
         .map_err(|e| anyhow::anyhow!(e))?;
 

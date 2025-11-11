@@ -58,8 +58,6 @@ pub struct Module {
     pub sui_object_store_rpc_url: String,
 
     pub ibc_store: ObjectID,
-
-    pub ibc_contract: ObjectID,
 }
 
 impl ProofModule<IbcUnion> for Module {
@@ -76,7 +74,6 @@ impl ProofModule<IbcUnion> for Module {
             chain_id: ChainId::new(chain_id.to_string()),
             sui_client,
             ibc_store: config.ibc_store,
-            ibc_contract: config.ibc_contract,
             sui_object_store_rpc_url: config.sui_object_store_rpc_url,
         })
     }
@@ -90,8 +87,6 @@ pub struct Config {
     pub ibc_store: ObjectID,
 
     pub sui_object_store_rpc_url: String,
-
-    pub ibc_contract: ObjectID,
 }
 
 impl Module {
