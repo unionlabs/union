@@ -3,7 +3,8 @@ edition = "2024.beta"
 name    = "ibc"
 
 [addresses]
-ibc = "_"
+# ibc = "_"
+ibc = "0x0"
 
 [dev-addresses]
 ibc = "0x1111"
