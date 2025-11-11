@@ -15896,6 +15896,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-attested"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "attested-light-client",
+ "attested-light-client-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-base"
 version = "0.0.0"
 dependencies = [
@@ -16137,6 +16158,21 @@ dependencies = [
  "arbitrum-light-client-types",
  "embed-commit",
  "ethereum-light-client-types",
+ "jsonrpsee 0.25.1",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-module-attested"
+version = "0.0.0"
+dependencies = [
+ "attested-light-client-types",
+ "embed-commit",
  "jsonrpsee 0.25.1",
  "serde",
  "serde_json",

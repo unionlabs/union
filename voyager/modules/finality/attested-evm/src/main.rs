@@ -3,8 +3,8 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
-use attested_light_client::{contract::query::LatestHeight, types::AttestationValue};
-use ibc_union_spec::{IbcUnion, Timestamp, path::StorePath};
+use attested_light_client::contract::query::LatestHeight;
+use ibc_union_spec::Timestamp;
 use jsonrpsee::{
     Extensions,
     core::{RpcResult, async_trait},
@@ -12,7 +12,6 @@ use jsonrpsee::{
 };
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use tracing::instrument;
 use unionlabs::{
     ErrorReporter,
@@ -20,7 +19,7 @@ use unionlabs::{
     primitives::{Bech32, H256},
 };
 use voyager_sdk::{
-    anyhow, into_value,
+    anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType},
     rpc::{FinalityModuleServer, types::FinalityModuleInfo},

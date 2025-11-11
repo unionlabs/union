@@ -2,7 +2,6 @@ use std::{collections::VecDeque, ops::Deref, panic::AssertUnwindSafe, path::Path
 
 use alloy::{
     network::AnyNetwork,
-    primitives::U256,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
 use attested_light_client::types::{Attestation, AttestationValue};
@@ -35,6 +34,7 @@ use unionlabs::{
     ErrorReporter,
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     encoding::{Bincode, EncodeAs},
+    ethereum::ibc_commitment_key,
     never::Never,
     primitives::{Bech32, H160, H256},
 };
@@ -202,6 +202,8 @@ impl Plugin for Module {
         }
 
         let attestation_key = SigningKey::read_pkcs8_pem_file(config.attestation_key_path)?;
+
+        info!(attestation_key = %<H256>::new(attestation_key.verifying_key().to_bytes()));
 
         let bech32_prefix = rpc
             .client()
@@ -377,7 +379,7 @@ impl Module {
             .provider
             .get_storage_at(
                 self.ibc_handler_address.get().into(),
-                U256::from_be_bytes(*key.get()),
+                ibc_commitment_key(key).into(),
             )
             .block_id(height.into())
             .await
