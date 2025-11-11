@@ -165,6 +165,7 @@ members = [
   "voyager/modules/client/state-lens/ics23-smt",
   "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
+  "voyager/modules/client/attested",
 
   "voyager/modules/client-bootstrap/base",
   "voyager/modules/client-bootstrap/bob",
@@ -180,6 +181,7 @@ members = [
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
   "voyager/modules/client-bootstrap/sui",
+  "voyager/modules/client-bootstrap/attested",
 
   "voyager/modules/finality/base",
   "voyager/modules/finality/bob",
