@@ -16444,6 +16444,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-attested"
+version = "0.0.0"
+dependencies = [
+ "attested-light-client",
+ "attested-light-client-types",
+ "cometbft-rpc",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-base"
 version = "0.0.0"
 dependencies = [

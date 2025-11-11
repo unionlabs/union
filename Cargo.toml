@@ -207,6 +207,7 @@ members = [
   "voyager/plugins/client-update/state-lens",
   "voyager/plugins/client-update/sui",
   "voyager/plugins/client-update/trusted-mpt",
+  "voyager/plugins/client-update/attested",
 
   "voyager/plugins/periodic-client-update",
 
