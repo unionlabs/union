@@ -68,8 +68,8 @@ const program = Effect.gen(function*() {
     // NEW — only read by the Sui client
     transport: {
       sui: {
-        vaultId: "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3",
-        ibcStoreId: "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175",
+        vaultId: "0xc3ac8618f622fc70ea30eaec5b45d504e239af668033d07e396be44d45f8f45d",
+        ibcStoreId: "0xdc5f20df5f143a06772c073e9c30dacd30e31f6788885cf478d0fd40f92766c4",
         coins: [
           {
             typeArg: "0x2::sui::SUI",
