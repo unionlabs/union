@@ -29,7 +29,9 @@ export const fetchSuiBalance = ({
   walletAddress: string
 }) =>
   Effect.gen(function*() {
+    console.log(tokenAddress)
     const coinType = yield* fromHexString(tokenAddress)
+    console.log(coinType)
 
     const publicClient = yield* getSuiPublicClient(chain)
 
