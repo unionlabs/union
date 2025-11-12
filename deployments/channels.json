@@ -304,12 +304,6 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
-  "sui.4c78adac": {
-    "1": {
-      "comments": "union.union-testnet-10 channel 1",
-      "tags": ["canonical", "tokenorder-v2"]
-    }
-  },
   "union.union-1": {
     "1": {
       "comments": "ethereum.1 channel 2",
@@ -320,7 +314,12 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
-  "union.union-testnet-10": {},
+  "union.union-testnet-10": {
+    "24": {
+      "comments": "sui.4c78adac channel 5",
+      "tags": ["canonical", "tokenorder-v2"]
+    }
+  },
   "xion.xion-testnet-2": {
     "3": {
       "comments": "corn.21000001 channel 2",
