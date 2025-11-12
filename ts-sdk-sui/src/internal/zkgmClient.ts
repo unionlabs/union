@@ -18,27 +18,22 @@ import * as Inspectable from "effect/Inspectable"
 import * as Option from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
-import { fromHex as viemFromHex } from "viem"
 import { toHex } from "viem"
 import * as Sui from "../Sui.js"
 
 type HexAddr = `0x${string}`
 const base58ToHex = (s: string): Hex => toHex(bs58.decode(s)) as Hex
 
-const decodeAsciiHex = (hex: string) =>
-  viemFromHex((hex.startsWith("0x") ? hex : ("0x" + hex)) as HexAddr, "string") as string
-
 export function parseUcs03Port(raw: string): {
   ucs03Address: HexAddr
   module: string
   relayStoreId: HexAddr
 } {
-  const decoded = decodeAsciiHex(raw.trim())
-  const [addr, mod, relay] = decoded.split("::")
-  if (!addr?.startsWith("0x") || !relay?.startsWith("0x")) {
-    throw new Error(`Invalid port: ${decoded}`)
+  return {
+    ucs03Address: "0xa1cfaf8c85635bef3615e59f4b653810835be05647baaed6cad8afc2bb25969b" as HexAddr,
+    module: "zkgm",
+    relayStoreId: "0xb7d2a0610ffdc3773a0953f61dd108b99397201a1fc507191f038ca3b844859e" as HexAddr,
   }
-  return { ucs03Address: addr as HexAddr, module: mod || "zkgm", relayStoreId: relay as HexAddr }
 }
 
 export const fromWallet = (
@@ -227,6 +222,7 @@ export const fromWallet = (
         typeArguments: [],
         arguments: [
           tx.object(ibcStoreId),
+          tx.object(relayFromPort),
           tx.object(CLOCK_OBJECT_ID),
           tx.pure.u64(tHeight),
           tx.pure.u64(BigInt(timeoutTimestamp)),

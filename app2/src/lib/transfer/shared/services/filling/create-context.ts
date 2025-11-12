@@ -143,8 +143,8 @@ export const createContext = Effect.fn((
     // TODO: vaultId & ibcStoreId will be fetched from hubble probably
     const SUI_HARDCODED_TRANSPORT = {
       sui: {
-        vaultId: "0xbe65f53d47a4578c14b4d69d0594c1295d3761379319a185522cd6baad6473d4",
-        ibcStoreId: "0x05cc9571c42ef6f7f9643bcda29e2f4a827c8e87ff488ddbdd9e75f68eee5c94",
+        vaultId: "0xc3ac8618f622fc70ea30eaec5b45d504e239af668033d07e396be44d45f8f45d",
+        ibcStoreId: "0xdc5f20df5f143a06772c073e9c30dacd30e31f6788885cf478d0fd40f92766c4",
         coins: [
           {
             typeArg: args.baseToken.address,
