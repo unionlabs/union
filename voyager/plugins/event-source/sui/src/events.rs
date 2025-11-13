@@ -124,8 +124,10 @@ pub struct PacketAck {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct TimeoutPacket {
-    pub packet: Packet,
+pub struct PacketTimeout {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub maker: SuiAddress,
 }
 
 #[model]
@@ -145,5 +147,5 @@ pub enum IbcEvent {
     PacketSend(PacketSend),
     PacketRecv(PacketRecv),
     PacketAck(PacketAck),
-    TimeoutPacket(TimeoutPacket),
+    PacketTimeout(PacketTimeout),
 }
