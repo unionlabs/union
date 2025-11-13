@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 embed-commit                       = { workspace = true }
+hex-literal.workspace = true
 ibc-union-spec                     = { workspace = true }
 pinocchio                          = "0.9.2"
 pinocchio-associated-token-account = "0.2.0"

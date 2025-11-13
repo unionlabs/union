@@ -37,7 +37,7 @@ impl TryFrom<&[u8]> for NextConnectionId {
     }
 }
 
-impl Serializable for NextConnectionId {
+impl<'a> Serializable<'a> for NextConnectionId {
     fn serialize_into(&self, data: &mut [u8]) {
         data.copy_from_slice(self.0.raw().to_le_bytes().as_slice())
     }

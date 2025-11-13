@@ -1,10 +1,10 @@
 use ibc_union_spec::{ClientId, Connection, ConnectionId, ConnectionState};
 use pinocchio::{
-    ProgramResult, account_info::AccountInfo, program_error::ProgramError,
-    pubkey::find_program_address,
+    account_info::AccountInfo, program_error::ProgramError, pubkey::find_program_address,
+    ProgramResult,
 };
 
-use crate::{TypedAccount, next_connection_id::NextConnectionId};
+use crate::{next_connection_id::NextConnectionId, TypedAccount};
 
 pub struct ConnectionOpenInit<'a> {
     pub accounts: ConnectionOpenInitAccounts<'a>,
@@ -128,12 +128,12 @@ impl TryFrom<&[u8]> for ConnectionOpenInitData {
     }
 }
 
-impl Into<Vec<u8>> for ConnectionOpenInitData {
-    fn into(self) -> Vec<u8> {
+impl From<ConnectionOpenInitData> for Vec<u8> {
+    fn from(val: ConnectionOpenInitData) -> Self {
         let mut buf = Vec::new();
 
-        buf.extend_from_slice(&self.client_id.raw().to_le_bytes());
-        buf.extend_from_slice(&self.counterparty_client_id.raw().to_le_bytes());
+        buf.extend_from_slice(&val.client_id.raw().to_le_bytes());
+        buf.extend_from_slice(&val.counterparty_client_id.raw().to_le_bytes());
 
         buf
     }

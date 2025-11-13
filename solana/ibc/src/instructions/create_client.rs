@@ -1,27 +1,26 @@
 use ibc_union_spec::ClientId;
 use pinocchio::{
-    ProgramResult,
     account_info::AccountInfo,
     program_error::ProgramError,
-    pubkey::{create_program_address, find_program_address},
+    pubkey::{create_program_address, find_program_address, Pubkey},
+    ProgramResult,
 };
-use unionlabs_primitives::Bytes;
 
 use crate::{
-    TypedAccount,
-    helper::{parse_bytes, parse_string},
+    helper::{peel_bytes, peel_str},
     next_client_id::NextClientId,
+    Instruction, TypedAccount,
 };
 
 pub struct CreateClient<'a> {
-    pub accounts: CreateClientAccounts<'a>,
-    pub instruction_data: CreateClientData,
+    pub accounts: &'a CreateClientAccounts<'a>,
+    pub instruction_data: &'a CreateClientData,
 }
 
-impl<'a> CreateClient<'a> {
-    pub const DISCRIMINATOR: &'a u8 = &0;
+impl<'a> Instruction<'a> for CreateClient<'a> {
+    const DISCRIMINATOR: u8 = 0;
 
-    pub fn process(&mut self) -> ProgramResult {
+    fn process(self) -> ProgramResult {
         let mut latest_client_id = TypedAccount::<NextClientId>::init_if_needed(
             self.accounts.client_id,
             self.accounts.payer,
@@ -44,12 +43,8 @@ impl<'a> CreateClient<'a> {
 
         Ok(())
     }
-}
 
-impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CreateClient<'a> {
-    type Error = ProgramError;
-
-    fn try_from((data, accounts): (&'a [u8], &'a [AccountInfo])) -> Result<Self, Self::Error> {
+    fn from_input(accounts: &'a [AccountInfo], data: &'a [u8]) -> Result<Self, ProgramError> {
         let accounts = CreateClientAccounts::try_from(accounts)?;
         let instruction_data = CreateClientData::try_from(data)?;
 
@@ -114,53 +109,110 @@ impl<'a> TryFrom<&'a [AccountInfo]> for CreateClientAccounts<'a> {
 }
 
 #[derive(Debug)]
-pub struct CreateClientData {
-    pub client_type: String,
-    pub client_state_bytes: Bytes,
-    pub consensus_state_bytes: Bytes,
-    pub relayer: String,
+#[repr(C)]
+struct Idx<const I: usize, const L: usize> {
+    idx: [u8; I],
+    len: [u8; L],
 }
 
-impl TryFrom<&[u8]> for CreateClientData {
+impl<const I: usize, const L: usize> Idx<I, L>
+where
+    Self: IdxLen + IdxIdx,
+{
+    fn encoded_len(&self) -> usize {
+        I + L + (self.data_len().into() as usize)
+    }
+
+    fn slice<'a>(&self, data: &'a [u8]) -> &'a [u8] {
+        &data[(self.data_idx().into() as usize)
+            ..(self.data_idx().into() as usize) + (self.data_len().into() as usize)]
+    }
+}
+
+pub trait IdxLen {
+    type Len: Into<u32>;
+
+    fn data_len(&self) -> Self::Len;
+}
+
+pub trait IdxIdx {
+    type Idx: Into<u32>;
+
+    fn data_idx(&self) -> Self::Idx;
+}
+
+macro_rules! idx_impl {
+    ($Ty:ty) => {
+        impl<const I: usize> IdxLen for Idx<I, { (<$Ty>::BITS / 8) as usize }> {
+            type Len = $Ty;
+
+            fn data_len(&self) -> Self::Len {
+                <$Ty>::from_le_bytes(self.len)
+            }
+        }
+
+        impl<const I: usize> IdxIdx for Idx<I, { (<$Ty>::BITS / 8) as usize }> {
+            type Idx = $Ty;
+
+            fn data_idx(&self) -> Self::Idx {
+                <$Ty>::from_le_bytes(self.len)
+            }
+        }
+    };
+}
+
+idx_impl!(u8);
+idx_impl!(u16);
+idx_impl!(u32);
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct CreateClientData {
+    client_type: Idx<4, 1>,
+    client_state_bytes: Idx<4, 4>,
+    consensus_state_bytes: Idx<4, 4>,
+    relayer: Pubkey,
+    data: [u8],
+}
+
+impl CreateClientData {
+    fn encoded_len(&self) -> usize {
+        self.client_type.encoded_len()
+            + self.client_state_bytes.encoded_len()
+            + self.consensus_state_bytes.encoded_len()
+            + self.relayer.len()
+    }
+}
+
+impl<'a> TryFrom<&'a [u8]> for CreateClientData<'a> {
     type Error = ProgramError;
 
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        let mut cursor = 0;
-        let (n_read, client_type) = parse_string(data)?;
-
-        cursor += n_read;
-        let (n_read, client_state_bytes) = parse_bytes(&data[cursor..]);
-
-        cursor += n_read;
-        let (n_read, consensus_state_bytes) = parse_bytes(&data[cursor..]);
-
-        cursor += n_read;
-        let (_, relayer) = parse_string(&data[cursor..])?;
-
+    fn try_from(mut data: &'a [u8]) -> Result<Self, Self::Error> {
+        let data = &mut data;
         Ok(Self {
-            client_type,
-            client_state_bytes,
-            consensus_state_bytes,
-            relayer,
+            client_type: peel_str(data).ok_or(ProgramError::InvalidArgument)?,
+            client_state_bytes: peel_bytes(data).ok_or(ProgramError::InvalidArgument)?,
+            consensus_state_bytes: peel_bytes(data).ok_or(ProgramError::InvalidArgument)?,
+            relayer: peel_str(data).ok_or(ProgramError::InvalidArgument)?,
         })
     }
 }
 
-impl Into<Vec<u8>> for CreateClientData {
-    fn into(self) -> Vec<u8> {
-        let mut buf = Vec::new();
+impl From<CreateClientData> for Vec<u8> {
+    fn from(val: CreateClientData) -> Self {
+        let mut buf = Vec::with_capacity(val.encoded_len());
 
-        buf.extend_from_slice(&(self.client_type.len() as u32).to_le_bytes());
-        buf.extend_from_slice(self.client_type.as_bytes());
+        buf.extend_from_slice(&(val.client_type.len() as u32).to_le_bytes());
+        buf.extend_from_slice(val.client_type.as_bytes());
 
-        buf.extend_from_slice(&(self.client_state_bytes.len() as u32).to_le_bytes());
-        buf.extend_from_slice(&self.client_state_bytes);
+        buf.extend_from_slice(&(val.client_state_bytes.len() as u32).to_le_bytes());
+        buf.extend_from_slice(val.client_state_bytes);
 
-        buf.extend_from_slice(&(self.consensus_state_bytes.len() as u32).to_le_bytes());
-        buf.extend_from_slice(&self.consensus_state_bytes);
+        buf.extend_from_slice(&(val.consensus_state_bytes.len() as u32).to_le_bytes());
+        buf.extend_from_slice(val.consensus_state_bytes);
 
-        buf.extend_from_slice(&(self.relayer.len() as u32).to_le_bytes());
-        buf.extend_from_slice(self.relayer.as_bytes());
+        buf.extend_from_slice(&(val.relayer.len() as u32).to_le_bytes());
+        buf.extend_from_slice(val.relayer.as_bytes());
 
         buf
     }

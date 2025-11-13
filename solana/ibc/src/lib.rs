@@ -1,5 +1,5 @@
 use pinocchio::{
-    ProgramResult, account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey,
+    account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult,
 };
 
 use crate::{create_client::CreateClient, instructions::connection_open_init::ConnectionOpenInit};
@@ -21,14 +21,22 @@ fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     match instruction_data.split_first() {
-        Some((CreateClient::DISCRIMINATOR, data)) => {
-            CreateClient::try_from((data, accounts))?.process()
+        Some((&CreateClient::DISCRIMINATOR, data)) => {
+            CreateClient::from_input(accounts, data)?.process()
         }
         Some((ConnectionOpenInit::DISCRIMINATOR, data)) => {
             ConnectionOpenInit::try_from((data, accounts))?.process()
         }
         _ => Err(ProgramError::InvalidInstructionData),
     }
+}
+
+pub trait Instruction<'a>: Sized {
+    const DISCRIMINATOR: u8;
+
+    fn from_input(accounts: &'a [AccountInfo], data: &'a [u8]) -> Result<Self, ProgramError>;
+
+    fn process(self) -> ProgramResult;
 }
 
 #[cfg(test)]
@@ -47,10 +55,10 @@ mod tests {
         let mollusk = Mollusk::new(&ID.into(), "../../result/ibc_union_solana");
 
         let create_client: Vec<u8> = CreateClientData {
-            client_type: "cometbls".into(),
-            client_state_bytes: b"helloworld".into(),
-            consensus_state_bytes: b"helloworld2".into(),
-            relayer: "idunnomate".into(),
+            client_type: "cometbls",
+            client_state_bytes: b"helloworld",
+            consensus_state_bytes: b"helloworld2",
+            relayer: "idunnomate",
         }
         .into();
 
@@ -74,7 +82,7 @@ mod tests {
             &[0].into_iter().chain(create_client).collect::<Vec<u8>>(), // Instruction data (discriminator + parameters)
             account_addresses
                 .iter()
-                .map(|a| AccountMeta::new(a.to_owned().into(), true))
+                .map(|a| AccountMeta::new(a.to_owned(), true))
                 .collect(),
         );
 
@@ -101,7 +109,7 @@ mod tests {
                     account_addresses
                         .iter()
                         .skip(1)
-                        .map(|a| (a.to_owned().into(), Account::new(lamports, 10, &ID.into())))
+                        .map(|a| (a.to_owned(), Account::new(lamports, 10, &ID.into())))
                 )
                 .collect::<Vec<(solana_sdk::pubkey::Pubkey, Account)>>()
                 .as_slice()

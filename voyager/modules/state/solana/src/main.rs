@@ -64,7 +64,7 @@ impl StateModule<IbcUnion> for Module {
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> anyhow::Result<Self> {
         let provider =
-            RpcClient::new_with_commitment(&config.rpc_url, CommitmentConfig::finalized());
+            RpcClient::new_with_commitment(config.rpc_url.clone(), CommitmentConfig::finalized());
 
         let chain_id = provider.get_genesis_hash().await?.to_string();
 
@@ -118,17 +118,13 @@ impl Module {
         let client =
             RpcClient::new_with_commitment(self.rpc_url.clone(), CommitmentConfig::finalized());
 
-        client
-            .get_account(todo!())
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching connection account"),
-                    None::<()>,
-                )
-            })?
-            .data;
+        client.get_account(todo!()).await.map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message("error fetching connection account"),
+                None::<()>,
+            )
+        })?;
 
         todo!()
     }
@@ -313,6 +309,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .query_non_membership_proof(at, path.client_id, path.proof_height, path.path)
                 .await
                 .map(into_value),
+            StorePath::BatchTimeouts(path) => todo!(),
         }
     }
 

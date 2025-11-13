@@ -1,34 +1,8 @@
 use ibc_union_spec::ClientId;
-use pinocchio::{account_info::AccountInfo, program_error::ProgramError};
 
 use super::{Serializable, StaticInit};
 
 pub struct NextClientId(pub ClientId);
-
-pub struct LatestClientId2<'a> {
-    pub client_id: ClientId,
-    pub account_info: &'a AccountInfo,
-}
-
-impl Serializable for ClientId {
-    fn serialized_size(&self) -> usize {
-        4
-    }
-
-    fn serialize_into(&self, data: &mut [u8]) {
-        data.copy_from_slice(self.raw().to_le_bytes().as_slice())
-    }
-
-    fn deserialize(data: &[u8]) -> Result<Self, ProgramError> {
-        let client_id = u32::from_le_bytes(
-            data[0..4]
-                .try_into()
-                .map_err(|_| ProgramError::InvalidArgument)?,
-        );
-
-        Ok(ClientId::from_raw(client_id).ok_or(ProgramError::InvalidArgument)?)
-    }
-}
 
 impl NextClientId {
     pub const fn seed<'a>() -> &'a [&'a [u8]] {
@@ -46,23 +20,7 @@ impl StaticInit for NextClientId {
     }
 }
 
-impl TryFrom<&[u8]> for NextClientId {
-    type Error = ProgramError;
-
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        let client_id = u32::from_le_bytes(
-            data[0..4]
-                .try_into()
-                .map_err(|_| ProgramError::InvalidArgument)?,
-        );
-
-        Ok(Self(
-            ClientId::from_raw(client_id).ok_or(ProgramError::InvalidArgument)?,
-        ))
-    }
-}
-
-impl Serializable for NextClientId {
+impl<'a> Serializable<'a> for NextClientId {
     fn serialized_size(&self) -> usize {
         4
     }
@@ -71,7 +29,7 @@ impl Serializable for NextClientId {
         data.copy_from_slice(self.0.raw().to_le_bytes().as_slice())
     }
 
-    fn deserialize(data: &[u8]) -> Result<Self, ProgramError> {
-        Self::try_from(data)
+    fn deserialize(data: &[u8]) -> Option<Self> {
+        ClientId::deserialize(data).map(Self)
     }
 }
