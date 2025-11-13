@@ -197,9 +197,9 @@ impl Module {
                 let e: events::PacketAck = serde_json::from_value(e.parsed_json).unwrap();
                 Some(events::IbcEvent::PacketAck(e))
             }
-            "TimeoutPacket" => {
-                let e: events::TimeoutPacket = serde_json::from_value(e.parsed_json).unwrap();
-                Some(events::IbcEvent::TimeoutPacket(e))
+            "PacketTimeout" => {
+                let e: events::PacketTimeout = serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::PacketTimeout(e))
             }
             "Initiated" => None,
             e => panic!("unknown: {e}"),
