@@ -11,16 +11,28 @@ repository   = { workspace = true }
 [lints]
 workspace = true
 
-[features]
-cw-orch-interface = ["schemars", "dep:cw-orch", "dep:cosmwasm-std", "dep:cosmwasm-schema"]
-schemars          = ["dep:schemars", "unionlabs-primitives/schemars", "ibc-union-spec/schemars"]
-
 [dependencies]
+access-managed       = { workspace = true }
+cosmwasm-schema      = { workspace = true, optional = true }
+cosmwasm-std         = { workspace = true, optional = true }
+cw-orch              = { workspace = true, optional = true }
+enumorph             = { workspace = true }
 ibc-union-spec       = { workspace = true, features = ["serde"] }
+pausable             = { workspace = true }
+schemars             = { workspace = true, optional = true }
 serde                = { workspace = true, features = ["derive"] }
 unionlabs-primitives = { workspace = true, features = ["serde"] }
+upgradable           = { workspace = true }
 
-cosmwasm-schema = { workspace = true, optional = true }
-cosmwasm-std    = { workspace = true, optional = true }
-cw-orch         = { workspace = true, optional = true }
-schemars        = { workspace = true, optional = true }
+[features]
+default = []
+
+cw-orch-interface = ["schemars", "dep:cw-orch", "dep:cosmwasm-std", "dep:cosmwasm-schema"]
+schemars = [
+  "dep:schemars",
+  "unionlabs-primitives/schemars",
+  "ibc-union-spec/schemars",
+  "access-managed/schemars",
+  "upgradable/schemars",
+  "pausable/schemars",
+]

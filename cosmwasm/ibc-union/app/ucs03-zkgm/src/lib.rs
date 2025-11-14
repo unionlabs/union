@@ -17,12 +17,23 @@ pub mod token_bucket;
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
+
     #[error(transparent)]
     Migrate(#[from] UpgradeError),
+
+    #[error(transparent)]
+    AccessManaged(#[from] access_managed::error::ContractError),
+
+    #[error(transparent)]
+    Upgradable(#[from] upgradable::error::ContractError),
+
+    #[error(transparent)]
+    Pausable(#[from] pausable::error::ContractError),
+
     #[error("invalid ibc version, got {version}")]
     InvalidIbcVersion { version: String },
     #[error("invalid operation, sender must be ibc host")]
-    OnlyIBCHost,
+    OnlyIbcHost,
     #[error("invalid operation, sender must be self")]
     OnlySelf,
     #[error("invalid operation, sender must be admin")]
@@ -89,6 +100,7 @@ pub enum ContractError {
     ForwardedPacketMissingInReply,
     #[error("could not deserialize sent packet on reply, data: {sent_packet_data}")]
     CouldNotDeserializeSentPacket {
+        #[source]
         error: serde_json_wasm::de::Error,
         sent_packet_data: Bytes,
     },
@@ -136,10 +148,6 @@ pub enum ContractError {
     TokenBucketIsAbsent { token: String },
     #[error(transparent)]
     TokenBucket(#[from] token_bucket::Error),
-    #[error("invalid operation, sender must be the rate limit admin")]
-    OnlyRateLimitAdmin,
-    #[error("invalid operation, sender must be a rate limit operator")]
-    OnlyRateLimitOperator,
     #[error("the instruction cannot be executed by a market maker")]
     InvalidMarketMakerOperation,
     #[error(transparent)]

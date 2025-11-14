@@ -1,5 +1,5 @@
 [package]
-name    = "upgradable"
+name    = "pausable"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -11,17 +11,11 @@ repository   = { workspace = true }
 [lints]
 workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 cosmwasm-std = { workspace = true, features = [] }
-embed-commit = { workspace = true }
-frissitheto  = { workspace = true }
+depolama     = { workspace = true }
 schemars     = { workspace = true, optional = true }
 serde        = { workspace = true, features = ["derive"] }
-serde-utils  = { workspace = true }
-serde_json   = { workspace = true }
 thiserror    = { workspace = true }
 
 [features]

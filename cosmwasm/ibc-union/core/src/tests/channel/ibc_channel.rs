@@ -1,9 +1,13 @@
+use access_managed::Restricted;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use depolama::StorageExt;
 use ibc_union_msg::{
-    lightclient::VerifyCreationResponse,
+    lightclient::{
+        VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse, VerifyMembershipQuery,
+    },
     msg::{
         InitMsg, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
+        RestrictedExecuteMsg,
     },
 };
 use ibc_union_spec::Channel;
@@ -16,6 +20,8 @@ use crate::{
 
 const SENDER: &str = "unionsender";
 const RELAYER: &str = "unionrelayer";
+const MANAGER: &str = "manager";
+
 const VERSION: &str = "version";
 
 #[test]
@@ -24,20 +30,30 @@ fn channel_open_init_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -59,7 +75,7 @@ fn channel_open_init_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenInit(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
         )
         .is_ok()
     );
@@ -71,20 +87,30 @@ fn channel_open_init_channel_claimed() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -107,20 +133,30 @@ fn channel_open_init_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -149,20 +185,30 @@ fn channel_open_try_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -192,7 +238,7 @@ fn channel_open_try_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenTry(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         )
         .is_ok()
     )
@@ -203,20 +249,30 @@ fn channel_open_try_invalid_state() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -246,7 +302,7 @@ fn channel_open_try_invalid_state() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenTry(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         )
         .is_err_and(|err| {
             matches!(
@@ -266,20 +322,30 @@ fn channel_open_try_channel_claimed() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -307,7 +373,7 @@ fn channel_open_try_channel_claimed() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -323,20 +389,30 @@ fn channel_open_try_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -364,7 +440,7 @@ fn channel_open_try_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -386,20 +462,30 @@ fn channel_open_ack_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -420,7 +506,7 @@ fn channel_open_ack_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is ok");
 
@@ -438,7 +524,7 @@ fn channel_open_ack_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenAck(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
         )
         .is_ok()
     )
@@ -450,20 +536,30 @@ fn channel_open_ack_not_found() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -487,7 +583,7 @@ fn channel_open_ack_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenAck(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x6368616e6e656c7300 0x00000001 not present"
@@ -501,20 +597,30 @@ fn channel_open_ack_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -535,7 +641,7 @@ fn channel_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is ok");
 
@@ -552,7 +658,7 @@ fn channel_open_ack_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -574,20 +680,30 @@ fn channel_open_confirm_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -615,7 +731,7 @@ fn channel_open_confirm_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -630,7 +746,9 @@ fn channel_open_confirm_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenConfirm(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenConfirm(
+                msg
+            ))),
         )
         .is_ok()
     )
@@ -642,20 +760,30 @@ fn channel_open_try_invalid_counterparty() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -684,7 +812,7 @@ fn channel_open_try_invalid_counterparty() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenTry(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         ),
         Err(ContractError::CounterpartyChannelIdInvalid)
     )
@@ -696,20 +824,30 @@ fn channel_open_confirm_not_found() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -731,7 +869,9 @@ fn channel_open_confirm_not_found() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::ChannelOpenConfirm(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenConfirm(
+                msg
+            ))),
         ),
         Err(ContractError::Std(StdError::generic_err(
             "key 0x6368616e6e656c7300 0x00000001 not present"
@@ -745,20 +885,30 @@ fn channel_open_confirm_commitment_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                client_state_bytes: None,
-                events: vec![],
-                storage_writes: Default::default(),
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            events: vec![],
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -786,7 +936,7 @@ fn channel_open_confirm_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenTry(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
     )
     .expect("channel open try is ok");
 
@@ -800,7 +950,9 @@ fn channel_open_confirm_commitment_saved() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenConfirm(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenConfirm(
+            msg,
+        ))),
     )
     .expect("channel open confirm is ok");
 

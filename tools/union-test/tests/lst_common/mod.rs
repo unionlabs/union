@@ -14,9 +14,12 @@ use serde::Deserialize;
 use tokio::sync::OnceCell;
 use tracing::info;
 use tracing_subscriber::FmtSubscriber;
-use ucs03_zkgm::com::{
-    INSTR_VERSION_2, Instruction, OP_TOKEN_ORDER, SolverMetadata, TAG_ACK_SUCCESS,
-    TOKEN_ORDER_KIND_SOLVE, TokenOrderV2,
+use ucs03_zkgm::{
+    com::{
+        INSTR_VERSION_2, Instruction, OP_TOKEN_ORDER, SolverMetadata, TAG_ACK_SUCCESS,
+        TOKEN_ORDER_KIND_SOLVE, TokenOrderV2,
+    },
+    msg::SendMsg,
 };
 use union_test::{
     TestContext,
@@ -248,7 +251,7 @@ pub async fn eth_fund_u(
                 &t.ctx.src,
                 t.union_address.zkgm.clone(),
                 (
-                    ucs03_zkgm::msg::ExecuteMsg::Send {
+                    SendMsg::Send {
                         channel_id: src_channel_id.try_into().unwrap(),
                         timeout_height: 0u64.into(),
                         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(

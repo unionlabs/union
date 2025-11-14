@@ -1,10 +1,14 @@
+use access_managed::Restricted;
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
 use ibc_union_msg::{
-    lightclient::VerifyCreationResponse,
+    lightclient::{
+        VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse, VerifyMembershipQuery,
+        VerifyNonMembershipQuery,
+    },
     msg::{
         InitMsg, MsgBatchAcks, MsgBatchSend, MsgChannelOpenAck, MsgIntentPacketRecv,
         MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout, MsgSendPacket,
-        MsgWriteAcknowledgement,
+        MsgWriteAcknowledgement, RestrictedExecuteMsg,
     },
 };
 use ibc_union_spec::{MustBeZero, Packet};
@@ -18,20 +22,30 @@ fn send_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -68,20 +82,30 @@ fn send_packet_missing_timeout() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -118,20 +142,30 @@ fn send_packet_channel_does_not_exist() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -173,20 +207,30 @@ fn send_packet_module_is_not_channel_owner() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -223,20 +267,30 @@ fn recv_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -270,7 +324,7 @@ fn recv_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketRecv(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
         )
         .is_ok()
     )
@@ -282,20 +336,30 @@ fn recv_packet_invalid_channel_state() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -329,7 +393,7 @@ fn recv_packet_invalid_channel_state() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketRecv(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
         )
         .is_err_and(|err| {
             match err {
@@ -348,8 +412,9 @@ fn recv_packet_timeout_timestamp() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -359,13 +424,22 @@ fn recv_packet_timeout_timestamp() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -399,7 +473,7 @@ fn recv_packet_timeout_timestamp() {
             deps.as_mut(),
             env,
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketRecv(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
         )
         .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) })
     )
@@ -411,20 +485,30 @@ fn recv_intent_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -456,7 +540,9 @@ fn recv_intent_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::IntentPacketRecv(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::IntentPacketRecv(
+                msg
+            )))
         )
         .is_ok()
     )
@@ -468,20 +554,30 @@ fn recv_intent_packet_timeout_timestamp() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -513,7 +609,9 @@ fn recv_intent_packet_timeout_timestamp() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::IntentPacketRecv(msg),
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::IntentPacketRecv(
+                msg
+            ))),
         )
         .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketTimestamp { .. }) })
     )
@@ -525,20 +623,30 @@ fn acknowledge_packet_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -562,7 +670,7 @@ fn acknowledge_packet_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -579,7 +687,7 @@ fn acknowledge_packet_ok() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -615,7 +723,7 @@ fn acknowledge_packet_ok() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketAck(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketAck(msg)))
         )
         .is_ok()
     )
@@ -627,20 +735,30 @@ fn acknowledge_packet_tampered() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -664,7 +782,7 @@ fn acknowledge_packet_tampered() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -681,7 +799,7 @@ fn acknowledge_packet_tampered() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -717,7 +835,7 @@ fn acknowledge_packet_tampered() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketAck(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketAck(msg)))
         )
         .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound))
     )
@@ -729,20 +847,30 @@ fn acknowledge_packet_not_sent() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -766,7 +894,7 @@ fn acknowledge_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -783,7 +911,7 @@ fn acknowledge_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -806,7 +934,7 @@ fn acknowledge_packet_not_sent() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketAck(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketAck(msg)))
         )
         .is_err_and(|err| matches!(err, ContractError::PacketCommitmentNotFound))
     )
@@ -818,8 +946,9 @@ fn timeout_packet_timestamp_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -829,14 +958,25 @@ fn timeout_packet_timestamp_ok() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -882,7 +1022,7 @@ fn timeout_packet_timestamp_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketTimeout(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketTimeout(msg)))
         )
         .is_ok()
     )
@@ -894,8 +1034,9 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -905,14 +1046,25 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&128),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -958,7 +1110,7 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketTimeout(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketTimeout(msg)))
         )
         .is_err_and(|err| { matches!(err, ContractError::TimeoutTimestampNotReached) })
     )
@@ -970,8 +1122,9 @@ fn write_acknowledgement_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -981,14 +1134,25 @@ fn write_acknowledgement_ok() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1013,7 +1177,7 @@ fn write_acknowledgement_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1029,7 +1193,7 @@ fn write_acknowledgement_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1050,7 +1214,7 @@ fn write_acknowledgement_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
 
@@ -1081,8 +1245,9 @@ fn write_acknowledgement_module_is_not_channel_owner() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1092,14 +1257,25 @@ fn write_acknowledgement_module_is_not_channel_owner() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1124,7 +1300,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr("malicious"), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1140,7 +1316,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr("malicious"), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1161,7 +1337,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
 
@@ -1192,21 +1368,33 @@ fn write_acknowledgement_packet_not_received() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1231,7 +1419,7 @@ fn write_acknowledgement_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1247,7 +1435,7 @@ fn write_acknowledgement_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1278,8 +1466,9 @@ fn write_acknowledgement_already_exists() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1289,14 +1478,25 @@ fn write_acknowledgement_already_exists() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1321,7 +1521,7 @@ fn write_acknowledgement_already_exists() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1337,7 +1537,7 @@ fn write_acknowledgement_already_exists() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1358,7 +1558,7 @@ fn write_acknowledgement_already_exists() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
 
@@ -1408,8 +1608,9 @@ fn batch_send_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1419,14 +1620,25 @@ fn batch_send_ok() {
 
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1451,7 +1663,7 @@ fn batch_send_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1467,7 +1679,7 @@ fn batch_send_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1519,7 +1731,7 @@ fn batch_send_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchSend(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::BatchSend(msg)))
         )
         .is_ok()
     )
@@ -1531,21 +1743,33 @@ fn batch_send_packet_not_sent() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1570,7 +1794,7 @@ fn batch_send_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1586,7 +1810,7 @@ fn batch_send_packet_not_sent() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1613,7 +1837,7 @@ fn batch_send_packet_not_sent() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchSend(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::BatchSend(msg)))
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
@@ -1625,8 +1849,9 @@ fn batch_acks_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1635,14 +1860,25 @@ fn batch_acks_ok() {
     let timeout_timestamp = Timestamp::from_nanos(248);
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1667,7 +1903,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1683,7 +1919,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1704,7 +1940,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -1741,7 +1977,7 @@ fn batch_acks_ok() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -1786,7 +2022,7 @@ fn batch_acks_ok() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchAcks(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::BatchAcks(msg)))
         )
         .is_ok()
     )
@@ -1798,21 +2034,33 @@ fn batch_acks_packet_not_received() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1837,7 +2085,7 @@ fn batch_acks_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1853,7 +2101,7 @@ fn batch_acks_packet_not_received() {
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1881,7 +2129,7 @@ fn batch_acks_packet_not_received() {
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchAcks(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::BatchAcks(msg)))
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )
@@ -1893,8 +2141,9 @@ fn batch_acks_tampered_packet() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .expect("init is ok");
@@ -1903,14 +2152,25 @@ fn batch_acks_tampered_packet() {
     let timeout_timestamp = Timestamp::from_nanos(248);
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            client_state_bytes: None,
+                            storage_writes: Default::default(),
+                            events: vec![],
+                        })
+                    }
+                    VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery { .. }) => {
+                        to_json_binary(&())
+                    }
+                    VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                        ..
+                    }) => to_json_binary(&()),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -1935,7 +2195,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenInit(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenInit(msg))),
     )
     .expect("channel open init is okay");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
@@ -1951,7 +2211,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
     )
     .expect("channel open ack is ok");
 
@@ -1972,7 +2232,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -2009,7 +2269,7 @@ fn batch_acks_tampered_packet() {
         deps.as_mut(),
         env.clone(),
         message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketRecv(msg),
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::PacketRecv(msg))),
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
@@ -2054,7 +2314,7 @@ fn batch_acks_tampered_packet() {
             deps.as_mut(),
             env.clone(),
             message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::BatchAcks(msg)
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::BatchAcks(msg)))
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) })
     )

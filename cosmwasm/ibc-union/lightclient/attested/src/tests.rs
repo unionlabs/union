@@ -8,7 +8,10 @@ use cosmwasm_std::{
 use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
 use frissitheto::UpgradeMsg;
 use hex_literal::hex;
-use ibc_union_light_client::spec::{Duration, Timestamp};
+use ibc_union_light_client::{
+    access_managed,
+    spec::{Duration, Timestamp},
+};
 use unionlabs::{
     encoding::{Bincode, EncodeAs},
     primitives::{H256, H512},
@@ -71,7 +74,12 @@ fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier> {
         deps.as_mut(),
         env,
         UpgradeMsg::Init(InitMsg {
-            ibc_host,
+            ibc_union_light_client_init_msg: ibc_union_light_client::msg::InitMsg {
+                ibc_host: ibc_host.into_string(),
+                access_managed_init_msg: access_managed::InitMsg {
+                    initial_authority: Addr::unchecked("manager"),
+                },
+            },
             attestors: attestors().map(vk).collect(),
             quorum: const { <NonZero<u8>>::new(2).unwrap() },
         }),

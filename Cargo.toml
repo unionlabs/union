@@ -293,6 +293,7 @@ members = [
   "lib/aptos-types",
   "lib/cosmos-signer",
   "cosmwasm/upgradable",
+  "cosmwasm/pausable",
 ]
 
 [workspace.package]
@@ -310,6 +311,9 @@ disallowed_types        = "deny"
 module_inception        = "allow" # it's useful sometimes
 module_name_repetitions = "allow" # dumb lint
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }
+
 # [workspace.lints.rust]
 # unused_crate_dependencies = "warn"
 
@@ -323,6 +327,7 @@ opt-level = 3
 [workspace.dependencies]
 access-managed                            = { path = "cosmwasm/access-managed", default-features = false }
 access-managed-example                    = { path = "e2e/access-managed-example", default-features = false }
+access-manager                            = { path = "cosmwasm/access-manager", default-features = false }
 access-manager-types                      = { path = "lib/access-manager-types", default-features = false }
 aptos-types                               = { path = "lib/aptos-types", default-features = false }
 arbitrum-client                           = { path = "lib/arbitrum-client", default-features = false }
@@ -393,6 +398,7 @@ osmosis-tokenfactory-token-minter         = { path = "cosmwasm/osmosis-tokenfact
 parlia-light-client-types                 = { path = "lib/parlia-light-client-types", default-features = false }
 parlia-types                              = { path = "lib/parlia-types", default-features = false }
 parlia-verifier                           = { path = "lib/parlia-verifier", default-features = false }
+pausable                                  = { path = "cosmwasm/pausable", default-features = false }
 pg-queue                                  = { path = "lib/pg-queue", default-features = false }
 protos                                    = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }

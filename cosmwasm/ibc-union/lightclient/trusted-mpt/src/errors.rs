@@ -1,7 +1,7 @@
 use ibc_union_light_client::IbcClientError;
 use unionlabs::primitives::{H256, U256};
 
-use crate::client::MptTrustedLightClient;
+use crate::client::TrustedMptLightClient;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -36,7 +36,7 @@ pub enum Error {
     CounterpartyStorageNotNil,
 }
 
-impl From<Error> for IbcClientError<MptTrustedLightClient> {
+impl From<Error> for IbcClientError<TrustedMptLightClient> {
     fn from(value: Error) -> Self {
         IbcClientError::ClientSpecific(value)
     }

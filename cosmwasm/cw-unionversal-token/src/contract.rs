@@ -1,13 +1,14 @@
 use std::slice;
 
-use cosmwasm_schema::cw_serde;
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, entry_point,
-    to_json_binary,
+    Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, StdError, StdResult,
+    entry_point, to_json_binary,
 };
 use depolama::StorageExt;
-use frissitheto::UpgradeMsg;
+use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_spec::{ChannelId, path::commit_packets};
+use serde::{Deserialize, Serialize};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_solvable::Solvable;
@@ -16,13 +17,29 @@ use unionlabs_primitives::{Bytes, U256, encoding::HexPrefixed};
 
 use crate::{
     CwUCtx,
-    error::Error,
-    msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg},
+    error::ContractError,
+    msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg, RestrictedExecuteMsg},
     state::{
         Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist,
         Minters, Zkgm,
     },
 };
+
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
+pub mod version {
+    use std::num::NonZeroU32;
+
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
+}
 
 #[entry_point]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
@@ -31,21 +48,24 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
     );
 }
 
-#[cw_serde]
-pub struct MigrateMsg {}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MigrateMsg {
+    pub access_managed_init_msg: access_managed::InitMsg,
+}
 
 #[entry_point]
 pub fn migrate(
     deps: DepsMut,
     env: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
-) -> Result<Response<TokenFactoryMsg>, Error> {
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     msg.run(
         deps,
-        |deps, init_msg| {
+        |mut deps, init_msg| {
+            access_managed::init(deps.branch(), init_msg.access_managed_init_msg)?;
+
             let sender = env.contract.address.clone();
 
-            deps.storage.write_item::<Admin>(&init_msg.admin);
             deps.storage.write_item::<Zkgm>(&init_msg.zkgm);
             deps.storage.write_item::<Minters>(&init_msg.extra_minters);
 
@@ -64,31 +84,33 @@ pub fn migrate(
                         )?;
                         Ok(res.change_custom().expect("impossible"))
                     }
-                    Cw20InstantiateMsg::Tokenfactory(cw20_init) => {
+                    Cw20InstantiateMsg::Tokenfactory(tf_init) => {
                         deps.storage
                             .write_item::<Cw20Type>(&Cw20ImplType::Tokenfactory);
-                        cw20_wrapped_tokenfactory::contract::init(deps, env, cw20_init)
+                        cw20_wrapped_tokenfactory::contract::init(deps, env, tf_init)
                     }
                 }
             }?;
             Ok((res, None))
         },
-        |_, _, _| Ok((Response::default(), None)),
+        |mut deps, msg, version| match version {
+            version::INIT => {
+                access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+                deps.storage.delete_item::<Admin>();
+
+                Ok((Response::default(), Some(version::MANAGED)))
+            }
+            version::MANAGED => Ok((Response::default(), None)),
+            _ => Err(UpgradeError::UnknownStateVersion(version).into()),
+        },
     )
 }
 
-fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
+fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     let zkgm = deps.storage.read_item::<Zkgm>()?;
     if info.sender != zkgm {
-        return Err(Error::OnlyZkgm);
-    }
-    Ok(())
-}
-
-fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
-    let admin = deps.storage.read_item::<Admin>()?;
-    if info.sender != admin {
-        return Err(Error::OnlyAdmin);
+        return Err(ContractError::OnlyZkgm);
     }
     Ok(())
 }
@@ -99,7 +121,7 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response<TokenFactoryMsg>, Error> {
+) -> Result<Response<TokenFactoryMsg>, ContractError> {
     match msg {
         ExecuteMsg::Cw20(raw_msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => {
@@ -113,29 +135,6 @@ pub fn execute(
                     .map_err(Into::into)
             }
         },
-        ExecuteMsg::WhitelistIntents { hashes_whitelist } => {
-            ensure_admin(deps.as_ref(), &info)?;
-            for (packet_hash, allowed) in hashes_whitelist {
-                deps.storage
-                    .write::<IntentWhitelist>(&packet_hash, &allowed);
-            }
-            Ok(Response::new())
-        }
-        ExecuteMsg::SetFungibleCounterparty {
-            path,
-            channel_id,
-            base_token,
-            counterparty_beneficiary,
-        } => {
-            ensure_admin(deps.as_ref(), &info)?;
-            deps.storage.write::<FungibleCounterparty>(
-                &(path, channel_id, base_token),
-                &FungibleLane {
-                    counterparty_beneficiary,
-                },
-            );
-            Ok(Response::new())
-        }
         ExecuteMsg::Solvable(Solvable::DoSolve {
             packet,
             order,
@@ -148,13 +147,18 @@ pub fn execute(
             ensure_zkgm(deps.as_ref(), &info)?;
 
             if intent {
+                let packet_hash = commit_packets(slice::from_ref(&packet));
+
                 let whitelisted = deps
                     .storage
-                    .read::<IntentWhitelist>(&commit_packets(slice::from_ref(&packet)))
+                    .read::<IntentWhitelist>(&packet_hash)
                     .unwrap_or(false);
+
                 if !whitelisted {
-                    return Err(Error::IntentMustBeWhitelisted);
+                    return Err(ContractError::IntentMustBeWhitelisted);
                 }
+
+                deps.storage.delete::<IntentWhitelist>(&packet_hash);
             }
 
             let fungible_lane = deps
@@ -164,15 +168,15 @@ pub fn execute(
                     packet.destination_channel_id,
                     order.base_token,
                 ))?
-                .ok_or_else(|| Error::LaneIsNotFungible {
+                .ok_or_else(|| ContractError::LaneIsNotFungible {
                     channel_id: packet.destination_channel_id,
                 })?;
 
             let quote_token = String::from_utf8(Vec::from(order.quote_token))
-                .map_err(|_| Error::InvalidQuoteToken)?;
+                .map_err(|_| ContractError::InvalidQuoteToken)?;
 
             if quote_token != env.contract.address.as_str() {
-                return Err(Error::InvalidFill { quote_token });
+                return Err(ContractError::InvalidFill { quote_token });
             }
 
             let cw20_type = deps.storage.read_item::<Cw20Type>()?;
@@ -181,7 +185,7 @@ pub fn execute(
                         env: Env,
                         recipient: String,
                         amount: u128|
-             -> Result<Response<TokenFactoryMsg>, Error> {
+             -> Result<Response<TokenFactoryMsg>, ContractError> {
                 if amount != 0 {
                     match cw20_type {
                         Cw20ImplType::Base => cw20_base::contract::unchecked_internal_mint(
@@ -190,7 +194,7 @@ pub fn execute(
                             amount.into(),
                         )
                         .map(|x| x.change_custom().unwrap())
-                        .map_err(Into::<Error>::into),
+                        .map_err(Into::<ContractError>::into),
                         Cw20ImplType::Tokenfactory => {
                             cw20_wrapped_tokenfactory::contract::unchecked_internal_mint(
                                 deps,
@@ -198,7 +202,7 @@ pub fn execute(
                                 recipient,
                                 amount.into(),
                             )
-                            .map_err(Into::<Error>::into)
+                            .map_err(Into::<ContractError>::into)
                         }
                     }
                 } else {
@@ -209,9 +213,10 @@ pub fn execute(
             let receiver = deps
                 .api
                 .addr_validate(
-                    str::from_utf8(order.receiver.as_ref()).map_err(|_| Error::InvalidReceiver)?,
+                    str::from_utf8(order.receiver.as_ref())
+                        .map_err(|_| ContractError::InvalidReceiver)?,
                 )
-                .map_err(|_| Error::InvalidReceiver)?;
+                .map_err(|_| ContractError::InvalidReceiver)?;
             let mint_quote_res = mint(
                 deps.branch(),
                 env.clone(),
@@ -222,7 +227,7 @@ pub fn execute(
             let fee = order
                 .base_amount
                 .checked_sub(order.quote_amount)
-                .ok_or_else(|| Error::BaseAmountMustCoverQuoteAmount)?;
+                .ok_or_else(|| ContractError::BaseAmountMustCoverQuoteAmount)?;
             let mint_fee_res = mint(
                 deps,
                 env,
@@ -245,11 +250,56 @@ pub fn execute(
                     ),
                 ))
         }
+        ExecuteMsg::AccessManaged(msg) => Ok(access_managed::execute(deps, env, info, msg)?
+            .change_custom()
+            .unwrap()),
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new()
+                        .add_submessages(sub_msgs)
+                        .change_custom()
+                        .unwrap());
+                }
+            };
+
+            match msg {
+                RestrictedExecuteMsg::Upgradable(msg) => {
+                    Ok(upgradable::execute(deps, env, info, msg)?
+                        .change_custom()
+                        .unwrap())
+                }
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path,
+                    channel_id,
+                    base_token,
+                    counterparty_beneficiary,
+                } => {
+                    deps.storage.write::<FungibleCounterparty>(
+                        &(path, channel_id, base_token),
+                        &FungibleLane {
+                            counterparty_beneficiary,
+                        },
+                    );
+
+                    Ok(Response::new())
+                }
+                RestrictedExecuteMsg::WhitelistIntents { hashes_whitelist } => {
+                    for (packet_hash, allowed) in hashes_whitelist {
+                        deps.storage
+                            .write::<IntentWhitelist>(&packet_hash, &allowed);
+                    }
+
+                    Ok(Response::new())
+                }
+            }
+        }
     }
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::AllMinters {} => deps
             .storage
@@ -286,7 +336,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             .collect::<Result<Vec<_>, _>>()
             .and_then(|data| to_json_binary(&data))
             .map_err(Into::into),
-        QueryMsg::Minter {} => Err(Error::Unsupported),
+        QueryMsg::Minter {} => Err(ContractError::Unsupported),
         QueryMsg::Cw20(msg) => match deps.storage.read_item::<Cw20Type>()? {
             Cw20ImplType::Base => cw20_base::contract::query(
                 deps,
@@ -301,6 +351,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             )
             .map_err(Into::into),
         },
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+    }
+}
+
+#[entry_point]
+pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
     }
 }
 

@@ -4,6 +4,7 @@ use std::{
     sync::LazyLock,
 };
 
+use access_manager_types::{RoleId, Selector, manager::msg::ExecuteMsg as AccessManagerExecuteMsg};
 use anyhow::{Context, Result, bail};
 use bip32::secp256k1::ecdsa::SigningKey;
 use clap::Parser;
@@ -42,6 +43,11 @@ use unionlabs::{
     primitives::{Bech32, Bytes, H256, U256},
 };
 
+const RELAYER: RoleId = RoleId::new(1);
+const PAUSER: RoleId = RoleId::new(2);
+const UNPAUSER: RoleId = RoleId::new(3);
+const RATE_LIMITER: RoleId = RoleId::new(4);
+
 #[derive(clap::Parser)]
 enum App {
     DeployFull {
@@ -53,6 +59,8 @@ enum App {
         contracts: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long)]
+        manager_admin: Bech32<Bytes>,
         /// Marks this chain as permissioned.
         ///
         /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
@@ -60,14 +68,18 @@ enum App {
         permissioned: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
-        // #[arg(long)]
-        // relayers_admin: Bech32<Bytes>,
-        // #[arg(long)]
-        // relayers: Vec<Bech32<Bytes>>,
-        // #[arg(long)]
-        // rate_limit_admin: Bech32<Bytes>,
-        // #[arg(long)]
-        // rate_limit_operators: Vec<Bech32<Bytes>>,
+    },
+    SetupRoles {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        contracts: PathBuf,
+        #[arg(long)]
+        manager: Bech32<H256>,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
     },
     DeployContract {
         #[arg(long)]
@@ -214,7 +226,7 @@ enum TxCmd {
         #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
-        contract: Bech32<H256>,
+        manager: Bech32<H256>,
         /// The relayer(s) to whitelist.
         #[arg(trailing_var_arg = true)]
         relayer: Vec<Bech32<Bytes>>,
@@ -392,6 +404,9 @@ static ESCROW_VAULT: LazyLock<Salt> = LazyLock::new(|| {
 static ON_ZKGM_CALL_PROXY: LazyLock<Salt> =
     LazyLock::new(|| Salt::Utf8("on-zkgm-call-proxy".to_owned()));
 static CORE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("ibc-is-based".to_owned()));
+static MANAGER: LazyLock<Salt> = LazyLock::new(|| {
+    Salt::Raw(hex!("7b1f7c3b93ff643023d63bbbe182a179922ad85a2aa0e03ef50170b591a7b752").into())
+});
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
 
@@ -403,6 +418,7 @@ static BYTECODE_BASE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("bytecode-bas
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct ContractPaths {
     core: PathBuf,
+    manager: PathBuf,
     // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
@@ -447,6 +463,8 @@ struct ContractAddresses {
     core: Bech32<H256>,
     lightclient: BTreeMap<String, Bech32<H256>>,
     app: AppAddresses,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    manager: Option<Bech32<H256>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     escrow_vault: Option<Bech32<H256>>,
     on_zkgm_call_proxy: Bech32<H256>,
@@ -500,12 +518,9 @@ async fn do_main() -> Result<()> {
             private_key,
             contracts,
             output,
+            manager_admin,
             permissioned,
             gas_config,
-            // relayers_admin,
-            // relayers,
-            // rate_limit_admin,
-            // rate_limit_operators,
         } => {
             let contracts = serde_json::from_slice::<ContractPaths>(
                 &std::fs::read(contracts).context("reading contracts path")?,
@@ -515,13 +530,27 @@ async fn do_main() -> Result<()> {
 
             let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
 
+            let manager = ctx
+                .deploy_and_initiate(
+                    std::fs::read(contracts.manager)?,
+                    bytecode_base_code_id,
+                    access_manager_types::manager::msg::InitMsg {
+                        initial_admin: Addr::unchecked(manager_admin.to_string()),
+                    },
+                    &MANAGER,
+                )
+                .await?;
+
+            let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
+                initial_authority: Addr::unchecked(manager.to_string()),
+            };
+
             let core_address = ctx
                 .deploy_and_initiate(
                     std::fs::read(contracts.core)?,
                     bytecode_base_code_id,
                     ibc_union_msg::msg::InitMsg {
-                        relayers_admin: Some(ctx.wallet().address().to_string()),
-                        relayers: vec![ctx.wallet().address().to_string()],
+                        access_managed_init_msg: access_managed_init_msg.clone(),
                     },
                     &CORE,
                 )
@@ -540,6 +569,7 @@ async fn do_main() -> Result<()> {
                     ucs00: None,
                     ucs03: None,
                 },
+                manager: Some(manager.clone()),
                 escrow_vault: None,
                 on_zkgm_call_proxy: on_zkgm_call_proxy_address.clone(),
             };
@@ -550,7 +580,8 @@ async fn do_main() -> Result<()> {
                         std::fs::read(path)?,
                         bytecode_base_code_id,
                         ibc_union_light_client::msg::InitMsg {
-                            ibc_host: Addr::unchecked(core_address.to_string()),
+                            ibc_host: core_address.to_string(),
+                            access_managed_init_msg: access_managed_init_msg.clone(),
                         },
                         &Salt::Utf8(format!("{LIGHTCLIENT}/{client_type}")),
                     )
@@ -588,7 +619,7 @@ async fn do_main() -> Result<()> {
                             sender: ctx.wallet().address().map_data(Into::into),
                             contract: core_address.clone(),
                             msg: serde_json::to_vec(
-                                &ibc_union_msg::msg::ExecuteMsg::RegisterClient(
+                                &ibc_union_msg::msg::RestrictedExecuteMsg::RegisterClient(
                                     ibc_union_msg::msg::MsgRegisterClient {
                                         client_type: client_type.clone(),
                                         client_address: address.to_string(),
@@ -795,17 +826,12 @@ async fn do_main() -> Result<()> {
                                 admin: Addr::unchecked(ctx.wallet().address().to_string()),
                                 ibc_host: Addr::unchecked(core_address.to_string()),
                                 token_minter_code_id: minter_code_id.into(),
-                                rate_limit_admin: Addr::unchecked(
-                                    ctx.wallet().address().to_string(),
-                                ),
-                                rate_limit_operators: vec![Addr::unchecked(
-                                    ctx.wallet().address().to_string(),
-                                )],
                                 rate_limit_disabled: ucs03_config.rate_limit_disabled,
                                 dummy_code_id: bytecode_base_code_id.get(),
                                 cw_account_code_id: cw_account_code_id.get(),
                             },
                             minter_init_params,
+                            access_managed_init_msg: access_managed_init_msg.clone(),
                         },
                         &salt,
                     )
@@ -819,7 +845,7 @@ async fn do_main() -> Result<()> {
                             bytecode_base_code_id,
                             cw_escrow_vault::msg::InstantiateMsg {
                                 zkgm: Addr::unchecked(ucs03_address.to_string()),
-                                admin: Addr::unchecked(ctx.wallet().address().to_string()),
+                                access_managed_init_msg: access_managed_init_msg.clone(),
                             },
                             &ESCROW_VAULT,
                         )
@@ -844,6 +870,8 @@ async fn do_main() -> Result<()> {
 
                 contract_addresses.app.ucs03 = Some(ucs03_address);
             }
+
+            setup_roles(ctx, manager, &contract_addresses).await?;
 
             write_output(output, contract_addresses)?;
         }
@@ -1163,7 +1191,7 @@ async fn do_main() -> Result<()> {
             TxCmd::WhitelistRelayers {
                 rpc_url,
                 private_key,
-                contract,
+                manager,
                 relayer,
                 gas_config,
             } => {
@@ -1171,28 +1199,29 @@ async fn do_main() -> Result<()> {
 
                 info!("whitelisting {} relayers", relayer.len());
 
-                for relayer in relayer {
-                    let (tx_hash, _) = ctx
-                        .tx(
-                            MsgExecuteContract {
+                let tx_hash = ctx
+                    .broadcast_tx_commit(
+                        relayer.iter().map(|relayer| {
+                            Any(MsgExecuteContract {
                                 sender: ctx.wallet().address().map_data(Into::into),
-                                contract: contract.clone(),
-                                msg: serde_json::to_vec(
-                                    &ibc_union_msg::msg::ExecuteMsg::AddRelayer(
-                                        relayer.to_string(),
-                                    ),
-                                )
+                                contract: manager.clone(),
+                                msg: serde_json::to_vec(&AccessManagerExecuteMsg::GrantRole {
+                                    role_id: RELAYER,
+                                    account: Addr::unchecked(relayer.to_string()),
+                                    execution_delay: 0,
+                                })
                                 .unwrap()
                                 .into(),
                                 funds: vec![],
-                            },
-                            "",
-                            gas_config.simulate,
-                        )
-                        .await?;
+                            })
+                        }),
+                        "",
+                        gas_config.simulate,
+                    )
+                    .await?
+                    .hash;
 
-                    info!(%tx_hash, "registered relayer {relayer}");
-                }
+                info!(%tx_hash, "whitelisted {} relayers", relayer.len());
             }
             TxCmd::SetBucketConfig {
                 rpc_url,
@@ -1214,7 +1243,7 @@ async fn do_main() -> Result<()> {
                             sender: ctx.wallet().address().map_data(Into::into),
                             contract: ucs03_address.clone(),
                             msg: serde_json::to_vec(
-                                &ucs03_zkgm::msg::ExecuteMsg::SetBucketConfig {
+                                &ucs03_zkgm::msg::RestrictedExecuteMsg::SetBucketConfig {
                                     denom: denom.clone(),
                                     capacity: Uint256::from_be_bytes(capacity.to_be_bytes()),
                                     refill_rate: Uint256::from_be_bytes(refill_rate.to_be_bytes()),
@@ -1412,7 +1441,203 @@ async fn do_main() -> Result<()> {
                 }
             }
         },
+        App::SetupRoles {
+            rpc_url,
+            private_key,
+            contracts,
+            manager,
+            gas_config,
+        } => {
+            let contracts = serde_json::from_slice::<ContractAddresses>(
+                &std::fs::read(contracts).context("reading contracts path")?,
+            )?;
+
+            let deployer = Deployer::new(rpc_url, private_key, &gas_config).await?;
+
+            setup_roles(deployer, manager, &contracts).await?;
+        }
     }
+
+    Ok(())
+}
+
+async fn setup_roles(
+    deployer: Deployer,
+    manager: Bech32<H256>,
+    contracts: &ContractAddresses,
+) -> Result<()> {
+    let relayer_selectors = [
+        "register_client",
+        "create_client",
+        "update_client",
+        "misbehaviour",
+        "batch_send",
+        "batch_acks",
+        "recv_packet",
+        "recv_intent_packet",
+        "acknowledge_packet",
+        "timeout_packet",
+    ];
+
+    let rate_limiter_selectors = ["set_bucket_config"];
+
+    let pauser_selectors = ["pause"];
+
+    let unpauser_selectors = ["unpause"];
+
+    let ucs03_public_selectors = ["send"];
+
+    info!("setting up roles");
+
+    let tx_hash = deployer
+        .broadcast_tx_commit(
+            [
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                        target: Addr::unchecked(contracts.core.to_string()),
+                        selectors: relayer_selectors
+                            .into_iter()
+                            .map(Selector::new)
+                            .map(ToOwned::to_owned)
+                            .collect(),
+                        role_id: RELAYER,
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                        target: Addr::unchecked(contracts.app.ucs03.as_ref().unwrap().to_string()),
+                        selectors: rate_limiter_selectors
+                            .into_iter()
+                            .map(Selector::new)
+                            .map(ToOwned::to_owned)
+                            .collect(),
+                        role_id: RATE_LIMITER,
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                        target: Addr::unchecked(contracts.app.ucs03.as_ref().unwrap().to_string()),
+                        selectors: ucs03_public_selectors
+                            .into_iter()
+                            .map(Selector::new)
+                            .map(ToOwned::to_owned)
+                            .collect(),
+                        role_id: RoleId::PUBLIC_ROLE,
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                        role_id: RELAYER,
+                        label: "RELAYER".to_owned(),
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                        role_id: PAUSER,
+                        label: "PAUSER".to_owned(),
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                        role_id: UNPAUSER,
+                        label: "UNPAUSER".to_owned(),
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+                Any(MsgExecuteContract {
+                    sender: deployer.wallet().address().map_data(Into::into),
+                    contract: manager.clone(),
+                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                        role_id: RATE_LIMITER,
+                        label: "RATE_LIMITER".to_owned(),
+                    })
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                }),
+            ]
+            .into_iter()
+            .chain(
+                [contracts.app.ucs03.clone().unwrap()]
+                    .iter()
+                    .chain(contracts.lightclient.values())
+                    .flat_map(|target| {
+                        [
+                            Any(MsgExecuteContract {
+                                sender: deployer.wallet().address().map_data(Into::into),
+                                contract: manager.clone(),
+                                msg: serde_json::to_vec(
+                                    &AccessManagerExecuteMsg::SetTargetFunctionRole {
+                                        target: Addr::unchecked(target.to_string()),
+                                        selectors: pauser_selectors
+                                            .into_iter()
+                                            .map(Selector::new)
+                                            .map(ToOwned::to_owned)
+                                            .collect(),
+                                        role_id: PAUSER,
+                                    },
+                                )
+                                .unwrap()
+                                .into(),
+                                funds: vec![],
+                            }),
+                            Any(MsgExecuteContract {
+                                sender: deployer.wallet().address().map_data(Into::into),
+                                contract: manager.clone(),
+                                msg: serde_json::to_vec(
+                                    &AccessManagerExecuteMsg::SetTargetFunctionRole {
+                                        target: Addr::unchecked(target.to_string()),
+                                        selectors: unpauser_selectors
+                                            .into_iter()
+                                            .map(Selector::new)
+                                            .map(ToOwned::to_owned)
+                                            .collect(),
+                                        role_id: UNPAUSER,
+                                    },
+                                )
+                                .unwrap()
+                                .into(),
+                                funds: vec![],
+                            }),
+                        ]
+                    }),
+            ),
+            "",
+            deployer.simulate,
+        )
+        .await?
+        .hash;
+
+    info!(%tx_hash, "set up roles");
 
     Ok(())
 }
@@ -1457,8 +1682,12 @@ fn calculate_contract_addresses(
         sha2(BYTECODE_BASE_BYTECODE),
         &ESCROW_VAULT,
     )?;
-    let on_zkgm_call_proxy =
-        instantiate2_address(deployer, sha2(BYTECODE_BASE_BYTECODE), &ON_ZKGM_CALL_PROXY)?;
+
+    let on_zkgm_call_proxy = instantiate2_address(
+        deployer.clone(),
+        sha2(BYTECODE_BASE_BYTECODE),
+        &ON_ZKGM_CALL_PROXY,
+    )?;
 
     Ok(ContractAddresses {
         core,
@@ -1466,6 +1695,11 @@ fn calculate_contract_addresses(
         app,
         escrow_vault: Some(escrow_vault),
         on_zkgm_call_proxy,
+        manager: Some(instantiate2_address(
+            deployer,
+            sha2(BYTECODE_BASE_BYTECODE),
+            &MANAGER,
+        )?),
     })
 }
 

@@ -886,7 +886,7 @@ fn process_msgs(
 
                     match msg {
                         Datagram::CreateClient(msg_create_client) => {
-                            mk_msg(ExecuteMsg::CreateClient(MsgCreateClient {
+                            mk_msg(RestrictedExecuteMsg::CreateClient(MsgCreateClient {
                                 client_type: msg_create_client.client_type.to_string(),
                                 client_state_bytes: msg_create_client.client_state_bytes,
                                 consensus_state_bytes: msg_create_client.consensus_state_bytes,
@@ -895,22 +895,22 @@ fn process_msgs(
                             }))
                         }
                         Datagram::UpdateClient(msg_update_client) => {
-                            mk_msg(ExecuteMsg::UpdateClient(MsgUpdateClient {
+                            mk_msg(RestrictedExecuteMsg::UpdateClient(MsgUpdateClient {
                                 client_id: msg_update_client.client_id,
                                 client_message: msg_update_client.client_message,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
                             }))
                         }
-                        Datagram::ConnectionOpenInit(msg_connection_open_init) => {
-                            mk_msg(ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
+                        Datagram::ConnectionOpenInit(msg_connection_open_init) => mk_msg(
+                            RestrictedExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
                                 client_id: msg_connection_open_init.client_id,
                                 counterparty_client_id: msg_connection_open_init
                                     .counterparty_client_id,
-                            }))
-                        }
-                        Datagram::ConnectionOpenTry(msg_connection_open_try) => {
-                            mk_msg(ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
+                            }),
+                        ),
+                        Datagram::ConnectionOpenTry(msg_connection_open_try) => mk_msg(
+                            RestrictedExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
                                 counterparty_client_id: msg_connection_open_try
                                     .counterparty_client_id,
                                 counterparty_connection_id: msg_connection_open_try
@@ -918,26 +918,26 @@ fn process_msgs(
                                 client_id: msg_connection_open_try.client_id,
                                 proof_init: msg_connection_open_try.proof_init,
                                 proof_height: msg_connection_open_try.proof_height,
-                            }))
-                        }
-                        Datagram::ConnectionOpenAck(msg_connection_open_ack) => {
-                            mk_msg(ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
+                            }),
+                        ),
+                        Datagram::ConnectionOpenAck(msg_connection_open_ack) => mk_msg(
+                            RestrictedExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
                                 connection_id: msg_connection_open_ack.connection_id,
                                 counterparty_connection_id: msg_connection_open_ack
                                     .counterparty_connection_id,
                                 proof_try: msg_connection_open_ack.proof_try,
                                 proof_height: msg_connection_open_ack.proof_height,
-                            }))
-                        }
+                            }),
+                        ),
                         Datagram::ConnectionOpenConfirm(msg_connection_open_confirm) => mk_msg(
-                            ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
+                            RestrictedExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
                                 connection_id: msg_connection_open_confirm.connection_id,
                                 proof_ack: msg_connection_open_confirm.proof_ack,
                                 proof_height: msg_connection_open_confirm.proof_height,
                             }),
                         ),
                         Datagram::ChannelOpenInit(msg_channel_open_init) => {
-                            mk_msg(ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
+                            mk_msg(RestrictedExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
                                 port_id: parse_port_id(msg_channel_open_init.port_id.to_vec())?,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
@@ -947,7 +947,7 @@ fn process_msgs(
                             }))
                         }
                         Datagram::ChannelOpenTry(msg_channel_open_try) => {
-                            mk_msg(ExecuteMsg::ChannelOpenTry(MsgChannelOpenTry {
+                            mk_msg(RestrictedExecuteMsg::ChannelOpenTry(MsgChannelOpenTry {
                                 port_id: parse_port_id(msg_channel_open_try.port_id.to_vec())?,
                                 channel: msg_channel_open_try.channel,
                                 counterparty_version: msg_channel_open_try.counterparty_version,
@@ -958,7 +958,7 @@ fn process_msgs(
                             }))
                         }
                         Datagram::ChannelOpenAck(msg_channel_open_ack) => {
-                            mk_msg(ExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
+                            mk_msg(RestrictedExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
                                 channel_id: msg_channel_open_ack.channel_id,
                                 counterparty_version: msg_channel_open_ack.counterparty_version,
                                 counterparty_channel_id: msg_channel_open_ack
@@ -969,21 +969,21 @@ fn process_msgs(
                                     .map_or(signer.to_string(), |s| s.to_string()),
                             }))
                         }
-                        Datagram::ChannelOpenConfirm(msg_channel_open_confirm) => {
-                            mk_msg(ExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
+                        Datagram::ChannelOpenConfirm(msg_channel_open_confirm) => mk_msg(
+                            RestrictedExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
                                 channel_id: msg_channel_open_confirm.channel_id,
                                 proof_ack: msg_channel_open_confirm.proof_ack,
                                 proof_height: msg_channel_open_confirm.proof_height,
                                 relayer: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            }))
-                        }
+                            }),
+                        ),
                         Datagram::ChannelCloseInit(_msg_channel_close_init) => todo!(),
                         Datagram::ChannelCloseConfirm(_msg_channel_close_confirm) => {
                             todo!()
                         }
                         Datagram::PacketRecv(msg_packet_recv) => {
-                            mk_msg(ExecuteMsg::PacketRecv(MsgPacketRecv {
+                            mk_msg(RestrictedExecuteMsg::PacketRecv(MsgPacketRecv {
                                 packets: msg_packet_recv.packets.into_iter().collect(),
                                 relayer_msgs: msg_packet_recv.relayer_msgs,
                                 proof: msg_packet_recv.proof,
@@ -993,7 +993,7 @@ fn process_msgs(
                             }))
                         }
                         Datagram::PacketAcknowledgement(msg_packet_acknowledgement) => {
-                            mk_msg(ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
+                            mk_msg(RestrictedExecuteMsg::PacketAck(MsgPacketAcknowledgement {
                                 packets: msg_packet_acknowledgement.packets.into_iter().collect(),
                                 acknowledgements: msg_packet_acknowledgement.acknowledgements,
                                 proof: msg_packet_acknowledgement.proof,
@@ -1003,7 +1003,7 @@ fn process_msgs(
                             }))
                         }
                         Datagram::PacketTimeout(msg_packet_timeout) => {
-                            mk_msg(ExecuteMsg::PacketTimeout(MsgPacketTimeout {
+                            mk_msg(RestrictedExecuteMsg::PacketTimeout(MsgPacketTimeout {
                                 packet: msg_packet_timeout.packet,
                                 proof: msg_packet_timeout.proof,
                                 proof_height: msg_packet_timeout.proof_height,
@@ -1011,22 +1011,22 @@ fn process_msgs(
                                     .map_or(signer.to_string(), |s| s.to_string()),
                             }))
                         }
-                        Datagram::IntentPacketRecv(msg_intent_packet_recv) => {
-                            mk_msg(ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
+                        Datagram::IntentPacketRecv(msg_intent_packet_recv) => mk_msg(
+                            RestrictedExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
                                 packets: msg_intent_packet_recv.packets.into_iter().collect(),
                                 market_maker_msgs: msg_intent_packet_recv.market_maker_messages,
                                 market_maker: fee_recipient
                                     .map_or(signer.to_string(), |s| s.to_string()),
-                            }))
-                        }
+                            }),
+                        ),
                         Datagram::BatchSend(msg_batch_send) => {
-                            mk_msg(ExecuteMsg::BatchSend(MsgBatchSend {
+                            mk_msg(RestrictedExecuteMsg::BatchSend(MsgBatchSend {
                                 packets: msg_batch_send.packets,
                             }))
                         }
                         Datagram::BatchAcks(_msg_batch_acks) => todo!(),
                         Datagram::CommitMembershipProof(msg_commit_membership_proof) => mk_msg(
-                            ExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
+                            RestrictedExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
                                 client_id: msg_commit_membership_proof.client_id,
                                 proof_height: msg_commit_membership_proof.proof_height,
                                 proof: msg_commit_membership_proof.proof,
@@ -1035,7 +1035,7 @@ fn process_msgs(
                             }),
                         ),
                         Datagram::CommitNonMembershipProof(msg_commit_non_membership_proof) => {
-                            mk_msg(ExecuteMsg::CommitNonMembershipProof(
+                            mk_msg(RestrictedExecuteMsg::CommitNonMembershipProof(
                                 MsgCommitNonMembershipProof {
                                     client_id: msg_commit_non_membership_proof.client_id,
                                     proof_height: msg_commit_non_membership_proof.proof_height,

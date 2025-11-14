@@ -1,19 +1,21 @@
 use core::slice;
 use std::{collections::BTreeSet, num::NonZeroU32};
 
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, OverflowError,
-    OverflowOperation, Response, StdError, StdResult, Storage, to_json_binary, wasm_execute,
+    OverflowOperation, Reply, Response, StdError, StdResult, to_json_binary, wasm_execute,
 };
 use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, UpdateStateResponse, VerifyCreationResponse,
-        VerifyCreationResponseEvent,
+        QueryMsg as LightClientQuery, UpdateStateQuery, UpdateStateResponse, VerifyCreationQuery,
+        VerifyCreationResponse, VerifyCreationResponseEvent, VerifyMembershipQuery,
+        VerifyNonMembershipQuery,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
     msg::{
@@ -24,6 +26,7 @@ use ibc_union_msg::{
         MsgConnectionOpenTry, MsgCreateClient, MsgForceUpdateClient, MsgIntentPacketRecv,
         MsgMigrateState, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
         MsgRegisterClient, MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
+        RestrictedExecuteMsg,
     },
     query::QueryMsg,
 };
@@ -152,22 +155,6 @@ fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2]
     .map(Into::into)
 }
 
-fn ensure_relayer_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    if sender != storage.read_item::<WhitelistedRelayersAdmin>()? {
-        Err(ContractError::OnlyRelayerAdmin)
-    } else {
-        Ok(())
-    }
-}
-
-fn ensure_relayer(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    if storage.read::<WhitelistedRelayers>(sender).is_ok() {
-        Ok(())
-    } else {
-        Err(ContractError::OnlyWhitelistedRelayer)
-    }
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     mut deps: DepsMut,
@@ -176,395 +163,6 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::RegisterClient(MsgRegisterClient {
-            client_type,
-            client_address,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            let address = deps.api.addr_validate(&client_address)?;
-            register_client(deps.branch(), client_type, address)
-        }
-        ExecuteMsg::CreateClient(MsgCreateClient {
-            client_type,
-            client_state_bytes,
-            consensus_state_bytes,
-            relayer,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            create_client(
-                deps.branch(),
-                info,
-                client_type,
-                client_state_bytes.to_vec(),
-                consensus_state_bytes.to_vec(),
-                relayer,
-            )
-        }
-        ExecuteMsg::UpdateClient(MsgUpdateClient {
-            client_id,
-            client_message,
-            relayer,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            update_client(
-                deps.branch(),
-                info,
-                client_id,
-                client_message.to_vec(),
-                relayer,
-            )
-        }
-        ExecuteMsg::ForceUpdateClient(MsgForceUpdateClient {
-            client_id,
-            client_state_bytes,
-            consensus_state_bytes,
-        }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-
-            let client_impl = client_impl(deps.as_ref(), client_id)?;
-
-            let (_, height) = init_client(
-                deps,
-                info.clone(),
-                client_state_bytes.into(),
-                consensus_state_bytes.into(),
-                info.sender,
-                client_impl,
-                client_id,
-            )?;
-
-            Ok(Response::new().add_event(
-                Event::new("force_update_client")
-                    .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
-                    .add_attribute(events::attribute::COUNTERPARTY_HEIGHT, height.to_string()),
-            ))
-        }
-        ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
-            client_id,
-            counterparty_client_id,
-        }) => connection_open_init(deps.branch(), client_id, counterparty_client_id),
-        ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
-            counterparty_client_id,
-            counterparty_connection_id,
-            client_id,
-            proof_init,
-            proof_height,
-        }) => connection_open_try(
-            info,
-            deps.branch(),
-            counterparty_client_id,
-            counterparty_connection_id,
-            client_id,
-            proof_init.to_vec(),
-            proof_height,
-            true,
-        ),
-        ExecuteMsg::ForceConnectionOpenTry(MsgConnectionOpenTry {
-            counterparty_client_id,
-            counterparty_connection_id,
-            client_id,
-            proof_init,
-            proof_height,
-        }) => connection_open_try(
-            info,
-            deps.branch(),
-            counterparty_client_id,
-            counterparty_connection_id,
-            client_id,
-            proof_init.to_vec(),
-            proof_height,
-            false,
-        ),
-        ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
-            connection_id,
-            counterparty_connection_id,
-            proof_try,
-            proof_height,
-        }) => connection_open_ack(
-            info,
-            deps.branch(),
-            connection_id,
-            counterparty_connection_id,
-            proof_try.to_vec(),
-            proof_height,
-            true,
-        ),
-        ExecuteMsg::ForceConnectionOpenAck(MsgConnectionOpenAck {
-            connection_id,
-            counterparty_connection_id,
-            proof_try,
-            proof_height,
-        }) => connection_open_ack(
-            info,
-            deps.branch(),
-            connection_id,
-            counterparty_connection_id,
-            proof_try.to_vec(),
-            proof_height,
-            false,
-        ),
-        ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
-            connection_id,
-            proof_ack,
-            proof_height,
-        }) => connection_open_confirm(
-            info,
-            deps.branch(),
-            connection_id,
-            proof_ack.to_vec(),
-            proof_height,
-            true,
-        ),
-        ExecuteMsg::ForceConnectionOpenConfirm(MsgConnectionOpenConfirm {
-            connection_id,
-            proof_ack,
-            proof_height,
-        }) => connection_open_confirm(
-            info,
-            deps.branch(),
-            connection_id,
-            proof_ack.to_vec(),
-            proof_height,
-            false,
-        ),
-        ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
-            port_id,
-            counterparty_port_id,
-            connection_id,
-            version,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_init(
-                deps.branch(),
-                info,
-                port_id,
-                counterparty_port_id,
-                connection_id,
-                version,
-                relayer,
-            )
-        }
-        ExecuteMsg::ChannelOpenTry(MsgChannelOpenTry {
-            port_id,
-            channel,
-            counterparty_version,
-            proof_init,
-            proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_try(
-                deps.branch(),
-                info,
-                port_id,
-                channel,
-                counterparty_version,
-                proof_init.to_vec(),
-                proof_height,
-                relayer,
-                true,
-            )
-        }
-        ExecuteMsg::ForceChannelOpenTry(MsgChannelOpenTry {
-            port_id,
-            channel,
-            counterparty_version,
-            proof_init,
-            proof_height,
-            relayer,
-        }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_try(
-                deps.branch(),
-                info,
-                port_id,
-                channel,
-                counterparty_version,
-                proof_init.to_vec(),
-                proof_height,
-                relayer,
-                false,
-            )
-        }
-        ExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
-            channel_id,
-            counterparty_version,
-            counterparty_channel_id,
-            proof_try,
-            proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_ack(
-                deps.branch(),
-                info,
-                channel_id,
-                counterparty_version,
-                counterparty_channel_id,
-                proof_try.to_vec(),
-                proof_height,
-                relayer,
-                true,
-            )
-        }
-        ExecuteMsg::ForceChannelOpenAck(MsgChannelOpenAck {
-            channel_id,
-            counterparty_version,
-            counterparty_channel_id,
-            proof_try,
-            proof_height,
-            relayer,
-        }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_ack(
-                deps.branch(),
-                info,
-                channel_id,
-                counterparty_version,
-                counterparty_channel_id,
-                proof_try.to_vec(),
-                proof_height,
-                relayer,
-                false,
-            )
-        }
-        ExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
-            channel_id,
-            proof_ack,
-            proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_confirm(
-                deps.branch(),
-                info,
-                channel_id,
-                proof_ack.to_vec(),
-                proof_height,
-                relayer,
-                true,
-            )
-        }
-        ExecuteMsg::ForceChannelOpenConfirm(MsgChannelOpenConfirm {
-            channel_id,
-            proof_ack,
-            proof_height,
-            relayer,
-        }) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_open_confirm(
-                deps.branch(),
-                info,
-                channel_id,
-                proof_ack.to_vec(),
-                proof_height,
-                relayer,
-                false,
-            )
-        }
-        ExecuteMsg::ChannelCloseInit(MsgChannelCloseInit {
-            channel_id,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_close_init(deps.branch(), info, channel_id, relayer)
-        }
-        ExecuteMsg::ChannelCloseConfirm(MsgChannelCloseConfirm {
-            channel_id,
-            proof_init,
-            proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            channel_close_confirm(
-                deps.branch(),
-                info,
-                channel_id,
-                proof_init.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
-        ExecuteMsg::PacketRecv(MsgPacketRecv {
-            packets,
-            relayer_msgs,
-            relayer,
-            proof,
-            proof_height,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            process_receive(
-                deps,
-                env,
-                info,
-                packets,
-                relayer_msgs.into_iter().collect(),
-                relayer,
-                proof,
-                proof_height,
-                false,
-            )
-        }
-        ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
-            packets,
-            acknowledgements,
-            proof,
-            proof_height,
-            relayer,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            acknowledge_packet(
-                deps.branch(),
-                info,
-                packets,
-                acknowledgements.into_iter().collect(),
-                proof.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
-        ExecuteMsg::PacketTimeout(MsgPacketTimeout {
-            packet,
-            proof,
-            proof_height,
-            relayer,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            timeout_packet(
-                deps.branch(),
-                info,
-                packet,
-                proof.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
-        ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
-            packets,
-            market_maker_msgs,
-            market_maker,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            process_receive(
-                deps,
-                env,
-                info,
-                packets,
-                market_maker_msgs.into_iter().collect(),
-                market_maker,
-                Bytes::new_static(&[]),
-                0,
-                true,
-            )
-        }
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
             packet,
             acknowledgement,
@@ -585,14 +183,6 @@ pub fn execute(
             timeout_timestamp,
             data.into_vec(),
         ),
-        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            batch_send(deps, packets)
-        }
-        ExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            batch_acks(deps, packets, acks.into_iter().collect())
-        }
         ExecuteMsg::MigrateState(MsgMigrateState {
             client_id,
             client_state,
@@ -606,44 +196,398 @@ pub fn execute(
             consensus_state,
             height,
         ),
-        ExecuteMsg::AddRelayer(relayer) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            deps.storage.write::<WhitelistedRelayers>(&relayer, &());
-            Ok(Response::new().add_event(
-                Event::new("whitelisted_relayers")
-                    .add_attribute("action", "grant")
-                    .add_attribute("relayer", relayer),
-            ))
+        ExecuteMsg::AccessManaged(msg) => {
+            access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }
-        ExecuteMsg::RemoveRelayer(relayer) => {
-            ensure_relayer_admin(deps.storage, &info.sender)?;
-            let relayer = deps.api.addr_validate(&relayer)?;
-            deps.storage.delete::<WhitelistedRelayers>(&relayer);
-            Ok(Response::new().add_event(
-                Event::new("whitelisted_relayers")
-                    .add_attribute("action", "revoke")
-                    .add_attribute("relayer", relayer),
-            ))
-        }
-        ExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
-            client_id,
-            proof_height,
-            proof,
-            path,
-            value,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            commit_membership_proof(deps, client_id, proof_height, proof, path, value)
-        }
-        ExecuteMsg::CommitNonMembershipProof(MsgCommitNonMembershipProof {
-            client_id,
-            proof_height,
-            proof,
-            path,
-        }) => {
-            ensure_relayer(deps.storage, &info.sender)?;
-            commit_non_membership_proof(deps, client_id, proof_height, proof, path)
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new().add_submessages(sub_msgs));
+                }
+            };
+
+            match msg {
+                RestrictedExecuteMsg::RegisterClient(MsgRegisterClient {
+                    client_type,
+                    client_address,
+                }) => {
+                    let address = deps.api.addr_validate(&client_address)?;
+                    register_client(deps.branch(), client_type, address)
+                }
+                RestrictedExecuteMsg::CreateClient(MsgCreateClient {
+                    client_type,
+                    client_state_bytes,
+                    consensus_state_bytes,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    create_client(
+                        deps,
+                        info,
+                        client_type,
+                        client_state_bytes.to_vec(),
+                        consensus_state_bytes.to_vec(),
+                        relayer,
+                    )
+                }
+                RestrictedExecuteMsg::UpdateClient(MsgUpdateClient {
+                    client_id,
+                    client_message,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    update_client(deps, info, client_id, client_message.to_vec(), relayer)
+                }
+                RestrictedExecuteMsg::ForceUpdateClient(MsgForceUpdateClient {
+                    client_id,
+                    client_state_bytes,
+                    consensus_state_bytes,
+                }) => {
+                    let client_impl = client_impl(deps.as_ref(), client_id)?;
+
+                    let (_, height) = init_client(
+                        deps,
+                        info.clone(),
+                        client_state_bytes.into(),
+                        consensus_state_bytes.into(),
+                        info.sender,
+                        client_impl,
+                        client_id,
+                    )?;
+
+                    Ok(Response::new().add_event(
+                        Event::new("force_update_client")
+                            .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
+                            .add_attribute(
+                                events::attribute::COUNTERPARTY_HEIGHT,
+                                height.to_string(),
+                            ),
+                    ))
+                }
+                RestrictedExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
+                    client_id,
+                    counterparty_client_id,
+                }) => connection_open_init(deps, client_id, counterparty_client_id),
+                RestrictedExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
+                    counterparty_client_id,
+                    counterparty_connection_id,
+                    client_id,
+                    proof_init,
+                    proof_height,
+                }) => connection_open_try(
+                    deps,
+                    counterparty_client_id,
+                    counterparty_connection_id,
+                    client_id,
+                    proof_init.to_vec(),
+                    proof_height,
+                    true,
+                ),
+                RestrictedExecuteMsg::ForceConnectionOpenTry(MsgConnectionOpenTry {
+                    counterparty_client_id,
+                    counterparty_connection_id,
+                    client_id,
+                    proof_init,
+                    proof_height,
+                }) => connection_open_try(
+                    deps,
+                    counterparty_client_id,
+                    counterparty_connection_id,
+                    client_id,
+                    proof_init.to_vec(),
+                    proof_height,
+                    false,
+                ),
+                RestrictedExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
+                    connection_id,
+                    counterparty_connection_id,
+                    proof_try,
+                    proof_height,
+                }) => connection_open_ack(
+                    deps,
+                    connection_id,
+                    counterparty_connection_id,
+                    proof_try.to_vec(),
+                    proof_height,
+                    true,
+                ),
+                RestrictedExecuteMsg::ForceConnectionOpenAck(MsgConnectionOpenAck {
+                    connection_id,
+                    counterparty_connection_id,
+                    proof_try,
+                    proof_height,
+                }) => connection_open_ack(
+                    deps,
+                    connection_id,
+                    counterparty_connection_id,
+                    proof_try.to_vec(),
+                    proof_height,
+                    false,
+                ),
+                RestrictedExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
+                    connection_id,
+                    proof_ack,
+                    proof_height,
+                }) => connection_open_confirm(
+                    deps,
+                    connection_id,
+                    proof_ack.to_vec(),
+                    proof_height,
+                    true,
+                ),
+                RestrictedExecuteMsg::ForceConnectionOpenConfirm(MsgConnectionOpenConfirm {
+                    connection_id,
+                    proof_ack,
+                    proof_height,
+                }) => connection_open_confirm(
+                    deps,
+                    connection_id,
+                    proof_ack.to_vec(),
+                    proof_height,
+                    false,
+                ),
+                RestrictedExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
+                    port_id,
+                    counterparty_port_id,
+                    connection_id,
+                    version,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_init(
+                        deps,
+                        info,
+                        port_id,
+                        counterparty_port_id,
+                        connection_id,
+                        version,
+                        relayer,
+                    )
+                }
+                RestrictedExecuteMsg::ChannelOpenTry(MsgChannelOpenTry {
+                    port_id,
+                    channel,
+                    counterparty_version,
+                    proof_init,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_try(
+                        deps,
+                        info,
+                        port_id,
+                        channel,
+                        counterparty_version,
+                        proof_init.to_vec(),
+                        proof_height,
+                        relayer,
+                        true,
+                    )
+                }
+                RestrictedExecuteMsg::ForceChannelOpenTry(MsgChannelOpenTry {
+                    port_id,
+                    channel,
+                    counterparty_version,
+                    proof_init,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_try(
+                        deps,
+                        info,
+                        port_id,
+                        channel,
+                        counterparty_version,
+                        proof_init.to_vec(),
+                        proof_height,
+                        relayer,
+                        false,
+                    )
+                }
+                RestrictedExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
+                    channel_id,
+                    counterparty_version,
+                    counterparty_channel_id,
+                    proof_try,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_ack(
+                        deps,
+                        info,
+                        channel_id,
+                        counterparty_version,
+                        counterparty_channel_id,
+                        proof_try.to_vec(),
+                        proof_height,
+                        relayer,
+                        true,
+                    )
+                }
+                RestrictedExecuteMsg::ForceChannelOpenAck(MsgChannelOpenAck {
+                    channel_id,
+                    counterparty_version,
+                    counterparty_channel_id,
+                    proof_try,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_ack(
+                        deps,
+                        info,
+                        channel_id,
+                        counterparty_version,
+                        counterparty_channel_id,
+                        proof_try.to_vec(),
+                        proof_height,
+                        relayer,
+                        false,
+                    )
+                }
+                RestrictedExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
+                    channel_id,
+                    proof_ack,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_confirm(
+                        deps,
+                        info,
+                        channel_id,
+                        proof_ack.to_vec(),
+                        proof_height,
+                        relayer,
+                        true,
+                    )
+                }
+                RestrictedExecuteMsg::ForceChannelOpenConfirm(MsgChannelOpenConfirm {
+                    channel_id,
+                    proof_ack,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_open_confirm(
+                        deps,
+                        info,
+                        channel_id,
+                        proof_ack.to_vec(),
+                        proof_height,
+                        relayer,
+                        false,
+                    )
+                }
+                RestrictedExecuteMsg::ChannelCloseInit(MsgChannelCloseInit {
+                    channel_id,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_close_init(deps, info, channel_id, relayer)
+                }
+                RestrictedExecuteMsg::ChannelCloseConfirm(MsgChannelCloseConfirm {
+                    channel_id,
+                    proof_init,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    channel_close_confirm(
+                        deps,
+                        info,
+                        channel_id,
+                        proof_init.to_vec(),
+                        proof_height,
+                        relayer,
+                    )
+                }
+                RestrictedExecuteMsg::PacketRecv(MsgPacketRecv {
+                    packets,
+                    relayer_msgs,
+                    relayer,
+                    proof,
+                    proof_height,
+                }) => process_receive(
+                    deps,
+                    env,
+                    info,
+                    packets,
+                    relayer_msgs.into_iter().collect(),
+                    relayer,
+                    proof,
+                    proof_height,
+                    false,
+                ),
+                RestrictedExecuteMsg::PacketAck(MsgPacketAcknowledgement {
+                    packets,
+                    acknowledgements,
+                    proof,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    acknowledge_packet(
+                        deps,
+                        info,
+                        packets,
+                        acknowledgements.into_iter().collect(),
+                        proof.to_vec(),
+                        proof_height,
+                        relayer,
+                    )
+                }
+                RestrictedExecuteMsg::PacketTimeout(MsgPacketTimeout {
+                    packet,
+                    proof,
+                    proof_height,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    timeout_packet(deps, info, packet, proof.to_vec(), proof_height, relayer)
+                }
+                RestrictedExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
+                    packets,
+                    market_maker_msgs,
+                    market_maker,
+                }) => process_receive(
+                    deps,
+                    env,
+                    info,
+                    packets,
+                    market_maker_msgs.into_iter().collect(),
+                    market_maker,
+                    Bytes::new_static(&[]),
+                    0,
+                    true,
+                ),
+                RestrictedExecuteMsg::BatchSend(MsgBatchSend { packets }) => {
+                    batch_send(deps, packets)
+                }
+                RestrictedExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
+                    batch_acks(deps, packets, acks.into_iter().collect())
+                }
+                RestrictedExecuteMsg::CommitMembershipProof(MsgCommitMembershipProof {
+                    client_id,
+                    proof_height,
+                    proof,
+                    path,
+                    value,
+                }) => commit_membership_proof(deps, client_id, proof_height, proof, path, value),
+                RestrictedExecuteMsg::CommitNonMembershipProof(MsgCommitNonMembershipProof {
+                    client_id,
+                    proof_height,
+                    proof,
+                    path,
+                }) => commit_non_membership_proof(deps, client_id, proof_height, proof, path),
+                RestrictedExecuteMsg::Upgradable(msg) => {
+                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                }
+            }
         }
     }
 }
@@ -702,12 +646,24 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct IbcUnionMigrateMsg {}
+pub struct IbcUnionMigrateMsg {
+    pub access_managed_init_msg: access_managed::InitMsg,
+}
 
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
 pub mod version {
     use std::num::NonZeroU32;
 
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
     pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -716,33 +672,40 @@ pub fn migrate(
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, version| match version {
-        version::INIT => Ok((Response::new(), None)),
+    msg.run(deps, init, |mut deps, msg, version| match version {
+        version::INIT => {
+            access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+            deps.storage.delete_item::<WhitelistedRelayersAdmin>();
+
+            for (k, ()) in deps
+                .storage
+                .iter::<WhitelistedRelayers>(cosmwasm_std::Order::Ascending)
+                .collect::<Result<Vec<_>, _>>()?
+            {
+                deps.storage.delete::<WhitelistedRelayers>(&k);
+            }
+
+            Ok((Response::new(), Some(version::MANAGED)))
+        }
+        version::MANAGED => Ok((Response::new(), None)),
         _ => Err(UpgradeError::UnknownStateVersion(version).into()),
     })
 }
 
 pub(crate) fn init(
-    deps: DepsMut<'_>,
-    InitMsg {
-        relayers_admin,
-        relayers,
-    }: InitMsg,
+    mut deps: DepsMut<'_>,
+    msg: InitMsg,
 ) -> Result<(Response, Option<NonZeroU32>), ContractError> {
+    access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+    // init all id storages to 1 (ids are non-zero, and for simplicity in the rest of the contract we assume the storages exist)
     deps.storage.write_item::<NextChannelId>(&ChannelId!(1));
     deps.storage
         .write_item::<NextConnectionId>(&ConnectionId!(1));
     deps.storage.write_item::<NextClientId>(&ClientId!(1));
-    if let Some(relayers_admin) = relayers_admin {
-        let relayers_admin = deps.api.addr_validate(&relayers_admin)?;
-        deps.storage
-            .write_item::<WhitelistedRelayersAdmin>(&relayers_admin);
-    }
-    for relayer in relayers {
-        let relayer = deps.api.addr_validate(&relayer)?;
-        deps.storage.write::<WhitelistedRelayers>(&relayer, &());
-    }
-    Ok((Response::default(), None))
+
+    Ok((Response::default(), Some(version::LATEST)))
 }
 
 fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
@@ -839,7 +802,7 @@ fn timeout_packet(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyNonMembership {
+        VerifyNonMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -897,7 +860,7 @@ fn acknowledge_packet(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyMembership {
+        VerifyMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -1051,7 +1014,7 @@ fn init_client(
     let verify_creation_response = query_light_client::<VerifyCreationResponse>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyCreation {
+        VerifyCreationQuery {
             caller: info.sender.into(),
             client_id,
             relayer: relayer.into(),
@@ -1114,7 +1077,7 @@ fn update_client(
         let update = query_light_client::<UpdateStateResponse>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::UpdateState {
+            UpdateStateQuery {
                 caller: info.sender.into(),
                 client_id,
                 relayer: relayer.into(),
@@ -1194,7 +1157,6 @@ fn connection_open_init(
 
 #[allow(clippy::too_many_arguments)]
 fn connection_open_try(
-    info: MessageInfo,
     mut deps: DepsMut,
     counterparty_client_id: ClientId,
     counterparty_connection_id: ConnectionId,
@@ -1204,24 +1166,27 @@ fn connection_open_try(
     verify: bool,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
+
     let connection = Connection {
         state: ConnectionState::TryOpen,
         client_id,
         counterparty_client_id,
         counterparty_connection_id: Some(counterparty_connection_id),
     };
+
     let expected_connection = Connection {
         state: ConnectionState::Init,
         client_id: counterparty_client_id,
         counterparty_client_id: client_id,
         counterparty_connection_id: None,
     };
+
     if verify {
         let client_impl = client_impl(deps.as_ref(), client_id)?;
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id,
                 height: proof_height,
                 proof: proof_init.into(),
@@ -1233,10 +1198,10 @@ fn connection_open_try(
                 value: commit(expected_connection.abi_encode_params()).into_bytes(),
             },
         )?;
-    } else {
-        ensure_relayer_admin(deps.storage, &info.sender)?;
     }
+
     save_connection(deps.branch(), connection_id, &connection)?;
+
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_TRY).add_attributes([
             (events::attribute::CONNECTION_ID, connection_id.to_string()),
@@ -1254,7 +1219,6 @@ fn connection_open_try(
 }
 
 fn connection_open_ack(
-    info: MessageInfo,
     mut deps: DepsMut,
     connection_id: ConnectionId,
     counterparty_connection_id: ConnectionId,
@@ -1263,12 +1227,14 @@ fn connection_open_ack(
     verify: bool,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
+
     if connection.state != ConnectionState::Init {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
             expected: ConnectionState::Init,
         });
     }
+
     if verify {
         let expected_connection = Connection {
             state: ConnectionState::TryOpen,
@@ -1280,7 +1246,7 @@ fn connection_open_ack(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_try.into(),
@@ -1292,12 +1258,13 @@ fn connection_open_ack(
                 value: commit(expected_connection.abi_encode_params()).into_bytes(),
             },
         )?;
-    } else {
-        ensure_relayer_admin(deps.storage, &info.sender)?;
     }
+
     connection.state = ConnectionState::Open;
     connection.counterparty_connection_id = Some(counterparty_connection_id);
+
     save_connection(deps.branch(), connection_id, &connection)?;
+
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_ACK).add_attributes([
             (events::attribute::CONNECTION_ID, connection_id.to_string()),
@@ -1318,7 +1285,6 @@ fn connection_open_ack(
 }
 
 fn connection_open_confirm(
-    info: MessageInfo,
     mut deps: DepsMut,
     connection_id: ConnectionId,
     proof_ack: Vec<u8>,
@@ -1326,24 +1292,28 @@ fn connection_open_confirm(
     verify: bool,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
+
     if connection.state != ConnectionState::TryOpen {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
             expected: ConnectionState::TryOpen,
         });
     }
+
     let expected_connection = Connection {
         state: ConnectionState::Open,
         client_id: connection.counterparty_client_id,
         counterparty_client_id: connection.client_id,
         counterparty_connection_id: Some(connection_id),
     };
+
     if verify {
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_ack.into(),
@@ -1357,11 +1327,12 @@ fn connection_open_confirm(
                 value: commit(expected_connection.abi_encode_params()).into_bytes(),
             },
         )?;
-    } else {
-        ensure_relayer_admin(deps.storage, &info.sender)?;
     }
+
     connection.state = ConnectionState::Open;
+
     save_connection(deps.branch(), connection_id, &connection)?;
+
     Ok(Response::new().add_event(
         Event::new(events::connection::OPEN_CONFIRM).add_attributes([
             (events::attribute::CONNECTION_ID, connection_id.to_string()),
@@ -1394,7 +1365,9 @@ fn channel_open_init(
     relayer: Addr,
 ) -> ContractResult {
     let port_id = deps.api.addr_validate(&port_id)?;
+
     ensure_connection_state(deps.as_ref(), connection_id)?;
+
     let (channel_id, _) = create_channel(
         deps.branch(),
         port_id.clone(),
@@ -1404,6 +1377,7 @@ fn channel_open_init(
         counterparty_port_id.clone(),
         version.clone(),
     )?;
+
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_INIT).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -1446,10 +1420,13 @@ fn channel_open_try(
             expected: ChannelState::TryOpen,
         });
     }
+
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+
     let connection_id = connection
         .counterparty_connection_id
         .expect("connection is open; qed;");
+
     let expected_channel = Channel {
         state: ChannelState::Init,
         connection_id,
@@ -1457,15 +1434,18 @@ fn channel_open_try(
         counterparty_port_id: port_id.as_bytes().to_vec().into(),
         version: counterparty_version.clone(),
     };
+
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
     let counterparty_channel_id = channel
         .counterparty_channel_id
         .ok_or(ContractError::CounterpartyChannelIdInvalid)?;
+
     if verify {
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_init.into(),
@@ -1478,7 +1458,9 @@ fn channel_open_try(
             },
         )?;
     }
+
     let port_id = deps.api.addr_validate(&port_id)?;
+
     let (channel_id, channel) = create_channel(
         deps.branch(),
         port_id.clone(),
@@ -1488,6 +1470,7 @@ fn channel_open_try(
         channel.counterparty_port_id,
         channel.version,
     )?;
+
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_TRY).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -1555,7 +1538,7 @@ fn channel_open_ack(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_try.into(),
@@ -1635,7 +1618,7 @@ fn channel_open_confirm(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof_ack.into(),
@@ -1758,7 +1741,7 @@ fn channel_close_confirm(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyMembership {
+        VerifyMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
@@ -1825,7 +1808,7 @@ fn process_receive(
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyMembership {
+            VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof.to_vec().into(),
@@ -2108,6 +2091,7 @@ fn create_channel(
     version: String,
 ) -> Result<(ChannelId, Channel), ContractError> {
     let channel_id = next_channel_id(deps.branch())?;
+
     let channel = Channel {
         state,
         connection_id,
@@ -2115,6 +2099,7 @@ fn create_channel(
         counterparty_port_id,
         version,
     };
+
     deps.storage.write::<ChannelOwner>(&channel_id, &owner);
     deps.storage
         .upsert::<ContractChannels, _>(&owner, |v| -> Result<_, ContractError> {
@@ -2127,7 +2112,9 @@ fn create_channel(
                 None => BTreeSet::from([channel_id]),
             })
         })?;
+
     save_channel(deps, channel_id, &channel)?;
+
     Ok((channel_id, channel))
 }
 
@@ -2196,7 +2183,7 @@ fn get_timestamp_at_height(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::GetClientType { client_id } => Ok(to_json_binary(
             &deps.storage.read::<ClientTypes>(&client_id)?,
@@ -2296,14 +2283,25 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
                 unreachable!()
             }
         }
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
     }
 }
 
 fn query_light_client<T: DeserializeOwned>(
     deps: Deps,
     client_impl: Addr,
-    query: LightClientQuery,
+    query: impl Into<LightClientQuery>,
 ) -> Result<T, ContractError> {
+    let query = query.into();
     deps.querier
         .query_wasm_smart::<T>(&client_impl, &query)
         .map_err(|error| ContractError::CannotQueryLightClient {
@@ -2341,7 +2339,7 @@ fn commit_membership_proof(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyMembership {
+        VerifyMembershipQuery {
             client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -2382,7 +2380,7 @@ fn commit_non_membership_proof(
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
-        LightClientQuery::VerifyNonMembership {
+        VerifyNonMembershipQuery {
             client_id,
             height: proof_height,
             proof: proof.to_vec().into(),

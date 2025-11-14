@@ -1,18 +1,22 @@
+use std::num::NonZero;
+
 use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::H256;
 
+#[cfg(doc)]
+use crate::manager::event::*;
 use crate::{RoleId, Selector};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
 pub struct InitMsg {
     pub initial_admin: Addr,
 }
 
-#[cfg(doc)]
-use crate::manager::event::*;
-
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// The identifier of the admin role. Required to perform most configuration operations
@@ -188,7 +192,7 @@ pub enum QueryMsg {
     HasRole { role_id: RoleId, account: Addr },
 
     /// Return the timepoint at which a scheduled operation will be ready for execution. This
-    /// returns 0 if the operation is not yet scheduled, has expired, was executed, or was
+    /// returns [`None`] if the operation is not yet scheduled, has expired, was executed, or was
     /// canceled.
     ///
     /// ```solidity
@@ -220,9 +224,15 @@ pub enum QueryMsg {
         target: Addr,
         data: String,
     },
+
+    /// Return the labels of all of the provided roles.
+    ///
+    /// This will return `None` for a role label if the role is unlabeled.
+    GetRoleLabels { role_ids: Vec<RoleId> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Give a label to a role, for improved role discoverability by UIs.
@@ -429,16 +439,22 @@ pub enum ExecuteMsg {
     /// satisfies the execution delays required for the caller. The special value zero will
     /// automatically set the earliest possible time.
     ///
-    /// Returns the `operationId` that was scheduled. Since this value is a hash of the parameters,
+    /// Returns the `operation_id` that was scheduled. Since this value is a hash of the parameters,
     /// it can reoccur when the same parameters are used; if this is relevant, the returned `nonce`
     /// can be used to uniquely identify this scheduled operation from other occurrences of the
-    /// same `operationId` in invocations of [`ExecuteMsg::Execute`] and [`ExecuteMsg::Cancel`].
+    /// same `operation_id` in invocations of [`ExecuteMsg::Execute`] and [`ExecuteMsg::Cancel`].
     ///
     /// Emits an [`OperationScheduled`] event.
     ///
     /// NOTE: It is not possible to concurrently schedule more than one operation with the same
-    /// `target` and `data`. If this is necessary, additional whitespace can be appended to the
-    /// message to act as a salt, since whitespace is insignificant for JSON decoding.
+    /// `target` and `data`. If this is necessary, the JSON message can be altered in such a way
+    /// that it is semantically the same (i.e. it would normalize to the same JSON object). The
+    /// easiest way to achieve this is to include additional whitespace in the message to act as
+    /// a salt, since whitespace is insignificant for JSON decoding. Notably, due to the nature of
+    /// JSON being self-describing, it may also be possible to simply reorder the keys in the
+    /// message - however care must be taken when doing so, since key ordering may have semantic
+    /// implications (if, for example, the contract uses [`IndexMap`] in it's `ExecuteMsg`) or the
+    /// keys may need to be in a certain order to avoid some obscure serde-json bugs ([1], [2]).
     ///
     /// ```solidity
     /// function schedule(
@@ -449,10 +465,14 @@ pub enum ExecuteMsg {
     /// ```
     ///
     /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L440>
+    ///
+    /// [`IndexMap`]: https://docs.rs/indexmap/latest/indexmap/map/struct.IndexMap.html
+    /// [1]: https://github.com/serde-rs/json/issues/989
+    /// [2]: https://github.com/serde-rs/json/issues/1108
     Schedule {
         target: Addr,
         data: String,
-        when: u64,
+        when: NonZero<u64>,
     },
 
     /// Cancel a scheduled (delayed) operation. Returns the nonce that identifies the previously
@@ -509,4 +529,6 @@ pub enum ExecuteMsg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MigrateMsg {}

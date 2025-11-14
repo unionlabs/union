@@ -1,25 +1,42 @@
 use std::slice;
 
-use cosmwasm_schema::cw_serde;
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
-    to_json_binary, wasm_execute,
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response,
+    StdError, StdResult, to_json_binary, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
-use frissitheto::UpgradeMsg;
+use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_spec::path::commit_packets;
-use ucs03_solvable::Solvable;
+use serde::{Deserialize, Serialize};
+use ucs03_solvable::{Solvable, SolverQuery};
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
 use unionlabs_primitives::{Bytes, encoding::HexPrefixed};
 
 use crate::{
-    error::Error,
-    msg::{ExecuteMsg, FungibleLaneConfig, InstantiateMsg, QueryMsg},
+    error::ContractError,
+    msg::{ExecuteMsg, FungibleLaneConfig, InstantiateMsg, QueryMsg, RestrictedExecuteMsg},
     state::{Admin, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
 };
+
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
+pub mod version {
+    use std::num::NonZeroU32;
+
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
@@ -28,80 +45,54 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
     );
 }
 
-#[cw_serde]
-pub struct MigrateMsg {}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MigrateMsg {
+    pub access_managed_init_msg: access_managed::InitMsg,
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _: Env,
     msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     msg.run(
         deps,
-        |deps, msg| {
-            deps.storage.write_item::<Admin>(&msg.admin);
+        |mut deps, msg| {
+            access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
             deps.storage.write_item::<Zkgm>(&msg.zkgm);
-            Ok((Response::new(), None))
+
+            Ok((Response::new(), Some(version::LATEST)))
         },
-        |_, _, _| Ok((Response::default(), None)),
+        |mut deps, msg, version| match version {
+            version::INIT => {
+                access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+                deps.storage.delete_item::<Admin>();
+                Ok((Response::default(), Some(version::MANAGED)))
+            }
+            version::MANAGED => Ok((Response::default(), None)),
+            _ => Err(UpgradeError::UnknownStateVersion(version).into()),
+        },
     )
 }
 
-fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
+fn ensure_zkgm(deps: Deps, info: &MessageInfo) -> Result<(), ContractError> {
     let admin = deps.storage.read_item::<Zkgm>()?;
     if info.sender != admin {
-        return Err(Error::OnlyZkgm);
-    }
-    Ok(())
-}
-
-fn ensure_admin(deps: Deps, info: &MessageInfo) -> Result<(), Error> {
-    let admin = deps.storage.read_item::<Admin>()?;
-    if info.sender != admin {
-        return Err(Error::OnlyAdmin);
+        return Err(ContractError::OnlyZkgm);
     }
     Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
-    _env: Env,
+    mut deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, Error> {
+) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::WhitelistIntents { hashes_whitelist } => {
-            ensure_admin(deps.as_ref(), &info)?;
-            for (packet_hash, allowed) in hashes_whitelist {
-                deps.storage
-                    .write::<IntentWhitelist>(&packet_hash, &allowed);
-            }
-            Ok(Response::new())
-        }
-        ExecuteMsg::SetFungibleCounterparty {
-            path,
-            channel_id,
-            base_token,
-            counterparty_beneficiary,
-            escrowed_denom,
-        } => {
-            ensure_admin(deps.as_ref(), &info)?;
-            let is_cw20 = deps
-                .querier
-                .query_wasm_contract_info(escrowed_denom.clone())
-                .is_ok();
-            deps.storage.write::<FungibleCounterparty>(
-                &(path, channel_id, base_token),
-                &FungibleLane {
-                    counterparty_beneficiary,
-                    escrowed_denom,
-                    is_cw20,
-                },
-            );
-            Ok(Response::new())
-        }
         ExecuteMsg::Solvable(Solvable::DoSolve {
             packet,
             order,
@@ -112,14 +103,20 @@ pub fn execute(
             intent,
         }) => {
             ensure_zkgm(deps.as_ref(), &info)?;
+
             if intent {
+                let packet_hash = commit_packets(slice::from_ref(&packet));
+
                 let whitelisted = deps
                     .storage
-                    .read::<IntentWhitelist>(&commit_packets(slice::from_ref(&packet)))
+                    .read::<IntentWhitelist>(&packet_hash)
                     .unwrap_or(false);
+
                 if !whitelisted {
-                    return Err(Error::IntentMustBeWhitelisted);
+                    return Err(ContractError::IntentMustBeWhitelisted);
                 }
+
+                deps.storage.delete::<IntentWhitelist>(&packet_hash);
             }
 
             let fungible_lane = deps
@@ -129,15 +126,15 @@ pub fn execute(
                     packet.destination_channel_id,
                     order.base_token,
                 ))?
-                .ok_or_else(|| Error::LaneIsNotFungible {
+                .ok_or_else(|| ContractError::LaneIsNotFungible {
                     channel_id: packet.destination_channel_id,
                 })?;
 
             let quote_token = String::from_utf8(Vec::from(order.quote_token))
-                .map_err(|_| Error::InvalidQuoteToken)?;
+                .map_err(|_| ContractError::InvalidQuoteToken)?;
 
             if quote_token != fungible_lane.escrowed_denom {
-                return Err(Error::InvalidFill {
+                return Err(ContractError::InvalidFill {
                     quote_token,
                     escrowed_denom: fungible_lane.escrowed_denom,
                 });
@@ -177,15 +174,16 @@ pub fn execute(
             let fee = order
                 .base_amount
                 .checked_sub(order.quote_amount)
-                .ok_or_else(|| Error::BaseAmountMustCoverQuoteAmount)?;
+                .ok_or_else(|| ContractError::BaseAmountMustCoverQuoteAmount)?;
             push_transfer(relayer.into(), fee.try_into().expect("impossible"))?;
 
             let receiver = deps
                 .api
                 .addr_validate(
-                    str::from_utf8(order.receiver.as_ref()).map_err(|_| Error::InvalidReceiver)?,
+                    str::from_utf8(order.receiver.as_ref())
+                        .map_err(|_| ContractError::InvalidReceiver)?,
                 )
-                .map_err(|_| Error::InvalidReceiver)?;
+                .map_err(|_| ContractError::InvalidReceiver)?;
             push_transfer(
                 receiver.into(),
                 order.quote_amount.try_into().expect("impossible"),
@@ -199,55 +197,120 @@ pub fn execute(
                 ),
             ))
         }
-    }
-}
+        ExecuteMsg::AccessManaged(msg) => {
+            access_managed::execute(deps, env, info, msg).map_err(Into::into)
+        }
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new().add_submessages(sub_msgs));
+                }
+            };
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::IsSolver => to_json_binary(&()),
-        QueryMsg::AllowMarketMakers => to_json_binary(&true),
-        QueryMsg::GetFungibleCounterparty {
-            path,
-            channel_id,
-            base_token,
-        } => deps
-            .storage
-            .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))
-            .and_then(|data| to_json_binary(&data)),
-        QueryMsg::GetAllFungibleCounterparties => deps
-            .storage
-            .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
-            .map(|res| {
-                res.map(
-                    |(
-                        (path, channel_id, base_token),
-                        FungibleLane {
+            match msg {
+                RestrictedExecuteMsg::WhitelistIntents { hashes_whitelist } => {
+                    for (packet_hash, allowed) in hashes_whitelist {
+                        deps.storage
+                            .write::<IntentWhitelist>(&packet_hash, &allowed);
+                    }
+
+                    Ok(Response::new())
+                }
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path,
+                    channel_id,
+                    base_token,
+                    counterparty_beneficiary,
+                    escrowed_denom,
+                } => {
+                    let is_cw20 = deps
+                        .querier
+                        .query_wasm_contract_info(escrowed_denom.clone())
+                        .is_ok();
+
+                    deps.storage.write::<FungibleCounterparty>(
+                        &(path, channel_id, base_token),
+                        &FungibleLane {
                             counterparty_beneficiary,
                             escrowed_denom,
                             is_cw20,
                         },
-                    )| FungibleLaneConfig {
-                        path,
-                        channel_id,
-                        base_token,
-                        counterparty_beneficiary,
-                        escrowed_denom,
-                        is_cw20,
-                    },
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .and_then(|data| to_json_binary(&data)),
+                    );
+
+                    Ok(Response::new())
+                }
+                RestrictedExecuteMsg::Upgradable(msg) => {
+                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                }
+            }
+        }
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    match msg {
+        QueryMsg::GetFungibleCounterparty {
+            path,
+            channel_id,
+            base_token,
+        } => Ok(to_json_binary(
+            &deps
+                .storage
+                .maybe_read::<FungibleCounterparty>(&(path, channel_id, base_token))?,
+        )?),
+        QueryMsg::GetAllFungibleCounterparties {} => Ok(to_json_binary(
+            &deps
+                .storage
+                .iter::<FungibleCounterparty>(cosmwasm_std::Order::Ascending)
+                .map(|res| {
+                    res.map(
+                        |(
+                            (path, channel_id, base_token),
+                            FungibleLane {
+                                counterparty_beneficiary,
+                                escrowed_denom,
+                                is_cw20,
+                            },
+                        )| FungibleLaneConfig {
+                            path,
+                            channel_id,
+                            base_token,
+                            counterparty_beneficiary,
+                            escrowed_denom,
+                            is_cw20,
+                        },
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        )?),
+        QueryMsg::Solvable(SolverQuery::IsSolver) => Ok(to_json_binary(&())?),
+        QueryMsg::Solvable(SolverQuery::AllowMarketMakers) => Ok(to_json_binary(&true)?),
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
+pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
+    if let Some(reply) = handle_consume_scheduled_op_reply(deps, reply)? {
+        Err(StdError::generic_err(format!("unknown reply: {reply:?}")).into())
+    } else {
+        Ok(Response::new())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use access_managed::Restricted;
+    use access_manager_types::{CanCall, managed::error::AccessManagedError};
     use cosmwasm_std::{
-        Addr, ContractInfoResponse, ContractResult, QuerierResult, SystemResult, WasmMsg,
-        WasmQuery,
-        testing::{MOCK_CONTRACT_ADDR, message_info, mock_dependencies, mock_env},
+        Addr, ContractInfoResponse, ContractResult, Empty, OwnedDeps, QuerierResult, QueryRequest,
+        SystemResult, WasmMsg, WasmQuery,
+        testing::{
+            MOCK_CONTRACT_ADDR, MockApi, MockQuerier, MockStorage, message_info, mock_dependencies,
+            mock_env,
+        },
     };
     use ibc_union_spec::{ChannelId, Packet, Timestamp};
 
@@ -259,14 +322,17 @@ mod tests {
 
     pub const DESTINATION_CHANNEL_ID: ChannelId = ChannelId!(2);
 
-    fn init(deps: DepsMut) {
+    fn init(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>) {
         let zkgm = Addr::unchecked(ZKGM_ADDR);
+
         migrate(
-            deps,
+            deps.as_mut(),
             mock_env(),
             UpgradeMsg::Init(InstantiateMsg {
                 zkgm: zkgm.clone(),
-                admin: Addr::unchecked(ADMIN_ADDR),
+                access_managed_init_msg: access_managed::InitMsg {
+                    initial_authority: Addr::unchecked("manager"),
+                },
             }),
         )
         .unwrap();
@@ -308,7 +374,7 @@ mod tests {
         base_amount: u128,
         quote_amount: u128,
         intent: bool,
-    ) -> Result<Response, Error> {
+    ) -> Result<Response, ContractError> {
         execute(
             deps,
             mock_env(),
@@ -321,10 +387,22 @@ mod tests {
     fn solve_successful() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         assert_eq!(
-            Err(Error::LaneIsNotFungible {
+            Err(ContractError::LaneIsNotFungible {
                 channel_id: DESTINATION_CHANNEL_ID
             }),
             solve(deps.as_mut(), 150, 150, false)
@@ -334,13 +412,15 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )),
         )
         .unwrap();
 
@@ -372,28 +452,34 @@ mod tests {
     fn solve_successful_with_cw20_fungible_lane() {
         let mut deps = mock_dependencies();
 
-        let wasm_handler = |q: &WasmQuery| -> QuerierResult {
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
             match q {
-                WasmQuery::ContractInfo { .. } => SystemResult::Ok(ContractResult::Ok(
-                    to_json_binary(&ContractInfoResponse::new(
-                        0,
-                        Addr::unchecked(""),
-                        None,
-                        false,
-                        None,
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
                     ))
-                    .unwrap(),
-                )),
-                _ => todo!(),
+                }
+                WasmQuery::ContractInfo { contract_addr } if contract_addr == "muno" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&ContractInfoResponse::new(
+                            0,
+                            Addr::unchecked(""),
+                            None,
+                            false,
+                            None,
+                        ))
+                        .unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
             }
-        };
+        });
 
-        deps.querier.update_wasm(wasm_handler);
-
-        init(deps.as_mut());
+        init(&mut deps);
 
         assert_eq!(
-            Err(Error::LaneIsNotFungible {
+            Err(ContractError::LaneIsNotFungible {
                 channel_id: DESTINATION_CHANNEL_ID
             }),
             solve(deps.as_mut(), 150, 150, false)
@@ -403,13 +489,15 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )),
         )
         .unwrap();
 
@@ -434,19 +522,33 @@ mod tests {
     fn solve_with_excess_fee() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )),
         )
         .unwrap();
 
@@ -475,19 +577,33 @@ mod tests {
     fn solve_with_intent() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )),
         )
         .unwrap();
 
@@ -497,9 +613,9 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::WhitelistIntents {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::WhitelistIntents {
                 hashes_whitelist: vec![(commitment, true)],
-            },
+            })),
         )
         .unwrap();
 
@@ -510,10 +626,22 @@ mod tests {
     fn solve_fails_when_intent_not_whitelisted() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         assert_eq!(
-            Err(Error::IntentMustBeWhitelisted),
+            Err(ContractError::IntentMustBeWhitelisted),
             solve(deps.as_mut(), 150, 150, true)
         );
     }
@@ -522,10 +650,22 @@ mod tests {
     fn solve_fails_when_fungible_lane_not_set() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         assert_eq!(
-            Err(Error::LaneIsNotFungible {
+            Err(ContractError::LaneIsNotFungible {
                 channel_id: DESTINATION_CHANNEL_ID
             }),
             solve(deps.as_mut(), 150, 150, false)
@@ -536,24 +676,38 @@ mod tests {
     fn solve_fails_when_quote_token_is_wrong() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "not_muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "not_muno".into(),
+                },
+            )),
         )
         .unwrap();
 
         assert_eq!(
-            Err(Error::InvalidFill {
+            Err(ContractError::InvalidFill {
                 quote_token: "muno".into(),
                 escrowed_denom: "not_muno".into()
             }),
@@ -565,24 +719,38 @@ mod tests {
     fn solve_fails_when_base_amount_doesnt_cover_quote_amount() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Immediate {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )),
         )
         .unwrap();
 
         assert_eq!(
-            Err(Error::BaseAmountMustCoverQuoteAmount),
+            Err(ContractError::BaseAmountMustCoverQuoteAmount),
             solve(deps.as_mut(), 100, 150, false)
         );
     }
@@ -591,26 +759,47 @@ mod tests {
     fn solve_fails_when_caller_is_not_zkgm() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::ContractInfo { .. } => SystemResult::Ok(ContractResult::Ok(
+                    to_json_binary(&ContractInfoResponse::new(
+                        0,
+                        Addr::unchecked(""),
+                        None,
+                        false,
+                        None,
+                    ))
+                    .unwrap(),
+                )),
+                WasmQuery::Smart { .. } => SystemResult::Ok(ContractResult::Ok(
+                    to_json_binary(&CanCall::Immediate {}).unwrap(),
+                )),
+                msg => todo!("{msg:?}"),
+            }
+        });
+
+        init(&mut deps);
 
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(ADMIN_ADDR), &[]),
-            ExecuteMsg::SetFungibleCounterparty {
-                path: 0u64.into(),
-                channel_id: DESTINATION_CHANNEL_ID,
-                base_token: b"base_token".into(),
-                counterparty_beneficiary: (&[0; 32]).into(),
-                escrowed_denom: "muno".into(),
-            },
+            ExecuteMsg::Restricted(Restricted::wrap(
+                RestrictedExecuteMsg::SetFungibleCounterparty {
+                    path: 0u64.into(),
+                    channel_id: DESTINATION_CHANNEL_ID,
+                    base_token: b"base_token".into(),
+                    counterparty_beneficiary: (&[0; 32]).into(),
+                    escrowed_denom: "muno".into(),
+                },
+            )),
         )
         .unwrap();
 
         let solve_msg = mock_solve(150, 150, false);
 
         assert_eq!(
-            Err(Error::OnlyZkgm),
+            Err(ContractError::OnlyZkgm),
             execute(
                 deps.as_mut(),
                 mock_env(),
@@ -624,21 +813,41 @@ mod tests {
     fn set_fungible_counterparty_fails_when_not_admin() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Unauthorized {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         assert_eq!(
-            Err(Error::OnlyAdmin),
+            Err(ContractError::AccessManaged(
+                access_managed::error::ContractError::AccessManaged(
+                    AccessManagedError::AccessManagedUnauthorized {
+                        caller: Addr::unchecked("zkgm")
+                    }
+                )
+            )),
             execute(
                 deps.as_mut(),
                 mock_env(),
                 message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
-                ExecuteMsg::SetFungibleCounterparty {
-                    path: 0u64.into(),
-                    channel_id: DESTINATION_CHANNEL_ID,
-                    base_token: b"base_token".into(),
-                    counterparty_beneficiary: (&[0; 32]).into(),
-                    escrowed_denom: "muno".into(),
-                },
+                ExecuteMsg::Restricted(Restricted::wrap(
+                    RestrictedExecuteMsg::SetFungibleCounterparty {
+                        path: 0u64.into(),
+                        channel_id: DESTINATION_CHANNEL_ID,
+                        base_token: b"base_token".into(),
+                        counterparty_beneficiary: (&[0; 32]).into(),
+                        escrowed_denom: "muno".into(),
+                    }
+                )),
             )
         );
     }
@@ -647,17 +856,35 @@ mod tests {
     fn whitelist_admin_fails_when_not_admin() {
         let mut deps = mock_dependencies();
 
-        init(deps.as_mut());
+        deps.querier.update_wasm(|q: &WasmQuery| -> QuerierResult {
+            match q {
+                WasmQuery::Smart { contract_addr, .. } if contract_addr == "manager" => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&CanCall::Unauthorized {}).unwrap(),
+                    ))
+                }
+                // delegate the rest to the default handler
+                _ => <MockQuerier<Empty>>::new(&[]).handle_query(&QueryRequest::Wasm(q.clone())),
+            }
+        });
+
+        init(&mut deps);
 
         assert_eq!(
-            Err(Error::OnlyAdmin),
+            Err(ContractError::AccessManaged(
+                access_managed::error::ContractError::AccessManaged(
+                    AccessManagedError::AccessManagedUnauthorized {
+                        caller: Addr::unchecked("zkgm")
+                    }
+                )
+            )),
             execute(
                 deps.as_mut(),
                 mock_env(),
                 message_info(&Addr::unchecked(ZKGM_ADDR), &[]),
-                ExecuteMsg::WhitelistIntents {
+                ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::WhitelistIntents {
                     hashes_whitelist: vec![(Default::default(), true)],
-                },
+                })),
             )
         );
     }

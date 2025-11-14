@@ -12,7 +12,7 @@ pub struct AuthorityUpdated<'a> {
 }
 
 impl From<AuthorityUpdated<'_>> for Event {
-    fn from(val: AuthorityUpdated<'_>) -> Self {
-        Event::new("authority_updated").add_attribute("authority", val.authority)
+    fn from(event: AuthorityUpdated<'_>) -> Self {
+        Event::new("authority_updated").add_attribute("authority", event.authority)
     }
 }

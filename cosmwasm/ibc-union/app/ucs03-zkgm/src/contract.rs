@@ -1,6 +1,7 @@
 use core::str;
 use std::{slice, str::FromStr};
 
+use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
@@ -17,6 +18,7 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{ChannelId, MustBeZero, Packet, Timestamp, path::BatchPacketsPath};
+use serde::{Deserialize, Serialize};
 use ucs03_solvable::Solvable;
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind, WrappedTokenMsg,
@@ -40,8 +42,8 @@ use crate::{
         TokenOrderV1, TokenOrderV2, ZkgmPacket,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, V1ToV2Migration,
-        V1ToV2WrappedMigration,
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, RestrictedExecuteMsg,
+        SendMsg, V1ToV2Migration, V1ToV2WrappedMigration,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT, CallProxySalt,
@@ -70,7 +72,9 @@ pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
 /// Instantiate `ucs03-zkgm`.
 ///
 /// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][ucs03_zkgm_token_minter_api::TokenMinterInitMsg]. The admin of the minter contract is set to `ucs03-zkgm`. All migrations for the minter will be threaded through the `ucs03-zkgm` migrate entrypoint.
-pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
+pub fn init(mut deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
+    access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
     CONFIG.save(deps.storage, &msg.config)?;
 
     let salt = minter_salt();
@@ -123,7 +127,7 @@ fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -131,10 +135,10 @@ pub fn execute(
     match msg {
         ExecuteMsg::IbcUnionMsg(ibc_msg) => {
             if info.sender != CONFIG.load(deps.storage)?.ibc_host {
-                return Err(ContractError::OnlyIBCHost);
+                return Err(ContractError::OnlyIbcHost);
             }
 
-            match ibc_msg {
+            match ibc_msg.ensure_not_paused(deps.as_ref())? {
                 IbcUnionMsg::OnChannelOpenInit { version, .. } => {
                     enforce_version(&version, None)?;
                     Ok(Response::default())
@@ -255,77 +259,77 @@ pub fn execute(
                 Ok(Response::new())
             }
         }
-        ExecuteMsg::Send {
-            channel_id,
-            timeout_timestamp,
-            timeout_height: _,
-            salt,
-            instruction,
-        } => send(
-            deps,
-            info,
-            channel_id,
-            timeout_timestamp,
-            salt,
-            Instruction::abi_decode_params_validate(&instruction)?,
-        ),
-        ExecuteMsg::SetRateLimitOperators {
-            rate_limit_operators,
-        } => {
-            if info.sender != CONFIG.load(deps.storage)?.rate_limit_admin {
-                return Err(ContractError::OnlyRateLimitAdmin);
-            }
-            let mut config = CONFIG.load(deps.storage)?;
-            config.rate_limit_operators = rate_limit_operators;
-            CONFIG.save(deps.storage, &config)?;
-            Ok(Response::new().add_event(Event::new("rate_limit_operators_update")))
+        ExecuteMsg::Send(msg) => {
+            let SendMsg::Send {
+                channel_id,
+                timeout_timestamp,
+                timeout_height: _,
+                salt,
+                instruction,
+            } = msg.ensure_not_paused(deps.as_ref())?;
+
+            send(
+                deps,
+                info,
+                channel_id,
+                timeout_timestamp,
+                salt,
+                Instruction::abi_decode_params_validate(&instruction)?,
+            )
         }
-        ExecuteMsg::SetBucketConfig {
-            denom,
-            capacity,
-            refill_rate,
-            reset,
-        } => {
-            if !CONFIG
-                .load(deps.storage)?
-                .rate_limit_operators
-                .contains(&info.sender)
-            {
-                return Err(ContractError::OnlyRateLimitOperator);
-            }
-            let token_bucket = TOKEN_BUCKET.update(
-                deps.storage,
-                denom.clone(),
-                |entry| -> Result<_, ContractError> {
-                    match entry {
-                        Some(mut token_bucket) => {
-                            token_bucket.update(capacity, refill_rate, reset)?;
-                            Ok(token_bucket)
-                        }
-                        None => Ok(TokenBucket::new(
-                            capacity,
-                            refill_rate,
-                            env.block.time.seconds(),
-                        )?),
-                    }
-                },
-            )?;
-            Ok(Response::new().add_event(
-                Event::new("token_bucket_update")
-                    .add_attribute("denom", denom)
-                    .add_attribute("capacity", token_bucket.capacity)
-                    .add_attribute("refill_rate", token_bucket.refill_rate),
-            ))
+        ExecuteMsg::AccessManaged(msg) => {
+            access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }
-        ExecuteMsg::MigrateV1ToV2 {
-            balance_migrations,
-            wrapped_migrations,
-        } => {
-            let config = CONFIG.load(deps.storage)?;
-            if info.sender != config.admin {
-                return Err(ContractError::OnlyAdmin);
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new().add_submessages(sub_msgs));
+                }
+            };
+
+            match msg {
+                RestrictedExecuteMsg::SetBucketConfig {
+                    denom,
+                    capacity,
+                    refill_rate,
+                    reset,
+                } => {
+                    let token_bucket = TOKEN_BUCKET.update(
+                        deps.storage,
+                        denom.clone(),
+                        |entry| -> Result<_, ContractError> {
+                            match entry {
+                                Some(mut token_bucket) => {
+                                    token_bucket.update(capacity, refill_rate, reset)?;
+                                    Ok(token_bucket)
+                                }
+                                None => Ok(TokenBucket::new(
+                                    capacity,
+                                    refill_rate,
+                                    env.block.time.seconds(),
+                                )?),
+                            }
+                        },
+                    )?;
+                    Ok(Response::new().add_event(
+                        Event::new("token_bucket_update")
+                            .add_attribute("denom", denom)
+                            .add_attribute("capacity", token_bucket.capacity)
+                            .add_attribute("refill_rate", token_bucket.refill_rate),
+                    ))
+                }
+                RestrictedExecuteMsg::MigrateV1ToV2 {
+                    balance_migrations,
+                    wrapped_migrations,
+                } => migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations),
+                RestrictedExecuteMsg::Upgradable(msg) => {
+                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                }
+                RestrictedExecuteMsg::Pausable(msg) => {
+                    pausable::execute(deps, &info, &msg).map_err(Into::into)
+                }
             }
-            migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations)
         }
     }
 }
@@ -2438,7 +2442,11 @@ fn protocol_fill_unescrow_v2(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
+pub fn reply(mut deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
+    let Some(reply) = handle_consume_scheduled_op_reply(deps.branch(), reply)? else {
+        return Ok(Response::new());
+    };
+
     match reply.id {
         // This reply is triggered after we execute a packet.
         // We need to handle this reply to process the acknowledgement that was generated during
@@ -3016,7 +3024,8 @@ pub struct TokenMinterMigration {
 
 // The current structure is expected to be backward compatible, only idempotent
 // fields can be currently added.
-#[cosmwasm_schema::cw_serde]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct MigrateMsg {
     // Provide `token_minter_migration` to also migrate the token minter
     token_minter_migration: Option<TokenMinterMigration>,
@@ -3024,6 +3033,7 @@ pub struct MigrateMsg {
     rate_limit_disabled: bool,
     dummy_code_id: Option<u64>,
     cw_account_code_id: Option<u64>,
+    access_managed_int_msg: access_managed::InitMsg,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -3046,7 +3056,9 @@ pub fn migrate(
 
             Ok((res, None))
         },
-        |deps, migrate_msg, _current_version| {
+        |mut deps, migrate_msg, _current_version| {
+            access_managed::init(deps.branch(), migrate_msg.access_managed_int_msg)?;
+
             CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
                 config.rate_limit_disabled = migrate_msg.rate_limit_disabled;
                 if let Some(dummy_code_id) = migrate_msg.dummy_code_id {
@@ -3057,8 +3069,10 @@ pub fn migrate(
                 }
                 Ok(config)
             })?;
+
             if let Some(token_minter_migration) = migrate_msg.token_minter_migration {
                 let token_minter = TOKEN_MINTER.load(deps.storage)?;
+
                 Ok((
                     Response::default().add_message(WasmMsg::Migrate {
                         contract_addr: token_minter.to_string(),
@@ -3087,7 +3101,7 @@ fn make_wasm_msg(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::PredictWrappedToken {
             path,
@@ -3169,6 +3183,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             Ok(to_json_binary(&config)?)
         }
         QueryMsg::GetBurnAddress {} => Ok(to_json_binary(&get_burn_address(deps)?)?),
+        QueryMsg::AccessManaged(msg) => access_managed::query(deps, env, msg).map_err(Into::into),
+        QueryMsg::Pausable(msg) => pausable::query(deps, &msg).map_err(Into::into),
     }
 }
 

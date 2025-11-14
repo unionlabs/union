@@ -9,7 +9,7 @@ use crate::{Instruction, Result, root::Root};
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
+    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
 pub enum Forward {
     V0(ForwardV0),

@@ -5,8 +5,11 @@ use cosmwasm_std::{
 };
 use depolama::StorageExt;
 use ibc_union_msg::{
-    lightclient::{QueryMsg as LightClientQueryMsg, UpdateStateResponse, VerifyCreationResponse},
-    msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
+    lightclient::{
+        QueryMsg as LightClientQueryMsg, UpdateStateQuery, UpdateStateResponse,
+        VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse,
+    },
+    msg::{ExecuteMsg, InitMsg, MsgUpdateClient, RestrictedExecuteMsg},
 };
 
 use super::*;
@@ -30,14 +33,21 @@ fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Even
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
+
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
+
+    deps.querier.update_wasm(wasm_query_handler(|msg| {
+        panic!("should not be called: {:?}", msg)
+    }));
+
     let res = register_client(deps.as_mut()).unwrap();
 
     assert!(
@@ -57,15 +67,23 @@ fn register_client_ok() {
 #[test]
 fn register_client_fails_when_duplicate() {
     let mut deps = mock_dependencies();
+
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
+
+    deps.querier.update_wasm(wasm_query_handler(|msg| {
+        panic!("should not be called: {:?}", msg)
+    }));
+
     register_client(deps.as_mut()).unwrap();
+
     assert_eq!(
         register_client(deps.as_mut()),
         Err(ContractError::ClientTypeAlreadyExists)
@@ -79,19 +97,27 @@ fn create_client_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -107,19 +133,27 @@ fn create_client_commitments_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -166,25 +200,35 @@ fn update_client_ok() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
-                height: 2,
-                consensus_state_bytes: vec![3, 2, 1].into(),
-                client_state_bytes: Some(vec![3, 2, 1].into()),
-                storage_writes: Default::default(),
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    VerificationQueryMsg::UpdateState(UpdateStateQuery { .. }) => {
+                        to_json_binary(&UpdateStateResponse {
+                            height: 2,
+                            consensus_state_bytes: vec![3, 2, 1].into(),
+                            client_state_bytes: Some(vec![3, 2, 1].into()),
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -205,17 +249,18 @@ fn update_client_ok() {
         .parse::<ClientId>()
         .expect("client type string is u32");
 
-    let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
-        client_id,
-        client_message: vec![3, 2, 1].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
     assert!(
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            msg
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::UpdateClient(
+                MsgUpdateClient {
+                    client_id,
+                    client_message: vec![3, 2, 1].into(),
+                    relayer: mock_addr(RELAYER).into_string(),
+                }
+            )))
         )
         .is_ok()
     )
@@ -228,21 +273,29 @@ fn update_client_ko() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    VerificationQueryMsg::UpdateState { .. } => to_json_binary(&0),
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
-            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&0),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -262,17 +315,18 @@ fn update_client_ko() {
         .parse::<ClientId>()
         .expect("client type string is u32");
 
-    let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
-        client_id,
-        client_message: vec![3, 2, 1].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
     assert!(
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
-            msg
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::UpdateClient(
+                MsgUpdateClient {
+                    client_id,
+                    client_message: vec![3, 2, 1].into(),
+                    relayer: mock_addr(RELAYER).into_string(),
+                }
+            )))
         )
         .is_err()
     )
@@ -285,25 +339,35 @@ fn update_client_commitments_saved() {
     init(
         deps.as_mut(),
         InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: mock_addr(MANAGER),
+            },
         },
     )
     .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
-                height: 2,
-                consensus_state_bytes: vec![3, 2, 1].into(),
-                client_state_bytes: Some(vec![3, 2, 1].into()),
-                storage_writes: Default::default(),
-            }),
+            LightClientQueryMsg::Verification(msg) => {
+                match msg.ensure_not_paused(unpaused_deps()).unwrap() {
+                    VerificationQueryMsg::VerifyCreation(VerifyCreationQuery { .. }) => {
+                        to_json_binary(&VerifyCreationResponse {
+                            counterparty_chain_id: "testchain".to_owned(),
+                            events: vec![],
+                            storage_writes: Default::default(),
+                            client_state_bytes: None,
+                        })
+                    }
+                    VerificationQueryMsg::UpdateState(UpdateStateQuery { .. }) => {
+                        to_json_binary(&UpdateStateResponse {
+                            height: 2,
+                            consensus_state_bytes: vec![3, 2, 1].into(),
+                            client_state_bytes: Some(vec![3, 2, 1].into()),
+                            storage_writes: Default::default(),
+                        })
+                    }
+                    msg => panic!("should not be called: {:?}", msg),
+                }
+            }
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
@@ -324,16 +388,17 @@ fn update_client_commitments_saved() {
         .parse::<ClientId>()
         .expect("client type string is u32");
 
-    let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
-        client_id,
-        client_message: vec![3, 2, 1].into(),
-        relayer: mock_addr(RELAYER).into_string(),
-    });
     execute(
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
-        msg,
+        ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::UpdateClient(
+            MsgUpdateClient {
+                client_id,
+                client_message: vec![3, 2, 1].into(),
+                relayer: mock_addr(RELAYER).into_string(),
+            },
+        ))),
     )
     .expect("update client ok");
 

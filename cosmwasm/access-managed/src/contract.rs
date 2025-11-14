@@ -62,7 +62,9 @@ pub(crate) fn _set_authority(deps: DepsMut, new_authority: &Addr) -> Event {
 /// See [`ExecuteMsg::IsConsumingScheduledOp`].
 pub(crate) fn is_consuming_scheduled_op(deps: Deps) -> Result<&'static Selector, ContractError> {
     if deps.storage.read_item::<ConsumingSchedule>()? {
-        Ok(QueryMsg::IsConsumingScheduledOp {}.selector())
+        Ok(Selector::extract_from_serialize(
+            &QueryMsg::IsConsumingScheduledOp {},
+        ))
     } else {
         Ok(Selector::new(""))
     }

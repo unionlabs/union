@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
-use ibc_union_light_client::{IbcClientError, msg::QueryMsg};
+use ibc_union_light_client::{IbcClientError, default_reply, msg::QueryMsg};
 use serde::{Deserialize, Serialize};
 use unionlabs::encoding::{Bincode, EncodeAs};
 
@@ -18,6 +18,8 @@ use crate::{
     },
     types::AttestationKey,
 };
+
+default_reply!();
 
 #[entry_point]
 pub fn execute(
@@ -127,6 +129,7 @@ pub fn execute(
 
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    // TODO: Add more queries for the attested light client
     ibc_union_light_client::query::<AttestedLightClient>(deps, env, msg).map_err(Into::into)
 }
 
@@ -142,18 +145,14 @@ pub fn migrate(
     msg.run(
         deps,
         |deps, init_msg| {
+            // TODO: Pull this out into an `init` function
             for key in init_msg.attestors {
                 deps.storage.write::<Attestors>(&key, &());
             }
 
             deps.storage.write_item::<Quorum>(&init_msg.quorum);
 
-            let res = ibc_union_light_client::init(
-                deps,
-                ibc_union_light_client::msg::InitMsg {
-                    ibc_host: init_msg.ibc_host,
-                },
-            )?;
+            let res = ibc_union_light_client::init(deps, init_msg.ibc_union_light_client_init_msg)?;
 
             Ok((res, None))
         },

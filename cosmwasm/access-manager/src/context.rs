@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Coin, Deps, DepsMut, Env, Event, MessageInfo, QuerierWrapper, Storage};
 use serde::Serialize;
 
-#[must_use]
+#[must_use = "call ExecCtx::events() to consume this object"]
 pub(crate) struct ExecCtx<'info, 'deps> {
     events: Vec<Event>,
     deps: DepsMut<'deps>,
@@ -38,6 +38,7 @@ impl<'info, 'deps> ExecCtx<'info, 'deps> {
         }
     }
 
+    #[must_use = "events must be emitted with Response::add_events()"]
     pub fn events(self) -> Vec<Event> {
         self.events
     }

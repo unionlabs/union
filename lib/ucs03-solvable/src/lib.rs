@@ -21,16 +21,6 @@ pub enum Solvable {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum SolverQuery {
-    /// Returns unit if the contract is a solver.
-    IsSolver,
-    /// Whether the solver allows the relayer to fulfill the order on our behalf.
-    AllowMarketMakers,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct CwTokenOrderV2 {
     pub sender: Bytes,
     pub receiver: Bytes,
@@ -40,4 +30,16 @@ pub struct CwTokenOrderV2 {
     pub quote_amount: U256,
     pub kind: u8,
     pub metadata: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+// TODO: These should be changed to empty struct variants
+// REVIEW: Are these even used?
+pub enum SolverQuery {
+    /// Returns unit if the contract is a solver.
+    IsSolver,
+    /// Whether the solver allows the relayer to fulfill the order on our behalf.
+    AllowMarketMakers,
 }

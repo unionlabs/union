@@ -30,6 +30,7 @@ ibc-union-msg                  = { workspace = true }
 ibc-union-spec                 = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lst                            = { workspace = true, features = ["library"] }
+pausable                       = { workspace = true }
 prost                          = { workspace = true }
 protos                         = { workspace = true }
 rand                           = { workspace = true, features = ["default"] }

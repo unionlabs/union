@@ -23,6 +23,7 @@ use ucs03_zkgm::{
         OP_TOKEN_ORDER, SolverMetadata, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
         TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW, TokenOrderV1, TokenOrderV2,
     },
+    msg::SendMsg,
 };
 use union_test::{
     TestContext,
@@ -230,7 +231,7 @@ async fn test_send_vault_success() {
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -368,7 +369,7 @@ async fn test_send_vault_success_with_fee() {
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -513,7 +514,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         .into(),
     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_chain_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -768,7 +769,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         .into(),
     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_chain_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -865,7 +866,7 @@ async fn test_send_packet_from_union_to_evm_get_refund() {
         "Timeout now:{}, timeout_timestamp: {:?}",
         now_secs, timeout_timestamp
     );
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_chain_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp,
@@ -1152,7 +1153,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_only_maker_err() {
         .into(),
     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -1341,7 +1342,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_invalid_unescrow() {
         .into(),
     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -1518,7 +1519,7 @@ async fn test_from_evm_to_union_tokenv2_unhappy_err_cannot_deploy() {
         .into(),
     };
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: pair.src.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -1823,7 +1824,7 @@ async fn test_send_vault_unhappy_u_counterparty_is_not_fungible() {
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -2006,7 +2007,7 @@ async fn test_send_vault_unhappy_u_base_amount_must_cover_quote_amount() {
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
@@ -2190,7 +2191,7 @@ async fn test_send_vault_unhappy_u_fool() {
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    let cw_msg = SendMsg::Send {
         channel_id: src_channel_id.try_into().unwrap(),
         timeout_height: 0u64.into(),
         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
