@@ -87,7 +87,7 @@ pub fn is_paused(deps: Deps) -> Result<bool, ContractError> {
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/utils/Pausable.sol#L74>
 pub fn require_not_paused(deps: Deps) -> Result<(), ContractError> {
     if is_paused(deps)? {
-        Err(ContractError::ExpectedPause)
+        Err(ContractError::EnforcedPause)
     } else {
         Ok(())
     }
@@ -104,7 +104,7 @@ pub fn require_paused(deps: Deps) -> Result<(), ContractError> {
     if is_paused(deps)? {
         Ok(())
     } else {
-        Err(ContractError::EnforcedPause)
+        Err(ContractError::ExpectedPause)
     }
 }
 

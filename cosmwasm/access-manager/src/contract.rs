@@ -53,6 +53,12 @@ pub(crate) fn label_role(
 ) -> Result<(), ContractError> {
     only_authorized(ctx)?;
 
+    if role_id == RoleId::ADMIN_ROLE || role_id == RoleId::PUBLIC_ROLE {
+        return Err(ContractError::AccessManager(
+            AccessManagerError::AccessManagerLockedRole(role_id),
+        ));
+    }
+
     ctx.storage().write::<RoleLabels>(&role_id, label);
 
     ctx.emit(RoleLabel { role_id, label });
@@ -614,7 +620,7 @@ pub(crate) fn execute(
 
     // If caller is authorized, check operation was scheduled early enough
     // Consume an available schedule even if there is no currently enforced delay
-    if immediate || get_schedule(ctx.query_ctx(), operation_id)?.is_some() {
+    if !immediate || get_schedule(ctx.query_ctx(), operation_id)?.is_some() {
         nonce = Some(_consume_scheduled_op(ctx, operation_id)?);
     }
 
@@ -732,7 +738,7 @@ pub(crate) fn consume_scheduled_op(
     Ok(())
 }
 
-/// Internal variant of [`consume_scheduled_op`] that operates on bytes32 operationId.
+/// Internal variant of [`consume_scheduled_op`] that operates on the pre-hashed `operation_id`.
 ///
 /// Returns the nonce of the scheduled operation that is consumed.
 ///

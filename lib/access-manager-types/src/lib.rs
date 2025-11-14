@@ -547,7 +547,9 @@ impl fmt::Display for Selector {
 
 /// Whether or not an account has permissions to call a selector on a target.
 ///
-/// This is a more type-safe representation of the `(bool immediate, delay uint32)` tuple used throughout the original solidity implementation; `immediate && delay != 0` is invalid and has no meaning, so this enum cannot represent that state.
+/// This is a more type-safe representation of the `(bool immediate, delay uint32)` tuple used
+/// throughout the original solidity implementation; `immediate && delay != 0` is invalid and has no
+/// meaning, so this enum cannot represent that state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CanCall {
     /// The caller is unauthorized to execute this call.
@@ -558,7 +560,8 @@ pub enum CanCall {
     ///
     /// This is equivalent to `immediate && delay == 0`.
     Immediate {},
-    /// The caller is authorized to execute this call, with the specified execution delay (the call must be scheduled).
+    /// The caller is authorized to execute this call, with the specified execution delay (the call
+    /// must be scheduled).
     ///
     /// This is equivalent to `!immediate && delay != 0`.
     WithDelay { delay: NonZero<u32> },
@@ -566,7 +569,9 @@ pub enum CanCall {
 
 /// Whether or not an account has a role.
 ///
-/// This is a more type-safe representation of the `(bool is_member, delay uint32)` tuple used throughout the original solidity implementation; `!is_member && delay != 0` is invalid and has no meaning, so this enum cannot represent that state.
+/// This is a more type-safe representation of the `(bool is_member, delay uint32)` tuple used
+/// throughout the original solidity implementation; `!is_member && delay != 0` is invalid and has
+/// no meaning, so this enum cannot represent that state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum HasRole {
     /// The account does not have the specified role.

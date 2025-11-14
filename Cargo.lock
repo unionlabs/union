@@ -15724,6 +15724,7 @@ dependencies = [
  "frissitheto",
  "schemars",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
 ]

@@ -27,7 +27,7 @@ pub fn execute(
             )
             .add_message(WasmMsg::Migrate {
                 contract_addr: env.contract.address.to_string(),
-                new_code_id,
+                new_code_id: new_code_id.get(),
                 msg: to_json_binary(&UpgradeMsg::<(), _>::Migrate(msg))?,
             })),
     }

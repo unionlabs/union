@@ -68,7 +68,7 @@ fn when_not_paused() {
         WhenNotPaused(())
             .ensure_not_paused(deps.as_ref())
             .unwrap_err(),
-        ContractError::ExpectedPause
+        ContractError::EnforcedPause
     );
 }
 
@@ -78,7 +78,7 @@ fn when_paused() {
 
     assert_eq!(
         WhenPaused(()).ensure_paused(deps.as_ref()).unwrap_err(),
-        ContractError::EnforcedPause
+        ContractError::ExpectedPause
     );
 
     execute(

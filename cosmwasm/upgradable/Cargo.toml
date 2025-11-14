@@ -20,6 +20,7 @@ embed-commit = { workspace = true }
 frissitheto  = { workspace = true }
 schemars     = { workspace = true, optional = true }
 serde        = { workspace = true, features = ["derive"] }
+serde-utils  = { workspace = true }
 serde_json   = { workspace = true }
 thiserror    = { workspace = true }
 
