@@ -311,6 +311,9 @@ disallowed_types        = "deny"
 module_inception        = "allow" # it's useful sometimes
 module_name_repetitions = "allow" # dumb lint
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }
+
 # [workspace.lints.rust]
 # unused_crate_dependencies = "warn"
 

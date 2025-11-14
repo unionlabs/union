@@ -4,8 +4,8 @@
 //!
 //! A smart contract under the control of an `access-manager` instance is known as a target, and
 //! will implement the `access-managed` messages, be connected to this contract as its manager and
-//! implement the {AccessManaged-restricted} modifier on a set of functions selected to be
-//! permissioned. Note that any function without this setup won't be effectively restricted.
+//! use the `Restricted<T>` wrapper on a subset of it's `ExecuteMsg` selected to be
+//! permissioned. Note that any variants without this setup won't be effectively restricted.
 //!
 //! The restriction rules for such functions are defined in terms of "roles" identified by a
 //! [`RoleId`] and scoped by target ([`Addr`][cosmwasm_std::Addr]) and function selectors
@@ -79,6 +79,7 @@
 //! [et]: https://serde.rs/enum-representations.html#externally-tagged
 //! [selector]: https://docs.soliditylang.org/en/latest/abi-spec.html#function-selector
 
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::used_underscore_items,
@@ -100,6 +101,7 @@ use cosmwasm_std::{
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
+use serde::Serialize;
 
 use crate::{
     context::{ExecCtx, HasStorage, QueryCtx},
@@ -121,6 +123,7 @@ pub mod error;
 pub mod state;
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests;
 
 pub const EXECUTE_REPLY_ID: u64 = 1;
@@ -258,57 +261,47 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 #[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    #[track_caller]
+    fn json(t: impl Serialize) -> Binary {
+        to_json_binary(&t).expect("serialization of access manager types is infallible; qed;")
+    }
+
     let ctx = QueryCtx::new(deps, &env);
 
     match msg {
-        QueryMsg::AdminRole {} => Ok(to_json_binary(&RoleId::ADMIN_ROLE)?),
-        QueryMsg::PublicRole {} => Ok(to_json_binary(&RoleId::PUBLIC_ROLE)?),
+        QueryMsg::AdminRole {} => Ok(json(RoleId::ADMIN_ROLE)),
+        QueryMsg::PublicRole {} => Ok(json(RoleId::PUBLIC_ROLE)),
         QueryMsg::CanCall {
             selector,
             target,
             caller,
-        } => Ok(to_json_binary(&can_call(
-            ctx, &caller, &target, &selector,
-        )?)?),
-        QueryMsg::Expiration {} => Ok(to_json_binary(&expiration())?),
-        QueryMsg::MinSetback {} => Ok(to_json_binary(&min_setback())?),
-        QueryMsg::IsTargetClosed { target } => {
-            Ok(to_json_binary(&is_target_closed(ctx, &target)?)?)
+        } => can_call(ctx, &caller, &target, &selector).map(json),
+        QueryMsg::Expiration {} => Ok(json(expiration())),
+        QueryMsg::MinSetback {} => Ok(json(min_setback())),
+        QueryMsg::IsTargetClosed { target } => is_target_closed(ctx, &target).map(json),
+        QueryMsg::GetTargetFunctionRole { target, selector } => {
+            get_target_function_role(ctx, &target, &selector).map(json)
         }
-        QueryMsg::GetTargetFunctionRole { target, selector } => Ok(to_json_binary(
-            &get_target_function_role(ctx, &target, &selector)?,
-        )?),
-        QueryMsg::GetTargetAdminDelay { target } => {
-            Ok(to_json_binary(&get_target_admin_delay(ctx, &target)?)?)
-        }
-        QueryMsg::GetRoleAdmin { role_id } => Ok(to_json_binary(&get_role_admin(ctx, role_id)?)?),
-        QueryMsg::GetRoleGuardian { role_id } => {
-            Ok(to_json_binary(&get_role_guardian(ctx, role_id)?)?)
-        }
-        QueryMsg::GetRoleGrantDelay { role_id } => {
-            Ok(to_json_binary(&get_role_grant_delay(ctx, role_id)?)?)
-        }
-        QueryMsg::GetAccess { role_id, account } => {
-            Ok(to_json_binary(&get_access(ctx, role_id, &account)?)?)
-        }
-        QueryMsg::HasRole { role_id, account } => {
-            Ok(to_json_binary(&has_role(ctx, role_id, &account)?)?)
-        }
-        QueryMsg::GetSchedule { id } => Ok(to_json_binary(&get_schedule(ctx, id)?)?),
-        QueryMsg::GetNonce { id } => Ok(to_json_binary(&get_nonce(ctx, id)?)?),
+        QueryMsg::GetTargetAdminDelay { target } => get_target_admin_delay(ctx, &target).map(json),
+        QueryMsg::GetRoleAdmin { role_id } => get_role_admin(ctx, role_id).map(json),
+        QueryMsg::GetRoleGuardian { role_id } => get_role_guardian(ctx, role_id).map(json),
+        QueryMsg::GetRoleGrantDelay { role_id } => get_role_grant_delay(ctx, role_id).map(json),
+        QueryMsg::GetAccess { role_id, account } => get_access(ctx, role_id, &account).map(json),
+        QueryMsg::HasRole { role_id, account } => has_role(ctx, role_id, &account).map(json),
+        QueryMsg::GetSchedule { id } => get_schedule(ctx, id).map(json),
+        QueryMsg::GetNonce { id } => get_nonce(ctx, id).map(json),
         QueryMsg::HashOperation {
             caller,
             target,
             data,
-        } => Ok(to_json_binary(&hash_operation(&caller, &target, &data))?),
-        QueryMsg::GetRoleLabels { role_ids } => {
-            Ok(to_json_binary(&get_role_labels(ctx, &role_ids)?)?)
-        }
+        } => Ok(json(hash_operation(&caller, &target, &data))),
+        QueryMsg::GetRoleLabels { role_ids } => get_role_labels(ctx, &role_ids).map(json),
     }
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 #[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
+#[expect(clippy::missing_panics_doc, reason = "internal invariant")]
 pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply {
         Reply {
@@ -322,7 +315,9 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
 
             deps.storage
                 .update_item::<ExecutionIdStack, ContractError, _>(|stack| {
-                    stack.pop();
+                    stack
+                        .pop()
+                        .expect("execution stack should not be empty on reply; qed;");
                     Ok(())
                 })?;
 

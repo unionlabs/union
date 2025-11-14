@@ -660,7 +660,8 @@ pub(crate) fn cancel(
     let schedule = ctx
         .storage()
         .maybe_read::<Schedules>(&operation_id)?
-        .ok_or(AccessManagerError::AccessManagerNotScheduled(operation_id))?;
+        // NOTE: We could error here with AccessManagerNotScheduled rather than unwrap_or_default, but using default reduces the amount of exit points and reduces complexity a bit
+        .unwrap_or_default();
 
     if schedule.timepoint.is_none() {
         return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
@@ -798,13 +799,16 @@ pub(crate) fn update_authority(
 ) -> Result<SubMsg, ContractError> {
     only_authorized(ctx)?;
 
-    Ok(SubMsg::reply_never(wasm_execute(
-        target,
-        &managed::msg::ExecuteMsg::SetAuthority {
-            new_authority: new_authority.clone(),
-        },
-        vec![],
-    )?))
+    Ok(SubMsg::reply_never(
+        wasm_execute(
+            target,
+            &managed::msg::ExecuteMsg::SetAuthority {
+                new_authority: new_authority.clone(),
+            },
+            vec![],
+        )
+        .expect("serialization of access manager types is infallible; qed;"),
+    ))
 }
 
 // ========================================= ADMIN LOGIC ==========================================
