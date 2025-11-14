@@ -5,16 +5,18 @@ members = ["cometbls-verifier"]
 name = "ibc"
 version = "0.1.0"
 edition = "2024_07"
-experimental-features = ["associated_item_constraints"]
+experimental-features = ["associated_item_constraints", "safe_dispatcher", "user_defined_inline_macros"]
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
+alexandria_bytes = "0.7.0"
+alexandria_encoding = "0.7.0"
 # groth16_example_bn254 = { git = "https://github.com/keep-starknet-strange/garaga" }
 starknet = "2.12.2"
 
 [dev-dependencies]
-snforge_std = "0.49.0"
+snforge_std = "0.51.1"
 assert_macros = "2.12.2"
 
 [[target.starknet-contract]]

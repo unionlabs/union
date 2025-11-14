@@ -581,6 +581,9 @@
                     pkgs.foundry-bin
                     pkgs.sqlx-cli
                     self'.packages.ignite-cli
+                    self'.packages.scarb
+                    self'.packages.snforge
+                    self'.packages.cairo-language-server
                   ]
                 else
                   [ ]

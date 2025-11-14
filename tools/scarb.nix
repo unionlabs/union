@@ -10,9 +10,9 @@ _: {
       ...
     }:
     let
-      craneLib = (crane.lib.overrideToolchain (_: rust.mkNightly { channel = "nightly-2025-05-09"; }));
+      craneLib = (crane.lib.overrideToolchain (_: rust.mkToolchain { channel = "1.91.1"; }));
 
-      cairoVersion = "v2.12.1";
+      cairoVersion = "v2.13.1";
 
       pyPkgs = pkgsUnstable.python312Packages;
 
@@ -24,18 +24,18 @@ _: {
           owner = "software-mansion";
           repo = pname;
           rev = version;
-          sha256 = "sha256-PlUZsr99TVH/9k2Ecq2+rAcUVTTneEh2v85zCMikkXU=";
+          sha256 = "sha256-cX4sDoPpn7Wr1lcR3BsGWOMIUGK+G7BHwqiGJumDbsQ=";
         };
         cargoExtraArgs = "-p scarb";
         doCheck = false;
         meta.mainProgram = "scarb";
         SCARB_CORELIB_LOCAL_PATH = "${
           pkgs.fetchFromGitHub rec {
-            pname = repo;
+            name = repo;
             owner = "starkware-libs";
             repo = "cairo";
             rev = cairoVersion;
-            sha256 = "sha256-NQYtlyttIvTxPa6dLbFOkWO5RysaJz2T2S3Z9fg1bg4=";
+            sha256 = "sha256-T4p4usng7xhiUZo0JB26bY9IQAAtX1bXj8hdKsrVbTk=";
           }
         }/corelib";
       };
@@ -62,32 +62,46 @@ _: {
           owner = "starkware-libs";
           repo = pname;
           rev = cairoVersion;
-          sha256 = "sha256-NQYtlyttIvTxPa6dLbFOkWO5RysaJz2T2S3Z9fg1bg4=";
+          sha256 = "";
         };
         cargoExtraArgs = "-p cairo-format";
         doCheck = false;
-        meta.mainProgram = "universal-sierra-compiler";
+        meta.mainProgram = "cairo-format";
       };
 
-      cairols = craneLib.buildPackage rec {
-        pname = "cairols";
-        version = cairoVersion;
-        src = pkgs.fetchFromGitHub {
-          name = pname;
-          owner = "software-mansion";
-          repo = pname;
-          rev = version;
-          sha256 = "sha256-F2JPandJB9yQspTi69Zl4DgN5vcK8vlJ02slDolv6KQ=";
-        };
-        doCheck = false;
-        meta.mainProgram = "cairo-language-server";
-      };
+      cairo-language-server =
+        let
+          baseArgs = rec {
+            pname = "cairols";
+            version = cairoVersion;
+            src = dbg (
+              pkgs.stdenv.mkDerivation {
+                name = "cairols-patched-source";
+                src = pkgs.fetchFromGitHub {
+                  name = pname;
+                  owner = "software-mansion";
+                  repo = pname;
+                  rev = version;
+                  sha256 = "sha256-T//raZMQEdJ+INzuDsGmUc7jCVe05nlpwMb/yZFD2ho=";
+                };
+                patches = [
+                  ./cairols-remove-tests.patch
+                ];
+                installPhase = ''
+                  cp -r --no-preserve=mode . $out
+                '';
+              }
+            );
+            doCheck = false;
+          };
+        in
+        craneLib.buildPackage baseArgs;
 
       starknet-foundry =
         let
           baseArgs = rec {
             pname = "starknet-foundry";
-            version = "v0.49.0";
+            version = "v0.51.1";
             buildInputs = [ pkgs.perl ];
             doCheck = false;
             src = pkgs.fetchFromGitHub {
@@ -95,40 +109,12 @@ _: {
               owner = "foundry-rs";
               repo = "starknet-foundry";
               rev = version;
-              sha256 = "sha256-X91KPHL9ELDfaL5HaQEh3B3zFlARfonFMEQGmBaqLuY=";
+              sha256 = "sha256-1a5qQzXhc3kBhWBsWwHMYhSjHznETLx/Rn7vhSL28Ow=";
             };
             cargoExtraArgs = "-p forge";
           };
         in
-        craneLib.buildPackage (
-          baseArgs
-          // {
-            cargoVendorDir = craneLib.vendorCargoDeps (
-              baseArgs
-              // {
-                overrideVendorGitCheckout =
-                  ps: drv:
-                  if
-                    (pkgs.lib.any (
-                      p:
-                      p.source
-                      == "git+https://github.com/software-mansion/scarb?rev=210da8dfd0b370f0f1970b33a373f1a7afe6ae33#210da8dfd0b370f0f1970b33a373f1a7afe6ae33"
-                    ))
-                      ps
-                  then
-                    craneLib.downloadCargoPackageFromGit {
-                      git = "https://github.com/software-mansion/scarb";
-                      # this is 210da8dfd0b370f0f1970b33a373f1a7afe6ae33 in the original source but that commit doesn't exist since the original branch was deleted
-                      # https://github.com/software-mansion/scarb/pull/2510
-                      rev = "77d1911c2fdfacfe194cd95216cf3c8d59284870";
-                      hash = "sha256-dVfSxeY84MICu7qnfwAdsddZKMtvmrDbAs6sJVutF9U=";
-                    }
-                  else
-                    drv;
-              }
-            );
-          }
-        );
+        craneLib.buildPackage baseArgs;
 
       garaga =
         let
@@ -356,10 +342,19 @@ _: {
       packages = {
         inherit
           universal-sierra-compiler
-          starknet-foundry
           cairo-format
           crypto-cpp-py
           ;
+        snforge = pkgs.writeShellApplication {
+          name = "snforge";
+          runtimeInputs = [
+            starknet-foundry
+            universal-sierra-compiler
+          ];
+          text = ''
+            snforge "$@"
+          '';
+        };
         garaga = pkgs.writeShellApplication {
           name = "garaga";
           runtimeInputs = [
@@ -370,10 +365,10 @@ _: {
             garaga "$@"
           '';
         };
-        cairols = pkgs.writeShellApplication {
+        cairo-language-server = pkgs.writeShellApplication {
           name = "cairo-language-server";
           runtimeInputs = [
-            cairols
+            cairo-language-server
             scarb
             starknet-foundry
             universal-sierra-compiler

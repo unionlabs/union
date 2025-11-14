@@ -3,13 +3,15 @@
 {
   perSystem =
     args@{
-      pkgs,
+      pkgsUnstable,
       rust,
       dbg,
       gitRev,
       ...
     }:
     let
+      pkgs = pkgsUnstable;
+
       mkCrane =
         {
           # root of the repository.

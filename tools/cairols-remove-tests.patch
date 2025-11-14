@@ -1,0 +1,114 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 14960b8..605562e 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -448,19 +448,6 @@ dependencies = [
+  "serde",
+ ]
+ 
+-[[package]]
+-name = "cairo-lang-macro"
+-version = "0.2.0-rc.0"
+-source = "git+https://github.com/software-mansion/scarb.git?rev=5f11cee9f8c9420917835d7cd2fe428b33fb6aea#5f11cee9f8c9420917835d7cd2fe428b33fb6aea"
+-dependencies = [
+- "bumpalo",
+- "cairo-lang-macro-attributes 0.2.0-rc.0",
+- "cairo-lang-macro-stable 2.0.0-rc.0",
+- "cairo-lang-primitive-token",
+- "cairo-lang-quote 0.1.0-rc.0",
+- "linkme",
+-]
+-
+ [[package]]
+ name = "cairo-lang-macro"
+ version = "0.2.1"
+@@ -471,7 +458,7 @@ dependencies = [
+  "cairo-lang-macro-attributes 0.2.1",
+  "cairo-lang-macro-stable 2.0.0",
+  "cairo-lang-primitive-token",
+- "cairo-lang-quote 0.1.0",
++ "cairo-lang-quote",
+  "linkme",
+  "serde",
+ ]
+@@ -487,16 +474,6 @@ dependencies = [
+  "syn 2.0.106",
+ ]
+ 
+-[[package]]
+-name = "cairo-lang-macro-attributes"
+-version = "0.2.0-rc.0"
+-source = "git+https://github.com/software-mansion/scarb.git?rev=5f11cee9f8c9420917835d7cd2fe428b33fb6aea#5f11cee9f8c9420917835d7cd2fe428b33fb6aea"
+-dependencies = [
+- "quote",
+- "scarb-stable-hash",
+- "syn 2.0.106",
+-]
+-
+ [[package]]
+ name = "cairo-lang-macro-attributes"
+ version = "0.2.1"
+@@ -514,11 +491,6 @@ version = "1.0.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "c49906d6b1c215e5814be7c5c65ecf2328898b335bee8c2409ec07cfb5530daf"
+ 
+-[[package]]
+-name = "cairo-lang-macro-stable"
+-version = "2.0.0-rc.0"
+-source = "git+https://github.com/software-mansion/scarb.git?rev=5f11cee9f8c9420917835d7cd2fe428b33fb6aea#5f11cee9f8c9420917835d7cd2fe428b33fb6aea"
+-
+ [[package]]
+ name = "cairo-lang-macro-stable"
+ version = "2.0.0"
+@@ -594,15 +566,6 @@ dependencies = [
+  "toml 0.9.6",
+ ]
+ 
+-[[package]]
+-name = "cairo-lang-quote"
+-version = "0.1.0-rc.0"
+-source = "git+https://github.com/software-mansion/scarb.git?rev=5f11cee9f8c9420917835d7cd2fe428b33fb6aea#5f11cee9f8c9420917835d7cd2fe428b33fb6aea"
+-dependencies = [
+- "proc-macro2",
+- "quote",
+-]
+-
+ [[package]]
+ name = "cairo-lang-quote"
+ version = "0.1.0"
+@@ -1054,22 +1017,6 @@ dependencies = [
+  "zip",
+ ]
+ 
+-[[package]]
+-name = "cairols_test_macros"
+-version = "1.0.0"
+-dependencies = [
+- "cairo-lang-macro 0.1.1",
+- "indoc",
+-]
+-
+-[[package]]
+-name = "cairols_test_macros_v2"
+-version = "1.0.0"
+-dependencies = [
+- "cairo-lang-macro 0.2.0-rc.0",
+- "cairo-lang-primitive-token",
+-]
+-
+ [[package]]
+ name = "camino"
+ version = "1.1.12"
+diff --git a/Cargo.toml b/Cargo.toml
+index 36c8dc8..49602c2 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -9,7 +9,7 @@ license = "Apache-2.0"
+ repository = "https://github.com/software-mansion/cairols"
+ 
+ [workspace]
+-members = ["xtask", "tests/scarb_procedural_macros", "tests/scarb_procedural_macros_v2"]
++members = ["xtask"]
+ 
+ [features]
+ testing = []

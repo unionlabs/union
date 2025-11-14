@@ -15,7 +15,7 @@ command = "biome"
 
 [language-server.cairo-language-server]
 args    = []
-command = "/home/ben/projects/union/cairols/bin/cairo-language-server"
+command = "cairo-language-server"
 
 [language-server.emmet-lsp]
 args    = ["--stdio"]
