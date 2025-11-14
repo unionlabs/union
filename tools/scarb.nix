@@ -1,7 +1,6 @@
 _: {
   perSystem =
     {
-      self',
       pkgs,
       pkgsUnstable,
       crane,
@@ -16,6 +15,14 @@ _: {
 
       pyPkgs = pkgsUnstable.python312Packages;
 
+      cairo-src = pkgs.fetchFromGitHub {
+        name = "cairo-src";
+        owner = "starkware-libs";
+        repo = "cairo";
+        rev = cairoVersion;
+        sha256 = "sha256-T4p4usng7xhiUZo0JB26bY9IQAAtX1bXj8hdKsrVbTk=";
+      };
+
       scarb = craneLib.buildPackage rec {
         pname = "scarb";
         version = cairoVersion;
@@ -29,15 +36,7 @@ _: {
         cargoExtraArgs = "-p scarb";
         doCheck = false;
         meta.mainProgram = "scarb";
-        SCARB_CORELIB_LOCAL_PATH = "${
-          pkgs.fetchFromGitHub rec {
-            name = repo;
-            owner = "starkware-libs";
-            repo = "cairo";
-            rev = cairoVersion;
-            sha256 = "sha256-T4p4usng7xhiUZo0JB26bY9IQAAtX1bXj8hdKsrVbTk=";
-          }
-        }/corelib";
+        SCARB_CORELIB_LOCAL_PATH = "${cairo-src}/corelib";
       };
 
       universal-sierra-compiler = craneLib.buildPackage rec {
@@ -54,16 +53,10 @@ _: {
         meta.mainProgram = "universal-sierra-compiler";
       };
 
-      cairo-format = craneLib.buildPackage rec {
-        pname = "cairo";
+      cairo-format = craneLib.buildPackage {
+        pname = "cairo-format";
         version = cairoVersion;
-        src = pkgs.fetchFromGitHub {
-          name = pname;
-          owner = "starkware-libs";
-          repo = pname;
-          rev = cairoVersion;
-          sha256 = "";
-        };
+        src = cairo-src;
         cargoExtraArgs = "-p cairo-format";
         doCheck = false;
         meta.mainProgram = "cairo-format";
@@ -111,7 +104,7 @@ _: {
               rev = version;
               sha256 = "sha256-1a5qQzXhc3kBhWBsWwHMYhSjHznETLx/Rn7vhSL28Ow=";
             };
-            cargoExtraArgs = "-p forge";
+            cargoExtraArgs = "-p forge -p sncast";
           };
         in
         craneLib.buildPackage baseArgs;
@@ -170,7 +163,7 @@ _: {
 
         format = "pyproject";
         build-system = [ pyPkgs.setuptools ];
-        dependencies = (with pyPkgs; [ ]) ++ [ crypto-cpp-py ];
+        dependencies = [ crypto-cpp-py ];
         doCheck = false;
         postPatch = ''
           patchShebangs ./build.sh
@@ -342,9 +335,17 @@ _: {
       packages = {
         inherit
           universal-sierra-compiler
-          cairo-format
           crypto-cpp-py
           ;
+        cairo-format = pkgs.writeShellApplication {
+          name = "cairo-format";
+          runtimeInputs = [
+            cairo-format
+          ];
+          text = ''
+            cairo-format --merge-use-items true "$@"
+          '';
+        };
         snforge = pkgs.writeShellApplication {
           name = "snforge";
           runtimeInputs = [
@@ -353,6 +354,16 @@ _: {
           ];
           text = ''
             snforge "$@"
+          '';
+        };
+        sncast = pkgs.writeShellApplication {
+          name = "sncast";
+          runtimeInputs = [
+            starknet-foundry
+            # universal-sierra-compiler
+          ];
+          text = ''
+            sncast "$@"
           '';
         };
         garaga = pkgs.writeShellApplication {

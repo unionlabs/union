@@ -1,4 +1,4 @@
-use core::hash::{HashStateExTrait, HashStateTrait};
+use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
 use crate::types::ClientId;
 
@@ -66,7 +66,7 @@ pub trait IIbcHandler<TContractState> {
 #[starknet::contract]
 mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
-    use core::num::traits::Zero;
+    use core::num::traits::{Pow, Zero};
     use starknet::event::EventEmitter;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -81,7 +81,7 @@ mod IbcHandler {
     };
     use crate::path::{ClientStatePath, ConsensusStatePath, StorePathKeyTrait};
     use crate::types::{ClientId, ClientIdImpl};
-    use crate::{Error, MsgCreateClient, MsgRegisterClient, MsgUpdateClient, poseidon};
+    use crate::{Error, MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
 
     #[storage]
     struct Storage {
@@ -223,20 +223,27 @@ mod IbcHandler {
         }
 
         fn commit<T, +StorePathKeyTrait<T>>(ref self: ContractState, key: @T, value: u256) {
+            // based on
+            // https://www.starknet.io/cairo-book/ch101-01-01-storage-mappings.html#storage-address-computation-for-mappings
+            let truncate = |n: u256| {
+                let modulus: felt252 = (2_felt252.pow(251)) - 256;
+                (n % modulus.into()).try_into().expect('u256 % u252 fits into u252')
+            };
+
             storage_write_syscall(
                 0,
                 storage_address_from_base(
                     storage_base_address_from_felt252(
-                        poseidon(key.key()),
+                        truncate(key.key()),
                     ) // REVIEW: This wraps if it doesn't fit, is that behaviour ok?
                 ),
-                poseidon(value),
+                truncate(value),
             )
                 .unwrap_syscall();
         }
     }
 }
 
-pub fn poseidon(n: u256) -> felt252 {
-    core::poseidon::PoseidonImpl::new().update_with(n).finalize()
+pub fn poseidon<T, +Drop<T>, +Hash<T, core::poseidon::HashState>>(t: T) -> felt252 {
+    core::poseidon::PoseidonImpl::new().update_with(t).finalize()
 }

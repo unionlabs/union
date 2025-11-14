@@ -583,7 +583,9 @@
                     self'.packages.ignite-cli
                     self'.packages.scarb
                     self'.packages.snforge
+                    self'.packages.sncast
                     self'.packages.cairo-language-server
+                    self'.packages.cairo-format
                   ]
                 else
                   [ ]
