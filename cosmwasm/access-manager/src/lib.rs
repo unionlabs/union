@@ -4,8 +4,8 @@
 //!
 //! A smart contract under the control of an `access-manager` instance is known as a target, and
 //! will implement the `access-managed` messages, be connected to this contract as its manager and
-//! use the `Restricted<T>` wrapper on a subset of it's `ExecuteMsg` selected to be
-//! permissioned. Note that any variants without this setup won't be effectively restricted.
+//! use the `Restricted<T>` wrapper on a subset of it's `ExecuteMsg` selected to be permissioned.
+//! Note that any variants without this setup won't be effectively restricted.
 //!
 //! The restriction rules for such functions are defined in terms of "roles" identified by a
 //! [`RoleId`] and scoped by target ([`Addr`][cosmwasm_std::Addr]) and function selectors
@@ -179,6 +179,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let mut msgs: Vec<SubMsg> = vec![];
     let mut ctx = ExecCtx::new(deps, &env, &info, &msg);
+    let mut response_data = None;
 
     match &msg {
         ExecuteMsg::LabelRole { role_id, label } => {
@@ -234,38 +235,44 @@ pub fn execute(
             msgs.push(msg);
         }
         ExecuteMsg::Schedule { target, data, when } => {
-            schedule(&mut ctx, target, data, *when)?;
+            let (operation_id, nonce) = schedule(&mut ctx, target, data, *when)?;
+
+            response_data = Some(json((operation_id, nonce)));
         }
         ExecuteMsg::Cancel {
             caller,
             target,
             data,
         } => {
-            cancel(&mut ctx, caller, target, data)?;
+            let nonce = cancel(&mut ctx, caller, target, data)?;
+
+            response_data = Some(json(nonce));
         }
         ExecuteMsg::Execute { target, data } => {
-            let (msg, _) = contract::execute(&mut ctx, target, data)?;
+            let (msg, nonce) = contract::execute(&mut ctx, target, data)?;
 
             msgs.push(msg);
+            response_data = Some(json(nonce));
         }
         ExecuteMsg::ConsumeScheduledOp { caller, data } => {
             consume_scheduled_op(&mut ctx, caller, data)?;
         }
     }
 
-    Ok(Response::new()
+    let mut res = Response::new()
         .add_submessages(msgs)
-        .add_events(ctx.events()))
+        .add_events(ctx.events());
+
+    if let Some(data) = response_data {
+        res = res.set_data(data);
+    }
+
+    Ok(res)
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 #[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
-    #[track_caller]
-    fn json(t: impl Serialize) -> Binary {
-        to_json_binary(&t).expect("serialization of access manager types is infallible; qed;")
-    }
-
     let ctx = QueryCtx::new(deps, &env);
 
     match msg {
@@ -342,4 +349,10 @@ pub fn migrate(
         },
         |_, _, _| Ok((Response::default(), None)),
     )
+}
+
+#[track_caller]
+#[inline]
+fn json(t: impl Serialize) -> Binary {
+    to_json_binary(&t).expect("serialization of access manager types is infallible; qed;")
 }

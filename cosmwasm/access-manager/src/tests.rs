@@ -20,7 +20,7 @@ use cosmwasm_std::{
     Addr, Binary, Order, Reply, Response, StdError, Storage, SubMsg, SubMsgResponse, SystemResult,
     WasmMsg, WasmQuery, from_json,
     testing::{message_info, mock_dependencies, mock_env},
-    to_json_binary, wasm_execute,
+    to_json_binary, to_json_string, wasm_execute,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
@@ -1562,14 +1562,18 @@ fn schedule_works() {
             },
         )
         .unwrap(),
-        Response::new().add_event(OperationScheduled {
-            operation_id,
-            nonce: Nonce::new(1),
-            schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
-            caller: &ACCOUNT_1,
-            target: &TARGET_1,
-            data,
-        }),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",1]"#,
+            ),
     );
 
     // operation has been scheduled, nonce is now 1 and timepoint has been set
@@ -1633,14 +1637,18 @@ fn schedule_works() {
             },
         )
         .unwrap(),
-        Response::new().add_event(OperationScheduled {
-            operation_id,
-            nonce: Nonce::new(2),
-            schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
-            caller: &ACCOUNT_1,
-            target: &TARGET_1,
-            data,
-        }),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(2),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",2]"#,
+            ),
     );
 
     assert_query_result(
@@ -1811,7 +1819,10 @@ fn schedule_reentrant_works() {
             caller: &ACCOUNT_1,
             target: &env.contract.address,
             data: r#"{"grant_role":{"role_id":"10","account":"account-2","execution_delay":0}}"#,
-        }),
+            })
+            .set_data(
+                br#"["0x8851fd1669d010b077f22bf956ea2ae240fe964d0f9d30e46f702b6e950278b5",1]"#,
+            ),
     );
 }
 
@@ -2571,14 +2582,16 @@ fn execute_with_delay_without_schedule_must_fail() {
         )
         .unwrap(),
         // no event is emitted since this was not a scheduled operation
-        Response::new().add_submessage(SubMsg::reply_on_success(
-            WasmMsg::Execute {
-                contract_addr: TARGET_1.to_string(),
-                msg: data.as_bytes().into(),
-                funds: vec![]
-            },
-            1
-        )),
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: TARGET_1.to_string(),
+                    msg: data.as_bytes().into(),
+                    funds: vec![]
+                },
+                1
+            ))
+            .set_data(b"0"),
     );
 
     // no scheduled operation was executed, all values should still be default
@@ -2655,14 +2668,18 @@ fn execute_works() {
             },
         )
         .unwrap(),
-        Response::new().add_event(OperationScheduled {
-            operation_id,
-            nonce: Nonce::new(1),
-            schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
-            caller: &ACCOUNT_1,
-            target: &TARGET_1,
-            data,
-        }),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",1]"#,
+            ),
     );
 
     // operation has been scheduled, nonce is now 1 and timepoint has been set
@@ -2720,7 +2737,8 @@ fn execute_works() {
             .add_event(OperationExecuted {
                 operation_id,
                 nonce: Nonce::new(1),
-            }),
+            })
+            .set_data(b"1"),
     );
 
     assert_query_result(
@@ -2749,14 +2767,18 @@ fn execute_works() {
             },
         )
         .unwrap(),
-        Response::new().add_event(OperationScheduled {
-            operation_id,
-            nonce: Nonce::new(2),
-            schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
-            caller: &ACCOUNT_1,
-            target: &TARGET_1,
-            data,
-        }),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(2),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",2]"#,
+            ),
     );
 
     // operation has been scheduled again, nonce is now 2 and timepoint has been set
@@ -2865,14 +2887,18 @@ fn execute_consume_schedule_no_delay() {
             },
         )
         .unwrap(),
-        Response::new().add_event(OperationScheduled {
-            operation_id,
-            nonce: Nonce::new(1),
-            schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
-            caller: &ACCOUNT_1,
-            target: &TARGET_1,
-            data,
-        }),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",1]"#,
+            ),
     );
 
     // operation has been scheduled, nonce is now 1 and timepoint has been set
@@ -2939,7 +2965,8 @@ fn execute_consume_schedule_no_delay() {
             .add_event(OperationExecuted {
                 operation_id,
                 nonce: Nonce::new(1),
-            }),
+            })
+            .set_data(b"1"),
     );
 
     assert_query_result(
@@ -3323,4 +3350,183 @@ fn reply_execute_stack_invariant() {
         },
     )
     .unwrap();
+}
+
+#[test]
+fn call_on_self_with_delay() {
+    let (mut deps, mut env) = setup();
+
+    let operation_id = H256::new(hex!(
+        "1526b52ee5b6533c5eb88991ce7dac1979fd1078572183a1c2798c699859e355"
+    ));
+
+    let msg = ExecuteMsg::Schedule {
+        target: TARGET_1.clone(),
+        data: r#"{"a":{}}"#.to_owned(),
+        when: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+    };
+
+    // set up roles so that access manager itself can call "a" on target-1 (with a delay so it can be scheduled)
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(2),
+            account: env.contract.address.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(2),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    // set up roles so that account-1 can call schedule on access manager with a delay
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: env.contract.address.clone(),
+            selectors: vec![Selector::extract_from_serialize(&msg).to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::extract_from_serialize(&msg).to_owned(),
+            target: env.contract.address.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::WithDelay {
+            delay: const { NonZero::new(10).unwrap() },
+        },
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: env.contract.address.clone(),
+                data: to_json_string(&msg).unwrap(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &env.contract.address,
+                data: &to_json_string(&msg).unwrap(),
+            })
+            .set_data(
+                br#"["0x1526b52ee5b6533c5eb88991ce7dac1979fd1078572183a1c2798c699859e355",1]"#,
+            ),
+    );
+
+    // operation has been scheduled, nonce is now 1 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+
+    // not ready yet
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: env.contract.address.clone(),
+                data: to_json_string(&msg).unwrap(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerNotReady(operation_id)),
+    );
+
+    env.block.time = env.block.time.plus_seconds(10);
+
+    // ready now, so should successfully execute
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: env.contract.address.clone(),
+                data: to_json_string(&msg).unwrap(),
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_json_binary(&msg).unwrap(),
+                    funds: vec![]
+                },
+                1
+            ))
+            .add_event(OperationExecuted {
+                operation_id,
+                nonce: Nonce::new(1),
+            })
+            .set_data(b"1"),
+    );
+
+    // and now execute the reentrant sub msg, this will fail since a call to schedule cannot be scheduled
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&env.contract.address, &[]),
+            msg,
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: env.contract.address.clone(),
+            target: TARGET_1.clone(),
+            selector: Selector::new("a").to_owned(),
+        }),
+    );
 }

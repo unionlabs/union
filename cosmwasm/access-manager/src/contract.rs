@@ -595,7 +595,7 @@ pub(crate) fn execute(
     ctx: &mut ExecCtx,
     target: &Addr,
     data: &str,
-) -> Result<(SubMsg, Option<Nonce>), ContractError> {
+) -> Result<(SubMsg, Nonce), ContractError> {
     let caller = ctx.msg_sender();
 
     // Fetch restrictions that apply to the caller on the targeted function
@@ -616,12 +616,12 @@ pub(crate) fn execute(
     };
 
     let operation_id = hash_operation(caller, target, data);
-    let mut nonce = None;
+    let mut nonce = Nonce::new(0);
 
     // If caller is authorized, check operation was scheduled early enough
     // Consume an available schedule even if there is no currently enforced delay
     if !immediate || get_schedule(ctx.query_ctx(), operation_id)?.is_some() {
-        nonce = Some(_consume_scheduled_op(ctx, operation_id)?);
+        nonce = _consume_scheduled_op(ctx, operation_id)?;
     }
 
     // Mark the target and selector as authorized
@@ -963,6 +963,7 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
         // Caller is AccessManager, this means the call was sent through `execute` and it already
         // checked permissions. We verify that the call "identifier", which is set during
         // `execute`, is correct.
+        // NOTE: This prevents actions like scheduling a call to schedule on the same access manager.
         return Ok(
             if _is_executing(ctx.query_ctx(), ctx.address_this(), _check_selector(data)?)? {
                 CanCall::Immediate {}
