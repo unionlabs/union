@@ -26,4 +26,13 @@ pub trait ILightClient<TContractState> {
         client_message: ByteArray,
         relayer: ContractAddress,
     ) -> ConsensusStateUpdate;
+
+    fn verify_membership(
+        self: @TContractState,
+        client_id: ClientId,
+        height: u64,
+        proof: ByteArray,
+        key: ByteArray,
+        value: ByteArray,
+    ) -> bool;
 }

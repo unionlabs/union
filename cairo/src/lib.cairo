@@ -1,3 +1,5 @@
+use alexandria_bytes::byte_appender::ByteAppender;
+use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
 use crate::types::ClientId;
@@ -75,13 +77,21 @@ mod IbcHandler {
     use starknet::storage_access::{storage_address_from_base, storage_base_address_from_felt252};
     use starknet::syscalls::storage_write_syscall;
     use starknet::{ContractAddress, SyscallResultTrait, get_execution_info};
-    use crate::event::{CreateClient, RegisterClient, UpdateClient};
-    use crate::lightclient::{
-        ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
+    use crate::event::{
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+        CreateClient, RegisterClient, UpdateClient,
     };
-    use crate::path::{ClientStatePath, ConsensusStatePath, StorePathKeyTrait};
-    use crate::types::{ClientId, ClientIdImpl};
-    use crate::{Error, MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
+    use crate::lightclient::{
+        ConsensusStateUpdate, ILightClient, ILightClientDispatcher, ILightClientSafeDispatcher,
+        ILightClientSafeDispatcherTrait,
+    };
+    use crate::msg::{MsgConnectionOpenInit, MsgConnectionOpenTry};
+    use crate::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
+    use crate::types::{
+        ChannelId, ClientId, ClientIdImpl, Connection, ConnectionId, ConnectionImpl,
+        ConnectionState, ConnectionTrait,
+    };
+    use crate::{Error, MsgCreateClient, MsgRegisterClient, MsgUpdateClient, to_byte_array};
 
     #[storage]
     struct Storage {
@@ -90,6 +100,8 @@ mod IbcHandler {
         client_types: Map<ClientId, ByteArray>,
         client_impls: Map<ClientId, ContractAddress>,
         next_client_id: ClientId,
+        next_connection_id: ConnectionId,
+        next_channel_id: ChannelId,
     }
 
     #[event]
@@ -98,6 +110,14 @@ mod IbcHandler {
         RegisterClient: RegisterClient,
         CreateClient: CreateClient,
         UpdateClient: UpdateClient,
+        ConnectionOpenInit: ConnectionOpenInit,
+        ConnectionOpenTry: ConnectionOpenTry,
+        ConnectionOpenAck: ConnectionOpenAck,
+        ConnectionOpenConfirm: ConnectionOpenConfirm,
+        // ChannelOpenInit: ChannelOpenInit,
+    // ChannelOpenTry: ChannelOpenTry,
+    // ChannelOpenAck: ChannelOpenAck,
+    // ChannelOpenConfiChannelrm: ChannelOpenConfirm,
     }
 
     #[constructor]
@@ -129,8 +149,7 @@ mod IbcHandler {
         fn create_client(ref self: ContractState, msg: MsgCreateClient) -> ClientId {
             let client_address = self.client_type_impl(@msg.client_type);
 
-            let client_id = self.next_client_id.read().increment();
-            self.next_client_id.write(client_id);
+            let client_id = self.get_next_client_id();
 
             #[feature("safe_dispatcher")]
             let res = ILightClientSafeDispatcher { contract_address: client_address }
@@ -201,10 +220,303 @@ mod IbcHandler {
                 Err(err) => { panic!("error when creating client: {err:?}"); },
             }
         }
+        // fn forceConnectionOpenTry(
+    //     IBCMsgs.MsgConnectionOpenTry calldata msg_
+    // ) public restricted returns (uint32) {
+    //     return _connectionOpenTry(msg_);
+    // }
+
+        // /**
+    //  * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B
+    //  (this * code is executed on chain B).
+    //  */
+    // fn connectionOpenTry(
+    //     IBCMsgs.MsgConnectionOpenTry calldata msg_
+    // ) external override returns (uint32) {
+    //     IBCConnection memory expectedConnection = IBCConnection({
+    //         state: IBCConnectionState.Init,
+    //         clientId: msg_.counterpartyClientId,
+    //         counterpartyClientId: msg_.clientId,
+    //         counterpartyConnectionId: 0
+    //     });
+    //     if (
+    //         !verifyConnectionState(
+    //             msg_.clientId,
+    //             msg_.proofHeight,
+    //             msg_.proofInit,
+    //             msg_.counterpartyConnectionId,
+    //             expectedConnection
+    //         )
+    //     ) {
+    //         revert IBCErrors.ErrInvalidProof();
+    //     }
+    //     return _connectionOpenTry(msg_);
+    // }
+
+        // fn _connectionOpenAck(
+    //     IBCMsgs.MsgConnectionOpenAck calldata msg_,
+    //     IBCConnection storage connection
+    // ) internal {
+    //     connection.state = IBCConnectionState.Open;
+    //     connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
+    //     commitConnection(msg_.connectionId, connection);
+    //     emit IBCConnectionLib.ConnectionOpenAck(
+    //         msg_.connectionId,
+    //         connection.clientId,
+    //         connection.counterpartyClientId,
+    //         connection.counterpartyConnectionId
+    //     );
+    // }
+
+        // fn forceConnectionOpenAck(
+    //     IBCMsgs.MsgConnectionOpenAck calldata msg_
+    // ) public restricted {
+    //     _connectionOpenAck(
+    //         msg_,
+    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.Init)
+    //     );
+    // }
+
+        // /**
+    //  * @dev connectionOpenAck relays acceptance of a connection open attempt from chain B
+    //  back * to chain A (this code is executed on chain A).
+    //  */
+    // fn connectionOpenAck(
+    //     IBCMsgs.MsgConnectionOpenAck calldata msg_
+    // ) external override {
+    //     IBCConnection storage connection =
+    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.Init);
+    //     IBCConnection memory expectedConnection = IBCConnection({
+    //         state: IBCConnectionState.TryOpen,
+    //         clientId: connection.counterpartyClientId,
+    //         counterpartyClientId: connection.clientId,
+    //         counterpartyConnectionId: msg_.connectionId
+    //     });
+    //     if (
+    //         !verifyConnectionState(
+    //             connection.clientId,
+    //             msg_.proofHeight,
+    //             msg_.proofTry,
+    //             msg_.counterpartyConnectionId,
+    //             expectedConnection
+    //         )
+    //     ) {
+    //         revert IBCErrors.ErrInvalidProof();
+    //     }
+    //     _connectionOpenAck(msg_, connection);
+    // }
+
+        // fn _connectionOpenConfirm(
+    //     IBCMsgs.MsgConnectionOpenConfirm calldata msg_,
+    //     IBCConnection storage connection
+    // ) internal {
+    //     connection.state = IBCConnectionState.Open;
+    //     commitConnection(msg_.connectionId, connection);
+    //     emit IBCConnectionLib.ConnectionOpenConfirm(
+    //         msg_.connectionId,
+    //         connection.clientId,
+    //         connection.counterpartyClientId,
+    //         connection.counterpartyConnectionId
+    //     );
+    // }
+
+        // fn forceConnectionOpenConfirm(
+    //     IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+    // ) public restricted {
+    //     _connectionOpenConfirm(
+    //         msg_,
+    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.TryOpen)
+    //     );
+    // }
+
+        // /**
+    //  * @dev connectionOpenConfirm confirms opening of a connection on chain A to chain B,
+    //  after * which the connection is open on both chains (this code is executed on chain B).
+    //  */
+    // fn connectionOpenConfirm(
+    //     IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+    // ) external override {
+    //     IBCConnection storage connection =
+    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.TryOpen);
+    //     IBCConnection memory expectedConnection = IBCConnection({
+    //         state: IBCConnectionState.Open,
+    //         clientId: connection.counterpartyClientId,
+    //         counterpartyClientId: connection.clientId,
+    //         counterpartyConnectionId: msg_.connectionId
+    //     });
+    //     if (
+    //         !verifyConnectionState(
+    //             connection.clientId,
+    //             msg_.proofHeight,
+    //             msg_.proofAck,
+    //             connection.counterpartyConnectionId,
+    //             expectedConnection
+    //         )
+    //     ) {
+    //         revert IBCErrors.ErrInvalidProof();
+    //     }
+    //     _connectionOpenConfirm(msg_, connection);
+    // }
+
+        // fn encodeConnection(
+    //     IBCConnection memory connection
+    // ) internal pure returns (bytes32) {
+    //     return keccak256(abi.encode(connection));
+    // }
+
+        // fn encodeConnectionStorage(
+    //     IBCConnection storage connection
+    // ) internal pure returns (bytes32) {
+    //     return keccak256(abi.encode(connection));
+    // }
+
+        // fn commitConnection(
+    //     uint32 connectionId,
+    //     IBCConnection storage connection
+    // ) internal {
+    //     commitments[IBCCommitment.connectionCommitmentKey(connectionId)] =
+    //         encodeConnectionStorage(connection);
+    // }
+
     }
 
     #[generate_trait]
     impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
+        fn connection_open_init(
+            ref self: ContractState, msg: MsgConnectionOpenInit,
+        ) -> ConnectionId {
+            let connection_id = self.get_next_connection_id();
+
+            let connection = Connection {
+                state: ConnectionState::Init,
+                client_id: msg.client_id,
+                counterparty_client_id: msg.counterparty_client_id,
+                counterparty_connection_id: None,
+            };
+
+            self.commit(@ConnectionPath { connection_id }, connection.commit());
+
+            self
+                .emit(
+                    ConnectionOpenInit {
+                        connection_id,
+                        client_id: msg.client_id,
+                        counterparty_client_id: msg.counterparty_client_id,
+                    },
+                );
+
+            connection_id
+        }
+
+        fn connection_open_try(ref self: ContractState, msg: MsgConnectionOpenTry) -> ConnectionId {
+            let expected_connection = Connection {
+                state: ConnectionState::Init,
+                client_id: msg.counterparty_client_id,
+                counterparty_client_id: msg.client_id,
+                counterparty_connection_id: None,
+            };
+
+            assert(
+                self
+                    .verify_connection_state(
+                        msg.client_id,
+                        msg.proof_height,
+                        msg.proof_init,
+                        msg.counterparty_connection_id,
+                        expected_connection,
+                    ),
+                'invalid proof',
+            );
+
+            let connection_id = self.get_next_connection_id();
+
+            let connection = Connection {
+                state: ConnectionState::TryOpen,
+                client_id: msg.client_id,
+                counterparty_client_id: msg.counterparty_client_id,
+                counterparty_connection_id: None,
+            };
+
+            self.commit(@ConnectionPath { connection_id }, connection.commit());
+
+            self
+                .emit(
+                    ConnectionOpenInit {
+                        connection_id,
+                        client_id: msg.client_id,
+                        counterparty_client_id: msg.counterparty_client_id,
+                    },
+                );
+
+            connection_id
+        }
+        // fn _connectionOpenTry(
+        //     IBCMsgs.MsgConnectionOpenTry calldata msg_
+        // ) internal returns (uint32) {
+        //     IBCConnection storage connection = connections[connectionId];
+        //     connection.clientId = msg_.clientId;
+        //     connection.state = IBCConnectionState.TryOpen;
+        //     connection.counterpartyClientId = msg_.counterpartyClientId;
+        //     connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
+        //     commitConnection(connectionId, connection);
+        //     emit IBCConnectionLib.ConnectionOpenTry(
+        //         connectionId,
+        //         msg_.clientId,
+        //         msg_.counterpartyClientId,
+        //         msg_.counterpartyConnectionId
+        //     );
+        //     return connectionId;
+        // }
+        // fn ensureHandshakeState(
+        //     uint32 connectionId,
+        //     IBCConnectionState state
+        // ) internal view returns (IBCConnection storage) {
+        //     IBCConnection storage connection = connections[connectionId];
+        //     if (connection.state != state) {
+        //         revert IBCErrors.ErrInvalidConnectionState();
+        //     }
+        //     return connection;
+        // }
+
+        fn verify_connection_state(
+            self: @ContractState,
+            client_id: ClientId,
+            height: u64,
+            proof: ByteArray,
+            connection_id: ConnectionId,
+            counterparty_connection: Connection,
+        ) -> bool {
+            #[feature("safe_dispatcher")]
+            ILightClientSafeDispatcher { contract_address: self.client_impl(client_id) }
+                .verify_membership(
+                    client_id,
+                    height,
+                    proof,
+                    to_byte_array(ConnectionPath { connection_id }.key()),
+                    to_byte_array(counterparty_connection.commit()),
+                )
+                .unwrap_or(false)
+        }
+
+
+        fn get_next_client_id(ref self: ContractState) -> ClientId {
+            let client_id = self.next_client_id.read();
+            self.next_client_id.write(client_id.increment());
+            client_id
+        }
+
+        fn get_next_connection_id(ref self: ContractState) -> ConnectionId {
+            let connection_id = self.next_connection_id.read();
+            self.next_connection_id.write(connection_id.increment());
+            connection_id
+        }
+
+        fn get_next_channel_id(ref self: ContractState) -> ChannelId {
+            let channel_id = self.next_channel_id.read();
+            self.next_channel_id.write(channel_id.increment());
+            channel_id
+        }
+
         fn client_type_impl(self: @ContractState, client_type: @ByteArray) -> ContractAddress {
             let key = compute_keccak_byte_array(client_type);
             let client_address = self.client_type_registry.read(key);
@@ -223,20 +535,16 @@ mod IbcHandler {
         }
 
         fn commit<T, +StorePathKeyTrait<T>>(ref self: ContractState, key: @T, value: u256) {
-            // based on
-            // https://www.starknet.io/cairo-book/ch101-01-01-storage-mappings.html#storage-address-computation-for-mappings
-            let truncate = |n: u256| {
-                let modulus: felt252 = (2_felt252.pow(251)) - 256;
-                (n % modulus.into()).try_into().expect('u256 % u252 fits into u252')
+            // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
+            let truncate = |n: u256| -> felt252 {
+                // u250(u256::MAX);
+                let mask = 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
+                (n ^ mask).try_into().expect('value is <= 250 bits')
             };
 
             storage_write_syscall(
                 0,
-                storage_address_from_base(
-                    storage_base_address_from_felt252(
-                        truncate(key.key()),
-                    ) // REVIEW: This wraps if it doesn't fit, is that behaviour ok?
-                ),
+                storage_address_from_base(storage_base_address_from_felt252(truncate(key.key()))),
                 truncate(value),
             )
                 .unwrap_syscall();
@@ -246,4 +554,10 @@ mod IbcHandler {
 
 pub fn poseidon<T, +Drop<T>, +Hash<T, core::poseidon::HashState>>(t: T) -> felt252 {
     core::poseidon::PoseidonImpl::new().update_with(t).finalize()
+}
+
+pub fn to_byte_array(n: u256) -> ByteArray {
+    let mut out = ByteArrayTraitExt::new_empty();
+    out.append_u256(n);
+    out
 }

@@ -25,7 +25,9 @@ unionlabs          = { workspace = true }
 voyager-primitives = { workspace = true }
 
 [dev-dependencies]
-ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde"] }
+hex-literal    = { workspace = true }
+ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", "bincode"] }
+unionlabs      = { workspace = true, features = ["test-utils"] }
 
 [features]
 default = []

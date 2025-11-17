@@ -30,6 +30,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alexandria_evm"
+version = "0.7.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:b92fefb7811a324a651e9781acea748c8588afa69b50ef4fe19f068c2d8ab745"
+dependencies = [
+ "alexandria_bytes",
+ "alexandria_math",
+]
+
+[[package]]
 name = "alexandria_math"
 version = "0.7.0"
 source = "registry+https://scarbs.xyz/"
@@ -73,6 +83,7 @@ version = "0.1.0"
 dependencies = [
  "alexandria_bytes",
  "alexandria_encoding",
+ "alexandria_evm",
  "snforge_std",
 ]
 

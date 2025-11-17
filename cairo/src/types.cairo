@@ -1,4 +1,10 @@
+use alexandria_bytes::BytesTrait;
+use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
+use alexandria_encoding::sol_abi::encode::SolAbiEncodeU8;
+use alexandria_evm::encoder::{AbiEncodeTrait, EVMCalldata};
+use alexandria_evm::evm_enum::EVMTypes;
 use core::hash::{Hash, HashStateTrait};
+use core::keccak::compute_keccak_byte_array;
 
 pub trait Id<T, +Copy<T>> {
     fn new(id: NonZero<u32>) -> T;
@@ -95,11 +101,38 @@ pub struct Connection {
     pub counterparty_connection_id: Option<ConnectionId>,
 }
 
+#[generate_trait]
+pub impl ConnectionImpl of ConnectionTrait {
+    fn encode(self: @Connection) -> ByteArray {
+        BytesTrait::new_empty()
+            .encode(self.state.as_u8())
+            .encode(self.client_id.raw())
+            .encode(self.counterparty_client_id.raw())
+            .encode(self.counterparty_connection_id.map_or(0, |id| id.raw()))
+            .into()
+    }
+
+    fn commit(self: @Connection) -> u256 {
+        compute_keccak_byte_array(@self.encode())
+    }
+}
+
 #[derive(Drop, Serde)]
 pub enum ConnectionState {
     Init,
     TryOpen,
     Open,
+}
+
+#[generate_trait]
+pub impl ConnectionStateImpl of ConnectionStateTrait {
+    fn as_u8(self: @ConnectionState) -> u8 {
+        match self {
+            ConnectionState::Init => 1,
+            ConnectionState::TryOpen => 2,
+            ConnectionState::Open => 3,
+        }
+    }
 }
 
 #[derive(Drop, Serde)]
@@ -112,12 +145,62 @@ pub struct Channel {
     pub version: ByteArray,
 }
 
+#[generate_trait]
+pub impl ChannelImpl of ChannelTrait {
+    fn encode(self: @Channel) -> ByteArray {
+        let mut encoder = EVMCalldata {
+            calldata: Default::default(),
+            offset: 0,
+            dynamic_data: Default::default(),
+            dynamic_offset: 0,
+        };
+
+        let mut bz: Array<felt252> = array![
+            self.state.as_u8().into(), self.connection_id.raw().into(),
+            self.counterparty_channel_id.map_or(0, |id| id.raw()).into(),
+            self.counterparty_port_id.len().into(),
+        ];
+
+        self.counterparty_port_id.serialize(ref bz);
+
+        bz.append(self.version.len().into());
+
+        self.version.serialize(ref bz);
+
+        encoder
+            .encode(
+                array![
+                    EVMTypes::Uint8, EVMTypes::Uint32, EVMTypes::Uint32, EVMTypes::Bytes,
+                    EVMTypes::String,
+                ]
+                    .span(),
+                bz.span(),
+            )
+    }
+
+    fn commit(self: @Channel) -> u256 {
+        compute_keccak_byte_array(@self.encode())
+    }
+}
+
 #[derive(Drop, Serde)]
 pub enum ChannelState {
     Init,
     TryOpen,
     Open,
     Closed,
+}
+
+#[generate_trait]
+pub impl ChannelStateImpl of ChannelStateTrait {
+    fn as_u8(self: @ChannelState) -> u8 {
+        match self {
+            ChannelState::Init => 1,
+            ChannelState::TryOpen => 2,
+            ChannelState::Open => 3,
+            ChannelState::Closed => 4,
+        }
+    }
 }
 
 #[derive(Drop, Serde)]

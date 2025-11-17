@@ -12,6 +12,7 @@ experimental-features = ["associated_item_constraints", "safe_dispatcher", "user
 [dependencies]
 alexandria_bytes = "0.7.0"
 alexandria_encoding = "0.7.0"
+alexandria_evm = "0.7.0"
 # groth16_example_bn254 = { git = "https://github.com/keep-starknet-strange/garaga" }
 starknet = "2.12.2"
 
