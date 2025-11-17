@@ -39,7 +39,6 @@ pub enum ExecuteMsg {
 
 /// Subset of [`ExecuteMsg`] for entrypoints that are access managed.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum RestrictedExecuteMsg {
     WhitelistIntents {

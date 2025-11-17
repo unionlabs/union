@@ -2329,7 +2329,7 @@ fn admin_operations_check_admin() {
 }
 
 #[test]
-fn consume_sheduled_op() {
+fn consume_scheduled_op() {
     let (mut deps, mut env) = setup();
 
     let data = r#"{"a":{}}"#;

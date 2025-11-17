@@ -11,6 +11,7 @@ pub enum Upgradable {
         /// The new code id to upgrade to.
         ///
         /// Note that the contract may have already been migrated to this code id. It is up to the contract to do necessary checks to guard against this case if it is not desired.
+        #[cfg_attr(feature = "schemars", schemars(with = "String"))]
         #[serde(with = "::serde_utils::string")]
         new_code_id: NonZero<u64>,
         /// The `MigrateMsg` that will be forward to the contract, within [`frissitheto::UpgradeMsg::Upgrade`].

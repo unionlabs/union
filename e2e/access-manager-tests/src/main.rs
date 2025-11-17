@@ -1029,7 +1029,7 @@ async fn setup_contracts(
         alice_client,
         &managed_address,
         &[Upgradable::Upgrade {
-            new_code_id: code_id.get(),
+            new_code_id: code_id,
             msg: serde_json::to_value(&access_managed_example::msg::MigrateMsg {}).unwrap(),
         }],
     )
