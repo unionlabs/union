@@ -1,10 +1,19 @@
-use alloy::sol_types::SolValue;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+
 use alloy_primitives::U256;
-use cosmwasm_schema::cw_serde;
+use alloy_sol_types::SolValue;
 use cosmwasm_std::{Addr, Binary, Event, Uint128};
 use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
-use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
+use serde::{Deserialize, Serialize};
+use unionlabs_primitives::{Bytes, H256, encoding::HexPrefixed};
 
 pub const EVENT_WRAPPED_TOKEN: &str = "create_wrapped_token";
 pub const EVENT_WRAPPED_TOKEN_ATTR_CHANNEL_ID: &str = "channel_id";
@@ -50,7 +59,8 @@ pub fn encode_metadata(implementation: &[u8], initializer: &[u8]) -> Vec<u8> {
     (implementation, initializer).abi_encode_params()
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum TokenMinterInitMsg {
     /// Cosmwasm's [CW20] minter, will use virtualized `CW20` tokens.
     /// Note that the `CW20` stack is fully on CosmWasm. Similarly to Ethereum's ERC20, the tokens will be
@@ -71,7 +81,7 @@ pub enum TokenMinterInitMsg {
 }
 
 /// Messages for the funds that are local to this chain
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LocalTokenMsg {
     /// Lock the funds.
     ///
@@ -99,7 +109,7 @@ pub enum LocalTokenMsg {
     },
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Metadata {
     /// name defines the name of the token (eg: Circle USDC)
     pub name: String,
@@ -110,7 +120,7 @@ pub struct Metadata {
 }
 
 /// Messages for the funds that are originated in other chains
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WrappedTokenMsg {
     /// Create a new denom
     ///
@@ -178,14 +188,13 @@ pub enum WrappedTokenMsg {
     },
 }
 
-#[cw_serde]
-#[derive(Enumorph)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Enumorph)]
 pub enum ExecuteMsg {
     Wrapped(WrappedTokenMsg),
     Local(LocalTokenMsg),
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum QueryMsg {
     /// Query the metadata of a token.
     Metadata {
@@ -205,14 +214,14 @@ pub enum QueryMsg {
     },
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MetadataResponse {
     pub name: String,
     pub symbol: String,
     pub decimals: u8,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PredictWrappedTokenResponse {
     pub wrapped_token: String,
 }

@@ -14,40 +14,17 @@ use hex::FromHexError;
 
 pub const HEX_ENCODING_PREFIX: &str = "0x";
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum FromHexStringError {
+    #[error("{0}")]
     Hex(FromHexError),
+    #[error("missing prefix `{HEX_ENCODING_PREFIX}` when deserializing hex data '{0}'")]
     MissingPrefix(String),
+    #[error("cannot parse empty string as hex")]
     EmptyString,
     // NOTE: Contains the stringified error
+    #[error("unable to convert from bytes: {0:?}")]
     TryFromBytes(String),
-}
-
-impl core::error::Error for FromHexStringError {
-    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-        match self {
-            FromHexStringError::Hex(hex) => Some(hex),
-            FromHexStringError::EmptyString => None,
-            FromHexStringError::MissingPrefix(_) => None,
-            FromHexStringError::TryFromBytes(_) => None,
-        }
-    }
-}
-
-impl core::fmt::Display for FromHexStringError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            FromHexStringError::Hex(e) => write!(f, "{e}"),
-            FromHexStringError::EmptyString => write!(f, "cannot parse empty string as hex"),
-            FromHexStringError::MissingPrefix(data) => write!(
-                f,
-                "missing prefix `{HEX_ENCODING_PREFIX}` when deserializing hex data '{data}'",
-            ),
-            FromHexStringError::TryFromBytes(err) => {
-                write!(f, "unable to convert from bytes: {err:?}")
-            }
-        }
-    }
 }
 
 pub fn to_hex<T: AsRef<[u8]>>(data: T) -> String {

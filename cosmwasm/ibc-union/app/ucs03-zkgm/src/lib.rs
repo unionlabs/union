@@ -1,9 +1,19 @@
+#![no_std]
+#![no_main]
+
+extern crate alloc;
+
+use alloc::{
+    borrow::ToOwned,
+    string::{String, ToString},
+};
+
 use alloy_primitives::{U256, ruint::ParseError};
 use cosmwasm_std::{Instantiate2AddressError, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
-use unionlabs::primitives::Bytes;
+use unionlabs_primitives::Bytes;
 
 pub mod com;
 pub mod contract;

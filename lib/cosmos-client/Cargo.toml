@@ -16,7 +16,7 @@ bip32         = { workspace = true }
 cometbft-rpc  = { workspace = true }
 cosmos-signer = { workspace = true }
 num-rational  = "0.4.2"
-num-traits    = "0.2.19"
+num-traits           = { workspace = true }
 protos        = { workspace = true }
 serde         = { workspace = true, features = ["derive"] }
 serde-utils   = { workspace = true }

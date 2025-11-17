@@ -27,7 +27,8 @@ _: {
         clippy = "clippy";
         miri = "miri";
         rust-src = "rust-src";
-        llvm-tools-preview = "llvm-tools-preview";
+        llvm-tools = "llvm-tools";
+        llvm-bitcode-linker = "llvm-bitcode-linker";
       };
 
       # rustSrc =
@@ -52,9 +53,11 @@ _: {
       #   });
 
       rustSrc =
-        (mkToolchain {
-          components = [ availableComponents.rust-src ];
-        }).passthru.availableComponents.rust-src;
+        (dbg
+          (mkToolchain {
+            components = [ availableComponents.rust-src ];
+          }).passthru.availableComponents
+        ).rust-src;
 
       mkToolchain =
         {
@@ -106,6 +109,11 @@ _: {
     rec {
       packages.rust-home = _module.args.rust.toolchains.dev;
 
+      packages.llvm-bitcode-linker =
+        (mkToolchain {
+          components = [ availableComponents.rust-src ];
+        }).passthru.availableComponents.llvm-bitcode-linker;
+
       packages.fetchRustStdCargoLock = mkCi false (
         pkgs.writeShellApplication {
           name = "fetchRustStdCargoLock";
@@ -126,7 +134,10 @@ _: {
           # for use in the devShell
           dev = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
             extensions = builtins.attrValues availableComponents;
-            targets = [ "wasm32-unknown-unknown" ];
+            targets = [
+              "wasm32-unknown-unknown"
+              "wasm32v1-none"
+            ];
           };
         };
       };

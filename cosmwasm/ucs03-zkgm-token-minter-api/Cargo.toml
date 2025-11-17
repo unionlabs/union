@@ -12,11 +12,19 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy             = { workspace = true, features = ["sol-types"] }
-alloy-primitives  = { workspace = true }
-cosmwasm-schema   = { workspace = true }
-cosmwasm-std      = { workspace = true, features = ["std"] }
-enumorph          = { workspace = true }
-ibc-union-spec    = { workspace = true, features = ["schemars", "serde"] }
-token-factory-api = { workspace = true }
-unionlabs         = { workspace = true }
+alloy-primitives     = { workspace = true }
+alloy-sol-types      = { workspace = true }
+cosmwasm-schema      = { workspace = true, optional = true }
+cosmwasm-std         = { workspace = true }
+enumorph             = { workspace = true }
+ibc-union-spec       = { workspace = true, features = ["serde"] }
+serde                = { workspace = true, features = ["derive"] }
+token-factory-api    = { workspace = true }
+unionlabs-primitives = { workspace = true }
+
+[features]
+default = []
+
+std = ["cosmwasm-std/std"]
+
+schemars = ["std", "unionlabs-primitives/schemars", "dep:cosmwasm-schema"]

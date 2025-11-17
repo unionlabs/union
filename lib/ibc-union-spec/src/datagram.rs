@@ -1,5 +1,8 @@
+use alloc::{string::String, vec::Vec};
+
 use enumorph::Enumorph;
-use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
+use unionlabs_height::Height;
+use unionlabs_primitives::Bytes;
 use voyager_primitives::ClientType;
 
 use crate::{

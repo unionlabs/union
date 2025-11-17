@@ -1,5 +1,7 @@
+use alloc::string::String;
+
 use enumorph::Enumorph;
-use unionlabs::primitives::{Bytes, H256};
+use unionlabs_primitives::{Bytes, H256};
 use voyager_primitives::{ClientType, Timestamp};
 
 use crate::{

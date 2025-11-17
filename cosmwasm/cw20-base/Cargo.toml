@@ -9,9 +9,6 @@ name          = "cw20-base"
 repository    = "https://github.com/CosmWasm/cw-plus"
 version       = "0.0.0"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [features]
 # use library feature to disable all instantiate/execute/query exports
 library = []

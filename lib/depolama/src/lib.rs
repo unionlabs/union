@@ -58,7 +58,16 @@
 //! assert!(storage.maybe_read::<ExampleStore>(&3).unwrap().is_none());
 //! ```
 
+#![no_std]
 #![warn(clippy::pedantic, missing_docs)]
+
+extern crate alloc;
+
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 use cosmwasm_std::{
     Addr, Empty, OverflowError, OverflowOperation, Querier, QueryRequest, StdError, StdResult,
@@ -398,7 +407,7 @@ pub trait StorageExt {
     fn iter_range<S: Store>(
         &self,
         order: cosmwasm_std::Order,
-        bounds: impl std::ops::RangeBounds<S::Key>,
+        bounds: impl core::ops::RangeBounds<S::Key>,
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>>;
 }
 
@@ -435,7 +444,7 @@ impl<T: Storage> StorageExt for T {
     fn iter_range<S: Store>(
         &self,
         order: cosmwasm_std::Order,
-        bounds: impl std::ops::RangeBounds<S::Key>,
+        bounds: impl core::ops::RangeBounds<S::Key>,
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
         (self as &dyn Storage).iter_range::<S>(order, bounds)
     }
@@ -494,9 +503,10 @@ impl StorageExt for dyn Storage + '_ {
     fn iter_range<S: Store>(
         &self,
         order: cosmwasm_std::Order,
-        bounds: impl std::ops::RangeBounds<S::Key>,
+        bounds: impl core::ops::RangeBounds<S::Key>,
     ) -> impl Iterator<Item = StdResult<(S::Key, S::Value)>> {
-        use std::ops::Bound;
+        use alloc::vec::Vec;
+        use core::ops::Bound;
 
         fn key_plus_one(raw_key: impl Into<Vec<u8>>) -> Bytes {
             let mut raw_key = raw_key.into();

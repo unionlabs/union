@@ -1,8 +1,10 @@
+use alloc::{string::String, vec::Vec};
+
 use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
 use ibc_union_spec::{ChannelId, Packet};
 use serde::{Deserialize, Serialize};
-use unionlabs::primitives::{Bytes, H256, U256};
+use unionlabs_primitives::{Bytes, H256, U256};
 
 use crate::{msg::Config, token_bucket::TokenBucket};
 

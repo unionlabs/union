@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use ibc_union_spec::{ChannelId, ConnectionId, Packet};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;

@@ -1,4 +1,9 @@
-use alloc::borrow::Cow;
+use alloc::{
+    borrow::{Cow, ToOwned},
+    vec::Vec,
+};
+#[cfg(feature = "schemars")]
+use alloc::{format, string::String};
 use core::{
     array::TryFromSliceError, cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr,
 };
@@ -176,6 +181,8 @@ impl<'de, E: Encoding> serde::Deserialize<'de> for Bytes<E> {
         D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
+            use alloc::string::String;
+
             String::deserialize(deserializer)
                 .and_then(|s| s.parse().map_err(::serde::de::Error::custom))
         } else {
@@ -377,6 +384,8 @@ impl<E: Encoding> schemars::JsonSchema for Bytes<E> {
     }
 
     fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
+        use alloc::boxed::Box;
+
         use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
 
         SchemaObject {

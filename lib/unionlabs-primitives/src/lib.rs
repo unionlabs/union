@@ -1,3 +1,4 @@
+#![no_std]
 #![deny(
     clippy::pedantic,
     clippy::std_instead_of_core,

@@ -1,4 +1,5 @@
-use std::{collections::BTreeSet, marker::PhantomData};
+use alloc::{collections::BTreeSet, format, string::String};
+use core::marker::PhantomData;
 
 use cosmwasm_std::{Addr, StdError, StdResult};
 use depolama::{
@@ -6,10 +7,8 @@ use depolama::{
     value::{ValueCodecViaEncoding, ValueUnitEncoding},
 };
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
-use unionlabs::{
-    encoding::Bincode,
-    primitives::{ByteArrayExt, Bytes, H256},
-};
+use unionlabs_encoding::Bincode;
+use unionlabs_primitives::{ByteArrayExt, Bytes, H256};
 
 macro_rules! id_key {
     ($ty:ty) => {

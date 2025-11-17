@@ -1,5 +1,6 @@
 #![allow(clippy::disallowed_types)] // need to access the inner type to wrap it
 
+use alloc::{borrow::ToOwned, format, string::String, vec::Vec};
 use core::{
     fmt::{self, Display},
     iter::Sum,
@@ -8,10 +9,10 @@ use core::{
     str::FromStr,
 };
 
-/// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
+/// [`ruint::aliases::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[repr(transparent)]
-pub struct U256(pub primitive_types::U256);
+pub struct U256(pub ruint::aliases::U256);
 
 impl fmt::Debug for U256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -41,9 +42,11 @@ impl<'de> serde::Deserialize<'de> for U256 {
     where
         D: serde::Deserializer<'de>,
     {
+        use alloc::string::String;
+
         String::deserialize(deserializer)
             .and_then(|s| {
-                primitive_types::U256::from_dec_str(&s).map_err(|err| {
+                ruint::aliases::U256::from_str_radix(&s, 10).map_err(|err| {
                     serde::de::Error::custom(format!("failure to parse string data: {err}"))
                 })
             })
@@ -54,6 +57,8 @@ impl<'de> serde::Deserialize<'de> for U256 {
 #[cfg(feature = "serde")]
 #[allow(clippy::missing_errors_doc)]
 pub mod u256_big_endian_hex {
+    use alloc::string::String;
+
     use serde::de::{self, Deserialize};
 
     use crate::U256;
@@ -139,6 +144,8 @@ impl schemars::JsonSchema for U256 {
     }
 
     fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
+        use alloc::boxed::Box;
+
         use schemars::schema::{
             InstanceType, Metadata, SchemaObject, SingleOrVec, StringValidation,
         };
@@ -182,25 +189,25 @@ impl U256 {
 
 impl From<u32> for U256 {
     fn from(value: u32) -> Self {
-        Self(primitive_types::U256::from(value))
+        Self(ruint::aliases::U256::from(value))
     }
 }
 
 impl From<NonZeroU32> for U256 {
     fn from(value: NonZeroU32) -> Self {
-        Self(primitive_types::U256::from(value.get()))
+        Self(ruint::aliases::U256::from(value.get()))
     }
 }
 
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
-        Self(primitive_types::U256::from(value))
+        Self(ruint::aliases::U256::from(value))
     }
 }
 
 impl From<u128> for U256 {
     fn from(value: u128) -> Self {
-        Self(primitive_types::U256::from(value))
+        Self(ruint::aliases::U256::from(value))
     }
 }
 
@@ -208,11 +215,7 @@ impl TryFrom<U256> for u32 {
     type Error = ();
 
     fn try_from(value: U256) -> Result<Self, Self::Error> {
-        if value > U256::from(u32::MAX) {
-            Err(())
-        } else {
-            Ok(value.0.as_u32())
-        }
+        value.0.try_into().map_err(|_| ())
     }
 }
 
@@ -220,11 +223,7 @@ impl TryFrom<U256> for u64 {
     type Error = ();
 
     fn try_from(value: U256) -> Result<Self, Self::Error> {
-        if value > U256::from(u64::MAX) {
-            Err(())
-        } else {
-            Ok(value.0.as_u64())
-        }
+        value.0.try_into().map_err(|_| ())
     }
 }
 
@@ -232,51 +231,29 @@ impl TryFrom<U256> for u128 {
     type Error = ();
 
     fn try_from(value: U256) -> Result<Self, Self::Error> {
-        if value > U256::from(u128::MAX) {
-            Err(())
-        } else {
-            Ok(value.0.as_u128())
-        }
-    }
-}
-
-impl From<primitive_types::U256> for U256 {
-    fn from(value: primitive_types::U256) -> Self {
-        Self(value)
-    }
-}
-
-impl From<U256> for primitive_types::U256 {
-    fn from(value: U256) -> Self {
-        value.0
+        value.0.try_into().map_err(|_| ())
     }
 }
 
 impl U256 {
     #[must_use]
-    pub fn leading_zeros(&self) -> u32 {
+    pub fn leading_zeros(&self) -> usize {
         self.0.leading_zeros()
     }
 
     #[must_use]
     pub fn to_le_bytes(&self) -> [u8; 32] {
-        let mut buf = [0; 32];
-        self.0.to_little_endian(&mut buf);
-        buf
+        self.0.to_le_bytes()
     }
 
     #[must_use]
     pub fn to_be_bytes(&self) -> [u8; 32] {
-        let mut buf = [0; 32];
-        self.0.to_big_endian(&mut buf);
-        buf
+        self.0.to_be_bytes()
     }
 
     #[must_use]
     pub fn to_be_bytes_packed(&self) -> Vec<u8> {
-        let buffer = self.to_be_bytes();
-        let leading_empty_bytes = (self.leading_zeros() / 8) as usize;
-        buffer[leading_empty_bytes..].to_vec()
+        self.0.to_be_bytes_trimmed_vec()
     }
 
     /// Attempt to convert the provided big-endian bytes into a [`U256`].
@@ -288,7 +265,7 @@ impl U256 {
         let len = bz.len();
 
         if (0..=32).contains(&len) {
-            Ok(Self(primitive_types::U256::from_big_endian(bz)))
+            Ok(Self(ruint::aliases::U256::from_be_slice(bz)))
         } else {
             Err(TryFromBytesError {
                 expected_max_len: 32,
@@ -299,28 +276,28 @@ impl U256 {
 
     #[must_use]
     pub fn from_be_bytes(bz: [u8; 32]) -> Self {
-        Self(primitive_types::U256::from_big_endian(&bz))
+        Self(ruint::aliases::U256::from_be_bytes(bz))
     }
 
     #[must_use]
     pub fn from_le_bytes(bz: [u8; 32]) -> Self {
-        Self(primitive_types::U256::from_little_endian(&bz))
+        Self(ruint::aliases::U256::from_le_bytes(bz))
     }
 
     #[must_use]
     pub const fn from_limbs(limbs: [u64; 4]) -> Self {
-        Self(primitive_types::U256(limbs))
+        Self(ruint::aliases::U256::from_limbs(limbs))
     }
 
     #[must_use]
     pub const fn as_limbs(&self) -> [u64; 4] {
-        self.0.0
+        *self.0.as_limbs()
     }
 
     #[must_use]
     pub fn to_be_hex(&self) -> String {
         let encoded = if self == &Self::ZERO {
-            "0".to_string()
+            "0".to_owned()
         } else {
             hex::encode(self.to_be_bytes())
         };
@@ -368,14 +345,7 @@ impl U256 {
 
     #[must_use]
     pub fn div_ceil(self, other: Self) -> Self {
-        // https://doc.rust-lang.org/stable/src/core/num/uint_macros.rs.html#3247
-
-        let (d, r) = self.0.div_mod(other.0);
-        if r.is_zero() {
-            Self(d)
-        } else {
-            Self(d) + Self::ONE
-        }
+        Self(self.0.div_ceil(other.0))
     }
 
     pub fn checked_sub(self, other: Self) -> Option<Self> {
@@ -398,19 +368,17 @@ pub enum TryFromHexError {
     EmptyString,
     #[error(transparent)]
     TryFromBytes(#[from] TryFromBytesError),
-    #[error(transparent)]
-    Hex(#[from] hex::FromHexError),
+    #[error("{0}")]
+    Hex(hex::FromHexError),
 }
 
 impl FromStr for U256 {
-    type Err = ::uint::FromDecStrErr;
+    type Err = ruint::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        primitive_types::U256::from_dec_str(s).map(Self)
+        ruint::aliases::U256::from_str_radix(s, 10).map(Self)
     }
 }
-
-pub use ::uint::FromDecStrErr;
 
 #[cfg(feature = "rlp")]
 impl rlp::Encodable for U256 {
@@ -422,7 +390,7 @@ impl rlp::Encodable for U256 {
 #[cfg(feature = "rlp")]
 impl rlp::Decodable for U256 {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        <primitive_types::U256 as rlp::Decodable>::decode(rlp).map(Self)
+        <ruint::aliases::U256 as rlp::Decodable>::decode(rlp).map(Self)
     }
 }
 

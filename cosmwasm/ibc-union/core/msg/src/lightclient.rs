@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
 use ibc_union_spec::ClientId;
 use unionlabs_primitives::Bytes;

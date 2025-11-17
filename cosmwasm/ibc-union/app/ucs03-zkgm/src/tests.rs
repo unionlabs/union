@@ -12,10 +12,7 @@ use cw20::{Cw20Coin, Cw20QueryMsg, TokenInfoResponse};
 use cw20_token_minter::contract::{Cw20TokenMinterImplementation, save_native_token};
 use ibc_union_msg::module::IbcUnionMsg;
 use ibc_union_spec::{ChannelId, ConnectionId, MustBeZero, Packet, path::commit_packets};
-use unionlabs::{
-    ethereum::keccak256,
-    primitives::{Bytes, H256},
-};
+use unionlabs_primitives::{Bytes, H256};
 
 use crate::{
     ContractError,

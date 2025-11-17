@@ -1,6 +1,8 @@
+use alloc::{string::String, vec::Vec};
 use core::{borrow::Borrow, fmt::Display};
 
-use unionlabs::{errors::UnknownEnumVariant, primitives::Bytes, tuple::AsTuple};
+use unionlabs_primitives::Bytes;
+use unionlabs_tuple::AsTuple;
 
 use crate::types::{ChannelId, ConnectionId};
 
@@ -38,7 +40,7 @@ pub enum ChannelState {
 }
 
 impl Display for ChannelState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             ChannelState::Init => "init",
             ChannelState::TryOpen => "try_open",
@@ -49,7 +51,7 @@ impl Display for ChannelState {
 }
 
 impl TryFrom<u8> for ChannelState {
-    type Error = UnknownEnumVariant<u8>;
+    type Error = InvalidChannelState;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -57,10 +59,14 @@ impl TryFrom<u8> for ChannelState {
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
             4 => Ok(Self::Closed),
-            _ => Err(UnknownEnumVariant(value)),
+            _ => Err(InvalidChannelState(value)),
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("invalid channel state: {0}")]
+pub struct InvalidChannelState(pub u8);
 
 impl Borrow<u8> for ChannelState {
     fn borrow(&self) -> &u8 {
@@ -77,7 +83,7 @@ impl Borrow<u8> for &ChannelState {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use std::borrow::Cow;
+    use alloc::borrow::Cow;
 
     use alloy_sol_types::{
         SolStruct, SolType, SolValue,

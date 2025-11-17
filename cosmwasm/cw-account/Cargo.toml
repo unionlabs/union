@@ -8,19 +8,18 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [lints]
 workspace = true
 
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
+cfg-if = "1.0.4"
 cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0", "staking", "stargate"] } # enable all features so that any message is dispatchable
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
 frissitheto          = { workspace = true }
 ibc-union-spec       = { workspace = true, features = ["bincode"] }
+mini-alloc = "1.0.0"
 schemars             = { workspace = true, optional = true, features = ["derive"] }
 serde                = { workspace = true, features = ["derive"] }
 thiserror            = { workspace = true }

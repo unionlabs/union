@@ -11,9 +11,6 @@ repository   = { workspace = true }
 [lints]
 workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 cometbls-light-client                     = { workspace = true }
 cosmwasm-std                              = { workspace = true, features = ["abort"] }

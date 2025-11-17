@@ -1,3 +1,5 @@
+#![no_std]
+
 use bytemuck::CheckedBitPattern;
 
 /// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the `commit_hash` export.
@@ -21,7 +23,7 @@ pub enum Rev {
 }
 
 impl core::fmt::Display for Rev {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Rev::Unknown => f.write_str("unknown"),
             Rev::Dirty => f.write_str("dirty"),

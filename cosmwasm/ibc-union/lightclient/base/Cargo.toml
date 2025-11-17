@@ -14,9 +14,6 @@ workspace = true
 [package.metadata.crane]
 test-include = []
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 base-light-client-types     = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 base-verifier               = { workspace = true }

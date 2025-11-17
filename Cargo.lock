@@ -3037,9 +3037,9 @@ dependencies = [
 
 [[package]]
 name = "cfg-if"
-version = "1.0.0"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "cfg_aliases"
@@ -3465,15 +3465,14 @@ dependencies = [
 
 [[package]]
 name = "const-hex"
-version = "1.14.1"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83e22e0ed40b96a48d3db274f72fd365bd78f67af39b6bbd47e8a15e1c6207ff"
+checksum = "3bb320cac8a0750d7f25280aa97b09c26edfe161164238ecbbb31092b079e735"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "hex",
  "proptest",
- "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -3646,14 +3645,12 @@ dependencies = [
 [[package]]
 name = "cosmwasm-core"
 version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35b6dc17e7fd89d0a0a58f12ef33f0bbdf09a6a14c3dfb383eae665e5889250e"
+source = "git+https://github.com/benluelo/cosmwasm?branch=union-v2.2.2#6467e29dc410329696e9890f03982f2a971d9f0f"
 
 [[package]]
 name = "cosmwasm-crypto"
 version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa2f53285517db3e33d825b3e46301efe845135778527e1295154413b2f0469e"
+source = "git+https://github.com/benluelo/cosmwasm?branch=union-v2.2.2#6467e29dc410329696e9890f03982f2a971d9f0f"
 dependencies = [
  "ark-bls12-381 0.4.0",
  "ark-ec 0.4.2",
@@ -3670,7 +3667,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rayon",
  "sha2 0.10.9",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -3712,8 +3709,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-derive"
 version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a782b93fae93e57ca8ad3e9e994e784583f5933aeaaa5c80a545c4b437be2047"
+source = "git+https://github.com/benluelo/cosmwasm?branch=union-v2.2.2#6467e29dc410329696e9890f03982f2a971d9f0f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3723,21 +3719,19 @@ dependencies = [
 [[package]]
 name = "cosmwasm-schema"
 version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6984ab21b47a096e17ae4c73cea2123a704d4b6686c39421247ad67020d76f95"
+source = "git+https://github.com/benluelo/cosmwasm?branch=union-v2.2.2#6467e29dc410329696e9890f03982f2a971d9f0f"
 dependencies = [
  "cosmwasm-schema-derive",
  "schemars",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
 name = "cosmwasm-schema-derive"
 version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e01c9214319017f6ebd8e299036e1f717fa9bb6724e758f7d6fb2477599d1a29"
+source = "git+https://github.com/benluelo/cosmwasm?branch=union-v2.2.2#6467e29dc410329696e9890f03982f2a971d9f0f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3747,25 +3741,25 @@ dependencies = [
 [[package]]
 name = "cosmwasm-std"
 version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf82335c14bd94eeb4d3c461b7aa419ecd7ea13c2efe24b97cd972bdb8044e7d"
+source = "git+https://github.com/benluelo/cosmwasm?branch=union-v2.2.2#6467e29dc410329696e9890f03982f2a971d9f0f"
 dependencies = [
  "base64 0.22.1",
  "bech32 0.11.0",
  "bnum 0.11.0",
+ "cfg-if",
  "cosmwasm-core",
  "cosmwasm-crypto",
  "cosmwasm-derive",
  "derive_more 1.0.0",
+ "ed25519-zebra",
  "hex",
+ "mini-alloc",
  "rand_core 0.6.4",
- "rmp-serde",
- "schemars",
  "serde",
  "serde-json-wasm",
  "sha2 0.10.9",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -4152,12 +4146,14 @@ name = "cw-account"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
+ "cfg-if",
  "cosmwasm-std",
  "depolama",
  "embed-commit",
  "frissitheto",
  "hex-literal 0.4.1",
  "ibc-union-spec",
+ "mini-alloc",
  "schemars",
  "serde",
  "thiserror 2.0.12",
@@ -4315,11 +4311,10 @@ dependencies = [
 [[package]]
 name = "cw-storage-plus"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f13360e9007f51998d42b1bc6b7fa0141f74feae61ed5fd1e5b0a89eec7b5de1"
+source = "git+https://github.com/benluelo/cw-storage-plus?branch=union-v2.0.0#cd079e56e8e2d7e02ba2c13993494c2996efaf40"
 dependencies = [
  "cosmwasm-std",
- "schemars",
+ "ed25519-zebra",
  "serde",
 ]
 
@@ -5243,16 +5238,17 @@ dependencies = [
 
 [[package]]
 name = "ed25519-zebra"
-version = "4.0.3"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d9ce6874da5d4415896cd45ffbc4d1cfc0c4f9c079427bd870742c30f2f65a9"
+checksum = "0017d969298eec91e3db7a2985a8cab4df6341d86e6f3a6f5878b13fb7846bc9"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
- "hashbrown 0.14.5",
- "hex",
+ "hashbrown 0.15.2",
+ "pkcs8 0.10.2",
  "rand_core 0.6.4",
  "sha2 0.10.9",
+ "subtle 2.6.1",
  "zeroize",
 ]
 
@@ -5440,9 +5436,18 @@ dependencies = [
 
 [[package]]
 name = "enumorph"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d3e2610493c0a1fc3bf33fb420650c6ebf7990c55e3d5e71a57bee374486824"
+checksum = "57800a2ba81b2c7dbb6ac3db68bbc8bf2ed2b3a8d3da5515255cbc704ebe61bc"
+dependencies = [
+ "enumorph-derive",
+]
+
+[[package]]
+name = "enumorph-derive"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddf587caf60391b3c5fe3df755892b29dde3b5b8b64cfe848c093fbde0d6d92a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7071,7 +7076,8 @@ dependencies = [
  "serde-json-wasm",
  "strum 0.27.2",
  "thiserror 2.0.12",
- "unionlabs",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -7120,7 +7126,9 @@ dependencies = [
  "sha3",
  "thiserror 2.0.12",
  "tracing",
- "unionlabs",
+ "unionlabs-height",
+ "unionlabs-primitives",
+ "unionlabs-tuple",
  "voyager-primitives",
 ]
 
@@ -7333,15 +7341,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba6a270039626615617f3f36d15fc827041df3b78c439da2cadfa47455a77f2f"
 dependencies = [
  "parity-scale-codec 3.7.4",
-]
-
-[[package]]
-name = "impl-rlp"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f28220f89297a075ddc7245cd538076ee98b01f2a9c23a53a4f1105d5a322808"
-dependencies = [
- "rlp",
 ]
 
 [[package]]
@@ -8620,6 +8619,15 @@ checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
 dependencies = [
  "mime",
  "unicase",
+]
+
+[[package]]
+name = "mini-alloc"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b620761d4c29ede39bb1351c4360dba54d3b414d9fb460d37cba4c98b37a0b9d"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]
@@ -10647,7 +10655,6 @@ checksum = "0b34d9fd68ae0b74a41b21c03c2f62847aa0ffea044eee893b4c140b37e244e2"
 dependencies = [
  "fixed-hash 0.8.0",
  "impl-codec 0.6.0",
- "impl-rlp",
  "uint",
 ]
 
@@ -11610,28 +11617,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rmp"
-version = "0.8.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "228ed7c16fa39782c3b3468e974aec2795e9089153cd08ee2e9aefb3613334c4"
-dependencies = [
- "byteorder",
- "num-traits",
- "paste",
-]
-
-[[package]]
-name = "rmp-serde"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52e599a477cf9840e92f2cde9a7189e67b42c57532749bf90aea6ec10facd4db"
-dependencies = [
- "byteorder",
- "rmp",
- "serde",
-]
-
-[[package]]
 name = "roaring"
 version = "0.10.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12390,6 +12375,7 @@ dependencies = [
  "chrono",
  "hex",
  "serde",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -14560,6 +14546,8 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "enumorph",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
@@ -15305,6 +15293,7 @@ dependencies = [
  "hex-literal 0.4.1",
  "ibc-union-msg",
  "ibc-union-spec",
+ "mini-alloc",
  "schemars",
  "serde",
  "serde-json-wasm",
@@ -15315,7 +15304,7 @@ dependencies = [
  "ucs03-solvable",
  "ucs03-zkgm-token-minter-api",
  "ucs03-zkgmable",
- "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -15335,14 +15324,15 @@ dependencies = [
 name = "ucs03-zkgm-token-minter-api"
 version = "0.0.0"
 dependencies = [
- "alloy",
  "alloy-primitives",
+ "alloy-sol-types",
  "cosmwasm-schema",
  "cosmwasm-std",
  "enumorph",
  "ibc-union-spec",
+ "serde",
  "token-factory-api",
- "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -15565,7 +15555,9 @@ dependencies = [
  "thiserror 2.0.12",
  "typenum",
  "unionlabs-encoding",
+ "unionlabs-height",
  "unionlabs-primitives",
+ "unionlabs-tuple",
 ]
 
 [[package]]
@@ -15583,6 +15575,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "unionlabs-height"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "prost 0.12.6",
+ "protos",
+ "schemars",
+ "serde",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+]
+
+[[package]]
 name = "unionlabs-primitives"
 version = "0.0.0"
 dependencies = [
@@ -15595,6 +15600,7 @@ dependencies = [
  "hex",
  "primitive-types 0.12.2",
  "rlp",
+ "ruint",
  "schemars",
  "serde",
  "serde_bytes",
@@ -15602,9 +15608,15 @@ dependencies = [
  "subtle-encoding",
  "thiserror 2.0.12",
  "typenum",
- "uint",
  "unionlabs",
  "unionlabs-primitives",
+]
+
+[[package]]
+name = "unionlabs-tuple"
+version = "0.0.0"
+dependencies = [
+ "macros",
 ]
 
 [[package]]
@@ -17176,7 +17188,8 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "unionlabs",
+ "unionlabs-height",
+ "unionlabs-primitives",
 ]
 
 [[package]]

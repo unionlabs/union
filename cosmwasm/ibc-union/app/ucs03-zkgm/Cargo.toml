@@ -11,20 +11,18 @@ repository   = { workspace = true }
 [lints]
 workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 alloy-primitives            = { workspace = true }
 alloy-sol-types             = { workspace = true }
-cosmwasm-schema             = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "cosmwasm_1_4", "staking"] }
-cw-account                  = { workspace = true }
+cosmwasm-schema             = { workspace = true, optional = true }
+cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "cosmwasm_1_4", "staking", "panic_handler", "global_allocator"] }
+cw-account                  = { workspace = true, features = ["library"] }
 cw-storage-plus             = { workspace = true }
 embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-msg               = { workspace = true }
 ibc-union-spec              = { workspace = true, features = ["serde", "ethabi"] }
+mini-alloc = "1.0.0"
 schemars                    = { workspace = true, features = ["derive"], optional = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde-json-wasm             = { workspace = true }
@@ -34,7 +32,7 @@ token-factory-api           = { workspace = true }
 ucs03-solvable              = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 ucs03-zkgmable              = { workspace = true }
-unionlabs                   = { workspace = true, features = ["ethabi", "schemars"] }
+unionlabs-primitives        = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test     = { version = "=2.4", features = ["cosmwasm_2_2"] }
@@ -47,5 +45,7 @@ serde_json        = { workspace = true }
 
 [features]
 default  = []
+
 library  = []
-schemars = ["dep:schemars", "ibc-union-msg/schemars"]
+
+schemars = ["dep:schemars", "ibc-union-msg/schemars", "dep:cosmwasm-schema"]

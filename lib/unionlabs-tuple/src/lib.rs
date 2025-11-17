@@ -1,3 +1,5 @@
+#![no_std]
+
 pub use macros::AsTuple;
 
 pub trait Tuple {
@@ -17,38 +19,38 @@ pub trait TupleFromRef: Tuple {
 }
 
 macro_rules! impl_is_tuple {
-        ($($T:ident)*) => {
-            impl<$($T),*> Tuple for ($($T,)*) {
-                type Ref<'a> = ($(&'a $T,)*) where $($T: 'a,)*;
+    ($($T:ident)*) => {
+        impl<$($T),*> Tuple for ($($T,)*) {
+            type Ref<'a> = ($(&'a $T,)*) where $($T: 'a,)*;
 
-                const ARITY: usize = {
-                    $(const $T: usize = 1;)*
+            const ARITY: usize = {
+                $(const $T: usize = 1;)*
 
-                    $($T + )* 0
-                };
+                $($T + )* 0
+            };
+        }
+
+        impl<$($T),*> TupleAsRef for ($($T,)*) {
+            fn as_ref(&self) -> Self::Ref<'_> {
+                #[allow(non_snake_case)]
+                let ($($T,)*) = self;
+
+                #[allow(clippy::unused_unit)]
+                ($(&$T,)*)
             }
+        }
 
-            impl<$($T),*> TupleAsRef for ($($T,)*) {
-                fn as_ref(&self) -> Self::Ref<'_> {
-                    #[allow(non_snake_case)]
-                    let ($($T,)*) = self;
+        impl<$($T: Clone),*> TupleFromRef for ($($T,)*) {
+            fn from_ref(tuple: Self::Ref<'_>) -> Self {
+                #[allow(non_snake_case)]
+                let ($($T,)*) = tuple;
 
-                    #[allow(clippy::unused_unit)]
-                    ($(&$T,)*)
-                }
+                #[allow(clippy::unused_unit)]
+                ($($T.clone(),)*)
             }
-
-            impl<$($T: Clone),*> TupleFromRef for ($($T,)*) {
-                fn from_ref(tuple: Self::Ref<'_>) -> Self {
-                    #[allow(non_snake_case)]
-                    let ($($T,)*) = tuple;
-
-                    #[allow(clippy::unused_unit)]
-                    ($($T.clone(),)*)
-                }
-            }
-        };
-    }
+        }
+    };
+}
 
 impl_is_tuple!();
 impl_is_tuple!(A);

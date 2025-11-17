@@ -1,7 +1,10 @@
 #![doc = include_str!("../README.md")]
 #![warn(clippy::pedantic, missing_docs)]
+#![no_std]
 
-use std::num::NonZeroU32;
+extern crate alloc;
+
+use core::num::NonZeroU32;
 
 use cosmwasm_std::{CustomMsg, DepsMut, Response, StdError};
 use serde::{Deserialize, Serialize};
@@ -156,7 +159,7 @@ pub enum InitStateVersionError {
 // TODO: Add tests for version changes as well
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use alloc::{collections::BTreeMap, vec::Vec};
 
     use cosmwasm_std::{Empty, MemoryStorage, Storage, testing::mock_dependencies};
 

@@ -8,9 +8,6 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [lints]
 workspace = true
 

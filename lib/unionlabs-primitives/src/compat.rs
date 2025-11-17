@@ -27,10 +27,24 @@ pub mod primitive_types_compat {
             Self::new(value.0)
         }
     }
+
+    impl From<primitive_types::U256> for U256 {
+        fn from(value: primitive_types::U256) -> Self {
+            Self(value)
+        }
+    }
+
+    impl From<U256> for primitive_types::U256 {
+        fn from(value: U256) -> Self {
+            value.0
+        }
+    }
 }
 
 #[cfg(feature = "generic-array-compat")]
 pub mod generic_array_compat {
+    use alloc::borrow::ToOwned;
+
     use generic_array::{ArrayLength, GenericArray};
     use typenum::{Const, ToUInt, U};
 
@@ -134,6 +148,8 @@ pub mod alloy_primitives_compat {
 
 #[cfg(feature = "alloy-sol-types-compat")]
 pub mod alloy_sol_types_compat {
+    use alloc::vec::Vec;
+
     use alloy_sol_types::{
         SolType, SolValue, Word,
         abi::token::WordToken,

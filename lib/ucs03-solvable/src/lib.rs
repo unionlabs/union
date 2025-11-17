@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 use cosmwasm_std::Addr;
 use ibc_union_spec::Packet;
 use serde::{Deserialize, Serialize};

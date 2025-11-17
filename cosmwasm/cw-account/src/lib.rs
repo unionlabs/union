@@ -1,4 +1,25 @@
-use std::num::NonZeroU32;
+#![no_std]
+
+extern crate alloc;
+
+cfg_if::cfg_if! {
+    if #[cfg(not(feature = "library"))] {
+        #[global_allocator]
+        static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
+
+        #[panic_handler]
+        fn panic(_info: &core::panic::PanicInfo) -> ! {
+            loop {}
+        }
+    }
+}
+
+use alloc::{
+    borrow::ToOwned,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::{iter::Iterator, num::NonZeroU32};
 
 use cosmwasm_std::{
     Addr, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Order, Response, StdError,
@@ -221,7 +242,7 @@ pub fn migrate(
             let res = init(deps, init_msg);
             Ok((res, None))
         },
-        |_, _, _| Ok((Response::default(), None)),
+        |_, _, _| Ok((Response::new(), None)),
     )
 }
 

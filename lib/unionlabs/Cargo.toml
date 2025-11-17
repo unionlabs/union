@@ -39,10 +39,12 @@ bs58    = { workspace = true }
 # near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
-serde_bytes          = "0.11.17"
+serde_bytes          = { version = "0.11.17", default-features = false }
 solidity-slot        = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["proto", "json"] }
+unionlabs-height     = { workspace = true, features = ["serde"] }                                             # TODO: Feature gate serde correctly throughout this crate
 unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64", "base58"] }
+unionlabs-tuple      = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
@@ -64,10 +66,15 @@ std = ["sha2/std", "unionlabs-encoding/std"]
 fuzzing    = []
 test-utils = ["dep:serde_json"]
 
-bcs      = ["unionlabs-encoding/bcs"]
-bincode  = ["dep:bincode", "unionlabs-primitives/bincode", "unionlabs-encoding/bincode"]
-proto    = ["unionlabs-encoding/proto"]
-rlp      = ["unionlabs-primitives/rlp"]
+bcs = ["unionlabs-encoding/bcs"]
+bincode = [
+  "dep:bincode",
+  "unionlabs-primitives/bincode",
+  "unionlabs-encoding/bincode",
+  "unionlabs-height/bincode",
+]
+proto = ["unionlabs-encoding/proto", "unionlabs-height/proto"]
+rlp = ["unionlabs-primitives/rlp"]
 schemars = ["dep:schemars", "unionlabs-primitives/schemars"]
-ssz      = ["unionlabs-encoding/ssz"]
+ssz = ["unionlabs-encoding/ssz"]
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

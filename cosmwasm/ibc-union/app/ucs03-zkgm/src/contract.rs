@@ -1,7 +1,15 @@
-use core::str;
-use std::{slice, str::FromStr};
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+use core::{
+    slice,
+    str::{self, FromStr},
+};
 
-use alloy_primitives::U256;
+use alloy_primitives::{U256, keccak256};
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -17,17 +25,14 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{ChannelId, MustBeZero, Packet, Timestamp, path::BatchPacketsPath};
+use serde::{Deserialize, Serialize};
 use ucs03_solvable::Solvable;
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind, WrappedTokenMsg,
     new_wrapped_token_event,
 };
 use ucs03_zkgmable::{OnIntentZkgm, OnZkgm, Zkgmable};
-use unionlabs::{
-    ethereum::keccak256,
-    never::Never,
-    primitives::{Bytes, H256, encoding::HexPrefixed},
-};
+use unionlabs_primitives::{Bytes, H256, encoding::HexPrefixed};
 
 use crate::{
     ContractError,
@@ -1539,7 +1544,7 @@ fn execute_call(
                 WasmMsg::Migrate {
                     contract_addr: predicted_address.to_string(),
                     new_code_id: cw_account_code_id,
-                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
+                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, ()>::Init(
                         cw_account::msg::InitMsg::Zkgm {
                             zkgm: env.contract.address.clone(),
                             path: path.into(),
@@ -2314,7 +2319,7 @@ fn protocol_fill_mint(
         METADATA_IMAGE_OF.save(
             deps.storage,
             wrapped_token.clone(),
-            &keccak256(metadata.abi_encode_params()),
+            &keccak256(metadata.abi_encode_params()).into(),
         )?;
     }
 
@@ -2994,7 +2999,7 @@ pub fn send(
             source_channel_id: channel_id,
             timeout_timestamp,
             data: ZkgmPacket {
-                salt: hashed_salt.into(),
+                salt: hashed_salt,
                 path: U256::ZERO,
                 instruction,
             }
@@ -3005,7 +3010,7 @@ pub fn send(
     )?))
 }
 
-#[cosmwasm_schema::cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TokenMinterMigration {
     // code id of the new token minter
     new_code_id: u64,
@@ -3016,7 +3021,7 @@ pub struct TokenMinterMigration {
 
 // The current structure is expected to be backward compatible, only idempotent
 // fields can be currently added.
-#[cosmwasm_schema::cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MigrateMsg {
     // Provide `token_minter_migration` to also migrate the token minter
     token_minter_migration: Option<TokenMinterMigration>,
@@ -3312,12 +3317,12 @@ fn predict_wrapped_token_v2(
         path,
         channel_id,
         token,
-        metadata_image,
+        metadata_image.into(),
     )
 }
 
 pub fn derive_batch_salt(index: U256, salt: H256) -> H256 {
-    keccak256((index, salt.get()).abi_encode())
+    keccak256((index, salt.get()).abi_encode()).into()
 }
 
 pub fn dequeue_channel_from_path(path: U256) -> (U256, Option<ChannelId>) {
@@ -3403,7 +3408,7 @@ pub fn is_forwarded_packet(salt: H256) -> bool {
 }
 
 pub fn derive_forward_salt(salt: H256) -> H256 {
-    tint_forward_salt(keccak256(salt.abi_encode()))
+    tint_forward_salt(keccak256(salt.abi_encode()).into())
 }
 
 fn migrate_v1_to_v2(
@@ -3498,6 +3503,7 @@ pub fn proxy_account_salt(
         )
             .abi_encode_params(),
     )
+    .into()
 }
 
 #[test]
