@@ -14,7 +14,7 @@ pub enum Upgradable {
         #[cfg_attr(feature = "schemars", schemars(with = "String"))]
         #[serde(with = "::serde_utils::string")]
         new_code_id: NonZero<u64>,
-        /// The `MigrateMsg` that will be forward to the contract, within [`frissitheto::UpgradeMsg::Upgrade`].
+        /// The `MigrateMsg` that will be forward to the contract, within [`frissitheto::UpgradeMsg::Migrate`].
         msg: Value,
     },
 }
