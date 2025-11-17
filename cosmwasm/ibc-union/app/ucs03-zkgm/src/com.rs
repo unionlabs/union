@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use alloy_primitives::U256;
 use ucs03_solvable::CwTokenOrderV2;
 

@@ -1,6 +1,8 @@
-use std::{fmt::Display, str::FromStr};
+use alloc::{string::String, vec::Vec};
+use core::{fmt::Display, str::FromStr};
 
-use unionlabs::{primitives::Bytes, tuple::AsTuple};
+use unionlabs_primitives::Bytes;
+use unionlabs_tuple::AsTuple;
 use voyager_primitives::Timestamp;
 
 use crate::types::ChannelId;
@@ -69,7 +71,7 @@ impl FromStr for MustBeZero {
 }
 
 impl Display for MustBeZero {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "0")
     }
 }
@@ -132,17 +134,22 @@ impl serde::Serialize for MustBeZero {
 impl Packet {
     /// Calculate the hash of this packet. This is the same as the commitment key for a single packet.
     #[cfg(feature = "ethabi")]
-    pub fn hash(&self) -> unionlabs::primitives::H256 {
+    pub fn hash(&self) -> unionlabs_primitives::H256 {
         use alloy_sol_types::SolValue;
-        use unionlabs::ethereum::keccak256;
+        use sha3::Digest;
 
-        keccak256(vec![self].abi_encode())
+        sha3::Keccak256::new()
+            // NOTE: `[self]` is actually `[Packet; 1]`, which encodes than `[Packet]`!
+            // the former is fixed size, and encodes the same as `Packet`, whereas the latter is a dynamic array
+            .chain_update(core::slice::from_ref(self).abi_encode())
+            .finalize()
+            .into()
     }
 }
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use std::borrow::Cow;
+    use alloc::borrow::Cow;
 
     use alloy_sol_types::{
         SolStruct, SolType, SolValue,
@@ -337,7 +344,7 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use unionlabs::primitives::H256;
+    use unionlabs_primitives::H256;
 
     use super::*;
 

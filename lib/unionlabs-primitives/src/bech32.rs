@@ -1,3 +1,4 @@
+use alloc::{string::String, vec::Vec};
 use core::{convert::Infallible, fmt, str::FromStr};
 
 #[cfg(feature = "serde")]
@@ -167,6 +168,8 @@ where
         &self,
         encoder: &mut E,
     ) -> Result<(), bincode::error::EncodeError> {
+        use alloc::string::ToString;
+
         self.to_string().encode(encoder)
     }
 }
@@ -181,6 +184,8 @@ where
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
         <String as bincode::Decode<Context>>::decode(decoder).and_then(|s| {
+            use alloc::string::ToString;
+
             s.parse::<Self>()
                 .map_err(|e| bincode::error::DecodeError::OtherString(e.to_string()))
         })

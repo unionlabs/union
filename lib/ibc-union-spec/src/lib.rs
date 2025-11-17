@@ -1,4 +1,9 @@
-use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+use unionlabs_height::Height;
+use unionlabs_primitives::Bytes;
 use voyager_primitives::{IbcSpec, IbcSpecId};
 
 pub mod datagram;

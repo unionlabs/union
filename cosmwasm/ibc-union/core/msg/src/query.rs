@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use ibc_union_spec::{ChannelId, ClientId, ConnectionId};
 use unionlabs_primitives::{Bytes, H256};
 #[derive(serde::Serialize, serde::Deserialize, Debug)]

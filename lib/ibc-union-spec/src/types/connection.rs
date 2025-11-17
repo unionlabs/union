@@ -1,6 +1,7 @@
+use alloc::vec::Vec;
 use core::{borrow::Borrow, fmt};
 
-use unionlabs::{errors::UnknownEnumVariant, tuple::AsTuple};
+use unionlabs_tuple::AsTuple;
 
 use crate::types::{ClientId, ConnectionId};
 
@@ -53,7 +54,7 @@ pub enum ConnectionState {
 }
 
 impl fmt::Display for ConnectionState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             Self::Init => "init",
             Self::TryOpen => "try_open",
@@ -63,17 +64,21 @@ impl fmt::Display for ConnectionState {
 }
 
 impl TryFrom<u8> for ConnectionState {
-    type Error = UnknownEnumVariant<u8>;
+    type Error = InvalidConnectionState;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
-            _ => Err(UnknownEnumVariant(value)),
+            _ => Err(InvalidConnectionState(value)),
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[error("invalid connection state: {0}")]
+pub struct InvalidConnectionState(pub u8);
 
 impl Borrow<u8> for ConnectionState {
     fn borrow(&self) -> &u8 {
@@ -90,7 +95,7 @@ impl Borrow<u8> for &ConnectionState {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use std::borrow::Cow;
+    use alloc::borrow::Cow;
 
     use alloy_sol_types::{SolStruct, SolType, SolValue, sol_data::Uint};
 

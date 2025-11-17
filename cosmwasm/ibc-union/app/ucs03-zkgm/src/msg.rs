@@ -1,8 +1,10 @@
+use alloc::{string::String, vec::Vec};
+
 use cosmwasm_std::{Addr, CosmosMsg, Uint64, Uint256};
 use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
-use unionlabs::primitives::{Bytes, H256};
+use unionlabs_primitives::{Bytes, H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]

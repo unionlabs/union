@@ -30,6 +30,7 @@ pub use unionlabs_encoding::impl_ethabi_via_try_from_into;
 #[cfg(feature = "proto")]
 pub use unionlabs_encoding::impl_proto_via_try_from_into;
 pub use unionlabs_primitives as primitives;
+pub use unionlabs_tuple as tuple;
 
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
 pub mod google;
@@ -68,8 +69,6 @@ pub mod id;
 pub(crate) mod macros;
 
 pub mod errors;
-
-pub mod tuple;
 
 #[cfg(feature = "proto")]
 pub use ::prost;

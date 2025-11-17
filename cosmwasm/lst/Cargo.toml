@@ -4,9 +4,6 @@ license-file = "LICENSE"
 name         = "lst"
 version      = "0.0.0"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [lints]
 workspace = true
 

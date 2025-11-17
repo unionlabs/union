@@ -12,8 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [features]
+default = []
+
+std = ["cosmwasm-std/std"]
+
 cw-orch-interface = ["schemars", "dep:cw-orch", "dep:cosmwasm-std", "dep:cosmwasm-schema"]
-schemars          = ["dep:schemars", "unionlabs-primitives/schemars", "ibc-union-spec/schemars"]
+schemars          = ["std", "dep:schemars", "unionlabs-primitives/schemars", "ibc-union-spec/schemars"]
 
 [dependencies]
 ibc-union-spec       = { workspace = true, features = ["serde"] }

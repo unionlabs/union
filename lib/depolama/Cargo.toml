@@ -12,8 +12,8 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-std         = { workspace = true, features = ["std"] }
-num-traits           = "0.2.19"
+cosmwasm-std         = { workspace = true }
+num-traits           = { workspace = true }
 unionlabs-encoding   = { workspace = true }
 unionlabs-primitives = { workspace = true }
 

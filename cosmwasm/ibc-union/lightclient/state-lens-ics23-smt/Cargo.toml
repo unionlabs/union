@@ -9,9 +9,6 @@ version      = "0.0.0"
 [lints]
 workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 aptos-verifier                          = { workspace = true }
 bcs                                     = { workspace = true }

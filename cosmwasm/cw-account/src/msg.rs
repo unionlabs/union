@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use cosmwasm_std::{Addr, CosmosMsg};
 use depolama::Bytes;
 use ibc_union_spec::ChannelId;

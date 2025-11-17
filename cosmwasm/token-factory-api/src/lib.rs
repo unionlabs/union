@@ -1,10 +1,15 @@
 //! Special messages to be supported by any chain that supports osmosis tokenfactory.
 
-// TODO: Link to the protobuf definitions on all types
+#![cfg_attr(not(feature = "std"), no_std)]
 
-use cosmwasm_schema::{QueryResponses, cw_serde};
+extern crate alloc;
+
+use alloc::{string::String, vec::Vec};
+
+// TODO: Link to the protobuf definitions on all types
 use cosmwasm_std::{Addr, Coin, CustomMsg, CustomQuery, Uint128};
 use enumorph::Enumorph;
+use serde::{Deserialize, Serialize};
 
 /// Contracts can mint native tokens for an existing factory denom
 /// that they are the admin of.
@@ -16,7 +21,8 @@ use enumorph::Enumorph;
 ///     MintToAddress string       `json:"mint_to_address"`
 /// }
 /// ```
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct MintTokensMsg {
     pub denom: String,
     pub amount: Uint128,
@@ -35,7 +41,8 @@ pub struct MintTokensMsg {
 ///     BurnFromAddress string `json:"burn_from_address"`
 /// }
 /// ```
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct BurnTokensMsg {
     pub denom: String,
     pub amount: Uint128,
@@ -52,13 +59,15 @@ pub struct BurnTokensMsg {
 ///     NewAdminAddress string `json:"new_admin_address"`
 /// }
 /// ```
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ChangeAdminMsg {
     pub denom: String,
     pub new_admin_address: Addr,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ForceTransferMsg {
     pub denom: String,
     pub amount: Uint128,
@@ -66,8 +75,8 @@ pub struct ForceTransferMsg {
     pub to_address: Addr,
 }
 
-#[cw_serde]
-#[derive(Enumorph)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Enumorph)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenFactoryMsg {
     /// CreateDenom creates a new factory denom, of denomination:
     /// factory/{creating contract bech32 address}/{Subdenom}
@@ -99,7 +108,8 @@ pub enum TokenFactoryMsg {
 }
 
 /// This maps to `cosmos.bank.v1beta1.Metadata`.
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct Metadata {
     pub description: Option<String>,
     /// denom_units represents the list of DenomUnit's for a given coin
@@ -120,7 +130,8 @@ pub struct Metadata {
 }
 
 /// This maps to cosmos.bank.v1beta1.DenomUnit protobuf struct
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct DenomUnit {
     /// denom represents the string name of the given denom unit (e.g uatom).
     pub denom: String,
@@ -135,7 +146,8 @@ pub struct DenomUnit {
 }
 
 /// This maps to `osmosis.tokenfactory.v1beta1.Params`.
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct Params {
     pub denom_creation_fee: Vec<Coin>,
 }
@@ -148,14 +160,17 @@ pub struct CreateDenomResponse {
     pub new_token_denom: String,
 }
 
-#[cw_serde]
-#[derive(QueryResponses)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "schemars",
+    derive(schemars::JsonSchema, cosmwasm_schema::QueryResponses)
+)]
 pub enum TokenFactoryQuery {
     /// Given a subdenom created by the address `creator_addr` via `TokenFactoryMsg::CreateDenom`,
     /// returns the full denom as used by `BankMsg::Send`.
     /// You may call `FullDenom { creator_addr: env.contract.address, subdenom }` to find the denom issued
     /// by the current contract.
-    #[returns(FullDenomResponse)]
+    #[cfg_attr(feature = "schemars", returns(FullDenomResponse))]
     FullDenom {
         creator_addr: String,
         subdenom: String,
@@ -163,46 +178,51 @@ pub enum TokenFactoryQuery {
     /// Returns the metadata set for this denom, if present. May return None.
     /// This will also return metadata for native tokens created outside
     /// of the token factory (like staking tokens)
-    #[returns(MetadataResponse)]
+    #[cfg_attr(feature = "schemars", returns(MetadataResponse))]
     Metadata { denom: String },
     /// Returns info on admin of the denom, only if created/managed via token factory.
     /// Errors if denom doesn't exist or was created by another module.
-    #[returns(AdminResponse)]
+    #[cfg_attr(feature = "schemars", returns(AdminResponse))]
     Admin { denom: String },
     /// List all denoms that were created by the given creator.
     /// This does not imply all tokens currently managed by the creator.
     /// (Admin may have changed)
-    #[returns(DenomsByCreatorResponse)]
+    #[cfg_attr(feature = "schemars", returns(DenomsByCreatorResponse))]
     DenomsByCreator { creator: String },
     /// Returns configuration params for TokenFactory modules
-    #[returns(ParamsResponse)]
+    #[cfg_attr(feature = "schemars", returns(ParamsResponse))]
     Params {},
 }
 
 impl CustomQuery for TokenFactoryQuery {}
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct FullDenomResponse {
     pub denom: String,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct MetadataResponse {
     /// Empty if this was never set for the given denom
     pub metadata: Option<Metadata>,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct AdminResponse {
     pub admin: String,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct DenomsByCreatorResponse {
     pub denoms: Vec<String>,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ParamsResponse {
     pub params: Params,
 }

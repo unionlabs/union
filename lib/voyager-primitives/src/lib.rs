@@ -1,16 +1,20 @@
+#![no_std]
 #![feature(trait_alias)]
 #![warn(clippy::pedantic)]
 
-use core::{fmt, str::FromStr};
-use std::fmt::{Debug, Display};
+extern crate alloc;
+
+use core::{
+    fmt,
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
 pub use consensus_primitives::{Duration, Timestamp};
 use macros::apply;
 use serde_json::Value;
-use unionlabs::{
-    ibc::core::client::height::{Height, HeightFromStrError},
-    primitives::{Bytes, H256, encoding::HexUnprefixed},
-};
+use unionlabs_height::{Height, HeightFromStrError};
+use unionlabs_primitives::{Bytes, H256, encoding::HexUnprefixed};
 
 /// Represents the IBC interface of a chain.
 ///
@@ -519,7 +523,7 @@ macro_rules! str_newtype {
         )]
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         #[debug("{}({:?})", stringify!($Struct), self.0)]
-        $vis struct $Struct(#[doc(hidden)] ::std::borrow::Cow<'static, str>);
+        $vis struct $Struct(#[doc(hidden)] ::alloc::borrow::Cow<'static, str>);
 
         impl ::core::fmt::Display for $Struct {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -544,7 +548,7 @@ macro_rules! str_newtype {
             /// Construct a new [`
             #[doc = stringify!($Struct)]
             /// `].
-            pub fn new(s: impl Into<::std::borrow::Cow<'static, str>>) -> Self {
+            pub fn new(s: impl Into<::alloc::borrow::Cow<'static, str>>) -> Self {
                 Self(s.into())
             }
 
@@ -559,7 +563,7 @@ macro_rules! str_newtype {
             /// `const`-friendly version of [`Self::new`].
             #[must_use = concat!("constructing a ", stringify!($Struct), " has no effect")]
             pub const fn new_static(ibc_interface: &'static str) -> Self {
-                Self(::std::borrow::Cow::Borrowed(ibc_interface))
+                Self(::alloc::borrow::Cow::Borrowed(ibc_interface))
             }
         }
     };

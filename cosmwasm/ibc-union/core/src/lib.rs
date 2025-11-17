@@ -1,4 +1,6 @@
-#![cfg_attr(not(test), warn(clippy::unwrap_used))]
+#![cfg_attr(not(test), no_std, warn(clippy::unwrap_used))]
+
+extern crate alloc;
 
 pub mod contract;
 #[cfg(feature = "cw-orch-interface")]
@@ -8,11 +10,13 @@ pub mod state;
 #[cfg(test)]
 mod tests;
 
+use alloc::boxed::Box;
+
 use cosmwasm_std::{Addr, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState, Status, Timestamp};
 use thiserror::Error;
-use unionlabs::primitives::Bytes;
+use unionlabs_primitives::Bytes;
 
 #[derive(Error, Debug, PartialEq, strum::EnumDiscriminants)]
 #[strum_discriminants(

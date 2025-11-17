@@ -1,5 +1,5 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint256;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -12,7 +12,7 @@ pub enum Error {
     RateLimitExceeded,
 }
 
-#[cw_serde]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TokenBucket {
     pub capacity: Uint256,
     pub available: Uint256,

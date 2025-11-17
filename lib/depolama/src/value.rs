@@ -1,3 +1,5 @@
+use alloc::{format, vec, vec::Vec};
+
 use cosmwasm_std::{StdError, StdResult};
 use unionlabs_encoding::{Decode, DecodeAs, Encode, EncodeAs, Encoding};
 use unionlabs_primitives::Bytes;

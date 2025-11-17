@@ -14,9 +14,6 @@ workspace = true
 [package.metadata.crane]
 test-include = []
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 depolama                    = { workspace = true }

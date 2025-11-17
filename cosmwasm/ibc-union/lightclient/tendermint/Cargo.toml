@@ -14,9 +14,6 @@ workspace = true
 [package.metadata.crane]
 test-include = ["cosmwasm/ibc-union/lightclient/tendermint/src/test"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 cometbft-types                = { workspace = true, features = ["hash"] }
 cosmwasm-std                  = { workspace = true, features = ["abort", "iterator"] }

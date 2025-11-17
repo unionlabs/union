@@ -1,3 +1,6 @@
+use alloc::vec::Vec;
+#[cfg(feature = "schemars")]
+use alloc::{boxed::Box, format, string::String};
 use core::{
     borrow::Borrow,
     cmp::Ordering,
@@ -202,6 +205,8 @@ impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for FixedByte
         D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
+            use alloc::string::String;
+
             String::deserialize(deserializer)
                 .and_then(|s| s.parse().map_err(::serde::de::Error::custom))
         } else {

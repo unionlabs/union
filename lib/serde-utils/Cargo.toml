@@ -12,8 +12,9 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-base64 = { workspace = true, features = ["alloc"] }
-bitvec = { workspace = true, features = ["alloc"] }
-chrono = { workspace = true, features = ["alloc"] }
-hex    = { workspace = true, features = ["alloc", "std"] }
-serde  = { workspace = true, features = ["derive", "alloc"] }
+base64    = { workspace = true, features = ["alloc"] }
+bitvec    = { workspace = true, features = ["alloc"] }
+chrono    = { workspace = true, features = ["alloc"] }
+hex       = { workspace = true, features = ["alloc"] }
+serde     = { workspace = true, features = ["derive", "alloc"] }
+thiserror = { workspace = true }

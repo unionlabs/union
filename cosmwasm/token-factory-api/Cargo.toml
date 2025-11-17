@@ -12,6 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-schema = { workspace = true }
+cosmwasm-schema = { workspace = true, optional = true }
 cosmwasm-std    = { workspace = true }
 enumorph        = { workspace = true }
+schemars        = { workspace = true, optional = true }
+serde           = { workspace = true }
+
+[features]
+default = []
+
+std = []
+
+schemars = ["std", "dep:schemars"]

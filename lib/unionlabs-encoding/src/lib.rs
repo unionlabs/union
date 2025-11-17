@@ -428,8 +428,8 @@ pub trait TypeUrl {
 pub enum TryFromProtoBytesError<E> {
     #[error("unable to convert from the raw prost type")]
     TryFromProto(#[source] E),
-    #[error("unable to decode from raw proto bytes")]
-    Decode(#[source] prost::DecodeError),
+    #[error("unable to decode from raw proto bytes: {0}")]
+    Decode(prost::DecodeError),
 }
 
 /// Implement [`Proto`] encoding via conversion to/from a [`prost`] generated type. See the

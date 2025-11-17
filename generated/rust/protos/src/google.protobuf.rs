@@ -2224,8 +2224,8 @@ pub struct SourceContext {
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Struct {
     /// Unordered map of dynamically typed values.
-    #[prost(map = "string, message", tag = "1")]
-    pub fields: ::std::collections::HashMap<::prost::alloc::string::String, Value>,
+    #[prost(btree_map = "string, message", tag = "1")]
+    pub fields: ::std::collections::BTreeMap<::prost::alloc::string::String, Value>,
 }
 /// `Value` represents a dynamically typed value which can be either
 /// null, a number, a string, a boolean, a recursive struct value, or a

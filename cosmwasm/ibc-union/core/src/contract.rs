@@ -1,6 +1,13 @@
-use core::slice;
-use std::{collections::BTreeSet, num::NonZeroU32};
+use alloc::{
+    boxed::Box,
+    collections::BTreeSet,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+use core::{num::NonZeroU32, slice};
 
+use alloy_primitives::keccak256;
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -37,10 +44,7 @@ use ibc_union_spec::{
     },
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use unionlabs::{
-    ethereum::keccak256,
-    primitives::{Bytes, H256},
-};
+use unionlabs_primitives::{Bytes, H256};
 
 use crate::{
     ContractError,
@@ -652,8 +656,8 @@ fn migrate_state(
     mut deps: DepsMut,
     sender: Addr,
     client_id: ClientId,
-    client_state: unionlabs::primitives::Bytes,
-    consensus_state: unionlabs::primitives::Bytes,
+    client_state: unionlabs_primitives::Bytes,
+    consensus_state: unionlabs_primitives::Bytes,
     height: u64,
 ) -> Result<Response, ContractError> {
     let client_addr = deps.storage.read::<ClientImpls>(&client_id)?;
@@ -705,7 +709,7 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 pub struct IbcUnionMigrateMsg {}
 
 pub mod version {
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
 
     pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
 }
@@ -2057,7 +2061,7 @@ fn client_impl(deps: Deps, client_id: ClientId) -> Result<Addr, ContractError> {
 }
 
 fn commit(bytes: impl AsRef<[u8]>) -> H256 {
-    keccak256(bytes)
+    keccak256(bytes).into()
 }
 
 fn commit_ack(ack: &Bytes) -> H256 {

@@ -17,11 +17,21 @@ macros               = { workspace = true }
 schemars             = { workspace = true, optional = true, features = ["derive"] }
 serde                = { workspace = true, optional = true, features = ["derive"] }
 serde_json           = { workspace = true }
-unionlabs            = { workspace = true }
+unionlabs-height     = { workspace = true }
+unionlabs-primitives = { workspace = true }
 
 [features]
 default = []
 
-bincode  = ["consensus-primitives/bincode"]
-schemars = ["dep:schemars", "consensus-primitives/schemars"]
-serde    = ["dep:serde", "consensus-primitives/serde"]
+bincode = [
+  "consensus-primitives/bincode",
+  "unionlabs-height/bincode",
+  "unionlabs-primitives/bincode",
+]
+schemars = ["dep:schemars", "consensus-primitives/schemars", "unionlabs-primitives/schemars"]
+serde = [
+  "dep:serde",
+  "consensus-primitives/serde",
+  "unionlabs-height/serde",
+  "unionlabs-primitives/serde",
+]

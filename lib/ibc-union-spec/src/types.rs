@@ -1,6 +1,6 @@
 use core::{fmt, num::NonZeroU32};
 
-use unionlabs::primitives::U256;
+use unionlabs_primitives::U256;
 
 pub(crate) mod channel;
 pub(crate) mod connection;
@@ -107,7 +107,7 @@ pub enum Status {
 }
 
 impl fmt::Display for Status {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             Status::Active => "active",
             Status::Expired => "expired",
