@@ -44,7 +44,7 @@ let
     }:
     ''
       # mkdir -p $out/lib
-      mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out
+      mv target/wasm32-unknown-unknown/wasm-release/${contractFileNameWithoutExt}.wasm $out
 
       ${pkgs.binaryen}/bin/wasm-opt -Oz $out -o $out
 
@@ -95,6 +95,9 @@ let
         maxSize
         ;
       contractFileNameWithoutExt = contract-basename;
+    };
+    extraEnv = {
+      CARGO_PROFILE = "wasm-release";
     };
   };
 

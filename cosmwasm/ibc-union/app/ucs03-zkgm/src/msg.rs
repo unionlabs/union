@@ -7,7 +7,7 @@ use pausable::{
 };
 use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
-use unionlabs::primitives::{Bytes, H256};
+use unionlabs_primitives::{Bytes, H256};
 use upgradable::msg::Upgradable;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

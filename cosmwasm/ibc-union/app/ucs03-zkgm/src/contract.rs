@@ -2,7 +2,7 @@ use core::str;
 use std::{slice, str::FromStr};
 
 use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
-use alloy_primitives::U256;
+use alloy_primitives::{U256, keccak256};
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -25,11 +25,7 @@ use ucs03_zkgm_token_minter_api::{
     new_wrapped_token_event,
 };
 use ucs03_zkgmable::{OnIntentZkgm, OnZkgm, Zkgmable};
-use unionlabs::{
-    ethereum::keccak256,
-    never::Never,
-    primitives::{Bytes, H256, encoding::HexPrefixed},
-};
+use unionlabs_primitives::{Bytes, H256, encoding::HexPrefixed};
 
 use crate::{
     ContractError,
@@ -1575,7 +1571,7 @@ fn execute_call(
                 WasmMsg::Migrate {
                     contract_addr: predicted_address.to_string(),
                     new_code_id: cw_account_code_id,
-                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
+                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, ()>::Init(
                         cw_account::msg::InitMsg::Zkgm {
                             zkgm: env.contract.address.clone(),
                             path: path.into(),
@@ -2350,7 +2346,7 @@ fn protocol_fill_mint(
         METADATA_IMAGE_OF.save(
             deps.storage,
             wrapped_token.clone(),
-            &keccak256(metadata.abi_encode_params()),
+            &keccak256(metadata.abi_encode_params()).into(),
         )?;
     }
 
@@ -3034,7 +3030,7 @@ pub fn send(
             source_channel_id: channel_id,
             timeout_timestamp,
             data: ZkgmPacket {
-                salt: hashed_salt.into(),
+                salt: hashed_salt,
                 path: U256::ZERO,
                 instruction,
             }
@@ -3331,7 +3327,7 @@ fn predict_wrapped_token_v2(
 ) -> StdResult<(String, Bytes)> {
     // Hash the metadata to get the metadata image
     let metadata_bytes = metadata.abi_encode_params();
-    let metadata_image = keccak256(metadata_bytes);
+    let metadata_image = keccak256(metadata_bytes).into();
 
     // Use the metadata image to predict the token
     predict_wrapped_token_from_metadata_image_v2(
@@ -3345,7 +3341,7 @@ fn predict_wrapped_token_v2(
 }
 
 pub fn derive_batch_salt(index: U256, salt: H256) -> H256 {
-    keccak256((index, salt.get()).abi_encode())
+    keccak256((index, salt.get()).abi_encode()).into()
 }
 
 pub fn dequeue_channel_from_path(path: U256) -> (U256, Option<ChannelId>) {
@@ -3431,7 +3427,7 @@ pub fn is_forwarded_packet(salt: H256) -> bool {
 }
 
 pub fn derive_forward_salt(salt: H256) -> H256 {
-    tint_forward_salt(keccak256(salt.abi_encode()))
+    tint_forward_salt(keccak256(salt.abi_encode()).into())
 }
 
 fn migrate_v1_to_v2(
@@ -3526,6 +3522,7 @@ pub fn proxy_account_salt(
         )
             .abi_encode_params(),
     )
+    .into()
 }
 
 #[test]

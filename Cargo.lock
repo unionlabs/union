@@ -15337,7 +15337,6 @@ dependencies = [
  "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
- "cosmwasm-schema",
  "cosmwasm-std",
  "cw-account",
  "cw-multi-test",
@@ -15362,7 +15361,7 @@ dependencies = [
  "ucs03-solvable",
  "ucs03-zkgm-token-minter-api",
  "ucs03-zkgmable",
- "unionlabs",
+ "unionlabs-primitives",
  "upgradable",
 ]
 

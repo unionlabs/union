@@ -436,6 +436,7 @@
               allDepsForCrate = getAllDeps memberDepsForCrate dontRemoveDevDeps;
 
               patchedCargoToml = {
+                profile = workspaceCargoToml.profile or { };
                 workspace = workspaceCargoToml.workspace // {
                   members = memberDepsForCrate;
                   dependencies = lib.filterAttrs (
