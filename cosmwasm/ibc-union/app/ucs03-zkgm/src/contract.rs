@@ -3091,7 +3091,7 @@ pub fn migrate(
 /// Creates a WasmMsg for interacting with the token minter contract.
 /// This is a helper function to construct properly formatted wasm messages
 /// for token minting, burning, and other token operations.
-fn make_wasm_msg(
+pub(crate) fn make_wasm_msg(
     msg: impl Into<ucs03_zkgm_token_minter_api::ExecuteMsg>,
     minter: impl Into<String>,
     funds: Vec<Coin>,

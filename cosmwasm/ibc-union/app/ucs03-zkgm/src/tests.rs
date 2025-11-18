@@ -2,8 +2,9 @@ use access_manager_types::{CanCall, RoleId, Selector};
 use alloy_primitives::U256;
 use alloy_sol_types::SolValue;
 use cosmwasm_std::{
-    Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Response,
-    StdError, StdResult, Uint256,
+    Addr, Binary, Checksum, CodeInfoResponse, Coin, Coins, ContractResult, Deps, DepsMut, Empty,
+    Env, MessageInfo, OwnedDeps, Querier, QuerierResult, Response, StdError, StdResult, Uint128,
+    Uint256,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
     to_json_binary, to_json_vec, wasm_execute,
 };
@@ -32,7 +33,7 @@ use crate::{
         PROTOCOL_VERSION, dequeue_channel_from_path, execute, increase_channel_balance_v2,
         instantiate, is_forwarded_packet, migrate, pop_channel_from_path, query, reply,
         reverse_channel_path, tint_forward_salt, update_channel_path, verify_batch, verify_call,
-        verify_forward, verify_internal,
+        verify_forward, verify_internal, verify_token_order_v2,
     },
     msg::{
         Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, RestrictedExecuteMsg,
@@ -3748,4 +3749,234 @@ fn test_on_channel_close_confirm_only_ibc() {
         err.downcast::<ContractError>().unwrap(),
         ContractError::OnlyIbcHost
     );
+}
+
+#[cfg(test)]
+mod verify_token_order_v2_tests {
+    use cosmwasm_std::QueryRequest;
+    use ucs03_zkgm_token_minter_api::WrappedTokenMsg;
+
+    use super::*;
+    use crate::{contract::make_wasm_msg, state::TOKEN_MINTER};
+
+    const SOURCE_CHANNEL_ID: ChannelId = ChannelId!(1);
+    const DESTINATION_CHANNEL_ID: ChannelId = ChannelId!(2);
+    const AMOUNT: u128 = 10;
+    const TOKEN: &str = "au";
+    const ADMIN: &str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
+    const PREDICT_TOKEN: &str = "union1xlzyzcerp2r3dd8w877j0uqnhjllkhv22ahevl";
+
+    struct MockCodeHashQuerier;
+
+    impl Querier for MockCodeHashQuerier {
+        fn raw_query(&self, q: &[u8]) -> cosmwasm_std::QuerierResult {
+            let Ok(QueryRequest::Wasm(cosmwasm_std::WasmQuery::Smart {
+                contract_addr: _,
+                msg,
+            })) = serde_json::from_slice::<QueryRequest>(q)
+            else {
+                return QuerierResult::Ok(ContractResult::Ok(
+                    to_json_binary(&CodeInfoResponse::new(
+                        1,
+                        Addr::unchecked("helo"),
+                        Checksum::from([0; 32]),
+                    ))
+                    .unwrap(),
+                ));
+            };
+
+            if let Ok(ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedTokenV2 { .. })
+            | Ok(ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedToken { .. }) =
+                serde_json::from_slice(msg.as_slice())
+            {
+                return QuerierResult::Ok(ContractResult::Ok(
+                    to_json_binary(&PredictWrappedTokenResponse {
+                        wrapped_token: PREDICT_TOKEN.into(),
+                    })
+                    .unwrap(),
+                ));
+            } else {
+                panic!("{}", String::from_utf8(q.to_vec()).unwrap());
+            }
+        }
+    }
+
+    fn init_with_custom_querier<T: Querier>(
+        querier: T,
+    ) -> (
+        OwnedDeps<MockStorage, MockApi, T, Empty>,
+        Env,
+        MessageInfo,
+        Config,
+    ) {
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier,
+            custom_query_type: std::marker::PhantomData,
+        };
+        deps.api = MockApi::default().with_prefix("union");
+        let mut env = mock_env();
+        let ibc_host = Addr::unchecked(DEFAULT_IBC_HOST);
+        let info = message_info(&ibc_host, &[]);
+        let config = Config {
+            admin: Addr::unchecked(""),
+            ibc_host,
+            token_minter_code_id: 0,
+            rate_limit_disabled: false,
+            dummy_code_id: 0,
+            cw_account_code_id: 0,
+        };
+        env.contract.address = Addr::unchecked(ADMIN);
+        crate::contract::init(
+            deps.as_mut(),
+            env.clone(),
+            InitMsg {
+                config: Config {
+                    admin: Addr::unchecked(ADMIN),
+                    ibc_host: Addr::unchecked(DEFAULT_IBC_HOST),
+                    token_minter_code_id: 0,
+                    rate_limit_disabled: false,
+                    dummy_code_id: 0,
+                    cw_account_code_id: 0,
+                },
+                minter_init_params: TokenMinterInitParams::Cw20 {
+                    cw20_impl_code_id: 0,
+                    dummy_code_id: 0,
+                },
+                access_managed_init_msg: access_managed::InitMsg {
+                    initial_authority: Addr::unchecked(ADMIN),
+                },
+            },
+        )
+        .unwrap();
+        (deps, env, info, config)
+    }
+
+    #[test]
+    fn test_verify_token_order_v2_not_unescrow() {
+        let (mut deps, _, info, _) = init_with_custom_querier(MockCodeHashQuerier);
+
+        let mut response = Response::new();
+        let mut funds = Coins::try_from(info.funds.clone()).unwrap();
+
+        let token_order = TokenOrderV2 {
+            sender: b"asdasd".into(),
+            receiver: b"asdasdasd".into(),
+            base_token: TOKEN.as_bytes().into(),
+            base_amount: AMOUNT.try_into().unwrap(),
+            quote_token: TOKEN.as_bytes().into(),
+            quote_amount: AMOUNT.try_into().unwrap(),
+            kind: TOKEN_ORDER_KIND_INITIALIZE,
+            metadata: b"".into(),
+        };
+
+        let _ = verify_token_order_v2(
+            deps.as_mut(),
+            info.clone(),
+            &mut funds,
+            SOURCE_CHANNEL_ID,
+            U256::ZERO,
+            &token_order,
+            &mut response,
+        )
+        .unwrap();
+
+        assert_eq!(
+            CHANNEL_BALANCE_V2
+                .load(
+                    &deps.storage,
+                    (
+                        SOURCE_CHANNEL_ID.raw(),
+                        (
+                            U256::ZERO.to_be_bytes::<32>().to_vec(),
+                            TOKEN.into(),
+                            TOKEN.into()
+                        )
+                    )
+                )
+                .unwrap(),
+            Uint256::from(AMOUNT)
+        );
+
+        let mut funds = Coins::try_from(vec![Coin {
+            denom: TOKEN.into(),
+            amount: Uint128::from(AMOUNT + 1),
+        }])
+        .unwrap();
+
+        let _ = verify_token_order_v2(
+            deps.as_mut(),
+            info,
+            &mut funds,
+            SOURCE_CHANNEL_ID,
+            U256::ZERO,
+            &token_order,
+            &mut response,
+        )
+        .unwrap();
+
+        // sent funds must be subtracted from the given funds
+        assert_eq!(funds.amount_of(TOKEN), Uint128::from(1u128));
+    }
+
+    #[test]
+    fn test_verify_token_order_v2_unescrow() {
+        let (mut deps, _, info, _) = init_with_custom_querier(MockCodeHashQuerier);
+
+        let mut response = Response::new();
+        let mut funds = Coins::try_from(info.funds.clone()).unwrap();
+
+        TOKEN_ORIGIN
+            .save(
+                &mut deps.storage,
+                PREDICT_TOKEN.to_string(),
+                &Uint256::from_be_bytes(
+                    update_channel_path(U256::ZERO, DESTINATION_CHANNEL_ID)
+                        .unwrap()
+                        .to_be_bytes(),
+                ),
+            )
+            .unwrap();
+        let token_order = TokenOrderV2 {
+            sender: b"asdasd".into(),
+            receiver: b"asdasdasd".into(),
+            base_token: PREDICT_TOKEN.as_bytes().into(),
+            base_amount: AMOUNT.try_into().unwrap(),
+            quote_token: TOKEN.as_bytes().into(),
+            quote_amount: AMOUNT.try_into().unwrap(),
+            kind: TOKEN_ORDER_KIND_UNESCROW,
+            metadata: b"".into(),
+        };
+
+        let _ = verify_token_order_v2(
+            deps.as_mut(),
+            info.clone(),
+            &mut funds,
+            DESTINATION_CHANNEL_ID,
+            U256::ZERO,
+            &token_order,
+            &mut response,
+        )
+        .unwrap();
+
+        let minter = TOKEN_MINTER.load(&deps.storage).unwrap();
+
+        assert_eq!(
+            response.messages[0],
+            cosmwasm_std::SubMsg::new(
+                make_wasm_msg(
+                    WrappedTokenMsg::BurnTokens {
+                        denom: PREDICT_TOKEN.into(),
+                        amount: AMOUNT.into(),
+                        burn_from_address: minter.clone(),
+                        sender: info.sender,
+                    },
+                    &minter,
+                    vec![]
+                )
+                .unwrap()
+            )
+        );
+    }
 }
