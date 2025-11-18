@@ -38,7 +38,7 @@ _: {
             ../ts-sdk-evm
             ../ts-sdk-sui
           ];
-          hash = "sha256-xgb38ENz2cq3qOpdFJGjxXW89GryVlhLCCGSjhnYCmk=";
+          hash = "sha256-muTjcrxyASfVYRIClyU4Z+ZyCwlFTNkw9UnVWOBEhGA=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
