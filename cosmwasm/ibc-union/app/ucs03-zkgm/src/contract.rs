@@ -2,7 +2,7 @@ use core::str;
 use std::{slice, str::FromStr};
 
 use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
-use alloy_primitives::U256;
+use alloy_primitives::{U256, keccak256};
 use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -12,7 +12,7 @@ use cosmwasm_std::{
     SubMsgResponse, SubMsgResult, Uint128, Uint256, WasmMsg, WasmQuery, instantiate2_address,
     to_json_binary, to_json_string, wasm_execute,
 };
-use frissitheto::UpgradeMsg;
+use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
@@ -25,11 +25,7 @@ use ucs03_zkgm_token_minter_api::{
     new_wrapped_token_event,
 };
 use ucs03_zkgmable::{OnIntentZkgm, OnZkgm, Zkgmable};
-use unionlabs::{
-    ethereum::keccak256,
-    never::Never,
-    primitives::{Bytes, H256, encoding::HexPrefixed},
-};
+use unionlabs_primitives::{Bytes, H256, encoding::HexPrefixed};
 
 use crate::{
     ContractError,
@@ -323,6 +319,38 @@ pub fn execute(
                     balance_migrations,
                     wrapped_migrations,
                 } => migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations),
+                RestrictedExecuteMsg::MigrateMinter { new_code_id, msg } => {
+                    let token_minter = TOKEN_MINTER.load(deps.storage)?;
+
+                    Ok(Response::default().add_message(WasmMsg::Migrate {
+                        contract_addr: token_minter.to_string(),
+                        new_code_id,
+                        msg: to_json_binary(&msg)?,
+                    }))
+                }
+                RestrictedExecuteMsg::SetRateLimitDisabled {
+                    rate_limit_disabled,
+                } => {
+                    CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
+                        config.rate_limit_disabled = rate_limit_disabled;
+                        Ok(config)
+                    })?;
+                    Ok(Response::new())
+                }
+                RestrictedExecuteMsg::UpdateDummyCodeId { dummy_code_id } => {
+                    CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
+                        config.dummy_code_id = dummy_code_id;
+                        Ok(config)
+                    })?;
+                    Ok(Response::new())
+                }
+                RestrictedExecuteMsg::UpdateCwAccountCodeId { cw_account_code_id } => {
+                    CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
+                        config.cw_account_code_id = cw_account_code_id;
+                        Ok(config)
+                    })?;
+                    Ok(Response::new())
+                }
                 RestrictedExecuteMsg::Upgradable(msg) => {
                     upgradable::execute(&env, msg).map_err(Into::into)
                 }
@@ -1543,7 +1571,7 @@ fn execute_call(
                 WasmMsg::Migrate {
                     contract_addr: predicted_address.to_string(),
                     new_code_id: cw_account_code_id,
-                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, Never>::Init(
+                    msg: to_json_binary(&frissitheto::UpgradeMsg::<_, ()>::Init(
                         cw_account::msg::InitMsg::Zkgm {
                             zkgm: env.contract.address.clone(),
                             path: path.into(),
@@ -2318,7 +2346,7 @@ fn protocol_fill_mint(
         METADATA_IMAGE_OF.save(
             deps.storage,
             wrapped_token.clone(),
-            &keccak256(metadata.abi_encode_params()),
+            &keccak256(metadata.abi_encode_params()).into(),
         )?;
     }
 
@@ -3002,7 +3030,7 @@ pub fn send(
             source_channel_id: channel_id,
             timeout_timestamp,
             data: ZkgmPacket {
-                salt: hashed_salt.into(),
+                salt: hashed_salt,
                 path: U256::ZERO,
                 instruction,
             }
@@ -3013,26 +3041,11 @@ pub fn send(
     )?))
 }
 
-#[cosmwasm_schema::cw_serde]
-pub struct TokenMinterMigration {
-    // code id of the new token minter
-    new_code_id: u64,
-    // migrate message json that will directly be passed to migrate call
-    // it will be the same as the `to_json_binary(&msg)`'s output
-    msg: Binary,
-}
-
 // The current structure is expected to be backward compatible, only idempotent
 // fields can be currently added.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct MigrateMsg {
-    // Provide `token_minter_migration` to also migrate the token minter
-    token_minter_migration: Option<TokenMinterMigration>,
-    // Whether to enable or disable rate limiting while migrating.
-    rate_limit_disabled: bool,
-    dummy_code_id: Option<u64>,
-    cw_account_code_id: Option<u64>,
     access_managed_int_msg: access_managed::InitMsg,
 }
 
@@ -3041,6 +3054,22 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
     panic!(
         "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
     );
+}
+
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
+pub mod version {
+    use std::num::NonZeroU32;
+
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -3054,36 +3083,15 @@ pub fn migrate(
         |deps, init_msg| {
             let res = init(deps, env, init_msg)?;
 
-            Ok((res, None))
+            Ok((res, Some(version::LATEST)))
         },
-        |mut deps, migrate_msg, _current_version| {
-            access_managed::init(deps.branch(), migrate_msg.access_managed_int_msg)?;
-
-            CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
-                config.rate_limit_disabled = migrate_msg.rate_limit_disabled;
-                if let Some(dummy_code_id) = migrate_msg.dummy_code_id {
-                    config.dummy_code_id = dummy_code_id;
-                }
-                if let Some(cw_account_code_id) = migrate_msg.cw_account_code_id {
-                    config.cw_account_code_id = cw_account_code_id;
-                }
-                Ok(config)
-            })?;
-
-            if let Some(token_minter_migration) = migrate_msg.token_minter_migration {
-                let token_minter = TOKEN_MINTER.load(deps.storage)?;
-
-                Ok((
-                    Response::default().add_message(WasmMsg::Migrate {
-                        contract_addr: token_minter.to_string(),
-                        new_code_id: token_minter_migration.new_code_id,
-                        msg: token_minter_migration.msg,
-                    }),
-                    None,
-                ))
-            } else {
-                Ok((Response::default(), None))
+        |mut deps, migrate_msg, version| match version {
+            version::INIT => {
+                access_managed::init(deps.branch(), migrate_msg.access_managed_int_msg)?;
+                Ok((Response::default(), Some(version::MANAGED)))
             }
+            version::MANAGED => Ok((Response::default(), None)),
+            _ => Err(UpgradeError::UnknownStateVersion(version).into()),
         },
     )
 }
@@ -3319,7 +3327,7 @@ fn predict_wrapped_token_v2(
 ) -> StdResult<(String, Bytes)> {
     // Hash the metadata to get the metadata image
     let metadata_bytes = metadata.abi_encode_params();
-    let metadata_image = keccak256(metadata_bytes);
+    let metadata_image = keccak256(metadata_bytes).into();
 
     // Use the metadata image to predict the token
     predict_wrapped_token_from_metadata_image_v2(
@@ -3333,7 +3341,7 @@ fn predict_wrapped_token_v2(
 }
 
 pub fn derive_batch_salt(index: U256, salt: H256) -> H256 {
-    keccak256((index, salt.get()).abi_encode())
+    keccak256((index, salt.get()).abi_encode()).into()
 }
 
 pub fn dequeue_channel_from_path(path: U256) -> (U256, Option<ChannelId>) {
@@ -3419,7 +3427,7 @@ pub fn is_forwarded_packet(salt: H256) -> bool {
 }
 
 pub fn derive_forward_salt(salt: H256) -> H256 {
-    tint_forward_salt(keccak256(salt.abi_encode()))
+    tint_forward_salt(keccak256(salt.abi_encode()).into())
 }
 
 fn migrate_v1_to_v2(
@@ -3514,6 +3522,7 @@ pub fn proxy_account_salt(
         )
             .abi_encode_params(),
     )
+    .into()
 }
 
 #[test]

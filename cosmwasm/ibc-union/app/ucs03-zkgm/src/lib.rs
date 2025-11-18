@@ -3,15 +3,16 @@ use cosmwasm_std::{Instantiate2AddressError, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
-use unionlabs::primitives::Bytes;
+use unionlabs_primitives::Bytes;
 
 pub mod com;
 pub mod contract;
 pub mod msg;
 pub mod state;
+pub mod token_bucket;
+
 #[cfg(test)]
 mod tests;
-pub mod token_bucket;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {

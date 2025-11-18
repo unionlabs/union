@@ -322,8 +322,19 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }
 broken-intra-doc-links = "deny"
 
 [profile.release]
-lto       = "thin"
-opt-level = 3
+lto = "fat"
+
+[profile.wasm-release]
+codegen-units    = 1         # prefer efficiency to compile time
+debug            = false     # no debug data
+debug-assertions = false     # prune debug assertions
+incremental      = false     # no incremental builds
+inherits         = "release"
+lto              = true      # link time optimization
+opt-level        = "z"       # optimize for size ("s" may also work)
+panic            = "abort"   # use simple panics
+rpath            = false     # no run-time search path
+strip            = true
 
 [workspace.dependencies]
 access-managed                            = { path = "cosmwasm/access-managed", default-features = false }

@@ -18,7 +18,6 @@ crate-type = ["cdylib", "rlib"]
 access-managed              = { workspace = true }
 alloy-primitives            = { workspace = true }
 alloy-sol-types             = { workspace = true }
-cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "cosmwasm_1_4", "staking"] }
 cw-account                  = { workspace = true }
 cw-storage-plus             = { workspace = true }
@@ -36,7 +35,7 @@ token-factory-api           = { workspace = true }
 ucs03-solvable              = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 ucs03-zkgmable              = { workspace = true }
-unionlabs                   = { workspace = true, features = ["ethabi", "schemars"] }
+unionlabs-primitives        = { workspace = true }
 upgradable                  = { workspace = true }
 
 [dev-dependencies]
@@ -53,4 +52,4 @@ serde_json           = { workspace = true }
 [features]
 default  = []
 library  = []
-schemars = ["dep:schemars", "ibc-union-msg/schemars"]
+schemars = ["dep:schemars", "ibc-union-msg/schemars", "unionlabs-primitives/schemars"]

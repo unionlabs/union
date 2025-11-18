@@ -1,5 +1,5 @@
 use access_manager_types::{CanCall, RoleId, Selector};
-use alloy_primitives::U256;
+use alloy_primitives::{U256, keccak256};
 use alloy_sol_types::SolValue;
 use cosmwasm_std::{
     Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Response,
@@ -14,10 +14,7 @@ use cw20_token_minter::contract::{Cw20TokenMinterImplementation, save_native_tok
 use ibc_union_msg::module::IbcUnionMsg;
 use ibc_union_spec::{ChannelId, ConnectionId, MustBeZero, Packet, path::commit_packets};
 use pausable::WhenNotPaused;
-use unionlabs::{
-    ethereum::keccak256,
-    primitives::{Bytes, H256},
-};
+use unionlabs_primitives::{Bytes, H256};
 
 use crate::{
     ContractError,
@@ -1390,7 +1387,7 @@ fn test_recv_packet_native_new_wrapped() {
         .into(),
     };
 
-    let metadata_image = keccak256(metadata.abi_encode_params());
+    let metadata_image = keccak256(metadata.abi_encode_params()).into();
 
     let quote_token = st
         .app
@@ -1504,7 +1501,7 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
         .into(),
     };
 
-    let metadata_image = keccak256(metadata.abi_encode_params());
+    let metadata_image = keccak256(metadata.abi_encode_params()).into();
 
     let quote_token = st
         .app
@@ -1600,7 +1597,7 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
-                metadata_image: keccak256(metadata.abi_encode_params()),
+                metadata_image: keccak256(metadata.abi_encode_params()).into(),
             },
         )
         .unwrap()
@@ -1691,7 +1688,7 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
-                metadata_image: keccak256(metadata.abi_encode_params()),
+                metadata_image: keccak256(metadata.abi_encode_params()).into(),
             },
         )
         .unwrap()
@@ -1770,7 +1767,7 @@ fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
         .into(),
     };
 
-    let metadata_image = keccak256(metadata.abi_encode_params());
+    let metadata_image = keccak256(metadata.abi_encode_params()).into();
 
     let quote_token = st
         .app
@@ -2444,7 +2441,8 @@ fn test_recv_packet_native_v2_wrap_ok() {
     };
 
     // Predict the wrapped token address using the metadata image
-    let metadata_image = keccak256(metadata.abi_encode_params());
+    let metadata_image = keccak256(metadata.abi_encode_params()).into();
+
     let quote_token = st
         .app
         .wrap()
@@ -2990,7 +2988,7 @@ fn test_recv_packet_native_v2_wrap_with_metadata_image_ok() {
     };
 
     // Calculate the metadata image from the preimage
-    let metadata_image = keccak256(preimage_metadata.abi_encode_params());
+    let metadata_image = keccak256(preimage_metadata.abi_encode_params()).into();
 
     // Get the predicted token address using the metadata image
     let quote_token = st
@@ -3188,7 +3186,7 @@ fn test_recv_packet_native_v2_wrap_protocol_fill_ok() {
                 path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.to_vec().into(),
-                metadata_image: keccak256(metadata.clone().abi_encode_params()),
+                metadata_image: keccak256(metadata.clone().abi_encode_params()).into(),
             },
         )
         .unwrap()
