@@ -91,7 +91,7 @@ pub fn migrate(
                     }
                 }
             }?;
-            Ok((res, None))
+            Ok((res, Some(version::LATEST)))
         },
         |mut deps, msg, version| match version {
             version::INIT => {

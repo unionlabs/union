@@ -1,5 +1,5 @@
 use access_managed::Restricted;
-use cosmwasm_std::{Addr, CosmosMsg, Uint64, Uint256};
+use cosmwasm_std::{Addr, Binary, CosmosMsg, Uint64, Uint256};
 use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use pausable::{
     WhenNotPaused,
@@ -148,16 +148,28 @@ pub enum RestrictedExecuteMsg {
         /// If true, reset the currently available amount to the new maximum capacity.
         reset: bool,
     },
+    MigrateMinter {
+        // code id of the new token minter
+        new_code_id: u64,
+        // migrate message json that will directly be passed to migrate call
+        // it will be the same as the `to_json_binary(&msg)`'s output
+        msg: Binary,
+    },
+    SetRateLimitDisabled {
+        // Whether to enable or disable rate limiting.
+        rate_limit_disabled: bool,
+    },
+    UpdateDummyCodeId {
+        dummy_code_id: u64,
+    },
+    UpdateCwAccountCodeId {
+        cw_account_code_id: u64,
+    },
     #[serde(untagged)]
     Pausable(Pausable),
     #[serde(untagged)]
     Upgradable(Upgradable),
 }
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct MigrateMsg {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
