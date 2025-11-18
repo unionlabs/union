@@ -54,6 +54,9 @@ pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
     pub const CLIENT_TYPE_NOT_FOUND: felt252 = 'CLIENT_TYPE_NOT_FOUND';
     pub const CLIENT_NOT_FOUND: felt252 = 'CLIENT_NOT_FOUND';
+    pub const INVALID_PROOF: felt252 = 'INVALID_PROOF';
+    pub const INVALID_CONNECTION_STATE: felt252 = 'INVALID_CONNECTION_STATE';
+    pub const INVALID_CHANNEL_STATE: felt252 = 'INVALID_CHANNEL_STATE';
 }
 
 #[starknet::interface]
@@ -85,10 +88,12 @@ mod IbcHandler {
         ConsensusStateUpdate, ILightClient, ILightClientDispatcher, ILightClientSafeDispatcher,
         ILightClientSafeDispatcherTrait,
     };
-    use crate::msg::{MsgConnectionOpenInit, MsgConnectionOpenTry};
+    use crate::msg::{
+        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
+    };
     use crate::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
     use crate::types::{
-        ChannelId, ClientId, ClientIdImpl, Connection, ConnectionId, ConnectionImpl,
+        Channel, ChannelId, ClientId, ClientIdImpl, Connection, ConnectionId, ConnectionImpl,
         ConnectionState, ConnectionTrait,
     };
     use crate::{Error, MsgCreateClient, MsgRegisterClient, MsgUpdateClient, to_byte_array};
@@ -102,6 +107,8 @@ mod IbcHandler {
         next_client_id: ClientId,
         next_connection_id: ConnectionId,
         next_channel_id: ChannelId,
+        connections: Map<ConnectionId, Connection>,
+        channels: Map<ChannelId, Channel>,
     }
 
     #[event]
@@ -190,10 +197,9 @@ mod IbcHandler {
         }
 
         fn update_client(ref self: ContractState, msg: MsgUpdateClient) {
-            let client_address = self.client_impl(msg.client_id);
-
             #[feature("safe_dispatcher")]
-            let res = ILightClientSafeDispatcher { contract_address: client_address }
+            let res = self
+                .client_impl(msg.client_id)
                 .update_client(
                     get_execution_info().caller_address,
                     msg.client_id,
@@ -220,164 +226,6 @@ mod IbcHandler {
                 Err(err) => { panic!("error when creating client: {err:?}"); },
             }
         }
-        // fn forceConnectionOpenTry(
-    //     IBCMsgs.MsgConnectionOpenTry calldata msg_
-    // ) public restricted returns (uint32) {
-    //     return _connectionOpenTry(msg_);
-    // }
-
-        // /**
-    //  * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B
-    //  (this * code is executed on chain B).
-    //  */
-    // fn connectionOpenTry(
-    //     IBCMsgs.MsgConnectionOpenTry calldata msg_
-    // ) external override returns (uint32) {
-    //     IBCConnection memory expectedConnection = IBCConnection({
-    //         state: IBCConnectionState.Init,
-    //         clientId: msg_.counterpartyClientId,
-    //         counterpartyClientId: msg_.clientId,
-    //         counterpartyConnectionId: 0
-    //     });
-    //     if (
-    //         !verifyConnectionState(
-    //             msg_.clientId,
-    //             msg_.proofHeight,
-    //             msg_.proofInit,
-    //             msg_.counterpartyConnectionId,
-    //             expectedConnection
-    //         )
-    //     ) {
-    //         revert IBCErrors.ErrInvalidProof();
-    //     }
-    //     return _connectionOpenTry(msg_);
-    // }
-
-        // fn _connectionOpenAck(
-    //     IBCMsgs.MsgConnectionOpenAck calldata msg_,
-    //     IBCConnection storage connection
-    // ) internal {
-    //     connection.state = IBCConnectionState.Open;
-    //     connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
-    //     commitConnection(msg_.connectionId, connection);
-    //     emit IBCConnectionLib.ConnectionOpenAck(
-    //         msg_.connectionId,
-    //         connection.clientId,
-    //         connection.counterpartyClientId,
-    //         connection.counterpartyConnectionId
-    //     );
-    // }
-
-        // fn forceConnectionOpenAck(
-    //     IBCMsgs.MsgConnectionOpenAck calldata msg_
-    // ) public restricted {
-    //     _connectionOpenAck(
-    //         msg_,
-    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.Init)
-    //     );
-    // }
-
-        // /**
-    //  * @dev connectionOpenAck relays acceptance of a connection open attempt from chain B
-    //  back * to chain A (this code is executed on chain A).
-    //  */
-    // fn connectionOpenAck(
-    //     IBCMsgs.MsgConnectionOpenAck calldata msg_
-    // ) external override {
-    //     IBCConnection storage connection =
-    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.Init);
-    //     IBCConnection memory expectedConnection = IBCConnection({
-    //         state: IBCConnectionState.TryOpen,
-    //         clientId: connection.counterpartyClientId,
-    //         counterpartyClientId: connection.clientId,
-    //         counterpartyConnectionId: msg_.connectionId
-    //     });
-    //     if (
-    //         !verifyConnectionState(
-    //             connection.clientId,
-    //             msg_.proofHeight,
-    //             msg_.proofTry,
-    //             msg_.counterpartyConnectionId,
-    //             expectedConnection
-    //         )
-    //     ) {
-    //         revert IBCErrors.ErrInvalidProof();
-    //     }
-    //     _connectionOpenAck(msg_, connection);
-    // }
-
-        // fn _connectionOpenConfirm(
-    //     IBCMsgs.MsgConnectionOpenConfirm calldata msg_,
-    //     IBCConnection storage connection
-    // ) internal {
-    //     connection.state = IBCConnectionState.Open;
-    //     commitConnection(msg_.connectionId, connection);
-    //     emit IBCConnectionLib.ConnectionOpenConfirm(
-    //         msg_.connectionId,
-    //         connection.clientId,
-    //         connection.counterpartyClientId,
-    //         connection.counterpartyConnectionId
-    //     );
-    // }
-
-        // fn forceConnectionOpenConfirm(
-    //     IBCMsgs.MsgConnectionOpenConfirm calldata msg_
-    // ) public restricted {
-    //     _connectionOpenConfirm(
-    //         msg_,
-    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.TryOpen)
-    //     );
-    // }
-
-        // /**
-    //  * @dev connectionOpenConfirm confirms opening of a connection on chain A to chain B,
-    //  after * which the connection is open on both chains (this code is executed on chain B).
-    //  */
-    // fn connectionOpenConfirm(
-    //     IBCMsgs.MsgConnectionOpenConfirm calldata msg_
-    // ) external override {
-    //     IBCConnection storage connection =
-    //         ensureHandshakeState(msg_.connectionId, IBCConnectionState.TryOpen);
-    //     IBCConnection memory expectedConnection = IBCConnection({
-    //         state: IBCConnectionState.Open,
-    //         clientId: connection.counterpartyClientId,
-    //         counterpartyClientId: connection.clientId,
-    //         counterpartyConnectionId: msg_.connectionId
-    //     });
-    //     if (
-    //         !verifyConnectionState(
-    //             connection.clientId,
-    //             msg_.proofHeight,
-    //             msg_.proofAck,
-    //             connection.counterpartyConnectionId,
-    //             expectedConnection
-    //         )
-    //     ) {
-    //         revert IBCErrors.ErrInvalidProof();
-    //     }
-    //     _connectionOpenConfirm(msg_, connection);
-    // }
-
-        // fn encodeConnection(
-    //     IBCConnection memory connection
-    // ) internal pure returns (bytes32) {
-    //     return keccak256(abi.encode(connection));
-    // }
-
-        // fn encodeConnectionStorage(
-    //     IBCConnection storage connection
-    // ) internal pure returns (bytes32) {
-    //     return keccak256(abi.encode(connection));
-    // }
-
-        // fn commitConnection(
-    //     uint32 connectionId,
-    //     IBCConnection storage connection
-    // ) internal {
-    //     commitments[IBCCommitment.connectionCommitmentKey(connectionId)] =
-    //         encodeConnectionStorage(connection);
-    // }
-
     }
 
     #[generate_trait]
@@ -425,7 +273,7 @@ mod IbcHandler {
                         msg.counterparty_connection_id,
                         expected_connection,
                     ),
-                'invalid proof',
+                Error::INVALID_PROOF,
             );
 
             let connection_id = self.get_next_connection_id();
@@ -434,49 +282,116 @@ mod IbcHandler {
                 state: ConnectionState::TryOpen,
                 client_id: msg.client_id,
                 counterparty_client_id: msg.counterparty_client_id,
-                counterparty_connection_id: None,
+                counterparty_connection_id: Some(msg.counterparty_connection_id),
             };
 
-            self.commit(@ConnectionPath { connection_id }, connection.commit());
+            self.save_connection(connection_id, connection);
 
             self
                 .emit(
-                    ConnectionOpenInit {
+                    ConnectionOpenTry {
                         connection_id,
                         client_id: msg.client_id,
                         counterparty_client_id: msg.counterparty_client_id,
+                        counterparty_connection_id: msg.counterparty_connection_id,
                     },
                 );
 
             connection_id
         }
-        // fn _connectionOpenTry(
-        //     IBCMsgs.MsgConnectionOpenTry calldata msg_
-        // ) internal returns (uint32) {
-        //     IBCConnection storage connection = connections[connectionId];
-        //     connection.clientId = msg_.clientId;
-        //     connection.state = IBCConnectionState.TryOpen;
-        //     connection.counterpartyClientId = msg_.counterpartyClientId;
-        //     connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
-        //     commitConnection(connectionId, connection);
-        //     emit IBCConnectionLib.ConnectionOpenTry(
-        //         connectionId,
-        //         msg_.clientId,
-        //         msg_.counterpartyClientId,
-        //         msg_.counterpartyConnectionId
-        //     );
-        //     return connectionId;
-        // }
-        // fn ensureHandshakeState(
-        //     uint32 connectionId,
-        //     IBCConnectionState state
-        // ) internal view returns (IBCConnection storage) {
-        //     IBCConnection storage connection = connections[connectionId];
-        //     if (connection.state != state) {
-        //         revert IBCErrors.ErrInvalidConnectionState();
-        //     }
-        //     return connection;
-        // }
+
+        fn connection_open_ack(ref self: ContractState, msg: MsgConnectionOpenAck) {
+            let mut connection = self
+                .ensure_connection_state(msg.connection_id, ConnectionState::Init);
+
+            let expected_connection = Connection {
+                state: ConnectionState::Init,
+                client_id: connection.counterparty_client_id,
+                counterparty_client_id: connection.client_id,
+                counterparty_connection_id: Some(msg.connection_id),
+            };
+
+            assert(
+                self
+                    .verify_connection_state(
+                        connection.client_id,
+                        msg.proof_height,
+                        msg.proof_try,
+                        msg.counterparty_connection_id,
+                        expected_connection,
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            connection.state = ConnectionState::Open;
+
+            self
+                .emit(
+                    ConnectionOpenAck {
+                        connection_id: msg.connection_id,
+                        client_id: connection.client_id,
+                        counterparty_client_id: connection.counterparty_client_id,
+                        counterparty_connection_id: msg.counterparty_connection_id,
+                    },
+                );
+
+            self.save_connection(msg.connection_id, connection);
+        }
+
+        fn connection_open_confirm(ref self: ContractState, msg: MsgConnectionOpenConfirm) {
+            let mut connection = self
+                .ensure_connection_state(msg.connection_id, ConnectionState::TryOpen);
+
+            let expected_connection = Connection {
+                state: ConnectionState::TryOpen,
+                client_id: connection.counterparty_client_id,
+                counterparty_client_id: connection.client_id,
+                counterparty_connection_id: Some(msg.connection_id),
+            };
+
+            assert(
+                self
+                    .verify_connection_state(
+                        connection.client_id,
+                        msg.proof_height,
+                        msg.proof_ack,
+                        connection.counterparty_connection_id.expect('must be set'),
+                        expected_connection,
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            connection.state = ConnectionState::Open;
+
+            self
+                .emit(
+                    ConnectionOpenConfirm {
+                        connection_id: msg.connection_id,
+                        client_id: connection.client_id,
+                        counterparty_client_id: connection.counterparty_client_id,
+                        counterparty_connection_id: connection
+                            .counterparty_connection_id
+                            .expect('must be set'),
+                    },
+                );
+
+            self.save_connection(msg.connection_id, connection);
+        }
+
+        fn ensure_connection_state(
+            self: @ContractState, connection_id: ConnectionId, state: ConnectionState,
+        ) -> Connection {
+            let connection = self.connections.read(connection_id);
+            assert(connection.state != state, Error::INVALID_CONNECTION_STATE);
+            connection
+        }
+
+        fn save_connection(
+            ref self: ContractState, connection_id: ConnectionId, connection: Connection,
+        ) {
+            self.commit(@ConnectionPath { connection_id }, connection.commit());
+            self.connections.write(connection_id, connection);
+        }
 
         fn verify_connection_state(
             self: @ContractState,
@@ -487,7 +402,8 @@ mod IbcHandler {
             counterparty_connection: Connection,
         ) -> bool {
             #[feature("safe_dispatcher")]
-            ILightClientSafeDispatcher { contract_address: self.client_impl(client_id) }
+            self
+                .client_impl(client_id)
                 .verify_membership(
                     client_id,
                     height,
@@ -526,12 +442,12 @@ mod IbcHandler {
             client_address
         }
 
-        fn client_impl(self: @ContractState, client_id: ClientId) -> ContractAddress {
-            let client_address = self.client_impls.read(client_id);
+        fn client_impl(self: @ContractState, client_id: ClientId) -> ILightClientSafeDispatcher {
+            let contract_address = self.client_impls.read(client_id);
 
-            assert(!client_address.is_zero(), Error::CLIENT_NOT_FOUND);
+            assert(!contract_address.is_zero(), Error::CLIENT_NOT_FOUND);
 
-            client_address
+            ILightClientSafeDispatcher { contract_address }
         }
 
         fn commit<T, +StorePathKeyTrait<T>>(ref self: ContractState, key: @T, value: u256) {

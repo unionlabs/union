@@ -92,7 +92,7 @@ impl ChannelIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelId, S> {
     }
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, starknet::Store)]
 pub struct Connection {
     pub state: ConnectionState,
     pub client_id: ClientId,
@@ -117,7 +117,8 @@ pub impl ConnectionImpl of ConnectionTrait {
     }
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, PartialEq, Clone, Copy, Serde, starknet::Store)]
+#[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ConnectionState {
     Init,
     TryOpen,
@@ -135,7 +136,7 @@ pub impl ConnectionStateImpl of ConnectionStateTrait {
     }
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, starknet::Store)]
 pub struct Channel {
     pub state: ChannelState,
     pub connection_id: ConnectionId,
@@ -183,7 +184,8 @@ pub impl ChannelImpl of ChannelTrait {
     }
 }
 
-#[derive(Drop, Serde)]
+#[derive(Drop, Serde, starknet::Store)]
+#[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ChannelState {
     Init,
     TryOpen,
