@@ -585,7 +585,7 @@ pub fn execute(
                     path,
                 }) => commit_non_membership_proof(deps, client_id, proof_height, proof, path),
                 RestrictedExecuteMsg::Upgradable(msg) => {
-                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                    upgradable::execute(&env, msg).map_err(Into::into)
                 }
             }
         }

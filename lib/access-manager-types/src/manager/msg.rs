@@ -231,7 +231,7 @@ pub enum QueryMsg {
     GetRoleLabels { role_ids: Vec<RoleId> },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {

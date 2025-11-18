@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, Coin, Deps, DepsMut, Env, Event, MessageInfo, QuerierWr
 use serde::Serialize;
 
 #[must_use = "call ExecCtx::events() to consume this object"]
-pub(crate) struct ExecCtx<'info, 'deps> {
+pub struct ExecCtx<'info, 'deps> {
     events: Vec<Event>,
     deps: DepsMut<'deps>,
     env: &'info Env,
@@ -11,18 +11,24 @@ pub(crate) struct ExecCtx<'info, 'deps> {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct QueryCtx<'info, 'deps> {
+pub struct QueryCtx<'info, 'deps> {
     deps: Deps<'deps>,
     env: &'info Env,
 }
 
 impl<'info, 'deps> QueryCtx<'info, 'deps> {
+    #[must_use]
     pub fn new(deps: Deps<'deps>, env: &'info Env) -> Self {
         Self { deps, env }
     }
 }
 
 impl<'info, 'deps> ExecCtx<'info, 'deps> {
+    /// Create a new [`ExecCtx`].
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the provided `data`'s serialization fails.
     pub fn new(
         deps: DepsMut<'deps>,
         env: &'info Env,

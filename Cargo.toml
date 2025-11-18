@@ -294,6 +294,7 @@ members = [
   "lib/cosmos-signer",
   "cosmwasm/upgradable",
   "cosmwasm/pausable",
+  "cosmwasm/gatekeeper",
 ]
 
 [workspace.package]

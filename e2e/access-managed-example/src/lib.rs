@@ -131,9 +131,7 @@ pub fn execute(
         ExecuteMsg::AccessManaged(msg) => {
             access_managed::execute(deps, env, info, msg).map_err(Into::into)
         }
-        ExecuteMsg::Upgradable(msg) => {
-            upgradable::execute(deps, env, info, msg).map_err(Into::into)
-        }
+        ExecuteMsg::Upgradable(msg) => upgradable::execute(&env, msg).map_err(Into::into),
     }
 }
 

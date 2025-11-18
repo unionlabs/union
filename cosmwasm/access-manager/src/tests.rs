@@ -17,8 +17,8 @@ use access_manager_types::{
     },
 };
 use cosmwasm_std::{
-    Addr, Binary, Order, Reply, Response, StdError, Storage, SubMsg, SubMsgResponse, SystemResult,
-    WasmMsg, WasmQuery, from_json,
+    Addr, Binary, Order, Reply, Response, StdError, Storage, SubMsg, SubMsgResponse, SubMsgResult,
+    SystemResult, WasmMsg, WasmQuery, from_json,
     testing::{message_info, mock_dependencies, mock_env},
     to_json_binary, to_json_string, wasm_execute,
 };
@@ -3282,7 +3282,7 @@ fn reply_handles_correctly() {
                 id: EXECUTE_REPLY_ID,
                 payload: Binary::default(),
                 gas_used: 0,
-                result: cosmwasm_std::SubMsgResult::Ok(SubMsgResponse {
+                result: SubMsgResult::Ok(SubMsgResponse {
                     events: vec![],
                     #[expect(deprecated, reason = "need to construct this type somehow")]
                     data: None,
@@ -3314,7 +3314,7 @@ fn reply_unknown_id() {
                 id: 123,
                 payload: Binary::default(),
                 gas_used: 0,
-                result: cosmwasm_std::SubMsgResult::Ok(SubMsgResponse {
+                result: SubMsgResult::Ok(SubMsgResponse {
                     events: vec![],
                     #[expect(deprecated, reason = "need to construct this type somehow")]
                     data: None,
@@ -3341,7 +3341,7 @@ fn reply_execute_stack_invariant() {
             id: EXECUTE_REPLY_ID,
             payload: Binary::default(),
             gas_used: 0,
-            result: cosmwasm_std::SubMsgResult::Ok(SubMsgResponse {
+            result: SubMsgResult::Ok(SubMsgResponse {
                 events: vec![],
                 #[expect(deprecated, reason = "need to construct this type somehow")]
                 data: None,

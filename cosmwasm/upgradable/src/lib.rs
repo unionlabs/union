@@ -2,7 +2,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
-use cosmwasm_std::{DepsMut, Env, Event, MessageInfo, Response, WasmMsg, to_json_binary};
+use cosmwasm_std::{Env, Event, Response, WasmMsg, to_json_binary};
 use frissitheto::UpgradeMsg;
 
 use crate::{error::ContractError, msg::Upgradable};
@@ -10,14 +10,7 @@ use crate::{error::ContractError, msg::Upgradable};
 pub mod error;
 pub mod msg;
 
-#[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
-#[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
-pub fn execute(
-    _: DepsMut,
-    env: Env,
-    _: MessageInfo,
-    msg: Upgradable,
-) -> Result<Response, ContractError> {
+pub fn execute(env: &Env, msg: Upgradable) -> Result<Response, ContractError> {
     match msg {
         Upgradable::Upgrade { new_code_id, msg } => Ok(Response::new()
             .add_event(

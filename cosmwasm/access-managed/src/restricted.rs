@@ -93,6 +93,7 @@ impl<T: DeserializeOwned + Serialize> Restricted<T> {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum EnsureCanCallResult<T> {
     Msg(T),
     Scheduled(Vec<SubMsg>),
@@ -186,6 +187,19 @@ mod tests {
         deser_expect_error(
             b"null",
             "Expected to parse either a `true`, `false`, or a `null`.",
+        );
+    }
+
+    #[test]
+    fn equality() {
+        assert_eq!(
+            serde_json_wasm::from_slice::<Restricted<ExecuteMsg>>(br#"{"key":{}}"#).unwrap(),
+            Restricted::wrap(ExecuteMsg::Key {}),
+        );
+
+        assert_ne!(
+            serde_json_wasm::from_slice::<Restricted<ExecuteMsg>>(br#"{"key2":1}"#).unwrap(),
+            Restricted::wrap(ExecuteMsg::Key {}),
         );
     }
 }
