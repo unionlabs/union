@@ -386,77 +386,77 @@ use core::keccak::compute_keccak_byte_array;
             self.save_connection(msg.connection_id, connection);
         }
 
-        fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
-            let channel_id = self.get_next_channel_id();
+        // fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
+        //     let channel_id = self.get_next_channel_id();
 
-            let channel = Channel {
-                state: ChannelState::Init,
-                connection_id: msg.connection_id,
-                counterparty_channel_id: None,
-                counterparty_port_id: msg.counterparty_port_id.clone(),
-                version: msg.version.clone(),
-            };
+        //     let channel = Channel {
+        //         state: ChannelState::Init,
+        //         connection_id: msg.connection_id,
+        //         counterparty_channel_id: None,
+        //         counterparty_port_id: msg.counterparty_port_id.clone(),
+        //         version: msg.version.clone(),
+        //     };
 
-            self.commit(@ChannelPath { channel_id }, channel.commit());
+        //     self.commit(@ChannelPath { channel_id }, channel.commit());
 
-            self
-                .emit(
-                    ChannelOpenInit {
-                        port_id: msg.port_id,
-                        channel_id,
-                        counterparty_port_id: msg.counterparty_port_id,
-                        connection_id: msg.connection_id,
-                        version: msg.version,
-                    },
-                );
+        //     self
+        //         .emit(
+        //             ChannelOpenInit {
+        //                 port_id: msg.port_id,
+        //                 channel_id,
+        //                 counterparty_port_id: msg.counterparty_port_id,
+        //                 connection_id: msg.connection_id,
+        //                 version: msg.version,
+        //             },
+        //         );
 
-            channel_id
-        }
+        //     channel_id
+        // }
 
-        fn channel_open_try(ref self: ContractState, msg: MsgChannelOpenTry) -> ChannelId {
-            let expected_Channel = Channel {
-                state: ChannelState::Init,
-                connection_id: msg.,
-                counterparty_channel_id: (),
-                counterparty_port_id: (),
-                version: (),
-            };
+        // fn channel_open_try(ref self: ContractState, msg: MsgChannelOpenTry) -> ChannelId {
+        //     let expected_Channel = Channel {
+        //         state: ChannelState::Init,
+        //         connection_id: msg.,
+        //         counterparty_channel_id: (),
+        //         counterparty_port_id: (),
+        //         version: (),
+        //     };
 
-            assert(
-                self
-                    .verify_channel_state(
-                        msg.client_id,
-                        msg.proof_height,
-                        msg.proof_init,
-                        msg.counterparty_channel_id,
-                        expected_Channel,
-                    ),
-                Error::INVALID_PROOF,
-            );
+        //     assert(
+        //         self
+        //             .verify_channel_state(
+        //                 msg.client_id,
+        //                 msg.proof_height,
+        //                 msg.proof_init,
+        //                 msg.counterparty_channel_id,
+        //                 expected_Channel,
+        //             ),
+        //         Error::INVALID_PROOF,
+        //     );
 
-            let channel_id = self.get_next_channel_id();
+        //     let channel_id = self.get_next_channel_id();
 
-            let Channel = Channel {
-                state: ChannelState::TryOpen,
-                client_id: msg.client_id,
-                counterparty_client_id: msg.counterparty_client_id,
-                counterparty_channel_id: Some(msg.counterparty_channel_id),
-            };
+        //     let Channel = Channel {
+        //         state: ChannelState::TryOpen,
+        //         client_id: msg.client_id,
+        //         counterparty_client_id: msg.counterparty_client_id,
+        //         counterparty_channel_id: Some(msg.counterparty_channel_id),
+        //     };
 
-            self.save_Channel(channel_id, Channel);
+        //     self.save_Channel(channel_id, Channel);
 
-            self
-                .emit(
-                    ChannelOpenTry {
-                        channel_id,
-                        client_id: msg.client_id,
-                        counterparty_client_id: msg.counterparty_client_id,
-                        counterparty_channel_id: msg.counterparty_channel_id,
-                    },
-                );
+        //     self
+        //         .emit(
+        //             ChannelOpenTry {
+        //                 channel_id,
+        //                 client_id: msg.client_id,
+        //                 counterparty_client_id: msg.counterparty_client_id,
+        //                 counterparty_channel_id: msg.counterparty_channel_id,
+        //             },
+        //         );
 
-            channel_id
-        }
+        //     channel_id
+        // }
 
         // fn channel_open_ack(ref self: ContractState, msg: MsgChannelOpenAck) {
         //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::Init);
