@@ -21,11 +21,11 @@ const writeToClipboard = () => {
 }
 
 const exportData = () => {
-  if (!step.context.message) {
+  if (Option.isNone(step.context.message)) {
     return
   }
   const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
-  const data = JSON.stringify(step.context.message, null, 2)
+  const data = step.context.message.value
   const blob = new Blob([data], { type: "application/json" })
   const url = window.URL.createObjectURL(blob)
   const anchor = document.createElement("a")
