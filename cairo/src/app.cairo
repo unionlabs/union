@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use crate::types::{ChannelId, ClientId, ConnectionId, Packet};
+use crate::types::{ChannelId, ConnectionId, Packet};
 
 #[starknet::interface]
 pub trait IIbcModuleRecv<TContractState> {

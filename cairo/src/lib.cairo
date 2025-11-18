@@ -71,7 +71,8 @@ pub trait IIbcHandler<TContractState> {
 
 #[starknet::contract]
 mod IbcHandler {
-    use core::keccak::compute_keccak_byte_array;
+    use crate::msg::MsgChannelOpenTry;
+use core::keccak::compute_keccak_byte_array;
     use core::num::traits::{Pow, Zero};
     use starknet::event::EventEmitter;
     use starknet::storage::{
@@ -82,20 +83,24 @@ mod IbcHandler {
     use starknet::syscalls::storage_write_syscall;
     use starknet::{ContractAddress, SyscallResultTrait, get_execution_info};
     use crate::event::{
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, RegisterClient, UpdateClient,
+        ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
+        ChannelOpenTry, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, RegisterClient, UpdateClient,
     };
     use crate::lightclient::{
         ConsensusStateUpdate, ILightClient, ILightClientDispatcher, ILightClientSafeDispatcher,
         ILightClientSafeDispatcherTrait,
     };
     use crate::msg::{
-        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
+        MsgChannelOpenInit, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+        MsgConnectionOpenTry,
     };
-    use crate::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
+    use crate::path::{
+        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
+    };
     use crate::types::{
-        Channel, ChannelId, ClientId, ClientIdImpl, Connection, ConnectionId, ConnectionImpl,
-        ConnectionState, ConnectionTrait,
+        Channel, ChannelId, ChannelState, ChannelTrait, ClientId, ClientIdImpl, Connection,
+        ConnectionId, ConnectionImpl, ConnectionState, ConnectionTrait,
     };
     use crate::{Error, MsgCreateClient, MsgRegisterClient, MsgUpdateClient, to_byte_array};
 
@@ -122,10 +127,12 @@ mod IbcHandler {
         ConnectionOpenTry: ConnectionOpenTry,
         ConnectionOpenAck: ConnectionOpenAck,
         ConnectionOpenConfirm: ConnectionOpenConfirm,
-        // ChannelOpenInit: ChannelOpenInit,
-    // ChannelOpenTry: ChannelOpenTry,
-    // ChannelOpenAck: ChannelOpenAck,
-    // ChannelOpenConfiChannelrm: ChannelOpenConfirm,
+        ChannelOpenInit: ChannelOpenInit,
+        ChannelOpenTry: ChannelOpenTry,
+        ChannelOpenAck: ChannelOpenAck,
+        ChannelOpenConfirm: ChannelOpenConfirm,
+        ChannelCloseInit: ChannelCloseInit,
+        ChannelCloseConfirm: ChannelCloseConfirm,
     }
 
     #[constructor]
@@ -378,6 +385,154 @@ mod IbcHandler {
 
             self.save_connection(msg.connection_id, connection);
         }
+
+        fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
+            let channel_id = self.get_next_channel_id();
+
+            let channel = Channel {
+                state: ChannelState::Init,
+                connection_id: msg.connection_id,
+                counterparty_channel_id: None,
+                counterparty_port_id: msg.counterparty_port_id.clone(),
+                version: msg.version.clone(),
+            };
+
+            self.commit(@ChannelPath { channel_id }, channel.commit());
+
+            self
+                .emit(
+                    ChannelOpenInit {
+                        port_id: msg.port_id,
+                        channel_id,
+                        counterparty_port_id: msg.counterparty_port_id,
+                        connection_id: msg.connection_id,
+                        version: msg.version,
+                    },
+                );
+
+            channel_id
+        }
+
+        fn channel_open_try(ref self: ContractState, msg: MsgChannelOpenTry) -> ChannelId {
+            let expected_Channel = Channel {
+                state: ChannelState::Init,
+                connection_id: msg.,
+                counterparty_channel_id: (),
+                counterparty_port_id: (),
+                version: (),
+            };
+
+            assert(
+                self
+                    .verify_channel_state(
+                        msg.client_id,
+                        msg.proof_height,
+                        msg.proof_init,
+                        msg.counterparty_channel_id,
+                        expected_Channel,
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            let channel_id = self.get_next_channel_id();
+
+            let Channel = Channel {
+                state: ChannelState::TryOpen,
+                client_id: msg.client_id,
+                counterparty_client_id: msg.counterparty_client_id,
+                counterparty_channel_id: Some(msg.counterparty_channel_id),
+            };
+
+            self.save_Channel(channel_id, Channel);
+
+            self
+                .emit(
+                    ChannelOpenTry {
+                        channel_id,
+                        client_id: msg.client_id,
+                        counterparty_client_id: msg.counterparty_client_id,
+                        counterparty_channel_id: msg.counterparty_channel_id,
+                    },
+                );
+
+            channel_id
+        }
+
+        // fn channel_open_ack(ref self: ContractState, msg: MsgChannelOpenAck) {
+        //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::Init);
+
+        //     let expected_Channel = Channel {
+        //         state: ChannelState::Init,
+        //         client_id: Channel.counterparty_client_id,
+        //         counterparty_client_id: Channel.client_id,
+        //         counterparty_channel_id: Some(msg.channel_id),
+        //     };
+
+        //     assert(
+        //         self
+        //             .verify_channel_state(
+        //                 Channel.client_id,
+        //                 msg.proof_height,
+        //                 msg.proof_try,
+        //                 msg.counterparty_channel_id,
+        //                 expected_Channel,
+        //             ),
+        //         Error::INVALID_PROOF,
+        //     );
+
+        //     Channel.state = ChannelState::Open;
+
+        //     self
+        //         .emit(
+        //             ChannelOpenAck {
+        //                 channel_id: msg.channel_id,
+        //                 client_id: Channel.client_id,
+        //                 counterparty_client_id: Channel.counterparty_client_id,
+        //                 counterparty_channel_id: msg.counterparty_channel_id,
+        //             },
+        //         );
+
+        //     self.save_Channel(msg.channel_id, Channel);
+        // }
+
+        // fn channel_open_confirm(ref self: ContractState, msg: MsgChannelOpenConfirm) {
+        //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::TryOpen);
+
+        //     let expected_Channel = Channel {
+        //         state: ChannelState::TryOpen,
+        //         client_id: Channel.counterparty_client_id,
+        //         counterparty_client_id: Channel.client_id,
+        //         counterparty_channel_id: Some(msg.channel_id),
+        //     };
+
+        //     assert(
+        //         self
+        //             .verify_channel_state(
+        //                 Channel.client_id,
+        //                 msg.proof_height,
+        //                 msg.proof_ack,
+        //                 Channel.counterparty_channel_id.expect('must be set'),
+        //                 expected_Channel,
+        //             ),
+        //         Error::INVALID_PROOF,
+        //     );
+
+        //     Channel.state = ChannelState::Open;
+
+        //     self
+        //         .emit(
+        //             ChannelOpenConfirm {
+        //                 channel_id: msg.channel_id,
+        //                 client_id: Channel.client_id,
+        //                 counterparty_client_id: Channel.counterparty_client_id,
+        //                 counterparty_channel_id: Channel
+        //                     .counterparty_channel_id
+        //                     .expect('must be set'),
+        //             },
+        //         );
+
+        //     self.save_Channel(msg.channel_id, Channel);
+        // }
 
         fn ensure_connection_state(
             self: @ContractState, connection_id: ConnectionId, state: ConnectionState,

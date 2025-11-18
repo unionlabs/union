@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use crate::types::{ClientId, ConnectionId};
+use crate::types::{ChannelId, ClientId, ConnectionId};
 
 #[derive(Drop, starknet::Event)]
 pub struct RegisterClient {
@@ -64,3 +64,71 @@ pub struct ConnectionOpenConfirm {
     pub counterparty_client_id: ClientId,
     pub counterparty_connection_id: ConnectionId,
 }
+
+#[derive(Drop, starknet::Event)]
+pub struct ChannelOpenInit {
+    #[key]
+    pub port_id: ContractAddress,
+    #[key]
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: ByteArray,
+    pub connection_id: ConnectionId,
+    #[key]
+    pub version: ByteArray,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct ChannelOpenTry {
+    #[key]
+    pub port_id: ContractAddress,
+    #[key]
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: ByteArray,
+    pub counterparty_channel_id: ChannelId,
+    pub connection_id: ConnectionId,
+    #[key]
+    pub counterparty_version: ByteArray,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct ChannelOpenAck {
+    #[key]
+    pub port_id: ContractAddress,
+    #[key]
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: ByteArray,
+    pub counterparty_channel_id: ChannelId,
+    pub connection_id: ConnectionId,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct ChannelOpenConfirm {
+    #[key]
+    pub port_id: ContractAddress,
+    #[key]
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: ByteArray,
+    pub counterpartyChannel_id: ChannelId,
+    pub connection_id: ConnectionId,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct ChannelCloseInit {
+    #[key]
+    pub port_id: ContractAddress,
+    #[key]
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: ByteArray,
+    pub counterparty_channel_id: ChannelId,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct ChannelCloseConfirm {
+    #[key]
+    pub port_id: ContractAddress,
+    #[key]
+    pub channel_id: ChannelId,
+    pub counterparty_port_id: ByteArray,
+    pub counterparty_channel_id: ChannelId,
+}
+
