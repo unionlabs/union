@@ -28,7 +28,7 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![cfg_attr(test, allow(clippy::too_many_lines))]
 
-use access_manager_types::managed::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg};
+pub use access_manager_types::managed::msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg};
 use cosmwasm_std::{
     Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, to_json_binary,
 };

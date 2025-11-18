@@ -1,22 +1,42 @@
+use std::{
+    collections::BTreeMap,
+    num::NonZero,
+    sync::{Arc, Mutex},
+};
+
 use access_manager_types::{
-    CanCall, HasRole, RoleId, Selector,
+    CanCall, FullAccess, HasRole, Nonce, RoleId, RoleLabelsResponse, Selector, Timepoint, managed,
     manager::{
         error::AccessManagerError,
         event::{
-            OperationScheduled, RoleGrantDelayChanged, RoleGranted, RoleGuardianChanged,
-            RoleRevoked, TargetClosed, TargetFunctionRoleUpdated,
+            OperationExecuted, OperationScheduled, RoleGrantDelayChanged, RoleGranted,
+            RoleGuardianChanged, RoleLabel, RoleRevoked, TargetAdminDelayUpdated, TargetClosed,
+            TargetFunctionRoleUpdated,
         },
-        msg::{ExecuteMsg, QueryMsg},
+        msg::{ExecuteMsg, InitMsg, QueryMsg},
     },
 };
-use cosmwasm_std::{Addr, Response, testing::message_info};
+use cosmwasm_std::{
+    Addr, Binary, Order, Reply, Response, StdError, Storage, SubMsg, SubMsgResponse, SystemResult,
+    WasmMsg, WasmQuery, from_json,
+    testing::{message_info, mock_dependencies, mock_env},
+    to_json_binary, to_json_string, wasm_execute,
+};
+use depolama::StorageExt;
+use frissitheto::UpgradeMsg;
 use hex_literal::hex;
+use itertools::assert_equal;
 use unionlabs_primitives::H256;
 
 use crate::{
+    EXECUTE_REPLY_ID,
+    contract::expiration,
     error::ContractError,
-    execute, min_setback, query,
-    tests::utils::{ACCOUNT_1, ACCOUNT_2, ADMIN, TARGET_1, TARGET_2, assert_query_result, setup},
+    execute, instantiate, migrate, min_setback, query, reply,
+    state::ExecutionIdStack,
+    tests::utils::{
+        ACCOUNT_1, ACCOUNT_2, ACCOUNT_3, ADMIN, TARGET_1, TARGET_2, assert_query_result, setup,
+    },
 };
 
 pub mod utils;
@@ -58,9 +78,22 @@ fn grant_revoke_role_works() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
+        },
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetAccess {
+            role_id: RoleId::new(1),
+            account: grantee.clone(),
+        },
+        &FullAccess {
+            since: env.block.time.seconds(),
+            current_delay: 0,
+            pending_delay: 0,
+            effect: 0,
         },
     );
 
@@ -72,9 +105,20 @@ fn grant_revoke_role_works() {
             role_id: RoleId::new(2),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: false,
-            execution_delay: 0,
+        &HasRole::No {},
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetAccess {
+            role_id: RoleId::new(2),
+            account: grantee.clone(),
+        },
+        &FullAccess {
+            since: 0,
+            current_delay: 0,
+            pending_delay: 0,
+            effect: 0,
         },
     );
 
@@ -108,9 +152,22 @@ fn grant_revoke_role_works() {
             role_id: RoleId::new(2),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 10,
+        &HasRole::Yes {
+            execution_delay: Some(NonZero::new(10).unwrap()),
+        },
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetAccess {
+            role_id: RoleId::new(2),
+            account: grantee.clone(),
+        },
+        &FullAccess {
+            since: env.block.time.seconds(),
+            current_delay: 10,
+            pending_delay: 0,
+            effect: 0,
         },
     );
 
@@ -136,12 +193,23 @@ fn grant_revoke_role_works() {
         deps.as_ref(),
         &env,
         QueryMsg::HasRole {
-            role_id: RoleId::new(0),
+            role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: false,
-            execution_delay: 0,
+        &HasRole::No {},
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetAccess {
+            role_id: RoleId::new(1),
+            account: grantee.clone(),
+        },
+        &FullAccess {
+            since: 0,
+            current_delay: 0,
+            pending_delay: 0,
+            effect: 0,
         },
     );
 
@@ -167,12 +235,23 @@ fn grant_revoke_role_works() {
         deps.as_ref(),
         &env,
         QueryMsg::HasRole {
-            role_id: RoleId::new(0),
+            role_id: RoleId::new(2),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: false,
-            execution_delay: 0,
+        &HasRole::No {},
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetAccess {
+            role_id: RoleId::new(2),
+            account: grantee.clone(),
+        },
+        &FullAccess {
+            since: 0,
+            current_delay: 0,
+            pending_delay: 0,
+            effect: 0,
         },
     );
 
@@ -199,6 +278,23 @@ fn renounce_role_works() {
     let info = message_info(&ADMIN, &[]);
 
     let grantee = Addr::unchecked("grantee");
+
+    // can't renounce public role
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&grantee, &[]),
+            ExecuteMsg::RenounceRole {
+                role_id: RoleId::PUBLIC_ROLE,
+                caller_confirmation: grantee.clone(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+            RoleId::PUBLIC_ROLE
+        )),
+    );
 
     assert_eq!(
         execute(
@@ -283,10 +379,7 @@ fn renounce_role_works() {
             role_id: RoleId::new(0),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: false,
-            execution_delay: 0,
-        },
+        &HasRole::No {},
     );
 
     assert_eq!(
@@ -314,10 +407,7 @@ fn renounce_role_works() {
             role_id: RoleId::new(0),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: false,
-            execution_delay: 0,
-        },
+        &HasRole::No {},
     );
 
     // renouncing again has no effect
@@ -437,9 +527,8 @@ fn grant_revoke_role_requires_role_admin() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 
@@ -481,10 +570,7 @@ fn grant_revoke_role_requires_role_admin() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: false,
-            execution_delay: 0,
-        },
+        &HasRole::No {},
     );
 }
 
@@ -643,9 +729,8 @@ fn re_grant_role() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 
@@ -678,9 +763,8 @@ fn re_grant_role() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 
@@ -713,9 +797,8 @@ fn re_grant_role() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 10,
+        &HasRole::Yes {
+            execution_delay: Some(NonZero::new(10).unwrap()),
         },
     );
 
@@ -750,9 +833,8 @@ fn re_grant_role() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 10,
+        &HasRole::Yes {
+            execution_delay: Some(NonZero::new(10).unwrap()),
         },
     );
 
@@ -766,9 +848,8 @@ fn re_grant_role() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 10,
+        &HasRole::Yes {
+            execution_delay: Some(NonZero::new(10).unwrap()),
         },
     );
 
@@ -782,9 +863,8 @@ fn re_grant_role() {
             role_id: RoleId::new(1),
             account: grantee.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 6,
+        &HasRole::Yes {
+            execution_delay: Some(NonZero::new(6).unwrap()),
         },
     );
 }
@@ -935,9 +1015,8 @@ fn everyone_has_public_role() {
             role_id: RoleId::PUBLIC_ROLE,
             account: ADMIN.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 
@@ -948,9 +1027,8 @@ fn everyone_has_public_role() {
             role_id: RoleId::PUBLIC_ROLE,
             account: ACCOUNT_1.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 
@@ -961,9 +1039,8 @@ fn everyone_has_public_role() {
             role_id: RoleId::PUBLIC_ROLE,
             account: ACCOUNT_2.clone(),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 
@@ -974,9 +1051,8 @@ fn everyone_has_public_role() {
             role_id: RoleId::PUBLIC_ROLE,
             account: Addr::unchecked(""),
         },
-        &HasRole {
-            is_member: true,
-            execution_delay: 0,
+        &HasRole::Yes {
+            execution_delay: None,
         },
     );
 }
@@ -1081,10 +1157,7 @@ fn can_call_works() {
             selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
 
     // grant role 1 to account-1
@@ -1109,10 +1182,7 @@ fn can_call_works() {
             selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: true,
-            delay: 0,
-        },
+        &CanCall::Immediate {},
     );
 
     // grant role 1 to account-2 with an execution delay
@@ -1137,9 +1207,8 @@ fn can_call_works() {
             selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 10,
+        &CanCall::WithDelay {
+            delay: NonZero::new(10).unwrap(),
         },
     );
 
@@ -1152,10 +1221,7 @@ fn can_call_works() {
             selector: Selector::new("b").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
     assert_query_result(
         deps.as_ref(),
@@ -1165,10 +1231,7 @@ fn can_call_works() {
             selector: Selector::new("b").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
 }
 
@@ -1198,10 +1261,7 @@ fn closed_target_not_callable() {
             selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
 
     // grant role 1 to account-1
@@ -1226,10 +1286,7 @@ fn closed_target_not_callable() {
             selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: true,
-            delay: 0,
-        },
+        &CanCall::Immediate {},
     );
 
     // grant role 1 to account-2 with an execution delay
@@ -1271,10 +1328,7 @@ fn closed_target_not_callable() {
             selector: Selector::new("a").to_owned(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
     assert_query_result(
         deps.as_ref(),
@@ -1284,10 +1338,7 @@ fn closed_target_not_callable() {
             selector: Selector::new("b").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
     assert_query_result(
         deps.as_ref(),
@@ -1298,10 +1349,7 @@ fn closed_target_not_callable() {
             selector: Selector::new("c").to_owned(),
             caller: ACCOUNT_2.clone(),
         },
-        &CanCall {
-            allowed: false,
-            delay: 0,
-        },
+        &CanCall::Unauthorized {},
     );
 }
 
@@ -1309,16 +1357,42 @@ fn closed_target_not_callable() {
 fn set_target_closed_works() {
     let (mut deps, env) = setup();
 
-    execute(
-        deps.as_mut(),
-        env.clone(),
-        message_info(&ADMIN, &[]),
-        ExecuteMsg::SetTargetClosed {
+    // not closed yet
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::IsTargetClosed {
             target: TARGET_1.clone(),
-            closed: true,
         },
-    )
-    .unwrap();
+        &false,
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetClosed {
+                target: TARGET_1.clone(),
+                closed: true,
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetClosed {
+            target: &TARGET_1,
+            closed: true,
+        }),
+    );
+
+    // closed now after closing
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::IsTargetClosed {
+            target: TARGET_1.clone(),
+        },
+        &true,
+    );
 
     // closing again acts the same as if it was not closed previously
     assert_eq!(
@@ -1338,6 +1412,16 @@ fn set_target_closed_works() {
         }),
     );
 
+    // still closed after closing while already closed
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::IsTargetClosed {
+            target: TARGET_1.clone(),
+        },
+        &true,
+    );
+
     assert_eq!(
         execute(
             deps.as_mut(),
@@ -1354,10 +1438,235 @@ fn set_target_closed_works() {
             closed: false,
         }),
     );
+
+    // not closed after opening
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::IsTargetClosed {
+            target: TARGET_1.clone(),
+        },
+        &false,
+    );
 }
 
 #[test]
 fn schedule_works() {
+    let (mut deps, mut env) = setup();
+
+    let operation_id = H256::new(hex!(
+        "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
+    ));
+
+    let data = r#"{"a":{}}"#;
+
+    // operation has never been scheduled, nonce and timepoint are default values
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(0),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &None::<()>,
+    );
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_2.clone(),
+            execution_delay: 0,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    // account-2 has no execution delay, so it cannot schedule
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_2, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 5).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: ACCOUNT_2.clone(),
+            target: TARGET_1.clone(),
+            selector: Selector::new("a").to_owned()
+        })
+    );
+
+    // attempt to schedule too soon
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 5).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: ACCOUNT_1.clone(),
+            target: TARGET_1.clone(),
+            selector: Selector::new("a").to_owned()
+        })
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",1]"#,
+            ),
+    );
+
+    // operation has been scheduled, nonce is now 1 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+
+    // can't schedule the exact same operation again before the currently scheduled operation has either expired or been executed
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerAlreadyScheduled(
+            operation_id
+        ))
+    );
+
+    env.block.time = env.block.time.plus_seconds(u64::from(expiration()) + 10);
+
+    // scheduled operation expires correctly; nonce does not increase on expiry
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &None::<()>,
+    );
+
+    // scheduling again increases the nonce and sets the timepoint
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(2),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",2]"#,
+            ),
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(2),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+}
+
+#[test]
+fn schedule_invalid_data_fails() {
     let (mut deps, env) = setup();
 
     execute(
@@ -1367,7 +1676,7 @@ fn schedule_works() {
         ExecuteMsg::GrantRole {
             role_id: RoleId::new(1),
             account: ACCOUNT_1.clone(),
-            execution_delay: 1,
+            execution_delay: 10,
         },
     )
     .unwrap();
@@ -1391,21 +1700,31 @@ fn schedule_works() {
             message_info(&ACCOUNT_1, &[]),
             ExecuteMsg::Schedule {
                 target: TARGET_1.clone(),
-                data: r#"{"a":{}}"#.to_owned(),
-                when: env.block.time.seconds() + 5
+                data: r"this ain't json bro".to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
             },
         )
-        .unwrap(),
-        Response::new().add_event(OperationScheduled {
-            operation_id: H256::new(hex!(
-                "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
-            )),
-            nonce: 1,
-            schedule: env.block.time.seconds() + 5,
-            caller: &ACCOUNT_1,
-            target: &TARGET_1,
-            data: r#"{"a":{}}"#,
-        }),
+        .unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "error extracting selector: expected ident at line 1 column 2"
+        )),
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: r#"{"too":"many","keys":"man"}"#.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "error extracting selector: multiple keys found at line 1 column 20"
+        )),
     );
 }
 
@@ -1487,7 +1806,7 @@ fn schedule_reentrant_works() {
                     execution_delay: 0
                 })
                 .unwrap(),
-                when: env.block.time.seconds() + 20
+                when: NonZero::new(env.block.time.seconds() + 20).unwrap()
             },
         )
         .unwrap(),
@@ -1495,12 +1814,15 @@ fn schedule_reentrant_works() {
             operation_id: H256::new(hex!(
                 "8851fd1669d010b077f22bf956ea2ae240fe964d0f9d30e46f702b6e950278b5"
             )),
-            nonce: 1,
-            schedule: env.block.time.seconds() + 20,
+            nonce: Nonce::new(1),
+            schedule: NonZero::new(env.block.time.seconds() + 20).unwrap(),
             caller: &ACCOUNT_1,
             target: &env.contract.address,
             data: r#"{"grant_role":{"role_id":"10","account":"account-2","execution_delay":0}}"#,
-        }),
+            })
+            .set_data(
+                br#"["0x8851fd1669d010b077f22bf956ea2ae240fe964d0f9d30e46f702b6e950278b5",1]"#,
+            ),
     );
 }
 
@@ -1548,9 +1870,1663 @@ fn target_role_internal_selector_fails() {
             target: TARGET_1.clone(),
             caller: ACCOUNT_1.clone(),
         },
-        &CanCall {
-            allowed: true,
-            delay: 0,
+        &CanCall::Immediate {},
+    );
+}
+
+#[test]
+fn cancel_works() {
+    let init = || {
+        let (mut deps, env) = setup();
+
+        let role = RoleId::new(1);
+        let guardian = RoleId::new(2);
+        let admin = RoleId::new(3);
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::GrantRole {
+                role_id: role,
+                account: ACCOUNT_1.clone(),
+                execution_delay: 1,
+            },
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetRoleGuardian {
+                role_id: role,
+                guardian,
+            },
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::GrantRole {
+                role_id: guardian,
+                account: ACCOUNT_2.clone(),
+                execution_delay: 1,
+            },
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetRoleAdmin {
+                role_id: role,
+                admin,
+            },
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::GrantRole {
+                role_id: admin,
+                account: ACCOUNT_3.clone(),
+                execution_delay: 1,
+            },
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetFunctionRole {
+                role_id: role,
+                target: TARGET_1.clone(),
+                selectors: vec![Selector::new("a").to_owned()],
+            },
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 5).unwrap(),
+            },
+        )
+        .unwrap();
+
+        (deps, env)
+    };
+
+    // original scheduler can cancel
+    {
+        let (mut deps, env) = init();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Cancel {
+                caller: ACCOUNT_1.clone(),
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned(),
+            },
+        )
+        .unwrap();
+    }
+
+    // role guardian can cancel
+    {
+        let (mut deps, env) = init();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_2, &[]),
+            ExecuteMsg::Cancel {
+                caller: ACCOUNT_1.clone(),
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned(),
+            },
+        )
+        .unwrap();
+    }
+
+    // role admin can *not* cancel
+    {
+        let (mut deps, env) = init();
+
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                env.clone(),
+                message_info(&ACCOUNT_3, &[]),
+                ExecuteMsg::Cancel {
+                    caller: ACCOUNT_1.clone(),
+                    target: TARGET_1.clone(),
+                    data: r#"{"a":{}}"#.to_owned(),
+                },
+            )
+            .unwrap_err(),
+            ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCancel {
+                msg_sender: ACCOUNT_3.clone(),
+                caller: ACCOUNT_1.clone(),
+                target: TARGET_1.clone(),
+                selector: Selector::new("a").to_owned()
+            })
+        );
+    }
+
+    // global admin can cancel
+    {
+        let (mut deps, env) = init();
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::Cancel {
+                caller: ACCOUNT_1.clone(),
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned(),
+            },
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn cancel_fails_if_not_scheduled() {
+    let (mut deps, env) = setup();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Cancel {
+                caller: ACCOUNT_1.clone(),
+                target: TARGET_1.clone(),
+                data: r#"{"a":{}}"#.to_owned()
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerNotScheduled(<H256>::new(
+            hex!("7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e")
+        ))),
+    );
+}
+
+#[test]
+fn role_label_works() {
+    let (mut deps, env) = setup();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::LabelRole {
+                role_id: RoleId::new(1),
+                label: "role".to_owned(),
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(RoleLabel {
+            role_id: RoleId::new(1),
+            label: "role",
+        }),
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetRoleLabels {
+            role_ids: vec![RoleId::new(1), RoleId::new(2)],
         },
+        &RoleLabelsResponse(
+            [
+                (RoleId::new(1), Some("role".to_string())),
+                (RoleId::new(2), None),
+            ]
+            .into_iter()
+            .collect(),
+        ),
+    );
+}
+
+// TODO: Link audit report once it's published
+#[test]
+fn locked_roles_not_labelable() {
+    {
+        let (mut deps, env) = setup();
+
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                env.clone(),
+                message_info(&ADMIN, &[]),
+                ExecuteMsg::LabelRole {
+                    role_id: RoleId::ADMIN_ROLE,
+                    label: "ADMIN".to_owned(),
+                },
+            )
+            .unwrap_err(),
+            ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+                RoleId::ADMIN_ROLE
+            ))
+        );
+    }
+
+    {
+        let (mut deps, env) = setup();
+
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                env.clone(),
+                message_info(&ADMIN, &[]),
+                ExecuteMsg::LabelRole {
+                    role_id: RoleId::PUBLIC_ROLE,
+                    label: "PUBLIC".to_owned(),
+                },
+            )
+            .unwrap_err(),
+            ContractError::AccessManager(AccessManagerError::AccessManagerLockedRole(
+                RoleId::PUBLIC_ROLE
+            ))
+        );
+    }
+}
+
+#[test]
+fn target_admin_delay_works() {
+    let (mut deps, mut env) = setup();
+
+    // defaults to 0 (no delay)
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &0,
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetAdminDelay {
+                target: TARGET_1.clone(),
+                new_delay: 100
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetAdminDelayUpdated {
+            target: &TARGET_1,
+            delay: 100,
+            since: env.block.time.seconds() + u64::from(min_setback()),
+        }),
+    );
+
+    // still zero until `since` is reached
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &0,
+    );
+
+    env.block.time = env.block.time.plus_seconds(3);
+
+    // still zero, `since` has still not been reached
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &0,
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetAdminDelay {
+                target: TARGET_1.clone(),
+                new_delay: min_setback() * 10
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetAdminDelayUpdated {
+            target: &TARGET_1,
+            delay: min_setback() * 10,
+            since: env.block.time.seconds() + u64::from(min_setback()),
+        }),
+    );
+
+    // still zero until `since` is reached
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &0,
+    );
+
+    env.block.time = env.block.time.plus_seconds(min_setback().into());
+
+    // `since` has been reached
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &(min_setback() * 10),
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::SetTargetAdminDelay {
+                target: TARGET_1.clone(),
+                new_delay: 100
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(TargetAdminDelayUpdated {
+            target: &TARGET_1,
+            delay: 100,
+            since: env.block.time.seconds() + u64::from(min_setback() * 10) - 100,
+        }),
+    );
+
+    // still the previous value until `since` is reached
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &(min_setback() * 10),
+    );
+
+    env.block.time = env.block.time.plus_seconds((min_setback() * 10).into());
+
+    // `since` has been reached, the new value is active
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetTargetAdminDelay {
+            target: TARGET_1.clone(),
+        },
+        &100,
+    );
+}
+
+#[test]
+fn admin_operations_check_admin() {
+    for msg in [
+        ExecuteMsg::UpdateAuthority {
+            target: TARGET_1.clone(),
+            new_authority: Addr::unchecked("oogabooga"),
+        },
+        ExecuteMsg::SetRoleGuardian {
+            role_id: RoleId::new(1),
+            guardian: RoleId::new(2),
+        },
+        ExecuteMsg::SetRoleAdmin {
+            role_id: RoleId::new(1),
+            admin: RoleId::new(2),
+        },
+        ExecuteMsg::SetGrantDelay {
+            role_id: RoleId::new(1),
+            grant_delay: 0,
+        },
+        ExecuteMsg::SetTargetFunctionRole {
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+            role_id: RoleId::new(1),
+        },
+        ExecuteMsg::SetTargetAdminDelay {
+            target: TARGET_1.clone(),
+            new_delay: 0,
+        },
+        ExecuteMsg::SetTargetClosed {
+            target: TARGET_1.clone(),
+            closed: true,
+        },
+        ExecuteMsg::LabelRole {
+            role_id: RoleId::new(1),
+            label: "role".to_owned(),
+        },
+    ] {
+        let (mut deps, env) = setup();
+
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                env.clone(),
+                message_info(&ACCOUNT_1, &[]),
+                msg,
+            )
+            .unwrap_err(),
+            ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedAccount {
+                msg_sender: ACCOUNT_1.clone(),
+                required_role_id: RoleId::ADMIN_ROLE,
+            }),
+        );
+    }
+}
+
+#[test]
+fn consume_scheduled_op() {
+    let (mut deps, mut env) = setup();
+
+    let data = r#"{"a":{}}"#;
+
+    let operation_id = <H256>::new(hex!(
+        "eef98f9db9d29d93d227216aefc0d5a91d5d536d746496a9890ca637a515d808"
+    ));
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::ConsumeScheduledOp {
+                caller: ACCOUNT_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "Querier system error: No such contract: account-1"
+        )),
+    );
+
+    let is_consuming = Arc::new(Mutex::new(false));
+
+    deps.querier.update_wasm({
+        let is_consuming = is_consuming.clone();
+        move |wasm_query| match wasm_query {
+            WasmQuery::Smart { contract_addr, msg } => match &**contract_addr {
+                "contract" => match from_json::<managed::msg::QueryMsg>(msg).unwrap() {
+                    managed::msg::QueryMsg::Authority {} => todo!(),
+                    managed::msg::QueryMsg::IsConsumingScheduledOp {} => {
+                        SystemResult::Ok(cosmwasm_std::ContractResult::Ok(
+                            to_json_binary(if *is_consuming.lock().unwrap() {
+                                Selector::extract_from_serialize(
+                                    &managed::msg::QueryMsg::IsConsumingScheduledOp {},
+                                )
+                            } else {
+                                Selector::new("")
+                            })
+                            .unwrap(),
+                        ))
+                    }
+                },
+                _ => todo!(),
+            },
+            _ => todo!(),
+        }
+    });
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked("contract"), &[]),
+            ExecuteMsg::ConsumeScheduledOp {
+                caller: ACCOUNT_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedConsume {
+            target: Addr::unchecked("contract")
+        }),
+    );
+
+    *is_consuming.lock().unwrap() = true;
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked("contract"), &[]),
+            ExecuteMsg::ConsumeScheduledOp {
+                caller: ACCOUNT_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerNotScheduled(operation_id)),
+    );
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: Addr::unchecked("contract"),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ACCOUNT_1, &[]),
+        ExecuteMsg::Schedule {
+            target: Addr::unchecked("contract"),
+            data: data.to_owned(),
+            when: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+        },
+    )
+    .unwrap();
+
+    env.block.time = env.block.time.plus_seconds(10);
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&Addr::unchecked("contract"), &[]),
+            ExecuteMsg::ConsumeScheduledOp {
+                caller: ACCOUNT_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap(),
+        Response::new().add_event(OperationExecuted {
+            operation_id,
+            nonce: Nonce::new(1),
+        })
+    );
+}
+
+// TODO: Link audit report once it's published
+#[test]
+fn execute_with_delay_without_schedule_must_fail() {
+    let (mut deps, env) = setup();
+
+    let operation_id = H256::new(hex!(
+        "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
+    ));
+
+    let data = r#"{"a":{}}"#;
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::WithDelay {
+            delay: const { NonZero::new(10).unwrap() },
+        },
+    );
+
+    // Try to execute directly WITHOUT calling `Schedule` first.
+    //
+    // OpenZeppelin behaviour:
+    //
+    // ```
+    // _canCallExtended(..) -> (immediate = false, setback = 10)
+    // if (setback != 0 || getSchedule(operationId) != 0) {
+    //     _consumeScheduledOp(operationId); // timepoint == 0 -> AccessManagerNotScheduled
+    // }
+    // ```
+    //
+    // So OZ AccessManager MUST revert with AccessManagerNotScheduled(operationId).
+    //
+    // This test encodes that behaviour. If our port allows this call to succeed
+    // without a prior schedule, the test will panic (and that’s the PoC).
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerNotScheduled(operation_id))
+    );
+
+    // account-2 has the required role but with no execution delay, so it should be able to execute immediately, without an already scheduled operation
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_2.clone(),
+            execution_delay: 0,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_2, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap(),
+        // no event is emitted since this was not a scheduled operation
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: TARGET_1.to_string(),
+                    msg: data.as_bytes().into(),
+                    funds: vec![]
+                },
+                1
+            ))
+            .set_data(b"0"),
+    );
+
+    // no scheduled operation was executed, all values should still be default
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(0),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &None::<Timepoint>,
+    );
+}
+
+#[test]
+fn execute_works() {
+    let (mut deps, mut env) = setup();
+
+    let operation_id = H256::new(hex!(
+        "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
+    ));
+
+    let data = r#"{"a":{}}"#;
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::WithDelay {
+            delay: const { NonZero::new(10).unwrap() },
+        },
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",1]"#,
+            ),
+    );
+
+    // operation has been scheduled, nonce is now 1 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+
+    // not ready yet
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerNotReady(operation_id)),
+    );
+
+    env.block.time = env.block.time.plus_seconds(10);
+
+    // ready now, so should successfully execute
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: TARGET_1.to_string(),
+                    msg: data.as_bytes().into(),
+                    funds: vec![]
+                },
+                1
+            ))
+            .add_event(OperationExecuted {
+                operation_id,
+                nonce: Nonce::new(1),
+            })
+            .set_data(b"1"),
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &None::<Timepoint>,
+    );
+
+    // reschedule the same operation
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(2),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",2]"#,
+            ),
+    );
+
+    // operation has been scheduled again, nonce is now 2 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(2),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+
+    // wait for the operation to expire (execution timepoint + expiration)
+    env.block.time = env.block.time.plus_seconds((10 + expiration()).into());
+
+    // not ready yet
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerExpired(operation_id)),
+    );
+
+    // operation expired, nonce stays the same but the timepoint gets reset
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(2),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &None::<Timepoint>,
+    );
+}
+
+#[test]
+fn execute_consume_schedule_no_delay() {
+    let (mut deps, mut env) = setup();
+
+    let operation_id = H256::new(hex!(
+        "7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e"
+    ));
+
+    let data = r#"{"a":{}}"#;
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::WithDelay {
+            delay: const { NonZero::new(10).unwrap() },
+        },
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &TARGET_1,
+                data,
+            })
+            .set_data(
+                br#"["0x7c99107b1d6b31f7b0c08fece541ea567a76154de0d91f62d2f2022d09004b0e",1]"#,
+            ),
+    );
+
+    // operation has been scheduled, nonce is now 1 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+
+    // remove the execution delay for account-1 (the user that scheduled the operation)
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 0,
+        },
+    )
+    .unwrap();
+
+    env.block.time = env.block.time.plus_seconds(10);
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::Immediate {},
+    );
+
+    // the schedule will still be consumed even though the scheduler now has no execution delay
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: TARGET_1.to_string(),
+                    msg: data.as_bytes().into(),
+                    funds: vec![]
+                },
+                1
+            ))
+            .add_event(OperationExecuted {
+                operation_id,
+                nonce: Nonce::new(1),
+            })
+            .set_data(b"1"),
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &None::<Timepoint>,
+    );
+}
+
+#[test]
+fn schedule_unauthorized() {
+    let (mut deps, env) = setup();
+
+    let data = r#"{"a":{}}"#;
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::Unauthorized {},
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: ACCOUNT_1.clone(),
+            target: TARGET_1.clone(),
+            selector: Selector::new("a").to_owned(),
+        }),
+    );
+}
+
+#[test]
+fn execute_unauthorized() {
+    let (mut deps, env) = setup();
+
+    let data = r#"{"a":{}}"#;
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::Unauthorized {},
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: TARGET_1.clone(),
+                data: data.to_owned(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: ACCOUNT_1.clone(),
+            target: TARGET_1.clone(),
+            selector: Selector::new("a").to_owned(),
+        }),
+    );
+}
+
+#[test]
+fn static_queries_work() {
+    let (deps, env) = setup();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::PublicRole {},
+        &RoleId::PUBLIC_ROLE,
+    );
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::AdminRole {},
+        &RoleId::ADMIN_ROLE,
+    );
+
+    assert_query_result(deps.as_ref(), &env, QueryMsg::Expiration {}, &expiration());
+
+    assert_query_result(deps.as_ref(), &env, QueryMsg::MinSetback {}, &min_setback());
+}
+
+#[test]
+fn hash_operation_smoke_test() {
+    let (deps, env) = setup();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::HashOperation {
+            caller: ACCOUNT_1.clone(),
+            target: TARGET_1.clone(),
+            data: "{}".to_owned(),
+        },
+        &<H256>::new(hex!(
+            "8359c1de59c898219713afdeffb4c613f4b8501f13da1b4685fcc8e319e5247b"
+        )),
+    );
+}
+
+#[test]
+fn init_and_instantiate_are_equivalent() {
+    let (init_deps, init_res) = {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let res = migrate(
+            deps.as_mut(),
+            env.clone(),
+            UpgradeMsg::Init(InitMsg {
+                initial_admin: ADMIN.clone(),
+            }),
+        )
+        .unwrap();
+
+        (
+            deps.storage
+                .range(None, None, Order::Ascending)
+                .collect::<BTreeMap<_, _>>(),
+            res,
+        )
+    };
+
+    let (instantiate_deps, instantiate_res) = {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let res = instantiate(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            InitMsg {
+                initial_admin: ADMIN.clone(),
+            },
+        )
+        .unwrap();
+
+        (
+            deps.storage
+                .range(None, None, Order::Ascending)
+                .collect::<BTreeMap<_, _>>(),
+            res,
+        )
+    };
+
+    assert_equal(init_deps, instantiate_deps);
+
+    assert_eq!(init_res, instantiate_res);
+}
+
+#[test]
+fn update_authority_works() {
+    let (mut deps, env) = setup();
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ADMIN, &[]),
+            ExecuteMsg::UpdateAuthority {
+                target: TARGET_1.clone(),
+                new_authority: Addr::unchecked("new-admin"),
+            },
+        )
+        .unwrap(),
+        Response::new().add_message(
+            wasm_execute(
+                TARGET_1.to_string(),
+                &managed::msg::ExecuteMsg::SetAuthority {
+                    new_authority: Addr::unchecked("new-admin"),
+                },
+                vec![],
+            )
+            .unwrap()
+        ),
+    );
+}
+
+#[test]
+fn reply_handles_correctly() {
+    let (mut deps, mut env) = setup();
+
+    let data = r#"{"a":{}}"#;
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::new("a").to_owned(),
+            target: TARGET_1.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::WithDelay {
+            delay: const { NonZero::new(10).unwrap() },
+        },
+    );
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ACCOUNT_1, &[]),
+        ExecuteMsg::Schedule {
+            target: TARGET_1.clone(),
+            data: data.to_owned(),
+            when: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+        },
+    )
+    .unwrap();
+
+    env.block.time = env.block.time.plus_seconds(10);
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ACCOUNT_1, &[]),
+        ExecuteMsg::Execute {
+            target: TARGET_1.clone(),
+            data: data.to_owned(),
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        deps.storage.read_item::<ExecutionIdStack>().unwrap(),
+        vec![<H256>::new(hex!(
+            "72109e45d2239806aaab258170b3c9fb802dac7aea0dfe996ae1bc27b5bc8211"
+        ))],
+    );
+
+    assert_eq!(
+        reply(
+            deps.as_mut(),
+            env,
+            Reply {
+                id: EXECUTE_REPLY_ID,
+                payload: Binary::default(),
+                gas_used: 0,
+                result: cosmwasm_std::SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    #[expect(deprecated, reason = "need to construct this type somehow")]
+                    data: None,
+                    msg_responses: vec![],
+                }),
+            },
+        )
+        .unwrap(),
+        Response::new(),
+    );
+
+    assert!(
+        deps.storage
+            .read_item::<ExecutionIdStack>()
+            .unwrap()
+            .is_empty(),
+    );
+}
+
+#[test]
+fn reply_unknown_id() {
+    let (mut deps, env) = setup();
+
+    assert_eq!(
+        reply(
+            deps.as_mut(),
+            env,
+            Reply {
+                id: 123,
+                payload: Binary::default(),
+                gas_used: 0,
+                result: cosmwasm_std::SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    #[expect(deprecated, reason = "need to construct this type somehow")]
+                    data: None,
+                    msg_responses: vec![],
+                }),
+            },
+        )
+        .unwrap_err(),
+        ContractError::Std(StdError::generic_err(
+            "unknown reply: Reply { id: 123, payload: Binary(), gas_used: 0, result: Ok(SubMsgResponse { events: [], data: None, msg_responses: [] }) }"
+        )),
+    );
+}
+
+#[test]
+#[should_panic = "execution stack should not be empty on reply; qed;"]
+fn reply_execute_stack_invariant() {
+    let (mut deps, env) = setup();
+
+    reply(
+        deps.as_mut(),
+        env,
+        Reply {
+            id: EXECUTE_REPLY_ID,
+            payload: Binary::default(),
+            gas_used: 0,
+            result: cosmwasm_std::SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                #[expect(deprecated, reason = "need to construct this type somehow")]
+                data: None,
+                msg_responses: vec![],
+            }),
+        },
+    )
+    .unwrap();
+}
+
+#[test]
+fn call_on_self_with_delay() {
+    let (mut deps, mut env) = setup();
+
+    let operation_id = H256::new(hex!(
+        "1526b52ee5b6533c5eb88991ce7dac1979fd1078572183a1c2798c699859e355"
+    ));
+
+    let msg = ExecuteMsg::Schedule {
+        target: TARGET_1.clone(),
+        data: r#"{"a":{}}"#.to_owned(),
+        when: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+    };
+
+    // set up roles so that access manager itself can call "a" on target-1 (with a delay so it can be scheduled)
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(2),
+            account: env.contract.address.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(2),
+            target: TARGET_1.clone(),
+            selectors: vec![Selector::new("a").to_owned()],
+        },
+    )
+    .unwrap();
+
+    // set up roles so that account-1 can call schedule on access manager with a delay
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::GrantRole {
+            role_id: RoleId::new(1),
+            account: ACCOUNT_1.clone(),
+            execution_delay: 10,
+        },
+    )
+    .unwrap();
+
+    execute(
+        deps.as_mut(),
+        env.clone(),
+        message_info(&ADMIN, &[]),
+        ExecuteMsg::SetTargetFunctionRole {
+            role_id: RoleId::new(1),
+            target: env.contract.address.clone(),
+            selectors: vec![Selector::extract_from_serialize(&msg).to_owned()],
+        },
+    )
+    .unwrap();
+
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::CanCall {
+            selector: Selector::extract_from_serialize(&msg).to_owned(),
+            target: env.contract.address.clone(),
+            caller: ACCOUNT_1.clone(),
+        },
+        &CanCall::WithDelay {
+            delay: const { NonZero::new(10).unwrap() },
+        },
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Schedule {
+                target: env.contract.address.clone(),
+                data: to_json_string(&msg).unwrap(),
+                when: NonZero::new(env.block.time.seconds() + 10).unwrap()
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_event(OperationScheduled {
+                operation_id,
+                nonce: Nonce::new(1),
+                schedule: NonZero::new(env.block.time.seconds() + 10).unwrap(),
+                caller: &ACCOUNT_1,
+                target: &env.contract.address,
+                data: &to_json_string(&msg).unwrap(),
+            })
+            .set_data(
+                br#"["0x1526b52ee5b6533c5eb88991ce7dac1979fd1078572183a1c2798c699859e355",1]"#,
+            ),
+    );
+
+    // operation has been scheduled, nonce is now 1 and timepoint has been set
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetNonce { id: operation_id },
+        &Nonce::new(1),
+    );
+    assert_query_result(
+        deps.as_ref(),
+        &env,
+        QueryMsg::GetSchedule { id: operation_id },
+        &Some(NonZero::new(env.block.time.seconds() + 10).unwrap()),
+    );
+
+    // not ready yet
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: env.contract.address.clone(),
+                data: to_json_string(&msg).unwrap(),
+            },
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerNotReady(operation_id)),
+    );
+
+    env.block.time = env.block.time.plus_seconds(10);
+
+    // ready now, so should successfully execute
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&ACCOUNT_1, &[]),
+            ExecuteMsg::Execute {
+                target: env.contract.address.clone(),
+                data: to_json_string(&msg).unwrap(),
+            },
+        )
+        .unwrap(),
+        Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_json_binary(&msg).unwrap(),
+                    funds: vec![]
+                },
+                1
+            ))
+            .add_event(OperationExecuted {
+                operation_id,
+                nonce: Nonce::new(1),
+            })
+            .set_data(b"1"),
+    );
+
+    // and now execute the reentrant sub msg, this will fail since a call to schedule cannot be scheduled
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            message_info(&env.contract.address, &[]),
+            msg,
+        )
+        .unwrap_err(),
+        ContractError::AccessManager(AccessManagerError::AccessManagerUnauthorizedCall {
+            caller: env.contract.address.clone(),
+            target: TARGET_1.clone(),
+            selector: Selector::new("a").to_owned(),
+        }),
     );
 }

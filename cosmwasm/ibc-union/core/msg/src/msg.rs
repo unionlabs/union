@@ -1,12 +1,13 @@
+use access_managed::Restricted;
 use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
+use upgradable::msg::Upgradable;
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InitMsg {
-    pub relayers_admin: Option<String>,
-    pub relayers: Vec<String>,
+    pub access_managed_init_msg: access_managed::InitMsg,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,16 +17,31 @@ pub struct MsgRegisterClient {
     pub client_address: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
-    AddRelayer(String),
-    RemoveRelayer(String),
+    PacketSend(MsgSendPacket),
+    WriteAcknowledgement(MsgWriteAcknowledgement),
+
+    MigrateState(MsgMigrateState),
+
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+
+    #[serde(untagged)]
+    Restricted(Restricted<RestrictedExecuteMsg>),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
+pub enum RestrictedExecuteMsg {
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
     ForceUpdateClient(MsgForceUpdateClient),
+
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
     ForceConnectionOpenTry(MsgConnectionOpenTry),
@@ -33,6 +49,7 @@ pub enum ExecuteMsg {
     ForceConnectionOpenAck(MsgConnectionOpenAck),
     ConnectionOpenConfirm(MsgConnectionOpenConfirm),
     ForceConnectionOpenConfirm(MsgConnectionOpenConfirm),
+
     ChannelOpenInit(MsgChannelOpenInit),
     ChannelOpenTry(MsgChannelOpenTry),
     ForceChannelOpenTry(MsgChannelOpenTry),
@@ -42,17 +59,19 @@ pub enum ExecuteMsg {
     ForceChannelOpenConfirm(MsgChannelOpenConfirm),
     ChannelCloseInit(MsgChannelCloseInit),
     ChannelCloseConfirm(MsgChannelCloseConfirm),
+
     PacketRecv(MsgPacketRecv),
     PacketAck(MsgPacketAcknowledgement),
     PacketTimeout(MsgPacketTimeout),
     IntentPacketRecv(MsgIntentPacketRecv),
     BatchSend(MsgBatchSend),
     BatchAcks(MsgBatchAcks),
-    PacketSend(MsgSendPacket),
-    WriteAcknowledgement(MsgWriteAcknowledgement),
-    MigrateState(MsgMigrateState),
+
     CommitMembershipProof(MsgCommitMembershipProof),
     CommitNonMembershipProof(MsgCommitNonMembershipProof),
+
+    #[serde(untagged)]
+    Upgradable(Upgradable),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

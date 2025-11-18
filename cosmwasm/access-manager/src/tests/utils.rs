@@ -22,6 +22,7 @@ pub static ADMIN: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("admin"));
 
 pub static ACCOUNT_1: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("account-1"));
 pub static ACCOUNT_2: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("account-2"));
+pub static ACCOUNT_3: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("account-3"));
 
 pub static TARGET_1: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("target-1"));
 pub static TARGET_2: LazyLock<Addr> = LazyLock::new(|| Addr::unchecked("target-2"));

@@ -1,15 +1,16 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 use core::fmt::Debug;
-use std::error::Error;
+use std::{error::Error, num::NonZero};
 
 use cosmwasm_std::{Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError, to_json_binary};
 use depolama::{QuerierExt, StorageExt, Store};
 use frissitheto::UpgradeError;
 use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
 use ibc_union_msg::lightclient::{
-    MisbehaviourResponse, QueryMsg, StorageWrites, UpdateStateResponse, VerifyCreationResponse,
-    VerifyCreationResponseEvent,
+    MisbehaviourQuery, MisbehaviourResponse, QueryMsg, StorageWrites, UpdateStateQuery,
+    UpdateStateResponse, VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse,
+    VerifyCreationResponseEvent, VerifyMembershipQuery, VerifyNonMembershipQuery,
 };
 use ibc_union_spec::{ClientId, Status, Timestamp};
 use unionlabs::{
@@ -20,10 +21,131 @@ use unionlabs::{
 
 use crate::{msg::InitMsg, state::IbcHost};
 
-pub mod msg;
 pub mod state;
 
+pub use access_managed;
+pub use ibc_union_msg::lightclient as msg;
 pub use ibc_union_spec as spec;
+pub use pausable;
+pub use upgradable;
+
+#[macro_export]
+macro_rules! default_query {
+    ($LightClient:ty) => {
+        default_query!(
+            $LightClient;
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    ($LightClient:ty; library) => {
+        default_query!(
+            $LightClient;
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    ($LightClient:ty; #[$meta:meta]) => {
+        #[$meta]
+        pub fn query(
+            deps: ::cosmwasm_std::Deps,
+            env: ::cosmwasm_std::Env,
+            msg: $crate::msg::QueryMsg,
+        ) -> ::cosmwasm_std::StdResult<::cosmwasm_std::Binary> {
+            $crate::query::<$LightClient>(deps, env, msg).map_err(Into::into)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! default_migrate {
+    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr) => {
+        default_migrate!(
+            $LightClient; $MigrateMsg; $migrate_fn;
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr, library) => {
+        default_migrate!(
+            $LightClient; $MigrateMsg; $migrate_fn;
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr; #[$meta:meta]) => {
+        #[$meta]
+        pub fn migrate(
+            deps: ::cosmwasm_std::DepsMut,
+            env: ::cosmwasm_std::Env,
+            msg: ::frissitheto::UpgradeMsg<$crate::msg::InitMsg, $MigrateMsg>,
+        ) -> Result<::cosmwasm_std::Response, $crate::IbcClientError<$LightClient>> {
+            msg.run(
+                deps,
+                |deps, init_msg| {
+                    let res = $crate::init(deps, init_msg)?;
+
+                    Ok((res, None))
+                },
+                |deps, migrate_msg, current_version| ($migrate_fn)(deps, env, migrate_msg, current_version),
+            )
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! default_reply {
+    () => {
+        default_reply!(
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    (library) => {
+        default_reply!(
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    (#[$meta:meta]) => {
+        #[$meta]
+        pub fn reply(
+            deps: ::cosmwasm_std::DepsMut,
+            _: ::cosmwasm_std::Env,
+            reply: ::cosmwasm_std::Reply,
+        ) -> Result<::cosmwasm_std::Response, $crate::access_managed::error::ContractError> {
+            if let Some(reply) =
+                $crate::access_managed::handle_consume_scheduled_op_reply(deps, reply)?
+            {
+                Err(
+                    ::cosmwasm_std::StdError::generic_err(format!("unknown reply: {reply:?}"))
+                        .into(),
+                )
+            } else {
+                Ok(::cosmwasm_std::Response::new())
+            }
+        }
+    };
+}
+
+#[derive(macros::Debug, thiserror::Error)]
+#[debug(bound())]
+pub enum IbcClientError<T: IbcClient> {
+    #[error(transparent)]
+    Std(#[from] StdError),
+    #[error(transparent)]
+    Migrate(#[from] UpgradeError),
+    #[error("decode error ({0:?})")]
+    Decode(#[from] DecodeError<T>),
+    #[error("unexpected call from the host module ({0})")]
+    UnexpectedCallDataFromHostModule(String),
+    #[error("client state not found")]
+    ClientStateNotFound,
+    #[error("`ClientMessage` cannot be decoded ({0})")]
+    InvalidClientMessage(Bytes),
+    #[error(transparent)]
+    ClientSpecific(T::Error),
+    #[error(transparent)]
+    AccessManaged(#[from] access_managed::error::ContractError),
+    #[error(transparent)]
+    Pausable(#[from] pausable::error::ContractError),
+    #[error(transparent)]
+    Upgradable(#[from] upgradable::error::ContractError),
+}
 
 #[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
@@ -46,26 +168,7 @@ pub enum DecodeError<T: IbcClient> {
     RawStorage(Bytes),
 }
 
-#[derive(macros::Debug, thiserror::Error)]
-#[debug(bound())]
-pub enum IbcClientError<T: IbcClient> {
-    #[error(transparent)]
-    Std(#[from] StdError),
-    #[error(transparent)]
-    Migrate(#[from] UpgradeError),
-    #[error("decode error ({0:?})")]
-    Decode(#[from] DecodeError<T>),
-    #[error("unexpected call from the host module ({0})")]
-    UnexpectedCallDataFromHostModule(String),
-    #[error("client state not found")]
-    ClientStateNotFound,
-    #[error(transparent)]
-    ClientSpecific(T::Error),
-    #[error("`ClientMessage` cannot be decoded ({data})", data = serde_utils::to_hex(.0))]
-    InvalidClientMessage(Vec<u8>),
-}
-
-impl<T: IbcClient + 'static> From<IbcClientError<T>> for StdError {
+impl<T: IbcClient> From<IbcClientError<T>> for StdError {
     fn from(value: IbcClientError<T>) -> Self {
         Self::generic_err(ErrorReporter(value).to_string())
     }
@@ -138,13 +241,13 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 
         self.deps.querier.query_wasm_smart::<()>(
             &client_impl,
-            &(QueryMsg::VerifyMembership {
+            &VerifyMembershipQuery {
                 client_id,
                 height,
                 proof: storage_proof.encode_as::<Client::Encoding>().into(),
                 path,
                 value,
-            }),
+            },
         )?;
 
         Ok(())
@@ -327,9 +430,11 @@ pub trait IbcClient: Sized + 'static {
 }
 
 pub fn init<T: IbcClient>(
-    deps: DepsMut<T::CustomQuery>,
+    mut deps: DepsMut<T::CustomQuery>,
     msg: InitMsg,
 ) -> Result<Response, IbcClientError<T>> {
+    access_managed::init(deps.branch().into_empty(), msg.access_managed_init_msg)?;
+
     // cosmwasm doesn't understand newtypes. the addr type in the message is not validated, so make sure we check it ourselves
     let ibc_host = deps.api.addr_validate(msg.ibc_host.as_ref())?;
 
@@ -346,149 +451,167 @@ pub fn query<T: IbcClient>(
     match msg {
         QueryMsg::GetTimestamp { client_id, height } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
+
             let consensus_state =
                 read_consensus_state::<T>(&*deps.querier, &ibc_host, client_id, height)?;
+
             to_json_binary(&T::get_timestamp(&consensus_state)).map_err(Into::into)
         }
         QueryMsg::GetLatestHeight { client_id } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
+
             let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
+
             to_json_binary(&T::get_latest_height(&client_state)).map_err(Into::into)
         }
         QueryMsg::GetStatus { client_id } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
+
             let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
+
             let status = T::status(
                 IbcClientCtx::new(client_id, ibc_host, deps, env),
                 &client_state,
             );
+
             to_json_binary(&status).map_err(Into::into)
         }
-        QueryMsg::VerifyCreation {
-            caller,
-            client_id,
-            relayer,
-        } => {
-            let ibc_host = deps.storage.read_item::<IbcHost>()?;
-
-            let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
-            let consensus_state = read_consensus_state::<T>(
-                &*deps.querier,
-                &ibc_host,
+        QueryMsg::Verification(msg) => match msg.ensure_not_paused(deps.into_empty())? {
+            VerificationQueryMsg::VerifyCreation(VerifyCreationQuery {
+                caller,
                 client_id,
-                T::get_latest_height(&client_state),
-            )?;
+                relayer,
+            }) => {
+                let ibc_host = deps.storage.read_item::<IbcHost>()?;
 
-            let client_creation = T::verify_creation(
-                Addr::unchecked(caller),
-                &client_state,
-                &consensus_state,
-                Addr::unchecked(relayer),
-            )?;
+                let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
+                let consensus_state = read_consensus_state::<T>(
+                    &*deps.querier,
+                    &ibc_host,
+                    client_id,
+                    T::get_latest_height(&client_state),
+                )?;
 
-            let response = VerifyCreationResponse {
-                counterparty_chain_id: T::get_counterparty_chain_id(&client_state),
-                client_state_bytes: client_creation
-                    .client_state
-                    .map(|cs| cs.encode_as::<T::Encoding>().into()),
-                storage_writes: client_creation.storage_writes,
-                events: client_creation.events,
-            };
+                let client_creation = T::verify_creation(
+                    Addr::unchecked(caller),
+                    &client_state,
+                    &consensus_state,
+                    Addr::unchecked(relayer),
+                )?;
 
-            to_json_binary(&response).map_err(Into::into)
-        }
-        QueryMsg::VerifyMembership {
-            client_id,
-            height,
-            proof,
-            path,
-            value,
-        } => {
-            let ibc_host = deps.storage.read_item::<IbcHost>()?;
-            let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
-                .map_err(DecodeError::StorageProof)?;
+                let response = VerifyCreationResponse {
+                    counterparty_chain_id: T::get_counterparty_chain_id(&client_state),
+                    client_state_bytes: client_creation
+                        .client_state
+                        .map(|cs| cs.encode_as::<T::Encoding>().into()),
+                    storage_writes: client_creation.storage_writes,
+                    events: client_creation.events,
+                };
 
-            T::verify_membership(
-                IbcClientCtx::new(client_id, ibc_host, deps, env),
+                to_json_binary(&response).map_err(Into::into)
+            }
+            VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery {
+                client_id,
                 height,
-                path.to_vec(),
-                storage_proof,
-                value.to_vec(),
-            )?;
+                proof,
+                path,
+                value,
+            }) => {
+                let ibc_host = deps.storage.read_item::<IbcHost>()?;
 
-            to_json_binary(&()).map_err(Into::into)
-        }
-        QueryMsg::VerifyNonMembership {
-            client_id,
-            height,
-            proof,
-            path,
-        } => {
-            let ibc_host = deps.storage.read_item::<IbcHost>()?;
-            let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
-                .map_err(DecodeError::StorageProof)?;
+                let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
+                    .map_err(DecodeError::StorageProof)?;
 
-            T::verify_non_membership(
-                IbcClientCtx::new(client_id, ibc_host, deps, env),
+                T::verify_membership(
+                    IbcClientCtx::new(client_id, ibc_host, deps, env),
+                    height,
+                    path.to_vec(),
+                    storage_proof,
+                    value.to_vec(),
+                )?;
+
+                to_json_binary(&()).map_err(Into::into)
+            }
+            VerificationQueryMsg::VerifyNonMembership(VerifyNonMembershipQuery {
+                client_id,
                 height,
-                path.to_vec(),
-                storage_proof,
-            )?;
+                proof,
+                path,
+            }) => {
+                let ibc_host = deps.storage.read_item::<IbcHost>()?;
 
-            to_json_binary(&()).map_err(Into::into)
+                let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
+                    .map_err(DecodeError::StorageProof)?;
+
+                T::verify_non_membership(
+                    IbcClientCtx::new(client_id, ibc_host, deps, env),
+                    height,
+                    path.to_vec(),
+                    storage_proof,
+                )?;
+
+                to_json_binary(&()).map_err(Into::into)
+            }
+            VerificationQueryMsg::UpdateState(UpdateStateQuery {
+                caller,
+                client_id,
+                relayer,
+            }) => {
+                let ibc_host = deps.storage.read_item::<IbcHost>()?;
+
+                let message = deps.querier.read_item::<QueryStore>(&ibc_host)?;
+
+                let header =
+                    T::Header::decode_as::<T::Encoding>(&message).map_err(DecodeError::Header)?;
+
+                let StateUpdate {
+                    height,
+                    client_state,
+                    consensus_state,
+                    storage_writes,
+                } = T::verify_header(
+                    IbcClientCtx::new(client_id, ibc_host, deps, env),
+                    Addr::unchecked(caller),
+                    header,
+                    Addr::unchecked(relayer),
+                )?;
+
+                to_json_binary(&UpdateStateResponse {
+                    height,
+                    consensus_state_bytes: consensus_state.encode().into(),
+                    client_state_bytes: client_state.map(|cs| cs.encode_as::<T::Encoding>().into()),
+                    storage_writes,
+                })
+                .map_err(Into::into)
+            }
+            VerificationQueryMsg::Misbehaviour(MisbehaviourQuery {
+                caller,
+                client_id,
+                message,
+                relayer,
+            }) => {
+                let ibc_host = deps.storage.read_item::<IbcHost>()?;
+
+                let misbehaviour = T::Misbehaviour::decode_as::<T::Encoding>(&message)
+                    .map_err(DecodeError::Misbehaviour)?;
+
+                let client_state = T::misbehaviour(
+                    IbcClientCtx::new(client_id, ibc_host, deps, env),
+                    Addr::unchecked(caller),
+                    misbehaviour,
+                    Addr::unchecked(relayer),
+                )?;
+
+                to_json_binary(&MisbehaviourResponse {
+                    client_state: client_state.encode_as::<T::Encoding>().into(),
+                })
+                .map_err(Into::into)
+            }
+        },
+        QueryMsg::AccessManaged(msg) => {
+            access_managed::query(deps.into_empty(), env, msg).map_err(Into::into)
         }
-        QueryMsg::UpdateState {
-            caller,
-            client_id,
-            relayer,
-        } => {
-            let ibc_host = deps.storage.read_item::<IbcHost>()?;
-            let message = deps.querier.read_item::<QueryStore>(&ibc_host)?;
-            let header =
-                T::Header::decode_as::<T::Encoding>(&message).map_err(DecodeError::Header)?;
-
-            let StateUpdate {
-                height,
-                client_state,
-                consensus_state,
-                storage_writes,
-            } = T::verify_header(
-                IbcClientCtx::new(client_id, ibc_host, deps, env),
-                Addr::unchecked(caller),
-                header,
-                Addr::unchecked(relayer),
-            )?;
-
-            to_json_binary(&UpdateStateResponse {
-                height,
-                consensus_state_bytes: consensus_state.encode().into(),
-                client_state_bytes: client_state.map(|cs| cs.encode_as::<T::Encoding>().into()),
-                storage_writes,
-            })
-            .map_err(Into::into)
-        }
-        QueryMsg::Misbehaviour {
-            caller,
-            client_id,
-            message,
-            relayer,
-        } => {
-            let misbehaviour = T::Misbehaviour::decode_as::<T::Encoding>(&message)
-                .map_err(DecodeError::Misbehaviour)?;
-
-            let ibc_host = deps.storage.read_item::<IbcHost>()?;
-            let client_state = T::misbehaviour(
-                IbcClientCtx::new(client_id, ibc_host, deps, env),
-                Addr::unchecked(caller),
-                misbehaviour,
-                Addr::unchecked(relayer),
-            )?;
-
-            to_json_binary(&MisbehaviourResponse {
-                client_state: client_state.encode_as::<T::Encoding>().into(),
-            })
-            .map_err(Into::into)
-        }
+        QueryMsg::Pausable(msg) => pausable::query(deps.into_empty(), &msg).map_err(Into::into),
     }
 }
 
@@ -529,4 +652,13 @@ pub fn read_consensus_state<T: IbcClient>(
             error: e,
         })
     })
+}
+
+pub fn noop_migration<T, L: IbcClient>(
+    _deps: DepsMut,
+    _env: Env,
+    _migrate_msg: T,
+    _current_version: NonZero<u32>,
+) -> Result<(Response, Option<NonZero<u32>>), IbcClientError<L>> {
+    Ok((Response::default(), None))
 }

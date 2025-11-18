@@ -49,6 +49,7 @@ dependencies = [
  "frissitheto",
  "hex-literal 0.4.1",
  "itertools 0.13.0",
+ "schemars",
  "serde",
  "serde-json-wasm",
  "serde-utils",
@@ -132,11 +133,11 @@ dependencies = [
  "cosmwasm-std",
  "hex-literal 0.4.1",
  "itertools 0.13.0",
+ "schemars",
  "serde",
  "serde-json-wasm",
  "serde-utils",
  "serde_json",
- "strum 0.27.2",
  "thiserror 2.0.12",
  "unionlabs-encoding",
  "unionlabs-primitives",
@@ -2335,8 +2336,7 @@ dependencies = [
 [[package]]
 name = "bincode"
 version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36eaf5d7b090263e8150820482d5d93cd964a81e4019913c972f4edcc6edb740"
+source = "git+https://git.sr.ht/~benluelo/bincode?branch=add-automatically-derived#95d92c80315a2f748282a0940c09dba52759c001"
 dependencies = [
  "bincode_derive",
  "serde",
@@ -2346,8 +2346,7 @@ dependencies = [
 [[package]]
 name = "bincode_derive"
 version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf95709a440f45e986983918d0e8a1f30a9b1df04918fc828670606804ac3c09"
+source = "git+https://git.sr.ht/~benluelo/bincode?branch=add-automatically-derived#95d92c80315a2f748282a0940c09dba52759c001"
 dependencies = [
  "virtue",
 ]
@@ -3677,6 +3676,7 @@ dependencies = [
 name = "cosmwasm-deployer"
 version = "0.0.0"
 dependencies = [
+ "access-manager-types",
  "anyhow",
  "bip32 0.5.3",
  "clap",
@@ -4185,6 +4185,8 @@ dependencies = [
 name = "cw-escrow-vault"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
+ "access-manager-types",
  "bincode 2.0.1",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -4201,6 +4203,7 @@ dependencies = [
  "ucs03-zkgm",
  "unionlabs-encoding",
  "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]
@@ -4327,8 +4330,8 @@ dependencies = [
 name = "cw-unionversal-token"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
  "bincode 2.0.1",
- "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw20",
@@ -4347,6 +4350,7 @@ dependencies = [
  "ucs03-zkgm",
  "unionlabs-encoding",
  "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]
@@ -7054,6 +7058,8 @@ dependencies = [
 name = "ibc-union"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
+ "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
  "cosmwasm-schema",
@@ -7067,18 +7073,20 @@ dependencies = [
  "hex-literal 0.4.1",
  "ibc-union-msg",
  "ibc-union-spec",
+ "pausable",
  "serde",
  "serde-json-wasm",
  "strum 0.27.2",
  "thiserror 2.0.12",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]
 name = "ibc-union-light-client"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema",
+ "access-managed",
  "cosmwasm-std",
  "depolama",
  "frissitheto",
@@ -7086,24 +7094,30 @@ dependencies = [
  "ibc-union-msg",
  "ibc-union-spec",
  "macros",
+ "pausable",
  "schemars",
  "serde",
  "serde-utils",
  "thiserror 2.0.12",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]
 name = "ibc-union-msg"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
+ "enumorph",
  "ibc-union-spec",
+ "pausable",
  "schemars",
  "serde",
  "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]
@@ -10193,6 +10207,17 @@ name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
+name = "pausable"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "depolama",
+ "schemars",
+ "serde",
+ "thiserror 2.0.12",
+]
 
 [[package]]
 name = "pbkdf2"
@@ -15289,6 +15314,9 @@ dependencies = [
 name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
+ "access-managed",
+ "access-manager",
+ "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
  "cosmwasm-schema",
@@ -15305,6 +15333,7 @@ dependencies = [
  "hex-literal 0.4.1",
  "ibc-union-msg",
  "ibc-union-spec",
+ "pausable",
  "schemars",
  "serde",
  "serde-json-wasm",
@@ -15316,6 +15345,7 @@ dependencies = [
  "ucs03-zkgm-token-minter-api",
  "ucs03-zkgmable",
  "unionlabs",
+ "upgradable",
 ]
 
 [[package]]
@@ -15515,6 +15545,7 @@ dependencies = [
  "lst",
  "lst-staker",
  "once_cell",
+ "pausable",
  "prost 0.12.6",
  "protos",
  "rand 0.6.5",
@@ -15691,7 +15722,9 @@ dependencies = [
  "cosmwasm-std",
  "embed-commit",
  "frissitheto",
+ "schemars",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
 ]

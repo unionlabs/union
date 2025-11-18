@@ -15,6 +15,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
+access-managed       = { workspace = true }
 bincode              = { workspace = true }
 cosmwasm-schema      = { workspace = true }
 cosmwasm-std         = { workspace = true, features = ["cosmwasm_1_3"] }
@@ -30,9 +31,11 @@ ucs03-solvable       = { workspace = true }
 ucs03-zkgm           = { workspace = true, features = ["library"] }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
 unionlabs-primitives = { workspace = true, features = ["schemars", "bincode"] }
+upgradable           = { workspace = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
+access-manager-types = { workspace = true }
+hex-literal          = { workspace = true }
 
 [features]
 default = []
@@ -42,4 +45,6 @@ schemars = [
   "unionlabs-primitives/schemars",
   "ibc-union-spec/schemars",
   "ucs03-solvable/schemars",
+  "access-managed/schemars",
+  "upgradable/schemars",
 ]

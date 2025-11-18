@@ -605,7 +605,7 @@ _: {
               --contracts ${chain-contracts-config-json args} \
               ${if permissioned then "--permissioned " else ""} \
               --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config}
+              ${mk-gas-args gas_config} "$@"
           '';
         };
 
@@ -719,6 +719,7 @@ _: {
             app = apps;
             escrow_vault = cw-escrow-vault.release;
             on_zkgm_call_proxy = on-zkgm-call-proxy.release;
+            manager = access-manager.release;
           }
         );
 
@@ -1017,9 +1018,15 @@ _: {
 
       cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
 
-      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" { };
+      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" {
+        # doesn't use bls precompiles, so the miscompilation is not an issue
+        buildWithOz = true;
+      };
 
-      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" { };
+      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" {
+        # doesn't use bls precompiles, so the miscompilation is not an issue
+        buildWithOz = true;
+      };
 
       lst = crane.buildWasmContract "cosmwasm/lst" { };
       lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };

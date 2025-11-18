@@ -4,13 +4,13 @@
 //!
 //! A smart contract under the control of an `access-manager` instance is known as a target, and
 //! will implement the `access-managed` messages, be connected to this contract as its manager and
-//! implement the {AccessManaged-restricted} modifier on a set of functions selected to be
-//! permissioned. Note that any function without this setup won't be effectively restricted.
+//! use the `Restricted<T>` wrapper on a subset of it's `ExecuteMsg` selected to be permissioned.
+//! Note that any variants without this setup won't be effectively restricted.
 //!
 //! The restriction rules for such functions are defined in terms of "roles" identified by a
 //! [`RoleId`] and scoped by target ([`Addr`][cosmwasm_std::Addr]) and function selectors
-//! ([`Selector`][access_manager_types::Selector]). These roles are stored in this contract and can be
-//! configured by admins ([`RoleId::ADMIN_ROLE`] members) after a delay (see
+//! ([`Selector`][access_manager_types::Selector]). These roles are stored in this contract and can
+//! be configured by admins ([`RoleId::ADMIN_ROLE`] members) after a delay (see
 //! [`QueryMsg::GetTargetAdminDelay`]).
 //!
 //! For each target contract, admins can configure the following without any delay:
@@ -58,7 +58,8 @@
 //! - Storage in CosmWasm functions quite differently than in the EVM. In Solidity, it is possible
 //!   to embed a mapping directly in a struct that is stored in storage, which allows for
 //!   multi-level deferred storage access. To emulate this behaviour in CosmWasm, a separate storage
-//!   item is used explicitly in these cases. See [`state`] and [`access_manager_types`] for examples.
+//!   item is used explicitly in these cases. See [`state`] and [`access_manager_types`] for
+//!   examples.
 //! - CosmWasm does not allow for synchronous cross-contract calls, and instead uses a
 //!   submessage/reply pattern. As such, nested executions can not be run inline. In the original
 //!   Solidity implementation, `_executionId` is used to track the currently executing call, which
@@ -68,12 +69,17 @@
 //! - CosmWasm does not support modifiers, so modifiers are instead implemented as standalone
 //!   functions that are called manually within functions they are applied to in the original
 //!   Solidity implementation.
+//! - Due to the limitations of Solidity, tuples are often used to emulate enums; this however
+//!   results in invalid states being representable. In order to reduce the chance of bugs, and to
+//!   make the code more idiomatic and easier to understand, these tuples have been replaced with
+//!   enums wherever possible.
 //!
 //! [oz]: https://www.openzeppelin.com
 //! [am]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol
 //! [et]: https://serde.rs/enum-representations.html#externally-tagged
 //! [selector]: https://docs.soliditylang.org/en/latest/abi-spec.html#function-selector
 
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::used_underscore_items,
@@ -95,12 +101,13 @@ use cosmwasm_std::{
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
+use serde::Serialize;
 
 use crate::{
     context::{ExecCtx, HasStorage, QueryCtx},
     contract::{
         _grant_role, can_call, cancel, consume_scheduled_op, expiration, get_access, get_nonce,
-        get_role_admin, get_role_grant_delay, get_role_guardian, get_schedule,
+        get_role_admin, get_role_grant_delay, get_role_guardian, get_role_labels, get_schedule,
         get_target_admin_delay, get_target_function_role, grant_role, has_role, hash_operation,
         is_target_closed, label_role, min_setback, renounce_role, revoke_role, schedule,
         set_grant_delay, set_role_admin, set_role_guardian, set_target_admin_delay,
@@ -116,6 +123,7 @@ pub mod error;
 pub mod state;
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests;
 
 pub const EXECUTE_REPLY_ID: u64 = 1;
@@ -134,9 +142,11 @@ pub fn init(deps: DepsMut, env: &Env, msg: &InitMsg) -> Result<Response, Contrac
     };
 
     let mut ctx = ExecCtx::new(
-        deps, env, &info,
+        deps,
+        env,
+        &info,
         // this can technically be whatever, just needs to be passed through
-        &msg,
+        &(),
     );
 
     ctx.storage().write_item::<ExecutionIdStack>(&vec![]);
@@ -169,10 +179,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let mut msgs: Vec<SubMsg> = vec![];
     let mut ctx = ExecCtx::new(deps, &env, &info, &msg);
+    let mut response_data = None;
 
     match &msg {
         ExecuteMsg::LabelRole { role_id, label } => {
-            label_role(&mut ctx, *role_id, label);
+            label_role(&mut ctx, *role_id, label)?;
         }
         ExecuteMsg::GrantRole {
             role_id,
@@ -224,28 +235,39 @@ pub fn execute(
             msgs.push(msg);
         }
         ExecuteMsg::Schedule { target, data, when } => {
-            schedule(&mut ctx, target, data, *when)?;
+            let (operation_id, nonce) = schedule(&mut ctx, target, data, *when)?;
+
+            response_data = Some(json((operation_id, nonce)));
         }
         ExecuteMsg::Cancel {
             caller,
             target,
             data,
         } => {
-            cancel(&mut ctx, caller, target, data)?;
+            let nonce = cancel(&mut ctx, caller, target, data)?;
+
+            response_data = Some(json(nonce));
         }
         ExecuteMsg::Execute { target, data } => {
-            let (msg, _) = contract::execute(&mut ctx, target, data)?;
+            let (msg, nonce) = contract::execute(&mut ctx, target, data)?;
 
             msgs.push(msg);
+            response_data = Some(json(nonce));
         }
         ExecuteMsg::ConsumeScheduledOp { caller, data } => {
             consume_scheduled_op(&mut ctx, caller, data)?;
         }
     }
 
-    Ok(Response::new()
+    let mut res = Response::new()
         .add_submessages(msgs)
-        .add_events(ctx.events()))
+        .add_events(ctx.events());
+
+    if let Some(data) = response_data {
+        res = res.set_data(data);
+    }
+
+    Ok(res)
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
@@ -254,51 +276,39 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
     let ctx = QueryCtx::new(deps, &env);
 
     match msg {
-        QueryMsg::AdminRole {} => Ok(to_json_binary(&RoleId::ADMIN_ROLE)?),
-        QueryMsg::PublicRole {} => Ok(to_json_binary(&RoleId::PUBLIC_ROLE)?),
+        QueryMsg::AdminRole {} => Ok(json(RoleId::ADMIN_ROLE)),
+        QueryMsg::PublicRole {} => Ok(json(RoleId::PUBLIC_ROLE)),
         QueryMsg::CanCall {
             selector,
             target,
             caller,
-        } => Ok(to_json_binary(&can_call(
-            ctx, &caller, &target, &selector,
-        )?)?),
-        QueryMsg::Expiration {} => Ok(to_json_binary(&expiration())?),
-        QueryMsg::MinSetback {} => Ok(to_json_binary(&min_setback())?),
-        QueryMsg::IsTargetClosed { target } => {
-            Ok(to_json_binary(&is_target_closed(ctx, &target)?)?)
+        } => can_call(ctx, &caller, &target, &selector).map(json),
+        QueryMsg::Expiration {} => Ok(json(expiration())),
+        QueryMsg::MinSetback {} => Ok(json(min_setback())),
+        QueryMsg::IsTargetClosed { target } => is_target_closed(ctx, &target).map(json),
+        QueryMsg::GetTargetFunctionRole { target, selector } => {
+            get_target_function_role(ctx, &target, &selector).map(json)
         }
-        QueryMsg::GetTargetFunctionRole { target, selector } => Ok(to_json_binary(
-            &get_target_function_role(ctx, &target, &selector)?,
-        )?),
-        QueryMsg::GetTargetAdminDelay { target } => {
-            Ok(to_json_binary(&get_target_admin_delay(ctx, &target)?)?)
-        }
-        QueryMsg::GetRoleAdmin { role_id } => Ok(to_json_binary(&get_role_admin(ctx, role_id)?)?),
-        QueryMsg::GetRoleGuardian { role_id } => {
-            Ok(to_json_binary(&get_role_guardian(ctx, role_id)?)?)
-        }
-        QueryMsg::GetRoleGrantDelay { role_id } => {
-            Ok(to_json_binary(&get_role_grant_delay(ctx, role_id)?)?)
-        }
-        QueryMsg::GetAccess { role_id, account } => {
-            Ok(to_json_binary(&get_access(ctx, role_id, &account)?)?)
-        }
-        QueryMsg::HasRole { role_id, account } => {
-            Ok(to_json_binary(&has_role(ctx, role_id, &account)?)?)
-        }
-        QueryMsg::GetSchedule { id } => Ok(to_json_binary(&get_schedule(ctx, id)?)?),
-        QueryMsg::GetNonce { id } => Ok(to_json_binary(&get_nonce(ctx, id)?)?),
+        QueryMsg::GetTargetAdminDelay { target } => get_target_admin_delay(ctx, &target).map(json),
+        QueryMsg::GetRoleAdmin { role_id } => get_role_admin(ctx, role_id).map(json),
+        QueryMsg::GetRoleGuardian { role_id } => get_role_guardian(ctx, role_id).map(json),
+        QueryMsg::GetRoleGrantDelay { role_id } => get_role_grant_delay(ctx, role_id).map(json),
+        QueryMsg::GetAccess { role_id, account } => get_access(ctx, role_id, &account).map(json),
+        QueryMsg::HasRole { role_id, account } => has_role(ctx, role_id, &account).map(json),
+        QueryMsg::GetSchedule { id } => get_schedule(ctx, id).map(json),
+        QueryMsg::GetNonce { id } => get_nonce(ctx, id).map(json),
         QueryMsg::HashOperation {
             caller,
             target,
             data,
-        } => Ok(to_json_binary(&hash_operation(&caller, &target, &data))?),
+        } => Ok(json(hash_operation(&caller, &target, &data))),
+        QueryMsg::GetRoleLabels { role_ids } => get_role_labels(ctx, &role_ids).map(json),
     }
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
 #[expect(clippy::needless_pass_by_value, reason = "required for entry_point")]
+#[expect(clippy::missing_panics_doc, reason = "internal invariant")]
 pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply {
         Reply {
@@ -312,7 +322,9 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
 
             deps.storage
                 .update_item::<ExecutionIdStack, ContractError, _>(|stack| {
-                    stack.pop();
+                    stack
+                        .pop()
+                        .expect("execution stack should not be empty on reply; qed;");
                     Ok(())
                 })?;
 
@@ -337,4 +349,10 @@ pub fn migrate(
         },
         |_, _, _| Ok((Response::default(), None)),
     )
+}
+
+#[track_caller]
+#[inline]
+fn json(t: impl Serialize) -> Binary {
+    to_json_binary(&t).expect("serialization of access manager types is infallible; qed;")
 }

@@ -3,12 +3,18 @@ use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 
 #[derive(Debug, PartialEq, thiserror::Error)]
-pub enum Error {
+pub enum ContractError {
     #[error(transparent)]
     StdError(#[from] StdError),
 
     #[error(transparent)]
     Migrate(#[from] UpgradeError),
+
+    #[error(transparent)]
+    AccessManaged(#[from] access_managed::error::ContractError),
+
+    #[error(transparent)]
+    Upgradable(#[from] upgradable::error::ContractError),
 
     #[error("sender is not admin")]
     OnlyAdmin,

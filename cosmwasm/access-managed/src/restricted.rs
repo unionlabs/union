@@ -1,4 +1,4 @@
-use access_manager_types::{CanCall, Selector, managed::error::AccessManagedError};
+use access_manager_types::{CanCall, Selector, managed::error::AccessManagedError, manager};
 use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, SubMsg, WasmMsg, to_json_binary};
 use depolama::{StorageExt, Store};
 use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
@@ -7,10 +7,36 @@ use crate::{error::ContractError, state::ConsumingSchedule};
 
 pub const ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID: u64 = u64::MAX;
 
-#[derive(Debug)]
-pub struct Restricted<T: DeserializeOwned + Serialize> {
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(transparent)]
+pub struct Restricted<T: Serialize + DeserializeOwned> {
+    #[serde(skip)]
     selector: &'static Selector,
     value: T,
+}
+
+impl<T: Serialize + DeserializeOwned + PartialEq> PartialEq for Restricted<T> {
+    fn eq(&self, other: &Self) -> bool {
+        // selector will be equal if .value is the same variant, no need to check it
+        self.value == other.value
+    }
+}
+
+impl<T: DeserializeOwned + Serialize> Restricted<T> {
+    /// Construct a [`Restricted<T>`] from the inner `T` value by serializing the value to JSON, and then deserializing the JSON string.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the serialization of `t` fails, or if the deserialization of the serialized value fails.
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "intentionally taking ownership"
+    )]
+    pub fn wrap(t: T) -> Self {
+        serde_json_wasm::from_str(&serde_json_wasm::to_string(&t).expect("infallible"))
+            .expect("should round trip")
+    }
 }
 
 impl<T: DeserializeOwned + Serialize> Restricted<T> {
@@ -23,51 +49,46 @@ impl<T: DeserializeOwned + Serialize> Restricted<T> {
     ) -> Result<EnsureCanCallResult<T>, ContractError> {
         let authority = deps.storage.read_item::<S>()?;
 
-        let CanCall {
-            allowed: immediate,
-            delay,
-        } = deps.querier.query_wasm_smart::<CanCall>(
+        let can_call = deps.querier.query_wasm_smart::<CanCall>(
             &authority,
-            &access_manager_types::manager::msg::QueryMsg::CanCall {
+            &manager::msg::QueryMsg::CanCall {
                 selector: self.selector.to_owned(),
                 target: env.contract.address.clone(),
                 caller: info.sender.clone(),
             },
         )?;
 
-        if immediate {
-            Ok(EnsureCanCallResult::Msg(self.value))
-        } else if delay > 0 {
-            deps.storage.write_item::<ConsumingSchedule>(&true);
-
-            Ok(EnsureCanCallResult::Scheduled(
-                [
-                    SubMsg::reply_never(WasmMsg::Execute {
-                        contract_addr: authority.into(),
-                        msg: to_json_binary(
-                            &access_manager_types::manager::msg::ExecuteMsg::ConsumeScheduledOp {
-                                caller: info.sender.clone(),
-                                data: serde_json_wasm::to_string(&self.value).expect("infallible"),
-                            },
-                        )?,
-                        funds: vec![],
-                    }),
-                    SubMsg::reply_on_success(
-                        WasmMsg::Execute {
-                            contract_addr: env.contract.address.to_string(),
-                            msg: to_json_binary(&self.value).expect("infallible"),
-                            funds: vec![],
-                        },
-                        ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
-                    ),
-                ]
-                .to_vec(),
-            ))
-        } else {
-            Err(AccessManagedError::AccessManagedUnauthorized {
+        match can_call {
+            CanCall::Immediate {} => Ok(EnsureCanCallResult::Msg(self.value)),
+            CanCall::Unauthorized {} => Err(AccessManagedError::AccessManagedUnauthorized {
                 caller: info.sender.clone(),
             }
-            .into())
+            .into()),
+            CanCall::WithDelay { delay: _ } => {
+                deps.storage.write_item::<ConsumingSchedule>(&true);
+
+                Ok(EnsureCanCallResult::Scheduled(
+                    [
+                        SubMsg::reply_never(WasmMsg::Execute {
+                            contract_addr: authority.into(),
+                            msg: to_json_binary(&manager::msg::ExecuteMsg::ConsumeScheduledOp {
+                                caller: info.sender.clone(),
+                                data: serde_json_wasm::to_string(&self.value).expect("infallible"),
+                            })?,
+                            funds: vec![],
+                        }),
+                        SubMsg::reply_on_success(
+                            WasmMsg::Execute {
+                                contract_addr: env.contract.address.to_string(),
+                                msg: to_json_binary(&self.value).expect("infallible"),
+                                funds: vec![],
+                            },
+                            ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID,
+                        ),
+                    ]
+                    .to_vec(),
+                ))
+            }
         }
     }
 }

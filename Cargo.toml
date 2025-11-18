@@ -293,6 +293,7 @@ members = [
   "lib/aptos-types",
   "lib/cosmos-signer",
   "cosmwasm/upgradable",
+  "cosmwasm/pausable",
 ]
 
 [workspace.package]
@@ -310,6 +311,9 @@ disallowed_types        = "deny"
 module_inception        = "allow" # it's useful sometimes
 module_name_repetitions = "allow" # dumb lint
 
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage_nightly)'] }
+
 # [workspace.lints.rust]
 # unused_crate_dependencies = "warn"
 
@@ -323,6 +327,7 @@ opt-level = 3
 [workspace.dependencies]
 access-managed                            = { path = "cosmwasm/access-managed", default-features = false }
 access-managed-example                    = { path = "e2e/access-managed-example", default-features = false }
+access-manager                            = { path = "cosmwasm/access-manager", default-features = false }
 access-manager-types                      = { path = "lib/access-manager-types", default-features = false }
 aptos-types                               = { path = "lib/aptos-types", default-features = false }
 arbitrum-client                           = { path = "lib/arbitrum-client", default-features = false }
@@ -393,6 +398,7 @@ osmosis-tokenfactory-token-minter         = { path = "cosmwasm/osmosis-tokenfact
 parlia-light-client-types                 = { path = "lib/parlia-light-client-types", default-features = false }
 parlia-types                              = { path = "lib/parlia-types", default-features = false }
 parlia-verifier                           = { path = "lib/parlia-verifier", default-features = false }
+pausable                                  = { path = "cosmwasm/pausable", default-features = false }
 pg-queue                                  = { path = "lib/pg-queue", default-features = false }
 protos                                    = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
@@ -458,16 +464,16 @@ anyhow                   = { version = "1" }
 axum                     = { version = "0.8", default-features = false }
 base64                   = { version = "0.22", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }
-bincode                  = { version = "2.0.1", default-features = false, features = ["std"] }       # std is used by all dependants
+bincode                  = { git = "https://git.sr.ht/~benluelo/bincode", branch = "add-automatically-derived" } # std is used by all dependants
 bip32                    = { version = "0.5.3", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.7", default-features = false }
 bs58                     = { version = "0.5.1", default-features = false }
 chrono                   = { version = "0.4.41", default-features = false }
-clap                     = { version = "4.5.39", default-features = false, features = ["std"] }      # clap has a fake std feature that is required to be enabled by default
+clap                     = { version = "4.5.39", default-features = false, features = ["std"] }                  # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.5", default-features = false }
 cosmwasm-schema          = { version = "2.2.2", default-features = false }
-cosmwasm-std             = { version = "2.2.2", default-features = false, features = ["std"] }       # cosmwasm-std has a fake std feature that is requried to be enabled by default
+cosmwasm-std             = { version = "2.2.2", default-features = false, features = ["std"] }                   # cosmwasm-std has a fake std feature that is requried to be enabled by default
 crossbeam-queue          = { version = "0.3.12", default-features = false }
 cw-orch                  = { version = "0.27.0", default-features = false }
 cw-storage-plus          = { version = "2.0.0", default-features = false }
@@ -505,12 +511,12 @@ rlp                      = { version = "0.5.2", default-features = false }
 schemars                 = { version = "0.8.22", default-features = false }
 serde                    = { version = "1.0.219", default-features = false }
 serde-json-wasm          = { version = "1.0.1", default-features = false }
-serde_json               = { version = "1.0.140", default-features = false, features = ["alloc"] }   # serde-json requires one of "std" or "alloc"
+serde_json               = { version = "1.0.140", default-features = false, features = ["alloc"] }               # serde-json requires one of "std" or "alloc"
 serde_with               = { version = "3.12.0", default-features = false, features = ["macros"] }
 sha2                     = { version = "0.10.9", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.4", default-features = false }
-static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
+static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                                # https://github.com/nvzqz/static-assertions/pull/28
 strum                    = { version = "0.27", default-features = false }
 subtle-encoding          = { version = "0.5.1", default-features = false }
 syn                      = { version = "2", default-features = false }

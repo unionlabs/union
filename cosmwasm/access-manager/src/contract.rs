@@ -1,9 +1,10 @@
-use std::cmp;
+use std::{cmp, num::NonZero};
 
 #[cfg(doc)]
 use access_manager_types::manager::{event::*, msg::QueryMsg};
 use access_manager_types::{
-    Access, CanCall, FullAccess, HasRole, Role, RoleId, Schedule, Selector, TargetConfig, managed,
+    Access, CanCall, FullAccess, HasRole, Nonce, Role, RoleId, RoleLabelsResponse, Schedule,
+    Selector, TargetConfig, Timepoint, managed,
     manager::{
         error::AccessManagerError,
         event::{
@@ -24,7 +25,9 @@ use crate::{
     EXECUTE_REPLY_ID,
     context::{ExecCtx, HasStorage, IExecCtx, IQueryCtx, QueryCtx},
     error::ContractError,
-    state::{ExecutionIdStack, RoleMembers, Roles, Schedules, TargetAllowedRoles, Targets},
+    state::{
+        ExecutionIdStack, RoleLabels, RoleMembers, Roles, Schedules, TargetAllowedRoles, Targets,
+    },
 };
 
 /// Check that the caller is authorized to perform the operation.
@@ -43,10 +46,24 @@ fn only_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
 // ======================================= ROLE MANAGEMENT =======================================
 
 /// See [`ExecuteMsg::LabelRole`].
-pub(crate) fn label_role(ctx: &mut ExecCtx, role_id: RoleId, label: &str) {
-    // TODO: figure out how we want to label roles; events like the original solidity implementation
-    // or in storage?
+pub(crate) fn label_role(
+    ctx: &mut ExecCtx,
+    role_id: RoleId,
+    label: &String,
+) -> Result<(), ContractError> {
+    only_authorized(ctx)?;
+
+    if role_id == RoleId::ADMIN_ROLE || role_id == RoleId::PUBLIC_ROLE {
+        return Err(ContractError::AccessManager(
+            AccessManagerError::AccessManagerLockedRole(role_id),
+        ));
+    }
+
+    ctx.storage().write::<RoleLabels>(&role_id, label);
+
     ctx.emit(RoleLabel { role_id, label });
+
+    Ok(())
 }
 
 /// See [`ExecuteMsg::GrantRole`].
@@ -411,14 +428,10 @@ fn _set_target_admin_delay(
         .upsert::<Targets, ContractError>(target, |maybe_target_config| {
             let mut target_config = maybe_target_config.unwrap_or_default();
 
-            let delay;
-
-            (delay, effect) =
+            (target_config.admin_delay, effect) =
                 target_config
                     .admin_delay
                     .with_update(timestamp, new_delay, min_setback());
-
-            target_config.admin_delay = delay;
 
             Ok(target_config)
         })?;
@@ -473,22 +486,24 @@ fn _set_target_closed(ctx: &mut ExecCtx, target: &Addr, closed: bool) -> Result<
 // ====================================== DELAYED OPERATIONS ======================================
 
 /// See [`QueryMsg::GetSchedule`].
-pub(crate) fn get_schedule(ctx: QueryCtx, id: H256) -> Result<u64, ContractError> {
+pub(crate) fn get_schedule(ctx: QueryCtx, id: H256) -> Result<Option<Timepoint>, ContractError> {
     let timepoint = ctx
         .storage()
         .maybe_read::<Schedules>(&id)?
         .map(|s| s.timepoint)
         .unwrap_or_default();
 
-    Ok(if _is_expired(ctx, timepoint) {
-        0
-    } else {
-        timepoint
-    })
+    Ok(timepoint.and_then(|timepoint| {
+        if _is_expired(ctx, timepoint) {
+            None
+        } else {
+            Some(timepoint)
+        }
+    }))
 }
 
 /// See [`QueryMsg::GetNonce`].
-pub(crate) fn get_nonce(ctx: QueryCtx, id: H256) -> Result<u32, ContractError> {
+pub(crate) fn get_nonce(ctx: QueryCtx, id: H256) -> Result<Nonce, ContractError> {
     Ok(ctx
         .storage()
         .maybe_read::<Schedules>(&id)?
@@ -501,29 +516,40 @@ pub(crate) fn schedule(
     ctx: &mut ExecCtx,
     target: &Addr,
     data: &str,
-    when: u64,
-) -> Result<(H256, u32), ContractError> {
+    when: NonZero<u64>,
+) -> Result<(H256, Nonce), ContractError> {
     let caller = ctx.msg_sender();
 
     // Fetch restrictions that apply to the caller on the targeted function
-    let CanCall {
-        allowed: _,
-        delay: setback,
-    } = _can_call_extended(ctx, caller, target, data)?;
+    let can_call = _can_call_extended(ctx, caller, target, data)?;
 
-    let min_when = ctx.timestamp() + u64::from(setback);
-
-    // If call with delay is not authorized, or if requested timing is too soon, revert
-    if setback == 0 || (when > 0 && when < min_when) {
-        return Err(AccessManagerError::AccessManagerUnauthorizedCall {
+    let err_unauthorized_call = || {
+        Err(AccessManagerError::AccessManagerUnauthorizedCall {
             caller: caller.clone(),
             target: target.clone(),
+            // NOTE: This call can technically never fail, since _check_selector is also called within _can_call_extended
             selector: _check_selector(data)?.to_owned(),
         }
-        .into());
-    }
+        .into())
+    };
 
-    let when = cmp::max(when, min_when);
+    // If call with delay is not authorized, or if requested timing is too soon, revert
+    let when = match can_call {
+        // only authorized callers that have an execution delay can schedule an operation
+        CanCall::Immediate {} | CanCall::Unauthorized {} => {
+            return err_unauthorized_call();
+        }
+        CanCall::WithDelay { delay: setback } => {
+            let min_when = NonZero::new(ctx.timestamp() + u64::from(setback.get()))
+                .expect("timestamp should be non-zero; qed;");
+
+            if when < min_when {
+                return err_unauthorized_call();
+            }
+
+            cmp::max(when, min_when)
+        }
+    };
 
     // If caller is authorized, schedule operation
     let operation_id = hash_operation(caller, target, data);
@@ -532,7 +558,7 @@ pub(crate) fn schedule(
 
     // inlined _checkNotScheduled
     if let Some(Schedule {
-        timepoint: prev_timepoint,
+        timepoint: Some(prev_timepoint),
         ..
     }) = maybe_schedule
         && !_is_expired(ctx.query_ctx(), prev_timepoint)
@@ -541,8 +567,11 @@ pub(crate) fn schedule(
     }
 
     let schedule = Schedule {
-        timepoint: when,
-        nonce: maybe_schedule.map(|s| s.nonce).unwrap_or_default() + 1,
+        timepoint: Some(Timepoint::new(when)),
+        nonce: maybe_schedule
+            .map(|s| s.nonce)
+            .unwrap_or_default()
+            .increment(),
     };
 
     ctx.storage().write::<Schedules>(&operation_id, &schedule);
@@ -566,32 +595,33 @@ pub(crate) fn execute(
     ctx: &mut ExecCtx,
     target: &Addr,
     data: &str,
-) -> Result<(SubMsg, Option<u32>), ContractError> {
+) -> Result<(SubMsg, Nonce), ContractError> {
     let caller = ctx.msg_sender();
 
     // Fetch restrictions that apply to the caller on the targeted function
-    let CanCall {
-        allowed: immediate,
-        delay: setback,
-    } = _can_call_extended(ctx, caller, target, data)?;
+    let can_call = _can_call_extended(ctx, caller, target, data)?;
 
     // If call is not authorized, revert
-    if !immediate && setback == 0 {
-        return Err(AccessManagerError::AccessManagerUnauthorizedCall {
-            caller: caller.clone(),
-            target: target.clone(),
-            selector: _check_selector(data)?.to_owned(),
+    let immediate = match can_call {
+        CanCall::Immediate {} => true,
+        CanCall::WithDelay { delay: _ } => false,
+        CanCall::Unauthorized {} => {
+            return Err(AccessManagerError::AccessManagerUnauthorizedCall {
+                caller: caller.clone(),
+                target: target.clone(),
+                selector: _check_selector(data)?.to_owned(),
+            }
+            .into());
         }
-        .into());
-    }
+    };
 
     let operation_id = hash_operation(caller, target, data);
-    let mut nonce = None;
+    let mut nonce = Nonce::new(0);
 
     // If caller is authorized, check operation was scheduled early enough
     // Consume an available schedule even if there is no currently enforced delay
-    if setback != 0 || get_schedule(ctx.query_ctx(), operation_id)? != 0 {
-        nonce = Some(_consume_scheduled_op(ctx, operation_id)?);
+    if !immediate || get_schedule(ctx.query_ctx(), operation_id)?.is_some() {
+        nonce = _consume_scheduled_op(ctx, operation_id)?;
     }
 
     // Mark the target and selector as authorized
@@ -622,7 +652,7 @@ pub(crate) fn cancel(
     caller: &Addr,
     target: &Addr,
     data: &str,
-) -> Result<u32, ContractError> {
+) -> Result<Nonce, ContractError> {
     let msgsender = ctx.msg_sender();
     let selector = _check_selector(data)?;
 
@@ -630,23 +660,29 @@ pub(crate) fn cancel(
     let schedule = ctx
         .storage()
         .maybe_read::<Schedules>(&operation_id)?
-        .ok_or(AccessManagerError::AccessManagerNotScheduled(operation_id))?;
+        // NOTE: We could error here with AccessManagerNotScheduled rather than unwrap_or_default, but using default reduces the amount of exit points and reduces complexity a bit
+        .unwrap_or_default();
 
-    if schedule.timepoint == 0 {
+    if schedule.timepoint.is_none() {
         return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
     } else if caller != msgsender {
         // calls can only be canceled by the account that scheduled them, a global admin, or by a
         // guardian of the required role.
-        let is_admin = has_role(ctx.query_ctx(), RoleId::ADMIN_ROLE, msgsender)?.is_member;
-        let is_guardian = has_role(
-            ctx.query_ctx(),
-            get_role_guardian(
+        let is_admin = matches!(
+            has_role(ctx.query_ctx(), RoleId::ADMIN_ROLE, msgsender)?,
+            HasRole::Yes { .. }
+        );
+        let is_guardian = matches!(
+            has_role(
                 ctx.query_ctx(),
-                get_target_function_role(ctx.query_ctx(), target, selector)?,
+                get_role_guardian(
+                    ctx.query_ctx(),
+                    get_target_function_role(ctx.query_ctx(), target, selector)?,
+                )?,
+                msgsender,
             )?,
-            msgsender,
-        )?
-        .is_member;
+            HasRole::Yes { .. },
+        );
 
         if !is_admin && !is_guardian {
             return Err(AccessManagerError::AccessManagerUnauthorizedCancel {
@@ -663,7 +699,7 @@ pub(crate) fn cancel(
     ctx.storage().write::<Schedules>(
         &operation_id,
         &Schedule {
-            timepoint: 0,
+            timepoint: None,
             ..schedule
         },
     );
@@ -689,7 +725,9 @@ pub(crate) fn consume_scheduled_op(
         target,
         &managed::msg::QueryMsg::IsConsumingScheduledOp {},
     )?;
-    if (&*selector != managed::msg::QueryMsg::IsConsumingScheduledOp {}.selector()) {
+    if &*selector
+        != Selector::extract_from_serialize(&managed::msg::QueryMsg::IsConsumingScheduledOp {})
+    {
         return Err(AccessManagerError::AccessManagerUnauthorizedConsume {
             target: target.clone(),
         }
@@ -701,7 +739,7 @@ pub(crate) fn consume_scheduled_op(
     Ok(())
 }
 
-/// Internal variant of [`consume_scheduled_op`] that operates on bytes32 operationId.
+/// Internal variant of [`consume_scheduled_op`] that operates on the pre-hashed `operation_id`.
 ///
 /// Returns the nonce of the scheduled operation that is consumed.
 ///
@@ -710,25 +748,30 @@ pub(crate) fn consume_scheduled_op(
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L563>
-fn _consume_scheduled_op(ctx: &mut ExecCtx, operation_id: H256) -> Result<u32, ContractError> {
+fn _consume_scheduled_op(ctx: &mut ExecCtx, operation_id: H256) -> Result<Nonce, ContractError> {
     let Schedule { timepoint, nonce } = ctx
         .storage()
         .maybe_read::<Schedules>(&operation_id)?
         .unwrap_or_default();
 
-    if timepoint == 0 {
-        return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
-    } else if timepoint > ctx.timestamp() {
-        return Err(AccessManagerError::AccessManagerNotReady(operation_id).into());
-    } else if _is_expired(ctx.query_ctx(), timepoint) {
-        return Err(AccessManagerError::AccessManagerExpired(operation_id).into());
+    match timepoint {
+        None => {
+            return Err(AccessManagerError::AccessManagerNotScheduled(operation_id).into());
+        }
+        Some(timepoint) => {
+            if timepoint.get() > ctx.timestamp() {
+                return Err(AccessManagerError::AccessManagerNotReady(operation_id).into());
+            } else if _is_expired(ctx.query_ctx(), timepoint) {
+                return Err(AccessManagerError::AccessManagerExpired(operation_id).into());
+            }
+        }
     }
 
     // reset the timepoint, keep the nonce
     ctx.storage().write::<Schedules>(
         &operation_id,
         &Schedule {
-            timepoint: 0,
+            timepoint: None,
             nonce,
         },
     );
@@ -756,13 +799,16 @@ pub(crate) fn update_authority(
 ) -> Result<SubMsg, ContractError> {
     only_authorized(ctx)?;
 
-    Ok(SubMsg::reply_never(wasm_execute(
-        target,
-        &managed::msg::ExecuteMsg::SetAuthority {
-            new_authority: new_authority.clone(),
-        },
-        vec![],
-    )?))
+    Ok(SubMsg::reply_never(
+        wasm_execute(
+            target,
+            &managed::msg::ExecuteMsg::SetAuthority {
+                new_authority: new_authority.clone(),
+            },
+            vec![],
+        )
+        .expect("serialization of access manager types is infallible; qed;"),
+    ))
 }
 
 // ========================================= ADMIN LOGIC ==========================================
@@ -781,25 +827,25 @@ pub(crate) fn update_authority(
 fn _check_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
     let msg_data = ctx.msg_data();
 
-    let CanCall {
-        allowed: immediate,
-        delay,
-    } = _can_call_self(ctx, ctx.msg_sender(), &msg_data)?;
+    let can_call = _can_call_self(ctx, ctx.msg_sender(), &msg_data)?;
 
-    if !immediate {
-        if delay == 0 {
+    match can_call {
+        CanCall::Unauthorized {} => {
             let (_, required_role, _) = _get_admin_restrictions(ctx, &msg_data)?;
+
             return Err(AccessManagerError::AccessManagerUnauthorizedAccount {
                 msg_sender: ctx.msg_sender().clone(),
                 required_role_id: required_role,
             }
             .into());
         }
-
-        _consume_scheduled_op(
-            ctx,
-            hash_operation(ctx.msg_sender(), ctx.address_this(), &msg_data),
-        )?;
+        CanCall::Immediate {} => {}
+        CanCall::WithDelay { delay: _ } => {
+            _consume_scheduled_op(
+                ctx,
+                hash_operation(ctx.msg_sender(), ctx.address_this(), &msg_data),
+            )?;
+        }
     }
 
     Ok(())
@@ -917,39 +963,36 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
         // Caller is AccessManager, this means the call was sent through `execute` and it already
         // checked permissions. We verify that the call "identifier", which is set during
         // `execute`, is correct.
-        return Ok(CanCall {
-            allowed: _is_executing(ctx.query_ctx(), ctx.address_this(), _check_selector(data)?)?,
-            delay: 0,
-        });
+        // NOTE: This prevents actions like scheduling a call to schedule on the same access manager.
+        return Ok(
+            if _is_executing(ctx.query_ctx(), ctx.address_this(), _check_selector(data)?)? {
+                CanCall::Immediate {}
+            } else {
+                CanCall::Unauthorized {}
+            },
+        );
     }
 
     let (admin_restricted, role_id, operation_delay) = _get_admin_restrictions(ctx, data)?;
 
-    // isTargetClosed apply to non-admin-restricted function
+    // is_target_closed only applies to non-admin-restricted functions
     if !admin_restricted && is_target_closed(ctx.query_ctx(), ctx.address_this())? {
-        return Ok(CanCall {
-            allowed: false,
-            delay: 0,
-        });
+        return Ok(CanCall::Unauthorized {});
     }
 
-    let HasRole {
-        is_member,
-        execution_delay,
-    } = has_role(ctx.query_ctx(), role_id, caller)?;
+    let has_role = has_role(ctx.query_ctx(), role_id, caller)?;
 
-    if !is_member {
-        return Ok(CanCall {
-            allowed: false,
-            delay: 0,
-        });
-    }
+    let execution_delay = match has_role {
+        HasRole::No {} => return Ok(CanCall::Unauthorized {}),
+        HasRole::Yes { execution_delay } => execution_delay,
+    };
 
-    let delay = cmp::max(operation_delay, execution_delay);
+    let delay = cmp::max(operation_delay, execution_delay.map_or(0, NonZero::get));
 
-    Ok(CanCall {
-        allowed: delay == 0,
-        delay,
+    Ok(if let Some(delay) = NonZero::new(delay) {
+        CanCall::WithDelay { delay }
+    } else {
+        CanCall::Immediate {}
     })
 }
 
@@ -982,8 +1025,8 @@ pub(crate) fn _is_executing(
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L685>
-fn _is_expired(ctx: QueryCtx, timepoint: u64) -> bool {
-    timepoint + u64::from(expiration()) <= ctx.timestamp()
+fn _is_expired(ctx: QueryCtx, timepoint: Timepoint) -> bool {
+    timepoint.get() + u64::from(expiration()) <= ctx.timestamp()
 }
 
 /// See [`QueryMsg::CanCall`].
@@ -994,39 +1037,31 @@ pub(crate) fn can_call(
     selector: &Selector,
 ) -> Result<CanCall, ContractError> {
     if selector.is_internal() {
-        Ok(CanCall {
-            allowed: true,
-            delay: 0,
-        })
+        Ok(CanCall::Immediate {})
     } else if is_target_closed(ctx, target)? {
-        Ok(CanCall {
-            allowed: false,
-            delay: 0,
-        })
+        Ok(CanCall::Unauthorized {})
     } else if caller == ctx.address_this() {
         // Caller is AccessManager, this means the call was sent through `execute` and it already
         // checked permissions. We verify that the call "identifier", which is set during
         // `execute`, is correct.
-        Ok(CanCall {
-            allowed: _is_executing(ctx, target, selector)?,
-            delay: 0,
+        Ok(if _is_executing(ctx, target, selector)? {
+            CanCall::Immediate {}
+        } else {
+            CanCall::Unauthorized {}
         })
     } else {
         let role_id = get_target_function_role(ctx, target, selector)?;
-        let HasRole {
-            is_member,
-            execution_delay,
-        } = has_role(ctx, role_id, caller)?;
-        if is_member {
-            Ok(CanCall {
-                allowed: execution_delay == 0,
+
+        match has_role(ctx, role_id, caller)? {
+            HasRole::No {} => Ok(CanCall::Unauthorized {}),
+            HasRole::Yes {
+                execution_delay: Some(execution_delay),
+            } => Ok(CanCall::WithDelay {
                 delay: execution_delay,
-            })
-        } else {
-            Ok(CanCall {
-                allowed: false,
-                delay: 0,
-            })
+            }),
+            HasRole::Yes {
+                execution_delay: None,
+            } => Ok(CanCall::Immediate {}),
         }
     }
 }
@@ -1140,9 +1175,8 @@ pub(crate) fn has_role(
     account: &Addr,
 ) -> Result<HasRole, ContractError> {
     if role_id == RoleId::PUBLIC_ROLE {
-        Ok(HasRole {
-            is_member: true,
-            execution_delay: 0,
+        Ok(HasRole::Yes {
+            execution_delay: None,
         })
     } else {
         let FullAccess {
@@ -1151,9 +1185,12 @@ pub(crate) fn has_role(
             pending_delay: _,
             effect: _,
         } = get_access(ctx, role_id, account)?;
-        Ok(HasRole {
-            is_member: since != 0 && since <= ctx.timestamp(),
-            execution_delay: current_delay,
+        Ok(if since != 0 && since <= ctx.timestamp() {
+            HasRole::Yes {
+                execution_delay: NonZero::new(current_delay),
+            }
+        } else {
+            HasRole::No {}
         })
     }
 }
@@ -1167,4 +1204,21 @@ pub(crate) fn has_role(
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L737>
 pub(crate) fn _hash_execution_id(target: &Addr, selector: &Selector) -> H256 {
     sha2::Sha256::digest(format!("{target}:{selector}")).into()
+}
+
+/// Return all labels for the given role IDs.
+pub(crate) fn get_role_labels(
+    ctx: QueryCtx,
+    role_ids: &[RoleId],
+) -> Result<RoleLabelsResponse, ContractError> {
+    role_ids
+        .iter()
+        .map(|role_id| {
+            ctx.storage()
+                .maybe_read::<RoleLabels>(role_id)
+                .map(|maybe_label| (*role_id, maybe_label))
+                .map_err(Into::into)
+        })
+        .collect::<Result<_, _>>()
+        .map(RoleLabelsResponse)
 }

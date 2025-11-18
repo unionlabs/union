@@ -1,9 +1,11 @@
+use access_managed::Restricted;
 use cosmwasm_std::Addr;
 use ibc_union_spec::ChannelId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use ucs03_solvable::Solvable;
 use unionlabs_primitives::{Bytes, H256, U256};
+use upgradable::msg::Upgradable;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -16,15 +18,29 @@ pub enum Cw20InstantiateMsg {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
     pub zkgm: Addr,
-    pub admin: Addr,
     pub extra_minters: Vec<String>,
     pub cw20_init: Cw20InstantiateMsg,
+    pub access_managed_init_msg: access_managed::InitMsg,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[allow(clippy::large_enum_variant)]
 pub enum ExecuteMsg {
+    #[serde(untagged)]
+    Solvable(Solvable),
+    #[serde(untagged)]
+    Cw20(Value),
+    #[serde(untagged)]
+    AccessManaged(access_managed::ExecuteMsg),
+    #[serde(untagged)]
+    Restricted(Restricted<RestrictedExecuteMsg>),
+}
+
+/// Subset of [`ExecuteMsg`] for entrypoints that are access managed.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum RestrictedExecuteMsg {
     WhitelistIntents {
         hashes_whitelist: Vec<(H256, bool)>,
     },
@@ -35,12 +51,10 @@ pub enum ExecuteMsg {
         counterparty_beneficiary: Bytes,
     },
     #[serde(untagged)]
-    Solvable(Solvable),
-    #[serde(untagged)]
-    Cw20(Value),
+    Upgradable(Upgradable),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     AllMinters {},
@@ -54,6 +68,8 @@ pub enum QueryMsg {
     Minter {},
     #[serde(untagged)]
     Cw20(Value),
+    #[serde(untagged)]
+    AccessManaged(access_managed::QueryMsg),
 }
 
 #[cfg(test)]
