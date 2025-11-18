@@ -324,7 +324,7 @@ pub fn execute(
                     wrapped_migrations,
                 } => migrate_v1_to_v2(deps, balance_migrations, wrapped_migrations),
                 RestrictedExecuteMsg::Upgradable(msg) => {
-                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                    upgradable::execute(&env, msg).map_err(Into::into)
                 }
                 RestrictedExecuteMsg::Pausable(msg) => {
                     pausable::execute(deps, &info, &msg).map_err(Into::into)

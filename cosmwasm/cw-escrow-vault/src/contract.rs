@@ -241,7 +241,7 @@ pub fn execute(
                     Ok(Response::new())
                 }
                 RestrictedExecuteMsg::Upgradable(msg) => {
-                    upgradable::execute(deps, env, info, msg).map_err(Into::into)
+                    upgradable::execute(&env, msg).map_err(Into::into)
                 }
             }
         }

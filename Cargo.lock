@@ -131,6 +131,7 @@ version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
  "cosmwasm-std",
+ "depolama",
  "hex-literal 0.4.1",
  "itertools 0.13.0",
  "schemars",
@@ -6313,6 +6314,23 @@ dependencies = [
  "thiserror 2.0.12",
  "tonic 0.10.2",
  "unionlabs",
+]
+
+[[package]]
+name = "gatekeeper"
+version = "0.0.0"
+dependencies = [
+ "access-manager",
+ "access-manager-types",
+ "cosmwasm-std",
+ "embed-commit",
+ "enumorph",
+ "frissitheto",
+ "hex-literal 0.4.1",
+ "serde",
+ "thiserror 2.0.12",
+ "unionlabs-primitives",
+ "upgradable",
 ]
 
 [[package]]

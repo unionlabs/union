@@ -266,9 +266,7 @@ pub fn execute(
 
             match msg {
                 RestrictedExecuteMsg::Upgradable(msg) => {
-                    Ok(upgradable::execute(deps, env, info, msg)?
-                        .change_custom()
-                        .unwrap())
+                    Ok(upgradable::execute(&env, msg)?.change_custom().unwrap())
                 }
                 RestrictedExecuteMsg::SetFungibleCounterparty {
                     path,

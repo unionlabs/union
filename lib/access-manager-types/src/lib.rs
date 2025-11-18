@@ -189,6 +189,12 @@ impl ToOwned for Selector {
     }
 }
 
+impl Clone for Box<Selector> {
+    fn clone(&self) -> Self {
+        Selector::new_owned(String::from(&self.0).into_boxed_str())
+    }
+}
+
 impl Serialize for Selector {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

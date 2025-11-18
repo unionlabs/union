@@ -46,6 +46,9 @@ pub mod error;
 mod restricted;
 pub mod state;
 
+#[cfg(test)]
+mod tests;
+
 pub use restricted::{
     ACCESS_MANAGED_CONSUME_SCHEDULED_OP_REPLY_ID, EnsureCanCallResult, Restricted,
 };
@@ -107,6 +110,7 @@ pub fn reply(deps: DepsMut, _: Env, reply: Reply) -> Result<Response, ContractEr
     clippy::needless_pass_by_value,
     reason = "DepsMut should be passed by value"
 )]
+#[expect(clippy::missing_panics_doc, reason = "internal invariant")]
 pub fn handle_consume_scheduled_op_reply(
     deps: DepsMut<'_>,
     reply: Reply,
@@ -118,6 +122,12 @@ pub fn handle_consume_scheduled_op_reply(
             ..
         } => {
             result.unwrap();
+
+            assert_eq!(
+                deps.storage.read_item::<ConsumingSchedule>(),
+                Ok(true),
+                "invariant: attempted to handle consume scheduled op reply while not consuming schedule",
+            );
 
             deps.storage.write_item::<ConsumingSchedule>(&false);
 

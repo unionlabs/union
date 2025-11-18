@@ -1,0 +1,34 @@
+[package]
+name    = "gatekeeper"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+access-manager       = { workspace = true, features = ["library"] }
+access-manager-types = { workspace = true }
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_1_3", "staking"] }
+embed-commit         = { workspace = true }
+enumorph             = { workspace = true }
+frissitheto          = { workspace = true }
+serde                = { workspace = true, features = ["derive"] }
+thiserror            = { workspace = true }
+upgradable           = { workspace = true }
+
+[features]
+default = []
+library = []
+
+[dev-dependencies]
+hex-literal          = { workspace = true }
+unionlabs-primitives = { workspace = true }

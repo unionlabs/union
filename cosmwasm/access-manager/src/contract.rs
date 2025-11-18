@@ -39,7 +39,7 @@ use crate::{
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/AccessManager.sol#L123>
 #[inline]
-fn only_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
+pub fn only_authorized(ctx: &mut ExecCtx) -> Result<(), ContractError> {
     _check_authorized(ctx)
 }
 
@@ -968,6 +968,7 @@ fn _can_call_self(ctx: &mut ExecCtx, caller: &Addr, data: &str) -> Result<CanCal
             if _is_executing(ctx.query_ctx(), ctx.address_this(), _check_selector(data)?)? {
                 CanCall::Immediate {}
             } else {
+                // NOTE: This *should* be an impossible branch to reach
                 CanCall::Unauthorized {}
             },
         );
