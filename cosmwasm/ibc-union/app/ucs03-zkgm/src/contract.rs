@@ -520,7 +520,7 @@ pub fn verify_token_order_v2(
 
 /// Handles IBC packet timeouts by either processing forwarded packet timeouts or
 /// executing timeout logic for normal packets.
-fn timeout_packet(
+pub(crate) fn timeout_packet(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -573,7 +573,7 @@ fn timeout_packet(
 #[allow(clippy::too_many_arguments)]
 /// Handles the internal timeout logic for a packet.
 /// Processes timeouts based on instruction type and executes appropriate refund/cleanup actions.
-fn timeout_internal(
+pub(crate) fn timeout_internal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,

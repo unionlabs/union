@@ -43,6 +43,12 @@ use crate::{
 };
 
 const DEFAULT_IBC_HOST: &str = "blabla";
+const ADMIN: &str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
+const SOURCE_CHANNEL_ID: ChannelId = ChannelId!(1);
+const DESTINATION_CHANNEL_ID: ChannelId = ChannelId!(2);
+const AMOUNT: u128 = 10;
+const TOKEN: &str = "au";
+const PREDICT_TOKEN: &str = "union1xlzyzcerp2r3dd8w877j0uqnhjllkhv22ahevl";
 
 #[test]
 fn test_dequeue_channel_from_path_ok_1() {
@@ -3751,6 +3757,58 @@ fn test_on_channel_close_confirm_only_ibc() {
     );
 }
 
+fn init_with_custom_querier<T: Querier>(
+    querier: T,
+) -> (
+    OwnedDeps<MockStorage, MockApi, T, Empty>,
+    Env,
+    MessageInfo,
+    Config,
+) {
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier,
+        custom_query_type: std::marker::PhantomData,
+    };
+    deps.api = MockApi::default().with_prefix("union");
+    let mut env = mock_env();
+    let ibc_host = Addr::unchecked(DEFAULT_IBC_HOST);
+    let info = message_info(&ibc_host, &[]);
+    let config = Config {
+        admin: Addr::unchecked(""),
+        ibc_host,
+        token_minter_code_id: 0,
+        rate_limit_disabled: false,
+        dummy_code_id: 0,
+        cw_account_code_id: 0,
+    };
+    env.contract.address = Addr::unchecked(ADMIN);
+    crate::contract::init(
+        deps.as_mut(),
+        env.clone(),
+        InitMsg {
+            config: Config {
+                admin: Addr::unchecked(ADMIN),
+                ibc_host: Addr::unchecked(DEFAULT_IBC_HOST),
+                token_minter_code_id: 0,
+                rate_limit_disabled: false,
+                dummy_code_id: 0,
+                cw_account_code_id: 0,
+            },
+            minter_init_params: TokenMinterInitParams::Cw20 {
+                cw20_impl_code_id: 0,
+                dummy_code_id: 0,
+            },
+            access_managed_init_msg: access_managed::InitMsg {
+                initial_authority: Addr::unchecked(ADMIN),
+            },
+        },
+    )
+    .unwrap();
+    (deps, env, info, config)
+}
+
 #[cfg(test)]
 mod verify_token_order_v2_tests {
     use cosmwasm_std::QueryRequest;
@@ -3759,14 +3817,7 @@ mod verify_token_order_v2_tests {
     use super::*;
     use crate::{contract::make_wasm_msg, state::TOKEN_MINTER};
 
-    const SOURCE_CHANNEL_ID: ChannelId = ChannelId!(1);
-    const DESTINATION_CHANNEL_ID: ChannelId = ChannelId!(2);
-    const AMOUNT: u128 = 10;
-    const TOKEN: &str = "au";
-    const ADMIN: &str = "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua";
-    const PREDICT_TOKEN: &str = "union1xlzyzcerp2r3dd8w877j0uqnhjllkhv22ahevl";
-
-    struct MockCodeHashQuerier;
+    pub struct MockCodeHashQuerier;
 
     impl Querier for MockCodeHashQuerier {
         fn raw_query(&self, q: &[u8]) -> cosmwasm_std::QuerierResult {
@@ -3778,7 +3829,7 @@ mod verify_token_order_v2_tests {
                 return QuerierResult::Ok(ContractResult::Ok(
                     to_json_binary(&CodeInfoResponse::new(
                         1,
-                        Addr::unchecked("helo"),
+                        Addr::unchecked("hello"),
                         Checksum::from([0; 32]),
                     ))
                     .unwrap(),
@@ -3801,58 +3852,6 @@ mod verify_token_order_v2_tests {
         }
     }
 
-    fn init_with_custom_querier<T: Querier>(
-        querier: T,
-    ) -> (
-        OwnedDeps<MockStorage, MockApi, T, Empty>,
-        Env,
-        MessageInfo,
-        Config,
-    ) {
-        let mut deps = OwnedDeps {
-            storage: MockStorage::default(),
-            api: MockApi::default(),
-            querier,
-            custom_query_type: std::marker::PhantomData,
-        };
-        deps.api = MockApi::default().with_prefix("union");
-        let mut env = mock_env();
-        let ibc_host = Addr::unchecked(DEFAULT_IBC_HOST);
-        let info = message_info(&ibc_host, &[]);
-        let config = Config {
-            admin: Addr::unchecked(""),
-            ibc_host,
-            token_minter_code_id: 0,
-            rate_limit_disabled: false,
-            dummy_code_id: 0,
-            cw_account_code_id: 0,
-        };
-        env.contract.address = Addr::unchecked(ADMIN);
-        crate::contract::init(
-            deps.as_mut(),
-            env.clone(),
-            InitMsg {
-                config: Config {
-                    admin: Addr::unchecked(ADMIN),
-                    ibc_host: Addr::unchecked(DEFAULT_IBC_HOST),
-                    token_minter_code_id: 0,
-                    rate_limit_disabled: false,
-                    dummy_code_id: 0,
-                    cw_account_code_id: 0,
-                },
-                minter_init_params: TokenMinterInitParams::Cw20 {
-                    cw20_impl_code_id: 0,
-                    dummy_code_id: 0,
-                },
-                access_managed_init_msg: access_managed::InitMsg {
-                    initial_authority: Addr::unchecked(ADMIN),
-                },
-            },
-        )
-        .unwrap();
-        (deps, env, info, config)
-    }
-
     #[test]
     fn test_verify_token_order_v2_not_unescrow() {
         let (mut deps, _, info, _) = init_with_custom_querier(MockCodeHashQuerier);
@@ -3871,7 +3870,7 @@ mod verify_token_order_v2_tests {
             metadata: b"".into(),
         };
 
-        let _ = verify_token_order_v2(
+        verify_token_order_v2(
             deps.as_mut(),
             info.clone(),
             &mut funds,
@@ -3905,7 +3904,7 @@ mod verify_token_order_v2_tests {
         }])
         .unwrap();
 
-        let _ = verify_token_order_v2(
+        verify_token_order_v2(
             deps.as_mut(),
             info,
             &mut funds,
@@ -3954,7 +3953,7 @@ mod verify_token_order_v2_tests {
         }])
         .unwrap();
 
-        let _ = verify_token_order_v2(
+        verify_token_order_v2(
             deps.as_mut(),
             info.clone(),
             // we don't want the original to be changed
@@ -3980,6 +3979,158 @@ mod verify_token_order_v2_tests {
                     },
                     &minter,
                     funds.into_vec()
+                )
+                .unwrap()
+            )
+        );
+    }
+}
+
+#[cfg(test)]
+mod timeout_tests {
+    use ucs03_zkgm_token_minter_api::{LocalTokenMsg, WrappedTokenMsg};
+
+    use super::*;
+    use crate::{
+        contract::{decrease_channel_balance_v2, make_wasm_msg, timeout_internal},
+        state::TOKEN_MINTER,
+    };
+
+    #[test]
+    fn test_timeout_packet_token_order_v2_unescrow() {
+        let (mut deps, env, info, _) =
+            init_with_custom_querier(verify_token_order_v2_tests::MockCodeHashQuerier);
+
+        let token_order = TokenOrderV2 {
+            sender: ADMIN.as_bytes().into(),
+            receiver: b"asdasdasd".into(),
+            base_token: PREDICT_TOKEN.as_bytes().into(),
+            base_amount: AMOUNT.try_into().unwrap(),
+            quote_token: TOKEN.as_bytes().into(),
+            quote_amount: AMOUNT.try_into().unwrap(),
+            kind: TOKEN_ORDER_KIND_UNESCROW,
+            metadata: b"".into(),
+        };
+
+        let response = timeout_internal(
+            deps.as_mut(),
+            env,
+            info,
+            Addr::unchecked(ADMIN),
+            Packet {
+                source_channel_id: SOURCE_CHANNEL_ID,
+                destination_channel_id: DESTINATION_CHANNEL_ID,
+                // we dont use this
+                data: b"".into(),
+                timeout_height: MustBeZero,
+                timeout_timestamp: Default::default(),
+            },
+            Addr::unchecked(ADMIN),
+            [0; 32].into(),
+            U256::ZERO,
+            Instruction {
+                version: INSTR_VERSION_2,
+                opcode: OP_TOKEN_ORDER,
+                operand: token_order.abi_encode_params().into(),
+            },
+        )
+        .unwrap();
+
+        let minter = TOKEN_MINTER.load(&deps.storage).unwrap();
+
+        assert_eq!(
+            response.messages[0],
+            cosmwasm_std::SubMsg::new(
+                make_wasm_msg(
+                    WrappedTokenMsg::MintTokens {
+                        denom: PREDICT_TOKEN.into(),
+                        amount: AMOUNT.into(),
+                        mint_to_address: Addr::unchecked(ADMIN),
+                    },
+                    minter,
+                    vec![]
+                )
+                .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn test_timeout_packet_token_order_v2_not_unescrow() {
+        let (mut deps, env, info, _) =
+            init_with_custom_querier(verify_token_order_v2_tests::MockCodeHashQuerier);
+
+        let token_order = TokenOrderV2 {
+            sender: ADMIN.as_bytes().into(),
+            receiver: b"asdasdasd".into(),
+            base_token: PREDICT_TOKEN.as_bytes().into(),
+            base_amount: AMOUNT.try_into().unwrap(),
+            quote_token: TOKEN.as_bytes().into(),
+            quote_amount: AMOUNT.try_into().unwrap(),
+            kind: TOKEN_ORDER_KIND_ESCROW,
+            metadata: b"".into(),
+        };
+
+        increase_channel_balance_v2(
+            &mut deps.storage,
+            SOURCE_CHANNEL_ID,
+            U256::ZERO,
+            PREDICT_TOKEN.to_string(),
+            TOKEN.as_bytes().into(),
+            AMOUNT.into(),
+        )
+        .unwrap();
+
+        let response = timeout_internal(
+            deps.as_mut(),
+            env,
+            info,
+            Addr::unchecked(ADMIN),
+            Packet {
+                source_channel_id: SOURCE_CHANNEL_ID,
+                destination_channel_id: DESTINATION_CHANNEL_ID,
+                // we dont use this
+                data: b"".into(),
+                timeout_height: MustBeZero,
+                timeout_timestamp: Default::default(),
+            },
+            Addr::unchecked(ADMIN),
+            [0; 32].into(),
+            U256::ZERO,
+            Instruction {
+                version: INSTR_VERSION_2,
+                opcode: OP_TOKEN_ORDER,
+                operand: token_order.abi_encode_params().into(),
+            },
+        )
+        .unwrap();
+
+        let minter = TOKEN_MINTER.load(&deps.storage).unwrap();
+
+        // no more balance to decrease, hence failure
+        assert!(
+            decrease_channel_balance_v2(
+                deps.as_mut(),
+                SOURCE_CHANNEL_ID,
+                U256::ZERO,
+                PREDICT_TOKEN.into(),
+                TOKEN.as_bytes().into(),
+                AMOUNT.into()
+            )
+            .is_err()
+        );
+
+        assert_eq!(
+            response.messages[0],
+            cosmwasm_std::SubMsg::new(
+                make_wasm_msg(
+                    LocalTokenMsg::Unescrow {
+                        denom: PREDICT_TOKEN.into(),
+                        recipient: ADMIN.into(),
+                        amount: AMOUNT.into(),
+                    },
+                    minter,
+                    vec![]
                 )
                 .unwrap()
             )
