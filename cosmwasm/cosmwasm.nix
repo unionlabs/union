@@ -360,7 +360,7 @@ _: {
           chain-id = "xion-testnet-2";
           ucs04-chain-id = "xion.xion-testnet-2";
           name = "xion-testnet";
-          rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
+          rpc_url = "https://rpc.xion-testnet-2.burnt.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "fixed";

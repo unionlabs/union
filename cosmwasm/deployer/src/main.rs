@@ -35,12 +35,13 @@ use unionlabs::{
     cosmwasm::wasm::{
         access_config::AccessConfig, msg_execute_contract::MsgExecuteContract,
         msg_instantiate_contract2::MsgInstantiateContract2,
-        msg_migrate_contract::MsgMigrateContract, msg_store_code::MsgStoreCode,
+        msg_migrate_contract::MsgMigrateContract,
+        msg_store_and_migrate_contract::MsgStoreAndMigrateContract, msg_store_code::MsgStoreCode,
         msg_update_admin::MsgUpdateAdmin,
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
     google::protobuf::any::Any,
-    primitives::{Bech32, Bytes, H256, U256},
+    primitives::{Bech32, Bytes, H160, H256, U256},
 };
 
 const RELAYER: RoleId = RoleId::new(1);
@@ -116,12 +117,16 @@ enum App {
     Migrate {
         #[arg(long)]
         rpc_url: String,
-        #[arg(long, env)]
-        private_key: H256,
+        #[arg(long, env, required_unless_present("dump_to"))]
+        private_key: Option<H256>,
         #[arg(long)]
         address: Bech32<H256>,
         #[arg(long)]
         new_bytecode: PathBuf,
+        #[arg(long, conflicts_with = "private_key")]
+        dump_to: Option<PathBuf>,
+        #[arg(long, conflicts_with = "private_key")]
+        sender: Option<Bech32<H160>>,
         #[arg(
             long,
             // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
@@ -522,358 +527,16 @@ async fn do_main() -> Result<()> {
             permissioned,
             gas_config,
         } => {
-            let contracts = serde_json::from_slice::<ContractPaths>(
-                &std::fs::read(contracts).context("reading contracts path")?,
-            )?;
-
-            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
-
-            let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
-
-            let manager = ctx
-                .deploy_and_initiate(
-                    std::fs::read(contracts.manager)?,
-                    bytecode_base_code_id,
-                    access_manager_types::manager::msg::InitMsg {
-                        initial_admin: Addr::unchecked(manager_admin.to_string()),
-                    },
-                    &MANAGER,
-                )
-                .await?;
-
-            let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
-                initial_authority: Addr::unchecked(manager.to_string()),
-            };
-
-            let core_address = ctx
-                .deploy_and_initiate(
-                    std::fs::read(contracts.core)?,
-                    bytecode_base_code_id,
-                    ibc_union_msg::msg::InitMsg {
-                        access_managed_init_msg: access_managed_init_msg.clone(),
-                    },
-                    &CORE,
-                )
-                .await?;
-
-            let on_zkgm_call_proxy_address = instantiate2_address(
-                ctx.wallet().address(),
-                sha2(BYTECODE_BASE_BYTECODE),
-                &ON_ZKGM_CALL_PROXY,
-            )?;
-
-            let mut contract_addresses = ContractAddresses {
-                core: core_address.clone(),
-                lightclient: BTreeMap::default(),
-                app: AppAddresses {
-                    ucs00: None,
-                    ucs03: None,
-                },
-                manager: Some(manager.clone()),
-                escrow_vault: None,
-                on_zkgm_call_proxy: on_zkgm_call_proxy_address.clone(),
-            };
-
-            for (client_type, path) in contracts.lightclient {
-                let address = ctx
-                    .deploy_and_initiate(
-                        std::fs::read(path)?,
-                        bytecode_base_code_id,
-                        ibc_union_light_client::msg::InitMsg {
-                            ibc_host: core_address.to_string(),
-                            access_managed_init_msg: access_managed_init_msg.clone(),
-                        },
-                        &Salt::Utf8(format!("{LIGHTCLIENT}/{client_type}")),
-                    )
-                    .await?;
-
-                let response = ctx
-                    .rpc()
-                    .client()
-                    .grpc_abci_query::<_, QuerySmartContractStateResponse>(
-                        "/cosmwasm.wasm.v1.Query/SmartContractState",
-                        &QuerySmartContractStateRequest {
-                            address: core_address.to_string(),
-                            query_data: serde_json::to_vec(
-                                &ibc_union_msg::query::QueryMsg::GetRegisteredClientType {
-                                    client_type: client_type.clone(),
-                                },
-                            )
-                            .unwrap(),
-                        },
-                        None,
-                        false,
-                    )
-                    .await?;
-
-                if let Some(addr) = response
-                    .value
-                    .map(|value| serde_json::from_slice::<Bech32<H256>>(&value.data))
-                    .transpose()?
-                {
-                    assert_eq!(addr, address);
-                    info!("client {client_type} has already been registered");
-                } else {
-                    ctx.tx(
-                        MsgExecuteContract {
-                            sender: ctx.wallet().address().map_data(Into::into),
-                            contract: core_address.clone(),
-                            msg: serde_json::to_vec(
-                                &ibc_union_msg::msg::RestrictedExecuteMsg::RegisterClient(
-                                    ibc_union_msg::msg::MsgRegisterClient {
-                                        client_type: client_type.clone(),
-                                        client_address: address.to_string(),
-                                    },
-                                ),
-                            )
-                            .unwrap()
-                            .into(),
-                            funds: vec![],
-                        },
-                        "",
-                        gas_config.simulate,
-                    )
-                    .await?;
-
-                    info!("registered client type {client_type} to {address}");
-                };
-
-                contract_addresses.lightclient.insert(client_type, address);
-            }
-
-            if let Some(_ucs00) = contracts.app.ucs00 {}
-
-            if let Some(ucs03_config) = contracts.app.ucs03 {
-                let salt = Salt::Utf8(format!("{APP}/{UCS03}"));
-
-                let ucs03_address = instantiate2_address(
-                    ctx.wallet().address(),
-                    sha2(BYTECODE_BASE_BYTECODE),
-                    &salt,
-                )
-                .unwrap();
-
-                info!("ucs03 address is {ucs03_address}");
-
-                let state = ctx.contract_deploy_state(ucs03_address.clone()).await?;
-
-                if let ContractDeployState::None | ContractDeployState::Instantiated = state {
-                    let (tx_hash, response) = ctx
-                        .tx(
-                            MsgStoreCode {
-                                sender: ctx.wallet().address().map_data(Into::into),
-                                wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?
-                                    .into(),
-                                instantiate_permission: None,
-                            },
-                            "",
-                            gas_config.simulate,
-                        )
-                        .await
-                        .context("store minter code")?;
-
-                    let minter_code_id = response.code_id;
-
-                    info!(%tx_hash, minter_code_id, "minter stored");
-
-                    // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
-                    if permissioned {
-                        let (tx_hash, _) = ctx
-                            .tx(
-                                MsgUpdateInstantiateConfig {
-                                    sender: ctx.wallet().address().map_data(Into::into),
-                                    code_id: minter_code_id,
-                                    new_instantiate_permission: Some(
-                                        AccessConfig::AnyOfAddresses {
-                                            addresses: vec![
-                                                ucs03_address.clone().map_data(Into::into),
-                                            ],
-                                        },
-                                    ),
-                                },
-                                "",
-                                gas_config.simulate,
-                            )
-                            .await
-                            .context("update instantiate perms of cw20 impl")?;
-
-                        info!(%tx_hash, "cw20 impl instantiate permissions updated");
-
-                        // the bytecode base code id must be instantiable by ucs03
-                        ctx.update_bytecode_base_instantiate_permissions(
-                            bytecode_base_code_id,
-                            ucs03_address.clone(),
-                        )
-                        .await?;
-                    }
-
-                    let token_minter_address = instantiate2_address(
-                        ucs03_address.clone(),
-                        response.checksum,
-                        &Salt::Utf8(ucs03_zkgm::contract::minter_salt()),
-                    )
-                    .unwrap();
-
-                    let minter_init_params = match ucs03_config.token_minter_config {
-                        TokenMinterConfig::Cw20 { cw20_impl } => {
-                            let (tx_hash, response) = ctx
-                                .tx(
-                                    MsgStoreCode {
-                                        sender: ctx.wallet().address().map_data(Into::into),
-                                        wasm_byte_code: std::fs::read(cw20_impl)?.into(),
-                                        instantiate_permission: None,
-                                    },
-                                    "",
-                                    gas_config.simulate,
-                                )
-                                .await
-                                .context("store cw20 impl code")?;
-
-                            let code_id = response.code_id;
-
-                            info!(%tx_hash, code_id, "cw20 impl stored");
-
-                            // on permissioned cosmwasm, we must specify that this code can be instantiated by the token minter
-                            if permissioned {
-                                let (tx_hash, _) = ctx
-                                    .tx(
-                                        MsgUpdateInstantiateConfig {
-                                            sender: ctx.wallet().address().map_data(Into::into),
-                                            code_id,
-                                            new_instantiate_permission: Some(
-                                                AccessConfig::AnyOfAddresses {
-                                                    addresses: vec![
-                                                        token_minter_address
-                                                            .clone()
-                                                            .map_data(Into::into)
-                                                            .clone(),
-                                                    ],
-                                                },
-                                            ),
-                                        },
-                                        "",
-                                        gas_config.simulate,
-                                    )
-                                    .await
-                                    .context("update instantiate perms of cw20 impl")?;
-
-                                info!(%tx_hash, "cw20 impl instantiate permissions updated");
-
-                                // the bytecode-base code must also be instantiable by the token minter
-                                ctx.update_bytecode_base_instantiate_permissions(
-                                    bytecode_base_code_id,
-                                    token_minter_address,
-                                )
-                                .await?;
-                            }
-
-                            TokenMinterInitParams::Cw20 {
-                                cw20_impl_code_id: code_id.get(),
-                                dummy_code_id: bytecode_base_code_id.get(),
-                            }
-                        }
-                        TokenMinterConfig::OsmosisTokenfactory {} => {
-                            TokenMinterInitParams::OsmosisTokenFactory {}
-                        }
-                    };
-
-                    let (tx_hash, response) = ctx
-                        .tx(
-                            MsgStoreCode {
-                                sender: ctx.wallet().address().map_data(Into::into),
-                                wasm_byte_code: std::fs::read(ucs03_config.cw_account_path)?.into(),
-                                instantiate_permission: None,
-                            },
-                            "",
-                            gas_config.simulate,
-                        )
-                        .await
-                        .context("store minter code")?;
-
-                    let cw_account_code_id = response.code_id;
-
-                    info!(%tx_hash, cw_account_code_id, "cw_account stored");
-
-                    // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
-                    if permissioned {
-                        let (tx_hash, _) = ctx
-                            .tx(
-                                MsgUpdateInstantiateConfig {
-                                    sender: ctx.wallet().address().map_data(Into::into),
-                                    code_id: cw_account_code_id,
-                                    new_instantiate_permission: Some(
-                                        AccessConfig::AnyOfAddresses {
-                                            addresses: vec![
-                                                ucs03_address.clone().map_data(Into::into),
-                                            ],
-                                        },
-                                    ),
-                                },
-                                "",
-                                gas_config.simulate,
-                            )
-                            .await
-                            .context("update instantiate perms of cw-account")?;
-
-                        info!(%tx_hash, "cw-account instantiate permissions updated");
-                    }
-
-                    ctx.deploy_and_initiate(
-                        std::fs::read(ucs03_config.path)?,
-                        bytecode_base_code_id,
-                        ucs03_zkgm::msg::InitMsg {
-                            config: ucs03_zkgm::msg::Config {
-                                admin: Addr::unchecked(ctx.wallet().address().to_string()),
-                                ibc_host: Addr::unchecked(core_address.to_string()),
-                                token_minter_code_id: minter_code_id.into(),
-                                rate_limit_disabled: ucs03_config.rate_limit_disabled,
-                                dummy_code_id: bytecode_base_code_id.get(),
-                                cw_account_code_id: cw_account_code_id.get(),
-                            },
-                            minter_init_params,
-                            access_managed_init_msg: access_managed_init_msg.clone(),
-                        },
-                        &salt,
-                    )
-                    .await?;
-                }
-
-                if let Some(escrow_vault_path) = contracts.escrow_vault {
-                    let escrow_vault_address = ctx
-                        .deploy_and_initiate(
-                            std::fs::read(escrow_vault_path)?,
-                            bytecode_base_code_id,
-                            cw_escrow_vault::msg::InstantiateMsg {
-                                zkgm: Addr::unchecked(ucs03_address.to_string()),
-                                access_managed_init_msg: access_managed_init_msg.clone(),
-                            },
-                            &ESCROW_VAULT,
-                        )
-                        .await?;
-
-                    info!("escrow vault address is {escrow_vault_address}");
-
-                    contract_addresses.escrow_vault = Some(escrow_vault_address);
-                }
-
-                ctx.deploy_and_initiate(
-                    std::fs::read(contracts.on_zkgm_call_proxy)?,
-                    bytecode_base_code_id,
-                    on_zkgm_call_proxy::InitMsg {
-                        zkgm: Addr::unchecked(ucs03_address.to_string()),
-                    },
-                    &ON_ZKGM_CALL_PROXY,
-                )
-                .await?;
-
-                info!("on-zkgm-call-proxy address is {on_zkgm_call_proxy_address}");
-
-                contract_addresses.app.ucs03 = Some(ucs03_address);
-            }
-
-            setup_roles(ctx, manager, &contract_addresses).await?;
-
-            write_output(output, contract_addresses)?;
+            deploy_full(
+                rpc_url,
+                private_key,
+                contracts,
+                output,
+                manager_admin,
+                permissioned,
+                gas_config,
+            )
+            .await?;
         }
         App::Instantiate2Address {
             deployer,
@@ -975,15 +638,15 @@ async fn do_main() -> Result<()> {
             private_key,
             address,
             new_bytecode,
+            dump_to,
+            sender,
             message,
             force,
             gas_config,
         } => {
             let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
 
-            info!("migrating address {address}");
-
-            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+            let ctx = Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
 
             let contract_info = ctx
                 .contract_info(&address)
@@ -1007,44 +670,41 @@ async fn do_main() -> Result<()> {
                 }
             }
 
-            let (tx_hash, store_code_response) = ctx
-                .tx(
-                    MsgStoreCode {
-                        sender: ctx.wallet().address().map_data(Into::into),
-                        wasm_byte_code: new_bytecode.into(),
-                        instantiate_permission: None,
-                    },
-                    "",
-                    gas_config.simulate,
-                )
-                .await
-                .context("store code")?;
-
-            info!(
-                %tx_hash,
-                code_id = store_code_response.code_id,
-                "code stored"
-            );
-
             let message = json!({ "migrate": message });
 
             info!("migrate message: {message}");
 
-            let (tx_hash, _migrate_response) = ctx
-                .tx(
-                    MsgMigrateContract {
-                        sender: ctx.wallet().address().map_data(Into::into),
-                        contract: address,
-                        code_id: store_code_response.code_id,
-                        msg: message.to_string().into_bytes().into(),
-                    },
-                    "",
-                    gas_config.simulate,
-                )
-                .await
-                .context("migrate")?;
+            let msg = MsgStoreAndMigrateContract {
+                sender: sender
+                    .unwrap_or_else(|| ctx.wallet().address())
+                    .map_data(Into::into),
+                wasm_byte_code: new_bytecode.into(),
+                instantiate_permission: None,
+                contract: address.clone(),
+                msg: message.to_string().into_bytes().into(),
+            };
 
-            info!(%tx_hash, "migrated");
+            if let Some(dump_to) = dump_to {
+                write_output(
+                    Some(dump_to.clone()),
+                    json!({
+                        "body": {
+                            "messages": [Any(msg)],
+                        },
+                    }),
+                )?;
+
+                info!("raw tx body written to {}", dump_to.display());
+            } else {
+                info!("migrating address {address}");
+
+                let (tx_hash, _migrate_response) = ctx
+                    .tx(msg, "", gas_config.simulate)
+                    .await
+                    .context("migrate")?;
+
+                info!(%tx_hash, "migrated");
+            }
         }
         App::AddressOfPrivateKey {
             private_key,
@@ -1457,6 +1117,359 @@ async fn do_main() -> Result<()> {
             setup_roles(deployer, manager, &contracts).await?;
         }
     }
+
+    Ok(())
+}
+
+async fn deploy_full(
+    rpc_url: String,
+    private_key: H256,
+    contracts: PathBuf,
+    output: Option<PathBuf>,
+    manager_admin: Bech32,
+    permissioned: bool,
+    gas_config: GasFillerArgs,
+) -> Result<()> {
+    let contracts = serde_json::from_slice::<ContractPaths>(
+        &std::fs::read(contracts).context("reading contracts path")?,
+    )?;
+
+    let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+
+    let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
+
+    let manager = ctx
+        .deploy_and_initiate(
+            std::fs::read(contracts.manager)?,
+            bytecode_base_code_id,
+            access_manager_types::manager::msg::InitMsg {
+                initial_admin: Addr::unchecked(manager_admin.to_string()),
+            },
+            &MANAGER,
+        )
+        .await?;
+
+    let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
+        initial_authority: Addr::unchecked(manager.to_string()),
+    };
+
+    let core_address = ctx
+        .deploy_and_initiate(
+            std::fs::read(contracts.core)?,
+            bytecode_base_code_id,
+            ibc_union_msg::msg::InitMsg {
+                access_managed_init_msg: access_managed_init_msg.clone(),
+            },
+            &CORE,
+        )
+        .await?;
+
+    let on_zkgm_call_proxy_address = instantiate2_address(
+        ctx.wallet().address(),
+        sha2(BYTECODE_BASE_BYTECODE),
+        &ON_ZKGM_CALL_PROXY,
+    )?;
+
+    let mut contract_addresses = ContractAddresses {
+        core: core_address.clone(),
+        lightclient: BTreeMap::default(),
+        app: AppAddresses {
+            ucs00: None,
+            ucs03: None,
+        },
+        manager: Some(manager.clone()),
+        escrow_vault: None,
+        on_zkgm_call_proxy: on_zkgm_call_proxy_address.clone(),
+    };
+
+    for (client_type, path) in contracts.lightclient {
+        let address = ctx
+            .deploy_and_initiate(
+                std::fs::read(path)?,
+                bytecode_base_code_id,
+                ibc_union_light_client::msg::InitMsg {
+                    ibc_host: core_address.to_string(),
+                    access_managed_init_msg: access_managed_init_msg.clone(),
+                },
+                &Salt::Utf8(format!("{LIGHTCLIENT}/{client_type}")),
+            )
+            .await?;
+
+        let response = ctx
+            .rpc()
+            .client()
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &QuerySmartContractStateRequest {
+                    address: core_address.to_string(),
+                    query_data: serde_json::to_vec(
+                        &ibc_union_msg::query::QueryMsg::GetRegisteredClientType {
+                            client_type: client_type.clone(),
+                        },
+                    )
+                    .unwrap(),
+                },
+                None,
+                false,
+            )
+            .await?;
+
+        if let Some(addr) = response
+            .value
+            .map(|value| serde_json::from_slice::<Bech32<H256>>(&value.data))
+            .transpose()?
+        {
+            assert_eq!(addr, address);
+            info!("client {client_type} has already been registered");
+        } else {
+            ctx.tx(
+                MsgExecuteContract {
+                    sender: ctx.wallet().address().map_data(Into::into),
+                    contract: core_address.clone(),
+                    msg: serde_json::to_vec(
+                        &ibc_union_msg::msg::RestrictedExecuteMsg::RegisterClient(
+                            ibc_union_msg::msg::MsgRegisterClient {
+                                client_type: client_type.clone(),
+                                client_address: address.to_string(),
+                            },
+                        ),
+                    )
+                    .unwrap()
+                    .into(),
+                    funds: vec![],
+                },
+                "",
+                gas_config.simulate,
+            )
+            .await?;
+
+            info!("registered client type {client_type} to {address}");
+        };
+
+        contract_addresses.lightclient.insert(client_type, address);
+    }
+
+    if let Some(_ucs00) = contracts.app.ucs00 {}
+
+    if let Some(ucs03_config) = contracts.app.ucs03 {
+        let salt = Salt::Utf8(format!("{APP}/{UCS03}"));
+
+        let ucs03_address =
+            instantiate2_address(ctx.wallet().address(), sha2(BYTECODE_BASE_BYTECODE), &salt)
+                .unwrap();
+
+        info!("ucs03 address is {ucs03_address}");
+
+        let state = ctx.contract_deploy_state(ucs03_address.clone()).await?;
+
+        if let ContractDeployState::None | ContractDeployState::Instantiated = state {
+            let (tx_hash, response) = ctx
+                .tx(
+                    MsgStoreCode {
+                        sender: ctx.wallet().address().map_data(Into::into),
+                        wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?.into(),
+                        instantiate_permission: None,
+                    },
+                    "",
+                    gas_config.simulate,
+                )
+                .await
+                .context("store minter code")?;
+
+            let minter_code_id = response.code_id;
+
+            info!(%tx_hash, minter_code_id, "minter stored");
+
+            // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
+            if permissioned {
+                let (tx_hash, _) = ctx
+                    .tx(
+                        MsgUpdateInstantiateConfig {
+                            sender: ctx.wallet().address().map_data(Into::into),
+                            code_id: minter_code_id,
+                            new_instantiate_permission: Some(AccessConfig::AnyOfAddresses {
+                                addresses: vec![ucs03_address.clone().map_data(Into::into)],
+                            }),
+                        },
+                        "",
+                        gas_config.simulate,
+                    )
+                    .await
+                    .context("update instantiate perms of cw20 impl")?;
+
+                info!(%tx_hash, "cw20 impl instantiate permissions updated");
+
+                // the bytecode base code id must be instantiable by ucs03
+                ctx.update_bytecode_base_instantiate_permissions(
+                    bytecode_base_code_id,
+                    ucs03_address.clone(),
+                )
+                .await?;
+            }
+
+            let token_minter_address = instantiate2_address(
+                ucs03_address.clone(),
+                response.checksum,
+                &Salt::Utf8(ucs03_zkgm::contract::minter_salt()),
+            )
+            .unwrap();
+
+            let minter_init_params = match ucs03_config.token_minter_config {
+                TokenMinterConfig::Cw20 { cw20_impl } => {
+                    let (tx_hash, response) = ctx
+                        .tx(
+                            MsgStoreCode {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                wasm_byte_code: std::fs::read(cw20_impl)?.into(),
+                                instantiate_permission: None,
+                            },
+                            "",
+                            gas_config.simulate,
+                        )
+                        .await
+                        .context("store cw20 impl code")?;
+
+                    let code_id = response.code_id;
+
+                    info!(%tx_hash, code_id, "cw20 impl stored");
+
+                    // on permissioned cosmwasm, we must specify that this code can be instantiated by the token minter
+                    if permissioned {
+                        let (tx_hash, _) = ctx
+                            .tx(
+                                MsgUpdateInstantiateConfig {
+                                    sender: ctx.wallet().address().map_data(Into::into),
+                                    code_id,
+                                    new_instantiate_permission: Some(
+                                        AccessConfig::AnyOfAddresses {
+                                            addresses: vec![
+                                                token_minter_address
+                                                    .clone()
+                                                    .map_data(Into::into)
+                                                    .clone(),
+                                            ],
+                                        },
+                                    ),
+                                },
+                                "",
+                                gas_config.simulate,
+                            )
+                            .await
+                            .context("update instantiate perms of cw20 impl")?;
+
+                        info!(%tx_hash, "cw20 impl instantiate permissions updated");
+
+                        // the bytecode-base code must also be instantiable by the token minter
+                        ctx.update_bytecode_base_instantiate_permissions(
+                            bytecode_base_code_id,
+                            token_minter_address,
+                        )
+                        .await?;
+                    }
+
+                    TokenMinterInitParams::Cw20 {
+                        cw20_impl_code_id: code_id.get(),
+                        dummy_code_id: bytecode_base_code_id.get(),
+                    }
+                }
+                TokenMinterConfig::OsmosisTokenfactory {} => {
+                    TokenMinterInitParams::OsmosisTokenFactory {}
+                }
+            };
+
+            let (tx_hash, response) = ctx
+                .tx(
+                    MsgStoreCode {
+                        sender: ctx.wallet().address().map_data(Into::into),
+                        wasm_byte_code: std::fs::read(ucs03_config.cw_account_path)?.into(),
+                        instantiate_permission: None,
+                    },
+                    "",
+                    gas_config.simulate,
+                )
+                .await
+                .context("store minter code")?;
+
+            let cw_account_code_id = response.code_id;
+
+            info!(%tx_hash, cw_account_code_id, "cw_account stored");
+
+            // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
+            if permissioned {
+                let (tx_hash, _) = ctx
+                    .tx(
+                        MsgUpdateInstantiateConfig {
+                            sender: ctx.wallet().address().map_data(Into::into),
+                            code_id: cw_account_code_id,
+                            new_instantiate_permission: Some(AccessConfig::AnyOfAddresses {
+                                addresses: vec![ucs03_address.clone().map_data(Into::into)],
+                            }),
+                        },
+                        "",
+                        gas_config.simulate,
+                    )
+                    .await
+                    .context("update instantiate perms of cw-account")?;
+
+                info!(%tx_hash, "cw-account instantiate permissions updated");
+            }
+
+            ctx.deploy_and_initiate(
+                std::fs::read(ucs03_config.path)?,
+                bytecode_base_code_id,
+                ucs03_zkgm::msg::InitMsg {
+                    config: ucs03_zkgm::msg::Config {
+                        admin: Addr::unchecked(ctx.wallet().address().to_string()),
+                        ibc_host: Addr::unchecked(core_address.to_string()),
+                        token_minter_code_id: minter_code_id.into(),
+                        rate_limit_disabled: ucs03_config.rate_limit_disabled,
+                        dummy_code_id: bytecode_base_code_id.get(),
+                        cw_account_code_id: cw_account_code_id.get(),
+                    },
+                    minter_init_params,
+                    access_managed_init_msg: access_managed_init_msg.clone(),
+                },
+                &salt,
+            )
+            .await?;
+        }
+
+        if let Some(escrow_vault_path) = contracts.escrow_vault {
+            let escrow_vault_address = ctx
+                .deploy_and_initiate(
+                    std::fs::read(escrow_vault_path)?,
+                    bytecode_base_code_id,
+                    cw_escrow_vault::msg::InstantiateMsg {
+                        zkgm: Addr::unchecked(ucs03_address.to_string()),
+                        access_managed_init_msg: access_managed_init_msg.clone(),
+                    },
+                    &ESCROW_VAULT,
+                )
+                .await?;
+
+            info!("escrow vault address is {escrow_vault_address}");
+
+            contract_addresses.escrow_vault = Some(escrow_vault_address);
+        }
+
+        ctx.deploy_and_initiate(
+            std::fs::read(contracts.on_zkgm_call_proxy)?,
+            bytecode_base_code_id,
+            on_zkgm_call_proxy::InitMsg {
+                zkgm: Addr::unchecked(ucs03_address.to_string()),
+            },
+            &ON_ZKGM_CALL_PROXY,
+        )
+        .await?;
+
+        info!("on-zkgm-call-proxy address is {on_zkgm_call_proxy_address}");
+
+        contract_addresses.app.ucs03 = Some(ucs03_address);
+    }
+
+    setup_roles(ctx, manager, &contract_addresses).await?;
+
+    write_output(output, contract_addresses)?;
 
     Ok(())
 }
