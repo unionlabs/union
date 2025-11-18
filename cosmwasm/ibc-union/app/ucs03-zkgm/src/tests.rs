@@ -3925,7 +3925,6 @@ mod verify_token_order_v2_tests {
         let (mut deps, _, info, _) = init_with_custom_querier(MockCodeHashQuerier);
 
         let mut response = Response::new();
-        let mut funds = Coins::try_from(info.funds.clone()).unwrap();
 
         TOKEN_ORIGIN
             .save(
@@ -3949,10 +3948,17 @@ mod verify_token_order_v2_tests {
             metadata: b"".into(),
         };
 
+        let funds = Coins::try_from(vec![Coin {
+            denom: PREDICT_TOKEN.into(),
+            amount: Uint128::from(AMOUNT),
+        }])
+        .unwrap();
+
         let _ = verify_token_order_v2(
             deps.as_mut(),
             info.clone(),
-            &mut funds,
+            // we don't want the original to be changed
+            &mut funds.clone(),
             DESTINATION_CHANNEL_ID,
             U256::ZERO,
             &token_order,
@@ -3973,7 +3979,7 @@ mod verify_token_order_v2_tests {
                         sender: info.sender,
                     },
                     &minter,
-                    vec![]
+                    funds.into_vec()
                 )
                 .unwrap()
             )
