@@ -1,7 +1,7 @@
-/// Interface representing `HelloContract`.
-/// This interface allows modification and retrieval of the contract balance.
+pub mod event;
+
 #[starknet::interface]
-pub trait IHelloStarknet<TContractState> {
+pub trait IUcs03Zkgm<TContractState> {
     /// Increase contract balance.
     fn increase_balance(ref self: TContractState, amount: felt252);
     /// Retrieve contract balance.
@@ -10,16 +10,23 @@ pub trait IHelloStarknet<TContractState> {
 
 /// Simple contract for managing balance.
 #[starknet::contract]
-mod HelloStarknet {
+mod Ucs03Zkgm {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use crate::event::CreateWrappedToken;
 
     #[storage]
     struct Storage {
         balance: felt252,
     }
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        CreateWrappedToken: CreateWrappedToken,
+    }
+
     #[abi(embed_v0)]
-    impl HelloStarknetImpl of super::IHelloStarknet<ContractState> {
+    impl Ucs03ZkgmImpl of super::IUcs03Zkgm<ContractState> {
         fn increase_balance(ref self: ContractState, amount: felt252) {
             assert(amount != 0, 'Amount cannot be 0');
             self.balance.write(self.balance.read() + amount);
