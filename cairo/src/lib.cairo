@@ -4,6 +4,7 @@ use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
 use crate::types::ClientId;
 
+pub mod app;
 pub mod event;
 pub mod lightclient;
 pub mod msg;
