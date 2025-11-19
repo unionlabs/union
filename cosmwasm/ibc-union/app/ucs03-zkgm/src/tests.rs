@@ -3840,12 +3840,12 @@ mod verify_token_order_v2_tests {
             | Ok(ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedToken { .. }) =
                 serde_json::from_slice(msg.as_slice())
             {
-                return QuerierResult::Ok(ContractResult::Ok(
+                QuerierResult::Ok(ContractResult::Ok(
                     to_json_binary(&PredictWrappedTokenResponse {
                         wrapped_token: PREDICT_TOKEN.into(),
                     })
                     .unwrap(),
-                ));
+                ))
             } else {
                 panic!("{}", String::from_utf8(q.to_vec()).unwrap());
             }
