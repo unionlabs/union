@@ -548,7 +548,7 @@ pub fn verify_token_order_v2(
 
 /// Handles IBC packet timeouts by either processing forwarded packet timeouts or
 /// executing timeout logic for normal packets.
-fn timeout_packet(
+pub(crate) fn timeout_packet(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -601,7 +601,7 @@ fn timeout_packet(
 #[allow(clippy::too_many_arguments)]
 /// Handles the internal timeout logic for a packet.
 /// Processes timeouts based on instruction type and executes appropriate refund/cleanup actions.
-fn timeout_internal(
+pub(crate) fn timeout_internal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -3099,7 +3099,7 @@ pub fn migrate(
 /// Creates a WasmMsg for interacting with the token minter contract.
 /// This is a helper function to construct properly formatted wasm messages
 /// for token minting, burning, and other token operations.
-fn make_wasm_msg(
+pub(crate) fn make_wasm_msg(
     msg: impl Into<ucs03_zkgm_token_minter_api::ExecuteMsg>,
     minter: impl Into<String>,
     funds: Vec<Coin>,
