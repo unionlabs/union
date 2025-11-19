@@ -3692,6 +3692,7 @@ dependencies = [
  "frissitheto",
  "futures",
  "hex-literal 0.4.1",
+ "ibc-union",
  "ibc-union-light-client",
  "ibc-union-msg",
  "num-rational",

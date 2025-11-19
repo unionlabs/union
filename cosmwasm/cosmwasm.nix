@@ -719,7 +719,7 @@ _: {
             app = apps;
             escrow_vault = cw-escrow-vault.release;
             on_zkgm_call_proxy = on-zkgm-call-proxy.release;
-            manager = access-manager.release;
+            manager = manager.release;
           }
         );
 
@@ -1031,6 +1031,7 @@ _: {
       lst = crane.buildWasmContract "cosmwasm/lst" { };
       lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };
 
+      manager = crane.buildWasmContract "cosmwasm/gatekeeper" { };
       access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
       access-managed-example = crane.buildWasmContract "e2e/access-managed-example" { };
 

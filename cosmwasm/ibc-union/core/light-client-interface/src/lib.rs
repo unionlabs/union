@@ -1,14 +1,17 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 use core::fmt::Debug;
-use std::{error::Error, num::NonZero};
+use std::error::Error;
 
-use cosmwasm_std::{Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError, to_json_binary};
+use access_managed::{EnsureCanCallResult, state::Authority};
+use cosmwasm_std::{
+    Addr, Binary, Deps, DepsMut, Env, MessageInfo, Querier, Response, StdError, to_json_binary,
+};
 use depolama::{QuerierExt, StorageExt, Store};
 use frissitheto::UpgradeError;
 use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
 use ibc_union_msg::lightclient::{
-    MisbehaviourQuery, MisbehaviourResponse, QueryMsg, StorageWrites, UpdateStateQuery,
+    ExecuteMsg, MisbehaviourQuery, MisbehaviourResponse, QueryMsg, StorageWrites, UpdateStateQuery,
     UpdateStateResponse, VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse,
     VerifyCreationResponseEvent, VerifyMembershipQuery, VerifyNonMembershipQuery,
 };
@@ -30,15 +33,31 @@ pub use pausable;
 pub use upgradable;
 
 #[macro_export]
+macro_rules! entrypoints {
+    ($LightClient:ty) => {
+        $crate::default_query!($LightClient);
+        $crate::default_execute!($LightClient);
+        $crate::default_migrate!($LightClient);
+        $crate::default_reply!();
+    };
+    ($LightClient:ty; library) => {
+        $crate::default_query!($LightClient, library);
+        $crate::default_execute!($LightClient, library);
+        $crate::default_migrate!($LightClient, library);
+        $crate::default_reply!(library);
+    };
+}
+
+#[macro_export]
 macro_rules! default_query {
     ($LightClient:ty) => {
-        default_query!(
+        $crate::default_query!(
             $LightClient;
             #[::cosmwasm_std::entry_point]
         );
     };
     ($LightClient:ty; library) => {
-        default_query!(
+        $crate::default_query!(
             $LightClient;
             #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
         );
@@ -56,34 +75,85 @@ macro_rules! default_query {
 }
 
 #[macro_export]
-macro_rules! default_migrate {
-    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr) => {
-        default_migrate!(
-            $LightClient; $MigrateMsg; $migrate_fn;
+macro_rules! default_execute {
+    ($LightClient:ty) => {
+        $crate::default_execute!(
+            $LightClient;
             #[::cosmwasm_std::entry_point]
         );
     };
-    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr, library) => {
-        default_migrate!(
-            $LightClient; $MigrateMsg; $migrate_fn;
+    ($LightClient:ty; library) => {
+        $crate::default_execute!(
+            $LightClient;
             #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
         );
     };
-    ($LightClient:ty; $MigrateMsg:ty; $migrate_fn:expr; #[$meta:meta]) => {
+    ($LightClient:ty; #[$meta:meta]) => {
+        #[$meta]
+        pub fn execute(
+            deps: ::cosmwasm_std::DepsMut<<$LightClient as $crate::IbcClient>::CustomQuery>,
+            env: ::cosmwasm_std::Env,
+            info: ::cosmwasm_std::MessageInfo,
+            msg: $crate::msg::ExecuteMsg,
+        ) -> ::core::result::Result<::cosmwasm_std::Response<<$LightClient as $crate::IbcClient>::CustomQuery>, $crate::IbcClientError<$LightClient>> {
+            $crate::execute::<$LightClient>(deps, env, info, msg).map_err(Into::into)
+        }
+    };
+}
+
+/// Major state versions of this contract, used in the [`frissitheto`] migrations.
+pub mod version {
+    use std::num::NonZeroU32;
+
+    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
+
+    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    ///
+    /// This is the current latest state version of this contract.
+    pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
+
+    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    pub const LATEST: NonZeroU32 = MANAGED;
+}
+
+#[macro_export]
+macro_rules! default_migrate {
+    ($LightClient:ty) => {
+        $crate::default_migrate!(
+            $LightClient;
+            #[::cosmwasm_std::entry_point]
+        );
+    };
+    ($LightClient:ty, library) => {
+        $crate::default_migrate!(
+            $LightClient;
+            #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
+        );
+    };
+    ($LightClient:ty; #[$meta:meta]) => {
         #[$meta]
         pub fn migrate(
             deps: ::cosmwasm_std::DepsMut,
             env: ::cosmwasm_std::Env,
-            msg: ::frissitheto::UpgradeMsg<$crate::msg::InitMsg, $MigrateMsg>,
+            msg: ::frissitheto::UpgradeMsg<$crate::msg::InitMsg, $crate::msg::MigrateMsg>,
         ) -> Result<::cosmwasm_std::Response, $crate::IbcClientError<$LightClient>> {
             msg.run(
                 deps,
                 |deps, init_msg| {
                     let res = $crate::init(deps, init_msg)?;
 
-                    Ok((res, None))
+                    Ok((res, Some($crate::version::LATEST)))
                 },
-                |deps, migrate_msg, current_version| ($migrate_fn)(deps, env, migrate_msg, current_version),
+                |mut deps, msg, version| match version {
+                    $crate::version::INIT => {
+                        $crate::access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+
+                        Ok((::cosmwasm_std::Response::default(), Some($crate::version::MANAGED)))
+                    }
+                    $crate::version::MANAGED => Ok((::cosmwasm_std::Response::default(), None)),
+                    _ => Err(::frissitheto::UpgradeError::UnknownStateVersion(version).into()),
+                },
             )
         }
     };
@@ -92,12 +162,12 @@ macro_rules! default_migrate {
 #[macro_export]
 macro_rules! default_reply {
     () => {
-        default_reply!(
+        $crate::default_reply!(
             #[::cosmwasm_std::entry_point]
         );
     };
     (library) => {
-        default_reply!(
+        $crate::default_reply!(
             #[cfg_attr(not(feature = "library"), ::cosmwasm_std::entry_point)]
         );
     };
@@ -443,6 +513,53 @@ pub fn init<T: IbcClient>(
     Ok(Response::default())
 }
 
+pub fn execute<T: IbcClient>(
+    mut deps: DepsMut<T::CustomQuery>,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response<T::CustomQuery>, IbcClientError<T>> {
+    match msg {
+        ExecuteMsg::AccessManaged(msg) => {
+            Ok(access_managed::execute(deps.into_empty(), env, info, msg)?
+                .change_custom()
+                .expect("custom is not used here; qed;"))
+        }
+        ExecuteMsg::Upgradable(msg) => {
+            let msg =
+                match msg.ensure_can_call::<Authority>(deps.branch().into_empty(), &env, &info)? {
+                    EnsureCanCallResult::Msg(msg) => msg,
+                    EnsureCanCallResult::Scheduled(sub_msgs) => {
+                        return Ok(Response::new()
+                            .add_submessages(sub_msgs)
+                            .change_custom()
+                            .expect("custom is not used here; qed;"));
+                    }
+                };
+
+            Ok(upgradable::execute(&env, msg)?
+                .change_custom()
+                .expect("custom is not used here; qed;"))
+        }
+        ExecuteMsg::Pausable(msg) => {
+            let msg =
+                match msg.ensure_can_call::<Authority>(deps.branch().into_empty(), &env, &info)? {
+                    EnsureCanCallResult::Msg(msg) => msg,
+                    EnsureCanCallResult::Scheduled(sub_msgs) => {
+                        return Ok(Response::new()
+                            .add_submessages(sub_msgs)
+                            .change_custom()
+                            .expect("custom is not used here; qed;"));
+                    }
+                };
+
+            Ok(pausable::execute(deps.into_empty(), &info, &msg)?
+                .change_custom()
+                .expect("custom is not used here; qed;"))
+        }
+    }
+}
+
 pub fn query<T: IbcClient>(
     deps: Deps<T::CustomQuery>,
     env: Env,
@@ -652,13 +769,4 @@ pub fn read_consensus_state<T: IbcClient>(
             error: e,
         })
     })
-}
-
-pub fn noop_migration<T, L: IbcClient>(
-    _deps: DepsMut,
-    _env: Env,
-    _migrate_msg: T,
-    _current_version: NonZero<u32>,
-) -> Result<(Response, Option<NonZero<u32>>), IbcClientError<L>> {
-    Ok((Response::default(), None))
 }

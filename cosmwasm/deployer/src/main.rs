@@ -25,7 +25,7 @@ use rand_chacha::{
     rand_core::{SeedableRng, block::BlockRng},
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_json::{Value, json};
+use serde_json::{Value, json, to_value};
 use sha2::Digest;
 use tracing::{info, instrument};
 use tracing_subscriber::EnvFilter;
@@ -113,6 +113,20 @@ enum App {
         /// Whether or not the salt should be interpreted as hex.
         #[arg(long)]
         salt_hex: bool,
+    },
+    MigrateToAccessManaged {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: Option<H256>,
+        #[arg(long)]
+        contracts: PathBuf,
+        #[arg(long)]
+        addresses: PathBuf,
+        #[arg(long)]
+        manager: Bech32<H160>,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
     },
     Migrate {
         #[arg(long)]
@@ -633,6 +647,119 @@ async fn do_main() -> Result<()> {
 
             write_output(output, heights)?;
         }
+        App::MigrateToAccessManaged {
+            rpc_url,
+            private_key,
+            contracts,
+            addresses,
+            manager,
+            gas_config,
+        } => {
+            let contracts = serde_json::from_slice::<ContractPaths>(
+                &std::fs::read(contracts).context("reading contracts path")?,
+            )?;
+
+            let addresses = serde_json::from_slice::<ContractAddresses>(
+                &std::fs::read(addresses).context("reading addresses path")?,
+            )?;
+
+            let ctx = Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
+
+            let do_migrate = async |address, bytecode, message: Value| {
+                let bytecode = std::fs::read(bytecode).context("reading bytecode")?;
+
+                let contract_info = ctx
+                    .contract_info(&address)
+                    .await?
+                    .with_context(|| format!("contract {address} does not exist"))?;
+
+                let checksum = ctx.code_checksum(contract_info.code_id).await?.unwrap();
+
+                if checksum == sha2(BYTECODE_BASE_BYTECODE) {
+                    bail!(
+                        "contract {address} has not yet been initiated, it must be fully deployed before it can be migrated"
+                    )
+                } else if checksum == sha2(&bytecode) {
+                    info!("contract {address} has already been migrated to this bytecode");
+                    return Ok(());
+                }
+
+                let message = json!({ "migrate": message });
+
+                info!("migrate message: {message}");
+
+                let msg = MsgStoreAndMigrateContract {
+                    sender: ctx.wallet().address().map_data(Into::into),
+                    wasm_byte_code: bytecode.into(),
+                    instantiate_permission: None,
+                    contract: address.clone(),
+                    msg: message.to_string().into_bytes().into(),
+                };
+
+                info!("migrating address {address}");
+
+                let (tx_hash, _migrate_response) = ctx
+                    .tx(msg, "", gas_config.simulate)
+                    .await
+                    .context("migrate")?;
+
+                info!(%tx_hash, "migrated");
+
+                Ok(())
+            };
+
+            let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
+                initial_authority: Addr::unchecked(manager.to_string()),
+            };
+
+            do_migrate(
+                addresses.core,
+                &contracts.core,
+                to_value(ibc_union::contract::MigrateMsg {
+                    access_managed_init_msg: access_managed_init_msg.clone(),
+                })
+                .unwrap(),
+            )
+            .await?;
+
+            for (salt, address) in addresses.lightclient {
+                do_migrate(
+                    address,
+                    &contracts.lightclient[&salt],
+                    to_value(ibc_union_light_client::msg::MigrateMsg {
+                        access_managed_init_msg: access_managed_init_msg.clone(),
+                    })
+                    .unwrap(),
+                )
+                .await?;
+            }
+
+            if let Some(address) = addresses.app.ucs03 {
+                do_migrate(
+                    address,
+                    &contracts.app.ucs03.as_ref().unwrap().path,
+                    to_value(ucs03_zkgm::msg::MigrateMsg {
+                        access_managed_init_msg: access_managed_init_msg.clone(),
+                    })
+                    .unwrap(),
+                )
+                .await?;
+            }
+
+            if let Some(address) = addresses.escrow_vault {
+                do_migrate(
+                    address,
+                    &contracts.escrow_vault.unwrap(),
+                    to_value(cw_escrow_vault::msg::MigrateMsg {
+                        access_managed_init_msg: access_managed_init_msg.clone(),
+                    })
+                    .unwrap(),
+                )
+                .await?;
+            }
+
+            info!("migrated contracts")
+        }
         App::Migrate {
             rpc_url,
             private_key,
@@ -727,18 +854,18 @@ async fn do_main() -> Result<()> {
             let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
             let check_contract = async |salt, address| {
-                let Some(core_info) = ctx.contract_info(&address).await? else {
+                let Some(info) = ctx.contract_info(&address).await? else {
                     return Ok(None);
                 };
 
-                if core_info.admin == new_admin.to_string() {
+                if info.admin == new_admin.to_string() {
                     info!("{salt} already migrated to admin {new_admin}");
                     Ok(None)
-                } else if core_info.admin != ctx.wallet().address().to_string() {
+                } else if info.admin != ctx.wallet().address().to_string() {
                     bail!(
                         "the admin of {salt} is not {}, found {}",
                         ctx.wallet().address(),
-                        core_info.admin
+                        info.admin
                     );
                 } else {
                     Ok(Some(address))
