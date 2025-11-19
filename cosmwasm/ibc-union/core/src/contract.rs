@@ -646,7 +646,7 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct IbcUnionMigrateMsg {
+pub struct MigrateMsg {
     pub access_managed_init_msg: access_managed::InitMsg,
 }
 
@@ -670,7 +670,7 @@ pub mod version {
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
-    msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
+    msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, ContractError> {
     msg.run(deps, init, |mut deps, msg, version| match version {
         version::INIT => {

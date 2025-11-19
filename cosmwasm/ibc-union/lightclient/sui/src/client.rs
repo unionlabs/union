@@ -1,7 +1,7 @@
 use cosmwasm_std::{Empty, StdError};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientError, StateUpdate,
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
     spec::{Status, Timestamp},
 };
 use sui_light_client_types::{
@@ -34,12 +34,12 @@ impl IbcClient for SuiLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let ClientState::V1(client_state) = ctx.read_self_client_state()?;
 
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -60,11 +60,11 @@ impl IbcClient for SuiLightClient {
     }
 
     fn verify_non_membership(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
         _height: u64,
         _key: Vec<u8>,
         _storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         unimplemented!()
     }
 
@@ -82,10 +82,7 @@ impl IbcClient for SuiLightClient {
         cs.chain_id.clone()
     }
 
-    fn status(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        client_state: &Self::ClientState,
-    ) -> Status {
+    fn status(_ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
         let ClientState::V1(cs) = client_state;
 
         if cs.frozen_height != 0 {
@@ -119,7 +116,7 @@ impl IbcClient for SuiLightClient {
     }
 
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         _caller: cosmwasm_std::Addr,
         header: Header,
         _relayer: cosmwasm_std::Addr,
@@ -163,11 +160,11 @@ impl IbcClient for SuiLightClient {
     }
 
     fn misbehaviour(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
         _caller: cosmwasm_std::Addr,
         _misbehaviour: Self::Misbehaviour,
         _relayer: cosmwasm_std::Addr,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         todo!()
     }
 }

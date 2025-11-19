@@ -11,14 +11,15 @@ use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_spec::path::commit_packets;
-use serde::{Deserialize, Serialize};
 use ucs03_solvable::{Solvable, SolverQuery};
 use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
 use unionlabs_primitives::{Bytes, encoding::HexPrefixed};
 
 use crate::{
     error::ContractError,
-    msg::{ExecuteMsg, FungibleLaneConfig, InstantiateMsg, QueryMsg, RestrictedExecuteMsg},
+    msg::{
+        ExecuteMsg, FungibleLaneConfig, InstantiateMsg, MigrateMsg, QueryMsg, RestrictedExecuteMsg,
+    },
     state::{Admin, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
 };
 
@@ -43,11 +44,6 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
     panic!(
         "this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract."
     );
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MigrateMsg {
-    pub access_managed_init_msg: access_managed::InitMsg,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

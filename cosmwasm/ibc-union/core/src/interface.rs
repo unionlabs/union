@@ -4,7 +4,7 @@ pub const IBC_UNION: &str = "union:ibc-union";
     ibc_union_msg::msg::InitMsg,
     ibc_union_msg::msg::ExecuteMsg,
     ibc_union_msg::query::QueryMsg,
-    crate::contract::IbcUnionMigrateMsg,
+    crate::contract::MigrateMsg,
     id = IBC_UNION
 )]
 pub struct IbcUnion<Chain>;

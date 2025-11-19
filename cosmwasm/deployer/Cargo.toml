@@ -27,6 +27,7 @@ embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 futures                     = { workspace = true }
 hex-literal                 = { workspace = true }
+ibc-union                   = { workspace = true, features = ["library"] }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
 num-rational                = "0.4.2"

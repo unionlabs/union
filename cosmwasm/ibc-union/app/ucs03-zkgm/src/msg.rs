@@ -19,6 +19,12 @@ pub struct InitMsg {
     pub access_managed_init_msg: access_managed::InitMsg,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub struct MigrateMsg {
+    pub access_managed_init_msg: access_managed::InitMsg,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]

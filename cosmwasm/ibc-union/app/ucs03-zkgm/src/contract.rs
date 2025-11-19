@@ -18,7 +18,6 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{ChannelId, MustBeZero, Packet, Timestamp, path::BatchPacketsPath};
-use serde::{Deserialize, Serialize};
 use ucs03_solvable::Solvable;
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenKind, WrappedTokenMsg,
@@ -38,8 +37,8 @@ use crate::{
         TokenOrderV1, TokenOrderV2, ZkgmPacket,
     },
     msg::{
-        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, RestrictedExecuteMsg,
-        SendMsg, V1ToV2Migration, V1ToV2WrappedMigration,
+        Config, ExecuteMsg, InitMsg, MigrateMsg, PredictWrappedTokenResponse, QueryMsg,
+        RestrictedExecuteMsg, SendMsg, V1ToV2Migration, V1ToV2WrappedMigration,
     },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE_V2, CONFIG, CREATED_PROXY_ACCOUNT, CallProxySalt,
@@ -3041,14 +3040,6 @@ pub fn send(
     )?))
 }
 
-// The current structure is expected to be backward compatible, only idempotent
-// fields can be currently added.
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", deny_unknown_fields)]
-pub struct MigrateMsg {
-    access_managed_int_msg: access_managed::InitMsg,
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
     panic!(
@@ -3087,7 +3078,7 @@ pub fn migrate(
         },
         |mut deps, migrate_msg, version| match version {
             version::INIT => {
-                access_managed::init(deps.branch(), migrate_msg.access_managed_int_msg)?;
+                access_managed::init(deps.branch(), migrate_msg.access_managed_init_msg)?;
                 Ok((Response::default(), Some(version::MANAGED)))
             }
             version::MANAGED => Ok((Response::default(), None)),
