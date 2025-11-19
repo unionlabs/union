@@ -23,7 +23,7 @@ use jsonrpsee::{
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
-use tracing::{debug, error, instrument, trace};
+use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
     ErrorReporter,
     ibc::core::client::height::Height,
@@ -113,7 +113,7 @@ impl Module {
             "wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}"
         );
 
-        let mut res = self
+        let mut tx_result = self
             .cometbft_client
             .tx_search(
                 query,
@@ -125,47 +125,63 @@ impl Module {
             .await
             .map_err(rpc_error("error querying packet by packet hash", None))?;
 
-        if res.total_count != 1 {
+        if tx_result.total_count != 1 {
             return Err(ErrorObject::owned(
                 -1,
                 format!(
                     "error querying for packet {packet_hash}, \
-                    expected 1 event but found {}",
-                    res.total_count,
+                    expected 1 tx but found {}",
+                    tx_result.total_count,
                 ),
-                None::<()>,
+                Some(json!({ "tx_result": tx_result })),
             ));
         }
 
-        let res = res.txs.pop().unwrap();
+        let tx = tx_result.txs.pop().unwrap();
 
-        let Some(IbcEvent::WasmPacketSend {
-            packet_source_channel_id,
-            packet_destination_channel_id,
-            packet_data,
-            packet_timeout_height: _,
-            packet_timeout_timestamp,
-            channel_id: _,
-            packet_hash: _,
-        }) = res.tx_result.events.into_iter().find_map(|event| {
-            CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
-                (e.contract_address.unwrap() == self.ibc_host_contract_address).then_some(e.event)
-            })
-        })
-        else {
-            panic!()
+        let maybe_packet = tx.tx_result.events.iter().find_map(|event| {
+            CosmosSdkEvent::<IbcEvent>::new(event.clone())
+                .ok()
+                .and_then(|e| match e.event {
+                    IbcEvent::WasmPacketSend {
+                        packet_source_channel_id,
+                        packet_destination_channel_id,
+                        packet_data,
+                        packet_timeout_height: _,
+                        packet_timeout_timestamp,
+                        channel_id: found_channel_id,
+                        packet_hash: found_packet_hash,
+                    } => (channel_id == found_channel_id
+                        && packet_hash == found_packet_hash
+                        && e.contract_address.unwrap() == self.ibc_host_contract_address)
+                        .then_some(Packet {
+                            source_channel_id: packet_source_channel_id,
+                            destination_channel_id: packet_destination_channel_id,
+                            data: packet_data,
+                            timeout_height: MustBeZero,
+                            timeout_timestamp: packet_timeout_timestamp,
+                        }),
+                    _ => None,
+                })
+        });
+
+        let Some(packet) = maybe_packet else {
+            return Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "error querying for packet {packet_hash}, channel \
+                    {channel_id}; the wasm-write_ack event was not found",
+                ),
+                Some(json!({ "tx": tx })),
+            ));
         };
 
+        info!(%packet_hash, %channel_id, "queried packet");
+
         Ok(PacketByHashResponse {
-            packet: Packet {
-                source_channel_id: packet_source_channel_id,
-                destination_channel_id: packet_destination_channel_id,
-                data: packet_data,
-                timeout_height: MustBeZero,
-                timeout_timestamp: packet_timeout_timestamp,
-            },
-            tx_hash: res.hash.into_encoding(),
-            provable_height: res.height.unwrap().get() + 1,
+            packet,
+            tx_hash: tx.hash.into_encoding(),
+            provable_height: tx.height.unwrap().get() + 1,
         })
     }
 
@@ -179,7 +195,7 @@ impl Module {
             "wasm-write_ack.packet_hash='{packet_hash}' AND wasm-write_ack.channel_id={channel_id}"
         );
 
-        let mut res = self
+        let mut tx_result = self
             .cometbft_client
             .tx_search(
                 query,
@@ -189,40 +205,55 @@ impl Module {
                 Order::Asc,
             )
             .await
-            .map_err(rpc_error("error querying packet by packet hash", None))?;
+            .map_err(rpc_error("error querying packet ack by packet hash", None))?;
 
-        if res.total_count != 1 {
+        if tx_result.total_count != 1 {
             return Err(ErrorObject::owned(
                 -1,
                 format!(
                     "error querying for acknowledgement for \
-                     packet {packet_hash}, expected 1 event \
+                     packet {packet_hash}, expected 1 tx \
                      but found {}",
-                    res.total_count,
+                    tx_result.total_count,
                 ),
-                None::<()>,
+                Some(json!({ "tx_result": tx_result })),
             ));
         }
 
-        let res = res.txs.pop().unwrap();
+        let tx = tx_result.txs.pop().unwrap();
 
-        let Some(IbcEvent::WasmWriteAck {
-            channel_id: _,
-            packet_hash: _,
-            acknowledgement,
-        }) = res.tx_result.events.into_iter().find_map(|event| {
-            CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
-                (e.contract_address.unwrap() == self.ibc_host_contract_address).then_some(e.event)
-            })
-        })
-        else {
-            panic!()
+        let maybe_ack = tx.tx_result.events.iter().find_map(|event| {
+            CosmosSdkEvent::<IbcEvent>::new(event.clone())
+                .ok()
+                .and_then(|e| match e.event {
+                    IbcEvent::WasmWriteAck {
+                        channel_id: found_channel_id,
+                        packet_hash: found_packet_hash,
+                        acknowledgement,
+                    } => (channel_id == found_channel_id
+                        && packet_hash == found_packet_hash
+                        && e.contract_address.unwrap() == self.ibc_host_contract_address)
+                        .then_some(acknowledgement),
+                    _ => None,
+                })
+        });
+        let Some(ack) = maybe_ack else {
+            return Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "error querying for acknowledgement for packet {packet_hash}, \
+                    channel {channel_id}; the wasm-write_ack event was not found",
+                ),
+                Some(json!({ "tx": tx })),
+            ));
         };
 
+        info!(%ack, %packet_hash, %channel_id, "queried ack for packet");
+
         Ok(PacketAckByHashResponse {
-            ack: acknowledgement.into_encoding(),
-            tx_hash: res.hash.into_encoding(),
-            provable_height: res.height.unwrap().get() + 1,
+            ack: ack.into_encoding(),
+            tx_hash: tx.hash.into_encoding(),
+            provable_height: tx.height.unwrap().get() + 1,
         })
     }
 
