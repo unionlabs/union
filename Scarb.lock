@@ -71,6 +71,7 @@ dependencies = [
  "alexandria_bytes",
  "alexandria_encoding",
  "alexandria_evm",
+ "snforge_std",
 ]
 
 [[package]]

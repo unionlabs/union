@@ -1,6 +1,3 @@
-use starknet::ContractAddress;
-use crate::types::{ChannelId, ClientId, ConnectionId};
-
 #[derive(Drop, starknet::Event)]
 pub struct CreateWrappedToken {
     pub path: u256,

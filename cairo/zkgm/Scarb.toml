@@ -6,7 +6,8 @@ edition = "2024_07"
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
-starknet = "2.13.1"
+starknet = { workspace = true }
+ibc = { workspace = true }
 
 [dev-dependencies]
 snforge_std = "0.51.1"

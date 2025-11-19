@@ -1,0 +1,13 @@
+
+[workspace]
+members = [
+  "cairo/ibc",
+  "cairo/zkgm"
+]
+
+[workspace.dependencies]
+alexandria_bytes = "0.7.0"
+alexandria_encoding = "0.7.0"
+alexandria_evm = "0.7.0"
+starknet = "2.12.2"
+ibc = { path = "cairo/ibc" }

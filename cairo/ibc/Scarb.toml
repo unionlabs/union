@@ -1,6 +1,3 @@
-[workspace]
-members = ["cometbls-verifier"]
-
 [package]
 name = "ibc"
 version = "0.1.0"
@@ -8,13 +5,13 @@ edition = "2024_07"
 experimental-features = ["associated_item_constraints", "safe_dispatcher", "user_defined_inline_macros"]
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+[lib]
 
 [dependencies]
-alexandria_bytes = "0.7.0"
-alexandria_encoding = "0.7.0"
-alexandria_evm = "0.7.0"
-# groth16_example_bn254 = { git = "https://github.com/keep-starknet-strange/garaga" }
-starknet = "2.12.2"
+alexandria_bytes = { workspace = true }
+alexandria_encoding = { workspace = true }
+alexandria_evm = { workspace = true }
+starknet = { workspace = true }
 
 [dev-dependencies]
 snforge_std = "0.51.1"
