@@ -6,6 +6,8 @@ use unionlabs::primitives::{Bytes, H256, H512};
 
 use crate::types::Attestation;
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Attest to a key/value state.
     ///

@@ -1,8 +1,7 @@
 use cosmwasm_std::{
     Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, entry_point, to_json_binary,
 };
-use frissitheto::UpgradeMsg;
-use ibc_union_light_client::{IbcClientError, default_migrate, default_reply, msg::QueryMsg};
+use ibc_union_light_client::{access_managed::state::Authority, default_migrate, default_reply};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -24,8 +23,8 @@ pub mod query;
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
+    env: Env,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, Error> {
     match msg {
@@ -35,20 +34,29 @@ pub fn execute(
             signature,
         } => attest(deps, attestation, attestor, signature),
         ExecuteMsg::ConfirmAttestation { attestation } => confirm_attestation(deps, attestation),
-        ExecuteMsg::Restricted(msg) => match msg {
-            RestrictedExecuteMsg::SetQuorum {
-                chain_id,
-                new_quorum,
-            } => set_quorum(deps, chain_id, new_quorum),
-            RestrictedExecuteMsg::AddAttestor {
-                chain_id,
-                new_attestor,
-            } => add_attestor(deps, chain_id, new_attestor),
-            RestrictedExecuteMsg::RemoveAttestor {
-                chain_id,
-                old_attestor,
-            } => remove_attestor(deps, chain_id, old_attestor),
-        },
+        ExecuteMsg::Restricted(msg) => {
+            let msg = match msg.ensure_can_call::<Authority>(deps.branch(), &env, &info)? {
+                EnsureCanCallResult::Msg(msg) => msg,
+                EnsureCanCallResult::Scheduled(sub_msgs) => {
+                    return Ok(Response::new().add_submessages(sub_msgs));
+                }
+            };
+
+            match msg {
+                RestrictedExecuteMsg::SetQuorum {
+                    chain_id,
+                    new_quorum,
+                } => set_quorum(deps, chain_id, new_quorum),
+                RestrictedExecuteMsg::AddAttestor {
+                    chain_id,
+                    new_attestor,
+                } => add_attestor(deps, chain_id, new_attestor),
+                RestrictedExecuteMsg::RemoveAttestor {
+                    chain_id,
+                    old_attestor,
+                } => remove_attestor(deps, chain_id, old_attestor),
+            }
+        }
     }
 }
 
