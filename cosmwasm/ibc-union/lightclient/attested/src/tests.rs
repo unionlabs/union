@@ -1,15 +1,18 @@
 use std::{collections::BTreeSet, fmt::Debug, num::NonZero, sync::LazyLock};
 
+use access_manager_types::CanCall;
 use attested_light_client_types::{ClientState, ClientStateV1, ConsensusState, Header};
 use cosmwasm_std::{
-    Addr, Api, Deps, Env, Event, OwnedDeps, Response, from_json,
+    Addr, Api, ContractResult, Deps, Env, Event, OwnedDeps, Response, SystemResult, from_json,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
+    to_json_binary,
 };
 use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
 use frissitheto::UpgradeMsg;
 use hex_literal::hex;
 use ibc_union_light_client::{
-    StateUpdate, access_managed,
+    StateUpdate,
+    access_managed::{self, EnsureCanCallResult, Restricted},
     msg::InitMsg,
     spec::{Duration, Timestamp},
 };
@@ -21,9 +24,10 @@ use unionlabs::{
 
 use crate::{
     client::{verify_attestation, verify_header},
-    contract::{execute, migrate, query, query::LatestHeight},
+    contract::{execute, migrate, query},
     errors::Error,
     msg::{ExecuteMsg, QueryMsg, RestrictedExecuteMsg},
+    query::LatestHeight,
     types::{Attestation, AttestationValue},
 };
 
@@ -103,15 +107,23 @@ fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
     )
     .unwrap();
 
+    deps.querier.update_wasm({
+        move |_| {
+            SystemResult::Ok(ContractResult::Ok(
+                to_json_binary(&CanCall::Immediate {}).unwrap(),
+            ))
+        }
+    });
+
     assert_eq!(
         execute(
             deps.as_mut(),
             env.clone(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::SetQuorum {
                 chain_id: CHAIN_ID.to_owned(),
                 new_quorum: const { NonZero::new(2).unwrap() },
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(
@@ -136,10 +148,10 @@ fn setup() -> (OwnedDeps<MockStorage, MockApi, MockQuerier>, Env) {
                 deps.as_mut(),
                 env.clone(),
                 message_info(&Addr::unchecked(""), &[]),
-                ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+                ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::AddAttestor {
                     chain_id: CHAIN_ID.to_owned(),
                     new_attestor: vk(attestor)
-                }),
+                })),
             )
             .unwrap(),
             Response::new().add_event(
@@ -611,10 +623,10 @@ fn add_attestor() {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::AddAttestor {
                 chain_id: CHAIN_ID.to_owned(),
                 new_attestor: vk(&ATTESTOR_3)
-            }),
+            })),
         )
         .unwrap_err(),
         Error::AttestorAlreadyExists {
@@ -628,10 +640,10 @@ fn add_attestor() {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::AddAttestor {
                 chain_id: CHAIN_ID.to_owned(),
                 new_attestor: vk(&ATTESTOR_4)
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(
@@ -666,10 +678,10 @@ fn remove_attestor() {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::RemoveAttestor {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::RemoveAttestor {
                 chain_id: CHAIN_ID.to_owned(),
                 old_attestor: vk(&ATTESTOR_4)
-            }),
+            })),
         )
         .unwrap_err(),
         Error::InvalidAttestor {
@@ -705,10 +717,10 @@ fn remove_attestor() {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::RemoveAttestor {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::RemoveAttestor {
                 chain_id: CHAIN_ID.to_owned(),
                 old_attestor: vk(&ATTESTOR_1)
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(
@@ -815,10 +827,10 @@ fn confirm_attestation() {
             deps.as_mut(),
             mock_env(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::SetQuorum {
                 chain_id: CHAIN_ID.to_owned(),
                 new_quorum: const { NonZero::new(1).unwrap() }
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(
@@ -915,10 +927,10 @@ fn quorum_unique_per_chain() {
             deps.as_mut(),
             env.clone(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::SetQuorum {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::SetQuorum {
                 chain_id: "998".to_owned(),
                 new_quorum: const { NonZero::new(3).unwrap() },
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(
@@ -956,10 +968,10 @@ fn attestors_unique_per_chain() {
             deps.as_mut(),
             env.clone(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::AddAttestor {
                 chain_id: "998".to_owned(),
                 new_attestor: H256::MIN,
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(
@@ -974,10 +986,10 @@ fn attestors_unique_per_chain() {
             deps.as_mut(),
             env.clone(),
             message_info(&Addr::unchecked(""), &[]),
-            ExecuteMsg::Restricted(RestrictedExecuteMsg::AddAttestor {
+            ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::AddAttestor {
                 chain_id: "998".to_owned(),
                 new_attestor: H256::MAX,
-            }),
+            })),
         )
         .unwrap(),
         Response::new().add_event(

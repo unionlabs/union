@@ -3,7 +3,7 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
-use attested_light_client::contract::query::LatestHeight;
+use attested_light_client::query::LatestHeight;
 use ibc_union_spec::Timestamp;
 use jsonrpsee::{
     Extensions,

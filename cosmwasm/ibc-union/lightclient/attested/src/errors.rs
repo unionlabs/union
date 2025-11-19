@@ -1,7 +1,7 @@
 use std::num::NonZero;
 
 use cosmwasm_std::StdError;
-use ibc_union_light_client::{IbcClientError, spec::Timestamp};
+use ibc_union_light_client::{IbcClientError, access_managed, spec::Timestamp};
 use unionlabs::primitives::{Bytes, H256};
 
 use crate::{client::AttestedLightClient, types::AttestationValue};
@@ -10,6 +10,9 @@ use crate::{client::AttestedLightClient, types::AttestationValue};
 pub enum Error {
     #[error(transparent)]
     Std(#[from] StdError),
+
+    #[error(transparent)]
+    AccessManaged(#[from] access_managed::error::ContractError),
 
     #[error("no misbehaviour in an attested client")]
     NoMisbehaviourInAttestedClient,

@@ -15,6 +15,7 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+access-manager-types        = { workspace = true }
 attested-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 bincode                     = { workspace = true, features = ["derive"] }
 cosmwasm-std                = { workspace = true, features = ["abort"] }

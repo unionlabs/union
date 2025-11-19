@@ -23,6 +23,8 @@ pub enum ExecuteMsg {
     ConfirmAttestation { attestation: Attestation },
     #[serde(untagged)]
     Restricted(Restricted<RestrictedExecuteMsg>),
+    #[serde(untagged)]
+    LightClient(ibc_union_light_client::msg::ExecuteMsg),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

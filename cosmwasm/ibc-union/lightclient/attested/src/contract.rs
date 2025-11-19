@@ -1,28 +1,26 @@
 use cosmwasm_std::{
     Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, entry_point, to_json_binary,
 };
-use ibc_union_light_client::{access_managed::state::Authority, default_migrate, default_reply};
-use serde::{Deserialize, Serialize};
+use ibc_union_light_client::{
+    access_managed::{EnsureCanCallResult, state::Authority},
+    default_migrate, default_reply,
+};
+use unionlabs::ErrorReporter;
 
 use crate::{
     client::AttestedLightClient,
-    contract::{
-        execute::{add_attestor, attest, confirm_attestation, remove_attestor, set_quorum},
-        query::{attested_value, attestors, latest_height, quorum, timestamp_at_height},
-    },
     errors::Error,
+    execute::{add_attestor, attest, confirm_attestation, remove_attestor, set_quorum},
     msg::{ExecuteMsg, QueryMsg, RestrictedExecuteMsg},
+    query::{attested_value, attestors, latest_height, quorum, timestamp_at_height},
 };
 
 default_reply!();
-defualt_migrate!();
-
-pub mod execute;
-pub mod query;
+default_migrate!(AttestedLightClient);
 
 #[entry_point]
 pub fn execute(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -56,6 +54,10 @@ pub fn execute(
                     old_attestor,
                 } => remove_attestor(deps, chain_id, old_attestor),
             }
+        }
+        ExecuteMsg::LightClient(msg) => {
+            ibc_union_light_client::execute::<AttestedLightClient>(deps, env, info, msg)
+                .map_err(|e| StdError::generic_err(ErrorReporter(e).to_string()).into())
         }
     }
 }
