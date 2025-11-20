@@ -187,6 +187,8 @@ impl Module {
             .expect("there must be some events exist")
             .into_iter()
             .find_map(|e| {
+                dbg!("EVENT BRO", &e);
+                dbg!("EVENT BRO", &self.ibc_contract);
                 if e.type_.address == self.ibc_contract.into()
                     && e.type_.module.as_str() == "events"
                     && e.type_.name.as_str() == "PacketSend"

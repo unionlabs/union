@@ -230,6 +230,43 @@
             }
           );
 
+        galoisd-bls12381-testnet-standalone =
+          let
+            unpackCircuit =
+              circuit:
+              pkgs.runCommand "galoisd-circuit-bls12381-${circuit.name}-unpacked"
+                { buildInputs = [ pkgs.unzip ]; }
+                ''
+                  unzip ${circuit} -d $out
+                '';
+            unpacked-circuit = unpackCircuit (
+              pkgs.fetchurl {
+                url = "https://circuit.cryptware.io/circuit-bls12.zip";
+                hash = "sha256-nNlAaqwX6HYs3QhV2E8DZzNsH2Ssht4FlzAtUsepyeA=";
+              }
+            );
+            
+            unpacked-bn254-circuit = unpackCircuit (
+              pkgs.fetchurl {
+                url = "https://circuit.cryptware.io/circuit-eb62b71bc60668da0e602eaa3d6aceec183fb5ca-26eae4b9-bd55-4ce7-8446-ad829ab7b3ed.zip";
+                hash = "sha256-4cExiem1lKrQlDIsrArfQPTuTvpABzi/rNra17R/md4=";
+              }
+            );
+          in
+          mkCi false (
+            pkgs.symlinkJoin {
+              name = "galoisd";
+              paths = [ self'.packages.galoisd ];
+              buildInputs = [ pkgs.makeWrapper ];
+              postBuild = ''
+                wrapProgram $out/bin/galoisd \
+                  --append-flags "--cs-path ${unpacked-bn254-circuit}/r1cs.bin --vk-path ${unpacked-bn254-circuit}/vk.bin --pk-path ${unpacked-bn254-circuit}/pk.bin" \
+                  --append-flags "--cs-path-bls12381 ${unpacked-circuit}/r1cs-bls12381.bin --vk-path-bls12381  ${unpacked-circuit}/vk-bls12381.bin --pk-path-bls12381 ${unpacked-circuit}/pk-bls12381.bin" \
+                  --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+              '';
+            }
+          );
+
         galoisd-testnet-image = pkgs.dockerTools.buildImage {
           name = "${self'.packages.galoisd.name}-testnet-image";
           copyToRoot = pkgs.buildEnv {
@@ -303,6 +340,66 @@
                 --log-level ${
                   builtins.toString ((pkgs.lib.lists.findFirstIndex (x: x == cfg.log-level) 2 logLevels) - 1)
                 }
+            '';
+            Restart = mkForce "always";
+            RestartSec = 10;
+          };
+        };
+      };
+    };
+
+  flake.nixosModules.galoisd-bls12381 =
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
+    with lib;
+    let
+      cfg = config.services.galoisd;
+      logLevels = [
+        "trace"
+        "debug"
+        "info"
+        "warn"
+        "error"
+        "fatal"
+        "panic"
+      ];
+    in
+    {
+      options.services.galoisd = {
+        enable = mkEnableOption "Galois daemon service";
+        package = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.galoisd-bls12381-testnet-standalone;
+        };
+        host = mkOption {
+          type = types.str;
+          default = "localhost:9999";
+        };
+        max-conn = mkOption {
+          type = types.int;
+          default = 1;
+        };
+        log-level = mkOption {
+          type = types.enum logLevels;
+          default = "info";
+        };
+      };
+      config = mkIf cfg.enable {
+        systemd.services.galoisd = {
+          wantedBy = [ "multi-user.target" ];
+          description = "Galois Daemon";
+          serviceConfig = {
+            Type = "simple";
+            # Default the log-level to `2` because we need to subtract 1 to get the correct value from the enum (index starting at 0).
+            # This is because `trace` level starts at -1, https://github.com/rs/zerolog/blob/c78e50e2da70f4ae63e1b65222c3acf12e9ba699/README.md#leveled-logging.
+            ExecStart = ''
+              ${pkgs.lib.getExe cfg.package} \
+                serve-bls12381 ${cfg.host} \
+                --max-conn ${builtins.toString cfg.max-conn} \
             '';
             Restart = mkForce "always";
             RestartSec = 10;
