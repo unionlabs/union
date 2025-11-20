@@ -1,4 +1,5 @@
 pub mod event;
+pub mod types;
 
 /// Simple contract for managing balance.
 #[starknet::contract]

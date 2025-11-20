@@ -1,6 +1,6 @@
 pub mod app;
 
-mod contract;
+pub mod contract;
 pub mod event;
 pub mod lightclient;
 pub mod msg;

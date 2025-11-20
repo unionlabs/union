@@ -93,6 +93,9 @@ dependencies = [
 name = "zkgm"
 version = "0.1.0"
 dependencies = [
+ "alexandria_bytes",
+ "alexandria_encoding",
+ "alexandria_evm",
  "ibc",
  "snforge_std",
 ]

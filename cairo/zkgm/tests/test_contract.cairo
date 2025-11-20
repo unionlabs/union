@@ -1,47 +1,65 @@
-use starknet::ContractAddress;
+use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
+use zkgm::types::{Instruction, TestBro, ZkgmPacket, ZkgmPacketTrait, ethabi_decode};
 
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+#[test]
+fn test_instruction_decode() {
+    let mut encoded: ByteArray = Default::default();
 
-use zkgm::IHelloStarknetSafeDispatcher;
-use zkgm::IHelloStarknetSafeDispatcherTrait;
-use zkgm::IHelloStarknetDispatcher;
-use zkgm::IHelloStarknetDispatcherTrait;
+    encoded.append_u256(0x000000000000000000000000000000000000000000000000000000000000000a);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000014);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000060);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000060);
+    encoded.append_u256(0x4141414100000000000000000000000000000000000000000000000000000000);
+    encoded.append_u256(0x4141414100000000000000000000000000000000000000000000000000000000);
+    encoded.append_u256(0x4141414100000000000000000000000000000000000000000000000000000000);
 
-fn deploy_contract(name: ByteArray) -> ContractAddress {
-    let contract = declare(name).unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@ArrayTrait::new()).unwrap();
-    contract_address
+    let instruction: Instruction = ethabi_decode(encoded.into()).unwrap();
+
+    println!("instruction: {:?}", instruction);
 }
 
 #[test]
-fn test_increase_balance() {
-    let contract_address = deploy_contract("HelloStarknet");
+fn test_zkgm_encode_decode() {
+    let mut encoded: ByteArray = Default::default();
 
-    let dispatcher = IHelloStarknetDispatcher { contract_address };
+    encoded.append_u256(0x4141414141414141414141414141414141414141414141414141414141414141);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000064);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000060);
+    encoded.append_u256(0x000000000000000000000000000000000000000000000000000000000000000a);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000014);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000060);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000008);
+    encoded.append_u256(0x4141414141414141000000000000000000000000000000000000000000000000);
 
-    let balance_before = dispatcher.get_balance();
-    assert(balance_before == 0, 'Invalid balance');
+    // let encoded = ZkgmPacket {
+    //     salt: Default::default(),
+    //     path: 100,
+    //     instruction: Instruction { version: 1, opcode: 2, operand: Default::default() },
+    // }
+    //     .encode();
 
-    dispatcher.increase_balance(42);
+    let packet: ZkgmPacket = ethabi_decode(encoded.into()).unwrap();
 
-    let balance_after = dispatcher.get_balance();
-    assert(balance_after == 42, 'Invalid balance');
+    println!("packet: {:?}", packet);
 }
 
 #[test]
-#[feature("safe_dispatcher")]
-fn test_cannot_increase_balance_with_zero_value() {
-    let contract_address = deploy_contract("HelloStarknet");
+fn test_bro() {
+    let mut encoded: ByteArray = Default::default();
 
-    let safe_dispatcher = IHelloStarknetSafeDispatcher { contract_address };
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000001);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000002);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000003);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000004);
 
-    let balance_before = safe_dispatcher.get_balance().unwrap();
-    assert(balance_before == 0, 'Invalid balance');
+    // let encoded = ZkgmPacket {
+    //     salt: Default::default(),
+    //     path: 100,
+    //     instruction: Instruction { version: 1, opcode: 2, operand: Default::default() },
+    // }
+    //     .encode();
 
-    match safe_dispatcher.increase_balance(0) {
-        Result::Ok(_) => core::panic_with_felt252('Should have panicked'),
-        Result::Err(panic_data) => {
-            assert(*panic_data.at(0) == 'Amount cannot be 0', *panic_data.at(0));
-        }
-    };
+    let packet: TestBro = ethabi_decode(encoded.into()).unwrap();
+
+    println!("packet: {:?}", packet);
 }

@@ -7,6 +7,9 @@ edition = "2024_07"
 
 [dependencies]
 starknet = { workspace = true }
+alexandria_bytes = { workspace = true }
+alexandria_encoding = { workspace = true }
+alexandria_evm = { workspace = true }
 ibc = { workspace = true }
 
 [dev-dependencies]
