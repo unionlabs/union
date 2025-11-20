@@ -6,8 +6,8 @@ name    = "escrow_vault"
 ibc = { local = "../ibc" }
 
 [addresses]
-escrow_vault = "_"
-ibc          = "_"
+escrow_vault = "0x0"
+ibc          = "0x8c7414ef89a6cb00a43c60027316ae450b642eca67a5a9d14fe34135e2edea05"
 
 [dev-addresses]
 escrow_vault = "0x4444"

@@ -59,7 +59,10 @@
 // TITLE.
 
 module u::u {
-    use sui::coin::{Self};
+    use sui::coin;
+    use sui::url;
+
+    use std::ascii;
 
     // one time witness
     public struct U has drop {}
@@ -69,10 +72,12 @@ module u::u {
             coin::create_currency<U>(
                 witness,
                 6,
-                b"au",
-                b"au",
                 b"U",
-                option::none(),
+                b"U",
+                b"Union",
+                option::some(
+                    url::new_unsafe(ascii::string(b"https://union.build"))
+                ),
                 ctx
             );
 

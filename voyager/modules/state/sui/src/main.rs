@@ -109,6 +109,7 @@ impl Module {
     ) -> RpcResult<PacketByHashResponse> {
         let key = &[COMMITMENT_TO_DIGEST]
             .iter()
+            .chain(&[32]) // packet_hash len
             .chain(packet_hash.as_ref())
             .collect::<Vec<_>>();
         let SuiParsedData::MoveObject(object) = self
@@ -187,7 +188,7 @@ impl Module {
             .into_iter()
             .find_map(|e| {
                 if e.type_.address == self.ibc_contract.into()
-                    && e.type_.module.as_str() == "ibc"
+                    && e.type_.module.as_str() == "events"
                     && e.type_.name.as_str() == "PacketSend"
                 {
                     let send: PacketSend = serde_json::from_value(e.parsed_json).unwrap();

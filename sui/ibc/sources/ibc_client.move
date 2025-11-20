@@ -132,7 +132,7 @@ module ibc::ibc_client {
         client_message: vector<u8>,
         relayer: address
     ) {
-        assert!(client_mgr.status(client_id, clock) == 0, EClientNotActive);
+        assert!(client_mgr.status(client_id, clock) == 1, EClientNotActive);
 
         // Update the client and consensus states using the client message
         let (client_state, consensus_state, height) =

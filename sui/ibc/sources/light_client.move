@@ -128,7 +128,7 @@ module ibc::light_client {
         clock: &Clock,
     ): u64 {
         if (store.test_mode) {
-            return 0
+            return 1
         };
 
         let client_type = store.client_id_to_type.borrow(client_id);
