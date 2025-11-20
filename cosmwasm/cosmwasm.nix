@@ -2,7 +2,7 @@ _: {
   perSystem =
     {
       self',
-      crane,
+      mkCrane,
       pkgs,
       dbg,
       system,
@@ -10,6 +10,11 @@ _: {
       ...
     }:
     let
+      crane = mkCrane {
+        root = ../.;
+        gitRev = "e3c532b2a4f927f5fde29525efcf87a77caf2577";
+      };
+
       getDeployment =
         ucs04-chain-id:
         (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
@@ -976,6 +981,35 @@ _: {
           '';
         };
 
+      migrate-to-access-managed =
+        args@{
+          name,
+          ucs04-chain-id,
+          rpc_url,
+          gas_config,
+          private_key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-migrate-contract";
+          runtimeInputs = [
+            cosmwasm-deployer
+            ibc-union-contract-addresses
+          ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              migrate-to-access-managed \
+              --rpc-url ${rpc_url} \
+              --manager ${(getDeployment ucs04-chain-id).manager} \
+              --contracts ${chain-contracts-config-json args} \
+              --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
+              ${mk-gas-args gas_config} \
+              "$@"
+          '';
+        };
+
       ibc-union-contract-addresses = pkgs.writeShellApplication {
         name = "ibc-union-contract-addresses";
         runtimeInputs = [ cosmwasm-deployer ];
@@ -1152,6 +1186,7 @@ _: {
                       set-bucket-config = set-bucket-config chain;
                       deploy-contract = deploy-contract chain;
                       migrate-contract = migrate-contract chain;
+                      migrate-to-access-managed = migrate-to-access-managed chain;
                     }
                     // (chain-migration-scripts chain)
                   );

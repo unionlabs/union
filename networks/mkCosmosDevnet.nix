@@ -807,6 +807,7 @@ let
 
     sed -i 's/max_body_bytes = 1000000/max_body_bytes = 100000000/' $out/config/config.toml
     sed -i 's/max_tx_bytes = 1048576/max_tx_bytes = 10485760/' $out/config/config.toml
+    sed -i 's/cors_allowed_origins = \[\]/cors_allowed_origins = \["*"\]/' $out/config/config.toml
   '';
 
   mkValidatorHome =
@@ -874,6 +875,7 @@ let
                   start \
                   --home home \
                   $$params \
+                  --api.enabled-unsafe-cors \
                   --rpc.pprof_laddr        0.0.0.0:6060 \
                   --rpc.laddr              tcp://0.0.0.0:26657 \
                   --rpc.unsafe \

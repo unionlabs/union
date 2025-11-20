@@ -124,7 +124,7 @@ enum App {
         #[arg(long)]
         addresses: PathBuf,
         #[arg(long)]
-        manager: Bech32<H160>,
+        manager: Bech32<H256>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -713,7 +713,7 @@ async fn do_main() -> Result<()> {
             };
 
             do_migrate(
-                addresses.core,
+                addresses.core.clone(),
                 &contracts.core,
                 to_value(ibc_union::contract::MigrateMsg {
                     access_managed_init_msg: access_managed_init_msg.clone(),
@@ -722,10 +722,10 @@ async fn do_main() -> Result<()> {
             )
             .await?;
 
-            for (salt, address) in addresses.lightclient {
+            for (salt, path) in &contracts.lightclient {
                 do_migrate(
-                    address,
-                    &contracts.lightclient[&salt],
+                    addresses.lightclient[salt].clone(),
+                    path,
                     to_value(ibc_union_light_client::msg::MigrateMsg {
                         access_managed_init_msg: access_managed_init_msg.clone(),
                     })
@@ -734,7 +734,7 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            if let Some(address) = addresses.app.ucs03 {
+            if let Some(address) = addresses.app.ucs03.clone() {
                 do_migrate(
                     address,
                     &contracts.app.ucs03.as_ref().unwrap().path,
@@ -746,7 +746,7 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            if let Some(address) = addresses.escrow_vault {
+            if let Some(address) = addresses.escrow_vault.clone() {
                 do_migrate(
                     address,
                     &contracts.escrow_vault.unwrap(),
@@ -757,6 +757,8 @@ async fn do_main() -> Result<()> {
                 )
                 .await?;
             }
+
+            setup_roles(ctx, manager, &addresses).await?;
 
             info!("migrated contracts")
         }

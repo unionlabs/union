@@ -35,7 +35,7 @@ const classes = cn(
 )
 </script>
 
-<div>
+<div class="w-full">
   <Label for={id}>{label}</Label>
   <input
     {id}
