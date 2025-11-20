@@ -42,7 +42,7 @@ pub fn init(deps: DepsMut, msg: InitMsg) -> StdResult<Response> {
     }
 
     deps.storage
-        .write_item::<BytecodeBaseCodeId>(&msg.cw_account_code_id);
+        .write_item::<BytecodeBaseCodeId>(&msg.bytecode_base_code_id);
 
     Ok(Response::default())
 }
