@@ -117,6 +117,7 @@ _: {
           ucs04-chain-id = "union.union-testnet-10";
           name = "union-testnet-10";
           rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
+          # rpc_url = "https://union-testnet-rpc.polkachu.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "feemarket";
@@ -627,8 +628,8 @@ _: {
               cosmwasm-deployer \
               tx \
               whitelist-relayers \
+              --manager ${(getDeployment ucs04-chain-id).manager} \
               --rpc-url ${rpc_url} \
-              --contract ${(getDeployment ucs04-chain-id).core.address} \
               ${mk-gas-args gas_config} "$@"
           '';
         };
@@ -976,6 +977,61 @@ _: {
           '';
         };
 
+      migrate-to-access-managed =
+        args@{
+          name,
+          ucs04-chain-id,
+          rpc_url,
+          gas_config,
+          private_key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-migrate-contract";
+          runtimeInputs = [
+            cosmwasm-deployer
+            ibc-union-contract-addresses
+          ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              migrate-to-access-managed \
+              --rpc-url ${rpc_url} \
+              --manager ${(getDeployment ucs04-chain-id).manager} \
+              --contracts ${chain-contracts-config-json args} \
+              --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
+              ${mk-gas-args gas_config} \
+              "$@"
+          '';
+        };
+
+      setup-roles =
+        {
+          name,
+          ucs04-chain-id,
+          rpc_url,
+          gas_config,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-setup-roles";
+          runtimeInputs = [
+            cosmwasm-deployer
+            ibc-union-contract-addresses
+          ];
+          text = ''
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              setup-roles \
+              --rpc-url ${rpc_url} \
+              --manager ${(getDeployment ucs04-chain-id).manager} \
+              --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
+              ${mk-gas-args gas_config} \
+              "$@"
+          '';
+        };
+
       ibc-union-contract-addresses = pkgs.writeShellApplication {
         name = "ibc-union-contract-addresses";
         runtimeInputs = [ cosmwasm-deployer ];
@@ -1152,6 +1208,8 @@ _: {
                       set-bucket-config = set-bucket-config chain;
                       deploy-contract = deploy-contract chain;
                       migrate-contract = migrate-contract chain;
+                      migrate-to-access-managed = migrate-to-access-managed chain;
+                      setup-roles = setup-roles chain;
                     }
                     // (chain-migration-scripts chain)
                   );

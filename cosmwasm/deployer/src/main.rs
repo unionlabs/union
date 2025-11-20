@@ -73,10 +73,14 @@ enum App {
     SetupRoles {
         #[arg(long)]
         rpc_url: String,
-        #[arg(long, env)]
-        private_key: H256,
+        #[arg(long, env, required_unless_present("dump_to"))]
+        private_key: Option<H256>,
+        #[arg(long, conflicts_with = "private_key")]
+        dump_to: Option<PathBuf>,
+        #[arg(long, conflicts_with = "private_key")]
+        sender: Option<Bech32>,
         #[arg(long)]
-        contracts: PathBuf,
+        addresses: PathBuf,
         #[arg(long)]
         manager: Bech32<H256>,
         #[command(flatten)]
@@ -124,7 +128,7 @@ enum App {
         #[arg(long)]
         addresses: PathBuf,
         #[arg(long)]
-        manager: Bech32<H160>,
+        manager: Bech32<H256>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -688,17 +692,31 @@ async fn do_main() -> Result<()> {
 
                 info!("migrate message: {message}");
 
-                let msg = MsgStoreAndMigrateContract {
+                let msg = MsgStoreCode {
                     sender: ctx.wallet().address().map_data(Into::into),
                     wasm_byte_code: bytecode.into(),
                     instantiate_permission: None,
+                };
+
+                info!("storing code for {address}");
+
+                let (tx_hash, store_code_response) = ctx
+                    .tx(msg, "", gas_config.simulate)
+                    .await
+                    .context("migrate")?;
+
+                info!(%tx_hash, code_id = store_code_response.code_id, "code stored");
+
+                let msg = MsgMigrateContract {
+                    sender: ctx.wallet().address().map_data(Into::into),
                     contract: address.clone(),
+                    code_id: store_code_response.code_id,
                     msg: message.to_string().into_bytes().into(),
                 };
 
-                info!("migrating address {address}");
+                info!("migrating {address}");
 
-                let (tx_hash, _migrate_response) = ctx
+                let (tx_hash, _) = ctx
                     .tx(msg, "", gas_config.simulate)
                     .await
                     .context("migrate")?;
@@ -713,7 +731,7 @@ async fn do_main() -> Result<()> {
             };
 
             do_migrate(
-                addresses.core,
+                addresses.core.clone(),
                 &contracts.core,
                 to_value(ibc_union::contract::MigrateMsg {
                     access_managed_init_msg: access_managed_init_msg.clone(),
@@ -722,10 +740,10 @@ async fn do_main() -> Result<()> {
             )
             .await?;
 
-            for (salt, address) in addresses.lightclient {
+            for (salt, path) in &contracts.lightclient {
                 do_migrate(
-                    address,
-                    &contracts.lightclient[&salt],
+                    addresses.lightclient[salt].clone(),
+                    path,
                     to_value(ibc_union_light_client::msg::MigrateMsg {
                         access_managed_init_msg: access_managed_init_msg.clone(),
                     })
@@ -734,7 +752,7 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            if let Some(address) = addresses.app.ucs03 {
+            if let Some(address) = addresses.app.ucs03.clone() {
                 do_migrate(
                     address,
                     &contracts.app.ucs03.as_ref().unwrap().path,
@@ -746,7 +764,7 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            if let Some(address) = addresses.escrow_vault {
+            if let Some(address) = addresses.escrow_vault.clone() {
                 do_migrate(
                     address,
                     &contracts.escrow_vault.unwrap(),
@@ -758,7 +776,8 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            info!("migrated contracts")
+            info!("migrated contracts");
+            info!("roles have not been set up, use `cosmwasm-deployer setup-roles`");
         }
         App::Migrate {
             rpc_url,
@@ -1231,17 +1250,20 @@ async fn do_main() -> Result<()> {
         App::SetupRoles {
             rpc_url,
             private_key,
-            contracts,
+            dump_to,
+            sender,
+            addresses,
             manager,
             gas_config,
         } => {
-            let contracts = serde_json::from_slice::<ContractAddresses>(
-                &std::fs::read(contracts).context("reading contracts path")?,
+            let addresses = serde_json::from_slice::<ContractAddresses>(
+                &std::fs::read(addresses).context("reading contracts path")?,
             )?;
 
-            let deployer = Deployer::new(rpc_url, private_key, &gas_config).await?;
+            let deployer =
+                Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
 
-            setup_roles(deployer, manager, &contracts).await?;
+            setup_roles(deployer, manager, &addresses, dump_to, sender).await?;
         }
     }
 
@@ -1594,7 +1616,7 @@ async fn deploy_full(
         contract_addresses.app.ucs03 = Some(ucs03_address);
     }
 
-    setup_roles(ctx, manager, &contract_addresses).await?;
+    setup_roles(ctx, manager, &contract_addresses, None, None).await?;
 
     write_output(output, contract_addresses)?;
 
@@ -1604,7 +1626,9 @@ async fn deploy_full(
 async fn setup_roles(
     deployer: Deployer,
     manager: Bech32<H256>,
-    contracts: &ContractAddresses,
+    addresses: &ContractAddresses,
+    dump_to: Option<PathBuf>,
+    sender: Option<Bech32>,
 ) -> Result<()> {
     let relayer_selectors = [
         "register_client",
@@ -1627,157 +1651,169 @@ async fn setup_roles(
 
     let ucs03_public_selectors = ["send"];
 
-    info!("setting up roles");
+    let sender = sender.map_or(deployer.wallet().address().map_data(Into::into), |s| {
+        s.map_data(Into::into)
+    });
 
-    let tx_hash = deployer
-        .broadcast_tx_commit(
-            [
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
-                        target: Addr::unchecked(contracts.core.to_string()),
-                        selectors: relayer_selectors
-                            .into_iter()
-                            .map(Selector::new)
-                            .map(ToOwned::to_owned)
-                            .collect(),
-                        role_id: RELAYER,
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
-                        target: Addr::unchecked(contracts.app.ucs03.as_ref().unwrap().to_string()),
-                        selectors: rate_limiter_selectors
-                            .into_iter()
-                            .map(Selector::new)
-                            .map(ToOwned::to_owned)
-                            .collect(),
-                        role_id: RATE_LIMITER,
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
-                        target: Addr::unchecked(contracts.app.ucs03.as_ref().unwrap().to_string()),
-                        selectors: ucs03_public_selectors
-                            .into_iter()
-                            .map(Selector::new)
-                            .map(ToOwned::to_owned)
-                            .collect(),
-                        role_id: RoleId::PUBLIC_ROLE,
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
-                        role_id: RELAYER,
-                        label: "RELAYER".to_owned(),
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
-                        role_id: PAUSER,
-                        label: "PAUSER".to_owned(),
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
-                        role_id: UNPAUSER,
-                        label: "UNPAUSER".to_owned(),
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-                Any(MsgExecuteContract {
-                    sender: deployer.wallet().address().map_data(Into::into),
-                    contract: manager.clone(),
-                    msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
-                        role_id: RATE_LIMITER,
-                        label: "RATE_LIMITER".to_owned(),
-                    })
-                    .unwrap()
-                    .into(),
-                    funds: vec![],
-                }),
-            ]
-            .into_iter()
-            .chain(
-                [contracts.app.ucs03.clone().unwrap()]
-                    .iter()
-                    .chain(contracts.lightclient.values())
-                    .flat_map(|target| {
-                        [
-                            Any(MsgExecuteContract {
-                                sender: deployer.wallet().address().map_data(Into::into),
-                                contract: manager.clone(),
-                                msg: serde_json::to_vec(
-                                    &AccessManagerExecuteMsg::SetTargetFunctionRole {
-                                        target: Addr::unchecked(target.to_string()),
-                                        selectors: pauser_selectors
-                                            .into_iter()
-                                            .map(Selector::new)
-                                            .map(ToOwned::to_owned)
-                                            .collect(),
-                                        role_id: PAUSER,
-                                    },
-                                )
-                                .unwrap()
-                                .into(),
-                                funds: vec![],
-                            }),
-                            Any(MsgExecuteContract {
-                                sender: deployer.wallet().address().map_data(Into::into),
-                                contract: manager.clone(),
-                                msg: serde_json::to_vec(
-                                    &AccessManagerExecuteMsg::SetTargetFunctionRole {
-                                        target: Addr::unchecked(target.to_string()),
-                                        selectors: unpauser_selectors
-                                            .into_iter()
-                                            .map(Selector::new)
-                                            .map(ToOwned::to_owned)
-                                            .collect(),
-                                        role_id: UNPAUSER,
-                                    },
-                                )
-                                .unwrap()
-                                .into(),
-                                funds: vec![],
-                            }),
-                        ]
+    let messages = [
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(addresses.core.to_string()),
+                selectors: relayer_selectors
+                    .into_iter()
+                    .map(Selector::new)
+                    .map(ToOwned::to_owned)
+                    .collect(),
+                role_id: RELAYER,
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(addresses.app.ucs03.as_ref().unwrap().to_string()),
+                selectors: rate_limiter_selectors
+                    .into_iter()
+                    .map(Selector::new)
+                    .map(ToOwned::to_owned)
+                    .collect(),
+                role_id: RATE_LIMITER,
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                target: Addr::unchecked(addresses.app.ucs03.as_ref().unwrap().to_string()),
+                selectors: ucs03_public_selectors
+                    .into_iter()
+                    .map(Selector::new)
+                    .map(ToOwned::to_owned)
+                    .collect(),
+                role_id: RoleId::PUBLIC_ROLE,
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                role_id: RELAYER,
+                label: "RELAYER".to_owned(),
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                role_id: PAUSER,
+                label: "PAUSER".to_owned(),
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                role_id: UNPAUSER,
+                label: "UNPAUSER".to_owned(),
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+        Any(MsgExecuteContract {
+            sender: sender.clone(),
+            contract: manager.clone(),
+            msg: serde_json::to_vec(&AccessManagerExecuteMsg::LabelRole {
+                role_id: RATE_LIMITER,
+                label: "RATE_LIMITER".to_owned(),
+            })
+            .unwrap()
+            .into(),
+            funds: vec![],
+        }),
+    ]
+    .into_iter()
+    .chain(
+        [addresses.app.ucs03.clone().unwrap()]
+            .iter()
+            .chain(addresses.lightclient.values())
+            .flat_map(|target| {
+                [
+                    Any(MsgExecuteContract {
+                        sender: sender.clone(),
+                        contract: manager.clone(),
+                        msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                            target: Addr::unchecked(target.to_string()),
+                            selectors: pauser_selectors
+                                .into_iter()
+                                .map(Selector::new)
+                                .map(ToOwned::to_owned)
+                                .collect(),
+                            role_id: PAUSER,
+                        })
+                        .unwrap()
+                        .into(),
+                        funds: vec![],
                     }),
-            ),
-            "",
-            deployer.simulate,
-        )
-        .await?
-        .hash;
+                    Any(MsgExecuteContract {
+                        sender: sender.clone(),
+                        contract: manager.clone(),
+                        msg: serde_json::to_vec(&AccessManagerExecuteMsg::SetTargetFunctionRole {
+                            target: Addr::unchecked(target.to_string()),
+                            selectors: unpauser_selectors
+                                .into_iter()
+                                .map(Selector::new)
+                                .map(ToOwned::to_owned)
+                                .collect(),
+                            role_id: UNPAUSER,
+                        })
+                        .unwrap()
+                        .into(),
+                        funds: vec![],
+                    }),
+                ]
+            }),
+    )
+    .collect::<Vec<_>>();
 
-    info!(%tx_hash, "set up roles");
+    if let Some(dump_to) = dump_to {
+        write_output(
+            Some(dump_to.clone()),
+            json!({
+                "body": {
+                    "messages": messages,
+                },
+            }),
+        )?;
+
+        info!("raw tx body written to {}", dump_to.display());
+    } else {
+        info!("setting up roles");
+
+        let response = deployer
+            .broadcast_tx_commit(messages, "", deployer.simulate)
+            .await
+            .context("migrate")?;
+
+        info!(tx_hash = %response.hash, "set up roles");
+    }
 
     Ok(())
 }
