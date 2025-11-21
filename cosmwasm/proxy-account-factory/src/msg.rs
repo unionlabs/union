@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
-    pub cw_account_code_id: u64,
     pub bytecode_base_code_id: u64,
+    pub cw_account_code_id: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

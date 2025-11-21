@@ -1,7 +1,7 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    Addr, Deps, DepsMut, Empty, Env, Event, MessageInfo, Response, StdError, StdResult, WasmMsg,
+    Addr, Checksum, Deps, DepsMut, Empty, Env, Event, MessageInfo, Response, WasmMsg,
     instantiate2_address, to_json_binary, wasm_execute,
 };
 use depolama::StorageExt;
@@ -22,22 +22,25 @@ pub mod state;
 #[cfg(test)]
 mod tests;
 
-const BYTECODE_BASE_CHECKSUM: &[u8] =
-    &hex!("ec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1");
+// SAFETY: Checksum is a newtype around [u8; 32]
+pub const BYTECODE_BASE_CHECKSUM: Checksum = unsafe {
+    core::mem::transmute::<[u8; 32], Checksum>(hex!(
+        "ec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1"
+    ))
+};
 
-pub fn init(deps: DepsMut, msg: InitMsg) -> StdResult<Response> {
+pub fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, ContractError> {
     deps.storage
         .write_item::<CwAccountCodeId>(&msg.cw_account_code_id);
 
-    if deps
+    let provided_bytecode_base_checksum = deps
         .querier
         .query_wasm_code_info(msg.bytecode_base_code_id)?
-        .checksum
-        .as_slice()
-        != BYTECODE_BASE_CHECKSUM
-    {
-        return Err(StdError::generic_err(
-            "invalid bytecode base code id, checksum is not as expected",
+        .checksum;
+
+    if provided_bytecode_base_checksum != BYTECODE_BASE_CHECKSUM {
+        return Err(ContractError::InvalidBytecodeBaseChecksum(
+            provided_bytecode_base_checksum,
         ));
     }
 
@@ -56,7 +59,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     frissitheto::init_state_version(&mut deps, const { NonZeroU32::new(1).unwrap() })?;
 
-    Ok(init(deps, msg)?)
+    init(deps, msg)
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]
@@ -77,33 +80,35 @@ pub fn execute(
                 .query_wasm_contract_info(&predicted_address)
                 .is_err()
             {
-                // proxy does not exist, add submsgs to create it
+                // proxy does not exist yet, add submsgs to create it
 
-                res = res.add_messages([
-                    WasmMsg::Instantiate2 {
-                        admin: Some(env.contract.address.to_string()),
-                        code_id: deps.storage.read_item::<BytecodeBaseCodeId>()?,
-                        label: proxy_account_label(&env, &info.sender),
-                        msg: to_json_binary(&Empty {})?,
-                        funds: vec![],
-                        salt: proxy_account_salt(deps.as_ref(), &info.sender)?.into(),
-                    },
-                    WasmMsg::Migrate {
-                        contract_addr: predicted_address.to_string(),
-                        new_code_id: deps.storage.read_item::<CwAccountCodeId>()?,
-                        msg: to_json_binary(&UpgradeMsg::<_, ()>::Init(
-                            cw_account::msg::InitMsg::Local {
-                                // the proxy factory is the admin of all of the created proxies, and as such is the only actor that can call them
-                                // this is safe since we check the proxy account address with info.sender
-                                admin: env.contract.address.clone(),
-                            },
-                        ))?,
-                    },
-                    WasmMsg::UpdateAdmin {
-                        contract_addr: predicted_address.to_string(),
-                        admin: predicted_address.to_string(),
-                    },
-                ]);
+                res = res
+                    .add_messages([
+                        WasmMsg::Instantiate2 {
+                            admin: Some(env.contract.address.to_string()),
+                            code_id: deps.storage.read_item::<BytecodeBaseCodeId>()?,
+                            label: proxy_account_label(&env, &info.sender),
+                            msg: to_json_binary(&Empty {})?,
+                            funds: vec![],
+                            salt: proxy_account_salt(deps.as_ref(), &info.sender)?.into(),
+                        },
+                        WasmMsg::Migrate {
+                            contract_addr: predicted_address.to_string(),
+                            new_code_id: deps.storage.read_item::<CwAccountCodeId>()?,
+                            msg: to_json_binary(&UpgradeMsg::<_, ()>::Init(
+                                cw_account::msg::InitMsg::Local {
+                                    // the proxy factory is the admin of all of the created proxies, and as such is the only actor that can call them
+                                    // this is safe since we check the proxy account address with info.sender
+                                    admin: env.contract.address.clone(),
+                                },
+                            ))?,
+                        },
+                        WasmMsg::UpdateAdmin {
+                            contract_addr: predicted_address.to_string(),
+                            admin: predicted_address.to_string(),
+                        },
+                    ])
+                    .add_event(Event::new("proxy_created").add_attribute("creator", info.sender));
             };
 
             Ok(res
@@ -112,8 +117,7 @@ pub fn execute(
                     predicted_address,
                     &cw_account::msg::ExecuteMsg::Dispatch(msgs),
                     info.funds,
-                )?)
-                .add_event(Event::new("proxy_created").add_attribute("creator", info.sender)))
+                )?))
         }
     }
 }
@@ -140,7 +144,7 @@ pub fn predict_call_proxy_account(
     sender: &Addr,
 ) -> Result<Addr, ContractError> {
     let token_addr = instantiate2_address(
-        BYTECODE_BASE_CHECKSUM,
+        BYTECODE_BASE_CHECKSUM.as_slice(),
         &deps.api.addr_canonicalize(env.contract.address.as_str())?,
         &proxy_account_salt(deps, sender)?,
     )
