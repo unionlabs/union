@@ -73,11 +73,11 @@ pub fn execute(
         ExecuteMsg::CallProxy(msgs) => {
             let mut res = Response::new();
 
-            let predicted_address = predict_call_proxy_account(deps.as_ref(), &env, &info.sender)?;
+            let proxy_address = predict_call_proxy_account(deps.as_ref(), &env, &info.sender)?;
 
             if deps
                 .querier
-                .query_wasm_contract_info(&predicted_address)
+                .query_wasm_contract_info(&proxy_address)
                 .is_err()
             {
                 // proxy does not exist yet, add submsgs to create it
@@ -87,13 +87,13 @@ pub fn execute(
                         WasmMsg::Instantiate2 {
                             admin: Some(env.contract.address.to_string()),
                             code_id: deps.storage.read_item::<BytecodeBaseCodeId>()?,
-                            label: proxy_account_label(&env, &info.sender),
+                            label: proxy_account_label(&info.sender),
                             msg: to_json_binary(&Empty {})?,
                             funds: vec![],
                             salt: proxy_account_salt(deps.as_ref(), &info.sender)?.into(),
                         },
                         WasmMsg::Migrate {
-                            contract_addr: predicted_address.to_string(),
+                            contract_addr: proxy_address.to_string(),
                             new_code_id: deps.storage.read_item::<CwAccountCodeId>()?,
                             msg: to_json_binary(&UpgradeMsg::<_, ()>::Init(
                                 cw_account::msg::InitMsg::Local {
@@ -104,17 +104,21 @@ pub fn execute(
                             ))?,
                         },
                         WasmMsg::UpdateAdmin {
-                            contract_addr: predicted_address.to_string(),
-                            admin: predicted_address.to_string(),
+                            contract_addr: proxy_address.to_string(),
+                            admin: proxy_address.to_string(),
                         },
                     ])
-                    .add_event(Event::new("proxy_created").add_attribute("creator", info.sender));
+                    .add_event(
+                        Event::new("proxy_created")
+                            .add_attribute("creator", info.sender)
+                            .add_attribute("proxy", &proxy_address),
+                    );
             };
 
             Ok(res
                 // forward the messages directly to the proxy account, along with any funds sent with this call
                 .add_message(wasm_execute(
-                    predicted_address,
+                    proxy_address,
                     &cw_account::msg::ExecuteMsg::Dispatch(msgs),
                     info.funds,
                 )?))
@@ -160,6 +164,6 @@ fn proxy_account_salt(deps: Deps<'_>, sender: &Addr) -> Result<[u8; 32], Contrac
         .into())
 }
 
-pub fn proxy_account_label(env: &Env, sender: &Addr) -> String {
-    format!("{}/proxy/{sender}", env.contract.address)
+pub fn proxy_account_label(sender: &Addr) -> String {
+    format!("proxy/{sender}")
 }

@@ -95,7 +95,8 @@ fn call_proxy_does_not_exist() {
 
     let proxy_addr = predict_call_proxy_account(deps.as_ref(), &env, &addr).unwrap();
 
-    let label = "cosmwasm1jpev2csrppg792t22rn8z8uew8h3sjcpglcd0qv9g8gj8ky922tscp8avs/proxy/cosmwasm1hm7w5uwjc4f06c8tl4mh9vy8meg5spslztmr2dfjg8zf24mvjvls2yv8l5".to_owned();
+    let label =
+        "proxy/cosmwasm1hm7w5uwjc4f06c8tl4mh9vy8meg5spslztmr2dfjg8zf24mvjvls2yv8l5".to_owned();
 
     assert_eq!(
         execute(
@@ -131,13 +132,17 @@ fn call_proxy_does_not_exist() {
                     admin: proxy_addr.to_string(),
                 },
                 wasm_execute(
-                    proxy_addr,
+                    &proxy_addr,
                     &cw_account::msg::ExecuteMsg::Dispatch([].into()),
                     vec![]
                 )
                 .unwrap()
             ])
-            .add_event(Event::new("proxy_created").add_attribute("creator", addr)),
+            .add_event(
+                Event::new("proxy_created")
+                    .add_attribute("creator", addr)
+                    .add_attribute("proxy", proxy_addr)
+            ),
     );
 }
 
