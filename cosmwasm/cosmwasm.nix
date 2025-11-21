@@ -82,6 +82,20 @@ _: {
             + (pkgs.lib.optionalString (
               gas_multiplier != null
             ) " --gas-multiplier ${toString gas_multiplier} ");
+          osmosis-eip1559-feemarket =
+            {
+              max_gas ? null,
+              gas_multiplier ? null,
+              base_fee_multiplier,
+              denom,
+            }:
+            " --gas osmosis-eip1559-feemarket "
+            + " --base-fee-multiplier ${base_fee_multiplier} "
+            + " --fee-denom ${denom} "
+            + (pkgs.lib.optionalString (max_gas != null) " --max-gas ${toString max_gas} ")
+            + (pkgs.lib.optionalString (
+              gas_multiplier != null
+            ) " --gas-multiplier ${toString gas_multiplier} ");
         }
         .${type}
           (builtins.removeAttrs config [ "type" ]);
@@ -261,11 +275,11 @@ _: {
           rpc_url = "https://osmosis-rpc.publicnode.com:443";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
-            type = "fixed";
-            gas_price = "0.01";
-            gas_denom = "uosmo";
-            gas_multiplier = "1.2";
+            type = "osmosis-eip1559-feemarket";
             max_gas = 60000000;
+            gas_multiplier = "1.2";
+            base_fee_multiplier = "1.4";
+            denom = "uosmo";
           };
           apps = {
             ucs03 = ucs03-configs.osmosis_tokenfactory;
