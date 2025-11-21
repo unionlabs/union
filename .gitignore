@@ -84,7 +84,6 @@ sui/*/build
 .tsup
 docs/generated
 dev-dist
-.zed
 rustc-ice*
 .docs
 profiles/

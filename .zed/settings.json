@@ -1,0 +1,49 @@
+// Zed settings to use Union's devShell
+{
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["typescript-language-server", "!vtsls"]
+    },
+    "TSX": {
+      "language_servers": ["typescript-language-server", "!vtsls"]
+    },
+    "JavaScript": {
+      "language_servers": ["typescript-language-server", "!vtsls"]
+    },
+    "Svelte": {
+      "language_servers": ["svelte-language-server"]
+    }
+  },
+  "lsp": {
+    "typescript-language-server": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    },
+    "vscode-html-language-server": {
+      "binary": {
+        "ignore_system_version": false,
+        "path": "vscode-html-language-server",
+        "arguments": ["--stdio"]
+      }
+    },
+    "astro-language-server": {
+      "binary": {
+        "ignore_system_version": false,
+        "path": "astro-ls",
+        "arguments": ["--stdio"]
+      }
+    },
+    "svelte-language-server": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    },
+    "nixd": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    }
+  },
+  "load_direnv": "direct"
+}
