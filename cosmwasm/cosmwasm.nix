@@ -1031,6 +1031,8 @@ _: {
       lst = crane.buildWasmContract "cosmwasm/lst" { };
       lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };
 
+      proxy-account-factory = crane.buildWasmContract "cosmwasm/proxy-account-factory" { };
+
       manager = crane.buildWasmContract "cosmwasm/gatekeeper" { };
       access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
       access-managed-example = crane.buildWasmContract "e2e/access-managed-example" { };
@@ -1110,6 +1112,7 @@ _: {
             access-manager
             lst-staker
             access-managed-example
+            proxy-account-factory
             ;
           cosmwasm-scripts =
             {
