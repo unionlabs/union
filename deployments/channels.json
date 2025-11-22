@@ -214,6 +214,30 @@
       "tags": ["development"]
     }
   },
+  "ethereum.1": {
+    "6": {
+      "comments": "osmosis-1 channel 2",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "532511",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "258650",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
+      "tags": ["canonical", "tokenorder-v2"]
+    },
+    "3": {
+      "comments": "trusted connection to union.union-testnet-10 channel 3 intended for development and testing only",
+      "tags": ["development"]
+    }
+  },
   "osmosis.osmosis-1": {
     "1": {
       "comments": "babylon.bbn-1 channel 4",
