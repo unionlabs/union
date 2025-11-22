@@ -272,7 +272,7 @@ _: {
           chain-id = "osmosis-1";
           ucs04-chain-id = "osmosis.osmosis-1";
           name = "osmosis";
-          rpc_url = "https://osmosis-rpc.publicnode.com:443";
+          rpc_url = "https://osmosis-rpc.polkachu.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "osmosis-eip1559-feemarket";
