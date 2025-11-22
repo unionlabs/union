@@ -295,6 +295,7 @@ members = [
   "cosmwasm/upgradable",
   "cosmwasm/pausable",
   "cosmwasm/gatekeeper",
+  "cosmwasm/proxy-account-factory",
 ]
 
 [workspace.package]

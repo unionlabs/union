@@ -21,6 +21,23 @@
         "type": "github"
       }
     },
+    "atomone": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1760962414,
+        "narHash": "sha256-/ebr1h73kylyceVZSA+0pcONxeU5bTmpxfO9CwPqFRM=",
+        "owner": "atomone-hub",
+        "repo": "atomone",
+        "rev": "a948052ffbe9b594070abe601b39f91ac1a8498c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "atomone-hub",
+        "ref": "v3.0.3",
+        "repo": "atomone",
+        "type": "github"
+      }
+    },
     "babylon": {
       "flake": false,
       "locked": {
@@ -596,6 +613,7 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "atomone": "atomone",
         "babylon": "babylon",
         "blst": "blst",
         "cometbls": "cometbls",

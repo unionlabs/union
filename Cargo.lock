@@ -10910,6 +10910,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "proxy-account-factory"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "cw-account",
+ "depolama",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 0.4.1",
+ "schemars",
+ "serde",
+ "sha2 0.10.9",
+ "thiserror 2.0.12",
+ "unionlabs-encoding",
+]
+
+[[package]]
 name = "psm"
 version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"

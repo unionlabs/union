@@ -169,6 +169,11 @@
       "client_type": "state-lens/ics23/ics23",
       "counterparty": "sei.1329",
       "refresh_rate": "5000"
+    },
+    "8": {
+      "client_type": "state-lens/ics23/ics23",
+      "counterparty": "osmosis.osmosis-1",
+      "refresh_rate": "5000"
     }
   },
   "ethereum.11155111": {
@@ -189,6 +194,16 @@
     "1": {
       "client_type": "tendermint",
       "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "client_type": "cometbls",
+      "counterparty": "union.union-1",
+      "refresh_rate": "5000"
+    },
+    "4": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "ethereum.1",
       "refresh_rate": "500"
     }
   },
@@ -265,6 +280,11 @@
     "11": {
       "client_type": "ethermint",
       "counterparty": "sei.pacific-1",
+      "refresh_rate": "5000"
+    },
+    "12": {
+      "client_type": "tendermint",
+      "counterparty": "osmosis.osmosis-1",
       "refresh_rate": "5000"
     }
   },
