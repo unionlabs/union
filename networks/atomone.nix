@@ -30,9 +30,6 @@
             env.GOWORK = "off";
           }
           // (
-            let
-              inherit (self'.packages) libwasmvm-2_1_3;
-            in
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux
