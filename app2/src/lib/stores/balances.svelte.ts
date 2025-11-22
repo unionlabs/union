@@ -1,6 +1,7 @@
 import { runFork, runPromise, runSync } from "$lib/runtime"
 import { fetchCosmosBalance, type FetchCosmosBalanceError } from "$lib/services/cosmos/balances"
 import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
+import { fetchSuiBalance, type FetchSuiBalanceError } from "$lib/services/sui/balances"
 import type { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
   type AddressCanonicalBytes,
@@ -71,6 +72,7 @@ const boundedFibonacci$: (maxDelta: number) => Stream.Stream<number> = maxDelta 
 export type BalancesStoreError =
   | FetchEvmBalanceError
   | FetchCosmosBalanceError
+  | FetchSuiBalanceError
 
 export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
@@ -148,6 +150,12 @@ export class BalancesStore {
           chain,
           tokenAddress: denom,
           walletAddress: AddressEvmCanonical.make(address),
+        })),
+      Match.when({ chain: { rpc_type: "sui" } }, ({ chain, address, denom }) =>
+        fetchSuiBalance({
+          chain,
+          tokenAddress: denom,
+          walletAddress: address,
         })),
       Match.when(
         { chain: { rpc_type: "cosmos" } },

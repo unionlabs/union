@@ -5,6 +5,7 @@
 import SharpPowerIcon from "$lib/components/icons/SharpPowerIcon.svelte"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type EvmWalletId } from "$lib/wallet/evm"
+import { type SuiWalletId } from "$lib/wallet/sui"
 import { RpcType } from "@unionlabs/sdk/schema"
 import type { State } from "@wagmi/core"
 import { Schema } from "effect"
@@ -27,6 +28,7 @@ interface Props {
   connectedWalletId?:
     | (T extends "cosmos" ? CosmosWalletId
       : T extends "evm" ? EvmWalletId
+      : T extends "sui" ? SuiWalletId
       : never)
     | undefined
     | null

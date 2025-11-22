@@ -4,12 +4,23 @@
  * @since 0.0.0
  */
 import { SuiClient } from "@mysten/sui/client"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+
 import { Transaction } from "@mysten/sui/transactions"
 import { extractErrorDetails } from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer } from "effect"
 import { type Address } from "viem"
 import * as internal from "./internal/sui.js"
+
+// Minimal shape your zkgm client expects
+type WalletStandardSigner = {
+  toSuiAddress(): string
+  signTransaction(input: { transactionBlock: Transaction | Uint8Array | string }): Promise<{
+    signature: string
+    bytes: Uint8Array
+    executeResult?: unknown
+  }>
+}
 
 /**
  * @category models
@@ -30,7 +41,8 @@ export namespace Sui {
    */
   export interface WalletClient {
     readonly client: SuiClient
-    readonly signer: Ed25519Keypair
+    readonly signer: WalletStandardSigner | Ed25519Keypair
+    readonly rpc: string
   }
 
   /**
@@ -361,6 +373,89 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
         }),
     })
     return coins
+  })
+
+/**
+ * Resolve the signer address from WalletClient.
+ */
+export const getSignerAddress = Effect.gen(function*() {
+  const { signer } = yield* WalletClient
+  return signer.toSuiAddress()
+})
+
+/**
+ * Incrementally fetch coin objects for `owner` and `coinType` until the running
+ */
+export const getCoinsWithBalance = (coinType: string, min: bigint) =>
+  Effect.gen(function*() {
+    const { client } = yield* PublicClient
+    const resolvedOwner = yield* getSignerAddress
+
+    return yield* Effect.tryPromise({
+      try: async () => {
+        let cursor: string | null | undefined = undefined
+        let acc: Array<{ coinObjectId: string; balance: string }> = []
+        let total = 0n
+
+        while (true) {
+          const page = await client.getCoins({
+            owner: resolvedOwner,
+            coinType: coinType,
+            cursor,
+            limit: 50,
+          })
+          for (const c of page.data) {
+            acc.push({ coinObjectId: c.coinObjectId, balance: c.balance })
+            total += BigInt(c.balance)
+            if (total >= min) {
+              return { coins: acc, total, hasEnough: true as const }
+            }
+          }
+          if (!page.hasNextPage) {
+            break
+          }
+          cursor = page.nextCursor
+        }
+
+        return { coins: acc, total, hasEnough: false as const }
+      },
+      catch: (err) => new ReadCoinError({ cause: extractErrorDetails(err as Error) }),
+    })
+  })
+
+/**
+ * Prepare a coin for spending inside the SAME PTB:
+ */
+export const prepareCoinForAmount = (
+  tx: Transaction,
+  coinType: string,
+  amount: bigint,
+) =>
+  Effect.gen(function*() {
+    // SUI special case: split from gas
+    if (
+      coinType === "0x2::sui::SUI"
+      || coinType === "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
+    ) {
+      const [out] = tx.splitCoins(tx.gas, [tx.pure.u64(amount)])
+      return out
+    }
+    const { coins, hasEnough } = yield* getCoinsWithBalance(coinType, amount)
+    if (!hasEnough || coins.length === 0) {
+      return yield* Effect.fail(
+        new ReadCoinError({ cause: `Insufficient ${coinType} balance for split ${amount}` }),
+      )
+    }
+
+    const target = coins[0]
+    const targetArg = tx.object(target.coinObjectId)
+    const rest = coins.slice(1).map(c => tx.object(c.coinObjectId))
+    if (rest.length > 0) {
+      tx.mergeCoins(targetArg, rest)
+    }
+
+    const [out] = tx.splitCoins(targetArg, [tx.pure.u64(amount)])
+    return out
   })
 
 /**
