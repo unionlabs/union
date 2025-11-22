@@ -71,6 +71,10 @@
       url = "github:osmosis-labs/osmosis/v28.0.5";
       flake = false;
     };
+    atomone = {
+      url = "github:atomone-hub/atomone/v3.0.3";
+      flake = false;
+    };
     xion = {
       url = "github:burnt-labs/xion/v21.0.0";
       flake = false;
@@ -219,6 +223,7 @@
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
         ./networks/osmosis.nix
+        ./networks/atomone.nix
         ./networks/xion.nix
         ./networks/babylon.nix
         ./networks/stride.nix
