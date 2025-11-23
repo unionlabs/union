@@ -68,6 +68,9 @@ pub struct Module {
     pub ibc_store: ObjectID,
 
     pub ibc_contract: ObjectID,
+
+    /// The initial deployed address where the event types are defined
+    pub initial_ibc_contract: ObjectID,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -187,9 +190,7 @@ impl Module {
             .expect("there must be some events exist")
             .into_iter()
             .find_map(|e| {
-                dbg!("EVENT BRO", &e);
-                dbg!("EVENT BRO", &self.ibc_contract);
-                if e.type_.address == self.ibc_contract.into()
+                if e.type_.address == self.initial_ibc_contract.into()
                     && e.type_.module.as_str() == "events"
                     && e.type_.name.as_str() == "PacketSend"
                 {
@@ -260,6 +261,7 @@ impl StateModule<IbcUnion> for Module {
             sui_client,
             rpc_url: config.rpc_url,
             ibc_store: config.ibc_store,
+            initial_ibc_contract: config.ibc_contract,
             ibc_contract,
         })
     }
