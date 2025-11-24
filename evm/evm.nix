@@ -36,8 +36,8 @@ _: {
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "v0.1.26";
-        hash = "sha256-ycYSZnpJBJiJTGpJCnt1R/vKP7pTQY6dd8e35HIP0Co=";
+        rev = "73f13dd1483707ef6b4d16cb0543570b7e1715a8";
+        hash = "sha256-RHKgAeb0bdKjFP50k/UNcH64MZyiITrsG2JfrhNWXu8=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
@@ -47,10 +47,10 @@ _: {
         fetchSubmodules = true;
       };
       safe-utils = pkgs.fetchFromGitHub {
-        owner = "Recon-Fuzz";
+        owner = "hussein-aitlahcen";
         repo = "safe-utils";
-        rev = "eccb79f80cad0f3ad98137cf3e859aac5d66e425";
-        hash = "sha256-6tOXRjKQQP+I8tjkY8IcLMKVHXP4KDsaUo4bKi3D1ig=";
+        rev = "d1ed14624352c22b1255555ad48fea1f532fb953";
+        hash = "sha256-4pqAofsN2Oo9sDT1/p76lVV1dD6xgvzv8lxVtqDaN9s=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
@@ -93,8 +93,16 @@ _: {
           path = "${safe-utils}/src";
         }
         {
-          name = "lib";
-          path = "${safe-utils}/lib";
+          name = "lib/safe-smart-account";
+          path = "${safe-utils}/lib/safe-smart-account/contracts";
+        }
+        {
+          name = "lib/solidity-http";
+          path = "${safe-utils}/lib/solidity-http";
+        }
+        {
+          name = "lib/solidity-stringutils";
+          path = "${safe-utils}/lib/solidity-stringutils";
         }
         {
           name = "@openzeppelin";
@@ -165,6 +173,7 @@ _: {
         cbor_metadata = false
         sparse_mode = false
         memory_limit = 33554432
+        solc_version   = "0.8.27"
 
         [profile.script]
         ffi = true
@@ -449,7 +458,7 @@ _: {
           ucs04-chain-id = "ethereum.1";
 
           name = "ethereum";
-          rpc-url = "https://eth-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://eth-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
@@ -522,7 +531,7 @@ _: {
           ucs04-chain-id = "base.8453";
 
           name = "base";
-          rpc-url = "https://base-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://base-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
           rate-limit-enabled = "true";
@@ -870,6 +879,50 @@ _: {
                 -vvvv \
                 --rpc-url ${rpc-url} \
                 --broadcast "''${VERIFICATION_ARGS[@]}"
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
+
+      verify =
+        {
+          chain-id,
+          rpc-url,
+          private-key,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-verify";
+            runtimeInputs = [ wrappedForgeOnline ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              # shellcheck disable=SC2005
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              FOUNDRY_LIBS='["libs"]' \
+                forge verify-contract \
+                  --force \
+                  --watch "$1" "$2" \
+                  --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -1326,6 +1379,7 @@ _: {
               inherit (chain) name;
               value = pkgs.mkRootDrv chain.name (
                 {
+                  verify = verify chain;
                   verify-all-contracts = verify-all-contracts chain;
                   verify-erc20 = verify-erc20 chain;
                   deploy = deploy chain;
@@ -1345,6 +1399,7 @@ _: {
                   {
                     ucs03 = "UCS03";
                     cometbls-client = "CometblsClient";
+                    loopback-client = "LoopbackClient";
                     state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
                     state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
                     state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
@@ -1356,6 +1411,7 @@ _: {
                     udrop = "UDrop";
                     eudrop = "EUDrop";
                     quick-withdrawal = "QuickWithdrawal";
+                    z-asset = "ZAsset";
                   }
                 )
                 # other various deployment scripts
@@ -1414,6 +1470,7 @@ _: {
                         udrop = "UDrop";
                         eudrop = "EUDrop";
                         quick-withdrawal = "QuickWithdrawal";
+                        z-asset = "ZAsset";
                       }
                   )
                 ))

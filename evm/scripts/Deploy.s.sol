@@ -17,12 +17,14 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
 import "@safe-utils/Safe.sol";
 
+import "../contracts/ZAsset.sol";
 import "../contracts/UnionversalToken.sol";
 import "../contracts/CrosschainVault.sol";
 import "../contracts/ProxyAccount.sol";
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/clients/CometblsClient.sol";
+import {LoopbackClient} from "../contracts/clients/LoopbackClient.sol";
 import {StateLensIcs23Ics23Client} from
     "../contracts/clients/StateLensIcs23Ics23Client.sol";
 import {StateLensIcs23MptClient} from
@@ -47,6 +49,7 @@ struct Contracts {
     Multicall multicall;
     IBCHandler handler;
     CometblsClient cometblsClient;
+    LoopbackClient loopbackClient;
     StateLensIcs23MptClient stateLensIcs23MptClient;
     StateLensIcs23Ics23Client stateLensIcs23Ics23Client;
     StateLensIcs23SmtClient stateLensIcs23SmtClient;
@@ -90,6 +93,7 @@ library IBC_SALT {
 
 library LIGHT_CLIENT_SALT {
     string constant COMETBLS = "lightclients/cometbls";
+    string constant LOOPBACK = "lightclients/loopback";
     string constant STATE_LENS_ICS23_MPT = "lightclients/state-lens/ics23/mpt";
     string constant STATE_LENS_ICS23_ICS23 =
         "lightclients/state-lens/ics23/ics23";
@@ -98,6 +102,7 @@ library LIGHT_CLIENT_SALT {
 
 library LightClients {
     string constant COMETBLS = "cometbls";
+    string constant LOOPBACK = "loopback";
     string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
     string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
     string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
@@ -334,6 +339,44 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function deployZAsset(
+        string memory salt,
+        Manager authority,
+        UCS03Zkgm zkgm,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        address attestor,
+        address ibcHandler,
+        uint256 chainId,
+        address underlying
+    ) internal returns (ZAsset) {
+        return ZAsset(
+            deployIfNotExists(
+                salt,
+                abi.encode(
+                    address(new ZAsset()),
+                    abi.encodeCall(
+                        ZAsset.initialize,
+                        (
+                            address(authority),
+                            address(zkgm),
+                            name,
+                            symbol,
+                            decimals,
+                            new bytes(0),
+                            attestor,
+                            ibcHandler,
+                            chainId,
+                            underlying
+                        )
+                    )
+                ),
+                "ZAsset"
+            )
+        );
+    }
+
     function deployUDrop(
         Manager authority,
         bytes32 root,
@@ -483,6 +526,24 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function deployLoopbackClient(
+        IBCHandler handler,
+        Manager manager
+    ) internal returns (LoopbackClient) {
+        return LoopbackClient(
+            deployIfNotExists(
+                LIGHT_CLIENT_SALT.LOOPBACK,
+                abi.encode(
+                    address(new LoopbackClient(address(handler))),
+                    abi.encodeCall(
+                        LoopbackClient.initialize, (address(manager))
+                    )
+                ),
+                "LoopbackClient"
+            )
+        );
+    }
+
     function deployUCS00(
         IBCHandler handler,
         Manager manager,
@@ -570,6 +631,7 @@ abstract contract UnionScript is UnionBase {
         Manager manager = deployManager(owner);
         IBCHandler handler = deployIBCHandler(manager);
         CometblsClient cometblsClient = deployCometbls(handler, manager);
+        LoopbackClient loopbackClient = deployLoopbackClient(handler, manager);
         StateLensIcs23MptClient stateLensIcs23MptClient =
             deployStateLensIcs23MptClient(handler, manager);
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
@@ -586,6 +648,7 @@ abstract contract UnionScript is UnionBase {
         Contracts memory contracts = Contracts({
             handler: handler,
             cometblsClient: cometblsClient,
+            loopbackClient: loopbackClient,
             stateLensIcs23MptClient: stateLensIcs23MptClient,
             stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
@@ -816,6 +879,23 @@ contract DeployStateLensIcs23SmtClient is UnionScript, VersionedScript {
         console.log(
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
+    }
+}
+
+contract DeployLoopbackClient is UnionScript, VersionedScript {
+    using LibString for *;
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
+
+        vm.startBroadcast(privateKey);
+        LoopbackClient loopbackClient = deployLoopbackClient(handler, manager);
+        vm.stopBroadcast();
+
+        console.log("LoopbackClient: ", address(loopbackClient));
     }
 }
 
@@ -2080,6 +2160,8 @@ contract DeployRoles is UnionScript {
         IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
         CometblsClient cometblsClient =
             CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
+        LoopbackClient loopbackClient =
+            LoopbackClient(getDeployed(LIGHT_CLIENT_SALT.LOOPBACK));
         PingPong ucs00 = PingPong(getDeployed(Protocols.UCS00));
         ZkgmERC20 ucs03Erc20Impl =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
@@ -2104,6 +2186,7 @@ contract DeployRoles is UnionScript {
             multicall: multicall,
             handler: handler,
             cometblsClient: cometblsClient,
+            loopbackClient: loopbackClient,
             stateLensIcs23MptClient: stateLensIcs23MptClient,
             stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
@@ -2133,6 +2216,8 @@ contract DeployRegisterClients is UnionScript {
         IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
         CometblsClient cometblsClient =
             CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
+        LoopbackClient loopbackClient =
+            LoopbackClient(getDeployed(LIGHT_CLIENT_SALT.LOOPBACK));
         PingPong ucs00 = PingPong(getDeployed(Protocols.UCS00));
         ZkgmERC20 ucs03Erc20Impl =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
@@ -2157,6 +2242,7 @@ contract DeployRegisterClients is UnionScript {
             multicall: multicall,
             handler: handler,
             cometblsClient: cometblsClient,
+            loopbackClient: loopbackClient,
             stateLensIcs23MptClient: stateLensIcs23MptClient,
             stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
@@ -2393,6 +2479,43 @@ contract DeployQuickWithdrawal is UnionScript, VersionedScript {
     }
 }
 
+contract DeployZAsset is UnionScript, VersionedScript {
+    using LibString for *;
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        bytes memory salt = vm.envBytes("SALT");
+        string memory name = vm.envString("NAME");
+        string memory symbol = vm.envString("SYMBOL");
+        uint8 decimals = uint8(vm.envUint("DECIMALS"));
+        address attestor = vm.envAddress("ATTESTOR");
+        uint256 chainId = vm.envUint("CHAIN_ID");
+        address underlying = vm.envOr("UNDERLYING", address(0));
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
+
+        vm.startBroadcast(privateKey);
+        ZAsset zAsset = deployZAsset(
+            string(salt),
+            manager,
+            ucs03,
+            name,
+            symbol,
+            decimals,
+            attestor,
+            address(handler),
+            chainId,
+            underlying
+        );
+        vm.stopBroadcast();
+
+        console.log("ZAsset: ", address(zAsset));
+    }
+}
+
 contract MintedAddress is VersionedScript {
     using LibString for *;
     using LibBytes for *;
@@ -2566,6 +2689,25 @@ contract SafeUpgradeUCS03 is BaseUpgrade {
                 accountImpl
             )
         );
+        upgradeCall = new bytes(0);
+    }
+}
+
+contract SafeUpgradeZAsset is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
+
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        bytes memory salt = vm.envBytes("SALT");
+        targetContract = getDeployed(string(salt));
+        newImplementation = address(new ZAsset());
         upgradeCall = new bytes(0);
     }
 }
