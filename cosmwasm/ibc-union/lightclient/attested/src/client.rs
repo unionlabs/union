@@ -119,13 +119,9 @@ impl IbcClient for AttestedLightClient {
 
 pub fn verify_header(
     deps: Deps,
-    client_state: ClientState,
-    header: Header,
+    ClientState::V1(mut client_state): ClientState,
+    Header { height, timestamp }: Header,
 ) -> Result<StateUpdate<AttestedLightClient>, Error> {
-    let ClientState::V1(mut client_state) = client_state;
-
-    let Header { height, timestamp } = header;
-
     let attested_timestamp = deps
         .storage
         .read::<HeightTimestamps>(&(client_state.chain_id.clone(), height))?;

@@ -42,7 +42,7 @@ pub enum RestrictedExecuteMsg {
         chain_id: String,
         new_attestor: H256,
     },
-    /// Add an existing attestor from the attestation set.
+    /// Remove an existing attestor from the attestation set.
     RemoveAttestor {
         chain_id: String,
         old_attestor: H256,

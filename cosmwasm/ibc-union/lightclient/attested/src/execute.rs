@@ -7,6 +7,8 @@ use unionlabs::{
     primitives::{H256, H512},
 };
 
+#[cfg(doc)]
+use crate::msg::{ExecuteMsg, RestrictedExecuteMsg};
 use crate::{
     errors::Error,
     state::{
@@ -16,6 +18,7 @@ use crate::{
     types::{Attestation, AttestationKey},
 };
 
+/// See [`ExecuteMsg::Attest`].
 pub fn attest(
     mut deps: DepsMut,
     attestation: Attestation,
@@ -118,6 +121,18 @@ pub fn confirm_attestation(deps: DepsMut, attestation: Attestation) -> Result<Re
     Ok(Response::new().add_event(event))
 }
 
+/// Check if the quorum has been reached for the provided `attestation` with the provided `signatures`.
+///
+/// This function will return `Ok(Ok(Event))` if the quorum was reached, containing the `quorum_reached` event. Additionally, the contract state will be updated:
+/// - The confirmed attestation will be removed from [`PendingAttestations`], and will be written to [`Attestations`]
+/// - [`AttestationAttestors`] will be updated to contain `signatures`
+/// - [`HeightTimestamps`] will be updated to contain the attestation timestamp at the attestation height, if it is not already present.
+///
+/// In the case that the quorum is not reached, `Ok(Err(quorum, total_valid_signatures))` will be returned. This can be safely ignored if the quorum is not expected to be reached.
+///
+/// # Errors
+///
+/// This function will return an error if any storage reads fail.
 fn check_quorum(
     deps: DepsMut,
     signatures: &BTreeMap<H256, H512>,
@@ -125,13 +140,14 @@ fn check_quorum(
 ) -> Result<Result<Event, (NonZero<u8>, u8)>, Error> {
     let quorum = deps.storage.read::<Quorum>(&attestation.chain_id)?;
 
-    let total_valid_signatures = signatures.iter().try_fold(0, |total, (attestor, _)| {
+    // TODO: Add a test that checks for wrapping behaviour
+    let total_valid_signatures = signatures.iter().try_fold(0_u8, |total, (attestor, _)| {
         deps.storage
             .maybe_read::<Attestors>(&(attestation.chain_id.clone(), *attestor))
-            .map(|exists| total + (exists.is_some() as usize))
+            .map(|exists| total.wrapping_add(exists.is_some() as u8))
     })?;
 
-    if total_valid_signatures >= quorum.get().into() {
+    if total_valid_signatures >= quorum.get() {
         deps.storage.delete::<PendingAttestations>(attestation);
 
         deps.storage.write::<Attestations>(
@@ -147,7 +163,16 @@ fn check_quorum(
 
         deps.storage.upsert::<HeightTimestamps, Error>(
             &(attestation.chain_id.clone(), attestation.height),
-            |maybe_timestamp| Ok(maybe_timestamp.unwrap_or(attestation.timestamp)),
+            |maybe_timestamp| match maybe_timestamp {
+                Some(timestamp) => {
+                    assert_eq!(
+                        timestamp, attestation.timestamp,
+                        "invariant: attestations with inconsistent heights cannot be created"
+                    );
+                    Ok(timestamp)
+                }
+                None => Ok(attestation.timestamp),
+            },
         )?;
 
         Ok(Ok(Event::new("quorum_reached")
@@ -158,10 +183,13 @@ fn check_quorum(
             .add_attribute("value", attestation.value.to_string())
             .add_attribute("quorum", quorum.to_string())))
     } else {
-        Ok(Err((quorum, total_valid_signatures as u8)))
+        Ok(Err((quorum, total_valid_signatures)))
     }
 }
 
+/// See [`RestrictedExecuteMsg::SetQuorum`].
+///
+/// Note that permissions are not checked in this function, and must be checked by the caller.
 pub fn set_quorum(
     deps: DepsMut,
     chain_id: String,
@@ -176,6 +204,9 @@ pub fn set_quorum(
     ))
 }
 
+/// See [`RestrictedExecuteMsg::AddAttestor`].
+///
+/// Note that permissions are not checked in this function, and must be checked by the caller.
 pub fn add_attestor(
     deps: DepsMut,
     chain_id: String,
@@ -203,6 +234,9 @@ pub fn add_attestor(
     }
 }
 
+/// See [`RestrictedExecuteMsg::RemoveAttestor`].
+///
+/// Note that permissions are not checked in this function, and must be checked by the caller.
 pub fn remove_attestor(
     deps: DepsMut,
     chain_id: String,

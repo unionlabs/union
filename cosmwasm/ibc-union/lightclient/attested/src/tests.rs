@@ -12,7 +12,7 @@ use frissitheto::UpgradeMsg;
 use hex_literal::hex;
 use ibc_union_light_client::{
     StateUpdate,
-    access_managed::{self, EnsureCanCallResult, Restricted},
+    access_managed::{self, Restricted},
     msg::InitMsg,
     spec::{Duration, Timestamp},
 };
