@@ -1,0 +1,33 @@
+[package]
+name    = "proxy-account-factory"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+cosmwasm-std       = { workspace = true, features = ["cosmwasm_2_0", "staking", "stargate"] } # enable all features so that any message is dispatchable
+cw-account         = { workspace = true }
+depolama           = { workspace = true }
+embed-commit       = { workspace = true }
+frissitheto        = { workspace = true }
+hex-literal        = { workspace = true }
+schemars           = { workspace = true, optional = true, features = ["derive"] }
+serde              = { workspace = true, features = ["derive"] }
+sha2               = { workspace = true }
+thiserror          = { workspace = true }
+unionlabs-encoding = { workspace = true, features = ["bincode"] }
+
+[features]
+default  = []
+library  = []
+schemars = ["dep:schemars"]
