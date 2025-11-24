@@ -326,7 +326,7 @@ impl Module {
                     None::<()>,
                 ));
             } else if block_number == until {
-                // if this is a ranged fetch, we need to fetch the upper bound of the range individually sinnce FetchBlocks is exclusive on the upper bound
+                // if this is a ranged fetch, we need to fetch the upper bound of the range individually since FetchBlocks is exclusive on the upper bound
                 return Ok(call(PluginMessage::new(
                     self.plugin_name(),
                     ModuleCall::from(FetchGetLogs { block_number }),
