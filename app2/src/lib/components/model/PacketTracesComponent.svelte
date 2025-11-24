@@ -1,11 +1,9 @@
 <script lang="ts">
 import { type DisplayMode, PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
 import { chains } from "$lib/stores/chains.svelte"
-import { getChain, PacketTrace, UniversalChainId } from "@unionlabs/sdk/schema"
-import bs58 from "bs58"
+import { getChain, PacketTrace } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import type { HTMLAttributes } from "svelte/elements"
-import { fromHex, type Hex } from "viem"
 import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
@@ -99,14 +97,6 @@ function getArrowSpan(
     isLeft,
   }
 }
-
-function formatTxHash(universal_chain_id: UniversalChainId, tx_hash: Hex): string {
-  if (universal_chain_id.split(".")[0] == "sui") {
-    return bs58.encode(fromHex(tx_hash, "bytes"))
-  } else {
-    return tx_hash
-  }
-}
 </script>
 
 {#if packetTracesWithOrWithoutAck.length > 0 && Option.isSome(chains.data)}
@@ -169,6 +159,7 @@ function formatTxHash(universal_chain_id: UniversalChainId, tx_hash: Hex): strin
         i > 0 ? packetTracesWithOrWithoutAck[i - 1] : null,
       )}
         {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
+        {@const formattedTxHash = trace.getDisplayTransactionHash()}
 
         <!-- Trace card -->
 
@@ -204,14 +195,11 @@ function formatTxHash(universal_chain_id: UniversalChainId, tx_hash: Hex): strin
               </div>
 
               {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp)
-              && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+              && Option.isSome(formattedTxHash) && Option.isSome(chain)}
                 <div class="text-xs text-zinc-400">
                   <TransactionHashComponent
                     chain={chain.value}
-                    hash={formatTxHash(
-                      chain.value.universal_chain_id,
-                      trace.transaction_hash.value,
-                    )}
+                    hash={formattedTxHash.value}
                   />
                 </div>
               {/if}

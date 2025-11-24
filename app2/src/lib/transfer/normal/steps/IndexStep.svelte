@@ -6,12 +6,9 @@ import TransactionHashComponent from "$lib/components/model/TransactionHashCompo
 import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte"
 import type { WaitForIndex } from "$lib/transfer/normal/steps/steps"
-import type { UniversalChainId } from "@unionlabs/sdk/schema"
-import bs58 from "bs58"
 import { Option } from "effect"
 import { onDestroy } from "svelte"
 import { fly } from "svelte/transition"
-import { fromHex, type Hex } from "viem"
 
 type Props = {
   newTransfer: () => void
@@ -37,14 +34,6 @@ const handleRedirect = () => {
     const packet = transferHashStore.data.value
     goto(`/explorer/transfers/${packet}`)
     transferHashStore.reset()
-  }
-}
-
-function formatTxHash(universal_chain_id: UniversalChainId, tx_hash: Hex): string {
-  if (universal_chain_id.split(".")[0] == "sui") {
-    return bs58.encode(fromHex(tx_hash, "bytes"))
-  } else {
-    return tx_hash
   }
 }
 </script>
@@ -121,7 +110,7 @@ function formatTxHash(universal_chain_id: UniversalChainId, tx_hash: Hex): strin
             Waiting for indexer...
           </p>
           <TransactionHashComponent
-            hash={formatTxHash(sourceChain.universal_chain_id, transferHashStore.hash)}
+            hash={sourceChain.getDisplayTransactionHash(transferHashStore.hash as `0x${string}`)}
             chain={sourceChain}
           />
         </div>

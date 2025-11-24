@@ -1,3 +1,4 @@
+import { base58 } from "@scure/base"
 import { Effect, ParseResult } from "effect"
 import { pipe } from "effect/Function"
 import * as S from "effect/Schema"
@@ -17,6 +18,42 @@ export const Hex = S.NonEmptyString.pipe( // TODO: add `Bytes` brand separately
   }),
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type Hex = typeof Hex.Type
+
+/**
+ * Base58-encoded string (non-empty)
+ */
+export const Base58 = S.NonEmptyString.pipe(
+  S.pattern(/^[1-9A-HJ-NP-Za-km-z]+$/),
+  S.annotations({
+    title: "base58",
+    description: "base58 encoded string",
+  }),
+)
+export type Base58 = typeof Base58.Type
+
+/**
+ * Transform from Hex to Base58 string
+ */
+export const Base58FromHex = S.transformOrFail(Hex, Base58, {
+  strict: true,
+  decode: (hex, _opts, ast) =>
+    Effect.try({
+      try: () => {
+        const hexBytes = fromHex(hex, "bytes")
+        return base58.encode(hexBytes) as Base58
+      },
+      catch: e => new ParseResult.Type(ast, hex, String(e)),
+    }),
+  encode: (b58, _opts, ast) =>
+    Effect.try({
+      try: () => {
+        const decodedBytes = base58.decode(b58)
+        return toHex(decodedBytes) as Hex
+      },
+      catch: e => new ParseResult.Type(ast, b58, String(e)),
+    }),
+})
+export type Base58FromHex = typeof Base58FromHex.Type
 
 // TODO: validate ERC55 checksum
 // TODO: see `Hex` for type hacking to avoid `TemplateLiteral` incongruency

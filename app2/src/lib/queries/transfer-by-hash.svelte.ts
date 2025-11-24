@@ -42,6 +42,7 @@ export const transferByPacketHashQuery = (packetHash: string) =>
             transaction_hash
             chain {
               universal_chain_id
+              rpc_type
             }
           }
         }
