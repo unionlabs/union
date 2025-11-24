@@ -1,3 +1,4 @@
+import { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
@@ -24,17 +25,33 @@ import * as Sui from "../Sui.js"
 type HexAddr = `0x${string}`
 const base58ToHex = (s: string): Hex => toHex(bs58.decode(s)) as Hex
 
-export function parseUcs03Port(raw: string): {
-  ucs03Address: HexAddr
-  module: string
-  relayStoreId: HexAddr
-} {
-  return {
-    ucs03Address: "0xa1cfaf8c85635bef3615e59f4b653810835be05647baaed6cad8afc2bb25969b" as HexAddr,
-    module: "zkgm",
-    relayStoreId: "0xb7d2a0610ffdc3773a0953f61dd108b99397201a1fc507191f038ca3b844859e" as HexAddr,
-  }
+interface Port {
+  id: { id: HexAddr }
+  _module_address: HexAddr
+  data: HexAddr
 }
+
+export const readUcs03Port = (client: SuiClient, portId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      client.getObject({
+        id: portId,
+        options: { showContent: true },
+      }).then(async res => {
+        if (res.data?.content?.dataType !== "moveObject") {
+          throw new Error("Not a MoveObject")
+        }
+
+        const f = res.data.content.fields as unknown as Port
+
+        return {
+          ucs03Address: f._module_address,
+          module: "zkgm",
+          relayStoreId: f.data,
+        }
+      }),
+    catch: error => error,
+  })
 
 export const fromWallet = (
   opts: { client: Sui.Sui.PublicClient; wallet: Sui.Sui.WalletClient },
@@ -128,8 +145,19 @@ export const fromWallet = (
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
+
       const { ucs03Address: decodedUcs03, module: decodedModule, relayStoreId: relayFromPort } =
-        parseUcs03Port(request.ucs03Address as unknown as string)
+        yield* pipe(
+          readUcs03Port(wallet.client, request.ucs03Address as unknown as string),
+          Effect.mapError((cause) =>
+            new ClientError.RequestError({
+              reason: "Transport",
+              request,
+              cause,
+              description: "parsing port",
+            })
+          ),
+        )
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", {
         decodedUcs03,

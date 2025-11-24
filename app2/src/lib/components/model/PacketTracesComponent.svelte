@@ -1,9 +1,11 @@
 <script lang="ts">
 import { type DisplayMode, PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
 import { chains } from "$lib/stores/chains.svelte"
-import { getChain, PacketTrace } from "@unionlabs/sdk/schema"
+import { getChain, PacketTrace, UniversalChainId } from "@unionlabs/sdk/schema"
+import bs58 from "bs58"
 import { Option } from "effect"
 import type { HTMLAttributes } from "svelte/elements"
+import { fromHex, type Hex } from "viem"
 import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
@@ -95,6 +97,14 @@ function getArrowSpan(
   return {
     gridColumn: `${Math.min(start, end)} / ${Math.max(start, end)}`,
     isLeft,
+  }
+}
+
+function formatTxHash(universal_chain_id: UniversalChainId, tx_hash: Hex): string {
+  if (universal_chain_id.split(".")[0] == "sui") {
+    return bs58.encode(fromHex(tx_hash, "bytes"))
+  } else {
+    return tx_hash
   }
 }
 </script>
@@ -198,7 +208,10 @@ function getArrowSpan(
                 <div class="text-xs text-zinc-400">
                   <TransactionHashComponent
                     chain={chain.value}
-                    hash={trace.transaction_hash.value}
+                    hash={formatTxHash(
+                      chain.value.universal_chain_id,
+                      trace.transaction_hash.value,
+                    )}
                   />
                 </div>
               {/if}
