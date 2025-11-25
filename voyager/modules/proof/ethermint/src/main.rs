@@ -29,7 +29,7 @@ use voyager_sdk::{
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    <Module as ProofModule<IbcUnion>>::run().await;
+    Module::run().await;
 }
 
 #[derive(clap::Subcommand)]
@@ -41,7 +41,6 @@ pub enum Cmd {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
 
@@ -69,34 +68,13 @@ impl ProofModule<IbcUnion> for Module {
 
         info.ensure_chain_id(&chain_id)?;
 
-        let chain_revision = chain_id
-            .split('-')
-            .next_back()
-            .ok_or_else(|| ChainIdParseError {
-                found: chain_id.clone(),
-                source: None,
-            })?
-            .parse()
-            .map_err(|err| ChainIdParseError {
-                found: chain_id.clone(),
-                source: Some(err),
-            })?;
-
         Ok(Self {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
-            chain_revision,
             ibc_handler_address: config.ibc_handler_address,
             store_key: config.store_key,
             key_prefix_storage: config.key_prefix_storage,
         })
-    }
-}
-
-impl Module {
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height::new_with_revision(self.chain_revision, height)
     }
 }
 

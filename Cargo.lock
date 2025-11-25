@@ -16755,18 +16755,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-event-source-plugin-cosmos-sdk"
+name = "voyager-event-source-plugin-cosmwasm"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
  "clap",
  "cometbft-rpc",
  "cosmos-sdk-event",
- "dashmap 5.5.3",
  "embed-commit",
  "enumorph",
- "ibc-classic-spec",
- "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
  "macros",
@@ -16781,7 +16778,6 @@ dependencies = [
  "tracing",
  "unionlabs",
  "voyager-sdk",
- "wasm-client-type",
 ]
 
 [[package]]
@@ -17248,26 +17244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-proof-module-cosmos-sdk"
-version = "0.0.0"
-dependencies = [
- "clap",
- "cometbft-rpc",
- "embed-commit",
- "ibc-classic-spec",
- "jsonrpsee 0.25.1",
- "prost 0.12.6",
- "protos",
- "serde",
- "serde_json",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-sdk",
-]
-
-[[package]]
 name = "voyager-proof-module-cosmos-sdk-union"
 version = "0.0.0"
 dependencies = [
@@ -17402,27 +17378,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-state-module-cosmos-sdk"
-version = "0.0.0"
-dependencies = [
- "clap",
- "cometbft-rpc",
- "embed-commit",
- "ibc-classic-spec",
- "jsonrpsee 0.25.1",
- "protos",
- "serde",
- "serde-utils",
- "serde_json",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-sdk",
-]
-
-[[package]]
-name = "voyager-state-module-cosmos-sdk-union"
+name = "voyager-state-module-cosmwasm"
 version = "0.0.0"
 dependencies = [
  "clap",

@@ -1,6 +1,6 @@
 // #![warn(clippy::unwrap_used)]
 
-use std::num::{NonZeroU8, NonZeroU32, ParseIntError};
+use std::num::{NonZeroU8, NonZeroU32};
 
 use cometbft_rpc::rpc_types::Order;
 use cosmos_sdk_event::CosmosSdkEvent;
@@ -20,17 +20,21 @@ use jsonrpsee::{
     core::{RpcResult, async_trait},
     types::ErrorObject,
 };
-use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
+use protos::cosmwasm::wasm::v1::{
+    QueryContractInfoRequest, QueryContractInfoResponse, QuerySmartContractStateRequest,
+    QuerySmartContractStateResponse,
+};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ErrorReporter,
     ibc::core::client::height::Height,
     primitives::{Bech32, Bytes, H256, encoding::HexUnprefixed},
 };
 use voyager_sdk::{
-    anyhow, into_value,
+    anyhow::{self, Context},
+    into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
     rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, rpc_error, types::StateModuleInfo},
@@ -38,7 +42,7 @@ use voyager_sdk::{
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    <Module as StateModule<IbcUnion>>::run().await;
+    Module::run().await;
 }
 
 #[derive(clap::Subcommand)]
@@ -50,7 +54,6 @@ pub enum Cmd {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
 
@@ -75,34 +78,38 @@ impl StateModule<IbcUnion> for Module {
         info.ensure_chain_id(&chain_id)?;
         info.ensure_ibc_spec_id(IbcUnion::ID.as_str())?;
 
-        let chain_revision = chain_id
-            .split('-')
-            .next_back()
-            .ok_or_else(|| ChainIdParseError {
-                found: chain_id.clone(),
-                source: None,
-            })?
-            .parse()
-            .map_err(|err| ChainIdParseError {
-                found: chain_id.clone(),
-                source: Some(err),
-            })?;
+        let contract_info = cometbft_client
+            .grpc_abci_query::<_, QueryContractInfoResponse>(
+                "/cosmwasm.wasm.v1.Query/ContractInfo",
+                &QueryContractInfoRequest {
+                    address: config.ibc_host_contract_address.to_string(),
+                },
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .context("empty response")?
+            .contract_info
+            .context("empty response")?;
+
+        debug!(
+            code_id = contract_info.code_id,
+            creator = contract_info.creator,
+            admin = contract_info.admin,
+            label = contract_info.label,
+            "ibc host contract info"
+        );
 
         Ok(Self {
             cometbft_client,
             chain_id: ChainId::new(chain_id),
-            chain_revision,
             ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
 }
 
 impl Module {
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height::new_with_revision(self.chain_revision, height)
-    }
-
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
     pub async fn query_packet_by_hash(
         &self,
@@ -515,14 +522,6 @@ impl Module {
 
         Ok(commitment.unwrap_or_default())
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
-pub struct ChainIdParseError {
-    found: String,
-    #[source]
-    source: Option<ParseIntError>,
 }
 
 #[async_trait]

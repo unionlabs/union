@@ -9,7 +9,7 @@
       // preconfigured state module to read state from the ibc-union implementation running on union-testnet-9
       {
         "enabled": true,
-        "path": "/path/to/modules/voyager-state-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-state-module-cosmwasm",
         "info": {
           "chain_id": "union-testnet-9",
           "ibc_spec_id": "ibc-union"
@@ -40,7 +40,7 @@
       // the state module to read state from the ibc-union implementation running on your chain. fill in the empty values with the relevant information.
       {
         "enabled": true,
-        "path": "/path/to/modules/voyager-state-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-state-module-cosmwasm",
         "info": {
           "chain_id": "",
           // since this is reading state for an ibc-union implementation, this must stay as ibc-union. any other value will error on startup.
@@ -64,7 +64,7 @@
       {
         // preconfigured proof module for union-testnet-9.
         "enabled": true,
-        "path": "/path/to/modules/voyager-proof-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-proof-module-cosmwasm",
         "info": {
           "chain_id": "union-testnet-9",
           "ibc_spec_id": "ibc-union"
@@ -91,7 +91,7 @@
       // the state module to read proofs from the ibc-union implementation running on your chain. for a cosmwasm chain running ibc-union, all of the values are the same as the state module.
       {
         "enabled": true,
-        "path": "/path/to/modules/voyager-proof-module-cosmos-sdk-union",
+        "path": "/path/to/modules/voyager-proof-module-cosmwasm",
         "info": {
           "chain_id": "",
           "ibc_spec_id": "ibc-union"

@@ -3,7 +3,7 @@
     "state": [
       {
         "enabled": true,
-        "path": "/bin/voyager-state-module-cosmos-sdk-union",
+        "path": "/bin/voyager-state-module-cosmwasm",
         "info": {
           "chain_id": "union-devnet-1",
           "ibc_spec_id": "ibc-union"
