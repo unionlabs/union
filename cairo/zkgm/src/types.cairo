@@ -2,40 +2,41 @@ use alexandria_evm::decoder::AbiDecodeTrait;
 use alexandria_evm::encoder::{AbiEncodeTrait, EVMCalldata};
 use alexandria_evm::evm_enum::EVMTypes;
 use alexandria_evm::evm_struct::EVMCalldata as StructEVMCalldata;
-use core::iter::Extend;
 
 pub fn ethabi_decode<T, +Serde<T>, +EthAbi<T>>(data: ByteArray) -> Option<T> {
     let mut calldata = StructEVMCalldata { relative_offset: 0, offset: 0, calldata: data };
 
-    println!("asdenaesdn");
     let mut decoded = calldata.decode(EthAbi::<T>::tokens().span());
-    println!("asdenaesdn2");
 
     Serde::deserialize(ref decoded)
 }
 
+pub fn ethabi_encode<T, +Serde<T>, +EthAbi<T>>(data: @T) -> ByteArray {
+    let mut encoder = EVMCalldata {
+        calldata: Default::default(),
+        offset: 0,
+        dynamic_data: Default::default(),
+        dynamic_offset: EthAbi::<T>::dynamic_offset(),
+    };
+
+    let mut bytes = Default::default();
+    data.serialize(ref bytes);
+
+    encoder.encode(EthAbi::<T>::tokens().span(), bytes.span())
+}
+
 pub trait EthAbi<T> {
     fn tokens() -> Array<EVMTypes>;
-}
 
-#[derive(Debug, Drop, Serde)]
-pub struct TestBro {
-    pub a: ByteArray,
-    pub b: ByteArray,
-    pub c: ByteArray,
-    pub d: ByteArray,
-}
-
-pub impl TestBroEthAbi of EthAbi<TestBro> {
-    fn tokens() -> Array<EVMTypes> {
-        array![EVMTypes::Bytes32, EVMTypes::Bytes32, EVMTypes::Bytes32, EVMTypes::Bytes32]
+    fn dynamic_offset() -> u32 {
+        0
     }
 }
 
-#[derive(Debug, Drop, Serde)]
+#[derive(Debug, Drop, Serde, PartialEq)]
 pub struct ZkgmPacket {
     // check if there is a fixed-sized type
-    pub salt: u256,
+    pub salt: ByteArray,
     pub path: u256,
     pub instruction: Instruction,
 }
@@ -43,34 +44,17 @@ pub struct ZkgmPacket {
 impl ZkgmEthAbiDecodeImpl of EthAbi<ZkgmPacket> {
     fn tokens() -> Array<EVMTypes> {
         array![
-            EVMTypes::Bytes32, EVMTypes::Uint256,
+            EVMTypes::Uint256, EVMTypes::Uint256,
             EVMTypes::Tuple(array![EVMTypes::Uint8, EVMTypes::Uint8, EVMTypes::Bytes].span()),
         ]
     }
-}
 
-#[generate_trait]
-pub impl ZkgmPacketImpl of ZkgmPacketTrait {
-    fn encode(self: @ZkgmPacket) -> ByteArray {
-        // let mut encoder = EVMCalldata {
-        //     calldata: Default::default(),
-        //     offset: 0,
-        //     dynamic_data: Default::default(),
-        //     dynamic_offset: 0,
-        // };
-
-        // let mut bz: Array<felt252> = array![
-        //     self.salt.len().into(), (*self.path.low).into(), (*self.path.high).into(),
-        // ];
-
-        // bz.extend(self.instruction.values_to_be_encoded());
-
-        // encoder.encode(EthAbi::<ZkgmPacket>::tokens().span(), bz.span())
-        Default::default()
+    fn dynamic_offset() -> u32 {
+        (3 + EthAbi::<Instruction>::dynamic_offset()) * 0x20
     }
 }
 
-#[derive(Drop, Debug, Serde)]
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Instruction {
     pub version: u8,
     pub opcode: u8,
@@ -81,21 +65,13 @@ impl InstructionEthAbiImpl of EthAbi<Instruction> {
     fn tokens() -> Array<EVMTypes> {
         array![EVMTypes::Uint8, EVMTypes::Uint8, EVMTypes::Bytes]
     }
-}
 
-#[generate_trait]
-pub impl InstructionImpl of InstructionTrait {
-    fn values_to_be_encoded(self: @Instruction) -> Array<felt252> {
-        let mut bz: Array<felt252> = array![
-            (*self.version).into(), (*self.opcode).into(), self.operand.len().into(),
-        ];
-
-        self.operand.serialize(ref bz);
-
-        bz
+    fn dynamic_offset() -> u32 {
+        3 * 0x20
     }
 }
 
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Forward {
     pub path: u256,
     pub timeout_height: u64,
@@ -103,6 +79,20 @@ pub struct Forward {
     pub instruction: Instruction,
 }
 
+impl ForwardEthAbiImpl of EthAbi<Forward> {
+    fn tokens() -> Array<EVMTypes> {
+        array![
+            EVMTypes::Uint256, EVMTypes::Uint64, EVMTypes::Uint64,
+            EVMTypes::Tuple(array![EVMTypes::Uint8, EVMTypes::Uint8, EVMTypes::Bytes].span()),
+        ]
+    }
+
+    fn dynamic_offset() -> u32 {
+        (4 + EthAbi::<Instruction>::dynamic_offset()) * 0x20
+    }
+}
+
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Call {
     pub sender: ByteArray,
     pub eureka: bool,
@@ -110,10 +100,34 @@ pub struct Call {
     pub contract_calldata: ByteArray,
 }
 
+
+impl CallEthAbiImpl of EthAbi<Call> {
+    fn tokens() -> Array<EVMTypes> {
+        array![EVMTypes::Bytes, EVMTypes::Bool, EVMTypes::Bytes, EVMTypes::Bytes]
+    }
+}
+
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Batch {
     pub instructions: Array<Instruction>,
 }
 
+impl BatchEthAbiImpl of EthAbi<Batch> {
+    fn tokens() -> Array<EVMTypes> {
+        array![
+            EVMTypes::Array(
+                array![
+                    EVMTypes::Tuple(
+                        array![EVMTypes::Uint8, EVMTypes::Uint8, EVMTypes::Bytes].span(),
+                    ),
+                ]
+                    .span(),
+            ),
+        ]
+    }
+}
+
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct TokenOrderV2 {
     pub sender: ByteArray,
     pub receiver: ByteArray,
@@ -126,9 +140,24 @@ pub struct TokenOrderV2 {
     pub metadata: ByteArray,
 }
 
+impl TokenOrderV2EthAbiImpl of EthAbi<TokenOrderV2> {
+    fn tokens() -> Array<EVMTypes> {
+        array![
+            EVMTypes::Bytes, EVMTypes::Bytes, EVMTypes::Bytes, EVMTypes::Uint256, EVMTypes::Bytes,
+            EVMTypes::Uint256, EVMTypes::Uint8, EVMTypes::Bytes,
+        ]
+    }
+}
+
 pub struct TokenMetadata {
     pub implementation: ByteArray,
     pub initializer: ByteArray,
+}
+
+impl TokenMetadataEthAbiImpl of EthAbi<TokenMetadata> {
+    fn tokens() -> Array<EVMTypes> {
+        array![EVMTypes::Bytes, EVMTypes::Bytes]
+    }
 }
 
 pub struct SolverMetadata {
@@ -136,16 +165,49 @@ pub struct SolverMetadata {
     pub metadata: ByteArray,
 }
 
+
+impl SolverMetadataEthAbiImpl of EthAbi<SolverMetadata> {
+    fn tokens() -> Array<EVMTypes> {
+        array![EVMTypes::Bytes, EVMTypes::Bytes]
+    }
+}
+
 pub struct Ack {
     pub tag: u256,
     pub inner_ack: ByteArray,
+}
+
+impl AckEthAbiImpl of EthAbi<Ack> {
+    fn tokens() -> Array<EVMTypes> {
+        array![EVMTypes::Uint256, EVMTypes::Bytes]
+    }
+
+    fn dynamic_offset() -> u32 {
+        0x20
+    }
 }
 
 pub struct BatchAck {
     pub acknowledgements: Array<ByteArray>,
 }
 
+impl BatchAckEthAbiImpl of EthAbi<BatchAck> {
+    fn tokens() -> Array<EVMTypes> {
+        array![EVMTypes::Array(array![EVMTypes::Bytes].span())]
+    }
+}
+
 pub struct TokenOrderAck {
     pub fill_type: u256,
     pub market_maker: ByteArray,
+}
+
+impl TokenOrderAckEthAbiImpl of EthAbi<TokenOrderAck> {
+    fn tokens() -> Array<EVMTypes> {
+        array![EVMTypes::Uint256, EVMTypes::Bytes]
+    }
+
+    fn dynamic_offset() -> u32 {
+        0x20
+    }
 }
