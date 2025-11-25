@@ -5,11 +5,7 @@ use ibc_union_spec::{
     ClientId, IbcUnion,
     path::{ClientStatePath, ConsensusStatePath},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
 use tracing::{debug, info, instrument};
@@ -26,7 +22,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     types::{ProofType, RawClientId},
     vm::{Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
@@ -416,15 +412,11 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                 // ensure that the l2 client on the l1 has been updated to at least update_to
                 if l2_client_state_meta.counterparty_height < update_to {
-                    return Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!(
-                            "l2_client_state_meta.counterparty_height is {} but update_to \
-                            request is {update_to}",
-                            l2_client_state_meta.counterparty_height
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(RpcError::missing_state(format!(
+                        "l2_client_state_meta.counterparty_height is {} but update_to \
+                        request is {update_to}",
+                        l2_client_state_meta.counterparty_height
+                    )));
                 }
 
                 let update_to = l2_client_state_meta.counterparty_height;
@@ -454,10 +446,8 @@ impl PluginServer<ModuleCall, Never> for Module {
                     .into_result()?;
 
                 if l2_consensus_state_proof.proof_type != ProofType::Membership {
-                    return Err(ErrorObject::owned(
-                        MISSING_STATE_ERROR_CODE,
+                    return Err(RpcError::missing_state(
                         "proof of the l2 consensus state must be a membership proof",
-                        None::<()>,
                     ));
                 }
 

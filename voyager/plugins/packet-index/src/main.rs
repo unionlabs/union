@@ -10,10 +10,7 @@ use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, COMMITMENT_MAGIC, ChannelPath, ConnectionPath},
     query::{PacketAckByHash, PacketByHash},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256};
@@ -26,7 +23,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcResult, types::PluginInfo},
     vm::{Op, call, data, noop, pass::PassResult},
 };
 

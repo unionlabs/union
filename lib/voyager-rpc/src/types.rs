@@ -1,4 +1,3 @@
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -6,7 +5,7 @@ use unionlabs::ibc::core::client::height::Height;
 use voyager_primitives::{ChainId, ClientType, ConsensusType, IbcInterface, IbcSpecId};
 use voyager_types::IbcProof;
 
-use crate::MISSING_STATE_ERROR_CODE;
+use crate::{RpcError, RpcResult};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -346,11 +345,7 @@ impl IbcProofResponse {
     pub fn into_result(self) -> RpcResult<IbcProof> {
         match self {
             Self::Proof(proof) => Ok(proof),
-            Self::NotAvailable => Err(ErrorObject::owned(
-                MISSING_STATE_ERROR_CODE,
-                "proof not available",
-                None::<()>,
-            )),
+            Self::NotAvailable => Err(RpcError::missing_state("proof not available")),
         }
     }
 }

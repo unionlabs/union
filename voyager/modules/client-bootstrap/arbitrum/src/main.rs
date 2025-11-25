@@ -4,22 +4,16 @@ use alloy::{
 };
 use arbitrum_light_client_types::{ClientState, ClientStateV1, ClientStateV2, ConsensusState};
 use ibc_union_spec::{ClientId, IbcUnion, Timestamp};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{info, instrument};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H160};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
     ExtensionsExt, VoyagerClient, anyhow, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
-    rpc::{
-        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
-    },
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -95,17 +89,13 @@ impl Module {
         if self.l1_chain_id == l1_client_state_meta.counterparty_chain_id {
             Ok(())
         } else {
-            Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "l1 client {l1_client_id} tracks {l1_counterparty_chain_id}, \
-                    but this arbitrum chain ({l2_chain_id}) settles on {l1_chain_id}",
-                    l1_counterparty_chain_id = l1_client_state_meta.counterparty_chain_id,
-                    l2_chain_id = self.chain_id,
-                    l1_chain_id = self.l1_chain_id
-                ),
-                None::<()>,
-            ))
+            Err(RpcError::fatal_from_message(format!(
+                "l1 client {l1_client_id} tracks {l1_counterparty_chain_id}, \
+                but this arbitrum chain ({l2_chain_id}) settles on {l1_chain_id}",
+                l1_counterparty_chain_id = l1_client_state_meta.counterparty_chain_id,
+                l2_chain_id = self.chain_id,
+                l1_chain_id = self.l1_chain_id
+            )))
         }
     }
 }
@@ -146,13 +136,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                ErrorReporter(err).with_message("unable to deserialize client state config"),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize client state config"))?;
 
         self.ensure_l1_client_counterparty_chain_id(
             e.voyager_client()?,
@@ -195,13 +180,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                ErrorReporter(err).with_message("unable to deserialize client state config"),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize client state config"))?;
 
         self.ensure_l1_client_counterparty_chain_id(
             e.voyager_client()?,
@@ -214,14 +194,8 @@ impl ClientBootstrapModuleServer for Module {
             .provider
             .get_block(height.height().into())
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    ErrorReporter(err).with_message("error fetching l2 block"),
-                    None::<()>,
-                )
-            })?
-            .unwrap();
+            .map_err(RpcError::retryable("error fetching l2 block"))?
+            .ok_or_else(|| RpcError::missing_state("error fetching l2 block: block not found"))?;
 
         Ok(into_value(ConsensusState {
             state_root: l2_block.header.state_root.into(),
@@ -230,7 +204,7 @@ impl ClientBootstrapModuleServer for Module {
                 .get_proof(self.ibc_handler_address.into(), vec![])
                 .block_id(height.height().into())
                 .await
-                .unwrap()
+                .map_err(RpcError::retryable("error fetching ibc storage root"))?
                 .storage_hash
                 .0
                 .into(),

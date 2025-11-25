@@ -3,10 +3,7 @@
 use std::{collections::VecDeque, num::ParseIntError};
 
 use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
 use tracing::{instrument, warn};
@@ -27,7 +24,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{PluginServer, rpc_error, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{Op, Visit, data, pass::PassResult},
 };
 
@@ -185,25 +182,25 @@ impl PluginServer<ModuleCall, Never> for Module {
                     .cometbft_client
                     .commit(Some(trusted_height))
                     .await
-                    .map_err(rpc_error("trusted commit", None))?;
+                    .map_err(RpcError::retryable("trusted commit"))?;
 
                 let untrusted_commit = self
                     .cometbft_client
                     .commit(Some(untrusted_height))
                     .await
-                    .map_err(rpc_error("untrusted commit", None))?;
+                    .map_err(RpcError::retryable("untrusted commit"))?;
 
                 let trusted_validators = self
                     .cometbft_client
                     .all_validators(Some(trusted_height))
                     .await
-                    .map_err(rpc_error("trusted validators", None))?;
+                    .map_err(RpcError::retryable("trusted validators"))?;
 
                 let untrusted_validators = self
                     .cometbft_client
                     .all_validators(Some(untrusted_height))
                     .await
-                    .map_err(rpc_error("untrusted validators", None))?;
+                    .map_err(RpcError::retryable("untrusted validators"))?;
 
                 let header = Header {
                     validator_set: mk_validator_set(

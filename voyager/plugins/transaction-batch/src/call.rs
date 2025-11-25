@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::{IbcUnion, query::PacketsByBatchHash};
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
@@ -17,7 +16,7 @@ use voyager_sdk::{
         data::{EventProvableHeight, IbcDatagram},
     },
     primitives::{ChainId, QueryHeight},
-    rpc::MISSING_STATE_ERROR_CODE,
+    rpc::{RpcError, RpcResult},
     types::RawClientId,
     vm::{Op, data, now, promise},
 };
@@ -100,25 +99,22 @@ where
             | EventProvableHeight::Exactly(target_height)) = target_height;
 
             if latest_height < target_height {
-                return Err(ErrorObject::owned(
-                    // we treat this as a missing state error, since this message assumes the state exists.
-                    MISSING_STATE_ERROR_CODE,
-                    format!(
-                        "the latest height of the counterparty chain ({counterparty_chain_id}) \
-                        is {latest_height} and the latest trusted height on the client tracking \
-                        it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
-                        in order to create an update for this client, we need to wait for the \
-                        counterparty chain to progress to the next consensus checkpoint greater \
-                        than the required target height {target_height}",
-                        counterparty_chain_id = client_state_meta.counterparty_chain_id,
-                        trusted_height = client_state_meta.counterparty_height,
-                        client_id = self.client_id,
-                        self_chain_id = module.chain_id,
-                    ),
-                    Some(json!({
-                        "current_timestamp": now(),
-                    })),
-                ));
+                // we treat this as a missing state error, since this message assumes the state exists.
+                return Err(RpcError::missing_state(format!(
+                    "the latest height of the counterparty chain ({counterparty_chain_id}) \
+                    is {latest_height} and the latest trusted height on the client tracking \
+                    it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
+                    in order to create an update for this client, we need to wait for the \
+                    counterparty chain to progress to the next consensus checkpoint greater \
+                    than the required target height {target_height}",
+                    counterparty_chain_id = client_state_meta.counterparty_chain_id,
+                    trusted_height = client_state_meta.counterparty_height,
+                    client_id = self.client_id,
+                    self_chain_id = module.chain_id,
+                ))
+                .with_data(json!({
+                    "current_timestamp": now(),
+                })));
             }
         }
 

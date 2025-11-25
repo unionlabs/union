@@ -8,11 +8,7 @@ use std::{
 
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_union_spec::{IbcUnion, datagram::Datagram, path::ChannelPath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use sui_sdk::{
     SuiClient, SuiClientBuilder,
@@ -25,10 +21,7 @@ use sui_sdk::{
     },
 };
 use tracing::instrument;
-use unionlabs::{
-    ErrorReporter,
-    primitives::{Bytes, encoding::HexPrefixed},
-};
+use unionlabs::primitives::{Bytes, encoding::HexPrefixed};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient,
     anyhow::{self},
@@ -36,7 +29,7 @@ use voyager_sdk::{
     message::{PluginMessage, VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::{ChainId, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     serde_json::{self, json},
     vm::{Op, Visit, call, noop, pass::PassResult},
 };
@@ -91,8 +84,7 @@ impl Plugin for Module {
                 ObjectID::new(config.ibc_store.to_inner()),
                 SuiObjectDataOptions::default().with_owner(),
             )
-            .await
-            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+            .await?
             .data
             .expect("ibc store object exists on chain")
             .owner
@@ -194,7 +186,7 @@ impl Module {
         pk: &Arc<SuiKeyPair>,
         msgs: Vec<Datagram>,
         fee_recipient: SuiAddress,
-    ) -> anyhow::Result<ProgrammableTransaction> {
+    ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb_builder = ProgrammableTransactionBuilder::new();
         let mut ptb = ProgrammableTransactionBuilder::new().finish();
         for msg in msgs {
@@ -370,40 +362,33 @@ impl Module {
     // original_address::module_name::store_address
     // TODO(aeryz): we can also choose to include store_name here
     pub async fn module_info_from_port(&self, port_id: &[u8]) -> RpcResult<ModuleInfo> {
-        let port_id = ObjectID::try_from(port_id).map_err(|_| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
+        let port_id = ObjectID::try_from(port_id)
+            .map_err(RpcError::fatal(
                 "port parsing: port expected to be a object ID",
-                Some(json!({
-                    "port": port_id
-                })),
-            )
-        })?;
+            ))
+            .with_data(json!({
+                "port": port_id
+            }))?;
 
         let bcs_port = self
             .sui_client
             .read_api()
             .get_move_object_bcs(port_id)
             .await
-            .map_err(|_| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "port parsing: the object id must exist on chain",
-                    Some(json!({
-                        "port": port_id
-                    })),
-                )
-            })?;
+            .map_err(RpcError::fatal(
+                "port parsing: the object id must exist on chain",
+            ))
+            .with_data(json!({
+                "port": port_id
+            }))?;
 
-        let port: Port = bcs::from_bytes(&bcs_port).map_err(|_| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
+        let port: Port = bcs::from_bytes(&bcs_port)
+            .map_err(RpcError::fatal(
                 "port parsing: the port object is not in the correct format",
-                Some(json!({
-                    "port": port_id
-                })),
-            )
-        })?;
+            ))
+            .with_data(json!({
+                "port": port_id
+            }))?;
 
         let query = json!({
             "query": "query ($address: SuiAddress) { packageVersions(address: $address, last: 1) { nodes { address } } }",
@@ -438,7 +423,7 @@ impl Module {
                 SuiObjectDataOptions::new().with_owner(),
             )
             .await
-            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+            .map_err(RpcError::retryable("error reading port store object"))?
             .data
             .expect("store must exist on chain")
             .owner

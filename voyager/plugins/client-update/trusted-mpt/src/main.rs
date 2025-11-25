@@ -5,16 +5,11 @@ use std::collections::VecDeque;
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
 use ethereum_light_client_types::AccountProof;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use trusted_mpt_light_client_types::{Header, signed_data::SignedData};
 use unionlabs::{
-    ErrorReporter,
     encoding::Bincode,
     ibc::core::client::height::Height,
     never::Never,
@@ -32,8 +27,8 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{PluginServer, types::PluginInfo},
-    vm::{self, BoxDynError, Op, Visit, pass::PassResult},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
+    vm::{self, Op, Visit, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -97,20 +92,9 @@ impl Module {
         let account_update = self
             .provider
             .get_proof(self.ibc_handler_address.into(), vec![])
-            .block_id(
-                // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                block_number.into(),
-            )
+            .block_id(block_number.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching account update"),
-                    None::<()>,
-                )
-            })?;
-
-        // tokio::time::sleep(std::time::Duration::from_millis(500));
+            .map_err(RpcError::retryable("error fetching account update"))?;
 
         debug!(storage_hash = %account_update.storage_hash, "fetched account update");
 
@@ -219,16 +203,10 @@ impl PluginServer<ModuleCall, Never> for Module {
                 to_height,
                 counterparty_chain_id,
                 ..
-            }) => self
-                .fetch_update(from_height, to_height, counterparty_chain_id)
-                .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching update: {}", ErrorReporter(&*e)),
-                        None::<()>,
-                    )
-                }),
+            }) => {
+                self.fetch_update(from_height, to_height, counterparty_chain_id)
+                    .await
+            }
         }
     }
 
@@ -260,7 +238,7 @@ impl Module {
         update_from_block_number: Height,
         update_to_block_number: Height,
         counterparty_chain_id: ChainId,
-    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         if update_from_block_number == update_to_block_number {
             info!("update is for the same height, noop");
             return Ok(vm::data(OrderedHeaders { headers: vec![] }));

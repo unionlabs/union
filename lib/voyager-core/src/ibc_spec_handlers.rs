@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use serde_json::Value;
 use unionlabs::primitives::Bytes;
 use voyager_primitives::{IbcSpec, IbcSpecId};
-use voyager_rpc::FATAL_JSONRPC_ERROR_CODE;
+use voyager_rpc::{RpcError, RpcResult};
 use voyager_types::RawClientId;
 
 pub struct IbcSpecHandlers {
@@ -25,11 +24,7 @@ impl IbcSpecHandlers {
 
     pub fn get(&self, ibc_spec_id: &IbcSpecId) -> RpcResult<&IbcSpecHandler> {
         self.handlers.get(ibc_spec_id).ok_or_else(|| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unknown IBC spec `{ibc_spec_id}`"),
-                None::<()>,
-            )
+            RpcError::fatal_from_message(format!("unknown IBC spec `{ibc_spec_id}`"))
         })
     }
 }

@@ -11,19 +11,15 @@ use beacon_api::{
     routes::light_client_finality_update::LightClientFinalityUpdateResponseTypes,
 };
 use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Slot};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument, trace};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H256};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow::{self, bail},
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcError, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -111,52 +107,42 @@ impl Module {
                 }
             })
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(err).with_message("error fetching finality update"),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching finality update"))?
             .unwrap()
             .into_value())
     }
 
     /// Returns (block_number, timestamp)
     async fn query_latest_execution_meta(&self) -> RpcResult<(u64, u64)> {
-        Ok(self
-            .finality_update_cached()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-            .fold(
-                |f| match f {},
-                |_| todo!(),
-                |_| todo!(),
-                |f| {
-                    (
-                        f.finalized_header.execution.block_number,
-                        f.finalized_header.execution.timestamp,
-                    )
-                },
-                |f| {
-                    (
-                        f.finalized_header.execution.block_number,
-                        f.finalized_header.execution.timestamp,
-                    )
-                },
-                |f| {
-                    (
-                        f.finalized_header.execution.block_number,
-                        f.finalized_header.execution.timestamp,
-                    )
-                },
-                |f| {
-                    (
-                        f.finalized_header.execution.block_number,
-                        f.finalized_header.execution.timestamp,
-                    )
-                },
-            ))
+        Ok(self.finality_update_cached().await?.fold(
+            |f| match f {},
+            |_| todo!(),
+            |_| todo!(),
+            |f| {
+                (
+                    f.finalized_header.execution.block_number,
+                    f.finalized_header.execution.timestamp,
+                )
+            },
+            |f| {
+                (
+                    f.finalized_header.execution.block_number,
+                    f.finalized_header.execution.timestamp,
+                )
+            },
+            |f| {
+                (
+                    f.finalized_header.execution.block_number,
+                    f.finalized_header.execution.timestamp,
+                )
+            },
+            |f| {
+                (
+                    f.finalized_header.execution.block_number,
+                    f.finalized_header.execution.timestamp,
+                )
+            },
+        ))
     }
 
     // TODO: Deduplicate this from ethereum client-update plugin
@@ -169,34 +155,23 @@ impl Module {
             .get_block((block_number + 1).into())
             .hashes()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .expect("block should exist");
+            .map_err(RpcError::retryable("error fetching block"))?
+            .ok_or_else(|| RpcError::missing_state("error fetching block: block should exist"))?;
 
         let beacon_slot = self
             .beacon_api_client
             .block(
-                <H256>::from(
-                    block
-                        .header
-                        .parent_beacon_block_root
-                        .expect("parent beacon block root should exist"),
-                )
-                .into(),
+                block
+                    .header
+                    .parent_beacon_block_root
+                    .ok_or_else(|| {
+                        RpcError::missing_state("parent beacon block root should exist")
+                    })?
+                    .0
+                    .into(),
             )
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon block: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching beacon block"))?
             .response
             .fold(
                 |b| b.message.slot,
@@ -232,10 +207,7 @@ impl FinalityModule for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
-        let spec = beacon_api_client
-            .spec()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+        let spec = beacon_api_client.spec().await?;
 
         if spec.preset_base != config.chain_spec {
             bail!(
@@ -261,20 +233,18 @@ impl FinalityModule for Module {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
         if finalized {
             self.query_latest_execution_meta()
                 .await
                 .map(|meta| Height::new(meta.0))
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
         } else {
             self.provider
                 .get_block_number()
                 .await
                 .map(Height::new)
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+                .map_err(RpcError::retryable("error fetching latest block number"))
         }
     }
 
@@ -292,12 +262,12 @@ impl FinalityModuleServer for Module {
                 .get_block(BlockNumberOrTag::Latest.into())
                 .hashes()
                 .await
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-                .ok_or_else(|| ErrorObject::owned(-1, "latest block not found", None::<()>))?
+                .map_err(RpcError::retryable("error fetching latest block"))?
+                .ok_or_else(|| RpcError::missing_state("latest block not found"))?
                 .header
                 .timestamp
         };
-        // Normalize to nanos in order to be compliant with cosmos
+
         Ok(Timestamp::from_secs(latest_timestamp))
     }
 }

@@ -1,9 +1,6 @@
 use alloy::providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer};
 use ed25519_dalek::SigningKey;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
@@ -16,7 +13,7 @@ use voyager_sdk::{
     anyhow, ensure_null, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -89,7 +86,7 @@ impl ClientBootstrapModuleServer for Module {
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
-        Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
+        Ok(into_value(ClientState::V1(ClientStateV1 {
             chain_id: self
                 .chain_id
                 .as_str()
@@ -98,8 +95,7 @@ impl ClientBootstrapModuleServer for Module {
             latest_height: height.height(),
             ibc_contract_address: self.ibc_handler_address,
             authorized_pubkey: H256::new(self.private_key.verifying_key().to_bytes()),
-        }))
-        .expect("infallible"))
+        })))
     }
 
     /// The consensus state on this chain at the specified `Height`.
@@ -116,8 +112,8 @@ impl ClientBootstrapModuleServer for Module {
             .provider
             .get_block_by_number(height.height().into())
             .await
-            .unwrap()
-            .unwrap()
+            .map_err(RpcError::retryable("error fetching block"))?
+            .ok_or_else(|| RpcError::missing_state("error fetching block: block not found"))?
             .header;
 
         Ok(into_value(ConsensusState {
@@ -127,7 +123,7 @@ impl ClientBootstrapModuleServer for Module {
                 .get_proof(self.ibc_handler_address.into(), vec![])
                 .block_id(height.height().into())
                 .await
-                .unwrap()
+                .map_err(RpcError::retryable("error fetching ibc account proof"))?
                 .storage_hash
                 .0
                 .into(),

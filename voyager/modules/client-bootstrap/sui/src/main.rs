@@ -1,8 +1,4 @@
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
@@ -19,12 +15,12 @@ use sui_sdk::{
     types::{base_types::ObjectID, full_checkpoint_content::CheckpointTransaction},
 };
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -98,14 +94,14 @@ impl ClientBootstrapModuleServer for Module {
             .read_api()
             .get_checkpoint(CheckpointId::SequenceNumber(height.height()))
             .await
-            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
+            .map_err(RpcError::retryable("error fetching checkpoint"))?;
 
         let committee = self
             .sui_client
             .governance_api()
             .get_committee_info(Some(latest_checkpoint.epoch.into()))
             .await
-            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
+            .map_err(RpcError::retryable("error fetching committee info"))?;
 
         Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
             chain_id: self.chain_id.to_string(),
@@ -134,22 +130,10 @@ impl ClientBootstrapModuleServer for Module {
             .get(req)
             .send()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching the checkpoint"),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching the checkpoint"))?
             .bytes()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching the checkpoint"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching the checkpoint"))?;
 
         let (_, checkpoint) =
             bcs::from_bytes::<(u8, CheckpointData)>(&res).expect("can decode checkpoint data");

@@ -1,11 +1,7 @@
 use std::{collections::VecDeque, str::FromStr};
 
 use call::FetchUpdate;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sui_light_client_types::{CertifiedCheckpointSummary, checkpoint_summary::CheckpointContents};
@@ -17,10 +13,11 @@ use sui_sdk::{
     },
 };
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     DefaultCmd, anyhow,
     hook::UpdateHook,
+    into_value,
     message::{
         PluginMessage, VoyagerMessage,
         call::Call,
@@ -29,7 +26,7 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, ClientType},
     rpc::{
-        FATAL_JSONRPC_ERROR_CODE, PluginServer,
+        PluginServer, RpcError, RpcResult,
         types::{PluginInfo, UnexpectedChainIdError},
     },
     vm::{Op, Visit, data, pass::PassResult},
@@ -235,30 +232,13 @@ impl Module {
             .get(req)
             .send()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching the checkpoint"),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching the checkpoint"))?
             .bytes()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching the checkpoint"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching the checkpoint"))?;
 
-        let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res).map_err(|e| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                ErrorReporter(e).with_message("checkpoint data cannot be decoded"),
-                None::<()>,
-            )
-        })?;
+        let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res)
+            .map_err(RpcError::fatal("checkpoint data cannot be decoded"))?;
 
         Ok(checkpoint)
     }
@@ -305,13 +285,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .read_api()
                     .get_checkpoint(CheckpointId::SequenceNumber(from))
                     .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e).with_message("error fetching the checkpoint"),
-                            None::<()>,
-                        )
-                    })?
+                    .map_err(RpcError::retryable("error fetching the checkpoint"))?
                     .epoch;
 
                 let checkpoint = self.fetch_checkpoint(to).await?;
@@ -328,12 +302,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     DecodedHeaderMeta {
                         height: Height::new(to),
                     },
-                    serde_json::to_value(sui_light_client_types::header::Header {
+                    into_value(sui_light_client_types::header::Header {
                         trusted_height,
                         checkpoint_summary: checkpoint.checkpoint_summary.data,
                         sign_info: checkpoint.checkpoint_summary.auth_signature,
-                    })
-                    .expect("serde serialization works"),
+                    }),
                 ));
 
                 Ok(data(OrderedHeaders { headers: updates }))

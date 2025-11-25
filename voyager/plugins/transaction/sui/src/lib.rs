@@ -1,6 +1,6 @@
 use fastcrypto::{hash::HashFunction, traits::Signer};
 use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout};
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
+use jsonrpsee::proc_macros::rpc;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
@@ -13,8 +13,8 @@ use sui_sdk::{
         transaction::{ProgrammableTransaction, Transaction, TransactionData},
     },
 };
-use tracing::info;
-use unionlabs::ErrorReporter;
+use tracing::{debug, info};
+use voyager_sdk::rpc::{RpcError, RpcResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleInfo {
@@ -73,32 +73,11 @@ pub async fn send_transactions(
         .read_api()
         .get_reference_gas_price()
         .await
-        .map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(e).with_message("error fetching the reference gas price"),
-                None::<()>,
-            )
-        })?;
+        .map_err(RpcError::retryable(
+            "error fetching the reference gas price",
+        ))?;
 
-    println!("ptb bro: {ptb:?}");
-    // println!(
-    //     "{}",
-    //     serde_json::to_string(
-    //         &sui_client
-    //             .read_api()
-    //             .dev_inspect_transaction_block(
-    //                 sender,
-    //                 TransactionKind::ProgrammableTransaction(ptb.clone()),
-    //                 None,
-    //                 None,
-    //                 None
-    //             )
-    //             .await
-    //             .unwrap()
-    //     )
-    //     .unwrap()
-    // );
+    debug!(?ptb, "ptb");
 
     let tx_data = TransactionData::new_programmable(
         sender,
@@ -137,13 +116,7 @@ pub async fn send_transactions(
 
     info!("{transaction_response:?}");
 
-    let transaction_response = transaction_response.map_err(|e| {
-        ErrorObject::owned(
-            -1,
-            ErrorReporter(e).with_message("error executing a tx"),
-            None::<()>,
-        )
-    })?;
-
-    Ok(transaction_response)
+    transaction_response.map_err(RpcError::retryable(
+        "error executing RpcError::retryablea tx",
+    ))
 }

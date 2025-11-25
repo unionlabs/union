@@ -1,11 +1,7 @@
 use std::fmt::Debug;
 
 use ibc_union_spec::{IbcUnion, path::StorePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::{ErrorObject, ErrorObjectOwned},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
@@ -25,12 +21,12 @@ use sui_sdk::{
     },
 };
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{FATAL_JSONRPC_ERROR_CODE, ProofModuleServer, types::ProofModuleInfo},
+    rpc::{ProofModuleServer, RpcError, RpcResult, types::ProofModuleInfo},
     types::ProofType,
 };
 
@@ -96,10 +92,6 @@ impl Module {
     }
 }
 
-fn err<T: core::error::Error>(e: T, msg: &str) -> ErrorObjectOwned {
-    ErrorObject::owned(-1, ErrorReporter(e).with_message(msg), None::<()>)
-}
-
 #[async_trait]
 impl ProofModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -133,7 +125,7 @@ impl ProofModuleServer<IbcUnion> for Module {
                 },
             )
             .await
-            .map_err(|e| err(e, "error fetching the object"))?
+            .map_err(RpcError::retryable("error fetching the object"))?
             .data
             .expect("data is fetched");
 
@@ -146,18 +138,15 @@ impl ProofModuleServer<IbcUnion> for Module {
             .read_api()
             .get_transaction_with_options(previous_tx, SuiTransactionBlockResponseOptions::new())
             .await
-            .map_err(|e| err(e, "error fetching the tx"))?;
+            .map_err(RpcError::retryable("error fetching the tx"))?;
 
         let checkpoint_number = checkpoint_number.checkpoint.unwrap();
 
         if height.height() != checkpoint_number {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "the proof height {height} must match the height of the transaction {checkpoint_number} where the object is modified"
-                ),
-                None::<()>,
-            ));
+            return Err(RpcError::fatal_from_message(format!(
+                "the proof height {height} must match the height of the \
+                transaction {checkpoint_number} where the object is modified"
+            )));
         }
 
         let client = reqwest::Client::new();
@@ -166,13 +155,13 @@ impl ProofModuleServer<IbcUnion> for Module {
             .get(req)
             .send()
             .await
-            .map_err(|e| err(e, "error fetching the tx"))?
+            .map_err(RpcError::retryable("error fetching the tx"))?
             .bytes()
             .await
-            .map_err(|e| err(e, "error fetching the tx"))?;
+            .map_err(RpcError::retryable("error fetching the tx"))?;
 
         let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res)
-            .map_err(|e| err(e, "invalid checkpoint data"))?;
+            .map_err(RpcError::retryable("invalid checkpoint data"))?;
 
         let tx = checkpoint
             .transactions

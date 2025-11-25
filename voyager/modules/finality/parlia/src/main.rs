@@ -5,19 +5,15 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcError, RpcErrorExt, RpcResult, types::FinalityModuleInfo},
     serde_json::json,
 };
 
@@ -63,7 +59,6 @@ impl FinalityModule for Module {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
         let height = self
@@ -74,15 +69,10 @@ impl FinalityModuleServer for Module {
                 BlockNumberOrTag::Latest
             }))
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching block for height"),
-                    Some(json!({
-                        "finalized": finalized,
-                    })),
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching block for height"))
+            .with_data(json!({
+                "finalized": finalized,
+            }))?
             .unwrap()
             .header
             .number;
@@ -90,7 +80,6 @@ impl FinalityModuleServer for Module {
         Ok(Height::new(height))
     }
 
-    /// Query the latest finalized timestamp of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_timestamp(
         &self,
@@ -105,15 +94,10 @@ impl FinalityModuleServer for Module {
                 BlockNumberOrTag::Latest
             }))
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching block for timestamp"),
-                    Some(json!({
-                        "finalized": finalized,
-                    })),
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching block for timestamp"))
+            .with_data(json!({
+                "finalized": finalized,
+            }))?
             .unwrap()
             .other
             .get_deserialized::<alloy::primitives::U64>("milliTimestamp")
@@ -121,6 +105,6 @@ impl FinalityModuleServer for Module {
             .unwrap()
             .into_limbs()[0];
 
-        Ok(Timestamp::from_nanos(millis * 1000_0000))
+        Ok(Timestamp::from_millis(millis))
     }
 }

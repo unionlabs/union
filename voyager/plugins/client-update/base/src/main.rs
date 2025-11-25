@@ -13,15 +13,10 @@ use base_light_client_types::{
 use call::FetchL2Update;
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{ClientId, IbcUnion, path::ClientStatePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{ByteArrayExt, H160, H256, U256, encoding::HexPrefixed},
@@ -38,9 +33,9 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     types::RawClientId,
-    vm::{BoxDynError, Op, Visit, call, conc, data, pass::PassResult, promise, seq},
+    vm::{Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -124,14 +119,9 @@ impl Module {
             .get_proof(self.l1_dispute_game_factory_proxy.into(), vec![])
             .block_id(block_number.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching dispute game factory account proof"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::fatal(
+                "error fetching dispute game factory account proof",
+            ))?;
 
         debug!(storage_hash = %account_update.storage_hash, "fetched dispute game factory account update");
 
@@ -161,16 +151,11 @@ impl Module {
             )
             .block_id(height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching output proposal proof: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::fatal("error fetching output proposal proof"))?
             .storage_proof
             .try_into()
             .unwrap();
+
         Ok(StorageProof {
             key: U256::from_be_bytes(proof.key.as_b256().0),
             value: U256::from_be_bytes(proof.value.to_be_bytes()),
@@ -276,8 +261,8 @@ impl PluginServer<ModuleCall, Never> for Module {
                 to_height,
                 counterparty_chain_id,
                 client_id,
-            }) => self
-                .fetch_update(
+            }) => {
+                self.fetch_update(
                     e.voyager_client()?,
                     from_height,
                     to_height,
@@ -285,32 +270,20 @@ impl PluginServer<ModuleCall, Never> for Module {
                     client_id,
                 )
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching update: {}", ErrorReporter(&*e)),
-                        None::<()>,
-                    )
-                }),
+            }
             ModuleCall::FetchL2Update(FetchL2Update {
                 update_from,
                 counterparty_chain_id,
                 client_id,
-            }) => self
-                .fetch_l2_update(
+            }) => {
+                self.fetch_l2_update(
                     e.voyager_client()?,
                     update_from,
                     counterparty_chain_id,
                     client_id,
                 )
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching l2 update: {}", ErrorReporter(&*e)),
-                        None::<()>,
-                    )
-                }),
+            }
         }
     }
 
@@ -327,17 +300,12 @@ impl PluginServer<ModuleCall, Never> for Module {
 
 impl Module {
     async fn fetch_game_account_code(&self, game_account: H160) -> RpcResult<Vec<u8>> {
-        self.l1_provider
+        Ok(self
+            .l1_provider
             .get_code_at(game_account.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching game account code: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })
-            .map(|x| x.into())
+            .map_err(RpcError::retryable("error fetching game account code"))?
+            .into())
     }
 
     async fn fetch_game_account_proof(
@@ -350,13 +318,8 @@ impl Module {
             .get_proof(game_account.into(), vec![])
             .block_id(height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching game account proof: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching game account proof"))?;
+
         Ok(AccountProof {
             storage_root: proof.storage_hash.into(),
             proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
@@ -369,13 +332,8 @@ impl Module {
             .get_proof(self.ibc_handler_address.into(), vec![])
             .block_id(height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching ibc contract proof: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching ibc contract proof"))?;
+
         Ok(AccountProof {
             storage_root: proof.storage_hash.into(),
             proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
@@ -387,32 +345,21 @@ impl Module {
             .l2_provider
             .get_block(l2_height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching output root proof: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching output root proof"))?
             .unwrap();
+
         let message_passer_storage_root = self
             .l2_provider
             // TODO: refactor this in a common crate for opstack
             .get_proof(bob_types::L2_TO_L1_MESSAGE_PASSER.into(), vec![])
             .block_id(l2_height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error fetching message passer storage root: {}",
-                        ErrorReporter(e)
-                    ),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable(
+                "error fetching message passer storage root",
+            ))?
             .storage_hash
             .into();
+
         Ok(OutputRootProof {
             // Seems to always be zero.
             version: H256::default(),
@@ -438,7 +385,7 @@ impl Module {
         update_to: Height,
         counterparty_chain_id: ChainId,
         client_id: ClientId,
-    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         let counterparty_latest_height = voy_client
             .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
@@ -552,7 +499,7 @@ impl Module {
         update_from: Height,
         counterparty_chain_id: ChainId,
         client_id: ClientId,
-    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         let counterparty_latest_height = voy_client
             .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
@@ -599,19 +546,15 @@ impl Module {
             l1_height,
         )
         .await
-        .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+        .map_err(RpcError::retryable(
+            "finalized l2 block number of l1 block number",
+        ))?;
 
         let l2_block = self
             .l2_provider
             .get_block(l2_block_number.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching finalized l2 block"),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching finalized l2 block"))?
             .expect("block should exist");
 
         let output_root_proof = self.fetch_output_root_proof(l2_block.header.number).await?;
@@ -622,14 +565,15 @@ impl Module {
             self.l1_dispute_game_factory_proxy,
         )
         .await
-        .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+        .map_err(RpcError::retryable(
+            "error fetching latest game of l1 block number",
+        ))?;
 
         let game_index = game_index - U256::ONE;
 
         let dispute_game_factory_account_proof = self
             .fetch_dispute_game_factory_account_proof(l1_height)
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+            .await?;
 
         let game_proof = self.fetch_game_proof(game_index, l1_height).await?;
 

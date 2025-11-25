@@ -5,23 +5,17 @@ use alloy::{
     sol,
 };
 use ibc_union_spec::{Duration, Timestamp};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use parlia_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{info, instrument};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H160};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::{
-        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
-    },
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -92,16 +86,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize client state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize client state config"))?;
 
         let valset_epoch_block_number =
             parlia_verifier::calculate_signing_valset_epoch_block_number(
@@ -115,13 +101,7 @@ impl ClientBootstrapModuleServer for Module {
             .provider
             .get_block(valset_epoch_block_number.into())
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    ErrorReporter(err).with_message("error fetching initial valset"),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching initial valset"))?
             .unwrap();
 
         let (_, initial_valset) = parlia_verifier::parse_epoch_rotation_header_extra_data(
@@ -161,16 +141,9 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize client state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(
+            RpcError::retryable("unable to deserialize client state config"),
+        )?;
 
         let valset_epoch_block_number =
             parlia_verifier::calculate_signing_valset_epoch_block_number(
@@ -184,14 +157,8 @@ impl ClientBootstrapModuleServer for Module {
             .provider
             .get_block(height.height().into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching block"),
-                    None::<()>,
-                )
-            })?
-            .unwrap();
+            .map_err(RpcError::retryable("error fetching block"))?
+            .ok_or_else(|| RpcError::missing_state("error fetching block: block not found"))?;
 
         Ok(into_value(ConsensusState {
             state_root: block.header.state_root.into(),

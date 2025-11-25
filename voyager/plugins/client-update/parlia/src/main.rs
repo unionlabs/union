@@ -8,18 +8,14 @@ use alloy::{
 };
 use ethereum_light_client_types::AccountProof;
 use ibc_union_spec::{ClientId, IbcUnion};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use parlia_light_client_types::Header;
 use parlia_types::ParliaHeader;
 use parlia_verifier::EPOCH_LENGTH;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{info, instrument};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, never::Never, primitives::H160};
+use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H160};
 use voyager_sdk::{
     DefaultCmd, anyhow,
     hook::UpdateHook,
@@ -31,8 +27,8 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{PluginServer, types::PluginInfo},
-    vm::{self, BoxDynError, Op, Visit, pass::PassResult},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
+    vm::{self, Op, Visit, pass::PassResult},
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -194,8 +190,8 @@ impl PluginServer<ModuleCall, Never> for Module {
                 counterparty_chain_id,
                 client_id,
                 already_fetched_updates,
-            }) => self
-                .fetch_update(
+            }) => {
+                self.fetch_update(
                     already_fetched_updates,
                     from_height,
                     to_height,
@@ -203,13 +199,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     client_id,
                 )
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching update: {}", ErrorReporter(&*e)),
-                        None::<()>,
-                    )
-                }),
+            }
         }
     }
 
@@ -231,16 +221,11 @@ impl Module {
             .get_proof(self.ibc_handler_address.into(), vec![])
             .block_id(height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching ibc contract proof: {}", ErrorReporter(e)),
-                    Some(json!({
-                        "height": height,
-                        "ibc_handler_address": self.ibc_handler_address,
-                    })),
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching ibc contract proof"))
+            .with_data(json!({
+                "height": height,
+                "ibc_handler_address": self.ibc_handler_address,
+            }))?;
         Ok(AccountProof {
             storage_root: proof.storage_hash.into(),
             proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
@@ -263,7 +248,7 @@ impl Module {
         update_to: Height,
         counterparty_chain_id: ChainId,
         client_id: ClientId,
-    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         // fetch intermediate updates for every epoch
 
         // #[derive(Debug, Deserialize)]
@@ -299,9 +284,32 @@ impl Module {
 
             info!("fetching update to {block}");
 
-            let source = self.provider.get_block(block.into()).await?.unwrap();
-            let target = self.provider.get_block((block + 1).into()).await?.unwrap();
-            let attestation = self.provider.get_block((block + 2).into()).await?.unwrap();
+            let source = self
+                .provider
+                .get_block(block.into())
+                .await
+                .map_err(RpcError::retryable("error fetching source block"))?
+                .ok_or_else(|| {
+                    RpcError::missing_state("error fetching source block: block not found")
+                })?;
+
+            let target = self
+                .provider
+                .get_block((block + 1).into())
+                .await
+                .map_err(RpcError::retryable("error fetching target block"))?
+                .ok_or_else(|| {
+                    RpcError::missing_state("error fetching target block: block not found")
+                })?;
+
+            let attestation = self
+                .provider
+                .get_block((block + 2).into())
+                .await
+                .map_err(RpcError::retryable("error fetching attestation block"))?
+                .ok_or_else(|| {
+                    RpcError::missing_state("error fetching attestation block: block not found")
+                })?;
 
             info!(
                 source_hash = %source.header.hash,

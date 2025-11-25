@@ -20,11 +20,7 @@ use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, info_span, instrument, trace, warn};
 use unionlabs::{
@@ -34,7 +30,8 @@ use unionlabs::{
     primitives::{H160, H256},
 };
 use voyager_sdk::{
-    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient,
+    anyhow::{self, bail},
     hook::simple_take_filter,
     into_value,
     message::{
@@ -44,7 +41,8 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
+    serde_json::json,
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
@@ -141,11 +139,18 @@ impl Module {
                 .await?,
         );
 
-        // TODO: Assert chain id is correct
-        let chain_id = provider.get_chain_id().await?;
+        let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
+
+        if chain_id != config.chain_id {
+            bail!(
+                "incorrect chain id: expected `{}`, but found `{}`",
+                config.chain_id,
+                chain_id
+            );
+        }
 
         Ok(Self {
-            chain_id: ChainId::new(chain_id.to_string()),
+            chain_id,
             ibc_handler_address: config.ibc_handler_address,
             index_trivial_events: config.index_trivial_events,
             chunk_block_fetch_size: config.chunk_block_fetch_size,
@@ -308,13 +313,9 @@ impl Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         if let Some(until) = until {
             if block_number > until {
-                return Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "block number {block_number} cannot be greater than the until height {until}"
-                    ),
-                    None::<()>,
-                ));
+                return Err(RpcError::fatal_from_message(format!(
+                    "block number {block_number} cannot be greater than the until height {until}"
+                )));
             } else if block_number == until {
                 // if this is a ranged fetch, we need to fetch the upper bound of the range individually since FetchBlocks is exclusive on the upper bound
                 return Ok(call(PluginMessage::new(
@@ -404,16 +405,9 @@ impl Module {
                     .to_block(block_number),
             )
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error fetching logs in block {block_number}: {}",
-                        ErrorReporter(e)
-                    ),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable(format!(
+                "error fetching logs in block {block_number}",
+            )))?;
 
         info!(logs_count = logs.len(), "found logs");
 
@@ -1352,11 +1346,11 @@ impl Module {
 }
 
 fn convert_packet(value: ibc_solidity::Packet) -> RpcResult<Packet> {
-    value.try_into().map_err(move |e| {
-        ErrorObject::owned(
-            -1,
-            ErrorReporter(e).with_message("invalid packet"),
-            None::<()>,
-        )
-    })
+    value
+        .clone()
+        .try_into()
+        .map_err(RpcError::fatal("invalid packet"))
+        .with_data(json!({
+            "packet": value
+        }))
 }

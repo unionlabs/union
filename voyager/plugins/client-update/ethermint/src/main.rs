@@ -1,10 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
 use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
 use tracing::instrument;
@@ -24,7 +21,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcResult, types::PluginInfo},
     vm::{Op, Visit, data, pass::PassResult},
 };
 

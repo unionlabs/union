@@ -5,17 +5,12 @@ use std::{
 };
 
 use ics23::ibc_api::SDK_SPECS;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
 use tracing::{error, info, instrument};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::{Bech32, H256},
     result_unwrap,
@@ -24,7 +19,7 @@ use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -271,13 +266,7 @@ impl ClientBootstrapModuleServer for Module {
             .cometbft_client
             .commit(Some(height.height().try_into().unwrap()))
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching commit: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching commit"))?;
 
         Ok(serde_json::to_value(&ConsensusState {
             root: MerkleRoot {

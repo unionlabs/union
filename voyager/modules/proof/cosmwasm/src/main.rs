@@ -4,16 +4,11 @@ use ibc_union_spec::{
     IbcUnion,
     path::{IBC_UNION_COSMWASM_COMMITMENT_PREFIX, StorePath},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
-use tracing::{error, instrument, warn};
+use serde_json::Value;
+use tracing::{instrument, warn};
 use unionlabs::{
-    ErrorReporter,
     bounded::BoundedI64,
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
@@ -23,7 +18,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{FATAL_JSONRPC_ERROR_CODE, ProofModuleServer, rpc_error, types::ProofModuleInfo},
+    rpc::{ProofModuleServer, RpcError, RpcResult, types::ProofModuleInfo},
     types::ProofType,
 };
 
@@ -98,19 +93,14 @@ impl ProofModuleServer<IbcUnion> for Module {
                 //
                 // a proof at height H is provable at height H + 1
                 // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
-                Some(BoundedI64::new(at.height() - 1).map_err(|e| {
-                    let message = format!("invalid height value: {}", ErrorReporter(e));
-                    error!(%message);
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        message,
-                        Some(json!({ "height": at })),
-                    )
-                })?),
+                Some(
+                    BoundedI64::new(at.height() - 1)
+                        .map_err(RpcError::fatal(format!("invalid height value: {at}")))?,
+                ),
                 true,
             )
             .await
-            .map_err(rpc_error("error querying ibc proof", None))?;
+            .map_err(RpcError::retryable("error querying ibc proof"))?;
 
         // if this field is none, the proof is not available at this height
         let Some(proofs) = query_result.response.proof_ops else {
@@ -122,25 +112,13 @@ impl ProofModuleServer<IbcUnion> for Module {
             .into_iter()
             .map(|op| {
                 <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(&*op.data)
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("invalid height value: {}", ErrorReporter(e)),
-                            Some(json!({ "height": at })),
-                        )
-                    })
+                    .map_err(RpcError::fatal("invalid commitment proof value"))
             })
             .collect::<Result<Vec<_>, _>>()?;
 
         let proof =
             MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof { proofs })
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("invalid merkle proof value: {}", ErrorReporter(e)),
-                        Some(json!({ "height": at })),
-                    )
-                })?;
+                .map_err(RpcError::fatal("invalid merkle proof value"))?;
 
         let proof_type = if proof
             .proofs

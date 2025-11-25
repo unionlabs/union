@@ -3,16 +3,11 @@
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_spec::{IbcUnion, path::StorePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
-    ErrorReporter,
     ethereum::ibc_commitment_key,
     ibc::core::client::height::Height,
     primitives::{H160, U256},
@@ -21,7 +16,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{ProofModuleServer, types::ProofModuleInfo},
+    rpc::{ProofModuleServer, RpcError, RpcResult, types::ProofModuleInfo},
     types::ProofType,
 };
 
@@ -108,13 +103,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             )
             .block_id(execution_height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching proof: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching proof"))?;
 
         let proof = match <[_; 1]>::try_from(proof.storage_proof) {
             Ok([proof]) => proof,

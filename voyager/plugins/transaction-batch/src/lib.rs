@@ -12,13 +12,10 @@ use futures::{StreamExt, stream::FuturesOrdered};
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tracing::{debug, error, info, instrument, trace, warn};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, id::ClientId};
+use unionlabs::{ibc::core::client::height::Height, id::ClientId};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     hook::simple_take_filter,
@@ -29,7 +26,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcErrorCode, RpcResult, types::PluginInfo},
     types::RawClientId,
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
@@ -673,17 +670,17 @@ where
         .await
     {
         Ok(ok) => ok,
-        Err(err) => {
-            if err.code() == FATAL_JSONRPC_ERROR_CODE {
+        Err(error) => {
+            if error.code() == RpcErrorCode::Fatal {
                 error!(
-                    error = %ErrorReporter(err),
+                    %error,
                     "fatal error fetching client state meta for client {client_id} on chain {}", module.chain_id
                 );
 
                 return Ok((vec![], noop()));
             } else {
                 error!(
-                    error = %ErrorReporter(err),
+                    %error,
                     "error fetching client state meta for client {client_id} on chain {}", module.chain_id
                 );
             }

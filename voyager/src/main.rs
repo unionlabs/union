@@ -650,7 +650,9 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 } => {
                     let response = voyager_client
                         .query_ibc_proof(on, ibc_spec_id.clone(), height, path)
-                        .await?;
+                        .await?
+                        .into_result()
+                        .map_err(|e| anyhow!("{e}"))?;
 
                     if encode {
                         let encoded = voyager_client
@@ -658,7 +660,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                                 client_type.expect("guaranteed to exist by clap; qed;"),
                                 ibc_interface.expect("guaranteed to exist by clap; qed;"),
                                 ibc_spec_id,
-                                response.into_result()?.proof,
+                                response.proof,
                             )
                             .await?;
                         print_json(&encoded);
@@ -747,7 +749,8 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
 
                 let client_info = voyager_client
                     .client_info_raw(on.clone(), ibc_spec_id.clone(), client_id.clone())
-                    .await?;
+                    .await
+                    .map_err(|e| anyhow!("{e}"))?;
 
                 let client_state_meta = voyager_client
                     .client_state_meta_raw(
@@ -756,18 +759,15 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                         QueryHeight::Latest,
                         client_id.clone(),
                     )
-                    .await?;
+                    .await
+                    .map_err(|e| anyhow!("{e}"))?;
 
                 let update_to = match update_to {
                     Some(update_to) => update_to,
-                    None => {
-                        voyager_client
-                            .query_latest_height(
-                                client_state_meta.counterparty_chain_id.clone(),
-                                true,
-                            )
-                            .await?
-                    }
+                    None => voyager_client
+                        .query_latest_height(client_state_meta.counterparty_chain_id.clone(), true)
+                        .await
+                        .map_err(|e| anyhow!("{e}"))?,
                 };
 
                 let update_from = update_from.unwrap_or(client_state_meta.counterparty_height);
@@ -821,7 +821,7 @@ fn print_json<T: Serialize>(t: &T) {
 
 // // TODO: Extract all logic here to a plugin
 pub mod utils {
-    use anyhow::bail;
+    use anyhow::{anyhow, bail};
     use ibc_classic_spec::IbcClassic;
     use ibc_union_spec::IbcUnion;
     use jsonrpsee::core::client::ClientT;
@@ -851,16 +851,14 @@ pub mod utils {
         }
 
         let height = match height {
-            QueryHeight::Latest => {
-                voyager_client
-                    .query_latest_height(counterparty_chain_id.clone(), false)
-                    .await?
-            }
-            QueryHeight::Finalized => {
-                voyager_client
-                    .query_latest_height(counterparty_chain_id.clone(), true)
-                    .await?
-            }
+            QueryHeight::Latest => voyager_client
+                .query_latest_height(counterparty_chain_id.clone(), false)
+                .await
+                .map_err(|e| anyhow!("{e}"))?,
+            QueryHeight::Finalized => voyager_client
+                .query_latest_height(counterparty_chain_id.clone(), true)
+                .await
+                .map_err(|e| anyhow!("{e}"))?,
             QueryHeight::Specific(height) => height,
         };
 
@@ -871,7 +869,8 @@ pub mod utils {
                 QueryHeight::Specific(height),
                 client_state_config,
             )
-            .await?
+            .await
+            .map_err(|e| anyhow!("{e}"))?
             .state;
         trace!(%self_client_state);
 
@@ -882,7 +881,8 @@ pub mod utils {
                 QueryHeight::Specific(height),
                 consensus_state_config,
             )
-            .await?
+            .await
+            .map_err(|e| anyhow!("{e}"))?
             .state;
         trace!(%self_consensus_state);
 
@@ -919,14 +919,16 @@ pub mod utils {
                                     self_client_state,
                                     metadata,
                                 )
-                                .await?,
+                                .await
+                                .map_err(|e| anyhow!("{e}"))?,
                             consensus_state: voyager_client
                                 .encode_consensus_state::<IbcClassic>(
                                     client_type.clone(),
                                     ibc_interface.clone(),
                                     self_consensus_state,
                                 )
-                                .await?,
+                                .await
+                                .map_err(|e| anyhow!("{e}"))?,
                         },
                         client_type: client_type.clone(),
                     }),
@@ -942,14 +944,16 @@ pub mod utils {
                                     self_client_state,
                                     metadata,
                                 )
-                                .await?,
+                                .await
+                                .map_err(|e| anyhow!("{e}"))?,
                             consensus_state_bytes: voyager_client
                                 .encode_consensus_state::<IbcUnion>(
                                     client_type.clone(),
                                     ibc_interface.clone(),
                                     self_consensus_state,
                                 )
-                                .await?,
+                                .await
+                                .map_err(|e| anyhow!("{e}"))?,
                         },
                     ))
                 }

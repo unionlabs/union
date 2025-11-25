@@ -1,9 +1,6 @@
 use std::collections::VecDeque;
 
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument};
 use unionlabs::never::Never;
@@ -17,7 +14,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpecId, QueryHeight},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcResult, types::PluginInfo},
     types::RawClientId,
     vm::{Op, call, conc, defer, now, pass::PassResult, promise, seq},
 };
