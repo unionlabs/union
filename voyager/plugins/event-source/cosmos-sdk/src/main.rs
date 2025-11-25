@@ -1661,9 +1661,8 @@ impl Module {
                                 connection_id: source_channel.connection_id,
                             },
                         },
-                        destination_channel: ibc_union_spec::event::ChannelMetadata {
+                        destination_channel: ibc_union_spec::event::CounterpartyChannelMetadata {
                             channel_id: packet.destination_channel_id,
-                            version: source_channel.version,
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: source_connection.counterparty_client_id,
                                 connection_id: source_connection
@@ -1732,11 +1731,10 @@ impl Module {
                             connection_id: source_channel.connection_id,
                         },
                     },
-                    destination_channel: ibc_union_spec::event::ChannelMetadata {
+                    destination_channel: ibc_union_spec::event::CounterpartyChannelMetadata {
                         channel_id: source_channel
                             .counterparty_channel_id
                             .expect("channel is open"),
-                        version: source_channel.version,
                         connection: ibc_union_spec::event::ConnectionMetadata {
                             client_id: source_connection.counterparty_client_id,
                             connection_id: source_connection.counterparty_connection_id.unwrap(),
@@ -1815,9 +1813,8 @@ impl Module {
                                 connection_id: source_channel.connection_id,
                             },
                         },
-                        destination_channel: ibc_union_spec::event::ChannelMetadata {
+                        destination_channel: ibc_union_spec::event::CounterpartyChannelMetadata {
                             channel_id: packet.destination_channel_id,
-                            version: source_channel.version,
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: source_connection.counterparty_client_id,
                                 connection_id: source_connection
@@ -1881,20 +1878,6 @@ impl Module {
                     )
                     .await?;
 
-                let counterparty_latest_height = voyager_client
-                    .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
-                    .await?;
-
-                let source_channel = voyager_client
-                    .query_ibc_state(
-                        client_state_meta.counterparty_chain_id.clone(),
-                        QueryHeight::Specific(counterparty_latest_height),
-                        ibc_union_spec::path::ChannelPath {
-                            channel_id: destination_channel.counterparty_channel_id.unwrap(),
-                        },
-                    )
-                    .await?;
-
                 let packet = voyager_client
                     .query(
                         client_state_meta.counterparty_chain_id.clone(),
@@ -1909,9 +1892,8 @@ impl Module {
                 let event = ibc_union_spec::event::PacketRecv {
                     packet_data: packet.data,
                     packet: ibc_union_spec::event::PacketMetadata {
-                        source_channel: ibc_union_spec::event::ChannelMetadata {
+                        source_channel: ibc_union_spec::event::CounterpartyChannelMetadata {
                             channel_id: packet.source_channel_id,
-                            version: source_channel.version.clone(),
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: destination_connection.counterparty_client_id,
                                 connection_id: destination_connection
@@ -1982,20 +1964,6 @@ impl Module {
                     )
                     .await?;
 
-                let counterparty_latest_height = voyager_client
-                    .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
-                    .await?;
-
-                let source_channel = voyager_client
-                    .query_ibc_state(
-                        client_state_meta.counterparty_chain_id.clone(),
-                        QueryHeight::Specific(counterparty_latest_height),
-                        ibc_union_spec::path::ChannelPath {
-                            channel_id: destination_channel.counterparty_channel_id.unwrap(),
-                        },
-                    )
-                    .await?;
-
                 let packet = voyager_client
                     .query(
                         client_state_meta.counterparty_chain_id.clone(),
@@ -2010,9 +1978,8 @@ impl Module {
                 let event = ibc_union_spec::event::WriteAck {
                     packet_data: packet.data,
                     packet: ibc_union_spec::event::PacketMetadata {
-                        source_channel: ibc_union_spec::event::ChannelMetadata {
+                        source_channel: ibc_union_spec::event::CounterpartyChannelMetadata {
                             channel_id: packet.source_channel_id,
-                            version: source_channel.version.clone(),
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: destination_connection.counterparty_client_id,
                                 connection_id: destination_connection

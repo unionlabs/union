@@ -6,8 +6,8 @@ use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
-        PacketSend, UpdateClient, WriteAck,
+        ConnectionOpenTry, CounterpartyChannelMetadata, CreateClient, FullEvent, PacketAck,
+        PacketMetadata, PacketRecv, PacketSend, UpdateClient, WriteAck,
     },
     path::{BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
@@ -262,7 +262,12 @@ impl Module {
         event_height: Height,
         self_channel_id: ChannelId,
         voyager_client: &VoyagerClient,
-    ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
+    ) -> RpcResult<(
+        ChainId,
+        ClientInfo,
+        ChannelMetadata,
+        CounterpartyChannelMetadata,
+    )> {
         let self_channel = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
@@ -296,21 +301,7 @@ impl Module {
             )
             .await?;
 
-        let counterparty_latest_height = voyager_client
-            .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
-            .await?;
-
         let other_channel_id = self_channel.counterparty_channel_id.unwrap();
-
-        let other_channel = voyager_client
-            .query_ibc_state(
-                client_state_meta.counterparty_chain_id.clone(),
-                QueryHeight::Specific(counterparty_latest_height),
-                ChannelPath {
-                    channel_id: other_channel_id,
-                },
-            )
-            .await?;
 
         let self_channel = ChannelMetadata {
             channel_id: self_channel_id,
@@ -320,9 +311,8 @@ impl Module {
                 connection_id: self_connection_id,
             },
         };
-        let other_channel = ChannelMetadata {
+        let other_channel = CounterpartyChannelMetadata {
             channel_id: other_channel_id,
-            version: other_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection.counterparty_client_id,
                 connection_id: self_connection.counterparty_connection_id.unwrap(),
