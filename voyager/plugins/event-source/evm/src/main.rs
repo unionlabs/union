@@ -34,7 +34,8 @@ use unionlabs::{
     primitives::{H160, H256},
 };
 use voyager_sdk::{
-    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
+    DefaultCmd, ExtensionsExt, VoyagerClient,
+    anyhow::{self, bail},
     hook::simple_take_filter,
     into_value,
     message::{
@@ -45,6 +46,7 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
     rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    serde_json::json,
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
@@ -141,11 +143,18 @@ impl Module {
                 .await?,
         );
 
-        // TODO: Assert chain id is correct
-        let chain_id = provider.get_chain_id().await?;
+        let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
+
+        if chain_id != config.chain_id {
+            bail!(
+                "incorrect chain id: expected `{}`, but found `{}`",
+                config.chain_id,
+                chain_id
+            );
+        }
 
         Ok(Self {
-            chain_id: ChainId::new(chain_id.to_string()),
+            chain_id,
             ibc_handler_address: config.ibc_handler_address,
             index_trivial_events: config.index_trivial_events,
             chunk_block_fetch_size: config.chunk_block_fetch_size,
@@ -1352,11 +1361,13 @@ impl Module {
 }
 
 fn convert_packet(value: ibc_solidity::Packet) -> RpcResult<Packet> {
-    value.try_into().map_err(move |e| {
+    value.clone().try_into().map_err(move |e| {
         ErrorObject::owned(
             -1,
             ErrorReporter(e).with_message("invalid packet"),
-            None::<()>,
+            Some(json!({
+                "packet": value
+            })),
         )
     })
 }

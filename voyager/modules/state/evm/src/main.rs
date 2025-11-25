@@ -42,8 +42,8 @@ use voyager_sdk::{
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     rpc::{
-        FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, StateModuleServer,
-        types::StateModuleInfo,
+        FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, RpcError, RpcErrorExt,
+        StateModuleServer, types::StateModuleInfo,
     },
 };
 
@@ -947,19 +947,18 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
+    async fn client_info(
+        &self,
+        _: &Extensions,
+        client_id: ClientId,
+    ) -> Result<ClientInfo, RpcError> {
         let ibc_handler = self.ibc_handler();
         let client_type = ibc_handler
             .clientTypes(client_id.raw())
             .call()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching client info: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable)
+            .with_message("error fetching client info")?;
 
         Ok(ClientInfo {
             client_type: ClientType::new(client_type),
