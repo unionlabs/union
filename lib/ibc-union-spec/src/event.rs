@@ -2,6 +2,8 @@ use enumorph::Enumorph;
 use unionlabs::primitives::{Bytes, H256};
 use voyager_primitives::{ClientType, Timestamp};
 
+#[cfg(doc)]
+use crate::Channel;
 use crate::{
     Connection, Packet,
     types::{ChannelId, ClientId, ConnectionId, packet::MustBeZero},
