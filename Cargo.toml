@@ -137,14 +137,12 @@ members = [
   "lib/voyager-core",
   "lib/voyager-primitives",
 
-  "voyager/modules/state/cosmos-sdk",
-  "voyager/modules/state/cosmos-sdk-union",
+  "voyager/modules/state/cosmwasm",
   "voyager/modules/state/ethereum",
   # "voyager/modules/state/movement",
   "voyager/modules/state/sui",
 
-  "voyager/modules/proof/cosmos-sdk",
-  "voyager/modules/proof/cosmos-sdk-union",
+  "voyager/modules/proof/cosmwasm",
   "voyager/modules/proof/ethermint",
   "voyager/modules/proof/ethereum",
   # "voyager/modules/proof/movement",
@@ -208,7 +206,7 @@ members = [
 
   "voyager/plugins/periodic-client-update",
 
-  "voyager/plugins/event-source/cosmos-sdk",
+  "voyager/plugins/event-source/cosmwasm",
   "voyager/plugins/event-source/ethereum",
   # "voyager/plugins/event-source/movement",
   "voyager/plugins/event-source/sui",

@@ -14,7 +14,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
+        "path": "./target/debug/voyager-state-module-cosmwasm",
         "info": {
           "chain_id": "union-devnet-1",
           "ibc_spec_id": "ibc-union"

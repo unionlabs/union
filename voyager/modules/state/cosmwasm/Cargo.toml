@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-event-source-plugin-cosmos-sdk"
+name    = "voyager-state-module-cosmwasm"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,27 +12,20 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bincode          = { workspace = true, features = ["derive"] }
 clap             = { workspace = true, features = ["derive"] }
 cometbft-rpc     = { workspace = true }
 cosmos-sdk-event = { workspace = true }
-dashmap          = { workspace = true }
 embed-commit     = { workspace = true }
-enumorph         = { workspace = true }
-ibc-classic-spec = { workspace = true }
-ibc-solidity     = { workspace = true, features = ["serde"] }
-ibc-union-spec   = { workspace = true, features = ["tracing", "bincode", "serde"] }
+futures          = { workspace = true }
+ibc-union-msg    = { workspace = true }
+ibc-union-spec   = { workspace = true }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
-macros           = { workspace = true }
-prost            = { workspace = true }
 protos           = { workspace = true }
 serde            = { workspace = true, features = ["derive"] }
 serde-utils      = { workspace = true }
 serde_json       = { workspace = true }
-sha2             = { workspace = true, features = ["std"] }
 thiserror        = { workspace = true }
 tokio            = { workspace = true }
 tracing          = { workspace = true }
-unionlabs        = { workspace = true, features = ["bincode"] }
+unionlabs        = { workspace = true }
 voyager-sdk      = { workspace = true }
-wasm-client-type = { workspace = true }

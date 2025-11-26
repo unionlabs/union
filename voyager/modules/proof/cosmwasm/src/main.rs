@@ -1,7 +1,5 @@
 #![warn(clippy::unwrap_used)]
 
-use std::num::ParseIntError;
-
 use ibc_union_spec::{
     IbcUnion,
     path::{IBC_UNION_COSMWASM_COMMITMENT_PREFIX, StorePath},
@@ -43,7 +41,6 @@ pub enum Cmd {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
 
@@ -67,41 +64,12 @@ impl ProofModule<IbcUnion> for Module {
 
         info.ensure_chain_id(&chain_id)?;
 
-        let chain_revision = chain_id
-            .split('-')
-            .next_back()
-            .ok_or_else(|| ChainIdParseError {
-                found: chain_id.clone(),
-                source: None,
-            })?
-            .parse()
-            .map_err(|err| ChainIdParseError {
-                found: chain_id.clone(),
-                source: Some(err),
-            })?;
-
         Ok(Self {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
-            chain_revision,
             ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
-}
-
-impl Module {
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height::new_with_revision(self.chain_revision, height)
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
-pub struct ChainIdParseError {
-    found: String,
-    #[source]
-    source: Option<ParseIntError>,
 }
 
 #[async_trait]
