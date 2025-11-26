@@ -18,6 +18,7 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
 };
 use ibc_union::ContractErrorKind;
+use ibc_union_spec::datagram::Datagram;
 use jsonrpsee::{
     Extensions, MethodsError,
     core::{RpcResult, async_trait},
@@ -157,12 +158,7 @@ impl GasFillerConfig {
     }
 }
 
-const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[
-    // https://github.com/cosmos/ibc-go/blob/main/modules/light-clients/08-wasm/types/errors.go
-    ("08-wasm", NonZeroU32::new(4).unwrap()),
-    // https://github.com/cosmos/ibc-go/blob/7f89b7dd8796eca1bfe07f8a7833f3ce2d7a8e04/modules/core/02-client/types/errors.go
-    ("client", NonZeroU32::new(4).unwrap()),
-];
+const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[];
 
 static ACCOUNT_SEQUENCE_ERRORS: LazyLock<HashSet<(&str, NonZeroU32)>> = LazyLock::new(|| {
     [
@@ -183,7 +179,7 @@ impl Plugin for Module {
     async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let rpc = Rpc::new(config.rpc_url.clone()).await?;
 
-        let chain_id = rpc.client().status().await?.node_info.network.to_string();
+        let chain_id = rpc.client().status().await?.node_info.network;
 
         if chain_id != config.chain_id.as_str() {
             bail!(
@@ -224,7 +220,7 @@ impl Plugin for Module {
             chain_id: ChainId::new(chain_id),
             gas_config: config
                 .gas_config
-                .into_gas_filler(config.rpc_url.clone())
+                .into_gas_filler(config.rpc_url)
                 .await
                 .map_err(|e| anyhow!(e))?,
             bech32_prefix,
@@ -450,48 +446,6 @@ impl Module {
     }
 }
 
-// {
-//     Ok((tx_hash, gas_used)) => {
-//         info!(
-//             %tx_hash,
-//             %gas_used,
-//             batch.size = %batch_size,
-//             "submitted cosmos transaction"
-//         );
-
-//         for msg in msg_names {
-//             info!(%tx_hash, %msg, "cosmos tx");
-//         }
-
-//         Ok(())
-//     }
-//     Err(err) => match err {
-//         BroadcastTxCommitError::Tx(CosmosSdkError::ChannelError(
-//             ChannelError::ErrRedundantTx,
-//         )) => {
-//             info!("packet messages are redundant");
-//             Ok(())
-//         }
-//         // BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-//         //     SdkError::ErrOutOfGas
-//         // )) => {
-//         //     error!("out of gas");
-//         //     Err(BroadcastTxCommitError::OutOfGas)
-//         // }
-//         BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-//             SdkError::ErrWrongSequence
-//         )) => {
-//             warn!("account sequence mismatch on tx submission, message will be requeued and retried");
-//             Err(BroadcastTxCommitError::AccountSequenceMismatch(None))
-//         }
-//         BroadcastTxCommitError::SimulateTx(err) if err.message().contains("account sequence mismatch") => {
-//             warn!("account sequence mismatch on simulation, message will be requeued and retried");
-//             Err(BroadcastTxCommitError::AccountSequenceMismatch(Some(err)))
-//         }
-//         err => Err(err),
-//     },
-// }
-
 #[async_trait]
 impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all)]
@@ -642,11 +596,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                                         if matches!(
                                             failed_msg,
-                                            IbcMessage::IbcClassic(
-                                                ibc_classic_spec::Datagram::UpdateClient(_)
-                                            ) | IbcMessage::IbcUnion(
-                                                ibc_union_spec::datagram::Datagram::UpdateClient(_)
-                                            )
+                                            IbcMessage::IbcUnion(Datagram::UpdateClient(_))
                                         ) {
                                             warn!(
                                                 "update client failed, this may cause other messages to fail as well"
@@ -745,132 +695,6 @@ fn process_msgs(
             let signer = signer.address().to_string();
 
             let encoded = match msg.clone() {
-                IbcMessage::IbcClassic(msg) => {
-                    use ibc_classic_spec::Datagram;
-                    use protos::ibc::core::{channel::v1::*, client::v1::*, connection::v1::*};
-
-                    match msg {
-                        Datagram::ConnectionOpenInit(message) => mk_any(&MsgConnectionOpenInit {
-                            client_id: message.client_id.to_string(),
-                            counterparty: Some(message.counterparty.into()),
-                            version: Some(message.version.into()),
-                            signer,
-                            delay_period: message.delay_period,
-                        }),
-                        Datagram::ConnectionOpenTry(message) => mk_any(&MsgConnectionOpenTry {
-                            client_id: message.client_id.to_string(),
-                            counterparty: Some(message.counterparty.into()),
-                            delay_period: message.delay_period,
-                            counterparty_versions: message
-                                .counterparty_versions
-                                .into_iter()
-                                .map(Into::into)
-                                .collect(),
-                            proof_height: Some(message.proof_height.into()),
-                            proof_init: message.proof_init.into(),
-                            signer,
-                            ..Default::default()
-                        }),
-                        #[allow(deprecated)]
-                        Datagram::ConnectionOpenAck(message) => mk_any(&MsgConnectionOpenAck {
-                            client_state: Some(
-                                protos::google::protobuf::Any::decode(&*message.client_state)
-                                    .expect("value should be encoded as an `Any`"),
-                            ),
-                            proof_height: Some(message.proof_height.into()),
-                            proof_client: message.proof_client.into(),
-                            proof_consensus: message.proof_consensus.into(),
-                            consensus_height: Some(message.consensus_height.into()),
-                            signer,
-                            host_consensus_state_proof: vec![],
-                            connection_id: message.connection_id.to_string(),
-                            counterparty_connection_id: message
-                                .counterparty_connection_id
-                                .to_string(),
-                            version: Some(message.version.into()),
-                            proof_try: message.proof_try.into(),
-                        }),
-                        Datagram::ConnectionOpenConfirm(message) => {
-                            mk_any(&MsgConnectionOpenConfirm {
-                                connection_id: message.connection_id.to_string(),
-                                proof_ack: message.proof_ack.into(),
-                                proof_height: Some(message.proof_height.into()),
-                                signer,
-                            })
-                        }
-                        Datagram::ChannelOpenInit(message) => mk_any(&MsgChannelOpenInit {
-                            port_id: message.port_id.to_string(),
-                            channel: Some(message.channel.into()),
-                            signer,
-                        }),
-                        Datagram::ChannelOpenTry(message) => mk_any(&MsgChannelOpenTry {
-                            port_id: message.port_id.to_string(),
-                            channel: Some(message.channel.into()),
-                            counterparty_version: message.counterparty_version,
-                            proof_init: message.proof_init.into(),
-                            proof_height: Some(message.proof_height.into()),
-                            signer,
-                            ..Default::default()
-                        }),
-                        Datagram::ChannelOpenAck(message) => mk_any(&MsgChannelOpenAck {
-                            port_id: message.port_id.to_string(),
-                            channel_id: message.channel_id.to_string(),
-                            counterparty_version: message.counterparty_version,
-                            counterparty_channel_id: message.counterparty_channel_id.to_string(),
-                            proof_try: message.proof_try.into(),
-                            proof_height: Some(message.proof_height.into()),
-                            signer,
-                        }),
-                        Datagram::ChannelOpenConfirm(message) => mk_any(&MsgChannelOpenConfirm {
-                            port_id: message.port_id.to_string(),
-                            channel_id: message.channel_id.to_string(),
-                            proof_height: Some(message.proof_height.into()),
-                            signer,
-                            proof_ack: message.proof_ack.into(),
-                        }),
-                        Datagram::RecvPacket(message) => mk_any(&MsgRecvPacket {
-                            packet: Some(message.packet.into()),
-                            proof_height: Some(message.proof_height.into()),
-                            signer,
-                            proof_commitment: message.proof_commitment.into(),
-                        }),
-                        Datagram::AcknowledgePacket(message) => mk_any(&MsgAcknowledgement {
-                            packet: Some(message.packet.into()),
-                            acknowledgement: message.acknowledgement.into(),
-                            proof_acked: message.proof_acked.into(),
-                            proof_height: Some(message.proof_height.into()),
-                            signer,
-                        }),
-                        Datagram::TimeoutPacket(message) => mk_any(&MsgTimeout {
-                            packet: Some(message.packet.into()),
-                            proof_unreceived: message.proof_unreceived,
-                            proof_height: Some(message.proof_height.into()),
-                            next_sequence_recv: message.next_sequence_recv.get(),
-                            signer,
-                        }),
-                        Datagram::CreateClient(message) => mk_any(&MsgCreateClient {
-                            client_state: Some(
-                                protos::google::protobuf::Any::decode(&*message.msg.client_state)
-                                    .expect("value should be encoded as an `Any`"),
-                            ),
-                            consensus_state: Some(
-                                protos::google::protobuf::Any::decode(
-                                    &*message.msg.consensus_state,
-                                )
-                                .expect("value should be encoded as an `Any`"),
-                            ),
-                            signer,
-                        }),
-                        Datagram::UpdateClient(message) => mk_any(&MsgUpdateClient {
-                            signer,
-                            client_id: message.client_id.to_string(),
-                            client_message: Some(
-                                protos::google::protobuf::Any::decode(&*message.client_message)
-                                    .expect("value should be encoded as an `Any`"),
-                            ),
-                        }),
-                    }
-                }
                 IbcMessage::IbcUnion(msg) => {
                     use ibc_union_msg::msg::*;
                     use ibc_union_spec::datagram::Datagram;

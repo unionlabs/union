@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-proof-module-ethereum"
+name    = "voyager-proof-module-evm-mpt"
 version = "0.0.0"
 
 authors      = { workspace = true }

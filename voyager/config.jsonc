@@ -214,7 +214,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-event-source-plugin-ethereum",
+      "path": "./target/debug/voyager-event-source-plugin-evm",
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
@@ -250,7 +250,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-plugin-ethereum",
+      "path": "./target/debug/voyager-transaction-plugin-evm",
       "config": {
         "gas_multiplier": "2",
         "chain_id": "32382",
@@ -320,7 +320,7 @@
     }
     // {
     //   "enabled": true,
-    //   "path": "./target/debug/voyager-client-update-plugin-ethereum",
+    //   "path": "./target/debug/voyager-client-update-plugin-evm",
     //   "config": {
     //     "chain_id": "32382",
     //     "chain_spec": "minimal",

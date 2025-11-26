@@ -15,7 +15,7 @@
       },
       {
         "enabled": true,
-        "path": "/bin/voyager-state-module-ethereum",
+        "path": "/bin/voyager-state-module-evm",
         "info": {
           "chain_id": "32382",
           "ibc_spec_id": "ibc-union"
@@ -29,7 +29,7 @@
     "proof": [
       {
         "enabled": true,
-        "path": "/bin/voyager-proof-module-cosmos-sdk-union",
+        "path": "/bin/voyager-proof-module-cosmwasm",
         "info": {
           "chain_id": "union-devnet-1",
           "ibc_spec_id": "ibc-union"
@@ -41,7 +41,7 @@
       },
       {
         "enabled": true,
-        "path": "/bin/voyager-proof-module-ethereum",
+        "path": "/bin/voyager-proof-module-evm-mpt",
         "info": {
           "chain_id": "32382",
           "ibc_spec_id": "ibc-union"
@@ -144,7 +144,7 @@
   "plugins": [
     {
       "enabled": true,
-      "path": "/bin/voyager-event-source-plugin-cosmos-sdk",
+      "path": "/bin/voyager-event-source-plugin-cosmwasm",
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://devnetUnion:26657",
@@ -155,7 +155,7 @@
     },
     {
       "enabled": true,
-      "path": "/bin/voyager-event-source-plugin-ethereum",
+      "path": "/bin/voyager-event-source-plugin-evm",
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
@@ -164,7 +164,7 @@
     },
     {
       "enabled": true,
-      "path": "/bin/voyager-transaction-plugin-cosmos-sdk",
+      "path": "/bin/voyager-transaction-plugin-cosmos",
       "config": {
         "chain_id": "union-devnet-1",
         "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
@@ -191,7 +191,7 @@
     },
     {
       "enabled": true,
-      "path": "/bin/voyager-transaction-plugin-ethereum",
+      "path": "/bin/voyager-transaction-plugin-evm",
       "config": {
         "gas_multiplier": "2",
         "chain_id": "32382",
@@ -261,7 +261,7 @@
     }
     // {
     //   "enabled": true,
-    //   "path": "/bin/voyager-client-update-plugin-ethereum",
+    //   "path": "/bin/voyager-client-update-plugin-evm",
     //   "config": {
     //     "chain_id": "32382",
     //     "chain_spec": "minimal",

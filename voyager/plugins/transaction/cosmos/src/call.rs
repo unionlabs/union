@@ -1,5 +1,4 @@
 use enumorph::Enumorph;
-use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
@@ -15,38 +14,28 @@ pub enum ModuleCall {
 #[model]
 #[derive(Enumorph)]
 pub enum IbcMessage {
-    IbcClassic(ibc_classic_spec::Datagram),
     IbcUnion(ibc_union_spec::datagram::Datagram),
 }
 
 impl IbcMessage {
     pub fn from_raw_datagram(datagram: IbcDatagram) -> RpcResult<Self> {
-        match datagram.decode_datagram::<IbcClassic>() {
+        match datagram.decode_datagram::<IbcUnion>() {
             Some(Ok(ok)) => Ok(ok.into()),
             Some(Err(err)) => Err(ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode IBC datagram: {}", ErrorReporter(err)),
                 None::<()>,
             )),
-            None => match datagram.decode_datagram::<IbcUnion>() {
-                Some(Ok(ok)) => Ok(ok.into()),
-                Some(Err(err)) => Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to decode IBC datagram: {}", ErrorReporter(err)),
-                    None::<()>,
-                )),
-                None => Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unknown IBC version id: {}", datagram.ibc_spec_id),
-                    None::<()>,
-                )),
-            },
+            None => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!("unknown IBC version id: {}", datagram.ibc_spec_id),
+                None::<()>,
+            )),
         }
     }
 
     pub fn name(&self) -> &'static str {
         match self {
-            IbcMessage::IbcClassic(datagram) => datagram.name(),
             IbcMessage::IbcUnion(datagram) => datagram.name(),
         }
     }
