@@ -81,6 +81,14 @@ impl RpcError {
         }
     }
 
+    pub fn retryable_from_message(message: impl fmt::Display) -> Self {
+        Self {
+            kind: RpcErrorKind::Retryable(-1),
+            message: message.to_string(),
+            data: Value::Null,
+        }
+    }
+
     pub fn retryable_with_code<E: Error>(code: i32) -> impl FnOnce(E) -> Self {
         move |error| Self {
             kind: RpcErrorKind::Retryable(code),
