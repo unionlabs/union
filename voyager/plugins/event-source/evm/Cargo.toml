@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-event-source-plugin-ethereum"
+name    = "voyager-event-source-plugin-evm"
 version = "0.0.0"
 
 authors      = { workspace = true }

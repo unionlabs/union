@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-transaction-plugin-cosmos-sdk"
+name    = "voyager-transaction-plugin-cosmos"
 version = "0.0.0"
 
 authors      = { workspace = true }

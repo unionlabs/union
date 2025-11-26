@@ -16781,7 +16781,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-event-source-plugin-ethereum"
+name = "voyager-event-source-plugin-evm"
 version = "0.0.0"
 dependencies = [
  "alloy",
@@ -17264,23 +17264,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-proof-module-ethereum"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "embed-commit",
- "ethereum-light-client-types",
- "ibc-union-spec",
- "jsonrpsee 0.25.1",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-sdk",
-]
-
-[[package]]
 name = "voyager-proof-module-ethermint"
 version = "0.0.0"
 dependencies = [
@@ -17294,6 +17277,23 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-proof-module-evm-mpt"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "ethereum-light-client-types",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "unionlabs",
@@ -17466,7 +17466,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-plugin-cosmos-sdk"
+name = "voyager-transaction-plugin-cosmos"
 version = "0.0.0"
 dependencies = [
  "bip32 0.5.3",
@@ -17496,7 +17496,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-plugin-ethereum"
+name = "voyager-transaction-plugin-evm"
 version = "0.0.0"
 dependencies = [
  "alloy",

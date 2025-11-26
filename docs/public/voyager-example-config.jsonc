@@ -78,7 +78,7 @@
       // preconfigured proof module for the holesky ethereum testnet.
       {
         "enabled": true,
-        "path": "/path/to/modules/voyager-proof-module-ethereum",
+        "path": "/path/to/modules/voyager-proof-module-evm-mpt",
         "info": {
           "chain_id": "17000",
           "ibc_spec_id": "ibc-union"
@@ -326,7 +326,7 @@
     },
     {
       "enabled": true,
-      "path": "/path/to/modules/voyager-event-source-plugin-ethereum",
+      "path": "/path/to/modules/voyager-event-source-plugin-evm",
       "config": {
         "chain_id": "17000",
         "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
@@ -394,7 +394,7 @@
     },
     {
       "enabled": true,
-      "path": "/path/to/modules/voyager-transaction-plugin-ethereum",
+      "path": "/path/to/modules/voyager-transaction-plugin-evm",
       "config": {
         "chain_id": "17000",
         "ibc_handler_address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
@@ -501,7 +501,7 @@
     // },
     {
       "enabled": true,
-      "path": "/path/to/modules/voyager-client-update-plugin-ethereum",
+      "path": "/path/to/modules/voyager-client-update-plugin-evm",
       "config": {
         "chain_id": "17000",
         "chain_spec": "mainnet",
