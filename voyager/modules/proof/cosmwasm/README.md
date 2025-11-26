@@ -1,6 +1,6 @@
 # Voyager CosmWasm Proof Module
 
-This module provides state proof querying functionality for the Union IBC stack deployed on [CosmWasm]. State proofs are read through [`abci_query`], under the storage key defined [here](storekeys). 
+This module provides state proof querying functionality for the Union IBC stack deployed on [CosmWasm]. State proofs are read through [`abci_query`], under the storage key defined [here][storekeys].
 
 ## Configuration
 
@@ -10,7 +10,7 @@ This module provides state proof querying functionality for the Union IBC stack 
 
 ### Module Info
 
-This module only provides state for the `ibc-union` IBC specification.
+This module only provides proofs for the `ibc-union` IBC specification.
 
 [cometbft]: https://cometbft.com
 [cosmossdk]: https://docs.cosmos.network/sdk
