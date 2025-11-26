@@ -3,7 +3,10 @@ use std::collections::VecDeque;
 use ibc_union_spec::{
     ChannelId, IbcUnion,
     datagram::MsgIntentPacketRecv,
-    event::{ChannelMetadata, ConnectionMetadata, FullEvent, PacketMetadata, PacketSend, WriteAck},
+    event::{
+        ChannelMetadata, ConnectionMetadata, CounterpartyChannelMetadata, FullEvent,
+        PacketMetadata, PacketSend, WriteAck,
+    },
     path::{BatchPacketsPath, BatchReceiptsPath, COMMITMENT_MAGIC, ChannelPath, ConnectionPath},
     query::{PacketAckByHash, PacketByHash},
 };
@@ -275,9 +278,8 @@ impl Module {
                                     connection_id: connection.counterparty_connection_id.unwrap(),
                                 },
                             },
-                            source_channel: ChannelMetadata {
+                            source_channel: CounterpartyChannelMetadata {
                                 channel_id,
-                                version: channel.version.clone(),
                                 connection: ConnectionMetadata {
                                     client_id: connection.client_id,
                                     connection_id: channel.connection_id,
@@ -328,9 +330,8 @@ impl Module {
                                     connection_id: channel.connection_id,
                                 },
                             },
-                            destination_channel: ChannelMetadata {
+                            destination_channel: CounterpartyChannelMetadata {
                                 channel_id: channel.counterparty_channel_id.unwrap(),
-                                version: channel.version.clone(),
                                 connection: ConnectionMetadata {
                                     client_id: connection.counterparty_client_id,
                                     connection_id: connection.counterparty_connection_id.unwrap(),

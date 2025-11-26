@@ -2,6 +2,8 @@ use enumorph::Enumorph;
 use unionlabs::primitives::{Bytes, H256};
 use voyager_primitives::{ClientType, Timestamp};
 
+#[cfg(doc)]
+use crate::Channel;
 use crate::{
     Connection, Packet,
     types::{ChannelId, ClientId, ConnectionId, packet::MustBeZero},
@@ -264,7 +266,7 @@ pub struct ChannelCloseConfirm {}
 pub struct PacketSend {
     pub packet_data: Bytes,
 
-    pub packet: PacketMetadata,
+    pub packet: PacketMetadata<ChannelMetadata, CounterpartyChannelMetadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -278,7 +280,7 @@ pub struct BatchSend {
     pub batch_hash: H256,
 
     pub source_channel: ChannelMetadata,
-    pub destination_channel: ChannelMetadata,
+    pub destination_channel: CounterpartyChannelMetadata,
 }
 
 macro_rules! packet_method {
@@ -310,7 +312,7 @@ impl PacketSend {
 pub struct PacketRecv {
     pub packet_data: Bytes,
 
-    pub packet: PacketMetadata,
+    pub packet: PacketMetadata<CounterpartyChannelMetadata, ChannelMetadata>,
 
     pub maker_msg: Bytes,
 }
@@ -329,7 +331,7 @@ impl PacketRecv {
 pub struct IntentPacketRecv {
     pub packet_data: Bytes,
 
-    pub packet: PacketMetadata,
+    pub packet: PacketMetadata<CounterpartyChannelMetadata, ChannelMetadata>,
 
     pub market_maker_msg: Bytes,
 }
@@ -348,7 +350,7 @@ impl IntentPacketRecv {
 pub struct WriteAck {
     pub packet_data: Bytes,
 
-    pub packet: PacketMetadata,
+    pub packet: PacketMetadata<CounterpartyChannelMetadata, ChannelMetadata>,
 
     pub acknowledgement: Bytes,
 }
@@ -367,7 +369,7 @@ impl WriteAck {
 pub struct PacketAck {
     pub packet_data: Bytes,
 
-    pub packet: PacketMetadata,
+    pub packet: PacketMetadata<ChannelMetadata, CounterpartyChannelMetadata>,
 
     pub acknowledgement: Bytes,
 }
@@ -386,7 +388,7 @@ impl PacketAck {
 pub struct PacketTimeout {
     pub packet_data: Bytes,
 
-    pub packet: PacketMetadata,
+    pub packet: PacketMetadata<ChannelMetadata, CounterpartyChannelMetadata>,
 }
 
 impl PacketTimeout {
@@ -401,13 +403,13 @@ impl PacketTimeout {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
-pub struct PacketMetadata {
-    pub source_channel: ChannelMetadata,
-    pub destination_channel: ChannelMetadata,
+pub struct PacketMetadata<S, D> {
+    pub source_channel: S,
+    pub destination_channel: D,
     pub timeout_timestamp: Timestamp,
 }
 
-/// All metadata associated with a Channel.
+/// All metadata associated with a [`Channel`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -417,12 +419,26 @@ pub struct PacketMetadata {
 )]
 pub struct ChannelMetadata {
     pub channel_id: ChannelId,
-    // REVIEW: Can this be different on either end of a channel?
     pub version: String,
     pub connection: ConnectionMetadata,
 }
 
-/// All metadata associated with a Connection.
+/// All metadata associated with a counterparty [`Channel`] (i.e. the opposite channel end of the channel on the chain the event was emitted on).
+///
+/// Note that this is the exact same as [`ChannelMetadata`], other than that there is no `version` field.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct CounterpartyChannelMetadata {
+    pub channel_id: ChannelId,
+    pub connection: ConnectionMetadata,
+}
+
+/// All metadata associated with a [`Connection`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
