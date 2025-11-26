@@ -35,7 +35,6 @@ pub trait EthAbi<T> {
 
 #[derive(Debug, Drop, Serde, PartialEq)]
 pub struct ZkgmPacket {
-    // check if there is a fixed-sized type
     pub salt: ByteArray,
     pub path: u256,
     pub instruction: Instruction,
@@ -44,20 +43,34 @@ pub struct ZkgmPacket {
 impl ZkgmEthAbiDecodeImpl of EthAbi<ZkgmPacket> {
     fn tokens() -> Array<EVMTypes> {
         array![
-            EVMTypes::Uint256, EVMTypes::Uint256,
+            EVMTypes::Bytes32, EVMTypes::Uint256,
             EVMTypes::Tuple(array![EVMTypes::Uint8, EVMTypes::Uint8, EVMTypes::Bytes].span()),
         ]
     }
-
     fn dynamic_offset() -> u32 {
-        (3 + EthAbi::<Instruction>::dynamic_offset()) * 0x20
+        3 * 0x20
     }
 }
 
 #[derive(Drop, Debug, Serde, PartialEq)]
+pub enum Opcode {
+    Forward,
+    Call,
+    Batch,
+    TokenOrder,
+}
+
+#[derive(Drop, Debug, Serde, PartialEq)]
+pub enum Version {
+    V0,
+    V1,
+    V2,
+}
+
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Instruction {
-    pub version: u8,
-    pub opcode: u8,
+    pub version: Version,
+    pub opcode: Opcode,
     pub operand: ByteArray,
 }
 
@@ -131,11 +144,11 @@ impl BatchEthAbiImpl of EthAbi<Batch> {
 pub struct TokenOrderV2 {
     pub sender: ByteArray,
     pub receiver: ByteArray,
-    pub baseToken: ByteArray,
-    pub baseAmount: u256,
+    pub base_token: ByteArray,
+    pub base_amount: u256,
     // TODO(aeryz): short string?
-    pub quoteToken: ByteArray,
-    pub quoteAmount: u256,
+    pub quote_token: ByteArray,
+    pub quote_amount: u256,
     pub kind: u8,
     pub metadata: ByteArray,
 }
@@ -149,6 +162,7 @@ impl TokenOrderV2EthAbiImpl of EthAbi<TokenOrderV2> {
     }
 }
 
+#[derive(Drop, Debug, Serde, PartialEq, starknet::Store)]
 pub struct TokenMetadata {
     pub implementation: ByteArray,
     pub initializer: ByteArray,
@@ -160,6 +174,7 @@ impl TokenMetadataEthAbiImpl of EthAbi<TokenMetadata> {
     }
 }
 
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct SolverMetadata {
     pub solver_address: ByteArray,
     pub metadata: ByteArray,
@@ -172,6 +187,7 @@ impl SolverMetadataEthAbiImpl of EthAbi<SolverMetadata> {
     }
 }
 
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Ack {
     pub tag: u256,
     pub inner_ack: ByteArray,
@@ -187,6 +203,7 @@ impl AckEthAbiImpl of EthAbi<Ack> {
     }
 }
 
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct BatchAck {
     pub acknowledgements: Array<ByteArray>,
 }
@@ -197,6 +214,7 @@ impl BatchAckEthAbiImpl of EthAbi<BatchAck> {
     }
 }
 
+#[derive(Drop, Debug, Serde, PartialEq)]
 pub struct TokenOrderAck {
     pub fill_type: u256,
     pub market_maker: ByteArray,

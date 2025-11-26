@@ -6,8 +6,8 @@ members = [
 ]
 
 [workspace.dependencies]
-alexandria_bytes = { git = "https://github.com/aeryz/alexandria", rev = "17fe9370daa56a8ef26f69a6b0fc7a309c015b18" }
-alexandria_encoding = { git = "https://github.com/aeryz/alexandria", rev = "17fe9370daa56a8ef26f69a6b0fc7a309c015b18" }
-alexandria_evm = { git = "https://github.com/aeryz/alexandria", rev = "17fe9370daa56a8ef26f69a6b0fc7a309c015b18" }
+alexandria_bytes = { git = "https://github.com/aeryz/alexandria", rev = "def7a1a06a9bf01922167a449dafed714a1be2c5" }
+alexandria_encoding = { git = "https://github.com/aeryz/alexandria", rev = "def7a1a06a9bf01922167a449dafed714a1be2c5" }
+alexandria_evm = { git = "https://github.com/aeryz/alexandria", rev = "def7a1a06a9bf01922167a449dafed714a1be2c5" }
 starknet = "2.12.2"
 ibc = { path = "cairo/ibc" }
