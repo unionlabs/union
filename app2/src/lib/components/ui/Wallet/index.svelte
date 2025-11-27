@@ -194,7 +194,7 @@ $effect(() => {
         connectedWalletId={suiStore.connectedWallet}
         onConnectClick={(id: string) => suiStore.connect(id as any)}
         onDisconnectClick={suiStore.disconnect}
-        showDivider={false}
+        showDivider={true}
       />
     {/if}
   </section>
