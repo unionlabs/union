@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "332DCCA5A441FBCB65201BC3BA3FDD408B6ECB013CA6170DCBB1B8C6917A55BE"
+manifest_digest = "46399891D5B77AC3EE1544692B786511DEE9857352FEC47D8D63013C0F8C3619"
 deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -16,7 +16,7 @@ dependencies = [
 
 [[move.package]]
 id = "Bridge"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "61dcfdbe2ddc7ad05d27fc10cd09d4c6cc151acd", subdir = "crates/sui-framework/packages/bridge" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "c1f1ae650fb9f9248b39a569400b4420820868db", subdir = "crates/sui-framework/packages/bridge" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -26,11 +26,11 @@ dependencies = [
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "61dcfdbe2ddc7ad05d27fc10cd09d4c6cc151acd", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "c1f1ae650fb9f9248b39a569400b4420820868db", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "61dcfdbe2ddc7ad05d27fc10cd09d4c6cc151acd", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "c1f1ae650fb9f9248b39a569400b4420820868db", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -38,7 +38,7 @@ dependencies = [
 
 [[move.package]]
 id = "SuiSystem"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "61dcfdbe2ddc7ad05d27fc10cd09d4c6cc151acd", subdir = "crates/sui-framework/packages/sui-system" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "c1f1ae650fb9f9248b39a569400b4420820868db", subdir = "crates/sui-framework/packages/sui-system" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -81,7 +81,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.60.0"
+compiler-version = "1.62.0"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -89,6 +89,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x0000000000000000000000000000000000000000000000000000000000000000"
-latest-published-id = "0xee454a18a1f6039fd1d24b0984cb28cbaf13e172e9c00ef02bb330c2069e799a"
-published-version = "3"
+original-published-id = "0xa1cfaf8c85635bef3615e59f4b653810835be05647baaed6cad8afc2bb25969b"
+latest-published-id = "0xa44252db37fe69b02b1d3e2266a6c2f25b27733be20990f0e31291b0f77b5344"
+published-version = "6"

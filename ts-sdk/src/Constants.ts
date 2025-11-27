@@ -246,15 +246,7 @@ export const U_ERC20 = Token.Erc20.make({ address: "0xba5eD44733953d79717F626935
  * @since 2.0.0
  */
 export const U_SUI = Token.SuiCoin.make({
-  address: "650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U",
-})
-
-/**
- * @category constants
- * @since 2.0.0
- */
-export const SUI_NATIVE_COIN_WITHOUT_0x = Token.SuiCoin.make({
-  address: "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+  address: "0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U",
 })
 
 /**
