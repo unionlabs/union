@@ -1,15 +1,10 @@
 use ibc_union_spec::{ClientId, IbcUnion, path::ConsensusStatePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState, client_state::Extra};
 use tracing::{info, instrument};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::client::height::Height,
     primitives::{H256, encoding::Base64},
 };
@@ -18,7 +13,8 @@ use voyager_sdk::{
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientStateMeta, QueryHeight},
     rpc::{
-        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
+        ClientBootstrapModuleServer, RpcError, RpcErrorExt, RpcResult,
+        types::ClientBootstrapModuleInfo,
     },
 };
 
@@ -91,17 +87,13 @@ impl Module {
         );
 
         if l2_client_meta.counterparty_chain_id != self.l2_chain_id {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "this module is configured for {}, but {} on {} tracks {}",
-                    self.l2_chain_id,
-                    config.l2_client_id,
-                    l1_client_meta.counterparty_chain_id,
-                    l2_client_meta.counterparty_chain_id
-                ),
-                None::<()>,
-            ));
+            return Err(RpcError::fatal_from_message(format!(
+                "this module is configured for {}, but {} on {} tracks {}",
+                self.l2_chain_id,
+                config.l2_client_id,
+                l1_client_meta.counterparty_chain_id,
+                l2_client_meta.counterparty_chain_id
+            )));
         }
 
         Ok((l1_client_meta, l2_client_meta))
@@ -117,16 +109,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize client state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize client state config"))?;
 
         let (_l1_client_meta, _l2_client_meta) = self
             .fetch_and_verify_config(e.voyager_client()?, &config)
@@ -149,16 +133,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize client state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize client state config"))?;
 
         let voyager_client = ext.voyager_client()?;
 
@@ -202,16 +178,12 @@ impl ClientBootstrapModuleServer for Module {
                     .await?
             }
             None => {
-                return Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "there is no consensus state for client {} on {} at height {}",
-                        config.l2_client_id,
-                        l1_client_meta.counterparty_chain_id,
-                        height.height()
-                    ),
-                    None::<()>,
-                ));
+                return Err(RpcError::fatal_from_message(format!(
+                    "there is no consensus state for client {} on {} at height {}",
+                    config.l2_client_id,
+                    l1_client_meta.counterparty_chain_id,
+                    height.height()
+                )));
             }
         };
 
@@ -235,27 +207,21 @@ impl ClientBootstrapModuleServer for Module {
                 consensus_state
                     .pointer("/root/hash")
                     .ok_or_else(|| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
+                        RpcError::fatal_from_message(
                             "unable to read /root/hash value of decoded l2 consensus state",
-                            Some(json!({
-                                "decoded_consensus_state": consensus_state
-                            })),
                         )
+                        .with_data(json!({
+                            "decoded_consensus_state": consensus_state
+                        }))
                     })?
                     .clone(),
             )
-            .map_err(|e| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    ErrorReporter(e).with_message(
-                        "unable to decode /root/hash value of decoded l2 consensus state",
-                    ),
-                    Some(json!({
-                        "decoded_consensus_state": consensus_state
-                    })),
-                )
-            })?
+            .map_err(RpcError::fatal(
+                "unable to decode /root/hash value of decoded l2 consensus state",
+            ))
+            .with_data(json!({
+                "decoded_consensus_state": consensus_state
+            }))?
             .into_encoding(),
         }))
     }
